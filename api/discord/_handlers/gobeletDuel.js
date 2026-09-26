@@ -344,7 +344,16 @@ function formatUsedLine(used) {
   return used.length ? ["", `🚫 Déjà réalisées : ${used.join(", ")}`] : [];
 }
 
-function buildHandEmbed(manche, hand, kept, used) {
+// Combinaisons déjà réalisées par chaque adversaire (aspect tactique, duel
+// uniquement). Un adversaire qui n'a encore rien réalisé n'est pas listé.
+function formatOpponentsLines(opponents = []) {
+  const lines = opponents
+    .filter((o) => o.used.length > 0)
+    .map((o) => `👀 ${o.username || "Adversaire"} : ${o.used.join(", ")}`);
+  return lines.length ? ["", ...lines] : [];
+}
+
+function buildHandEmbed(manche, hand, kept, used, opponents) {
   return {
     title: `🎲 Ta main — Manche ${manche}`,
     description: [
@@ -352,6 +361,7 @@ function buildHandEmbed(manche, hand, kept, used) {
       "",
       buildHandStatusMessage(hand, kept),
       ...formatUsedLine(used),
+      ...formatOpponentsLines(opponents),
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };
@@ -482,7 +492,7 @@ export async function handleJouer(webhookUrl, discordId, username) {
     const { diceEmojis } = await loadGobeletConfig();
     const state = result.state;
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(state.manche, result.hand, result.kept, result.used)],
+      embeds: [buildHandEmbed(state.manche, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(state.manche, result.hand, result.kept, diceEmojis, result.used),
     });
 
@@ -517,7 +527,7 @@ export async function handleToggle(webhookUrl, discordId, index) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used)],
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
         components: [],
       });
       return;
@@ -525,7 +535,7 @@ export async function handleToggle(webhookUrl, discordId, index) {
 
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used)],
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
     });
   } catch (err) {
@@ -556,7 +566,7 @@ export async function handleRelancer(webhookUrl, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used)],
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
         components: [],
       });
       return;
@@ -564,7 +574,7 @@ export async function handleRelancer(webhookUrl, discordId) {
 
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used)],
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
     });
 
@@ -597,7 +607,7 @@ export async function handleValider(webhookUrl, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used)],
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
         components: [],
       });
       return;
@@ -608,14 +618,14 @@ export async function handleValider(webhookUrl, discordId) {
       // Garde-fou : le bouton ne devrait normalement pas être cliquable
       // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used)],
+        embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
         components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used)],
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
     });
 
@@ -642,7 +652,7 @@ function buildReglesEmbed() {
       "👍 **Valider** — dès que tes dés forment une combinaison encore libre, fige ta main immédiatement sans attendre les relances restantes.",
       "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
       "",
-      "**Une combinaison différente à chaque manche :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt.",
+      "**Une combinaison différente à chaque manche :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt. Ta main affiche aussi celles déjà réalisées par tes adversaires.",
       "",
       "**Barème (la catégorie libre la plus valorisée est toujours retenue) :**",
       ...formatBaremeLines(),

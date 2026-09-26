@@ -1927,6 +1927,8 @@ Nettoyage 100% manuel (retour utilisateur explicite, 12/09 : "je ne souhaite abs
 
 Réutilise par import direct les fonctions pures du jeu spécial (`rollDice`, `rerollKept`, `computeBestCombination`, `resolveJour`, `buildRanking`) — même principe que Blackjack Duel vis-à-vis de Blackjack. Le rendu texte des dés reste dupliqué (`_handlers/gobeletDuel.js`), tout comme le mécanisme de sélection des dés (Jouer/toggle/Relancer). Les emoji personnalisés (`diceEmojis`) sont en revanche relus directement depuis `data/gobelet/gobelet.json` via `loadGobeletConfig()` — lecture de config statique sans état, aucun risque de couplage.
 
+**Combinaisons des adversaires (duel uniquement, 26/09)** : la main éphémère de chaque joueur liste aussi les combinaisons déjà réalisées par ses adversaires (« 👀 Pseudo : … », `readOpponentsUsed()`, pseudo stocké dans `gobeletduel:usernames`), pour ajouter un aspect tactique. Volontairement absent du jeu spécial, où les joueurs sont trop nombreux.
+
 Stockage Redis dédié `gobeletduel:*`. Scripts npm : `npm run gobeletduel:status`, `npm run gobeletduel:watchdog`, `npm run gobeletduel:reset` — mêmes garanties que Blackjack Duel (aucun workflow GitHub Actions ne les appelle).
 
 ## Jeu Goblin Hunters (identité secrète, camps cachés)
