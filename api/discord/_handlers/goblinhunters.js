@@ -456,15 +456,23 @@ function roleDescription(roleKey, config) {
 }
 
 function buildReglesEmbed(config) {
+  const l = config.lieux;
+  const lieu = (key) => `${l[key].emoji} **${l[key].numero}. ${l[key].label}**`;
+  const pvGobelin = config.combat.pv_base + (config.combat.gobelin_pv_bonus ?? 0);
   const lines = [
-    "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins infiltrés** (minorité). Chaque jour, choisis un lieu — il détermine ton action.",
+    "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins** (minorité).",
     "",
-    "**Lieux** (tous les 5 lieux comptent comme une action) :",
-    `${config.lieux.chateau.emoji} **${config.lieux.chateau.numero}. ${config.lieux.chateau.label}** — vote d'accusation public. En cas d'égalité, personne n'est éliminé.`,
-    `${config.lieux.camp_entrainement.emoji} **${config.lieux.camp_entrainement.numero}. ${config.lieux.camp_entrainement.label}** — attaque (1 dégât) un joueur vu ici la veille; si personne n'y était, tu frappes un joueur tiré au hasard.`,
-    `${config.lieux.tour_de_guet.emoji} **${config.lieux.tour_de_guet.numero}. ${config.lieux.tour_de_guet.label}** — révèle le camp d'un joueur vu ici la veille; si personne n'y était, révèle un joueur tiré au hasard. Inefficace si plus de ${Math.round((config.tour_de_guet_seuil_ratio ?? 0.5) * 100)}% des vivants s'y trouvent le même jour.`,
-    `${config.lieux.taverne.emoji} **${config.lieux.taverne.numero}. ${config.lieux.taverne.label}** — protection des attaques tant que ${config.taverne_seuil_protection} joueurs maximum s'y trouvent le même jour.`,
-    `${config.lieux.clairiere_mystique.emoji} **${config.lieux.clairiere_mystique.numero}. ${config.lieux.clairiere_mystique.label}** — révèle la position actuelle de 2 joueurs tirés au hasard.`,
+    "Chaque jour, tu choisis **un seul lieu**. Ton choix est **définitif**, et tu ne peux **pas retourner au même lieu deux jours de suite**.",
+    "",
+    `${lieu("chateau")} — Tu votes contre un joueur. Celui qui a le plus de voix est éliminé. En cas d'égalité, personne ne l'est.`,
+    `${lieu("camp_entrainement")} — Tu attaques un joueur qui était à l'Arène la veille (${config.combat.degats_base} dégât). Si personne n'y était, tu frappes un joueur au hasard.`,
+    `${lieu("tour_de_guet")} — Tu découvres le camp d'un joueur qui était à la Tour la veille (sinon, un joueur au hasard). Si plus de la moitié des joueurs y vont le même jour, personne n'apprend rien.`,
+    `${lieu("taverne")} — Tu es protégé des attaques, si vous êtes ${config.taverne_seuil_protection} maximum.`,
+    `${lieu("clairiere_mystique")} — Tu découvres où se trouvent 2 joueurs au hasard.`,
+    "",
+    `❤️ Villageois : ${config.combat.pv_base} PV — Gobelins : ${pvGobelin} PV. Au plus 1 mort au combat par jour.`,
+    "☀️ Jour 1 : personne ne peut mourir.",
+    `🏆 Les Gobelins gagnent s'ils sont aussi nombreux que les Villageois. Les Villageois gagnent s'ils éliminent tous les Gobelins, ou à la fin du Jour ${config.duree_jours}.`,
     "",
     "**Rôles spéciaux** (1 exemplaire de chacun) :",
     ...Object.keys(config.roles).map(
@@ -472,12 +480,8 @@ function buildReglesEmbed(config) {
         `${config.roles[roleKey].emoji} **${config.roles[roleKey].label}** (camp ${config.camps[config.roles[roleKey].camp].label}) — ${roleDescription(roleKey, config)}`,
     ),
     "",
-    `Villageois : **${config.combat.pv_base} PV**. Gobelins : **${config.combat.pv_base + (config.combat.gobelin_pv_bonus ?? 0)} PV** (plus résistants). Maximum **1 mort par combat et par jour**.`,
-    `Aucune élimination possible le Jour 1 (vote et combat désactivés).`,
-    `🚫 Impossible de rester au même lieu 2 jours de suite.`,
-    `📬 Bouton **Messagerie** : 1 message anonyme par jour, les 3 derniers restent affichés.`,
-    "",
-    "Victoire des Gobelins à la parité, des Villageois si tous les Gobelins sont éliminés, sinon des Villageois par défaut au dernier jour.",
+    "📜 **Journal** : ton rôle, tes PV et tes indices.",
+    "📬 **Messagerie** : 1 message anonyme par jour, les 3 derniers restent affichés.",
   ];
   return {
     title: "📖 Règles — Goblin Hunters",
