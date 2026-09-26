@@ -16,7 +16,7 @@
     "17": 7,
     "18": 8
   },
-  "combat": { "pv_base": 2, "degats_base": 1, "gobelin_pv_bonus": 1 },
+  "combat": { "pv_base": 2, "degats_base": 1, "degats_gobelin": 2, "gobelin_pv_bonus": 0 },
   "taverne_seuil_protection": 3,
   "tour_de_guet_seuil_ratio": 0.5,
   "vote_quorum_min": 2,

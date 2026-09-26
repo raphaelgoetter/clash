@@ -528,6 +528,7 @@ export function computeAttacksFromActions(
   rng = Math.random,
 ) {
   const roleById = new Map(joueursAvant.map((j) => [j.discordId, j.role]));
+  const campById = new Map(joueursAvant.map((j) => [j.discordId, j.camp]));
   const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, [
     "camp_entrainement",
   ]);
@@ -553,7 +554,9 @@ export function computeAttacksFromActions(
     degats:
       roleById.get(a.attackerId) === "bucheron"
         ? config.roles.bucheron.degats
-        : config.combat.degats_base,
+        : campById.get(a.attackerId) === "gobelin"
+          ? (config.combat.degats_gobelin ?? config.combat.degats_base)
+          : config.combat.degats_base,
   }));
 }
 
@@ -791,6 +794,7 @@ export function resolveExplosifRetaliation({
   attacks,
   joueursAvant,
   rng = Math.random,
+  immuneId = null,
 }) {
   const byId = new Map(joueursAvant.map((j) => [j.discordId, j]));
   let gobelinId = null;
@@ -824,6 +828,7 @@ export function resolveExplosifRetaliation({
     ];
   }
 
+  candidates = candidates.filter((id) => id !== immuneId);
   if (!gobelinId || !candidates.length) return null;
   const targetId = candidates[Math.floor(rng() * candidates.length)];
   return { gobelinId, targetId };
@@ -904,8 +909,13 @@ export function computeCloture({
   config,
   rng = Math.random,
   knownTargetsByInvestigator = {},
+  immuneId = null,
 }) {
+  // Immunité du jour (tirée à la clôture précédente, annoncée publiquement) :
+  // les voix contre le joueur immunisé ne comptent pas, et il est protégé de
+  // toute attaque (comme la Taverne) et de la riposte de l'Explosif.
   const voteTally = computeVoteTally(actionsRaw);
+  if (immuneId) delete voteTally[immuneId];
   const eliminationsParVote =
     jour > 1 ? resolveVoteElimination(voteTally, config.vote_quorum_min) : null;
 
@@ -933,6 +943,7 @@ export function computeCloture({
       config,
       rng,
     );
+    if (immuneId) protectedSet.add(immuneId);
     const damagePerTarget = sumDamagePerTarget(attacks, protectedSet);
     const pvBefore = Object.fromEntries(
       joueursApresVote.filter((j) => j.alive).map((j) => [j.discordId, j.pv]),
@@ -951,6 +962,7 @@ export function computeCloture({
           attacks,
           joueursAvant,
           rng,
+          immuneId,
         })
       : null;
   const guetApensReveal =
@@ -1002,6 +1014,14 @@ export function computeCloture({
 
   const victory = checkVictory(joueursApres, jour, config.duree_jours);
 
+  // Immunisé du jour suivant, tiré parmi les survivants (annoncé dans le
+  // post du lendemain).
+  const vivantsApres = joueursApres.filter((j) => j.alive);
+  const immuneIdSuivant =
+    !victory && vivantsApres.length
+      ? vivantsApres[Math.floor(rng() * vivantsApres.length)].discordId
+      : null;
+
   // Joueurs vivants n'ayant soumis aucune action ce jour (replacés d'office
   // au Château par computeNewPositions) — affichés publiquement dans le
   // bilan pour expliquer les pions "fantômes" du Château. Une action
@@ -1013,6 +1033,8 @@ export function computeCloture({
   return {
     joueursApres,
     absents,
+    immuneId,
+    immuneIdSuivant,
     eliminationsParVote,
     deathIdCombat,
     attacks,
@@ -1106,6 +1128,7 @@ async function loadCloture(jour, config) {
     config,
     rng: Math.random,
     knownTargetsByInvestigator,
+    immuneId: state.immuneId ?? null,
   });
 }
 
@@ -1143,6 +1166,7 @@ export async function closeDayAndAdvance(jour, config) {
     guetApensReveal: result.guetApensReveal,
     tourDeGuetSurpeuplee: result.tourDeGuetSurpeuplee,
     absents: result.absents,
+    immuneId: result.immuneId,
     victory: result.victory,
     resolvedAt: new Date().toISOString(),
   });
@@ -1161,7 +1185,12 @@ export async function closeDayAndAdvance(jour, config) {
   );
   await appendIndices(indicesByPlayer);
 
-  await writeState({ ...state, jour: jour + 1, joueurs: result.joueursApres });
+  await writeState({
+    ...state,
+    jour: jour + 1,
+    joueurs: result.joueursApres,
+    immuneId: result.immuneIdSuivant,
+  });
   await clearActions(jour);
 
   return result;

@@ -289,6 +289,59 @@ async function main() {
     assert.strictEqual(result.investigations.length, 4);
   }
 
+  // ── Dégâts Gobelins (config.combat.degats_gobelin) ──
+  {
+    const cfg = { ...CONFIG, combat: { ...CONFIG.combat, degats_gobelin: 2 } };
+    const joueursAvant = [
+      joueur("gob", { camp: "gobelin" }),
+      joueur("vil"),
+      joueur("cible", { position: "camp_entrainement" }),
+    ];
+    const actions = {
+      gob: { primary: { lieu: "camp_entrainement", cibleId: "cible" } },
+      vil: { primary: { lieu: "camp_entrainement", cibleId: "cible" } },
+    };
+    const attacks = computeAttacksFromActions(actions, joueursAvant, cfg);
+    assert.strictEqual(attacks.find((a) => a.attackerId === "gob").degats, 2);
+    assert.strictEqual(attacks.find((a) => a.attackerId === "vil").degats, 1);
+    // Sans degats_gobelin dans la config -> dégâts de base
+    assert.strictEqual(computeAttacksFromActions(actions, joueursAvant, CONFIG).find((a) => a.attackerId === "gob").degats, 1);
+  }
+
+  // ── Immunité du jour : votes ignorés, attaques bloquées, tirage du lendemain ──
+  {
+    const joueursAvant = [
+      joueur("immun", { pv: 1, position: "camp_entrainement" }),
+      joueur("a"),
+      joueur("b"),
+      joueur("c"),
+      joueur("g", { camp: "gobelin" }), // évite une victoire (aucun Gobelin) qui annulerait le tirage
+    ];
+    const actionsRaw = {
+      a: { primary: { lieu: "chateau", cibleId: "immun" } },
+      b: { primary: { lieu: "chateau", cibleId: "immun" } },
+      c: { primary: { lieu: "camp_entrainement", cibleId: "immun" } },
+    };
+    const result = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: CONFIG, immuneId: "immun", rng: () => 0 });
+    assert.strictEqual(result.eliminationsParVote, null);
+    assert.strictEqual(result.deathIdCombat, null);
+    assert.strictEqual(result.joueursApres.find((j) => j.discordId === "immun").pv, 1);
+    assert.strictEqual(result.immuneId, "immun");
+    assert.strictEqual(result.immuneIdSuivant, "immun"); // rng 0 -> premier vivant
+    // Sans immunité, le même vote élimine
+    const sans = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: CONFIG, rng: () => 0 });
+    assert.strictEqual(sans.eliminationsParVote, "immun");
+  }
+  // Riposte de l'Explosif : jamais sur l'immunisé
+  {
+    const joueursAvant = [joueur("boom", { camp: "gobelin", role: "explosif" }), joueur("v1")];
+    const actionsRaw = { v1: { primary: { lieu: "chateau", cibleId: "boom" } } };
+    assert.strictEqual(
+      resolveExplosifRetaliation({ eliminationsParVote: "boom", deathIdCombat: null, actionsRaw, attacks: [], joueursAvant, immuneId: "v1" }),
+      null,
+    );
+  }
+
   // ── absents : vivants sans action ce jour (pending = joué, morts ignorés) ──
   {
     const joueursAvant = [

@@ -248,6 +248,14 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
   // donc n'importe quel joueur peut déjà le calculer lui-même — masquer le
   // compte en vie serait une fausse pudeur, pas un vrai secret (repéré par
   // l'utilisateur sur un "?" affiché à tort).
+  // Immunisé du jour (tiré à la clôture, voir computeCloture) : public.
+  const immune = closure?.immuneIdSuivant
+    ? joueursApres.find((j) => j.discordId === closure.immuneIdSuivant)
+    : null;
+  if (immune) {
+    lines.push(`🛡️ Aujourd'hui, **${immune.username}** est totalement immunisé(e) (vote et combat) !`, "");
+  }
+
   const vivants = joueursApres.filter((j) => j.alive);
   const chasseursVivants = vivants.filter((j) => j.camp === "chasseur").length;
   const gobelinsVivants = vivants.filter((j) => j.camp === "gobelin").length;
@@ -465,18 +473,22 @@ function buildReglesEmbed(config) {
   const l = config.lieux;
   const lieu = (key) => `${l[key].emoji} **${l[key].numero}. ${l[key].label}**`;
   const pvGobelin = config.combat.pv_base + (config.combat.gobelin_pv_bonus ?? 0);
+  const degatsGobelin = config.combat.degats_gobelin ?? config.combat.degats_base;
   const lines = [
     "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins** (minorité).",
     "",
     "Chaque jour, tu choisis **un seul lieu**. Ton choix est **définitif**, et tu ne peux **pas retourner au même lieu deux jours de suite**.",
     "",
     `${lieu("chateau")} — Tu votes contre un joueur. Celui qui a le plus de voix est éliminé. En cas d'égalité, personne ne l'est.`,
-    `${lieu("camp_entrainement")} — Tu attaques un joueur qui était à l'Arène la veille (${config.combat.degats_base} dégât). Si personne n'y était, tu frappes un joueur au hasard.`,
+    `${lieu("camp_entrainement")} — Tu attaques un joueur qui était à l'Arène la veille (${config.combat.degats_base} dégât, ${degatsGobelin} pour un Gobelin). Si personne n'y était, tu frappes un joueur au hasard.`,
     `${lieu("tour_de_guet")} — Tu découvres le camp d'un joueur qui était à la Tour la veille (sinon, un joueur au hasard). Si plus de la moitié des joueurs y vont le même jour, personne n'apprend rien.`,
     `${lieu("taverne")} — Tu es protégé des attaques, si vous êtes ${config.taverne_seuil_protection} maximum.`,
     `${lieu("clairiere_mystique")} — Tu découvres où se trouvent 2 joueurs au hasard.`,
     "",
-    `❤️ Villageois : ${config.combat.pv_base} PV — Gobelins : ${pvGobelin} PV. Au plus 1 mort au combat par jour.`,
+    pvGobelin === config.combat.pv_base
+      ? `❤️ Tout le monde a ${config.combat.pv_base} PV, mais les Gobelins frappent plus fort. Au plus 1 mort au combat par jour.`
+      : `❤️ Villageois : ${config.combat.pv_base} PV — Gobelins : ${pvGobelin} PV. Au plus 1 mort au combat par jour.`,
+    "🛡️ Chaque jour, un joueur tiré au hasard est immunisé : impossible de l'éliminer, au vote comme au combat.",
     "☀️ Jour 1 : personne ne peut mourir.",
     `🏆 Les Gobelins gagnent s'ils sont aussi nombreux que les Villageois. Les Villageois gagnent s'ils éliminent tous les Gobelins, ou à la fin du Jour ${config.duree_jours}.`,
     "",
@@ -1182,6 +1194,10 @@ export async function handleLieuButton(
         : state.joueurs.filter(
             (j) => j.alive && j.discordId !== discordId && j.position === lieu,
           );
+    // Immunisé du jour : inutile de voter contre lui ou de l'attaquer.
+    if (state.immuneId && lieu !== "tour_de_guet") {
+      candidats = candidats.filter((j) => j.discordId !== state.immuneId);
+    }
 
     // Tour de Guet : jamais reproposer une cible dont le camp est déjà connu
     // (bug repéré en test réel — "displaynone" révélé 2 fois au même joueur).

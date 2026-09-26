@@ -36,7 +36,9 @@ import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } fro
   }
 
   console.log(`⚠️  SORTIE ADMIN — révèle les camps/rôles, ne jamais partager avec les joueurs.\n`);
-  console.log(`Jour ${state.jour}/${config.duree_jours}\n`);
+  console.log(`Jour ${state.jour}/${config.duree_jours}`);
+  const immune = state.joueurs.find((j) => j.discordId === state.immuneId);
+  console.log(`Immunisé(e) du jour : ${immune ? immune.username : "aucun"}\n`);
 
   for (const j of state.joueurs) {
     const camp = config.camps[j.camp];
