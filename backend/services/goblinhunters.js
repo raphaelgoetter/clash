@@ -1002,8 +1002,17 @@ export function computeCloture({
 
   const victory = checkVictory(joueursApres, jour, config.duree_jours);
 
+  // Joueurs vivants n'ayant soumis aucune action ce jour (replacés d'office
+  // au Château par computeNewPositions) — affichés publiquement dans le
+  // bilan pour expliquer les pions "fantômes" du Château. Une action
+  // Arène/Tour en attente de cible (pending) compte comme jouée.
+  const absents = joueursAvant
+    .filter((j) => j.alive && !actionsRaw[j.discordId]?.primary)
+    .map((j) => j.discordId);
+
   return {
     joueursApres,
+    absents,
     eliminationsParVote,
     deathIdCombat,
     attacks,
@@ -1133,6 +1142,7 @@ export async function closeDayAndAdvance(jour, config) {
     explosifRetaliation: result.explosifRetaliation,
     guetApensReveal: result.guetApensReveal,
     tourDeGuetSurpeuplee: result.tourDeGuetSurpeuplee,
+    absents: result.absents,
     victory: result.victory,
     resolvedAt: new Date().toISOString(),
   });

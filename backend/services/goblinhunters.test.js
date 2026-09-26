@@ -289,6 +289,22 @@ async function main() {
     assert.strictEqual(result.investigations.length, 4);
   }
 
+  // ── absents : vivants sans action ce jour (pending = joué, morts ignorés) ──
+  {
+    const joueursAvant = [
+      joueur("actif"),
+      joueur("pending"),
+      joueur("absent"),
+      joueur("mort", { alive: false }),
+    ];
+    const actionsRaw = {
+      actif: { primary: { lieu: "taverne", cibleId: null } },
+      pending: { primary: { lieu: "tour_de_guet", cibleId: null, pending: true } },
+    };
+    const result = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: CONFIG });
+    assert.deepStrictEqual(result.absents, ["absent"]);
+  }
+
   // ── knownEnqueteTargets : dérive les cibles déjà connues du carnet d'indices ──
   {
     const indices = [

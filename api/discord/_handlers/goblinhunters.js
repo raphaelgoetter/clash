@@ -233,6 +233,12 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
         "🔭 La Tour de Guet était trop encombrée hier — personne n'a rien pu observer.",
       );
     }
+    if (closure.absents?.length) {
+      const noms = closure.absents
+        .map((id) => joueursApres.find((p) => p.discordId === id)?.username || "?")
+        .map((nom) => `**${nom}**`);
+      lines.push(`💤 N'a pas joué (pion placé au Château) : ${noms.join(", ")}`);
+    }
 
     lines.push("");
   }
