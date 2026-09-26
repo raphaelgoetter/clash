@@ -78,15 +78,13 @@ async function buildNarrative(jour, closure) {
   const narratifs = await loadNarratifs();
   if (!closure) return pickFlavor(narratifs.intro_cocasse, jour); // Jour 1 : pas de bilan de la veille
 
+  // Pas de ligne narrative "personne n'a péri" : le bilan juste en dessous
+  // le dit déjà ("🕊️ Personne n'a été éliminé.").
   const lines = [pickFlavor(narratifs.intro_cocasse, jour)];
-  if (closure.eliminationsParVote === null && closure.deathIdCombat === null) {
-    lines.push(pickFlavor(narratifs.pas_de_mort, jour + 1));
-  } else {
-    if (closure.deathIdCombat)
-      lines.push(pickFlavor(narratifs.mort_combat, jour + 2));
-    if (closure.eliminationsParVote)
-      lines.push(pickFlavor(narratifs.mort_vote, jour + 3));
-  }
+  if (closure.deathIdCombat)
+    lines.push(pickFlavor(narratifs.mort_combat, jour + 2));
+  if (closure.eliminationsParVote)
+    lines.push(pickFlavor(narratifs.mort_vote, jour + 3));
   return lines.join(" ");
 }
 
@@ -199,7 +197,7 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     if (voteLine) lines.push(`⚖️ Accusé(e) par le village : ${voteLine}`);
     if (combatLine) lines.push(`⚔️ Tombé(e) au combat : ${combatLine}`);
     if (!voteLine && !combatLine)
-      lines.push("Personne n'a été éliminé aujourd'hui.");
+      lines.push("🕊️ Personne n'a été éliminé.");
 
     // Guet-Apens/Explosif : effets déclenchés à la mort d'un rôle spécial,
     // annoncés publiquement au même titre que le reveal de camp habituel
