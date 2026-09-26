@@ -48,14 +48,18 @@ import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } fro
   const actions = await readActions(state.jour);
   const vivants = state.joueurs.filter((j) => j.alive);
   console.log(`\nActions soumises aujourd'hui : ${Object.keys(actions).length}/${vivants.length}`);
+  // Pseudo de la cible plutôt que son discordId brut (illisible)
+  const usernameById = new Map(state.joueurs.map((j) => [j.discordId, j.username]));
+  const formatAction = (action) =>
+    `${action.lieu}${action.cibleId ? ` → ${usernameById.get(action.cibleId) || action.cibleId}` : ""}`;
   for (const j of vivants) {
     const a = actions[j.discordId];
     if (!a) {
       console.log(`  ${j.username} : —`);
       continue;
     }
-    const primary = a.primary ? `${a.primary.lieu}${a.primary.cibleId ? ` → ${a.primary.cibleId}` : ""}` : "—";
-    const secondary = a.secondary ? ` + ${a.secondary.lieu}${a.secondary.cibleId ? ` → ${a.secondary.cibleId}` : ""}` : "";
+    const primary = a.primary ? formatAction(a.primary) : "—";
+    const secondary = a.secondary ? ` + ${formatAction(a.secondary)}` : "";
     console.log(`  ${j.username} : ${primary}${secondary}`);
   }
 })();
