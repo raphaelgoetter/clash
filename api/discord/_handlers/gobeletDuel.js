@@ -163,8 +163,6 @@ async function buildFinalEmbed(state, results, ranking) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
   );
-  const maxPoints = resolvedRanking[0]?.points ?? 0;
-  const winners = maxPoints > 0 ? resolvedRanking.filter((r) => r.points === maxPoints) : [];
 
   const lastManchePoints = Math.max(...results.map((r) => r.points));
   const lastWinners = results.filter((r) => r.points === lastManchePoints);
@@ -179,13 +177,6 @@ async function buildFinalEmbed(state, results, ranking) {
       ? resolvedRanking.map((r, i) => `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`)
       : ["Personne n'a marqué de point."]),
   ];
-
-  if (winners.length) {
-    lines.push(
-      "",
-      `🏆 Vainqueur${winners.length > 1 ? "s" : ""} (${maxPoints} pt${maxPoints > 1 ? "s" : ""}) : ${winners.map((w) => w.username).join(", ")}`,
-    );
-  }
 
   return {
     title: "🏁 Gobelet Duel — Partie terminée",

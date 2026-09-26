@@ -175,8 +175,6 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
   );
-  const maxPoints = resolvedRanking[0]?.points ?? 0;
-  const winners = maxPoints > 0 ? resolvedRanking.filter((r) => r.points === maxPoints) : [];
 
   const lines = [
     `**📊 Bilan du dernier jour**`,
@@ -187,13 +185,6 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
       ? resolvedRanking.slice(0, 20).map((r, i) => `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`)
       : ["Personne n'a marqué de point cette manche."]),
   ];
-
-  if (winners.length) {
-    lines.push(
-      "",
-      `🏆 Vainqueur${winners.length > 1 ? "s" : ""} (${maxPoints} pt${maxPoints > 1 ? "s" : ""}) : ${winners.map((w) => w.username).join(", ")}`,
-    );
-  }
 
   if (manchesHistory.length) {
     lines.push("", "**Vainqueurs des manches précédentes :**", ...manchesHistory.map(formatMancheHistoryLine));

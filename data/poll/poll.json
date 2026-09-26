@@ -62,8 +62,8 @@
         "Frame (devine le film)",
         "Anagram (devine la carte)",
         "Zoom (carte zoomée)",
-        "La Juste Carte",
-        "Blind Royale",
+        "La Juste Carte (trouve grâce aux stats)",
+        "Blind Royale (trouve grâce au son)",
         "Aucun"
       ],
       "allowMultiselect": false,
@@ -73,7 +73,15 @@
       "id": "q7-prefere-quotidien",
       "type": "choice",
       "question": "Quel est ton jeu spécial préféré pour l'instant ?",
-      "answers": ["Tamagotchi", "Robinson", "Quiz", "Boss Raid", "Blackjack", "Aucun"],
+      "answers": [
+        "Tamagotchi",
+        "Robinson",
+        "Quiz",
+        "Boss Raid",
+        "Blackjack",
+        "Goblin Hunters",
+        "Aucun"
+      ],
       "allowMultiselect": false,
       "durationHours": 336
     },
@@ -102,6 +110,7 @@
         "Quiz",
         "Boss Raid",
         "Blackjack",
+        "Goblin Hunters",
         "Je participe à tous"
       ],
       "allowMultiselect": true,
