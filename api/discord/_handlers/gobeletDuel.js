@@ -88,6 +88,17 @@ async function patchOriginal(webhookUrl, payload) {
   }
 }
 
+// Supprime la réponse éphémère différée : une fois la table publiée dans le
+// salon, un accusé "Table ouverte" privé ne sert à rien.
+async function deleteOriginal(webhookUrl) {
+  if (!webhookUrl) return;
+  try {
+    await fetch(`${webhookUrl}/messages/@original`, { method: "DELETE" });
+  } catch (err) {
+    console.error("[GobeletDuel] Échec DELETE:", err.message);
+  }
+}
+
 async function patchPublicMessage(state, payload) {
   const token = process.env.DISCORD_TOKEN;
   if (!token || !state?.channelId || !state?.messageId) return;
@@ -296,11 +307,7 @@ export async function handleGobeletCommand(
     const message = await res.json();
     await writeState({ ...result.state, messageId: message.id });
 
-    await patchOriginal(webhookUrl, {
-      content: `Table ouverte ! ${maxPlayers} joueur${maxPlayers > 1 ? "s" : ""} max, ${totalManches} manches.`,
-      embeds: [],
-      components: [],
-    });
+    await deleteOriginal(webhookUrl);
   } catch (err) {
     console.error("[GobeletDuel] Échec lancement:", err.message);
     await patchOriginal(webhookUrl, {
@@ -369,8 +376,8 @@ function buildDieEmoji(value, kept, diceEmojis) {
 
 // Le bouton Valider n'apparaît que si les dés COURANTS forment déjà une
 // combinaison pas encore réalisée, dès le 1ᵉʳ tirage — même règle que le
-// jeu spécial (_handlers/gobelet.js). Son libellé annonce la combinaison
-// qui serait retenue.
+// jeu spécial (_handlers/gobelet.js). Le libellé ne nomme volontairement
+// pas la combinaison : à chacun de la repérer.
 function buildHandComponents(manche, hand, kept, diceEmojis, used) {
   if (hand.status !== "en_cours") return [];
   const { category } = computeBestCombination(hand.dice, used);
@@ -388,7 +395,7 @@ function buildHandComponents(manche, hand, kept, diceEmojis, used) {
     secondRow.push({
       type: 2,
       style: 3,
-      label: `Valider (${category})`,
+      label: "Valider",
       emoji: { name: "👍" },
       custom_id: `gobeletduel_valider:${manche}`,
     });
@@ -632,7 +639,7 @@ function buildReglesEmbed() {
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
-      "👍 **Valider (combinaison)** — dès que tes dés forment une combinaison encore libre, fige ta main immédiatement sans attendre les relances restantes. Le bouton indique la combinaison qui sera retenue.",
+      "👍 **Valider** — dès que tes dés forment une combinaison encore libre, fige ta main immédiatement sans attendre les relances restantes.",
       "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
       "",
       "**Une combinaison différente à chaque manche :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt.",

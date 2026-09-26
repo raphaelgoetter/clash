@@ -85,6 +85,17 @@ async function patchOriginal(webhookUrl, payload) {
   }
 }
 
+// Supprime la réponse éphémère différée : une fois la table publiée dans le
+// salon, un accusé "Table ouverte" privé ne sert à rien.
+async function deleteOriginal(webhookUrl) {
+  if (!webhookUrl) return;
+  try {
+    await fetch(`${webhookUrl}/messages/@original`, { method: "DELETE" });
+  } catch (err) {
+    console.error("[BlackjackDuel] Échec DELETE:", err.message);
+  }
+}
+
 async function patchPublicMessage(state, payload) {
   const token = process.env.DISCORD_TOKEN;
   if (!token || !state?.channelId || !state?.messageId) return;
@@ -345,11 +356,7 @@ export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, tot
     const message = await res.json();
     await writeState({ ...result.state, messageId: message.id });
 
-    await patchOriginal(webhookUrl, {
-      content: `Table ouverte ! ${maxPlayers} joueur${maxPlayers > 1 ? "s" : ""} max, ${totalManches} manches.`,
-      embeds: [],
-      components: [],
-    });
+    await deleteOriginal(webhookUrl);
   } catch (err) {
     console.error("[BlackjackDuel] Échec lancement:", err.message);
     await patchOriginal(webhookUrl, {

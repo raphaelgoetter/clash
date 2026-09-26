@@ -1838,10 +1838,10 @@ Combinaisons réalisées stockées dans `gobelet:used` / `gobeletduel:used` (has
 | Aucune combinaison | rien de libre | 0 |
 | Double quelconque | au moins 2 dés identiques | 10 |
 | Brelan | au moins 3 dés identiques | 20 |
+| Pairs | 5 dés pairs | 25 |
+| Impairs | 5 dés impairs | 25 |
 | Carré | au moins 4 dés identiques | 30 |
 | Petite Suite | 4 valeurs consécutives parmi les 5 dés (1-2-3-4, 2-3-4-5 ou 3-4-5-6, doublons/5ᵉ dé libres) | 30 |
-| Pairs | 5 dés pairs | 35 |
-| Impairs | 5 dés impairs | 35 |
 | Full | exactement 3 + 2 | 40 |
 | Somme ≤ 7 | somme ≤ 7 | 45 |
 | Somme ≥ 28 | somme ≥ 28 | 45 |
@@ -1856,7 +1856,7 @@ Une main par jour, définitive. 🎲 **Jouer** lance 5 dés (1ᵉʳ tirage). Cha
 
 La sélection "à garder" **persiste d'un tirage à l'autre** (retour utilisateur, 16/09) : après une relance, les dés déjà cochés 🔒 le restent automatiquement — seuls les dés qui viennent d'être relancés repartent "non gardés" par défaut. Le joueur n'a donc qu'à ajuster sa sélection (décocher un dé qu'il ne veut plus garder, cocher un nouveau bon résultat) plutôt que de tout recocher à chaque tirage.
 
-👍 **Valider** (ajouté le 16/09, retour utilisateur) apparaît en plus de Relancer dès que les dés COURANTS forment déjà une combinaison **encore libre**, y compris dès le 1ᵉʳ tirage ; son libellé annonce la combinaison qui serait retenue (ex. « Valider (Somme ≥ 28) », 26/09) — permet de figer une bonne main immédiatement sans attendre les 2 relances obligatoires. Un clic sur un bouton devenu obsolète (dés changés entretemps par une relance) est ignoré silencieusement : la main n'est jamais figée sans combinaison, le message est simplement repeint avec l'état réel.
+👍 **Valider** (ajouté le 16/09, retour utilisateur) apparaît en plus de Relancer dès que les dés COURANTS forment déjà une combinaison **encore libre**, y compris dès le 1ᵉʳ tirage ; son libellé ne nomme volontairement pas la combinaison (essayé le 26/09 puis retiré : ça mâchait le travail du joueur) — permet de figer une bonne main immédiatement sans attendre les 2 relances obligatoires. Un clic sur un bouton devenu obsolète (dés changés entretemps par une relance) est ignoré silencieusement : la main n'est jamais figée sans combinaison, le message est simplement repeint avec l'état réel.
 
 Une main encore `en_cours` à la clôture (joueur qui n'a pas fini ses 2 relances) est figée sur les dés courants plutôt qu'ignorée (`resolveJour()`).
 

@@ -40,8 +40,8 @@ async function main() {
   assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Aucune combinaison", points: 0 });
   assert.deepStrictEqual(computeBestCombination([2, 2, 3, 4, 6]), { category: "Double quelconque", points: 10 });
   assert.deepStrictEqual(computeBestCombination([2, 2, 2, 3, 6]), { category: "Brelan", points: 20 });
-  assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 35 });
-  assert.deepStrictEqual(computeBestCombination([1, 3, 5, 5, 3]), { category: "Impairs", points: 35 });
+  assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 25 });
+  assert.deepStrictEqual(computeBestCombination([1, 3, 5, 5, 3]), { category: "Impairs", points: 25 });
   assert.deepStrictEqual(computeBestCombination([3, 3, 3, 3, 6]), { category: "Carré", points: 30 });
   assert.deepStrictEqual(computeBestCombination([3, 3, 3, 2, 2]), { category: "Full", points: 40 });
   assert.deepStrictEqual(computeBestCombination([1, 1, 1, 1, 2]), { category: "Somme ≤ 7", points: 45 }); // somme=6
@@ -68,7 +68,7 @@ async function main() {
   // Une vraie combinaison l'emporte toujours, la somme brute ne compte plus :
   // 6,6,5,5,4 (somme 26) -> Double quelconque.
   assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Double quelconque", points: 10 });
-  // 4,4,4,2,2 : Full (40) ET 5 dés pairs (35) -> Full.
+  // 4,4,4,2,2 : Full (40) ET 5 dés pairs (25) -> Full.
   assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 40 });
   // Régression (16/09, capture d'écran) : un Brelan de 6 (somme=22, plus
   // que les 20 pts du Brelan) doit rester étiqueté "Brelan", jamais "Aucune
@@ -83,8 +83,8 @@ async function main() {
     const expected = [
       ["Gobelet", 60],
       ["Somme ≥ 28", 45],
-      ["Pairs", 35],
       ["Carré", 30],
+      ["Pairs", 25],
       ["Brelan", 20],
       ["Double quelconque", 10],
       ["Aucune combinaison", 0],

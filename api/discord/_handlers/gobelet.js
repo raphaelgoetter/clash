@@ -529,8 +529,8 @@ function buildDieEmoji(value, kept, diceEmojis) {
 // Le bouton Valider n'apparaît que si les dés COURANTS (indépendamment de
 // ce qui est coché "à garder") forment déjà une combinaison pas encore
 // réalisée — dès le 1ᵉʳ tirage. Permet de figer une bonne main tout de
-// suite sans passer par les 2 relances obligatoires. Son libellé annonce
-// la combinaison qui serait retenue.
+// suite sans passer par les 2 relances obligatoires. Le libellé ne nomme
+// volontairement pas la combinaison : à chacun de la repérer.
 function buildHandComponents(jour, hand, kept, diceEmojis, used) {
   if (hand.status !== "en_cours") return [];
   const { category } = computeBestCombination(hand.dice, used);
@@ -548,7 +548,7 @@ function buildHandComponents(jour, hand, kept, diceEmojis, used) {
     secondRow.push({
       type: 2,
       style: 3,
-      label: `Valider (${category})`,
+      label: "Valider",
       emoji: { name: "👍" },
       custom_id: `gobelet_valider:${jour}`,
     });
@@ -881,7 +881,7 @@ function buildReglesEmbed(config) {
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
-      "👍 **Valider (combinaison)** — dès que tes dés forment une combinaison encore libre, fige ta main immédiatement sans attendre les relances restantes. Le bouton indique la combinaison qui sera retenue.",
+      "👍 **Valider** — dès que tes dés forment une combinaison encore libre, fige ta main immédiatement sans attendre les relances restantes.",
       "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
       "",
       "**Une combinaison différente chaque jour :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt.",
