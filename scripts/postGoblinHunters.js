@@ -14,7 +14,7 @@
 //   node scripts/postGoblinHunters.js --no-ping       — poste sans pinger @MINI JEUX (inscription/lancement/fin uniquement)
 //   node scripts/postGoblinHunters.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node scripts/postGoblinHunters.js --force-close   — TESTS UNIQUEMENT : ignore l'échéance réelle de la fenêtre
-//                                                        d'inscription (3 jours) pour déclencher le lancement immédiatement
+//                                                        d'inscription (2 jours) pour déclencher le lancement immédiatement
 //   node scripts/postGoblinHunters.js --force         — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
 import dotenv from "dotenv";
