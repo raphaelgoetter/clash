@@ -41,6 +41,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { deletePreviousRoundMessage } from "../../../backend/services/discordMessages.js";
 
 const ANAGRAM_COLOR = 0x9b59b6;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -385,6 +386,7 @@ export async function postAnagram(
   const message = await res.json();
   state.messageId = message.id;
   await writeState(state);
+  await deletePreviousRoundMessage(previousState, "Anagram");
 
   return { state, entry, message };
 }

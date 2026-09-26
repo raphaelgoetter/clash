@@ -56,6 +56,7 @@ import {
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { deletePreviousRoundMessage } from "../../../backend/services/discordMessages.js";
 
 const BLINDROYALE_COLOR = 0x1abc9c;
 // Nom générique de la pièce jointe — ne doit JAMAIS reprendre entry.sound
@@ -319,6 +320,7 @@ export async function postBlindRoyale(channelId, { dryRun = false, noPing = fals
   const message = await res.json();
   state.messageId = message.id;
   await writeState(state);
+  await deletePreviousRoundMessage(previousState, "BlindRoyale");
 
   return { state, entry, message };
 }

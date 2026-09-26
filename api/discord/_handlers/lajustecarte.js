@@ -55,6 +55,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { deletePreviousRoundMessage } from "../../../backend/services/discordMessages.js";
 
 const JUSTECARTE_COLOR = 0x2ecc71;
 const STAT_LABELS = {
@@ -420,6 +421,7 @@ export async function postJusteCarte(
   const message = await res.json();
   state.messageId = message.id;
   await writeState(state);
+  await deletePreviousRoundMessage(previousState, "La Juste Carte");
 
   return { state, entry, message };
 }

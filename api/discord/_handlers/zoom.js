@@ -41,6 +41,7 @@ import {
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { deletePreviousRoundMessage } from "../../../backend/services/discordMessages.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const ZOOM_COLOR = 0xe67e22;
@@ -274,6 +275,7 @@ export async function postZoom(channelId, { dryRun = false, noPing = false, forc
   const message = await res.json();
   state.messageId = message.id;
   await writeState(state);
+  await deletePreviousRoundMessage(previousState, "Zoom");
 
   return { state, entry, message };
 }

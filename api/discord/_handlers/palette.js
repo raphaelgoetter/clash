@@ -46,6 +46,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { deletePreviousRoundMessage } from "../../../backend/services/discordMessages.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const PALETTE_COLOR = 0x9b59b6;
@@ -260,6 +261,7 @@ export async function postPalette(
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
+  const previousState = await readState();
   const { state: newState, entry } = await startNewGame(channelId);
   const embed = buildPaletteEmbed({
     gameId: newState.gameId,
@@ -295,6 +297,7 @@ export async function postPalette(
   const message = await res.json();
   newState.messageId = message.id;
   await writeState(newState);
+  await deletePreviousRoundMessage(previousState, "Palette");
 
   return { state: newState, entry, message };
 }

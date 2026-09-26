@@ -41,6 +41,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { deletePreviousRoundMessage } from "../../../backend/services/discordMessages.js";
 
 const TRIVIA_COLOR = 0xf1c40f;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -273,6 +274,7 @@ export async function postTrivia(
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
+  const previousState = await readState();
   const { state: newState, entry, order } = await startNewGame(channelId);
   const embed = buildTriviaEmbed({
     gameId: newState.gameId,
@@ -308,6 +310,7 @@ export async function postTrivia(
   const message = await res.json();
   newState.messageId = message.id;
   await writeState(newState);
+  await deletePreviousRoundMessage(previousState, "Trivia");
 
   return { state: newState, entry, message };
 }

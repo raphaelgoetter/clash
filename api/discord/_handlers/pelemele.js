@@ -55,6 +55,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { deletePreviousRoundMessage } from "../../../backend/services/discordMessages.js";
 
 const PELEMELE_COLOR = 0x9b59b6;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -359,6 +360,7 @@ export async function postPeleMele(
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
+  const previousState = await readState();
   const { state } = await startNewGame(channelId);
   const embed = buildPeleMeleEmbed(state);
   const components = buildAnswerComponents(state.gameId);
@@ -388,6 +390,7 @@ export async function postPeleMele(
   const message = await res.json();
   state.messageId = message.id;
   await writeState(state);
+  await deletePreviousRoundMessage(previousState, "Pêle-mêle");
 
   return { state, message };
 }
