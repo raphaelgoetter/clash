@@ -1487,11 +1487,13 @@ export async function handleRegles(webhookUrl) {
 // L'anonymat est structurel côté service (goblinhunters.js ne stocke jamais
 // le discordId de l'auteur avec le contenu), pas juste un masquage ici.
 
-function buildMessagerieEmbed(messages, { alive, alreadySent }) {
+function buildMessagerieEmbed(messages, { inscrit, alive, alreadySent }) {
   const lines = messages.length
     ? messages.map((m) => `- Jour ${m.jour} : "${m.content}"`)
     : ["- Aucun message pour l'instant."];
-  const footer = !alive
+  const footer = !inscrit
+    ? "Tu n'es pas inscrit(e) au jeu, tu ne peux pas poster de message."
+    : !alive
     ? "Tu es éliminé(e), tu ne peux plus poster de message."
     : alreadySent
       ? "Tu as déjà envoyé ton message du jour — reviens demain."
@@ -1567,7 +1569,11 @@ export async function handleMessagerie(webhookUrl, discordId) {
       ? await hasSentMessageToday(state.jour, discordId)
       : false;
     const messages = await listRecentMessages();
-    const embed = buildMessagerieEmbed(messages, { alive, alreadySent });
+    const embed = buildMessagerieEmbed(messages, {
+      inscrit: Boolean(joueur),
+      alive,
+      alreadySent,
+    });
     const components = buildMessagerieComponents({ alive, alreadySent });
     await patchOriginal(webhookUrl, { embeds: [embed], components });
   } catch (err) {
