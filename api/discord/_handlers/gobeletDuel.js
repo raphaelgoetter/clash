@@ -334,7 +334,7 @@ function buildHandStatusMessage(hand, kept) {
 // Combinaisons réalisées aux manches précédentes : chacune ne rapporte
 // qu'une fois par partie, le joueur doit donc savoir lesquelles tenter.
 function formatUsedLine(used) {
-  return used.length ? ["", `🚫 Déjà réalisées (0 pt) : ${used.join(", ")}`] : [];
+  return used.length ? ["", `🚫 Déjà réalisées : ${used.join(", ")}`] : [];
 }
 
 function buildHandEmbed(manche, hand, kept, used) {

@@ -492,7 +492,7 @@ function buildHandStatusMessage(hand, kept) {
 // Combinaisons réalisées les jours précédents : chacune ne rapporte qu'une
 // fois par partie, le joueur doit donc savoir lesquelles tenter.
 function formatUsedLine(used) {
-  return used.length ? ["", `🚫 Déjà réalisées (0 pt) : ${used.join(", ")}`] : [];
+  return used.length ? ["", `🚫 Déjà réalisées : ${used.join(", ")}`] : [];
 }
 
 function buildHandEmbed(jour, hand, kept, used) {

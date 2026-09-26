@@ -1829,7 +1829,7 @@ Règle d'unicité (retour utilisateur, 26/09) : chaque combinaison ne rapporte d
 
 ⚠️ **Motifs "au moins N dés identiques"** : Double quelconque, Brelan et Carré acceptent plus de N dés (un Carré contient aussi un Brelan et un Double) — nécessaire pour qu'un joueur ayant déjà réalisé Carré puisse marquer Brelan avec les mêmes dés. Le Full reste strict (exactement 3 + 2).
 
-Combinaisons réalisées stockées dans `gobelet:used` / `gobeletduel:used` (hash `discordId` → tableau JSON), mises à jour **uniquement à la résolution** du jour (`postGobelet()`) ou de la manche (`resolveManche()`), remises à zéro avec la partie. Affichées dans la main éphémère du joueur (« 🚫 Déjà réalisées (0 pt) : … »).
+Combinaisons réalisées stockées dans `gobelet:used` / `gobeletduel:used` (hash `discordId` → tableau JSON), mises à jour **uniquement à la résolution** du jour (`postGobelet()`) ou de la manche (`resolveManche()`), remises à zéro avec la partie. Affichées dans la main éphémère du joueur (« 🚫 Déjà réalisées : … »).
 
 `COMBINATIONS` (`backend/services/gobelet.js`, ordre croissant de valeur) est la source unique du calcul et de l'affichage des règles (`formatBaremeLines()`).
 
