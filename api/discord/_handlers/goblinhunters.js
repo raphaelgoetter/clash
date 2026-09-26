@@ -196,8 +196,7 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
       : null;
     if (voteLine) lines.push(`⚖️ Accusé(e) par le village : ${voteLine}`);
     if (combatLine) lines.push(`⚔️ Tombé(e) au combat : ${combatLine}`);
-    if (!voteLine && !combatLine)
-      lines.push("🕊️ Personne n'a été éliminé.");
+    if (!voteLine && !combatLine) lines.push("🕊️ Personne n'a été éliminé.");
 
     // Guet-Apens/Explosif : effets déclenchés à la mort d'un rôle spécial,
     // annoncés publiquement au même titre que le reveal de camp habituel
@@ -233,9 +232,13 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     }
     if (closure.absents?.length) {
       const noms = closure.absents
-        .map((id) => joueursApres.find((p) => p.discordId === id)?.username || "?")
+        .map(
+          (id) => joueursApres.find((p) => p.discordId === id)?.username || "?",
+        )
         .map((nom) => `**${nom}**`);
-      lines.push(`💤 N'a pas joué (pion placé au Château) : ${noms.join(", ")}`);
+      lines.push(
+        `💤 N'a pas joué (pion placé au Château) : ${noms.join(", ")}`,
+      );
     }
 
     lines.push("");
@@ -251,7 +254,10 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     ? joueursApres.find((j) => j.discordId === closure.immuneIdSuivant)
     : null;
   if (immune) {
-    lines.push(`🛡️ Aujourd'hui, **${immune.username}** est totalement immunisé(e) (vote et combat) !`, "");
+    lines.push(
+      `🛡️ Aujourd'hui, **${immune.username}** est totalement immunisé(e) (vote et combat) !`,
+      "",
+    );
   }
 
   const vivants = joueursApres.filter((j) => j.alive);
@@ -470,8 +476,10 @@ function roleDescription(roleKey, config) {
 function buildReglesEmbed(config) {
   const l = config.lieux;
   const lieu = (key) => `${l[key].emoji} **${l[key].numero}. ${l[key].label}**`;
-  const pvGobelin = config.combat.pv_base + (config.combat.gobelin_pv_bonus ?? 0);
-  const degatsGobelin = config.combat.degats_gobelin ?? config.combat.degats_base;
+  const pvGobelin =
+    config.combat.pv_base + (config.combat.gobelin_pv_bonus ?? 0);
+  const degatsGobelin =
+    config.combat.degats_gobelin ?? config.combat.degats_base;
   const lines = [
     "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins** (minorité).",
     "",
@@ -480,8 +488,8 @@ function buildReglesEmbed(config) {
     `${lieu("chateau")} — Tu votes contre un joueur. Celui qui a le plus de voix est éliminé. En cas d'égalité, personne ne l'est.`,
     `${lieu("camp_entrainement")} — Tu attaques un joueur qui était à l'Arène la veille (${config.combat.degats_base} dégât, ${degatsGobelin} pour un Gobelin). Si personne n'y était, tu frappes un joueur au hasard.`,
     `${lieu("tour_de_guet")} — Tu découvres le camp d'un joueur qui était à la Tour la veille (sinon, un joueur au hasard). Si plus de la moitié des joueurs y vont le même jour, personne n'apprend rien.`,
-    `${lieu("taverne")} — Tu es protégé des attaques ce jour-là, si vous êtes ${config.taverne_seuil_protection} maximum.`,
-    `${lieu("clairiere_mystique")} — Tu découvres où sont allés 2 joueurs au hasard ce jour-là.`,
+    `${lieu("taverne")} — Tu es protégé des attaques ce jour, si vous êtes ${config.taverne_seuil_protection} maximum.`,
+    `${lieu("clairiere_mystique")} — Tu découvres où sont allés 2 joueurs au hasard la veille.`,
     "",
     pvGobelin === config.combat.pv_base
       ? `❤️ Tout le monde a ${config.combat.pv_base} PV, mais les Gobelins frappent plus fort. Au plus 1 mort au combat par jour.`
@@ -597,7 +605,9 @@ async function sendEliminationDM(discordId, cause, closure, jourClos, config) {
 
   if (cause === "vote") {
     const votes = closure.voteTally?.[discordId] ?? 0;
-    lines.push(`⚖️ Le village t'a accusé(e) au Château (${votes} vote${votes > 1 ? "s" : ""}).`);
+    lines.push(
+      `⚖️ Le village t'a accusé(e) au Château (${votes} vote${votes > 1 ? "s" : ""}).`,
+    );
   } else {
     lines.push(`⚔️ Tu es tombé(e) au combat à l'Arène.`);
   }
@@ -606,7 +616,9 @@ async function sendEliminationDM(discordId, cause, closure, jourClos, config) {
     const camps = closure.guetApensReveal.attackers
       .map((a) => config.camps[a.campReporte].labelSingulier)
       .join(", ");
-    lines.push(`🪤 Ton piège de Guet-Apens s'est déclenché : le camp de qui t'a achevé(e) a été révélé publiquement (${camps}).`);
+    lines.push(
+      `🪤 Ton piège de Guet-Apens s'est déclenché : le camp de qui t'a achevé(e) a été révélé publiquement (${camps}).`,
+    );
   }
   if (closure.explosifRetaliation?.gobelinId === discordId) {
     const cible = closure.joueursApres.find(
@@ -831,10 +843,22 @@ export async function postGoblinHunters(
 
   if (!dryRun) {
     if (closure.eliminationsParVote) {
-      await sendEliminationDM(closure.eliminationsParVote, "vote", closure, jourClos, config);
+      await sendEliminationDM(
+        closure.eliminationsParVote,
+        "vote",
+        closure,
+        jourClos,
+        config,
+      );
     }
     if (closure.deathIdCombat) {
-      await sendEliminationDM(closure.deathIdCombat, "combat", closure, jourClos, config);
+      await sendEliminationDM(
+        closure.deathIdCombat,
+        "combat",
+        closure,
+        jourClos,
+        config,
+      );
     }
     for (const investigation of closure.investigations) {
       await sendInvestigationDM(investigation, closure.joueursApres, config);
@@ -1160,12 +1184,17 @@ export async function handleLieuButton(
     // jour === 1) — traité comme Taverne/Clairière ci-dessous, sans étape de
     // sélection de cible. Décidé avec l'utilisateur : seule l'ACTION doit
     // être nulle ce jour-là, pas le choix du lieu lui-même.
-    const sansCibleJour1 = Number(jour) === 1 && LIEUX_SANS_CIBLE_JOUR1.has(lieu);
+    const sansCibleJour1 =
+      Number(jour) === 1 && LIEUX_SANS_CIBLE_JOUR1.has(lieu);
 
     // Taverne/Clairière : aucune cible nécessaire, action enregistrée
     // directement (la Clairière révèle 2 joueurs au hasard à la clôture,
     // voir computeClairiereReveals — pas de choix à faire ici).
-    if (lieuAction === "protection" || lieuAction === "vision" || sansCibleJour1) {
+    if (
+      lieuAction === "protection" ||
+      lieuAction === "vision" ||
+      sansCibleJour1
+    ) {
       await recordAction(jour, discordId, slot, { lieu }, username);
       const followup =
         joueur.role === "eclaireur" && slot === "primary"
@@ -1508,10 +1537,10 @@ function buildMessagerieEmbed(messages, { inscrit, alive, alreadySent }) {
   const footer = !inscrit
     ? "Tu n'es pas inscrit(e) au jeu, tu ne peux pas poster de message."
     : !alive
-    ? "Tu es éliminé(e), tu ne peux plus poster de message."
-    : alreadySent
-      ? "Tu as déjà envoyé ton message du jour — reviens demain."
-      : "Un message par jour et par joueur (anonyme).";
+      ? "Tu es éliminé(e), tu ne peux plus poster de message."
+      : alreadySent
+        ? "Tu as déjà envoyé ton message du jour — reviens demain."
+        : "Un message par jour et par joueur (anonyme).";
   return {
     title: "📬 Messagerie du village",
     description: [
