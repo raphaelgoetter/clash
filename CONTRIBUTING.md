@@ -1823,7 +1823,7 @@ Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre da
 
 `computeBestCombination(dice, used)` liste toutes les catégories présentes dans les dés (`listMatchingCombinations()`), écarte celles que le joueur a **déjà réalisées** lors des jours/manches précédents de la partie (`used`), et retient la plus valorisée parmi celles qui restent. Égalité de points : `CATEGORY_PRIORITY` départage l'étiquette. S'il ne reste rien : "Aucune combinaison", **0 pt**. S'applique au jeu spécial et à Gobelet Duel.
 
-Règle d'unicité (retour utilisateur, 26/09) : chaque combinaison ne rapporte des points **qu'une seule fois par partie** — le joueur doit varier ses combinaisons (13 catégories pour 7 jours ou 5/10 manches). Si la meilleure combinaison des dés est déjà réalisée, la meilleure combinaison encore libre est retenue automatiquement (ex. 6-6-6-6-6 avec Gobelet déjà fait → Somme ≥ 28). Les petites combinaisons (Doubles) servent précisément de repli pour éviter le 0.
+Règle d'unicité (retour utilisateur, 26/09) : chaque combinaison ne rapporte des points **qu'une seule fois par partie** — le joueur doit varier ses combinaisons (11 catégories pour 7 jours ou 5/10 manches). Si la meilleure combinaison des dés est déjà réalisée, la meilleure combinaison encore libre est retenue automatiquement (ex. 6-6-6-6-6 avec Gobelet déjà fait → Somme ≥ 28). Les petites combinaisons (Double quelconque, Brelan) servent précisément de repli pour éviter le 0.
 
 ⚠️ **"Aucune combinaison" vaut 0 pt** (auparavant la somme des dés) : une main sans motif ne doit pas rapporter plus qu'une combinaison répétée. Elle n'est jamais "consommée" (`withUsedCategory()`).
 
@@ -1837,14 +1837,12 @@ Combinaisons réalisées stockées dans `gobelet:used` / `gobeletduel:used` (has
 | -------- | --------- | ------ |
 | Aucune combinaison | rien de libre | 0 |
 | Double quelconque | au moins 2 dés identiques | 10 |
-| Double 1 | au moins 2 dés 1 | 15 |
-| Double 6 | au moins 2 dés 6 | 15 |
 | Brelan | au moins 3 dés identiques | 20 |
 | Carré | au moins 4 dés identiques | 30 |
 | Petite Suite | 4 valeurs consécutives parmi les 5 dés (1-2-3-4, 2-3-4-5 ou 3-4-5-6, doublons/5ᵉ dé libres) | 30 |
+| Pairs | 5 dés pairs | 35 |
+| Impairs | 5 dés impairs | 35 |
 | Full | exactement 3 + 2 | 40 |
-| Pairs | 5 dés pairs | 40 |
-| Impairs | 5 dés impairs | 40 |
 | Somme ≤ 7 | somme ≤ 7 | 45 |
 | Somme ≥ 28 | somme ≥ 28 | 45 |
 | Grande Suite | 5 valeurs distinctes consécutives (1-2-3-4-5 ou 2-3-4-5-6) | 50 |

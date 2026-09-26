@@ -197,16 +197,14 @@ function containsRun(uniqueSet, run) {
 // `description` est affichée entre parenthèses dans les règles.
 export const COMBINATIONS = [
   { label: "Double quelconque", description: "2 dés identiques", points: 10 },
-  { label: "Double 1", description: "2 dés 1", points: 15 },
-  { label: "Double 6", description: "2 dés 6", points: 15 },
   { label: "Brelan", description: "3 dés identiques", points: 20 },
   { label: "Carré", description: "4 dés identiques", points: 30 },
   { label: "Petite Suite", description: "4 dés qui se suivent", points: 30 },
+  { label: "Pairs", description: "5 dés pairs", points: 35 },
+  { label: "Impairs", description: "5 dés impairs", points: 35 },
   { label: "Full", description: "3 + 2", points: 40 },
   { label: "Somme ≤ 7", description: null, points: 45 },
   { label: "Somme ≥ 28", description: null, points: 45 },
-  { label: "Pairs", description: "5 dés pairs", points: 50 },
-  { label: "Impairs", description: "5 dés impairs", points: 50 },
   { label: "Grande Suite", description: "5 dés qui se suivent", points: 50 },
   { label: "Gobelet", description: "5 dés identiques", points: 60 },
 ];
@@ -224,16 +222,14 @@ const POINTS_BY_LABEL = Object.fromEntries(
 const CATEGORY_PRIORITY = [
   "Gobelet",
   "Grande Suite",
-  "Pairs",
-  "Impairs",
   "Somme ≥ 28",
   "Somme ≤ 7",
   "Full",
+  "Pairs",
+  "Impairs",
   "Carré",
   "Petite Suite",
   "Brelan",
-  "Double 6",
-  "Double 1",
   "Double quelconque",
 ];
 
@@ -260,12 +256,9 @@ export function listMatchingCombinations(dice) {
   const maxCount = counts[0];
   const uniqueSorted = sortedUniqueValues(dice);
   const uniqueSet = new Set(dice);
-  const countOf = (value) => dice.filter((d) => d === value).length;
 
   const labels = [];
   if (maxCount >= 2) labels.push("Double quelconque");
-  if (countOf(1) >= 2) labels.push("Double 1");
-  if (countOf(6) >= 2) labels.push("Double 6");
   if (maxCount >= 3) labels.push("Brelan");
   if (maxCount >= 4) labels.push("Carré");
   // 4 valeurs consécutives présentes parmi les dés (les autres dés sont

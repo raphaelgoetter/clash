@@ -39,13 +39,11 @@ async function main() {
   // "Aucune combinaison" vaut 0 pt depuis la règle d'unicité (26/09).
   assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Aucune combinaison", points: 0 });
   assert.deepStrictEqual(computeBestCombination([2, 2, 3, 4, 6]), { category: "Double quelconque", points: 10 });
-  assert.deepStrictEqual(computeBestCombination([1, 1, 3, 4, 6]), { category: "Double 1", points: 15 });
-  assert.deepStrictEqual(computeBestCombination([6, 6, 2, 3, 1]), { category: "Double 6", points: 15 });
   assert.deepStrictEqual(computeBestCombination([2, 2, 2, 3, 6]), { category: "Brelan", points: 20 });
-  assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 40 });
-  assert.deepStrictEqual(computeBestCombination([1, 3, 5, 5, 3]), { category: "Impairs", points: 40 });
+  assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 35 });
+  assert.deepStrictEqual(computeBestCombination([1, 3, 5, 5, 3]), { category: "Impairs", points: 35 });
   assert.deepStrictEqual(computeBestCombination([3, 3, 3, 3, 6]), { category: "Carré", points: 30 });
-  assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 40 });
+  assert.deepStrictEqual(computeBestCombination([3, 3, 3, 2, 2]), { category: "Full", points: 40 });
   assert.deepStrictEqual(computeBestCombination([1, 1, 1, 1, 2]), { category: "Somme ≤ 7", points: 45 }); // somme=6
   // Petite Suite (16/09, révisée) : 4 valeurs consécutives parmi les 5 dés
   // (pas forcément les 5 dés) — ici 1-2-3-4, le 6 ne prolonge pas la suite.
@@ -68,9 +66,9 @@ async function main() {
   // Gobelet (60) bat toujours "Somme >= 28" (45) même si les deux matchent.
   assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 6]).points, 60);
   // Une vraie combinaison l'emporte toujours, la somme brute ne compte plus :
-  // 6,6,5,5,4 (somme 26) -> Double 6.
-  assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Double 6", points: 15 });
-  // Égalité de points : Full (40) prioritaire sur Pairs (40).
+  // 6,6,5,5,4 (somme 26) -> Double quelconque.
+  assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Double quelconque", points: 10 });
+  // 4,4,4,2,2 : Full (40) ET 5 dés pairs (35) -> Full.
   assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 40 });
   // Régression (16/09, capture d'écran) : un Brelan de 6 (somme=22, plus
   // que les 20 pts du Brelan) doit rester étiqueté "Brelan", jamais "Aucune
@@ -85,10 +83,9 @@ async function main() {
     const expected = [
       ["Gobelet", 60],
       ["Somme ≥ 28", 45],
-      ["Pairs", 40],
+      ["Pairs", 35],
       ["Carré", 30],
       ["Brelan", 20],
-      ["Double 6", 15],
       ["Double quelconque", 10],
       ["Aucune combinaison", 0],
     ];
