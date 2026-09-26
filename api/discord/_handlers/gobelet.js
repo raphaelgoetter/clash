@@ -33,6 +33,13 @@ import {
   archiveManche,
   listManches,
   isTooSoonSinceLastClosure,
+  readUsedCategories,
+  readAllUsedCategories,
+  writeUsedCategories,
+  resetUsedCategories,
+  withUsedCategory,
+  formatBaremeLines,
+  NO_COMBINATION,
 } from "../../../backend/services/gobelet.js";
 import {
   getRoleIdByName,
@@ -345,6 +352,7 @@ export async function postGobelet(
     }
 
     await resetPoints();
+    await resetUsedCategories();
     return publishAndWriteState(channelId, null, {
       jour,
       embed,
@@ -356,7 +364,8 @@ export async function postGobelet(
 
   // Résolution du jour actif (state.jour).
   const hands = await listHands(state.jour);
-  const results = resolveJour(hands);
+  const usedByPlayer = await readAllUsedCategories();
+  const results = resolveJour(hands, usedByPlayer);
   const jourSuivant = state.jour + 1;
   const estFinDeManche = jourSuivant > config.duree_jours;
 
@@ -387,6 +396,9 @@ export async function postGobelet(
 
   for (const r of results) {
     await addPoints(r.discordId, r.points);
+    const used = usedByPlayer[r.discordId] || [];
+    const nextUsed = withUsedCategory(used, r.category);
+    if (nextUsed !== used) await writeUsedCategories(r.discordId, nextUsed);
   }
   await writeHistoriqueEntry(state.jour, {
     jour: state.jour,
@@ -477,13 +489,20 @@ function buildHandStatusMessage(hand, kept) {
   return `Tirage ${hand.tirage}/3 — sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
-function buildHandEmbed(jour, hand, kept) {
+// Combinaisons réalisées les jours précédents : chacune ne rapporte qu'une
+// fois par partie, le joueur doit donc savoir lesquelles tenter.
+function formatUsedLine(used) {
+  return used.length ? ["", `🚫 Déjà réalisées (0 pt) : ${used.join(", ")}`] : [];
+}
+
+function buildHandEmbed(jour, hand, kept, used) {
   return {
     title: `🎲 Ta main — Jour ${jour}`,
     description: [
       ...formatDiceBlock(hand.dice),
       "",
       buildHandStatusMessage(hand, kept),
+      ...formatUsedLine(used),
     ].join("\n"),
     color: GOBELET_COLOR,
   };
@@ -508,13 +527,14 @@ function buildDieEmoji(value, kept, diceEmojis) {
 }
 
 // Le bouton Valider n'apparaît que si les dés COURANTS (indépendamment de
-// ce qui est coché "à garder") forment déjà une combinaison — n'importe
-// laquelle sauf "Aucune combinaison" — dès le 1ᵉʳ tirage. Permet de figer
-// une bonne main tout de suite sans passer par les 2 relances obligatoires.
-function buildHandComponents(jour, hand, kept, diceEmojis) {
+// ce qui est coché "à garder") forment déjà une combinaison pas encore
+// réalisée — dès le 1ᵉʳ tirage. Permet de figer une bonne main tout de
+// suite sans passer par les 2 relances obligatoires. Son libellé annonce
+// la combinaison qui serait retenue.
+function buildHandComponents(jour, hand, kept, diceEmojis, used) {
   if (hand.status !== "en_cours") return [];
-  const canValider =
-    computeBestCombination(hand.dice).category !== "Aucune combinaison";
+  const { category } = computeBestCombination(hand.dice, used);
+  const canValider = category !== NO_COMBINATION;
   const secondRow = [
     {
       type: 2,
@@ -528,7 +548,7 @@ function buildHandComponents(jour, hand, kept, diceEmojis) {
     secondRow.push({
       type: 2,
       style: 3,
-      label: "Valider",
+      label: `Valider (${category})`,
       emoji: { name: "👍" },
       custom_id: `gobelet_valider:${jour}`,
     });
@@ -565,6 +585,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
       });
       return;
     }
+    const used = await readUsedCategories(discordId);
 
     const { diceEmojis } = await loadGobeletConfig();
 
@@ -575,8 +596,8 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
           ? await readKept(jour, discordId)
           : NO_KEPT;
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, existing, kept)],
-        components: buildHandComponents(jour, existing, kept, diceEmojis),
+        embeds: [buildHandEmbed(jour, existing, kept, used)],
+        components: buildHandComponents(jour, existing, kept, diceEmojis, used),
       });
       return;
     }
@@ -594,8 +615,8 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
     await resetKept(jour, discordId);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, hand, NO_KEPT)],
-      components: buildHandComponents(jour, hand, NO_KEPT, diceEmojis),
+      embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
+      components: buildHandComponents(jour, hand, NO_KEPT, diceEmojis, used),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Jouer:", err.message);
@@ -613,6 +634,7 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
       });
       return;
     }
+    const used = await readUsedCategories(discordId);
 
     const hand = await readHand(jour, discordId);
     if (!hand) {
@@ -625,7 +647,7 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
     }
     if (hand.status !== "en_cours") {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, NO_KEPT)],
+        embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
         components: [],
       });
       return;
@@ -638,8 +660,8 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
     const updatedKept = kept.map((k, idx) => (idx === i ? !k : k));
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, hand, updatedKept)],
-      components: buildHandComponents(jour, hand, updatedKept, diceEmojis),
+      embeds: [buildHandEmbed(jour, hand, updatedKept, used)],
+      components: buildHandComponents(jour, hand, updatedKept, diceEmojis, used),
     });
   } catch (err) {
     console.error("[Gobelet] Échec sélection de dé:", err.message);
@@ -657,6 +679,7 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
       });
       return;
     }
+    const used = await readUsedCategories(discordId);
 
     const hand = await readHand(jour, discordId);
     if (!hand) {
@@ -669,7 +692,7 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
     }
     if (hand.status !== "en_cours") {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, NO_KEPT)],
+        embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
         components: [],
       });
       return;
@@ -682,7 +705,7 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
     let updated;
     let nextKept;
     if (tirage >= 3) {
-      const { category, points } = computeBestCombination(dice);
+      const { category, points } = computeBestCombination(dice, used);
       updated = { ...hand, dice, tirage, status: "termine", category, points };
       await resetKept(jour, discordId);
       nextKept = NO_KEPT;
@@ -697,8 +720,8 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
     await writeHand(jour, discordId, updated);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated, nextKept)],
-      components: buildHandComponents(jour, updated, nextKept, diceEmojis),
+      embeds: [buildHandEmbed(jour, updated, nextKept, used)],
+      components: buildHandComponents(jour, updated, nextKept, diceEmojis, used),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Relancer:", err.message);
@@ -716,6 +739,7 @@ export async function handleValider(webhookUrl, jour, discordId) {
       });
       return;
     }
+    const used = await readUsedCategories(discordId);
 
     const hand = await readHand(jour, discordId);
     if (!hand) {
@@ -728,15 +752,15 @@ export async function handleValider(webhookUrl, jour, discordId) {
     }
     if (hand.status !== "en_cours") {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, NO_KEPT)],
+        embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
         components: [],
       });
       return;
     }
 
     const { diceEmojis } = await loadGobeletConfig();
-    const { category, points } = computeBestCombination(hand.dice);
-    if (category === "Aucune combinaison") {
+    const { category, points } = computeBestCombination(hand.dice, used);
+    if (category === NO_COMBINATION) {
       // Garde-fou : le bouton ne devrait normalement pas être cliquable
       // dans ce cas (voir buildHandComponents), mais un client Discord qui
       // affiche encore l'ancien message (avant un relance qui a changé les
@@ -744,8 +768,8 @@ export async function handleValider(webhookUrl, jour, discordId) {
       // réel plutôt que de figer une main sans combinaison.
       const kept = await readKept(jour, discordId);
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, kept)],
-        components: buildHandComponents(jour, hand, kept, diceEmojis),
+        embeds: [buildHandEmbed(jour, hand, kept, used)],
+        components: buildHandComponents(jour, hand, kept, diceEmojis, used),
       });
       return;
     }
@@ -755,8 +779,8 @@ export async function handleValider(webhookUrl, jour, discordId) {
     await resetKept(jour, discordId);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated, NO_KEPT)],
-      components: buildHandComponents(jour, updated, NO_KEPT, diceEmojis),
+      embeds: [buildHandEmbed(jour, updated, NO_KEPT, used)],
+      components: buildHandComponents(jour, updated, NO_KEPT, diceEmojis, used),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Valider:", err.message);
@@ -857,19 +881,13 @@ function buildReglesEmbed(config) {
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
-      "👍 **Valider** — dès que tes dés forment déjà une combinaison, fige ta main immédiatement sans attendre les relances restantes (n'apparaît que si une combinaison est atteinte).",
+      "👍 **Valider (combinaison)** — dès que tes dés forment une combinaison encore libre, fige ta main immédiatement sans attendre les relances restantes. Le bouton indique la combinaison qui sera retenue.",
       "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
       "",
-      "**Barème (la catégorie applicable la plus valorisée est toujours retenue) :**",
-      "🎲 Aucune combinaison : somme des 5 dés",
-      "🎯 Brelan (3 dés identiques) : 20 pts",
-      "🎯 Carré (4 dés identiques) : 30 pts",
-      "🎯 Petite Suite (4 dés qui se suivent) : 30 pts",
-      "🎯 Full (3 + 2) : 40 pts",
-      "🎯 Somme ≤ 7 : 45 pts",
-      "🎯 Somme ≥ 28 : 45 pts",
-      "🎯 Grande Suite (5 dés qui se suivent) : 50 pts",
-      "🎯 Gobelet (5 dés identiques) : 60 pts",
+      "**Une combinaison différente chaque jour :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt.",
+      "",
+      "**Barème (la catégorie libre la plus valorisée est toujours retenue) :**",
+      ...formatBaremeLines(),
       "",
       `Au Jour ${config.duree_jours}, le classement cumulé désigne le(s) vainqueur(s) de la manche.`,
       "",

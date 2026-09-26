@@ -1819,27 +1819,38 @@ Même principe que Blackjack : un seul message actif à la fois dans le salon d�
 
 Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre dans `gobelet.js`, pas d'import — chaque jeu à cron du dépôt a sa propre copie) et refus si une partie est déjà active sur un autre salon.
 
-### Barème — résolution par catégorie la plus valorisée
+### Barème — une combinaison différente par jour/manche (26/09)
 
-`computeBestCombination(dice)` évalue TOUTES les VRAIES catégories applicables au résultat final et retient la plus valorisée — pas un ordre de priorité fixe (ex. un Full 1,1,1,2,2 avec une somme ≤7 rapporte 45 pts, pas 40 ; barème révisé le 16/09, retour utilisateur sur un cas réel de ce type).
+`computeBestCombination(dice, used)` liste toutes les catégories présentes dans les dés (`listMatchingCombinations()`), écarte celles que le joueur a **déjà réalisées** lors des jours/manches précédents de la partie (`used`), et retient la plus valorisée parmi celles qui restent. Égalité de points : `CATEGORY_PRIORITY` départage l'étiquette. S'il ne reste rien : "Aucune combinaison", **0 pt**. S'applique au jeu spécial et à Gobelet Duel.
 
-⚠️ **"Aucune combinaison" (la somme brute) n'est PAS une catégorie concurrente** — c'est un simple filet de secours retenu UNIQUEMENT quand rien d'autre ne matche (`candidates.length === 0`). Bug corrigé le 16/09 (retour utilisateur, capture d'écran) : un Brelan de 6 (6,6,6,3,1, somme=22) s'affichait comme "Aucune combinaison" (22 pts) au lieu de "Brelan" (20 pts), simplement parce que la somme brute dépassait numériquement les 20 pts du Brelan. La somme ne fait donc jamais perdre son étiquette à une vraie combinaison, même quand celle-ci rapporte moins de points que la somme brute l'aurait fait.
+Règle d'unicité (retour utilisateur, 26/09) : chaque combinaison ne rapporte des points **qu'une seule fois par partie** — le joueur doit varier ses combinaisons (13 catégories pour 7 jours ou 5/10 manches). Si la meilleure combinaison des dés est déjà réalisée, la meilleure combinaison encore libre est retenue automatiquement (ex. 6-6-6-6-6 avec Gobelet déjà fait → Somme ≥ 28). Les petites combinaisons (Doubles) servent précisément de repli pour éviter le 0.
+
+⚠️ **"Aucune combinaison" vaut 0 pt** (auparavant la somme des dés) : une main sans motif ne doit pas rapporter plus qu'une combinaison répétée. Elle n'est jamais "consommée" (`withUsedCategory()`).
+
+⚠️ **Motifs "au moins N dés identiques"** : Double quelconque, Brelan et Carré acceptent plus de N dés (un Carré contient aussi un Brelan et un Double) — nécessaire pour qu'un joueur ayant déjà réalisé Carré puisse marquer Brelan avec les mêmes dés. Le Full reste strict (exactement 3 + 2).
+
+Combinaisons réalisées stockées dans `gobelet:used` / `gobeletduel:used` (hash `discordId` → tableau JSON), mises à jour **uniquement à la résolution** du jour (`postGobelet()`) ou de la manche (`resolveManche()`), remises à zéro avec la partie. Affichées dans la main éphémère du joueur (« 🚫 Déjà réalisées (0 pt) : … »).
+
+`COMBINATIONS` (`backend/services/gobelet.js`, ordre croissant de valeur) est la source unique du calcul et de l'affichage des règles (`formatBaremeLines()`).
 
 | Résultat | Condition | Points |
 | -------- | --------- | ------ |
-| Aucune combinaison | par défaut | somme des 5 dés |
-| Brelan | 3 dés identiques | 20 |
-| Carré | 4 dés identiques | 30 |
-| Full | 3 + 2 | 40 |
+| Aucune combinaison | rien de libre | 0 |
+| Double quelconque | au moins 2 dés identiques | 10 |
+| Double 1 | au moins 2 dés 1 | 15 |
+| Double 6 | au moins 2 dés 6 | 15 |
+| Brelan | au moins 3 dés identiques | 20 |
+| Carré | au moins 4 dés identiques | 30 |
+| Petite Suite | 4 valeurs consécutives parmi les 5 dés (1-2-3-4, 2-3-4-5 ou 3-4-5-6, doublons/5ᵉ dé libres) | 30 |
+| Full | exactement 3 + 2 | 40 |
+| Pairs | 5 dés pairs | 40 |
+| Impairs | 5 dés impairs | 40 |
 | Somme ≤ 7 | somme ≤ 7 | 45 |
 | Somme ≥ 28 | somme ≥ 28 | 45 |
-| Petite Suite | 4 valeurs consécutives parmi les 5 dés (1-2-3-4, 2-3-4-5 ou 3-4-5-6, doublons/5ᵉ dé libres) | 30 |
 | Grande Suite | 5 valeurs distinctes consécutives (1-2-3-4-5 ou 2-3-4-5-6) | 50 |
 | Gobelet | 5 dés identiques | 60 |
 
-⚠️ **Petite Suite révisée le 16/09** (retour utilisateur, deux passes) : à l'origine "exactement 1,2,3,4,5" (5 dés), c'est maintenant la règle classique du Yahtzee — 4 valeurs consécutives présentes parmi les 5 dés, le 5ᵉ dé étant libre (peut dupliquer une des 4 valeurs ou être toute autre valeur) — puis sa valeur est passée de 25 à 30 pts. Une Grande Suite contient toujours au moins une Petite Suite, mais la règle "on retient le maximum" fait automatiquement gagner Grande Suite (50 > 30) sans logique d'exclusion mutuelle à coder. Petite Suite (30) et Carré (30) sont désormais à égalité de points mais ne peuvent jamais matcher la même main (un Carré n'a que 2 valeurs distinctes, une Petite Suite en a au moins 4) — aucun risque de collision réelle malgré l'égalité affichée dans le barème.
-
-Doublons de combinaison autorisés sur la semaine (pas de contrainte "une catégorie = un seul usage", contrairement au Yahtzee classique — pas de choix de catégorie par le joueur non plus, la meilleure combinaison est toujours calculée automatiquement).
+⚠️ **Petite Suite révisée le 16/09** (retour utilisateur, deux passes) : à l'origine "exactement 1,2,3,4,5" (5 dés), c'est maintenant la règle classique du Yahtzee — 4 valeurs consécutives présentes parmi les 5 dés, le 5ᵉ dé étant libre — puis sa valeur est passée de 25 à 30 pts.
 
 ### Main du joueur — Jouer / sélection des dés / Relancer, tout en éphémère
 
@@ -1847,7 +1858,7 @@ Une main par jour, définitive. 🎲 **Jouer** lance 5 dés (1ᵉʳ tirage). Cha
 
 La sélection "à garder" **persiste d'un tirage à l'autre** (retour utilisateur, 16/09) : après une relance, les dés déjà cochés 🔒 le restent automatiquement — seuls les dés qui viennent d'être relancés repartent "non gardés" par défaut. Le joueur n'a donc qu'à ajuster sa sélection (décocher un dé qu'il ne veut plus garder, cocher un nouveau bon résultat) plutôt que de tout recocher à chaque tirage.
 
-👍 **Valider** (ajouté le 16/09, retour utilisateur) apparaît en plus de Relancer dès que les dés COURANTS forment déjà une combinaison (n'importe laquelle sauf "Aucune combinaison"), y compris dès le 1ᵉʳ tirage — permet de figer une bonne main immédiatement sans attendre les 2 relances obligatoires. Un clic sur un bouton devenu obsolète (dés changés entretemps par une relance) est ignoré silencieusement : la main n'est jamais figée sans combinaison, le message est simplement repeint avec l'état réel.
+👍 **Valider** (ajouté le 16/09, retour utilisateur) apparaît en plus de Relancer dès que les dés COURANTS forment déjà une combinaison **encore libre**, y compris dès le 1ᵉʳ tirage ; son libellé annonce la combinaison qui serait retenue (ex. « Valider (Somme ≥ 28) », 26/09) — permet de figer une bonne main immédiatement sans attendre les 2 relances obligatoires. Un clic sur un bouton devenu obsolète (dés changés entretemps par une relance) est ignoré silencieusement : la main n'est jamais figée sans combinaison, le message est simplement repeint avec l'état réel.
 
 Une main encore `en_cours` à la clôture (joueur qui n'a pas fini ses 2 relances) est figée sur les dés courants plutôt qu'ignorée (`resolveJour()`).
 

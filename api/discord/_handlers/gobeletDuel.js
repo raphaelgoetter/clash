@@ -26,6 +26,8 @@ import {
 import {
   loadGobeletConfig,
   computeBestCombination,
+  formatBaremeLines,
+  NO_COMBINATION,
 } from "../../../backend/services/gobelet.js";
 import {
   getRoleIdByName,
@@ -329,13 +331,20 @@ function buildHandStatusMessage(hand, kept) {
   return `Tirage ${hand.tirage}/3 — sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
-function buildHandEmbed(manche, hand, kept) {
+// Combinaisons réalisées aux manches précédentes : chacune ne rapporte
+// qu'une fois par partie, le joueur doit donc savoir lesquelles tenter.
+function formatUsedLine(used) {
+  return used.length ? ["", `🚫 Déjà réalisées (0 pt) : ${used.join(", ")}`] : [];
+}
+
+function buildHandEmbed(manche, hand, kept, used) {
   return {
     title: `🎲 Ta main — Manche ${manche}`,
     description: [
       ...formatDiceBlock(hand.dice),
       "",
       buildHandStatusMessage(hand, kept),
+      ...formatUsedLine(used),
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };
@@ -359,12 +368,13 @@ function buildDieEmoji(value, kept, diceEmojis) {
 }
 
 // Le bouton Valider n'apparaît que si les dés COURANTS forment déjà une
-// combinaison (n'importe laquelle sauf "Aucune combinaison"), dès le 1ᵉʳ
-// tirage — même règle que le jeu spécial (_handlers/gobelet.js).
-function buildHandComponents(manche, hand, kept, diceEmojis) {
+// combinaison pas encore réalisée, dès le 1ᵉʳ tirage — même règle que le
+// jeu spécial (_handlers/gobelet.js). Son libellé annonce la combinaison
+// qui serait retenue.
+function buildHandComponents(manche, hand, kept, diceEmojis, used) {
   if (hand.status !== "en_cours") return [];
-  const canValider =
-    computeBestCombination(hand.dice).category !== "Aucune combinaison";
+  const { category } = computeBestCombination(hand.dice, used);
+  const canValider = category !== NO_COMBINATION;
   const secondRow = [
     {
       type: 2,
@@ -378,7 +388,7 @@ function buildHandComponents(manche, hand, kept, diceEmojis) {
     secondRow.push({
       type: 2,
       style: 3,
-      label: "Valider",
+      label: `Valider (${category})`,
       emoji: { name: "👍" },
       custom_id: `gobeletduel_valider:${manche}`,
     });
@@ -465,13 +475,8 @@ export async function handleJouer(webhookUrl, discordId, username) {
     const { diceEmojis } = await loadGobeletConfig();
     const state = result.state;
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(state.manche, result.hand, result.kept)],
-      components: buildHandComponents(
-        state.manche,
-        result.hand,
-        result.kept,
-        diceEmojis,
-      ),
+      embeds: [buildHandEmbed(state.manche, result.hand, result.kept, result.used)],
+      components: buildHandComponents(state.manche, result.hand, result.kept, diceEmojis, result.used),
     });
 
     if (result.isNew) {
@@ -505,7 +510,7 @@ export async function handleToggle(webhookUrl, discordId, index) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT)],
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used)],
         components: [],
       });
       return;
@@ -513,13 +518,8 @@ export async function handleToggle(webhookUrl, discordId, index) {
 
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
-      components: buildHandComponents(
-        result.state.manche,
-        result.hand,
-        result.kept,
-        diceEmojis,
-      ),
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used)],
+      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
     });
   } catch (err) {
     console.error("[GobeletDuel] Échec sélection de dé:", err.message);
@@ -549,7 +549,7 @@ export async function handleRelancer(webhookUrl, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT)],
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used)],
         components: [],
       });
       return;
@@ -557,13 +557,8 @@ export async function handleRelancer(webhookUrl, discordId) {
 
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
-      components: buildHandComponents(
-        result.state.manche,
-        result.hand,
-        result.kept,
-        diceEmojis,
-      ),
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used)],
+      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
     });
 
     await refreshPublicMessage();
@@ -595,7 +590,7 @@ export async function handleValider(webhookUrl, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT)],
+        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used)],
         components: [],
       });
       return;
@@ -606,25 +601,15 @@ export async function handleValider(webhookUrl, discordId) {
       // Garde-fou : le bouton ne devrait normalement pas être cliquable
       // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
-        components: buildHandComponents(
-          result.state.manche,
-          result.hand,
-          result.kept,
-          diceEmojis,
-        ),
+        embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used)],
+        components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
-      components: buildHandComponents(
-        result.state.manche,
-        result.hand,
-        result.kept,
-        diceEmojis,
-      ),
+      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used)],
+      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
     });
 
     await refreshPublicMessage();
@@ -641,27 +626,21 @@ function buildReglesEmbed() {
     description: [
       "Duel fermé à 1-3 joueurs, sur plusieurs manches.",
       "",
-      "**Inscription :** clique sur **Jouer** pour rejoindre — dès que tous les sièges sont pris (ou dès que la 1ʳᵉ manche se termine), les inscriptions sont définitivement closes.",
+      "**Inscription :** clique sur **Jouer** pour rejoindre — dès que tous les sièges sont pris, les inscriptions sont définitivement closes.",
       "",
       "**Déroulement (1 main par manche) :**",
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
-      "👍 **Valider** — dès que tes dés forment déjà une combinaison, fige ta main immédiatement sans attendre les relances restantes (n'apparaît que si une combinaison est atteinte).",
+      "👍 **Valider (combinaison)** — dès que tes dés forment une combinaison encore libre, fige ta main immédiatement sans attendre les relances restantes. Le bouton indique la combinaison qui sera retenue.",
       "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
       "",
-      "**Barème (la catégorie applicable la plus valorisée est toujours retenue) :**",
-      "🎲 Aucune combinaison : somme des 5 dés",
-      "🎯 Brelan (3 dés identiques) : 20 pts",
-      "🎯 Carré (4 dés identiques) : 30 pts",
-      "🎯 Petite Suite (4 dés qui se suivent) : 30 pts",
-      "🎯 Full (3 + 2) : 40 pts",
-      "🎯 Somme ≤ 7 : 45 pts",
-      "🎯 Somme ≥ 28 : 45 pts",
-      "🎯 Grande Suite (5 dés qui se suivent) : 50 pts",
-      "🎯 Gobelet (5 dés identiques) : 60 pts",
+      "**Une combinaison différente à chaque manche :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt.",
       "",
-      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini ses 3 tirages. Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive plus de 2h est automatiquement annulée.",
+      "**Barème (la catégorie libre la plus valorisée est toujours retenue) :**",
+      ...formatBaremeLines(),
+      "",
+      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini ses 3 tirages. Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 2h peut être remplacée en relançant /gobelet.",
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };

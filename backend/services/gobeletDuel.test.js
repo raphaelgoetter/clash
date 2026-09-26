@@ -76,14 +76,14 @@ async function main() {
     const state = baseState({ manche: 1, totalManches: 5 });
     const hands = {
       a: { dice: [1, 2, 3, 4, 5], status: "termine", category: "Grande Suite", points: 50, username: "Alice" },
-      b: { dice: [1, 1, 2, 3, 4], status: "termine", category: "Aucune combinaison", points: 11, username: "Bob" },
+      b: { dice: [1, 1, 2, 3, 4], status: "termine", category: "Aucune combinaison", points: 0, username: "Bob" },
     };
     const outcome = computeMancheOutcome(state, hands, {});
     assert.strictEqual(outcome.estFinDePartie, false);
     assert.strictEqual(outcome.mancheSuivante, 2);
     assert.strictEqual(outcome.ranking, null);
     assert.strictEqual(outcome.pointsAfter.a, 50);
-    assert.strictEqual(outcome.pointsAfter.b, 11);
+    assert.strictEqual(outcome.pointsAfter.b, 0);
   }
 
   // ── computeMancheOutcome — dernière manche : classement final cumulé ──
@@ -91,13 +91,13 @@ async function main() {
     const state = baseState({ manche: 5, totalManches: 5 });
     const hands = {
       a: { dice: [6, 6, 6, 6, 6], status: "termine", category: "Gobelet", points: 60, username: "Alice" },
-      b: { dice: [1, 2, 3, 5, 6], status: "termine", category: "Aucune combinaison", points: 17, username: "Bob" },
+      b: { dice: [1, 2, 3, 5, 6], status: "termine", category: "Aucune combinaison", points: 0, username: "Bob" },
     };
     const currentPoints = { a: 20, b: 30 };
     const outcome = computeMancheOutcome(state, hands, currentPoints);
     assert.strictEqual(outcome.estFinDePartie, true);
     assert.strictEqual(outcome.pointsAfter.a, 80);
-    assert.strictEqual(outcome.pointsAfter.b, 47);
+    assert.strictEqual(outcome.pointsAfter.b, 30);
     assert.deepStrictEqual(outcome.ranking.map((r) => r.discordId), ["a", "b"]);
     // computeMancheOutcome ne mute jamais l'objet points fourni par l'appelant
     assert.deepStrictEqual(currentPoints, { a: 20, b: 30 });

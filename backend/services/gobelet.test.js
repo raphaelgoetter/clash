@@ -6,6 +6,9 @@ import {
   computeBestCombination,
   resolveJour,
   buildRanking,
+  withUsedCategory,
+  formatBaremeLines,
+  COMBINATIONS,
   isTooSoonSinceLastClosure,
 } from "./gobelet.js";
 
@@ -33,8 +36,14 @@ async function main() {
   }
 
   // ── computeBestCombination — chaque catégorie du barème ──
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Aucune combinaison", points: 17 });
-  assert.deepStrictEqual(computeBestCombination([2, 2, 2, 4, 6]), { category: "Brelan", points: 20 });
+  // "Aucune combinaison" vaut 0 pt depuis la règle d'unicité (26/09).
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Aucune combinaison", points: 0 });
+  assert.deepStrictEqual(computeBestCombination([2, 2, 3, 4, 6]), { category: "Double quelconque", points: 10 });
+  assert.deepStrictEqual(computeBestCombination([1, 1, 3, 4, 6]), { category: "Double 1", points: 15 });
+  assert.deepStrictEqual(computeBestCombination([6, 6, 2, 3, 1]), { category: "Double 6", points: 15 });
+  assert.deepStrictEqual(computeBestCombination([2, 2, 2, 3, 6]), { category: "Brelan", points: 20 });
+  assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 40 });
+  assert.deepStrictEqual(computeBestCombination([1, 3, 5, 5, 3]), { category: "Impairs", points: 40 });
   assert.deepStrictEqual(computeBestCombination([3, 3, 3, 3, 6]), { category: "Carré", points: 30 });
   assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 40 });
   assert.deepStrictEqual(computeBestCombination([1, 1, 1, 1, 2]), { category: "Somme ≤ 7", points: 45 }); // somme=6
@@ -58,14 +67,66 @@ async function main() {
   assert.deepStrictEqual(computeBestCombination([2, 3, 4, 5, 6]), { category: "Grande Suite", points: 50 });
   // Gobelet (60) bat toujours "Somme >= 28" (45) même si les deux matchent.
   assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 6]).points, 60);
-  // "Aucune combinaison" (la somme brute) n'est retenue que si RIEN d'autre
-  // ne matche — ici pas de Brelan/Carré/Full/suite/Gobelet possible.
-  assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Aucune combinaison", points: 26 });
+  // Une vraie combinaison l'emporte toujours, la somme brute ne compte plus :
+  // 6,6,5,5,4 (somme 26) -> Double 6.
+  assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Double 6", points: 15 });
+  // Égalité de points : Full (40) prioritaire sur Pairs (40).
+  assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 40 });
   // Régression (16/09, capture d'écran) : un Brelan de 6 (somme=22, plus
   // que les 20 pts du Brelan) doit rester étiqueté "Brelan", jamais "Aucune
   // combinaison" seulement parce que la somme brute serait plus élevée — la
   // somme n'est un candidat qu'en l'absence de toute vraie combinaison.
   assert.deepStrictEqual(computeBestCombination([6, 6, 3, 1, 6]), { category: "Brelan", points: 20 });
+
+  // ── Unicité (26/09) — une combinaison déjà réalisée ne rapporte plus rien,
+  // la meilleure combinaison encore libre est retenue à sa place ──
+  {
+    const dice = [6, 6, 6, 6, 6];
+    const expected = [
+      ["Gobelet", 60],
+      ["Somme ≥ 28", 45],
+      ["Pairs", 40],
+      ["Carré", 30],
+      ["Brelan", 20],
+      ["Double 6", 15],
+      ["Double quelconque", 10],
+      ["Aucune combinaison", 0],
+    ];
+    let used = [];
+    for (const [category, points] of expected) {
+      const result = computeBestCombination(dice, used);
+      assert.deepStrictEqual(result, { category, points });
+      used = withUsedCategory(used, result.category);
+    }
+    // "Aucune combinaison" n'est jamais consommée
+    assert.strictEqual(used.includes("Aucune combinaison"), false);
+  }
+
+  // ── withUsedCategory — pure, sans doublon ──
+  {
+    const used = ["Brelan"];
+    assert.strictEqual(withUsedCategory(used, "Brelan"), used);
+    assert.strictEqual(withUsedCategory(used, "Aucune combinaison"), used);
+    assert.deepStrictEqual(withUsedCategory(used, "Full"), ["Brelan", "Full"]);
+    assert.deepStrictEqual(used, ["Brelan"]);
+  }
+
+  // ── Barème — règles affichées par ordre croissant de valeur ──
+  {
+    const points = COMBINATIONS.map((c) => c.points);
+    assert.deepStrictEqual(points, [...points].sort((a, b) => a - b));
+    assert.strictEqual(formatBaremeLines().length, COMBINATIONS.length + 1);
+    assert.ok(formatBaremeLines().includes("🎯 Double quelconque (2 dés identiques) : 10 pts"));
+  }
+
+  // ── resolveJour — une main figée à la clôture tient compte des combinaisons déjà réalisées ──
+  {
+    const results = resolveJour(
+      { a: { dice: [6, 6, 6, 6, 6], status: "en_cours", category: null, points: null, username: "Alice" } },
+      { a: ["Gobelet"] },
+    );
+    assert.deepStrictEqual([results[0].category, results[0].points], ["Somme ≥ 28", 45]);
+  }
 
   // ── resolveJour — une main "en_cours" à la clôture est figée, jamais ignorée ──
   const hands = {

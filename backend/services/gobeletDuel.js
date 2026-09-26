@@ -30,7 +30,15 @@
 // ============================================================
 
 import { Redis } from "@upstash/redis";
-import { rollDice, rerollKept, computeBestCombination, resolveJour, buildRanking } from "./gobelet.js";
+import {
+  rollDice,
+  rerollKept,
+  computeBestCombination,
+  resolveJour,
+  buildRanking,
+  withUsedCategory,
+  NO_COMBINATION,
+} from "./gobelet.js";
 
 let _redis = null;
 function getRedis() {
@@ -98,6 +106,7 @@ const STATE_KEY = "gobeletduel:state";
 const POINTS_KEY = "gobeletduel:points";
 const USERNAMES_KEY = "gobeletduel:usernames";
 const RESOLVING_KEY = "gobeletduel:resolving";
+const USED_KEY = "gobeletduel:used";
 
 function handKey(manche) {
   return `gobeletduel:hand:${manche}`;
@@ -156,6 +165,20 @@ async function resetKept(manche, discordId) {
   await getRedis().del(keptKey(manche, discordId));
 }
 
+// ── Combinaisons déjà réalisées (partie en cours) ───────────────────
+// Hash `gobeletduel:used` : discordId -> tableau JSON des catégories
+// marquées lors des manches déjà résolues (chaque combinaison ne rapporte
+// qu'une fois par partie, voir computeBestCombination). Mis à jour
+// uniquement dans resolveManche, protégé par claimResolution.
+
+export async function readUsedCategories(discordId) {
+  return fromJson(await getRedis().hget(USED_KEY, discordId)) || [];
+}
+
+async function writeUsedCategories(discordId, used) {
+  await getRedis().hset(USED_KEY, { [discordId]: toJson(used) });
+}
+
 // ── Points cumulés sur la partie en cours ──────────────────────────
 
 async function addPoints(discordId, amount) {
@@ -177,7 +200,7 @@ export { buildRanking };
 // ── Remise à zéro complète (nouvelle partie / watchdog) ────────────
 
 export async function resetGobeletDuel() {
-  await getRedis().del(STATE_KEY, POINTS_KEY, USERNAMES_KEY, RESOLVING_KEY);
+  await getRedis().del(STATE_KEY, POINTS_KEY, USERNAMES_KEY, RESOLVING_KEY, USED_KEY);
   await scanDelete("gobeletduel:hand:*");
   await scanDelete("gobeletduel:kept:*");
 }
@@ -243,9 +266,10 @@ export async function joinAndDeal(discordId, username) {
 
   const manche = state.manche;
   const existingHand = await readHand(manche, discordId);
+  const used = await readUsedCategories(discordId);
   if (existingHand) {
     const kept = existingHand.status === "en_cours" ? await readKept(manche, discordId) : [false, false, false, false, false];
-    return { state, hand: existingHand, kept, isNew: false };
+    return { state, hand: existingHand, kept, used, isNew: false };
   }
 
   const decision = applyJoin(state, discordId);
@@ -264,7 +288,7 @@ export async function joinAndDeal(discordId, username) {
   };
   await writeState(newState);
 
-  return { state: newState, hand, kept: [false, false, false, false, false], isNew: true };
+  return { state: newState, hand, kept: [false, false, false, false, false], used, isNew: true };
 }
 
 // ── Sélection des dés à conserver / relance ─────────────────────────
@@ -276,16 +300,17 @@ export async function toggleKept(discordId, index) {
   const manche = state.manche;
   const hand = await readHand(manche, discordId);
   if (!hand) return { noHand: true, state };
-  if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
+  if (hand.status !== "en_cours") return { alreadyDone: true, state, hand, used: await readUsedCategories(discordId) };
 
   const kept = await readKept(manche, discordId);
   await setKeptField(manche, discordId, index, !kept[index]);
   const updatedKept = kept.map((k, i) => (i === index ? !k : k));
+  const used = await readUsedCategories(discordId);
 
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
   await writeState(newState);
 
-  return { state: newState, hand, kept: updatedKept };
+  return { state: newState, hand, kept: updatedKept, used };
 }
 
 export async function relance(discordId) {
@@ -295,15 +320,16 @@ export async function relance(discordId) {
   const manche = state.manche;
   const hand = await readHand(manche, discordId);
   if (!hand) return { noHand: true, state };
-  if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
+  if (hand.status !== "en_cours") return { alreadyDone: true, state, hand, used: await readUsedCategories(discordId) };
 
   const kept = await readKept(manche, discordId);
+  const used = await readUsedCategories(discordId);
   const dice = rerollKept(hand.dice, kept, Math.random);
   const tirage = hand.tirage + 1;
   let updated;
   let nextKept;
   if (tirage >= 3) {
-    const { category, points } = computeBestCombination(dice);
+    const { category, points } = computeBestCombination(dice, used);
     updated = { ...hand, dice, tirage, status: "termine", category, points };
     await resetKept(manche, discordId);
     nextKept = [false, false, false, false, false];
@@ -319,7 +345,7 @@ export async function relance(discordId) {
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
   await writeState(newState);
 
-  return { state: newState, hand: updated, kept: nextKept };
+  return { state: newState, hand: updated, kept: nextKept, used };
 }
 
 // Fige la main immédiatement si les dés courants forment déjà une
@@ -332,12 +358,13 @@ export async function valider(discordId) {
   const manche = state.manche;
   const hand = await readHand(manche, discordId);
   if (!hand) return { noHand: true, state };
-  if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
+  if (hand.status !== "en_cours") return { alreadyDone: true, state, hand, used: await readUsedCategories(discordId) };
 
-  const { category, points } = computeBestCombination(hand.dice);
-  if (category === "Aucune combinaison") {
+  const used = await readUsedCategories(discordId);
+  const { category, points } = computeBestCombination(hand.dice, used);
+  if (category === NO_COMBINATION) {
     const kept = await readKept(manche, discordId);
-    return { notEligible: true, state, hand, kept };
+    return { notEligible: true, state, hand, kept, used };
   }
 
   const updated = { ...hand, status: "termine", category, points };
@@ -347,7 +374,7 @@ export async function valider(discordId) {
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
   await writeState(newState);
 
-  return { state: newState, hand: updated, kept: [false, false, false, false, false] };
+  return { state: newState, hand: updated, kept: [false, false, false, false, false], used };
 }
 
 // ── Résolution de fin de manche (concurrence) ───────────────────────
@@ -408,6 +435,9 @@ async function resolveManche(state, hands) {
 
   for (const r of outcome.results) {
     await addPoints(r.discordId, r.points);
+    const used = await readUsedCategories(r.discordId);
+    const nextUsed = withUsedCategory(used, r.category);
+    if (nextUsed !== used) await writeUsedCategories(r.discordId, nextUsed);
   }
 
   if (outcome.estFinDePartie) {

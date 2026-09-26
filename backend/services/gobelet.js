@@ -22,7 +22,14 @@ import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "gobelet", "gobelet.json");
+const CONFIG_JSON_PATH = path.resolve(
+  __dirname,
+  "..",
+  "..",
+  "data",
+  "gobelet",
+  "gobelet.json",
+);
 
 let _redis = null;
 function getRedis() {
@@ -76,7 +83,10 @@ async function scanKeys(pattern) {
   const keys = [];
   let cursor = "0";
   do {
-    const [next, batch] = await getRedis().scan(cursor, { match: pattern, count: 200 });
+    const [next, batch] = await getRedis().scan(cursor, {
+      match: pattern,
+      count: 200,
+    });
     cursor = next;
     keys.push(...batch);
   } while (cursor !== "0");
@@ -94,6 +104,7 @@ const USERNAMES_KEY = "gobelet:usernames";
 const HISTORIQUE_KEY = "gobelet:historique";
 const MANCHES_KEY = "gobelet:manches";
 const MANCHE_SEQ_KEY = "gobelet:manche_seq";
+const USED_KEY = "gobelet:used";
 
 function handKey(jour) {
   return `gobelet:hand:${jour}`;
@@ -180,78 +191,135 @@ function containsRun(uniqueSet, run) {
   return run.every((v) => uniqueSet.has(v));
 }
 
-// Ordre de priorité utilisé UNIQUEMENT pour départager l'étiquette affichée
+// Barème complet, par ordre croissant de valeur — source unique pour le
+// calcul (computeBestCombination) ET l'affichage des règles
+// (formatBaremeLines), pour que les deux ne divergent jamais.
+// `description` est affichée entre parenthèses dans les règles.
+export const COMBINATIONS = [
+  { label: "Double quelconque", description: "2 dés identiques", points: 10 },
+  { label: "Double 1", description: "2 dés 1", points: 15 },
+  { label: "Double 6", description: "2 dés 6", points: 15 },
+  { label: "Brelan", description: "3 dés identiques", points: 20 },
+  { label: "Carré", description: "4 dés identiques", points: 30 },
+  { label: "Petite Suite", description: "4 dés qui se suivent", points: 30 },
+  { label: "Full", description: "3 + 2", points: 40 },
+  { label: "Somme ≤ 7", description: null, points: 45 },
+  { label: "Somme ≥ 28", description: null, points: 45 },
+  { label: "Pairs", description: "5 dés pairs", points: 50 },
+  { label: "Impairs", description: "5 dés impairs", points: 50 },
+  { label: "Grande Suite", description: "5 dés qui se suivent", points: 50 },
+  { label: "Gobelet", description: "5 dés identiques", points: 60 },
+];
+
+export const NO_COMBINATION = "Aucune combinaison";
+
+const POINTS_BY_LABEL = Object.fromEntries(
+  COMBINATIONS.map((c) => [c.label, c.points]),
+);
+
+// Ordre de priorité utilisé UNIQUEMENT pour départager l'étiquette retenue
 // en cas d'égalité de points entre deux catégories applicables au même
 // résultat (le score retenu, lui, est toujours le maximum — voir
 // computeBestCombination) — n'affecte jamais les points gagnés.
 const CATEGORY_PRIORITY = [
   "Gobelet",
   "Grande Suite",
+  "Pairs",
+  "Impairs",
   "Somme ≥ 28",
   "Somme ≤ 7",
   "Full",
   "Carré",
   "Petite Suite",
   "Brelan",
+  "Double 6",
+  "Double 1",
+  "Double quelconque",
 ];
 
-// Barème (voir CONTRIBUTING.md) : on évalue TOUTES les VRAIES catégories
-// applicables au résultat final et on retient la plus valorisée — pas un
-// ordre de priorité fixe. Ex. un Full (1,1,1,2,2, somme=7) matche à la fois
-// Full (40 pts) et Somme ≤ 7 (45 pts) : on retient 45 (barème révisé le
-// 16/09, retour utilisateur — les seuils de somme et les suites valent
-// désormais plus qu'avant, dépassant le Full).
-//
-// ⚠️ "Aucune combinaison" (la somme brute) n'est PAS une vraie catégorie
-// concurrente : c'est un simple filet de secours utilisé UNIQUEMENT quand
-// rien d'autre ne matche. Bug corrigé le 16/09 (retour utilisateur, capture
-// d'écran) : un Brelan de 6 (6,6,6,3,1, somme=22) s'affichait comme "Aucune
-// combinaison" (22 pts) au lieu de "Brelan" (20 pts) simplement parce que la
-// somme dépassait les 20 pts du Brelan — la somme ne doit jamais faire
-// perdre son étiquette à une combinaison réellement présente dans les dés.
-export function computeBestCombination(dice) {
+// Lignes du barème pour l'embed Règles (jeu spécial et duel).
+export function formatBaremeLines() {
+  return [
+    `🎲 ${NO_COMBINATION} (ou combinaison déjà réalisée) : 0 pt`,
+    ...COMBINATIONS.map(
+      (c) =>
+        `🎯 ${c.label}${c.description ? ` (${c.description})` : ""} : ${c.points} pts`,
+    ),
+  ];
+}
+
+// Toutes les catégories présentes dans les dés, sans tenir compte de celles
+// déjà réalisées. Les motifs "au moins N dés identiques" (Double, Brelan,
+// Carré) acceptent plus de N dés : un Carré contient aussi un Brelan et un
+// Double — indispensable depuis la règle d'unicité (26/09), pour qu'un
+// joueur ayant déjà réalisé Carré puisse encore marquer son Brelan avec
+// les mêmes dés. Le Full reste strict (exactement 3 + 2).
+export function listMatchingCombinations(dice) {
   const sum = dice.reduce((total, d) => total + d, 0);
   const counts = diceCounts(dice);
+  const maxCount = counts[0];
   const uniqueSorted = sortedUniqueValues(dice);
   const uniqueSet = new Set(dice);
+  const countOf = (value) => dice.filter((d) => d === value).length;
 
-  const candidates = [];
-  if (sameCounts(counts, [3, 1, 1])) candidates.push({ label: "Brelan", points: 20 });
-  if (sameCounts(counts, [4, 1])) candidates.push({ label: "Carré", points: 30 });
-  if (sameCounts(counts, [3, 2])) candidates.push({ label: "Full", points: 40 });
-  if (sum <= 7) candidates.push({ label: "Somme ≤ 7", points: 45 });
-  if (sum >= 28) candidates.push({ label: "Somme ≥ 28", points: 45 });
-  // 4 valeurs consécutives présentes parmi les dés (Grande Suite, ci-dessous,
-  // en contient toujours au moins une — la règle "on retient le maximum"
-  // fait automatiquement gagner Grande Suite dans ce cas, pas besoin de les
-  // exclure mutuellement ici).
-  if (SMALL_STRAIGHTS.some((run) => containsRun(uniqueSet, run))) {
-    candidates.push({ label: "Petite Suite", points: 30 });
-  }
+  const labels = [];
+  if (maxCount >= 2) labels.push("Double quelconque");
+  if (countOf(1) >= 2) labels.push("Double 1");
+  if (countOf(6) >= 2) labels.push("Double 6");
+  if (maxCount >= 3) labels.push("Brelan");
+  if (maxCount >= 4) labels.push("Carré");
+  // 4 valeurs consécutives présentes parmi les dés (les autres dés sont
+  // libres, doublons compris).
+  if (SMALL_STRAIGHTS.some((run) => containsRun(uniqueSet, run)))
+    labels.push("Petite Suite");
+  if (sameCounts(counts, [3, 2])) labels.push("Full");
+  if (dice.every((d) => d % 2 === 0)) labels.push("Pairs");
+  if (dice.every((d) => d % 2 === 1)) labels.push("Impairs");
+  if (sum <= 7) labels.push("Somme ≤ 7");
+  if (sum >= 28) labels.push("Somme ≥ 28");
   // 5 valeurs distinctes consécutives (seules 1-2-3-4-5 et 2-3-4-5-6 sont
-  // possibles avec des dés à 6 faces : 5 valeurs distinctes couvrant un
-  // intervalle de 4 sont nécessairement consécutives, pas de trou possible).
-  if (uniqueSorted.length === 5 && uniqueSorted[4] - uniqueSorted[0] === 4) {
-    candidates.push({ label: "Grande Suite", points: 50 });
-  }
-  if (sameCounts(counts, [5])) candidates.push({ label: "Gobelet", points: 60 });
+  // possibles avec des dés à 6 faces).
+  if (uniqueSorted.length === 5 && uniqueSorted[4] - uniqueSorted[0] === 4)
+    labels.push("Grande Suite");
+  if (maxCount === 5) labels.push("Gobelet");
+  return labels;
+}
 
-  if (candidates.length === 0) {
-    return { category: "Aucune combinaison", points: sum };
-  }
+// Barème (voir CONTRIBUTING.md) : on retient la catégorie la plus valorisée
+// parmi celles présentes dans les dés ET pas encore réalisées par le joueur
+// lors des jours/manches précédents (`used`) — chaque combinaison ne
+// rapporte qu'une seule fois par partie (règle du 26/09). Si toutes les
+// catégories présentes sont déjà réalisées (ou si aucune n'est présente) :
+// "Aucune combinaison", 0 pt. L'ancienne règle "Aucune combinaison = somme
+// des dés" est abandonnée avec l'unicité : une main sans motif ne doit pas
+// rapporter plus qu'une combinaison répétée.
+export function computeBestCombination(dice, used = []) {
+  const usedSet = new Set(used);
+  const available = listMatchingCombinations(dice).filter(
+    (label) => !usedSet.has(label),
+  );
+  if (available.length === 0) return { category: NO_COMBINATION, points: 0 };
 
-  let best = candidates[0];
-  for (const candidate of candidates) {
-    if (candidate.points > best.points) {
-      best = candidate;
-    } else if (
-      candidate.points === best.points &&
-      CATEGORY_PRIORITY.indexOf(candidate.label) < CATEGORY_PRIORITY.indexOf(best.label)
+  let best = available[0];
+  for (const label of available) {
+    const diff = POINTS_BY_LABEL[label] - POINTS_BY_LABEL[best];
+    if (
+      diff > 0 ||
+      (diff === 0 &&
+        CATEGORY_PRIORITY.indexOf(label) < CATEGORY_PRIORITY.indexOf(best))
     ) {
-      best = candidate;
+      best = label;
     }
   }
-  return { category: best.label, points: best.points };
+  return { category: best, points: POINTS_BY_LABEL[best] };
+}
+
+// Ajoute la catégorie retenue à la liste des combinaisons réalisées
+// (pure). "Aucune combinaison" n'est jamais "consommée".
+export function withUsedCategory(used, category) {
+  if (!category || category === NO_COMBINATION || used.includes(category))
+    return used;
+  return [...used, category];
 }
 
 // Résout toutes les mains d'un jour. Une main encore "en_cours" à la
@@ -260,13 +328,32 @@ export function computeBestCombination(dice) {
 // d'être jugé sur ce qu'il a, pas exclu du classement. Fonction pure (aucun
 // I/O) : appelée aussi bien pour la vraie clôture que pour un aperçu
 // --dry-run.
-export function resolveJour(hands) {
+//
+// `usedByPlayer` ({ discordId: [catégories déjà réalisées] }) ne sert qu'aux
+// mains figées ici : une main "termine" porte déjà sa catégorie, calculée
+// au moment où le joueur l'a finie.
+export function resolveJour(hands, usedByPlayer = {}) {
   return Object.entries(hands).map(([discordId, hand]) => {
     if (hand.status === "en_cours") {
-      const { category, points } = computeBestCombination(hand.dice);
-      return { discordId, username: hand.username, dice: hand.dice, category, points };
+      const { category, points } = computeBestCombination(
+        hand.dice,
+        usedByPlayer[discordId] || [],
+      );
+      return {
+        discordId,
+        username: hand.username,
+        dice: hand.dice,
+        category,
+        points,
+      };
     }
-    return { discordId, username: hand.username, dice: hand.dice, category: hand.category, points: hand.points };
+    return {
+      discordId,
+      username: hand.username,
+      dice: hand.dice,
+      category: hand.category,
+      points: hand.points,
+    };
   });
 }
 
@@ -310,7 +397,9 @@ export async function readKept(jour, discordId) {
 }
 
 export async function setKeptField(jour, discordId, index, value) {
-  await getRedis().hset(keptKey(jour, discordId), { [String(index)]: value ? "1" : "0" });
+  await getRedis().hset(keptKey(jour, discordId), {
+    [String(index)]: value ? "1" : "0",
+  });
 }
 
 export async function resetKept(jour, discordId) {
@@ -349,8 +438,37 @@ export async function readUsername(discordId) {
 // source de vérité du pseudo actuel.
 export function buildRanking(points, usernames = {}) {
   return Object.entries(points)
-    .map(([discordId, score]) => ({ discordId, username: usernames[discordId] || null, points: score }))
+    .map(([discordId, score]) => ({
+      discordId,
+      username: usernames[discordId] || null,
+      points: score,
+    }))
     .sort((a, b) => b.points - a.points);
+}
+
+// ── Combinaisons déjà réalisées (partie en cours) ───────────────────
+// Hash `gobelet:used` : discordId -> tableau JSON des catégories marquées
+// lors des jours déjà clôturés. Mis à jour uniquement à la clôture
+// quotidienne (jamais en concurrence), remis à zéro avec les points.
+
+export async function readUsedCategories(discordId) {
+  return fromJson(await getRedis().hget(USED_KEY, discordId)) || [];
+}
+
+export async function readAllUsedCategories() {
+  const all = await hgetallJson(USED_KEY);
+  const result = {};
+  for (const [discordId, used] of Object.entries(all))
+    result[discordId] = used || [];
+  return result;
+}
+
+export async function writeUsedCategories(discordId, used) {
+  await getRedis().hset(USED_KEY, { [discordId]: toJson(used) });
+}
+
+export async function resetUsedCategories() {
+  await getRedis().del(USED_KEY);
 }
 
 // ── Historique (bilans quotidiens) ────────────────────────────────
@@ -378,7 +496,9 @@ export async function listHistorique({ limit = 10 } = {}) {
 
 export async function archiveManche(record) {
   const manche = Number(await getRedis().incr(MANCHE_SEQ_KEY));
-  await getRedis().hset(MANCHES_KEY, { [manche]: toJson({ manche, ...record }) });
+  await getRedis().hset(MANCHES_KEY, {
+    [manche]: toJson({ manche, ...record }),
+  });
   return manche;
 }
 
@@ -393,7 +513,13 @@ export async function listManches({ limit = 10 } = {}) {
 // ── Remise à zéro ────────────────────────────────────────────────────
 
 export async function resetGobelet({ clearManches = false } = {}) {
-  await getRedis().del(STATE_KEY, POINTS_KEY, USERNAMES_KEY, HISTORIQUE_KEY);
+  await getRedis().del(
+    STATE_KEY,
+    POINTS_KEY,
+    USERNAMES_KEY,
+    HISTORIQUE_KEY,
+    USED_KEY,
+  );
   await scanDelete("gobelet:hand:*");
   await scanDelete("gobelet:kept:*");
   if (clearManches) {
