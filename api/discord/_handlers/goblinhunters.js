@@ -475,13 +475,13 @@ function buildReglesEmbed(config) {
   const lines = [
     "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins** (minorité).",
     "",
-    "Chaque jour, tu choisis **un seul lieu**. Ton choix est **définitif**, et tu ne peux **pas retourner au même lieu deux jours de suite**.",
+    "Chaque jour, tu choisis **un seul lieu**. Ton choix est **définitif**, et tu ne peux **pas retourner au même lieu deux jours de suite**. Tout se résout à la clôture, le lendemain matin.",
     "",
     `${lieu("chateau")} — Tu votes contre un joueur. Celui qui a le plus de voix est éliminé. En cas d'égalité, personne ne l'est.`,
     `${lieu("camp_entrainement")} — Tu attaques un joueur qui était à l'Arène la veille (${config.combat.degats_base} dégât, ${degatsGobelin} pour un Gobelin). Si personne n'y était, tu frappes un joueur au hasard.`,
     `${lieu("tour_de_guet")} — Tu découvres le camp d'un joueur qui était à la Tour la veille (sinon, un joueur au hasard). Si plus de la moitié des joueurs y vont le même jour, personne n'apprend rien.`,
-    `${lieu("taverne")} — Tu es protégé des attaques, si vous êtes ${config.taverne_seuil_protection} maximum.`,
-    `${lieu("clairiere_mystique")} — Tu découvres où se trouvent 2 joueurs au hasard.`,
+    `${lieu("taverne")} — Tu es protégé des attaques ce jour-là, si vous êtes ${config.taverne_seuil_protection} maximum.`,
+    `${lieu("clairiere_mystique")} — Tu découvres où sont allés 2 joueurs au hasard ce jour-là.`,
     "",
     pvGobelin === config.combat.pv_base
       ? `❤️ Tout le monde a ${config.combat.pv_base} PV, mais les Gobelins frappent plus fort. Au plus 1 mort au combat par jour.`
@@ -634,7 +634,7 @@ async function sendClairiereDM(discordId, reveals, config) {
   if (!reveals?.length) return;
   const lines = reveals.map(
     (r) =>
-      `**${r.cibleUsername}** se trouve à ${config.lieux[r.lieu].emoji} ${config.lieux[r.lieu].label}.`,
+      `**${r.cibleUsername}** était à ${config.lieux[r.lieu].emoji} ${config.lieux[r.lieu].label} hier.`,
   );
   const embed = {
     title: "🌫️ Clairière — ta vision",
@@ -1175,7 +1175,7 @@ export async function handleLieuButton(
         ? `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — aucun effet aujourd'hui (vote et combat désactivés le Jour 1). **Choix définitif pour aujourd'hui.**`
         : lieuAction === "protection"
           ? "🍺 Tu te rends à la Taverne (protection si le lieu n'est pas surpeuplé aujourd'hui). **Choix définitif pour aujourd'hui.**"
-          : "🌫️ Tu te rends à la Clairière — la position de 2 joueurs au hasard te sera révélée demain. **Choix définitif pour aujourd'hui.**";
+          : "🌫️ Tu te rends à la Clairière — demain, tu sauras où 2 joueurs au hasard sont allés aujourd'hui. **Choix définitif pour aujourd'hui.**";
       await patchOriginal(webhookUrl, {
         content: confirmation,
         embeds: [],
@@ -1223,7 +1223,7 @@ export async function handleLieuButton(
       // choisira une cible au hasard à la clôture — cibleId reste null ici,
       // c'est le tirage à la clôture qui tranche, jamais au clic.
       await patchOriginal(webhookUrl, {
-        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — personne repéré ici pour l'instant, tu agiras sur un joueur choisi au hasard à la clôture. **Choix définitif pour aujourd'hui.**`,
+        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — personne n'était ici hier, tu agiras sur un joueur tiré au hasard à la clôture. **Choix définitif pour aujourd'hui.**`,
         embeds: [],
         components: followup,
       });
@@ -1248,7 +1248,7 @@ export async function handleLieuButton(
       content:
         lieu === "chateau"
           ? `${config.lieux[lieu].emoji} Choisis ta cible à ${config.lieux[lieu].label} :`
-          : `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} (**lieu définitif**) — choisis ta cible, sinon elle sera tirée au hasard à la clôture :`,
+          : `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} (**lieu définitif**) — choisis ta cible parmi les joueurs présents ici hier, sinon elle sera tirée au hasard à la clôture :`,
       embeds: [],
       components,
     });
