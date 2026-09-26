@@ -23,8 +23,14 @@ import {
   checkAndResolveManche,
   listHands,
 } from "../../../backend/services/gobeletDuel.js";
-import { loadGobeletConfig, computeBestCombination } from "../../../backend/services/gobelet.js";
-import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
+import {
+  loadGobeletConfig,
+  computeBestCombination,
+} from "../../../backend/services/gobelet.js";
+import {
+  getRoleIdByName,
+  MINI_JEUX_ROLE_NAME,
+} from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const GOBELETDUEL_COLOR = 0x9b59b6;
@@ -51,7 +57,10 @@ function formatDiceBlock(dice) {
 export function extractMember(body) {
   const discordId = body.member?.user?.id;
   const username =
-    body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    body.member?.nick ||
+    body.member?.user?.global_name ||
+    body.member?.user?.username ||
+    "Inconnu";
   return { discordId, username };
 }
 
@@ -81,16 +90,27 @@ async function patchPublicMessage(state, payload) {
   const token = process.env.DISCORD_TOKEN;
   if (!token || !state?.channelId || !state?.messageId) return;
   try {
-    const res = await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      },
+    );
     if (!res.ok) {
-      console.warn(`[GobeletDuel] Échec édition du message public (${res.status}).`);
+      console.warn(
+        `[GobeletDuel] Échec édition du message public (${res.status}).`,
+      );
     }
   } catch (err) {
-    console.warn("[GobeletDuel] Erreur réseau à l'édition du message public:", err.message);
+    console.warn(
+      "[GobeletDuel] Erreur réseau à l'édition du message public:",
+      err.message,
+    );
   }
 }
 
@@ -106,17 +126,34 @@ function buildJoinComponents() {
     {
       type: 1,
       components: [
-        { type: 2, style: 3, label: "Jouer", emoji: { name: "🎲" }, custom_id: "gobeletduel_jouer" },
-        { type: 2, style: 2, label: "Règles", emoji: { name: "📖" }, custom_id: "gobeletduel_regles" },
+        {
+          type: 2,
+          style: 3,
+          label: "Jouer",
+          emoji: { name: "🎲" },
+          custom_id: "gobeletduel_jouer",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Règles",
+          emoji: { name: "📖" },
+          custom_id: "gobeletduel_regles",
+        },
       ],
     },
   ];
 }
 
 async function buildPendingLabel(state, hands) {
-  const pendingIds = state.players.filter((id) => !hands[id] || hands[id].status === "en_cours");
-  if (pendingIds.length === 0) return "Tout le monde a joué, résolution en cours…";
-  const names = await Promise.all(pendingIds.map((id) => resolveDisplayName(id, hands[id]?.username)));
+  const pendingIds = state.players.filter(
+    (id) => !hands[id] || hands[id].status === "en_cours",
+  );
+  if (pendingIds.length === 0)
+    return "Tout le monde a joué, résolution en cours…";
+  const names = await Promise.all(
+    pendingIds.map((id) => resolveDisplayName(id, hands[id]?.username)),
+  );
   return `⏳ En attente de : ${names.join(", ")}`;
 }
 
@@ -127,7 +164,9 @@ async function buildTableEmbed(state, { previousResults } = {}) {
   if (previousResults) {
     const maxPoints = Math.max(...previousResults.map((r) => r.points));
     const winners = previousResults.filter((r) => r.points === maxPoints);
-    const winnerNames = await Promise.all(winners.map((w) => resolveDisplayName(w.discordId, w.username)));
+    const winnerNames = await Promise.all(
+      winners.map((w) => resolveDisplayName(w.discordId, w.username)),
+    );
     lines.push(
       `**📊 Bilan de la manche ${state.manche - 1}**`,
       `🏆 Meilleur${winnerNames.length > 1 ? "s" : ""} score${winnerNames.length > 1 ? "s" : ""} (${maxPoints} pt${maxPoints > 1 ? "s" : ""}) : ${winnerNames.join(", ")}`,
@@ -139,12 +178,19 @@ async function buildTableEmbed(state, { previousResults } = {}) {
   // est utilisé pour le body) — même principe que buildTodaySection du jeu
   // spécial (_handlers/gobelet.js).
   const seatsLabel = `${state.players.length}/${state.maxPlayers} joueur${state.maxPlayers > 1 ? "s" : ""} inscrit${state.players.length > 1 ? "s" : ""}`;
-  lines.push("## 🎲 À vos dés !", "Clique sur **Jouer** pour lancer tes 5 dés.", "", seatsLabel);
+  lines.push(
+    "## 🎲 À vos dés !",
+    "Clique sur **Jouer** pour lancer tes 5 dés.",
+    "",
+    seatsLabel,
+  );
 
   if (state.players.length > 0) {
     lines.push(await buildPendingLabel(state, hands));
   } else {
-    lines.push("Clique sur **Jouer** pour t'inscrire et lancer ta première main.");
+    lines.push(
+      "Clique sur **Jouer** pour t'inscrire et lancer ta première main.",
+    );
   }
 
   return {
@@ -161,12 +207,17 @@ async function buildTableEmbed(state, { previousResults } = {}) {
 
 async function buildFinalEmbed(state, results, ranking) {
   const resolvedRanking = await Promise.all(
-    ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+    ranking.map(async (r) => ({
+      ...r,
+      username: await resolveDisplayName(r.discordId, r.username),
+    })),
   );
 
   const lastManchePoints = Math.max(...results.map((r) => r.points));
   const lastWinners = results.filter((r) => r.points === lastManchePoints);
-  const lastWinnerNames = await Promise.all(lastWinners.map((w) => resolveDisplayName(w.discordId, w.username)));
+  const lastWinnerNames = await Promise.all(
+    lastWinners.map((w) => resolveDisplayName(w.discordId, w.username)),
+  );
 
   const lines = [
     `**📊 Bilan de la dernière manche**`,
@@ -174,7 +225,10 @@ async function buildFinalEmbed(state, results, ranking) {
     "",
     "**Classement final :**",
     ...(resolvedRanking.length
-      ? resolvedRanking.map((r, i) => `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`)
+      ? resolvedRanking.map(
+          (r, i) =>
+            `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+        )
       : ["Personne n'a marqué de point."]),
   ];
 
@@ -187,7 +241,11 @@ async function buildFinalEmbed(state, results, ranking) {
 
 // ── Commande /gobelet ──────────────────────────────────────────────
 
-export async function handleGobeletCommand(webhookUrl, body, { maxPlayers, totalManches }) {
+export async function handleGobeletCommand(
+  webhookUrl,
+  body,
+  { maxPlayers, totalManches },
+) {
   try {
     const channelId = body.channel_id;
     const result = await startGame(channelId, { maxPlayers, totalManches });
@@ -205,11 +263,17 @@ export async function handleGobeletCommand(webhookUrl, body, { maxPlayers, total
     const components = buildJoinComponents();
 
     const token = process.env.DISCORD_TOKEN;
-    const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed], components }),
-    });
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${channelId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ embeds: [embed], components }),
+      },
+    );
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
@@ -234,7 +298,8 @@ export async function handleGobeletCommand(webhookUrl, body, { maxPlayers, total
 
 export async function handleGobeletRoleRejected(webhookUrl) {
   await patchOriginal(webhookUrl, {
-    content: "Tu n'as pas le rôle nécessaire (MINI-JEUX) pour lancer une partie.",
+    content:
+      "Tu n'as pas le rôle nécessaire (MINI-JEUX) pour lancer une partie.",
     embeds: [],
     components: [],
   });
@@ -254,14 +319,20 @@ function buildHandStatusMessage(hand, kept) {
 function buildHandEmbed(manche, hand, kept) {
   return {
     title: `🎲 Ta main — Manche ${manche}`,
-    description: [...formatDiceBlock(hand.dice), "", buildHandStatusMessage(hand, kept)].join("\n"),
+    description: [
+      ...formatDiceBlock(hand.dice),
+      "",
+      buildHandStatusMessage(hand, kept),
+    ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };
 }
 
 function relancerLabel(kept) {
   const count = kept.filter((k) => !k).length;
-  return count === 0 ? "Passer au tirage suivant" : `Relancer (${count} dé${count > 1 ? "s" : ""})`;
+  return count === 0
+    ? "Passer au tirage suivant"
+    : `Relancer (${count} dé${count > 1 ? "s" : ""})`;
 }
 
 // Emoji d'application Discord uploadés une fois via `npm run gobelet:emojis`
@@ -279,7 +350,8 @@ function buildDieEmoji(value, kept, diceEmojis) {
 // tirage — même règle que le jeu spécial (_handlers/gobelet.js).
 function buildHandComponents(manche, hand, kept, diceEmojis) {
   if (hand.status !== "en_cours") return [];
-  const canValider = computeBestCombination(hand.dice).category !== "Aucune combinaison";
+  const canValider =
+    computeBestCombination(hand.dice).category !== "Aucune combinaison";
   const secondRow = [
     {
       type: 2,
@@ -325,18 +397,33 @@ async function refreshPublicMessage() {
     // Rien à résoudre pour l'instant (ou résolution déjà prise par un autre
     // clic concurrent) : on rafraîchit juste le compteur "en attente de".
     const embed = await buildTableEmbed(outcome.state);
-    await patchPublicMessage(outcome.state, { embeds: [embed], components: buildJoinComponents() });
+    await patchPublicMessage(outcome.state, {
+      embeds: [embed],
+      components: buildJoinComponents(),
+    });
     return;
   }
 
   if (outcome.final) {
-    const embed = await buildFinalEmbed(outcome.state, outcome.results, outcome.ranking);
-    await patchPublicMessage(outcome.state, { embeds: [embed], components: [] });
+    const embed = await buildFinalEmbed(
+      outcome.state,
+      outcome.results,
+      outcome.ranking,
+    );
+    await patchPublicMessage(outcome.state, {
+      embeds: [embed],
+      components: [],
+    });
     return;
   }
 
-  const embed = await buildTableEmbed(outcome.state, { previousResults: outcome.results });
-  await patchPublicMessage(outcome.state, { embeds: [embed], components: buildJoinComponents() });
+  const embed = await buildTableEmbed(outcome.state, {
+    previousResults: outcome.results,
+  });
+  await patchPublicMessage(outcome.state, {
+    embeds: [embed],
+    components: buildJoinComponents(),
+  });
 }
 
 export async function handleJouer(webhookUrl, discordId, username) {
@@ -345,7 +432,8 @@ export async function handleJouer(webhookUrl, discordId, username) {
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, {
-        content: "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
+        content:
+          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
         embeds: [],
         components: [],
       });
@@ -353,7 +441,8 @@ export async function handleJouer(webhookUrl, discordId, username) {
     }
     if (result.rosterLocked) {
       await patchOriginal(webhookUrl, {
-        content: "Cette partie a déjà commencé (ou les sièges sont tous pris) — tu ne peux pas rejoindre.",
+        content:
+          "Cette partie a déjà commencé (ou les sièges sont tous pris) — tu ne peux pas rejoindre.",
         embeds: [],
         components: [],
       });
@@ -364,7 +453,12 @@ export async function handleJouer(webhookUrl, discordId, username) {
     const state = result.state;
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(state.manche, result.hand, result.kept)],
-      components: buildHandComponents(state.manche, result.hand, result.kept, diceEmojis),
+      components: buildHandComponents(
+        state.manche,
+        result.hand,
+        result.kept,
+        diceEmojis,
+      ),
     });
 
     if (result.isNew) {
@@ -381,7 +475,8 @@ export async function handleToggle(webhookUrl, discordId, index) {
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, {
-        content: "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
+        content:
+          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
         embeds: [],
         components: [],
       });
@@ -406,7 +501,12 @@ export async function handleToggle(webhookUrl, discordId, index) {
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
-      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis),
+      components: buildHandComponents(
+        result.state.manche,
+        result.hand,
+        result.kept,
+        diceEmojis,
+      ),
     });
   } catch (err) {
     console.error("[GobeletDuel] Échec sélection de dé:", err.message);
@@ -419,7 +519,8 @@ export async function handleRelancer(webhookUrl, discordId) {
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, {
-        content: "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
+        content:
+          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
         embeds: [],
         components: [],
       });
@@ -444,7 +545,12 @@ export async function handleRelancer(webhookUrl, discordId) {
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
-      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis),
+      components: buildHandComponents(
+        result.state.manche,
+        result.hand,
+        result.kept,
+        diceEmojis,
+      ),
     });
 
     await refreshPublicMessage();
@@ -459,7 +565,8 @@ export async function handleValider(webhookUrl, discordId) {
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, {
-        content: "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
+        content:
+          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
         embeds: [],
         components: [],
       });
@@ -487,14 +594,24 @@ export async function handleValider(webhookUrl, discordId) {
       // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
-        components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis),
+        components: buildHandComponents(
+          result.state.manche,
+          result.hand,
+          result.kept,
+          diceEmojis,
+        ),
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept)],
-      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis),
+      components: buildHandComponents(
+        result.state.manche,
+        result.hand,
+        result.kept,
+        diceEmojis,
+      ),
     });
 
     await refreshPublicMessage();
@@ -524,10 +641,10 @@ function buildReglesEmbed() {
       "🎲 Aucune combinaison : somme des 5 dés",
       "🎯 Brelan (3 dés identiques) : 20 pts",
       "🎯 Carré (4 dés identiques) : 30 pts",
+      "🎯 Petite Suite (4 dés qui se suivent) : 30 pts",
       "🎯 Full (3 + 2) : 40 pts",
       "🎯 Somme ≤ 7 : 45 pts",
       "🎯 Somme ≥ 28 : 45 pts",
-      "🎯 Petite Suite (4 dés qui se suivent) : 30 pts",
       "🎯 Grande Suite (5 dés qui se suivent) : 50 pts",
       "🎯 Gobelet (5 dés identiques) : 60 pts",
       "",
@@ -539,7 +656,10 @@ function buildReglesEmbed() {
 
 export async function handleRegles(webhookUrl) {
   try {
-    await patchOriginal(webhookUrl, { embeds: [buildReglesEmbed()], components: [] });
+    await patchOriginal(webhookUrl, {
+      embeds: [buildReglesEmbed()],
+      components: [],
+    });
   } catch (err) {
     console.error("[GobeletDuel] Échec Règles:", err.message);
   }

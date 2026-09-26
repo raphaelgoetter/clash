@@ -89,10 +89,14 @@ function formatDiceBlock(dice) {
 async function formatResultsSection(results) {
   if (!results.length) return ["Personne n'a joué ce jour-là."];
 
-  const lines = [`${results.length} joueur${results.length > 1 ? "s" : ""} ont joué.`];
+  const lines = [
+    `${results.length} joueur${results.length > 1 ? "s" : ""} ont joué.`,
+  ];
   const maxPoints = Math.max(...results.map((r) => r.points));
   const winners = results.filter((r) => r.points === maxPoints);
-  const names = await Promise.all(winners.map((r) => resolveDisplayName(r.discordId, r.username)));
+  const names = await Promise.all(
+    winners.map((r) => resolveDisplayName(r.discordId, r.username)),
+  );
   lines.push(
     `🏆 Meilleur${winners.length > 1 ? "s" : ""} score${winners.length > 1 ? "s" : ""} du jour (${maxPoints} pt${maxPoints > 1 ? "s" : ""}) : ${names.join(", ")}`,
   );
@@ -142,12 +146,20 @@ function buildTodaySection() {
   ];
 }
 
-async function buildDayEmbed(jour, config, { estPremierJour, previousResults }) {
+async function buildDayEmbed(
+  jour,
+  config,
+  { estPremierJour, previousResults },
+) {
   const lines = [];
   if (estPremierJour) {
     lines.push(DAY1_INTRO, "");
   } else {
-    lines.push(`**📊 Bilan du Jour ${jour - 1}**`, ...(await formatResultsSection(previousResults)), "");
+    lines.push(
+      `**📊 Bilan du Jour ${jour - 1}**`,
+      ...(await formatResultsSection(previousResults)),
+      "",
+    );
   }
   lines.push(...buildTodaySection());
 
@@ -155,7 +167,9 @@ async function buildDayEmbed(jour, config, { estPremierJour, previousResults }) 
     title: `🎲 Jeu du Gobelet — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
     color: GOBELET_COLOR,
-    image: { url: estPremierJour ? GOBELET_START_IMAGE_URL : GOBELET_GAME_IMAGE_URL },
+    image: {
+      url: estPremierJour ? GOBELET_START_IMAGE_URL : GOBELET_GAME_IMAGE_URL,
+    },
     footer: {
       text: estPremierJour
         ? "Lance tes dés chaque jour pendant 7 jours pour cumuler des points !"
@@ -167,13 +181,18 @@ async function buildDayEmbed(jour, config, { estPremierJour, previousResults }) 
 // ── Embed de révélation finale (Jour 8) ───────────────────────────
 
 function formatMancheHistoryLine(record) {
-  const winners = record.winners?.length ? record.winners.join(", ") : "personne";
+  const winners = record.winners?.length
+    ? record.winners.join(", ")
+    : "personne";
   return `Manche ${record.manche} : 🏆 ${winners} — ${record.maxPoints} pts`;
 }
 
 async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
   const resolvedRanking = await Promise.all(
-    ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+    ranking.map(async (r) => ({
+      ...r,
+      username: await resolveDisplayName(r.discordId, r.username),
+    })),
   );
 
   const lines = [
@@ -182,12 +201,21 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
     "",
     "**Classement final :**",
     ...(resolvedRanking.length
-      ? resolvedRanking.slice(0, 20).map((r, i) => `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`)
+      ? resolvedRanking
+          .slice(0, 20)
+          .map(
+            (r, i) =>
+              `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+          )
       : ["Personne n'a marqué de point cette manche."]),
   ];
 
   if (manchesHistory.length) {
-    lines.push("", "**Vainqueurs des manches précédentes :**", ...manchesHistory.map(formatMancheHistoryLine));
+    lines.push(
+      "",
+      "**Vainqueurs des manches précédentes :**",
+      ...manchesHistory.map(formatMancheHistoryLine),
+    );
   }
 
   return {
@@ -200,7 +228,11 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
 
 // ── Publication quotidienne (appelée uniquement par scripts/postGobelet.js) ──
 
-async function publishAndWriteState(channelId, previousState, { jour, embed, components, noPing, termine = false }) {
+async function publishAndWriteState(
+  channelId,
+  previousState,
+  { jour, embed, components, noPing, termine = false },
+) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
 
@@ -211,10 +243,15 @@ async function publishAndWriteState(channelId, previousState, { jour, embed, com
         { method: "DELETE", headers: { Authorization: `Bot ${token}` } },
       );
       if (!delRes.ok && delRes.status !== 404) {
-        console.warn(`[Gobelet] Échec suppression du message de la veille (${delRes.status}), publication quand même.`);
+        console.warn(
+          `[Gobelet] Échec suppression du message de la veille (${delRes.status}), publication quand même.`,
+        );
       }
     } catch (err) {
-      console.warn("[Gobelet] Erreur réseau à la suppression du message de la veille:", err.message);
+      console.warn(
+        "[Gobelet] Erreur réseau à la suppression du message de la veille:",
+        err.message,
+      );
     }
   }
 
@@ -222,11 +259,21 @@ async function publishAndWriteState(channelId, previousState, { jour, embed, com
   // Blackjack/Quiz : une action est attendue CHAQUE jour (lancer ses dés).
   const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], components, ...buildRolePingFields(roleId) }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
+    },
+  );
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
@@ -246,7 +293,13 @@ async function publishAndWriteState(channelId, previousState, { jour, embed, com
 
 export async function postGobelet(
   channelId,
-  { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false } = {},
+  {
+    dryRun = false,
+    noPing = false,
+    isPublic = false,
+    requireActiveState = false,
+    force = false,
+  } = {},
 ) {
   const config = await loadGobeletConfig();
   const state = await readState();
@@ -255,8 +308,17 @@ export async function postGobelet(
 
   // Garde-fou anti-double-avancée (même pattern que Blackjack et les autres
   // jeux à cron du repo) : jamais appliqué en dry-run, contournable avec --force.
-  if (state && !dryRun && !force && isTooSoonSinceLastClosure(state.publishedAt)) {
-    return { skipped: true, reason: "tooSoonSinceLastClosure", publishedAt: state.publishedAt };
+  if (
+    state &&
+    !dryRun &&
+    !force &&
+    isTooSoonSinceLastClosure(state.publishedAt)
+  ) {
+    return {
+      skipped: true,
+      reason: "tooSoonSinceLastClosure",
+      publishedAt: state.publishedAt,
+    };
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être
@@ -276,12 +338,20 @@ export async function postGobelet(
     const components = buildDayComponents(jour);
 
     if (dryRun) {
-      const pingRoleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
       return { dryRun: true, jour, embed, components, pingRoleId };
     }
 
     await resetPoints();
-    return publishAndWriteState(channelId, null, { jour, embed, components, noPing, termine: false });
+    return publishAndWriteState(channelId, null, {
+      jour,
+      embed,
+      components,
+      noPing,
+      termine: false,
+    });
   }
 
   // Résolution du jour actif (state.jour).
@@ -296,20 +366,33 @@ export async function postGobelet(
       // Points simulés selon results[].points, sans écrire dans Redis —
       // pure projection pour npm run gobelet:status / --dry-run.
       for (const r of results) {
-        pointsActuels[r.discordId] = (pointsActuels[r.discordId] || 0) + r.points;
+        pointsActuels[r.discordId] =
+          (pointsActuels[r.discordId] || 0) + r.points;
       }
       const ranking = buildRanking(pointsActuels);
       const embed = await buildRevealEmbed(results, ranking, []);
       return { dryRun: true, final: true, embed };
     }
-    const embed = await buildDayEmbed(jourSuivant, config, { estPremierJour: false, previousResults: results });
-    return { dryRun: true, jour: jourSuivant, embed, components: buildDayComponents(jourSuivant) };
+    const embed = await buildDayEmbed(jourSuivant, config, {
+      estPremierJour: false,
+      previousResults: results,
+    });
+    return {
+      dryRun: true,
+      jour: jourSuivant,
+      embed,
+      components: buildDayComponents(jourSuivant),
+    };
   }
 
   for (const r of results) {
     await addPoints(r.discordId, r.points);
   }
-  await writeHistoriqueEntry(state.jour, { jour: state.jour, results, resolvedAt: new Date().toISOString() });
+  await writeHistoriqueEntry(state.jour, {
+    jour: state.jour,
+    results,
+    resolvedAt: new Date().toISOString(),
+  });
 
   if (estFinDeManche) {
     const points = await readPoints();
@@ -319,10 +402,18 @@ export async function postGobelet(
     let currentManche = null;
     if (isPublic) {
       const resolvedRanking = await Promise.all(
-        ranking.map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+        ranking.map(async (r) => ({
+          ...r,
+          username: await resolveDisplayName(r.discordId, r.username),
+        })),
       );
       const maxPoints = resolvedRanking[0]?.points ?? 0;
-      const winners = maxPoints > 0 ? resolvedRanking.filter((r) => r.points === maxPoints).map((r) => r.username) : [];
+      const winners =
+        maxPoints > 0
+          ? resolvedRanking
+              .filter((r) => r.points === maxPoints)
+              .map((r) => r.username)
+          : [];
       currentManche = await archiveManche({
         resolvedAt: new Date().toISOString(),
         ranking: resolvedRanking,
@@ -342,10 +433,19 @@ export async function postGobelet(
     return { ...result, final: true, manche: currentManche };
   }
 
-  const embed = await buildDayEmbed(jourSuivant, config, { estPremierJour: false, previousResults: results });
+  const embed = await buildDayEmbed(jourSuivant, config, {
+    estPremierJour: false,
+    previousResults: results,
+  });
   const components = buildDayComponents(jourSuivant);
 
-  return publishAndWriteState(channelId, state, { jour: jourSuivant, embed, components, noPing, termine: false });
+  return publishAndWriteState(channelId, state, {
+    jour: jourSuivant,
+    embed,
+    components,
+    noPing,
+    termine: false,
+  });
 }
 
 // ── Édition en place (réponses aux interactions) ──────────────────
@@ -380,14 +480,20 @@ function buildHandStatusMessage(hand, kept) {
 function buildHandEmbed(jour, hand, kept) {
   return {
     title: `🎲 Ta main — Jour ${jour}`,
-    description: [...formatDiceBlock(hand.dice), "", buildHandStatusMessage(hand, kept)].join("\n"),
+    description: [
+      ...formatDiceBlock(hand.dice),
+      "",
+      buildHandStatusMessage(hand, kept),
+    ].join("\n"),
     color: GOBELET_COLOR,
   };
 }
 
 function relancerLabel(kept) {
   const count = kept.filter((k) => !k).length;
-  return count === 0 ? "Passer au tirage suivant" : `Relancer (${count} dé${count > 1 ? "s" : ""})`;
+  return count === 0
+    ? "Passer au tirage suivant"
+    : `Relancer (${count} dé${count > 1 ? "s" : ""})`;
 }
 
 // Emoji d'application Discord uploadés une fois via `npm run gobelet:emojis`
@@ -407,7 +513,8 @@ function buildDieEmoji(value, kept, diceEmojis) {
 // une bonne main tout de suite sans passer par les 2 relances obligatoires.
 function buildHandComponents(jour, hand, kept, diceEmojis) {
   if (hand.status !== "en_cours") return [];
-  const canValider = computeBestCombination(hand.dice).category !== "Aucune combinaison";
+  const canValider =
+    computeBestCombination(hand.dice).category !== "Aucune combinaison";
   const secondRow = [
     {
       type: 2,
@@ -463,7 +570,10 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
 
     const existing = await readHand(jour, discordId);
     if (existing) {
-      const kept = existing.status === "en_cours" ? await readKept(jour, discordId) : NO_KEPT;
+      const kept =
+        existing.status === "en_cours"
+          ? await readKept(jour, discordId)
+          : NO_KEPT;
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(jour, existing, kept)],
         components: buildHandComponents(jour, existing, kept, diceEmojis),
@@ -472,7 +582,14 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
     }
 
     const dice = rollDice(5);
-    const hand = { dice, tirage: 1, status: "en_cours", category: null, points: null, username };
+    const hand = {
+      dice,
+      tirage: 1,
+      status: "en_cours",
+      category: null,
+      points: null,
+      username,
+    };
     await writeHand(jour, discordId, hand);
     await resetKept(jour, discordId);
 
@@ -507,7 +624,10 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
       return;
     }
     if (hand.status !== "en_cours") {
-      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(jour, hand, NO_KEPT)], components: [] });
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(jour, hand, NO_KEPT)],
+        components: [],
+      });
       return;
     }
 
@@ -548,7 +668,10 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
       return;
     }
     if (hand.status !== "en_cours") {
-      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(jour, hand, NO_KEPT)], components: [] });
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(jour, hand, NO_KEPT)],
+        components: [],
+      });
       return;
     }
 
@@ -604,7 +727,10 @@ export async function handleValider(webhookUrl, jour, discordId) {
       return;
     }
     if (hand.status !== "en_cours") {
-      await patchOriginal(webhookUrl, { embeds: [buildHandEmbed(jour, hand, NO_KEPT)], components: [] });
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(jour, hand, NO_KEPT)],
+        components: [],
+      });
       return;
     }
 
@@ -641,7 +767,9 @@ export async function handleValider(webhookUrl, jour, discordId) {
 
 function formatHistoriqueLine(entry, discordId) {
   const mine = entry.results?.find((r) => r.discordId === discordId);
-  const monResultat = !mine ? " — tu n'as pas joué" : ` — **${mine.category}** (${mine.points} pt${mine.points > 1 ? "s" : ""})`;
+  const monResultat = !mine
+    ? " — tu n'as pas joué"
+    : ` — **${mine.category}** (${mine.points} pt${mine.points > 1 ? "s" : ""})`;
   return `Jour ${entry.jour}${monResultat}`;
 }
 
@@ -666,7 +794,12 @@ export async function handleJournal(webhookUrl, discordId) {
 
     const ranking = buildRanking(points);
     const resolvedRanking = await Promise.all(
-      ranking.slice(0, 10).map(async (r) => ({ ...r, username: await resolveDisplayName(r.discordId, r.username) })),
+      ranking
+        .slice(0, 10)
+        .map(async (r) => ({
+          ...r,
+          username: await resolveDisplayName(r.discordId, r.username),
+        })),
     );
 
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
@@ -677,22 +810,35 @@ export async function handleJournal(webhookUrl, discordId) {
           : `en cours (tirage ${hand.tirage}/3)`;
       lines.push(`Ta main aujourd'hui : ${formatDice(hand.dice)} — ${detail}`);
     } else {
-      lines.push("Tu n'as pas encore joué aujourd'hui — clique sur **Jouer** !");
+      lines.push(
+        "Tu n'as pas encore joué aujourd'hui — clique sur **Jouer** !",
+      );
     }
 
     lines.push(
       "",
       "**Classement cumulé :**",
       ...(resolvedRanking.length
-        ? resolvedRanking.map((r, i) => `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`)
+        ? resolvedRanking.map(
+            (r, i) =>
+              `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+          )
         : ["Personne n'a encore marqué de point."]),
     );
 
     if (historique.length > 0) {
-      lines.push("", "**Jours précédents :**", ...historique.map((e) => formatHistoriqueLine(e, discordId)));
+      lines.push(
+        "",
+        "**Jours précédents :**",
+        ...historique.map((e) => formatHistoriqueLine(e, discordId)),
+      );
     }
 
-    const embed = { title: "📜 Journal", description: lines.join("\n"), color: GOBELET_COLOR };
+    const embed = {
+      title: "📜 Journal",
+      description: lines.join("\n"),
+      color: GOBELET_COLOR,
+    };
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[Gobelet] Échec Journal:", err.message);
@@ -718,10 +864,10 @@ function buildReglesEmbed(config) {
       "🎲 Aucune combinaison : somme des 5 dés",
       "🎯 Brelan (3 dés identiques) : 20 pts",
       "🎯 Carré (4 dés identiques) : 30 pts",
+      "🎯 Petite Suite (4 dés qui se suivent) : 30 pts",
       "🎯 Full (3 + 2) : 40 pts",
       "🎯 Somme ≤ 7 : 45 pts",
       "🎯 Somme ≥ 28 : 45 pts",
-      "🎯 Petite Suite (4 dés qui se suivent) : 30 pts",
       "🎯 Grande Suite (5 dés qui se suivent) : 50 pts",
       "🎯 Gobelet (5 dés identiques) : 60 pts",
       "",
