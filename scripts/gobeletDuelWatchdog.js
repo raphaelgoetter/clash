@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // gobeletDuelWatchdog.js
 // Nettoie une partie du Jeu du Gobelet Duel bloquée depuis plus de
-// STALE_HOURS (24h) sans aucune action — manche jamais terminée faute d'un
+// STALE_HOURS (2h) sans aucune action — manche jamais terminée faute d'un
 // joueur qui ne revient pas, ou partie jamais reprise.
 //
 // 100% manuel : aucun workflow GitHub Actions n'appelle ce script (même
@@ -23,7 +23,7 @@ import { resetIfStale } from "../backend/services/gobeletDuel.js";
     if (result.reset) {
       console.log(`Gobelet Duel : partie inactive depuis ${result.hoursSince.toFixed(1)}h, remise à zéro.`);
     } else if (result.hoursSince != null) {
-      console.log(`Gobelet Duel : partie active, inactive depuis ${result.hoursSince.toFixed(1)}h (< 24h) — rien à faire.`);
+      console.log(`Gobelet Duel : partie active, inactive depuis ${result.hoursSince.toFixed(1)}h (< 2h) — rien à faire.`);
     } else {
       console.log("Gobelet Duel : aucune partie en cours — rien à faire.");
     }

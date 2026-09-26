@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
+import { applyJoin, isMancheReady, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -47,6 +47,27 @@ async function main() {
     const state = baseState({ players: ["a", "b"] });
     const decision = applyJoin(state, "c");
     assert.strictEqual(decision.allowed, false);
+  }
+
+  // ── isMancheReady — roster incomplet : jamais résolue, même si le seul
+  // inscrit a fini (sinon la partie se verrouille en solo) ──
+  {
+    const state = baseState({ players: ["a"] });
+    assert.strictEqual(isMancheReady(state, { a: { status: "stand" } }), false);
+  }
+
+  // ── isMancheReady — roster complet : résolue seulement quand tous ont fini ──
+  {
+    const state = baseState({ players: ["a", "b"] });
+    assert.strictEqual(isMancheReady(state, { a: { status: "stand" } }), false);
+    assert.strictEqual(isMancheReady(state, { a: { status: "stand" }, b: { status: "en_cours" } }), false);
+    assert.strictEqual(isMancheReady(state, { a: { status: "stand" }, b: { status: "stand" } }), true);
+  }
+
+  // ── isMancheReady — solo (1 place) : résolue dès que le joueur a fini ──
+  {
+    const state = baseState({ maxPlayers: 1, players: ["a"] });
+    assert.strictEqual(isMancheReady(state, { a: { status: "stand" } }), true);
   }
 
   // ── computeMancheOutcome — solo (1 joueur), manche intermédiaire : pas de

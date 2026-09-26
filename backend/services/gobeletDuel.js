@@ -15,18 +15,18 @@
 // - Lobby FERMÉ (1 à 3 joueurs inscrits au lancement via le bouton Jouer,
 //   pas un lobby ouvert à tous) ;
 // - avancement piloté par les ACTIONS des joueurs (une manche se termine
-//   dès que tous les joueurs inscrits ont terminé leurs 3 tirages), pas par
-//   un cron quotidien ;
+//   dès que tous les sièges sont occupés et que chacun a terminé ses 3
+//   tirages), pas par un cron quotidien ;
 // - pas d'historique persistant (aucun équivalent à archiveManche /
 //   writeHistoriqueEntry) ;
 // - une seule partie à la fois sur tout le serveur (état global unique,
 //   comme le jeu spécial) ;
 // - pas de nettoyage automatique (même retour utilisateur que pour
 //   Blackjack Duel : "je ne souhaite absolument pas de cron/action pour
-//   cela") — une partie bloquée >24h (resetIfStale) ou dans n'importe quel
+//   cela") — une partie bloquée >2h (resetIfStale) ou dans n'importe quel
 //   état se nettoie désormais À LA MAIN via `npm run gobeletduel:reset`
 //   (inconditionnel) ou `npm run gobeletduel:watchdog` (respecte le seuil
-//   de 24h) ; voir `npm run gobeletduel:status` pour décider.
+//   de 2h) ; voir `npm run gobeletduel:status` pour décider.
 // ============================================================
 
 import { Redis } from "@upstash/redis";
@@ -104,7 +104,7 @@ function handKey(manche) {
 }
 
 // ── Délai d'inactivité avant nettoyage automatique (watchdog) ─────
-const STALE_HOURS = 24;
+const STALE_HOURS = 2;
 
 // ── État de la partie ──────────────────────────────────────────────
 
@@ -188,7 +188,11 @@ export async function resetGobeletDuel() {
 
 export async function startGame(channelId, { maxPlayers, totalManches }) {
   const existing = await readState();
-  if (existing && !existing.termine) {
+  // Une partie inactive depuis STALE_HOURS (ex. un joueur seul qui attend un
+  // adversaire jamais venu, voir isMancheReady) est considérée abandonnée :
+  // relancer la commande la remplace, sans cron de nettoyage.
+  const hoursSince = existing ? (Date.now() - new Date(existing.lastActivityAt).getTime()) / 3_600_000 : 0;
+  if (existing && !existing.termine && hoursSince < STALE_HOURS) {
     return { alreadyActive: true, state: existing };
   }
 
@@ -222,8 +226,9 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
 export function applyJoin(state, discordId) {
   const isSeated = state.players.includes(discordId);
   // Nouveau joueur : refusé si les inscriptions sont verrouillées (tous les
-  // sièges pris, ou une manche a déjà été résolue avec un roster incomplet
-  // — voir resolveManche ci-dessous).
+  // sièges pris). Aucune manche n'est résolue tant que le roster est
+  // incomplet (voir isMancheReady), le verrou ne tombe donc qu'une fois
+  // toutes les places occupées.
   if (!isSeated && (state.rosterLocked || state.players.length >= state.maxPlayers)) {
     return { allowed: false };
   }
@@ -356,6 +361,15 @@ async function claimResolution(manche) {
   return claimed === 1;
 }
 
+// Pure : une manche n'est résolue que si toutes les places sont occupées
+// ET que chaque joueur inscrit a fini sa main. Un joueur seul sur 2 places
+// qui termine sa main attend donc son adversaire au lieu de résoudre la
+// manche seul.
+export function isMancheReady(state, hands) {
+  if (state.players.length < state.maxPlayers) return false;
+  return state.players.every((id) => hands[id] && hands[id].status !== "en_cours");
+}
+
 // Appelée après CHAQUE action qui termine une main (3ᵉ tirage atteint) :
 // vérifie si tous les joueurs inscrits ont fini leur main pour la manche en
 // cours, et résout si c'est le cas.
@@ -365,9 +379,7 @@ export async function checkAndResolveManche() {
 
   const manche = state.manche;
   const hands = await listHands(manche);
-  const pending = state.players.filter((id) => !hands[id] || hands[id].status === "en_cours");
-
-  if (pending.length > 0) return { resolved: false, pending, state };
+  if (!isMancheReady(state, hands)) return { resolved: false, state };
 
   const claimed = await claimResolution(manche);
   if (!claimed) return { resolved: false, alreadyResolving: true, state };
@@ -412,11 +424,6 @@ async function resolveManche(state, hands) {
   const newState = {
     ...state,
     manche: outcome.mancheSuivante,
-    // Verrou définitif dès qu'une manche est résolue, même si le roster
-    // était incomplet (moins de joueurs que maxPlayers) — même principe que
-    // Blackjack Duel : un nouveau joueur ne peut plus jamais rejoindre après
-    // ce point.
-    rosterLocked: true,
     lastActivityAt: new Date().toISOString(),
   };
   await writeState(newState);

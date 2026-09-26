@@ -149,12 +149,25 @@ async function buildPendingLabel(state, hands) {
   const pendingIds = state.players.filter(
     (id) => !hands[id] || hands[id].status === "en_cours",
   );
-  if (pendingIds.length === 0)
-    return "Tout le monde a joué, résolution en cours…";
-  const names = await Promise.all(
-    pendingIds.map((id) => resolveDisplayName(id, hands[id]?.username)),
-  );
-  return `⏳ En attente de : ${names.join(", ")}`;
+  const missingSeats = state.maxPlayers - state.players.length;
+  const lines = [];
+  if (pendingIds.length > 0) {
+    const names = await Promise.all(
+      pendingIds.map((id) => resolveDisplayName(id, hands[id]?.username)),
+    );
+    lines.push(
+      `⏳ ${names.length > 1 ? "Doivent" : "Doit"} encore jouer cette manche : ${names.join(", ")}`,
+    );
+  }
+  // Roster incomplet : la manche attend les places libres avant d'être
+  // résolue (voir isMancheReady côté service).
+  if (missingSeats > 0) {
+    lines.push(
+      `⏳ En attente de ${missingSeats} joueur${missingSeats > 1 ? "s" : ""} supplémentaire${missingSeats > 1 ? "s" : ""}`,
+    );
+  }
+  if (lines.length === 0) return "Tout le monde a joué, résolution en cours…";
+  return lines.join("\n");
 }
 
 async function buildTableEmbed(state, { previousResults } = {}) {
@@ -252,7 +265,7 @@ export async function handleGobeletCommand(
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie du Jeu du Gobelet Duel est déjà en cours dans <#${result.state.channelId}> — attends qu'elle se termine (ou qu'elle expire après 24h d'inactivité).`,
+        content: `Une partie du Jeu du Gobelet Duel est déjà en cours dans <#${result.state.channelId}> — attends qu'elle se termine (ou qu'elle expire après 2h d'inactivité).`,
         embeds: [],
         components: [],
       });
@@ -648,7 +661,7 @@ function buildReglesEmbed() {
       "🎯 Grande Suite (5 dés qui se suivent) : 50 pts",
       "🎯 Gobelet (5 dés identiques) : 60 pts",
       "",
-      "Une manche se termine dès que tous les joueurs inscrits ont fini leurs 3 tirages. Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive plus de 24h est automatiquement annulée.",
+      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini ses 3 tirages. Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive plus de 2h est automatiquement annulée.",
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // blackjackDuelWatchdog.js
 // Nettoie automatiquement une partie de Blackjack Duel bloquée depuis plus
-// de STALE_HOURS (24h) sans aucune action — manche jamais terminée faute
+// de STALE_HOURS (2h) sans aucune action — manche jamais terminée faute
 // d'un joueur qui ne revient pas, ou partie jamais reprise. Appelé toutes
 // les 30 minutes par .github/workflows/blackjack-duel-watchdog.yml.
 //
@@ -21,7 +21,7 @@ import { resetIfStale } from "../backend/services/blackjackDuel.js";
       );
     } else if (result.hoursSince != null) {
       console.log(
-        `Blackjack Duel : partie active, inactive depuis ${result.hoursSince.toFixed(1)}h (< 24h) — rien à faire.`,
+        `Blackjack Duel : partie active, inactive depuis ${result.hoursSince.toFixed(1)}h (< 2h) — rien à faire.`,
       );
     } else {
       console.log("Blackjack Duel : aucune partie en cours — rien à faire.");

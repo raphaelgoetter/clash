@@ -15,7 +15,7 @@ dotenv.config({ path: "./.env" });
 import { readState, listHands, readPoints, buildRanking } from "../backend/services/gobeletDuel.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
-const STALE_HOURS = 24;
+const STALE_HOURS = 2;
 
 (async () => {
   const state = await readState();
@@ -30,7 +30,7 @@ const STALE_HOURS = 24;
 
   const hoursSince = (Date.now() - new Date(state.lastActivityAt).getTime()) / 3_600_000;
   const staleWarning =
-    hoursSince >= STALE_HOURS ? " ⚠️ inactive depuis plus de 24h — envisage `npm run gobeletduel:reset`" : "";
+    hoursSince >= STALE_HOURS ? " ⚠️ inactive depuis plus de 2h — envisage `npm run gobeletduel:reset`" : "";
 
   console.log(
     `Manche ${state.manche}/${state.totalManches} — ${state.players.length}/${state.maxPlayers} joueur${state.maxPlayers > 1 ? "s" : ""} inscrit${state.players.length > 1 ? "s" : ""}${state.rosterLocked ? " (inscriptions closes)" : ""}`,
