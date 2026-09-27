@@ -321,7 +321,7 @@ async function buildFinalEmbed(state, ranking) {
   ];
 
   return {
-    title: "🏁 Blackjack Duel — Partie terminée",
+    title: `🏁 Blackjack Duel — Partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     color: BLACKJACKDUEL_COLOR,
   };

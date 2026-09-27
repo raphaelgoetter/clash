@@ -265,7 +265,7 @@ async function buildFinalEmbed(state, results, ranking) {
   ];
 
   return {
-    title: "🏁 Gobelet Duel — Partie terminée",
+    title: `🏁 Gobelet Duel — Partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     color: GOBELETDUEL_COLOR,
   };
