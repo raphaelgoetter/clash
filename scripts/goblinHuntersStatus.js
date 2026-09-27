@@ -53,7 +53,15 @@ import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } fro
   // Pseudo de la cible plutôt que son discordId brut (illisible)
   const usernameById = new Map(state.joueurs.map((j) => [j.discordId, j.username]));
   const formatAction = (action) =>
-    `${action.lieu}${action.cibleId ? ` → ${usernameById.get(action.cibleId) || action.cibleId}` : ""}`;
+    `${action.lieu}${
+      action.cibleId
+        ? ` → ${usernameById.get(action.cibleId) || action.cibleId}`
+        : action.pending
+          ? " (cible pas encore choisie)"
+          : ["camp_entrainement", "tour_de_guet"].includes(action.lieu)
+            ? " (cible au hasard)"
+            : ""
+    }`;
   for (const j of vivants) {
     const a = actions[j.discordId];
     if (!a) {
