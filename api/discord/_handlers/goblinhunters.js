@@ -232,12 +232,10 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     }
     if (closure.absents?.length) {
       const noms = closure.absents
-        .map(
-          (id) => {
-            const p = joueursApres.find((x) => x.discordId === id);
-            return p?.usernameOrigine || p?.username || "?";
-          },
-        )
+        .map((id) => {
+          const p = joueursApres.find((x) => x.discordId === id);
+          return p?.usernameOrigine || p?.username || "?";
+        })
         .map((nom) => `**${nom}**`);
       lines.push(
         `💤 N'a pas joué (pion placé au Château) : ${noms.join(", ")}`,
@@ -510,7 +508,7 @@ function buildReglesEmbed(config) {
       : `❤️ Villageois : ${config.combat.pv_base} PV — Gobelins : ${pvGobelin} PV. Au plus 1 mort au combat par jour.`,
     "🛡️ Chaque jour, un joueur tiré au hasard est immunisé : impossible de l'éliminer, au vote comme au combat.",
     "☀️ Jour 1 : personne ne peut mourir.",
-    `💤 Absent ${config.absences_avant_remplacement ?? 2} jours de suite ? Un bot reprend ta place.`,
+    `💤 Absent ${config.absences_avant_remplacement ?? 2} jours de suite ? Un bot reprend ta place. Il ira un jour sur deux au Château pour apporter sa voix au vote majoritaire.`,
     `🏆 Les Gobelins gagnent s'ils sont aussi nombreux que les Villageois. Les Villageois gagnent s'ils éliminent tous les Gobelins, ou à la fin du Jour ${config.duree_jours}.`,
     "",
     "**Rôles spéciaux** (1 exemplaire de chacun) :",
@@ -861,10 +859,7 @@ export async function postGoblinHunters(
     // joueur humain, qui ne doit plus rien recevoir).
     const estBot = (id) =>
       closure.joueursApres.some((j) => j.discordId === id && j.bot);
-    if (
-      closure.eliminationsParVote &&
-      !estBot(closure.eliminationsParVote)
-    ) {
+    if (closure.eliminationsParVote && !estBot(closure.eliminationsParVote)) {
       await sendEliminationDM(
         closure.eliminationsParVote,
         "vote",
