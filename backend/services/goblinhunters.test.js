@@ -14,6 +14,7 @@ import {
   checkVictory,
   computeCloture,
   computeBotActions,
+  revealedTargetsForDay,
   isLieuRepeatAllowed,
   isActionLocked,
   computeIndicesForDay,
@@ -416,6 +417,25 @@ async function main() {
     const ids = Array.from({ length: 15 }, (_, i) => `p${i}`);
     const roles = assignCampsAndRoles(ids, 6).filter((a) => a.camp === "gobelin").map((a) => a.role);
     assert.ok(roles.includes("zombie") && roles.includes("explosif") && roles.includes("infiltre"));
+  }
+
+  // ── Clairière -> Arène : un joueur repéré la veille est ciblable où qu'il soit ──
+  {
+    const joueursAvant = [joueur("chasseur"), joueur("repere", { position: "taverne" }), joueur("autre", { position: "tour_de_guet" })];
+    const actions = { chasseur: { primary: { lieu: "camp_entrainement", cibleId: "repere" } } };
+    const avec = computeAttacksFromActions(actions, joueursAvant, CONFIG, () => 0, { chasseur: new Set(["repere"]) });
+    assert.deepStrictEqual(avec.map((a) => a.targetId), ["repere"]);
+    // Sans repérage : cible invalide -> filet de sécurité (tirage au hasard)
+    const sans = computeAttacksFromActions(actions, joueursAvant, CONFIG, () => 0.99);
+    assert.strictEqual(sans.length, 1); // une attaque quand même, cible tirée au hasard
+    assert.strictEqual(sans[0].attackerId, "chasseur");
+    // Carnet : seules les révélations de la veille comptent
+    const indices = [
+      { type: "reveal", jour: 2, cibleId: "a" },
+      { type: "reveal", jour: 3, cibleId: "b" },
+      { type: "enquete", jour: 3, cibleId: "c" },
+    ];
+    assert.deepStrictEqual(revealedTargetsForDay(indices, 3), new Set(["b"]));
   }
 
   // ── absents : vivants sans action ce jour (pending = joué, morts ignorés) ──

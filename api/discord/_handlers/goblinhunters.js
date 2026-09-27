@@ -28,6 +28,7 @@ import {
   buildInitialRoster,
   readPlayerIndices,
   knownEnqueteTargets,
+  revealedTargetsForDay,
   archiveManche,
   listManches,
   hasSentMessageToday,
@@ -508,10 +509,10 @@ function buildReglesEmbed(config, rolesEnJeu = null) {
     "Chaque jour, tu choisis **un seul lieu**. Ton choix est **définitif**, et tu ne peux **pas retourner au même lieu deux jours de suite**. Tout se résout à la clôture, le lendemain matin.",
     "",
     `${lieu("chateau")} — Tu votes contre un joueur. Celui qui a le plus de voix est éliminé. En cas d'égalité, personne ne l'est.`,
-    `${lieu("camp_entrainement")} — Tu attaques un joueur qui était à l'Arène la veille (${config.combat.degats_base} dégât, ${degatsGobelin} pour un Gobelin). Si personne n'y était, tu frappes un joueur au hasard.`,
+    `${lieu("camp_entrainement")} — Tu attaques un joueur qui était à l'Arène la veille, ou que la Clairière t'a montré la veille (${config.combat.degats_base} dégât, ${degatsGobelin} pour un Gobelin). Sinon, tu frappes un joueur au hasard.`,
     `${lieu("tour_de_guet")} — Tu découvres le camp d'un joueur qui était à la Tour la veille (sinon, un joueur au hasard). Si plus de la moitié des joueurs y vont le même jour, personne n'apprend rien.`,
     `${lieu("taverne")} — Tu es protégé des attaques ce jour, si vous êtes ${config.taverne_seuil_protection} maximum.`,
-    `${lieu("clairiere_mystique")} — Tu découvres où sont allés 2 joueurs au hasard la veille.`,
+    `${lieu("clairiere_mystique")} — Tu découvres où sont allés 2 joueurs au hasard la veille. Le jour où tu reçois cette vision, tu peux les attaquer à l'Arène.`,
     "",
     pvGobelin === config.combat.pv_base
       ? `❤️ Tout le monde a ${config.combat.pv_base} PV, mais les Gobelins frappent plus fort. Au plus 1 mort au combat par jour.`
@@ -701,7 +702,11 @@ async function sendClairiereDM(discordId, reveals, config) {
   );
   const embed = {
     title: "🌫️ Clairière — ta vision",
-    description: lines.join("\n"),
+    description: [
+      ...lines,
+      "",
+      "⚔️ Aujourd'hui, tu peux les attaquer à l'Arène, où qu'ils soient.",
+    ].join("\n"),
     color: GOBLINHUNTERS_COLOR,
   };
   await sendGoblinHuntersDM(discordId, embed);
@@ -1315,12 +1320,20 @@ export async function handleLieuButton(
     }
 
     // Château (vote) : cible libre sur tout joueur vivant (hors soi-même).
-    // Combat/Enquête : cible restreinte au dernier plateau connu.
+    // Combat/Enquête : cible restreinte au dernier plateau connu — l'Arène
+    // accepte aussi les joueurs repérés par CE joueur à la Clairière la veille.
+    const reperes =
+      lieu === "camp_entrainement"
+        ? revealedTargetsForDay(await readPlayerIndices(discordId), Number(jour) - 1)
+        : new Set();
     let candidats =
       lieu === "chateau"
         ? state.joueurs.filter((j) => j.alive && j.discordId !== discordId)
         : state.joueurs.filter(
-            (j) => j.alive && j.discordId !== discordId && j.position === lieu,
+            (j) =>
+              j.alive &&
+              j.discordId !== discordId &&
+              (j.position === lieu || reperes.has(j.discordId)),
           );
     // Immunisé du jour : inutile de voter contre lui ou de l'attaquer.
     if (state.immuneId && lieu !== "tour_de_guet") {
@@ -1353,7 +1366,7 @@ export async function handleLieuButton(
       // choisira une cible au hasard à la clôture — cibleId reste null ici,
       // c'est le tirage à la clôture qui tranche, jamais au clic.
       await patchOriginal(webhookUrl, {
-        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — personne n'était ici hier, tu agiras sur un joueur tiré au hasard à la clôture. **Choix définitif pour aujourd'hui.**`,
+        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — aucune cible possible, tu agiras sur un joueur tiré au hasard à la clôture. **Choix définitif pour aujourd'hui.**`,
         embeds: [],
         components: followup,
       });
@@ -1378,7 +1391,7 @@ export async function handleLieuButton(
       content:
         lieu === "chateau"
           ? `${config.lieux[lieu].emoji} Choisis ta cible à ${config.lieux[lieu].label} :`
-          : `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} (**lieu définitif**) — choisis ta cible parmi les joueurs présents ici hier, sinon elle sera tirée au hasard à la clôture :`,
+          : `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} (**lieu définitif**) — choisis ta cible parmi les joueurs ${lieu === "camp_entrainement" ? "présents ici hier ou repérés à la Clairière" : "présents ici hier"}, sinon elle sera tirée au hasard à la clôture :`,
       embeds: [],
       components,
     });

@@ -460,7 +460,15 @@ export function isTourDeGuetOvercrowded(occupantsCount, aliveCount, ratio = 0.5)
 // propose déjà que ces cibles valides, cette fonction re-filtre quand même
 // par défense (ex. cible éliminée par le vote la même clôture, voir
 // computeCloture).
-function resolveEligibleAttacks(actionsRaw, joueursAvant, lieuxCombat) {
+// `ciblesRevelees` (optionnel, {attaquantId: Set<cibleId>}) : joueurs dont la
+// Clairière a révélé la position à cet attaquant la veille — ciblables à
+// l'Arène où qu'ils soient (piste "B", Clairière -> Arène).
+function resolveEligibleAttacks(
+  actionsRaw,
+  joueursAvant,
+  lieuxCombat,
+  ciblesRevelees = {},
+) {
   const positionById = new Map(
     joueursAvant.map((j) => [j.discordId, j.position]),
   );
@@ -472,7 +480,11 @@ function resolveEligibleAttacks(actionsRaw, joueursAvant, lieuxCombat) {
       if (!a || !lieuxCombat.includes(a.lieu) || !a.cibleId) continue;
       if (!aliveById.get(attackerId)) continue;
       if (!aliveById.get(a.cibleId)) continue;
-      if (positionById.get(a.cibleId) !== a.lieu) continue; // cible plus présente à ce lieu
+      if (
+        positionById.get(a.cibleId) !== a.lieu &&
+        !ciblesRevelees[attackerId]?.has(a.cibleId)
+      )
+        continue; // ni présente à ce lieu la veille, ni repérée à la Clairière
       attacks.push({ attackerId, targetId: a.cibleId, lieu: a.lieu });
     }
   }
@@ -528,12 +540,16 @@ export function computeAttacksFromActions(
   joueursAvant,
   config,
   rng = Math.random,
+  revealsVeille = {},
 ) {
   const roleById = new Map(joueursAvant.map((j) => [j.discordId, j.role]));
   const campById = new Map(joueursAvant.map((j) => [j.discordId, j.camp]));
-  const attacks = resolveEligibleAttacks(actionsRaw, joueursAvant, [
-    "camp_entrainement",
-  ]);
+  const attacks = resolveEligibleAttacks(
+    actionsRaw,
+    joueursAvant,
+    ["camp_entrainement"],
+    revealsVeille,
+  );
 
   const resolvedIds = new Set(attacks.map((a) => a.attackerId));
   for (const attackerId of fallbackActorsFor(
@@ -944,6 +960,7 @@ export function computeCloture({
   knownTargetsByInvestigator = {},
   immuneId = null,
   absentsVeille = [],
+  revealsVeille = {},
 }) {
   // Actions des bots de remplacement, calculées sur les actions humaines
   // (écrasent toute action résiduelle de l'ancien joueur humain).
@@ -984,6 +1001,7 @@ export function computeCloture({
       joueursApresVote,
       config,
       rng,
+      revealsVeille,
     );
     if (immuneId) protectedSet.add(immuneId);
     const damagePerTarget = sumDamagePerTarget(attacks, protectedSet);
@@ -1199,14 +1217,32 @@ export async function listRecentMessages() {
 // lu depuis son carnet d'indices, pour ne jamais laisser le filet de sécurité
 // de la Tour de Guet révéler 2 fois le même camp au même enquêteur (voir
 // computeInvestigations()/knownEnqueteTargets()).
-async function loadKnownTargetsByInvestigator(joueurs) {
+// Joueurs révélés par la Clairière à la clôture de la veille, d'après le
+// carnet d'indices — ciblables à l'Arène aujourd'hui (resolveEligibleAttacks).
+export function revealedTargetsForDay(indices, jourVeille) {
+  return new Set(
+    indices
+      .filter((e) => e.type === "reveal" && e.jour === jourVeille)
+      .map((e) => e.cibleId),
+  );
+}
+
+async function loadIndicesContext(joueurs, jour) {
   const vivants = joueurs.filter((j) => j.alive);
   const indicesByPlayer = await Promise.all(
     vivants.map((j) => readPlayerIndices(j.discordId)),
   );
-  return Object.fromEntries(
-    vivants.map((j, i) => [j.discordId, knownEnqueteTargets(indicesByPlayer[i])]),
-  );
+  return {
+    knownTargetsByInvestigator: Object.fromEntries(
+      vivants.map((j, i) => [j.discordId, knownEnqueteTargets(indicesByPlayer[i])]),
+    ),
+    revealsVeille: Object.fromEntries(
+      vivants.map((j, i) => [
+        j.discordId,
+        revealedTargetsForDay(indicesByPlayer[i], jour - 1),
+      ]),
+    ),
+  };
 }
 
 async function loadCloture(jour, config) {
@@ -1214,9 +1250,8 @@ async function loadCloture(jour, config) {
     readActions(jour),
     readState(),
   ]);
-  const knownTargetsByInvestigator = await loadKnownTargetsByInvestigator(
-    state.joueurs,
-  );
+  const { knownTargetsByInvestigator, revealsVeille } =
+    await loadIndicesContext(state.joueurs, jour);
   const veille = jour > 1 ? await getHistoriqueEntry(jour - 1) : null;
   return computeCloture({
     jour,
@@ -1227,6 +1262,7 @@ async function loadCloture(jour, config) {
     knownTargetsByInvestigator,
     immuneId: state.immuneId ?? null,
     absentsVeille: veille?.absents ?? [],
+    revealsVeille,
   });
 }
 
