@@ -20,6 +20,8 @@
   "taverne_seuil_protection": 3,
   "tour_de_guet_seuil_ratio": 0.5,
   "vote_quorum_min": 2,
+  "absences_avant_remplacement": 2,
+  "bots_remplacants": ["Kévina", "Georgette"],
   "camps": {
     "chasseur": {
       "label": "Villageois",

@@ -233,11 +233,19 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
     if (closure.absents?.length) {
       const noms = closure.absents
         .map(
-          (id) => joueursApres.find((p) => p.discordId === id)?.username || "?",
+          (id) => {
+            const p = joueursApres.find((x) => x.discordId === id);
+            return p?.usernameOrigine || p?.username || "?";
+          },
         )
         .map((nom) => `**${nom}**`);
       lines.push(
         `💤 N'a pas joué (pion placé au Château) : ${noms.join(", ")}`,
+      );
+    }
+    for (const r of closure.remplacements || []) {
+      lines.push(
+        `🔄 ${r.ancienUsername} a quitté le village, **${r.nouveauUsername}** reprend sa place.`,
       );
     }
 
@@ -318,6 +326,12 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
 // qui désactivait carrément les boutons — trop restrictif, seule l'ACTION
 // doit être nulle, pas le déplacement lui-même.
 const LIEUX_SANS_CIBLE_JOUR1 = new Set(["chateau", "camp_entrainement"]);
+
+// Joueur humain dont la place a été reprise par un bot (voir
+// computeBotActions) : plus aucune action, ni Journal, ni Messagerie.
+function messageRemplace(joueur) {
+  return `🔄 Ta place a été reprise par **${joueur.username}** après plusieurs jours d'absence — tu ne participes plus à cette partie.`;
+}
 
 function buildLieuButtonsRow(jour, config, slot) {
   return {
@@ -496,6 +510,7 @@ function buildReglesEmbed(config) {
       : `❤️ Villageois : ${config.combat.pv_base} PV — Gobelins : ${pvGobelin} PV. Au plus 1 mort au combat par jour.`,
     "🛡️ Chaque jour, un joueur tiré au hasard est immunisé : impossible de l'éliminer, au vote comme au combat.",
     "☀️ Jour 1 : personne ne peut mourir.",
+    `💤 Absent ${config.absences_avant_remplacement ?? 2} jours de suite ? Un bot reprend ta place.`,
     `🏆 Les Gobelins gagnent s'ils sont aussi nombreux que les Villageois. Les Villageois gagnent s'ils éliminent tous les Gobelins, ou à la fin du Jour ${config.duree_jours}.`,
     "",
     "**Rôles spéciaux** (1 exemplaire de chacun) :",
@@ -842,7 +857,14 @@ export async function postGoblinHunters(
   const jourSuivant = jourClos + 1;
 
   if (!dryRun) {
-    if (closure.eliminationsParVote) {
+    // Bots de remplacement : aucun DM (le discordId est celui de l'ancien
+    // joueur humain, qui ne doit plus rien recevoir).
+    const estBot = (id) =>
+      closure.joueursApres.some((j) => j.discordId === id && j.bot);
+    if (
+      closure.eliminationsParVote &&
+      !estBot(closure.eliminationsParVote)
+    ) {
       await sendEliminationDM(
         closure.eliminationsParVote,
         "vote",
@@ -851,7 +873,7 @@ export async function postGoblinHunters(
         config,
       );
     }
-    if (closure.deathIdCombat) {
+    if (closure.deathIdCombat && !estBot(closure.deathIdCombat)) {
       await sendEliminationDM(
         closure.deathIdCombat,
         "combat",
@@ -861,11 +883,13 @@ export async function postGoblinHunters(
       );
     }
     for (const investigation of closure.investigations) {
+      if (estBot(investigation.investigatorId)) continue;
       await sendInvestigationDM(investigation, closure.joueursApres, config);
     }
     for (const [discordId, reveals] of Object.entries(
       closure.clairiereReveals || {},
     )) {
+      if (estBot(discordId)) continue;
       await sendClairiereDM(discordId, reveals, config);
     }
   }
@@ -1132,6 +1156,14 @@ export async function handleLieuButton(
     }
 
     const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    if (joueur?.bot) {
+      await patchOriginal(webhookUrl, {
+        content: messageRemplace(joueur),
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
     if (!joueur || !joueur.alive) {
       await patchOriginal(webhookUrl, {
         content: "Tu ne participes pas (ou plus) à cette partie.",
@@ -1438,6 +1470,14 @@ export async function handleJournal(webhookUrl, discordId) {
       return;
     }
     const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    if (joueur?.bot) {
+      await patchOriginal(webhookUrl, {
+        content: messageRemplace(joueur),
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
     if (!joueur) {
       await patchOriginal(webhookUrl, {
         content: "Tu ne participes pas à cette partie.",
@@ -1606,7 +1646,8 @@ export async function handleMessagerie(webhookUrl, discordId) {
       });
       return;
     }
-    const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    const found = state.joueurs.find((j) => j.discordId === discordId);
+    const joueur = found?.bot ? null : found;
     const alive = joueur?.alive === true;
     const alreadySent = alive
       ? await hasSentMessageToday(state.jour, discordId)
@@ -1649,7 +1690,7 @@ export async function handleMessagerieSubmit(
       state?.phase === "jeu"
         ? state.joueurs.find((j) => j.discordId === discordId)
         : null;
-    if (!joueur?.alive) {
+    if (!joueur?.alive || joueur.bot) {
       await patchOriginal(webhookUrl, {
         content: "Tu ne peux pas envoyer de message pour le moment.",
         embeds: [],

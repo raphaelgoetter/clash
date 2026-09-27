@@ -895,6 +895,37 @@ export function checkVictory(joueursApres, jourCourant, dureeJours) {
   return null;
 }
 
+// ── Bots de remplacement (joueurs absents trop longtemps) ───────────
+// Un joueur vivant absent `absences_avant_remplacement` jours de suite est
+// repris par un bot (`bots_remplacants` dans goblinhunters.json) : même
+// discordId/camp/rôle/PV, seul le pseudo change — les comptes par camp ne
+// bougent pas, rien n'est révélé. Le bot joue un comportement neutre (il
+// ignore son camp) : au Château, il ajoute sa voix au meneur du vote s'il y
+// a une majorité claire (meneur unique, quorum déjà atteint sans lui — il ne
+// permet jamais à un vote isolé d'éliminer ni ne départage une égalité) ;
+// le lendemain (anti-camping), il va à la Clairière, sans effet sur autrui.
+export function computeBotActions(actionsRaw, joueursAvant, jour, config, immuneId = null) {
+  const botActions = {};
+  for (const j of joueursAvant) {
+    if (!j.alive || !j.bot) continue;
+    if (jour > 1 && isLieuRepeatAllowed(j.position, "chateau", jour)) {
+      const tally = computeVoteTally(actionsRaw);
+      delete tally[j.discordId];
+      if (immuneId) delete tally[immuneId];
+      const entries = Object.entries(tally);
+      const total = entries.reduce((sum, [, c]) => sum + c, 0);
+      const max = entries.length ? Math.max(...entries.map(([, c]) => c)) : 0;
+      const top = entries.filter(([, c]) => c === max);
+      const cibleId =
+        total >= config.vote_quorum_min && top.length === 1 ? top[0][0] : null;
+      botActions[j.discordId] = { primary: { lieu: "chateau", cibleId } };
+    } else {
+      botActions[j.discordId] = { primary: { lieu: "clairiere_mystique", cibleId: null } };
+    }
+  }
+  return botActions;
+}
+
 // ── Orchestrateur pur — cœur de la clôture (aucun I/O) ──────────────
 // Jour 1 : aucune élimination possible (ni vote ni combat), garde-fou
 // décidé avec l'utilisateur — seules positions et enquêtes sont calculées.
@@ -910,7 +941,15 @@ export function computeCloture({
   rng = Math.random,
   knownTargetsByInvestigator = {},
   immuneId = null,
+  absentsVeille = [],
 }) {
+  // Actions des bots de remplacement, calculées sur les actions humaines
+  // (écrasent toute action résiduelle de l'ancien joueur humain).
+  actionsRaw = {
+    ...actionsRaw,
+    ...computeBotActions(actionsRaw, joueursAvant, jour, config, immuneId),
+  };
+
   // Immunité du jour (tirée à la clôture précédente, annoncée publiquement) :
   // les voix contre le joueur immunisé ne comptent pas, et il est protégé de
   // toute attaque (comme la Taverne) et de la riposte de l'Explosif.
@@ -986,6 +1025,34 @@ export function computeCloture({
       );
   const newPositions = computeNewPositions(actionsRaw, joueursApresVote);
 
+  // Joueurs vivants n'ayant soumis aucune action ce jour (replacés d'office
+  // au Château par computeNewPositions) — affichés publiquement dans le
+  // bilan pour expliquer les pions "fantômes" du Château. Une action
+  // Arène/Tour en attente de cible (pending) compte comme jouée.
+  const absents = joueursAvant
+    .filter((j) => j.alive && !actionsRaw[j.discordId]?.primary)
+    .map((j) => j.discordId);
+
+  // Absences consécutives -> remplacement par un bot. `absentsVeille`
+  // (historique de la veille) amorce le compteur des parties lancées avant
+  // son introduction.
+  const seuilAbsences = config.absences_avant_remplacement ?? 2;
+  const botsUtilises = new Set(joueursAvant.filter((j) => j.bot).map((j) => j.bot));
+  const remplacements = [];
+  const suiviAbsences = (j) => {
+    if (j.bot) return {};
+    const precedent =
+      j.absencesConsecutives ?? (absentsVeille.includes(j.discordId) ? 1 : 0);
+    const absencesConsecutives = absents.includes(j.discordId) ? precedent + 1 : 0;
+    if (absencesConsecutives < seuilAbsences) return { absencesConsecutives };
+    const bot = (config.bots_remplacants ?? []).find((b) => !botsUtilises.has(b));
+    if (!bot) return { absencesConsecutives };
+    botsUtilises.add(bot);
+    const username = `${bot} (bot)`;
+    remplacements.push({ discordId: j.discordId, ancienUsername: j.username, nouveauUsername: username });
+    return { absencesConsecutives, bot, usernameOrigine: j.username, username };
+  };
+
   const joueursApres = joueursApresVote.map((j) => {
     if (!j.alive) return j;
     let pv = pvApres[j.discordId] ?? j.pv;
@@ -999,6 +1066,7 @@ export function computeCloture({
       alive: !meurt,
       campReveleAt: meurt ? jour : j.campReveleAt,
       position: newPositions[j.discordId] ?? j.position,
+      ...(meurt ? {} : suiviAbsences(j)),
     };
   });
 
@@ -1022,17 +1090,10 @@ export function computeCloture({
       ? vivantsApres[Math.floor(rng() * vivantsApres.length)].discordId
       : null;
 
-  // Joueurs vivants n'ayant soumis aucune action ce jour (replacés d'office
-  // au Château par computeNewPositions) — affichés publiquement dans le
-  // bilan pour expliquer les pions "fantômes" du Château. Une action
-  // Arène/Tour en attente de cible (pending) compte comme jouée.
-  const absents = joueursAvant
-    .filter((j) => j.alive && !actionsRaw[j.discordId]?.primary)
-    .map((j) => j.discordId);
-
   return {
     joueursApres,
     absents,
+    remplacements,
     immuneId,
     immuneIdSuivant,
     eliminationsParVote,
@@ -1121,6 +1182,7 @@ async function loadCloture(jour, config) {
   const knownTargetsByInvestigator = await loadKnownTargetsByInvestigator(
     state.joueurs,
   );
+  const veille = jour > 1 ? await getHistoriqueEntry(jour - 1) : null;
   return computeCloture({
     jour,
     actionsRaw,
@@ -1129,6 +1191,7 @@ async function loadCloture(jour, config) {
     rng: Math.random,
     knownTargetsByInvestigator,
     immuneId: state.immuneId ?? null,
+    absentsVeille: veille?.absents ?? [],
   });
 }
 
@@ -1166,6 +1229,7 @@ export async function closeDayAndAdvance(jour, config) {
     guetApensReveal: result.guetApensReveal,
     tourDeGuetSurpeuplee: result.tourDeGuetSurpeuplee,
     absents: result.absents,
+    remplacements: result.remplacements,
     immuneId: result.immuneId,
     victory: result.victory,
     resolvedAt: new Date().toISOString(),

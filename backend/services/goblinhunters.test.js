@@ -13,6 +13,7 @@ import {
   computeNewPositions,
   checkVictory,
   computeCloture,
+  computeBotActions,
   isLieuRepeatAllowed,
   isActionLocked,
   computeIndicesForDay,
@@ -340,6 +341,48 @@ async function main() {
       resolveExplosifRetaliation({ eliminationsParVote: "boom", deathIdCombat: null, actionsRaw, attacks: [], joueursAvant, immuneId: "v1" }),
       null,
     );
+  }
+
+  // ── Bots de remplacement ──
+  {
+    const cfg = { ...CONFIG, absences_avant_remplacement: 2, bots_remplacants: ["Kévina", "Georgette"] };
+    // Majorité claire (quorum atteint sans lui) -> le bot suit le meneur
+    const joueurs = [joueur("bot", { bot: "Kévina", position: "clairiere_mystique" }), joueur("a"), joueur("b"), joueur("c"), joueur("x"), joueur("y")];
+    const votes = {
+      a: { primary: { lieu: "chateau", cibleId: "x" } },
+      b: { primary: { lieu: "chateau", cibleId: "x" } },
+      c: { primary: { lieu: "chateau", cibleId: "y" } },
+    };
+    assert.deepStrictEqual(computeBotActions(votes, joueurs, 3, cfg).bot, { primary: { lieu: "chateau", cibleId: "x" } });
+    // Égalité -> pas de voix
+    const egalite = { a: votes.a, c: votes.c };
+    assert.strictEqual(computeBotActions(egalite, joueurs, 3, cfg).bot.primary.cibleId, null);
+    // Vote isolé (sous le quorum) -> pas de voix
+    assert.strictEqual(computeBotActions({ a: votes.a }, joueurs, 3, cfg).bot.primary.cibleId, null);
+    // Au Château la veille (anti-camping) -> Clairière
+    const auChateau = joueurs.map((j) => (j.discordId === "bot" ? { ...j, position: "chateau" } : j));
+    assert.strictEqual(computeBotActions(votes, auChateau, 3, cfg).bot.primary.lieu, "clairiere_mystique");
+  }
+  {
+    const cfg = { ...CONFIG, absences_avant_remplacement: 2, bots_remplacants: ["Kévina", "Georgette"] };
+    const joueursAvant = [joueur("abs"), joueur("actif"), joueur("g", { camp: "gobelin" })];
+    const actionsRaw = { actif: { primary: { lieu: "taverne" } }, g: { primary: { lieu: "taverne" } } };
+    // 2e absence consécutive (amorcée par l'historique de la veille) -> remplacé
+    const r = computeCloture({ jour: 3, actionsRaw, joueursAvant, config: cfg, absentsVeille: ["abs"] });
+    const abs = r.joueursApres.find((j) => j.discordId === "abs");
+    assert.strictEqual(abs.bot, "Kévina");
+    assert.strictEqual(abs.username, "Kévina (bot)");
+    assert.strictEqual(abs.camp, "chasseur");
+    assert.deepStrictEqual(r.remplacements, [{ discordId: "abs", ancienUsername: "abs", nouveauUsername: "Kévina (bot)" }]);
+    assert.strictEqual(r.joueursApres.find((j) => j.discordId === "actif").absencesConsecutives, 0);
+    // 1re absence seulement -> pas remplacé
+    const r1 = computeCloture({ jour: 3, actionsRaw, joueursAvant, config: cfg });
+    assert.strictEqual(r1.joueursApres.find((j) => j.discordId === "abs").bot, undefined);
+    assert.strictEqual(r1.joueursApres.find((j) => j.discordId === "abs").absencesConsecutives, 1);
+    // Plus de bot disponible -> reste absent
+    const pris = [...joueursAvant, joueur("b1", { bot: "Kévina" }), joueur("b2", { bot: "Georgette" })];
+    const r2 = computeCloture({ jour: 3, actionsRaw, joueursAvant: pris, config: cfg, absentsVeille: ["abs"] });
+    assert.strictEqual(r2.joueursApres.find((j) => j.discordId === "abs").bot, undefined);
   }
 
   // ── absents : vivants sans action ce jour (pending = joué, morts ignorés) ──
