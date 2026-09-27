@@ -612,7 +612,7 @@
     "sound": "golden-knight.mp3",
     "elixir": 4,
     "hp": 1799,
-    "damage": 161,
+    "damage": 168,
     "range": {
       "kind": "melee",
       "category": "medium",
@@ -779,7 +779,7 @@
     "sound": "lava-hound.mp3",
     "elixir": 7,
     "hp": 3581,
-    "damage": 53,
+    "damage": 61,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -1365,7 +1365,7 @@
     "sound": "wall-breakers.mp3",
     "elixir": 2,
     "hp": 330,
-    "damage": 350,
+    "damage": 302,
     "range": {
       "kind": "melee",
       "category": "short",
