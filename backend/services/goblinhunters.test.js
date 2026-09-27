@@ -385,6 +385,39 @@ async function main() {
     assert.strictEqual(r2.joueursApres.find((j) => j.discordId === "abs").bot, undefined);
   }
 
+  // ── Gobelin-zombie : le Villageois qu'il achève est converti (une fois) ──
+  {
+    const cfg = { ...CONFIG, combat: { pv_base: 2, degats_base: 1, degats_gobelin: 2, gobelin_pv_bonus: 0 } };
+    const joueursAvant = [
+      joueur("zombie", { camp: "gobelin", role: "zombie", pv: 2, pvMax: 2 }),
+      joueur("g2", { camp: "gobelin", pv: 2, pvMax: 2 }),
+      joueur("victime", { role: "guet_apens", pv: 2, pvMax: 2, position: "camp_entrainement" }),
+      joueur("v2", { pv: 2, pvMax: 2 }),
+      joueur("v3", { pv: 2, pvMax: 2 }),
+    ];
+    const actionsRaw = { zombie: { primary: { lieu: "camp_entrainement", cibleId: "victime" } } };
+    const r = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: cfg });
+    const v = r.joueursApres.find((j) => j.discordId === "victime");
+    assert.strictEqual(r.conversionId, "victime");
+    assert.strictEqual(r.deathIdCombat, null);
+    assert.strictEqual(r.guetApensReveal, null); // pas de mort -> pas de piège
+    assert.deepStrictEqual([v.alive, v.camp, v.role, v.pv, v.converti], [true, "gobelin", null, 2, 2]);
+    // Deuxième fois dans la partie -> mort normale
+    const deja = joueursAvant.map((j) => (j.discordId === "g2" ? { ...j, converti: 1 } : j));
+    const r2 = computeCloture({ jour: 2, actionsRaw, joueursAvant: deja, config: cfg });
+    assert.strictEqual(r2.conversionId, null);
+    assert.strictEqual(r2.deathIdCombat, "victime");
+    // Achevé par un autre Gobelin -> mort normale
+    const autre = { g2: { primary: { lieu: "camp_entrainement", cibleId: "victime" } } };
+    assert.strictEqual(computeCloture({ jour: 2, actionsRaw: autre, joueursAvant, config: cfg }).deathIdCombat, "victime");
+  }
+  // assignCampsAndRoles : 3 rôles Gobelins dont le Zombie
+  {
+    const ids = Array.from({ length: 15 }, (_, i) => `p${i}`);
+    const roles = assignCampsAndRoles(ids, 6).filter((a) => a.camp === "gobelin").map((a) => a.role);
+    assert.ok(roles.includes("zombie") && roles.includes("explosif") && roles.includes("infiltre"));
+  }
+
   // ── absents : vivants sans action ce jour (pending = joué, morts ignorés) ──
   {
     const joueursAvant = [

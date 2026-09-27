@@ -9786,6 +9786,29 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── Goblin Hunters : confirmation du lieu (édite le message éphémère en place) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("goblinhunters_lieuok:")
+  ) {
+    const [, jour, lieu, slot] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGoblinHuntersLieu(webhookUrl, jour, lieu, slot, discordId, username, true));
+    return;
+  }
+  if (body.type === 3 && body.data?.custom_id === "goblinhunters_lieuko") {
+    res.status(200).json({
+      type: 7,
+      data: { content: "Choix annulé — clique sur un autre lieu dans le message du jour.", components: [] },
+    });
+    return;
+  }
+
   // ── Goblin Hunters : bouton "Choisir ma 2ᵉ action" (Éclaireur uniquement) ──
   if (
     body.type === 3 &&

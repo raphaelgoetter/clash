@@ -196,7 +196,13 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
       : null;
     if (voteLine) lines.push(`⚖️ Accusé(e) par le village : ${voteLine}`);
     if (combatLine) lines.push(`⚔️ Tombé(e) au combat : ${combatLine}`);
-    if (!voteLine && !combatLine) lines.push("🕊️ Personne n'a été éliminé.");
+    if (closure.conversionId) {
+      lines.push(
+        "🧟 Hier, un villageois a été tué et converti en Gobelin par le zombie !",
+      );
+    } else if (!voteLine && !combatLine) {
+      lines.push("🕊️ Personne n'a été éliminé.");
+    }
 
     // Guet-Apens/Explosif : effets déclenchés à la mort d'un rôle spécial,
     // annoncés publiquement au même titre que le reveal de camp habituel
@@ -480,12 +486,16 @@ function roleDescription(roleKey, config) {
       return 'l\'enquête menée sur toi à la Tour de Guet renvoie toujours "Villageois".';
     case "explosif":
       return `si tu meurs (vote ou combat), tu infliges automatiquement ${r.degats_riposte} dégât à un Villageois avant de partir — jamais mortel.`;
+    case "zombie":
+      return "le premier Villageois que tu achèves à l'Arène ne meurt pas : il devient Gobelin et perd son rôle (une seule fois par partie).";
     default:
       return "";
   }
 }
 
-function buildReglesEmbed(config) {
+// `rolesEnJeu` (optionnel) : rôles attribués dans la partie en cours —
+// évite d'afficher un rôle ajouté à la config après le lancement.
+function buildReglesEmbed(config, rolesEnJeu = null) {
   const l = config.lieux;
   const lieu = (key) => `${l[key].emoji} **${l[key].numero}. ${l[key].label}**`;
   const pvGobelin =
@@ -512,7 +522,9 @@ function buildReglesEmbed(config) {
     `🏆 Les Gobelins gagnent s'ils sont aussi nombreux que les Villageois. Les Villageois gagnent s'ils éliminent tous les Gobelins, ou à la fin du Jour ${config.duree_jours}.`,
     "",
     "**Rôles spéciaux** (1 exemplaire de chacun) :",
-    ...Object.keys(config.roles).map(
+    ...Object.keys(config.roles)
+      .filter((roleKey) => !rolesEnJeu || rolesEnJeu.has(roleKey))
+      .map(
       (roleKey) =>
         `${config.roles[roleKey].emoji} **${config.roles[roleKey].label}** (camp ${config.camps[config.roles[roleKey].camp].label}) — ${roleDescription(roleKey, config)}`,
     ),
@@ -528,6 +540,32 @@ function buildReglesEmbed(config) {
 }
 
 // ── DM (fetch direct API REST Discord, comme zoom.js/lajustecarte.js) ──
+
+// Gobelin-zombie : le converti apprend son nouveau camp et ses coéquipiers,
+// les autres Gobelins apprennent qui les rejoint.
+async function sendConversionDMs(convertiId, joueursApres, estBot) {
+  const converti = joueursApres.find((j) => j.discordId === convertiId);
+  if (!converti) return;
+  if (!estBot(convertiId)) {
+    await sendGoblinHuntersDM(convertiId, {
+      title: "🧟 Goblin Hunters — tu as été converti(e) !",
+      description: [
+        "Le Gobelin-zombie t'a achevé(e) à l'Arène… mais tu ne meurs pas : **tu es désormais un Gobelin** 👺.",
+        "Tu perds ton ancien rôle. Tu gagnes désormais avec les Gobelins.",
+        otherGobelinsLine(converti, joueursApres),
+      ].join("\n"),
+      color: GOBLINHUNTERS_COLOR,
+    });
+  }
+  for (const g of joueursApres) {
+    if (!g.alive || g.camp !== "gobelin" || g.discordId === convertiId || estBot(g.discordId)) continue;
+    await sendGoblinHuntersDM(g.discordId, {
+      title: "🧟 Goblin Hunters — un nouveau Gobelin",
+      description: `**${converti.username}** a été converti(e) par le zombie et rejoint votre camp.`,
+      color: GOBLINHUNTERS_COLOR,
+    });
+  }
+}
 
 async function sendGoblinHuntersDM(discordId, embed) {
   const token = process.env.DISCORD_TOKEN;
@@ -877,6 +915,9 @@ export async function postGoblinHunters(
         config,
       );
     }
+    if (closure.conversionId) {
+      await sendConversionDMs(closure.conversionId, closure.joueursApres, estBot);
+    }
     for (const investigation of closure.investigations) {
       if (estBot(investigation.investigatorId)) continue;
       await sendInvestigationDM(investigation, closure.joueursApres, config);
@@ -1130,6 +1171,7 @@ export async function handleLieuButton(
   slot,
   discordId,
   username,
+  confirme = false,
 ) {
   try {
     const state = await readState();
@@ -1201,6 +1243,38 @@ export async function handleLieuButton(
         content: `🚫 Tu as déjà choisi ${config.lieux[lieu].label} pour ta 1ère action — ta 2ᵉ action doit viser un lieu différent.`,
         embeds: [],
         components: [],
+      });
+      return;
+    }
+
+    // Étape de confirmation (anti-missclick) : rien n'est enregistré ni
+    // affiché (noms des cibles compris) avant [✅ Confirmer]. Un lieu déjà
+    // engagé en attente de cible (pending) est rouvert directement.
+    if (!confirme && !existingAction?.[slot]?.pending) {
+      await patchOriginal(webhookUrl, {
+        content: `Tu as choisi ${config.lieux[lieu].emoji} **${config.lieux[lieu].numero}. ${config.lieux[lieu].label}**. Ce choix sera **définitif** pour aujourd'hui.`,
+        embeds: [],
+        components: [
+          {
+            type: 1,
+            components: [
+              {
+                type: 2,
+                style: 3,
+                label: "Confirmer",
+                emoji: { name: "✅" },
+                custom_id: `goblinhunters_lieuok:${jour}:${lieu}:${slot}`,
+              },
+              {
+                type: 2,
+                style: 2,
+                label: "Annuler",
+                emoji: { name: "✖️" },
+                custom_id: "goblinhunters_lieuko",
+              },
+            ],
+          },
+        ],
       });
       return;
     }
@@ -1551,7 +1625,16 @@ export async function handleJournal(webhookUrl, discordId) {
 export async function handleRegles(webhookUrl) {
   try {
     const config = await loadGoblinHuntersConfig();
-    const embed = buildReglesEmbed(config);
+    const state = await readState();
+    // Rôles tels qu'attribués au lancement : `roleOrigine` pour un converti
+    // (sinon la disparition de son rôle trahirait la conversion).
+    const rolesEnJeu =
+      state?.phase === "jeu" && state.joueurs?.length
+        ? new Set(
+            state.joueurs.map((j) => j.roleOrigine ?? j.role).filter(Boolean),
+          )
+        : null;
+    const embed = buildReglesEmbed(config, rolesEnJeu);
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
     console.error("[GoblinHunters] Échec Règles:", err.message);

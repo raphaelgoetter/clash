@@ -233,6 +233,8 @@ export function assignCampsAndRoles(
     assignments.get(gobelinsShuffled[0]).role = "infiltre";
   if (gobelinsShuffled[1])
     assignments.get(gobelinsShuffled[1]).role = "explosif";
+  if (gobelinsShuffled[2])
+    assignments.get(gobelinsShuffled[2]).role = "zombie";
 
   const chasseursShuffled = shuffle(chasseurs, rng);
   if (chasseursShuffled[0])
@@ -965,6 +967,7 @@ export function computeCloture({
   );
 
   let deathIdCombat = null;
+  let conversionId = null;
   let attacks = [];
   let pvApres = Object.fromEntries(
     joueursApresVote.filter((j) => j.alive).map((j) => [j.discordId, j.pv]),
@@ -990,6 +993,22 @@ export function computeCloture({
     const combatResult = resolveCombat(pvBefore, damagePerTarget, rng);
     pvApres = combatResult.pvAfter;
     deathIdCombat = combatResult.deathId;
+
+    // Gobelin-zombie (une seule conversion par partie) : un Villageois achevé
+    // au combat par le Zombie ne meurt pas, il devient Gobelin — sans rôle
+    // (Bûcheron/Éclaireur/Guet-Apens perdent leur pouvoir), PV remis au max
+    // d'un Gobelin. Remplace la mort du jour : pas de reveal Guet-Apens.
+    const zombie = joueursApresVote.find((j) => j.alive && j.role === "zombie");
+    const victime = joueursApresVote.find((j) => j.discordId === deathIdCombat);
+    if (
+      zombie &&
+      victime?.camp === "chasseur" &&
+      !joueursAvant.some((j) => j.converti) &&
+      attacks.some((a) => a.attackerId === zombie.discordId && a.targetId === deathIdCombat)
+    ) {
+      conversionId = deathIdCombat;
+      deathIdCombat = null;
+    }
   }
 
   const explosifRetaliation =
@@ -1053,8 +1072,23 @@ export function computeCloture({
     return { absencesConsecutives, bot, usernameOrigine: j.username, username };
   };
 
+  const pvMaxGobelin =
+    config.combat.pv_base + (config.combat.gobelin_pv_bonus ?? 0);
   const joueursApres = joueursApresVote.map((j) => {
     if (!j.alive) return j;
+    if (j.discordId === conversionId) {
+      return {
+        ...j,
+        camp: "gobelin",
+        role: null,
+        roleOrigine: j.role,
+        pv: pvMaxGobelin,
+        pvMax: pvMaxGobelin,
+        converti: jour,
+        position: newPositions[j.discordId] ?? j.position,
+        ...suiviAbsences(j),
+      };
+    }
     let pv = pvApres[j.discordId] ?? j.pv;
     if (explosifRetaliation?.targetId === j.discordId) {
       pv = Math.max(pv - config.roles.explosif.degats_riposte, 1);
@@ -1094,6 +1128,7 @@ export function computeCloture({
     joueursApres,
     absents,
     remplacements,
+    conversionId,
     immuneId,
     immuneIdSuivant,
     eliminationsParVote,
@@ -1230,6 +1265,7 @@ export async function closeDayAndAdvance(jour, config) {
     tourDeGuetSurpeuplee: result.tourDeGuetSurpeuplee,
     absents: result.absents,
     remplacements: result.remplacements,
+    conversionId: result.conversionId,
     immuneId: result.immuneId,
     victory: result.victory,
     resolvedAt: new Date().toISOString(),

@@ -74,6 +74,7 @@
       "label": "Gobelin explosif",
       "emoji": "💣",
       "degats_riposte": 1
-    }
+    },
+    "zombie": { "camp": "gobelin", "label": "Gobelin-zombie", "emoji": "🧟" }
   }
 }
