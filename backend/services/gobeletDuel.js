@@ -468,6 +468,9 @@ async function resolveManche(state, hands) {
   const newState = {
     ...state,
     manche: outcome.mancheSuivante,
+    // Conservé pour réafficher le bilan de la manche précédente à chaque
+    // rafraîchissement du message public (pas seulement à la résolution).
+    lastResults: outcome.results,
     lastActivityAt: new Date().toISOString(),
   };
   await writeState(newState);

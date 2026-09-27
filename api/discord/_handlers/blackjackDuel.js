@@ -180,7 +180,16 @@ async function buildPendingLabel(state, hands) {
   return lines.join("\n");
 }
 
-async function buildTableEmbed(state, { previousResults, previousDealer } = {}) {
+// Sans bilan explicite (rafraîchissement après un clic Jouer, Piocher…), le
+// bilan est relu depuis la dernière manche de l'historique : il reste
+// affiché pendant toute la manche suivante au lieu de disparaître au 1ᵉʳ clic.
+async function buildTableEmbed(
+  state,
+  {
+    previousResults = state.history?.at(-1)?.results,
+    previousDealer = state.history?.at(-1)?.dealer,
+  } = {},
+) {
   const hands = await listHands(state.manche);
   const lines = [];
   const isSolo = state.maxPlayers === 1;

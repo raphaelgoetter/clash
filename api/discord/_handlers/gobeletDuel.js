@@ -183,7 +183,13 @@ async function buildPendingLabel(state, hands) {
   return lines.join("\n");
 }
 
-async function buildTableEmbed(state, { previousResults } = {}) {
+// Sans `previousResults` explicite (rafraîchissement après un clic Jouer,
+// Relancer…), le bilan est relu depuis l'état : il reste affiché pendant
+// toute la manche suivante au lieu de disparaître au premier clic.
+async function buildTableEmbed(
+  state,
+  { previousResults = state.lastResults } = {},
+) {
   const hands = await listHands(state.manche);
   const lines = [];
 
