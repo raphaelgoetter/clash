@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, isMancheReady, computeMancheOutcome, buildRanking } from "./gobeletDuel.js";
+import { applyJoin, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking } from "./gobeletDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -68,6 +68,13 @@ async function main() {
     const state = baseState({ maxPlayers: 1, players: ["a"] });
     assert.strictEqual(isMancheReady(state, { a: { status: "termine" } }), true);
   }
+
+  // ── isNewHighScore — record strictement battu, jamais un score nul ──
+  assert.strictEqual(isNewHighScore(null, 120), true);
+  assert.strictEqual(isNewHighScore(null, 0), false);
+  assert.strictEqual(isNewHighScore({ points: 185 }, 125), false);
+  assert.strictEqual(isNewHighScore({ points: 185 }, 185), false); // égalité : le détenteur garde le record
+  assert.strictEqual(isNewHighScore({ points: 185 }, 190), true);
 
   // ── computeMancheOutcome — manche intermédiaire : pas de classement final ──
   // Le score gagné est directement les points de la catégorie retenue (pas

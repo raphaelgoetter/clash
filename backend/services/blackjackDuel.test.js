@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, isMancheReady, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
+import { applyJoin, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -69,6 +69,13 @@ async function main() {
     const state = baseState({ maxPlayers: 1, players: ["a"] });
     assert.strictEqual(isMancheReady(state, { a: { status: "stand" } }), true);
   }
+
+  // ── isNewHighScore — record strictement battu, jamais un score nul ──
+  assert.strictEqual(isNewHighScore(null, 120), true);
+  assert.strictEqual(isNewHighScore(null, 0), false);
+  assert.strictEqual(isNewHighScore({ points: 185 }, 125), false);
+  assert.strictEqual(isNewHighScore({ points: 185 }, 185), false); // égalité : le détenteur garde le record
+  assert.strictEqual(isNewHighScore({ points: 185 }, 190), true);
 
   // ── computeMancheOutcome — solo (1 joueur), manche intermédiaire : pas de
   // classement final. Barème 2/1/0 (12/09) : une victoire rapporte 2 points,

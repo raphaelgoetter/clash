@@ -106,6 +106,10 @@ const STATE_KEY = "blackjackduel:state";
 const POINTS_KEY = "blackjackduel:points";
 const USERNAMES_KEY = "blackjackduel:usernames";
 const RESOLVING_KEY = "blackjackduel:resolving";
+// Meilleur score final de tous les temps, un record par format (5 ou 10
+// manches : des totaux non comparables). JAMAIS effacé par la remise à zéro
+// d'une partie.
+const HIGHSCORE_KEY = "blackjackduel:highscore";
 
 function handKey(manche) {
   return `blackjackduel:hand:${manche}`;
@@ -391,8 +395,10 @@ async function resolveManche(state, hands) {
   if (outcome.estFinDePartie) {
     const newState = { ...state, history, lastActivityAt: new Date().toISOString(), termine: true };
     await writeState(newState);
+    const highScore = await updateHighScore(state.totalManches, outcome.ranking);
     return {
       final: true,
+      highScore,
       dealer: state.dealer,
       results: outcome.results,
       ranking: outcome.ranking,
@@ -410,6 +416,25 @@ async function resolveManche(state, hands) {
   };
   await writeState(newState);
   return { final: false, dealer: state.dealer, results: outcome.results, state: newState };
+}
+
+// ── High score (record par format de partie) ─────────────────────────
+
+// Pure : strictement supérieur à l'ancien record (une égalité ne détrône
+// pas le détenteur), jamais un score nul.
+export function isNewHighScore(current, points) {
+  return points > 0 && (!current || points > current.points);
+}
+
+async function updateHighScore(totalManches, ranking) {
+  const field = String(totalManches);
+  const current = fromJson(await getRedis().hget(HIGHSCORE_KEY, field));
+  const top = ranking?.[0];
+  if (!top || !isNewHighScore(current, top.points)) return current;
+  const username = await getRedis().hget(USERNAMES_KEY, top.discordId);
+  const record = { discordId: top.discordId, username: username || null, points: top.points, at: new Date().toISOString() };
+  await getRedis().hset(HIGHSCORE_KEY, { [field]: toJson(record) });
+  return record;
 }
 
 // ── Watchdog anti-blocage ────────────────────────────────────────────

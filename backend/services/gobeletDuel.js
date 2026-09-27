@@ -106,6 +106,10 @@ const STATE_KEY = "gobeletduel:state";
 const POINTS_KEY = "gobeletduel:points";
 const USERNAMES_KEY = "gobeletduel:usernames";
 const RESOLVING_KEY = "gobeletduel:resolving";
+// Meilleur score final de tous les temps, un record par format (5 ou 10
+// manches : des totaux non comparables). JAMAIS effacé par la remise à zéro
+// d'une partie.
+const HIGHSCORE_KEY = "gobeletduel:highscore";
 const USED_KEY = "gobeletduel:used";
 
 function handKey(manche) {
@@ -457,8 +461,10 @@ async function resolveManche(state, hands) {
   if (outcome.estFinDePartie) {
     const newState = { ...state, lastActivityAt: new Date().toISOString(), termine: true };
     await writeState(newState);
+    const highScore = await updateHighScore(state.totalManches, outcome.ranking);
     return {
       final: true,
+      highScore,
       results: outcome.results,
       ranking: outcome.ranking,
       state: newState,
@@ -475,6 +481,25 @@ async function resolveManche(state, hands) {
   };
   await writeState(newState);
   return { final: false, results: outcome.results, state: newState };
+}
+
+// ── High score (record par format de partie) ─────────────────────────
+
+// Pure : strictement supérieur à l'ancien record (une égalité ne détrône
+// pas le détenteur), jamais un score nul.
+export function isNewHighScore(current, points) {
+  return points > 0 && (!current || points > current.points);
+}
+
+async function updateHighScore(totalManches, ranking) {
+  const field = String(totalManches);
+  const current = fromJson(await getRedis().hget(HIGHSCORE_KEY, field));
+  const top = ranking?.[0];
+  if (!top || !isNewHighScore(current, top.points)) return current;
+  const username = await getRedis().hget(USERNAMES_KEY, top.discordId);
+  const record = { discordId: top.discordId, username: username || null, points: top.points, at: new Date().toISOString() };
+  await getRedis().hset(HIGHSCORE_KEY, { [field]: toJson(record) });
+  return record;
 }
 
 // ── Watchdog anti-blocage ────────────────────────────────────────────

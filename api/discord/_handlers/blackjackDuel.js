@@ -298,7 +298,7 @@ async function buildMancheHistoryBlocks(history) {
   return blocks;
 }
 
-async function buildFinalEmbed(state, ranking) {
+async function buildFinalEmbed(state, ranking, highScore) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
       ...r,
@@ -315,10 +315,15 @@ async function buildFinalEmbed(state, ranking) {
     ...(resolvedRanking.length
       ? resolvedRanking.map(
           (r, i) =>
-            `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+            `${i + 1}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
         )
       : ["Personne n'a marqué de point."]),
   ];
+
+  if (highScore) {
+    const name = await resolveDisplayName(highScore.discordId, highScore.username);
+    lines.push("", `🏅 High score : ${name} (${highScore.points} pt${highScore.points > 1 ? "s" : ""})`);
+  }
 
   return {
     title: `🏁 Blackjack Duel — Partie terminée (${state.totalManches} manches)`,
@@ -481,7 +486,7 @@ async function refreshPublicMessage() {
   }
 
   if (outcome.final) {
-    const embed = await buildFinalEmbed(outcome.state, outcome.ranking);
+    const embed = await buildFinalEmbed(outcome.state, outcome.ranking, outcome.highScore);
     await patchPublicMessage(outcome.state, { embeds: [embed], components: [] });
     return;
   }

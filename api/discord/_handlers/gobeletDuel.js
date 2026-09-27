@@ -237,7 +237,7 @@ async function buildTableEmbed(
   };
 }
 
-async function buildFinalEmbed(state, results, ranking) {
+async function buildFinalEmbed(state, results, ranking, highScore) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
       ...r,
@@ -259,10 +259,15 @@ async function buildFinalEmbed(state, results, ranking) {
     ...(resolvedRanking.length
       ? resolvedRanking.map(
           (r, i) =>
-            `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+            `${i + 1}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
         )
       : ["Personne n'a marqué de point."]),
   ];
+
+  if (highScore) {
+    const name = await resolveDisplayName(highScore.discordId, highScore.username);
+    lines.push("", `🏅 High score : ${name} (${highScore.points} pt${highScore.points > 1 ? "s" : ""})`);
+  }
 
   return {
     title: `🏁 Gobelet Duel — Partie terminée (${state.totalManches} manches)`,
@@ -457,6 +462,7 @@ async function refreshPublicMessage() {
       outcome.state,
       outcome.results,
       outcome.ranking,
+      outcome.highScore,
     );
     await patchPublicMessage(outcome.state, {
       embeds: [embed],
