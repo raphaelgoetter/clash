@@ -212,8 +212,10 @@ export const COMBINATIONS = [
 
 export const NO_COMBINATION = "Aucune combinaison";
 
-// Joker (27/09, façon "Chance" du Yahtzee) : vaut la somme des 5 dés, une
-// seule fois par partie, et n'est retenu QUE si aucune autre combinaison
+// Joker (27/09, façon "Chance" du Yahtzee) : vaut la MOITIÉ de la somme
+// des 5 dés (arrondie à l'inférieur, 2 à 15 pts — la somme entière battait
+// la moitié des vraies combinaisons alors que c'est un lot de consolation),
+// une seule fois par partie, et n'est retenu QUE si aucune autre combinaison
 // n'est libre — sinon il serait consommé dès la 1ʳᵉ manche. Hors de
 // COMBINATIONS car sa valeur est variable. Jamais proposé par Valider
 // (option retenue : le bouton reste réservé aux vraies combinaisons, le
@@ -247,7 +249,7 @@ const CATEGORY_PRIORITY = [
 export function formatBaremeLines() {
   return [
     `🎲 ${NO_COMBINATION} (ou combinaison déjà réalisée) : 0 pt`,
-    `🃏 ${JOKER} (si aucune autre combinaison n'est libre, à la fin des 3 tirages) : somme des 5 dés`,
+    `🃏 ${JOKER} (si aucune autre combinaison n'est libre, à la fin des 3 tirages) : moitié de la somme des 5 dés`,
     ...COMBINATIONS.map(
       (c) =>
         `🎯 ${c.label}${c.description ? ` (${c.description})` : ""} : ${c.points} pts`,
@@ -307,7 +309,7 @@ export function computeBestCombination(dice, used = [], { allowJoker = true } = 
   );
   if (available.length === 0) {
     if (allowJoker && !usedSet.has(JOKER)) {
-      return { category: JOKER, points: dice.reduce((total, d) => total + d, 0) };
+      return { category: JOKER, points: Math.floor(dice.reduce((total, d) => total + d, 0) / 2) };
     }
     return { category: NO_COMBINATION, points: 0 };
   }

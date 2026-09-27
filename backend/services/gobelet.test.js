@@ -38,8 +38,9 @@ async function main() {
   // ── computeBestCombination — chaque catégorie du barème ──
   // "Aucune combinaison" vaut 0 pt depuis la règle d'unicité (26/09).
   assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], [], { allowJoker: false }), { category: "Aucune combinaison", points: 0 });
-  // Joker (27/09) : somme des dés, seulement si rien d'autre n'est libre.
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Joker", points: 17 });
+  // Joker (27/09) : moitié de la somme (arrondie à l'inférieur), seulement si
+  // rien d'autre n'est libre — somme 17 -> 8 pts.
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Joker", points: 8 });
   assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], ["Joker"]), { category: "Aucune combinaison", points: 0 });
   // Joker jamais préféré à une vraie combinaison libre, même moins payante.
   assert.deepStrictEqual(computeBestCombination([6, 6, 5, 4, 1]), { category: "Double quelconque", points: 10 });
@@ -94,7 +95,7 @@ async function main() {
       ["Pairs", 25],
       ["Brelan", 20],
       ["Double quelconque", 10],
-      ["Joker", 30],
+      ["Joker", 15],
       ["Aucune combinaison", 0],
     ];
     let used = [];
