@@ -11,7 +11,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } from "../backend/services/goblinhunters.js";
+import { loadGoblinHuntersConfig, readState, listInscriptions, readActions, readPlayerIndices, revealedTargetsForDay } from "../backend/services/goblinhunters.js";
 
 (async () => {
   const state = await readState();
@@ -35,6 +35,9 @@ import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } fro
     return;
   }
 
+  // Identifiant technique "camp_entrainement" affiché "arène" (plus lisible)
+  const nomLieu = (lieu) => (lieu === "camp_entrainement" ? "arène" : lieu);
+
   console.log(`⚠️  SORTIE ADMIN — révèle les camps/rôles, ne jamais partager avec les joueurs.\n`);
   console.log(`Jour ${state.jour}/${config.duree_jours}`);
   const immune = state.joueurs.find((j) => j.discordId === state.immuneId);
@@ -43,7 +46,7 @@ import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } fro
   for (const j of state.joueurs) {
     const camp = config.camps[j.camp];
     const roleLabel = j.role ? ` [${config.roles[j.role].label}]` : "";
-    const statut = j.alive ? `${j.pv}/${j.pvMax} PV @ ${j.position}` : `☠️ éliminé(e) (jour ${j.campReveleAt})`;
+    const statut = j.alive ? `${j.pv}/${j.pvMax} PV @ ${nomLieu(j.position)}` : `☠️ éliminé(e) (jour ${j.campReveleAt})`;
     console.log(`  ${camp.emoji} ${j.username}${roleLabel} — ${statut}`);
   }
 
@@ -53,7 +56,7 @@ import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } fro
   // Pseudo de la cible plutôt que son discordId brut (illisible)
   const usernameById = new Map(state.joueurs.map((j) => [j.discordId, j.username]));
   const formatAction = (action) =>
-    `${action.lieu}${
+    `${nomLieu(action.lieu)}${
       action.cibleId
         ? ` → ${usernameById.get(action.cibleId) || action.cibleId}`
         : action.pending
@@ -62,14 +65,24 @@ import { loadGoblinHuntersConfig, readState, listInscriptions, readActions } fro
             ? " (cible au hasard)"
             : ""
     }`;
+  // Joueurs repérés à la Clairière à la clôture précédente (ciblables à
+  // l'Arène aujourd'hui par ce joueur) — ceux d'aujourd'hui ne sont tirés
+  // qu'à la prochaine clôture.
+  const reperesDe = async (discordId) => {
+    const ids = [...revealedTargetsForDay(await readPlayerIndices(discordId), state.jour - 1)];
+    return ids.length
+      ? ` (${ids.map((id) => usernameById.get(id) || id).join(", ")})`
+      : "";
+  };
   for (const j of vivants) {
     const a = actions[j.discordId];
+    const reperes = await reperesDe(j.discordId);
     if (!a) {
-      console.log(`  ${j.username} : —`);
+      console.log(`  ${j.username} : —${reperes}`);
       continue;
     }
     const primary = a.primary ? formatAction(a.primary) : "—";
     const secondary = a.secondary ? ` + ${formatAction(a.secondary)}` : "";
-    console.log(`  ${j.username} : ${primary}${secondary}`);
+    console.log(`  ${j.username} : ${primary}${secondary}${reperes}`);
   }
 })();

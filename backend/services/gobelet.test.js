@@ -37,7 +37,14 @@ async function main() {
 
   // ── computeBestCombination — chaque catégorie du barème ──
   // "Aucune combinaison" vaut 0 pt depuis la règle d'unicité (26/09).
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Aucune combinaison", points: 0 });
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], [], { allowJoker: false }), { category: "Aucune combinaison", points: 0 });
+  // Joker (27/09) : somme des dés, seulement si rien d'autre n'est libre.
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Joker", points: 17 });
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], ["Joker"]), { category: "Aucune combinaison", points: 0 });
+  // Joker jamais préféré à une vraie combinaison libre, même moins payante.
+  assert.deepStrictEqual(computeBestCombination([6, 6, 5, 4, 1]), { category: "Double quelconque", points: 10 });
+  // Juste total (27/09) : somme exacte de 21 -> 25 pts (bat Brelan 20).
+  assert.deepStrictEqual(computeBestCombination([5, 5, 5, 4, 2]), { category: "Juste total", points: 25 });
   assert.deepStrictEqual(computeBestCombination([2, 2, 3, 4, 6]), { category: "Double quelconque", points: 10 });
   assert.deepStrictEqual(computeBestCombination([2, 2, 2, 3, 6]), { category: "Brelan", points: 20 });
   assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 25 });
@@ -87,6 +94,7 @@ async function main() {
       ["Pairs", 25],
       ["Brelan", 20],
       ["Double quelconque", 10],
+      ["Joker", 30],
       ["Aucune combinaison", 0],
     ];
     let used = [];
@@ -112,7 +120,7 @@ async function main() {
   {
     const points = COMBINATIONS.map((c) => c.points);
     assert.deepStrictEqual(points, [...points].sort((a, b) => a - b));
-    assert.strictEqual(formatBaremeLines().length, COMBINATIONS.length + 1);
+    assert.strictEqual(formatBaremeLines().length, COMBINATIONS.length + 2);
     assert.ok(formatBaremeLines().includes("🎯 Double quelconque (2 dés identiques) : 10 pts"));
   }
 

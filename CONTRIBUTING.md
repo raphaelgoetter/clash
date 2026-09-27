@@ -1821,9 +1821,11 @@ Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre da
 
 ### Barème — une combinaison différente par jour/manche (26/09)
 
-`computeBestCombination(dice, used)` liste toutes les catégories présentes dans les dés (`listMatchingCombinations()`), écarte celles que le joueur a **déjà réalisées** lors des jours/manches précédents de la partie (`used`), et retient la plus valorisée parmi celles qui restent. Égalité de points : `CATEGORY_PRIORITY` départage l'étiquette. S'il ne reste rien : "Aucune combinaison", **0 pt**. S'applique au jeu spécial et à Gobelet Duel.
+`computeBestCombination(dice, used)` liste toutes les catégories présentes dans les dés (`listMatchingCombinations()`), écarte celles que le joueur a **déjà réalisées** lors des jours/manches précédents de la partie (`used`), et retient la plus valorisée parmi celles qui restent. Égalité de points : `CATEGORY_PRIORITY` départage l'étiquette. S'il ne reste rien : le **Joker** s'il est encore libre (voir plus bas), sinon "Aucune combinaison", **0 pt**. S'applique au jeu spécial et à Gobelet Duel.
 
-Règle d'unicité (retour utilisateur, 26/09) : chaque combinaison ne rapporte des points **qu'une seule fois par partie** — le joueur doit varier ses combinaisons (11 catégories pour 7 jours ou 5/10 manches). Si la meilleure combinaison des dés est déjà réalisée, la meilleure combinaison encore libre est retenue automatiquement (ex. 6-6-6-6-6 avec Gobelet déjà fait → Somme ≥ 28). Les petites combinaisons (Double quelconque, Brelan) servent précisément de repli pour éviter le 0.
+Règle d'unicité (retour utilisateur, 26/09) : chaque combinaison ne rapporte des points **qu'une seule fois par partie** — le joueur doit varier ses combinaisons (12 catégories + le Joker pour 7 jours ou 5/10 manches). Si la meilleure combinaison des dés est déjà réalisée, la meilleure combinaison encore libre est retenue automatiquement (ex. 6-6-6-6-6 avec Gobelet déjà fait → Somme ≥ 28). Les petites combinaisons (Double quelconque, Brelan) servent précisément de repli pour éviter le 0.
+
+🃏 **Joker (27/09, la « Chance » du Yahtzee)** : vaut la somme des 5 dés, une seule fois par partie, retenu **uniquement** si aucune autre combinaison n'est libre (sinon il serait consommé dès la 1ʳᵉ manche). Ajouté avec le Juste total parce qu'en 10 manches les joueurs finissaient souvent sur "Aucune combinaison" (Somme ≤ 7, Somme ≥ 28 et Gobelet étant quasi inaccessibles). Le bouton Valider l'ignore (`allowJoker: false`, option retenue par l'utilisateur) : il ne s'applique qu'à la fin des 3 tirages ou à la clôture d'une main en cours — impossible de le griller par erreur dès le 1ᵉʳ tirage. Hors de `COMBINATIONS` (valeur variable), constante `JOKER`.
 
 ⚠️ **"Aucune combinaison" vaut 0 pt** (auparavant la somme des dés) : une main sans motif ne doit pas rapporter plus qu'une combinaison répétée. Elle n'est jamais "consommée" (`withUsedCategory()`).
 
@@ -1835,11 +1837,13 @@ Combinaisons réalisées stockées dans `gobelet:used` / `gobeletduel:used` (has
 
 | Résultat | Condition | Points |
 | -------- | --------- | ------ |
-| Aucune combinaison | rien de libre | 0 |
+| Aucune combinaison | rien de libre, Joker déjà utilisé | 0 |
+| Joker | rien d'autre de libre (hors Valider) | somme des 5 dés |
 | Double quelconque | au moins 2 dés identiques | 10 |
 | Brelan | au moins 3 dés identiques | 20 |
 | Pairs | 5 dés pairs | 25 |
 | Impairs | 5 dés impairs | 25 |
+| Juste total | somme exacte de 21 | 25 |
 | Carré | au moins 4 dés identiques | 30 |
 | Petite Suite | 4 valeurs consécutives parmi les 5 dés (1-2-3-4, 2-3-4-5 ou 3-4-5-6, doublons/5ᵉ dé libres) | 30 |
 | Full | exactement 3 + 2 | 40 |
@@ -1856,7 +1860,7 @@ Une main par jour, définitive. 🎲 **Jouer** lance 5 dés (1ᵉʳ tirage). Cha
 
 La sélection "à garder" **persiste d'un tirage à l'autre** (retour utilisateur, 16/09) : après une relance, les dés déjà cochés 🔒 le restent automatiquement — seuls les dés qui viennent d'être relancés repartent "non gardés" par défaut. Le joueur n'a donc qu'à ajuster sa sélection (décocher un dé qu'il ne veut plus garder, cocher un nouveau bon résultat) plutôt que de tout recocher à chaque tirage.
 
-👍 **Valider** (ajouté le 16/09, retour utilisateur) apparaît en plus de Relancer dès que les dés COURANTS forment déjà une combinaison **encore libre**, y compris dès le 1ᵉʳ tirage ; son libellé ne nomme volontairement pas la combinaison (essayé le 26/09 puis retiré : ça mâchait le travail du joueur) — permet de figer une bonne main immédiatement sans attendre les 2 relances obligatoires. Un clic sur un bouton devenu obsolète (dés changés entretemps par une relance) est ignoré silencieusement : la main n'est jamais figée sans combinaison, le message est simplement repeint avec l'état réel.
+👍 **Valider** (ajouté le 16/09, retour utilisateur) apparaît en plus de Relancer dès que les dés COURANTS forment déjà une combinaison **encore libre** (hors Joker), y compris dès le 1ᵉʳ tirage ; son libellé ne nomme volontairement pas la combinaison (essayé le 26/09 puis retiré : ça mâchait le travail du joueur) — permet de figer une bonne main immédiatement sans attendre les 2 relances obligatoires. Un clic sur un bouton devenu obsolète (dés changés entretemps par une relance) est ignoré silencieusement : la main n'est jamais figée sans combinaison, le message est simplement repeint avec l'état réel.
 
 Une main encore `en_cours` à la clôture (joueur qui n'a pas fini ses 2 relances) est figée sur les dés courants plutôt qu'ignorée (`resolveJour()`).
 

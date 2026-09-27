@@ -200,6 +200,7 @@ export const COMBINATIONS = [
   { label: "Brelan", description: "3 dés identiques", points: 20 },
   { label: "Pairs", description: "5 dés pairs", points: 25 },
   { label: "Impairs", description: "5 dés impairs", points: 25 },
+  { label: "Juste total", description: "somme exacte de 21", points: 25 },
   { label: "Carré", description: "4 dés identiques", points: 30 },
   { label: "Petite Suite", description: "4 dés qui se suivent", points: 30 },
   { label: "Full", description: "3 + 2", points: 40 },
@@ -210,6 +211,14 @@ export const COMBINATIONS = [
 ];
 
 export const NO_COMBINATION = "Aucune combinaison";
+
+// Joker (27/09, façon "Chance" du Yahtzee) : vaut la somme des 5 dés, une
+// seule fois par partie, et n'est retenu QUE si aucune autre combinaison
+// n'est libre — sinon il serait consommé dès la 1ʳᵉ manche. Hors de
+// COMBINATIONS car sa valeur est variable. Jamais proposé par Valider
+// (option retenue : le bouton reste réservé aux vraies combinaisons, le
+// Joker ne s'applique qu'à la fin des 3 tirages ou à la clôture).
+export const JOKER = "Joker";
 
 const POINTS_BY_LABEL = Object.fromEntries(
   COMBINATIONS.map((c) => [c.label, c.points]),
@@ -227,6 +236,7 @@ const CATEGORY_PRIORITY = [
   "Full",
   "Carré",
   "Petite Suite",
+  "Juste total",
   "Pairs",
   "Impairs",
   "Brelan",
@@ -237,6 +247,7 @@ const CATEGORY_PRIORITY = [
 export function formatBaremeLines() {
   return [
     `🎲 ${NO_COMBINATION} (ou combinaison déjà réalisée) : 0 pt`,
+    `🃏 ${JOKER} (si aucune autre combinaison n'est libre, à la fin des 3 tirages) : somme des 5 dés`,
     ...COMBINATIONS.map(
       (c) =>
         `🎯 ${c.label}${c.description ? ` (${c.description})` : ""} : ${c.points} pts`,
@@ -270,6 +281,7 @@ export function listMatchingCombinations(dice) {
   if (dice.every((d) => d % 2 === 1)) labels.push("Impairs");
   if (sum <= 7) labels.push("Somme ≤ 7");
   if (sum >= 28) labels.push("Somme ≥ 28");
+  if (sum === 21) labels.push("Juste total");
   // 5 valeurs distinctes consécutives (seules 1-2-3-4-5 et 2-3-4-5-6 sont
   // possibles avec des dés à 6 faces).
   if (uniqueSorted.length === 5 && uniqueSorted[4] - uniqueSorted[0] === 4)
@@ -285,13 +297,20 @@ export function listMatchingCombinations(dice) {
 // catégories présentes sont déjà réalisées (ou si aucune n'est présente) :
 // "Aucune combinaison", 0 pt. L'ancienne règle "Aucune combinaison = somme
 // des dés" est abandonnée avec l'unicité : une main sans motif ne doit pas
-// rapporter plus qu'une combinaison répétée.
-export function computeBestCombination(dice, used = []) {
+// rapporter plus qu'une combinaison répétée. Filet de sécurité : le Joker
+// (voir JOKER), tant qu'il est libre et que `allowJoker` est vrai — faux
+// pour le bouton Valider.
+export function computeBestCombination(dice, used = [], { allowJoker = true } = {}) {
   const usedSet = new Set(used);
   const available = listMatchingCombinations(dice).filter(
     (label) => !usedSet.has(label),
   );
-  if (available.length === 0) return { category: NO_COMBINATION, points: 0 };
+  if (available.length === 0) {
+    if (allowJoker && !usedSet.has(JOKER)) {
+      return { category: JOKER, points: dice.reduce((total, d) => total + d, 0) };
+    }
+    return { category: NO_COMBINATION, points: 0 };
+  }
 
   let best = available[0];
   for (const label of available) {

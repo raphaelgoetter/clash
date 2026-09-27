@@ -533,7 +533,9 @@ function buildDieEmoji(value, kept, diceEmojis) {
 // volontairement pas la combinaison : à chacun de la repérer.
 function buildHandComponents(jour, hand, kept, diceEmojis, used) {
   if (hand.status !== "en_cours") return [];
-  const { category } = computeBestCombination(hand.dice, used);
+  const { category } = computeBestCombination(hand.dice, used, {
+    allowJoker: false,
+  });
   const canValider = category !== NO_COMBINATION;
   const secondRow = [
     {
@@ -759,7 +761,9 @@ export async function handleValider(webhookUrl, jour, discordId) {
     }
 
     const { diceEmojis } = await loadGobeletConfig();
-    const { category, points } = computeBestCombination(hand.dice, used);
+    const { category, points } = computeBestCombination(hand.dice, used, {
+      allowJoker: false,
+    });
     if (category === NO_COMBINATION) {
       // Garde-fou : le bouton ne devrait normalement pas être cliquable
       // dans ce cas (voir buildHandComponents), mais un client Discord qui
@@ -881,7 +885,7 @@ function buildReglesEmbed(config) {
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
-      "👍 **Valider** — dès que tes dés forment une combinaison encore libre, fige ta main immédiatement sans attendre les relances restantes.",
+      "👍 **Valider** — dès que tes dés forment une combinaison encore libre (hors Joker), fige ta main immédiatement sans attendre les relances restantes.",
       "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
       "",
       "**Une combinaison différente chaque jour :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt.",

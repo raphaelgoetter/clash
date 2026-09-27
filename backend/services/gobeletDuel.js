@@ -375,7 +375,7 @@ export async function valider(discordId) {
 
   const used = await readUsedCategories(discordId);
   const opponents = await readOpponentsUsed(state, discordId);
-  const { category, points } = computeBestCombination(hand.dice, used);
+  const { category, points } = computeBestCombination(hand.dice, used, { allowJoker: false });
   if (category === NO_COMBINATION) {
     const kept = await readKept(manche, discordId);
     return { notEligible: true, state, hand, kept, used, opponents };
