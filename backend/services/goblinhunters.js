@@ -1142,9 +1142,13 @@ export function computeCloture({
       ? vivantsApres[Math.floor(rng() * vivantsApres.length)].discordId
       : null;
 
+  // Absents éliminés le jour même (vote ou combat) retirés du bilan : leur
+  // pion n'est pas replacé au Château, la ligne 💤 serait trompeuse.
+  const vivantsApresIds = new Set(vivantsApres.map((j) => j.discordId));
+
   return {
     joueursApres,
-    absents,
+    absents: absents.filter((id) => vivantsApresIds.has(id)),
     remplacements,
     conversionId,
     immuneId,

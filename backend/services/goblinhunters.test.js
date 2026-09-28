@@ -454,6 +454,25 @@ async function main() {
     assert.deepStrictEqual(result.absents, ["absent"]);
   }
 
+  // ── absents : un absent éliminé le jour même n'apparaît pas dans le bilan ──
+  {
+    const joueursAvant = [
+      joueur("a"),
+      joueur("b"),
+      joueur("absent"),
+      joueur("autre"),
+      joueur("g", { camp: "gobelin" }),
+    ];
+    const actionsRaw = {
+      a: { primary: { lieu: "chateau", cibleId: "absent" } },
+      b: { primary: { lieu: "chateau", cibleId: "absent" } },
+      g: { primary: { lieu: "taverne", cibleId: null } },
+    };
+    const result = computeCloture({ jour: 2, actionsRaw, joueursAvant, config: CONFIG, rng: () => 0 });
+    assert.strictEqual(result.eliminationsParVote, "absent");
+    assert.deepStrictEqual(result.absents, ["autre"]);
+  }
+
   // ── knownEnqueteTargets : dérive les cibles déjà connues du carnet d'indices ──
   {
     const indices = [
