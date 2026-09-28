@@ -23,13 +23,13 @@
 // donnerait publiquement l'info que Arène/Tour de Guet/Clairière ne livrent
 // qu'en privé à celui qui agit) — couleur neutre unique, anonyme. Seuls les
 // joueurs éliminés (camp déjà révélé publiquement) affichent une couleur de
-// camp et leur initiale, dans la bande grisée en bas de l'image.
+// camp et leur pseudo complet, dans la bande en bas de l'image.
 //
 // ⚠️ Police embarquée OBLIGATOIRE (fonts/Inter-Bold.ttf), même piège que
 // documenté dans pelemeleImage.js : resvg-js n'a aucune police système
 // disponible sur le runtime serverless Vercel (contrairement à une machine
 // de dev locale, où "Inter, system-ui, sans-serif" retombe silencieusement
-// sur une police système présente) — les initiales des pions ne
+// sur une police système présente) — les pseudos des éliminés ne
 // s'afficheraient pas du tout en production, sans erreur levée. `font:
 // { fontFiles, loadSystemFonts: false }` dans rasterize() ci-dessous.
 //
@@ -95,10 +95,6 @@ function escapeText(value) {
     .replace(/>/g, "&gt;");
 }
 
-function initialOf(username) {
-  return escapeText(String(username || "?").trim().charAt(0).toUpperCase() || "?");
-}
-
 // Regroupe les joueurs vivants par lieu, puis répartit les pastilles d'un
 // même lieu en petite grille (3 par ligne) centrée sur l'ancre du lieu, pour
 // éviter le chevauchement quand plusieurs joueurs partagent le même endroit.
@@ -151,24 +147,69 @@ function buildLieuBadgesSvg(lieux) {
     .join("\n");
 }
 
-// Bande de pastilles grisées pour les joueurs déjà éliminés — couleur de
-// camp visible (camp révélé publiquement à l'élimination), jamais le rôle
-// précis.
+// Bande d'étiquettes barrées pour les joueurs déjà éliminés — couleur de
+// camp visible (camp révélé publiquement à l'élimination), pseudo complet
+// (une initiale seule ne permettait pas de savoir qui était qui), jamais le
+// rôle précis. resvg ne mesure pas le texte : largeur estimée par caractère
+// (Inter Bold), passage à la ligne suivante si la bande déborde, lignes
+// empilées vers le haut depuis le bas de l'image.
+const ELIM_FONT_SIZE = 20;
+const ELIM_CHAR_WIDTH = 12.5;
+const ELIM_PILL_HEIGHT = 34;
+const ELIM_PILL_PADDING = 14;
+const ELIM_GAP = 10;
+const ELIM_MARGIN_BOTTOM = 18;
+const ELIM_MAX_ROW_WIDTH = BOARD_WIDTH - 80;
+const ELIM_MAX_CHARS = 18;
+
+function eliminatedLabel(username) {
+  const chars = Array.from(String(username || "?").trim() || "?");
+  return chars.length > ELIM_MAX_CHARS
+    ? `${chars.slice(0, ELIM_MAX_CHARS - 1).join("")}…`
+    : chars.join("");
+}
+
 function buildEliminatedStripSvg(joueursElimines) {
   if (!joueursElimines.length) return "";
-  const y = BOARD_HEIGHT - 36;
-  const startX = BOARD_WIDTH / 2 - ((joueursElimines.length - 1) * TOKEN_SPACING) / 2;
-  return joueursElimines
-    .map((j, index) => {
-      const cx = startX + index * TOKEN_SPACING;
-      const color = CAMP_COLORS[j.camp] || "#64748b";
-      return [
-        `<circle cx="${cx}" cy="${y}" r="${TOKEN_RADIUS - 4}" fill="${color}" fill-opacity="0.45" stroke="#1e293b" stroke-width="2"/>`,
-        `<text x="${cx}" y="${y + 5}" font-family="${FONT_FAMILY}" font-size="15" text-anchor="middle" fill="#f8fafc">${initialOf(j.username)}</text>`,
-        `<line x1="${cx - TOKEN_RADIUS + 4}" y1="${y - TOKEN_RADIUS + 4}" x2="${cx + TOKEN_RADIUS - 4}" y2="${y + TOKEN_RADIUS - 4}" stroke="#f8fafc" stroke-width="2"/>`,
-      ].join("\n");
-    })
-    .join("\n");
+  const pills = joueursElimines.map((j) => {
+    const label = eliminatedLabel(j.username);
+    const width = Math.round(Array.from(label).length * ELIM_CHAR_WIDTH + ELIM_PILL_PADDING * 2);
+    return { label, width, color: CAMP_COLORS[j.camp] || "#64748b" };
+  });
+
+  const rows = [[]];
+  let rowWidth = 0;
+  for (const pill of pills) {
+    const added = (rows.at(-1).length ? ELIM_GAP : 0) + pill.width;
+    if (rows.at(-1).length && rowWidth + added > ELIM_MAX_ROW_WIDTH) {
+      rows.push([]);
+      rowWidth = 0;
+    }
+    rowWidth += (rows.at(-1).length ? ELIM_GAP : 0) + pill.width;
+    rows.at(-1).push(pill);
+  }
+
+  const parts = [];
+  rows.forEach((row, rowIndex) => {
+    const y =
+      BOARD_HEIGHT -
+      ELIM_MARGIN_BOTTOM -
+      ELIM_PILL_HEIGHT -
+      (rows.length - 1 - rowIndex) * (ELIM_PILL_HEIGHT + ELIM_GAP);
+    const total = row.reduce((sum, p) => sum + p.width, 0) + (row.length - 1) * ELIM_GAP;
+    let x = BOARD_WIDTH / 2 - total / 2;
+    for (const pill of row) {
+      const cx = x + pill.width / 2;
+      const cy = y + ELIM_PILL_HEIGHT / 2;
+      parts.push(
+        `<rect x="${x}" y="${y}" width="${pill.width}" height="${ELIM_PILL_HEIGHT}" rx="${ELIM_PILL_HEIGHT / 2}" fill="${pill.color}" fill-opacity="0.55" stroke="#1e293b" stroke-width="2"/>`,
+        `<text x="${cx}" y="${cy + 7}" font-family="${FONT_FAMILY}" font-size="${ELIM_FONT_SIZE}" text-anchor="middle" fill="#f8fafc">${escapeText(pill.label)}</text>`,
+        `<line x1="${x + ELIM_PILL_PADDING - 4}" y1="${cy}" x2="${x + pill.width - ELIM_PILL_PADDING + 4}" y2="${cy}" stroke="#f8fafc" stroke-opacity="0.6" stroke-width="1.5"/>`,
+      );
+      x += pill.width + ELIM_GAP;
+    }
+  });
+  return parts.join("\n");
 }
 
 async function buildBoardSvg(joueurs) {
