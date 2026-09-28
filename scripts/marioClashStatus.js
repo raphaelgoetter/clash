@@ -53,7 +53,7 @@ import { loadMarioClashConfig, readState, readJoueurs, readActions } from "../ba
   for (const [discordId, action] of Object.entries(actions)) {
     const username = joueurs[discordId]?.username || discordId;
     const parts = [];
-    if (action.dice) parts.push("🎲 dé");
+    if (action.dice) parts.push(`${config.des[action.deId]?.emoji || "🎲"} dé (${action.diceValue})`);
     if (action.item) parts.push("🎒 objet");
     if (action.spell) parts.push("✨ sort");
     console.log(`  - ${username} : ${parts.join(", ") || "(aucune)"}`);

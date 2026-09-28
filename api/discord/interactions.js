@@ -139,6 +139,7 @@ import {
 } from "./_handlers/goblinhunters.js";
 import {
   handleDiceButton as handleMarioClashDice,
+  handleDiceSelect as handleMarioClashDiceSelect,
   handleBoutiqueButton as handleMarioClashBoutique,
   handleBoutiqueSelect as handleMarioClashBoutiqueSelect,
   handleItemTargetSelect as handleMarioClashItemTarget,
@@ -9903,6 +9904,23 @@ export default async function handler(req, res) {
     if (action === "marioclash_dice") runBackground(() => handleMarioClashDice(webhookUrl, jour, discordId, username));
     else if (action === "marioclash_boutique") runBackground(() => handleMarioClashBoutique(webhookUrl, jour, discordId, username));
     else if (action === "marioclash_spell") runBackground(() => handleMarioClashSpell(webhookUrl, jour, discordId, username));
+    return;
+  }
+
+  // ── Mario Clash : select du type de dé (custom_id: marioclash_dice_select:<jour>) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("marioclash_dice_select:")
+  ) {
+    const [, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    const deId = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashDiceSelect(webhookUrl, jour, discordId, username, deId));
     return;
   }
 

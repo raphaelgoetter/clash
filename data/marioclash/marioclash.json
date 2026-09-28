@@ -1,7 +1,23 @@
 {
   "duree_jours": 7,
-  "case_arrivee": 49,
-  "points_boutique_par_jour": 1,
+  "case_arrivee": 48,
+  "des": {
+    "classique": { "label": "Dé classique", "emoji": "🎲", "min": 1, "max": 6, "or": 1 },
+    "prudent": { "label": "Dé prudent", "emoji": "🐢", "min": 3, "max": 3, "or": 1 },
+    "epargne": { "label": "Dé d'épargne", "emoji": "💰", "min": 1, "max": 2, "or": 2 }
+  },
+  "cases_speciales": {
+    "4": { "label": "Turbo", "emoji": "⏩", "avance": 3 },
+    "7": { "label": "Coffre", "emoji": "🎁", "or": 2 },
+    "12": { "label": "Glace", "emoji": "❄️", "or": -2 },
+    "19": { "label": "Feu", "emoji": "🔥", "avance": -3 },
+    "22": { "label": "Coffre", "emoji": "🎁", "or": 2 },
+    "27": { "label": "Turbo", "emoji": "⏩", "avance": 3 },
+    "31": { "label": "Glace", "emoji": "❄️", "or": -2 },
+    "36": { "label": "Turbo inversé", "emoji": "⏪", "avance": -2 },
+    "41": { "label": "Coffre", "emoji": "🎁", "or": 2 },
+    "44": { "label": "Feu", "emoji": "🔥", "avance": -3 }
+  },
   "objets": {
     "accelerateur": {
       "label": "Accélérateur",
@@ -15,7 +31,8 @@
       "emoji": "💣",
       "cout": 2,
       "cible": "adversaire",
-      "recul": 3
+      "recul": 3,
+      "recul_renvoi": 3
     },
     "etoile": {
       "label": "Étoile",
@@ -29,15 +46,25 @@
       "emoji": "🍌",
       "cout": 3,
       "cible": "adversaire",
-      "echange": true
+      "echange": true,
+      "recul_renvoi": 3
+    },
+    "carapace": {
+      "label": "Carapace bleue",
+      "emoji": "🔵",
+      "cout": 5,
+      "cible": "leader",
+      "recul": 5,
+      "recul_renvoi": 3
     }
   },
+  "concentration_max": 2,
   "sorts": [
-    { "id": 1, "label": "Recule de 2 cases", "type": "negatif", "avance": -2 },
-    { "id": 2, "label": "Perd 1 Or", "type": "negatif", "perdOr": 1 },
+    { "id": 1, "label": "Recule de 2 cases", "nom": "Recul", "type": "negatif", "avance": -2, "retire_concentration": 2 },
+    { "id": 2, "label": "Gel : ton dé de demain ne fera avancer que d'1 case", "nom": "Gel", "type": "negatif", "gel": true, "retire_concentration": 1 },
     { "id": 3, "label": "Échange sa place avec un adversaire aléatoire", "type": "neutre", "echangeAleatoire": true },
-    { "id": 4, "label": "Gagne 1 Or supplémentaire", "type": "positif", "pointsBoutique": 1 },
-    { "id": 5, "label": "Avance de 1 case", "type": "positif", "avance": 1 },
+    { "id": 4, "label": "Clone : ton dé du jour est rejoué", "type": "positif", "clone": true },
+    { "id": 5, "label": "Rage : +2 cases sur ton dé de demain", "type": "positif", "rage": 2 },
     { "id": 6, "label": "Avance de 3 cases", "type": "positif", "avance": 3 }
   ]
 }

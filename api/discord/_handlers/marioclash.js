@@ -1,6 +1,6 @@
 // ============================================================
 // marioclash.js — Handlers Discord pour Mario Clash (course communautaire
-// façon Mario Kart sur plateau à 49 cases, thème Clash Royale). Embed,
+// façon Mario Kart sur plateau à 49 cases de 0 à 48, thème Clash Royale). Embed,
 // boutons du jour (dé/boutique/objet/sort), selects de ciblage, Règles. La
 // publication/clôture quotidienne passe uniquement par
 // scripts/postMarioClash.js (postMarioClash) — les boutons/selects restent
@@ -70,8 +70,10 @@ function sortedRanking(joueurs) {
     );
 }
 
-// `detailed` : le Journal affiche points + objet possédé, le classement
-// final du message de fin reste sobre (juste la position).
+// `detailed` : le Journal affiche les points, le classement final du
+// message de fin reste sobre (juste la position). ⚠️ Jamais l'objet
+// possédé : l'achat du jour doit rester caché jusqu'au bilan, sinon plus
+// aucun bluff possible autour de l'Étoile (qui renvoie les objets).
 function formatRankingLines(
   joueurs,
   config,
@@ -91,10 +93,7 @@ function formatRankingLines(
     const arrivee = j.position >= config.case_arrivee ? " 🏁" : "";
     if (!detailed)
       return `${medal} **${j.username}** — case ${j.position}${arrivee}`;
-    const objetLabel = j.objet
-      ? `${config.objets[j.objet]?.emoji || ""} ${config.objets[j.objet]?.label}`
-      : "aucun objet";
-    return `${medal} **${j.username}** — case ${j.position}${arrivee} · ${j.points} Or · ${objetLabel}`;
+    return `${medal} **${j.username}** — case ${j.position}${arrivee} · ${j.points} Or`;
   });
 }
 
@@ -172,6 +171,12 @@ function buildResumeLignes(
           .replaceAll("{a}", nomDe(l.discordId))
           .replaceAll("{b}", nomDe(l.cibleId)),
       );
+    } else if (l.type === "objet" && l.effet === "renvoi") {
+      lines.push(
+        pickFlavor(narratifs.renvoi, jour + 3)
+          .replaceAll("{a}", nomDe(l.discordId))
+          .replaceAll("{b}", nomDe(l.cibleId)),
+      );
     } else if (l.type === "sort" && l.autreEchangeId) {
       lines.push(
         pickFlavor(narratifs.echange, jour + 5)
@@ -194,23 +199,28 @@ function filterLignesForPlayer(lignes, discordId) {
   return lignes.filter((l) => l.discordId === discordId || l.cibleId === discordId || l.autreEchangeId === discordId);
 }
 
-function formatBilanLignes(lignes, joueurs) {
+function formatBilanLignes(lignes, joueurs, config) {
   if (!lignes.length) return [];
   const nomDe = (id) => joueurs[id]?.username || "?";
   const texte = lignes
     .map((l) => {
       switch (l.type) {
-        case "de":
-          return `🎲 ${nomDe(l.discordId)} avance de ${l.valeur}`;
+        case "de": {
+          const de = config.des[l.deId];
+          const arrivee = l.positionDe != null ? ` (case ${l.positionDe})` : "";
+          const c = l.caseSpeciale != null ? config.cases_speciales?.[l.caseSpeciale] : null;
+          const effet = c ? ` · ${c.emoji} ${c.label} : ${effetCaseTexte(c)}` : "";
+          return `${de?.emoji || "🎲"} Tu as fait ${l.valeur}${arrivee}${effet}`;
+        }
         case "objet":
           if (l.effet === "avance")
-            return `🚀 ${nomDe(l.discordId)} avance de ${l.valeur}`;
+            return `${config.objets[l.itemId]?.emoji || "🚀"} ${nomDe(l.discordId)} avance de ${l.valeur}`;
           if (l.effet === "recul")
-            return `💣 ${nomDe(l.discordId)} fait reculer ${nomDe(l.cibleId)} de ${l.valeur}`;
+            return `${config.objets[l.itemId]?.emoji || "💣"} ${nomDe(l.discordId)} fait reculer ${nomDe(l.cibleId)} de ${l.valeur}`;
           if (l.effet === "echange")
             return `🍌 ${nomDe(l.discordId)} échange sa place avec ${nomDe(l.cibleId)}`;
-          if (l.effet === "bloque")
-            return `⭐ ${nomDe(l.cibleId)} est protégé(e) par son Étoile — l'objet de ${nomDe(l.discordId)} n'a aucun effet`;
+          if (l.effet === "renvoi")
+            return `⭐ L'Étoile de ${nomDe(l.cibleId)} renvoie l'objet de ${nomDe(l.discordId)}, qui recule de ${l.valeur}`;
           return null;
         case "sort": {
           if (l.effet === "bloque")
@@ -218,7 +228,13 @@ function formatBilanLignes(lignes, joueurs) {
           const tiers = l.autreEchangeId
             ? ` — ${nomDe(l.cibleId)} et ${nomDe(l.autreEchangeId)} échangent leurs places au passage !`
             : "";
-          return `✨ ${nomDe(l.discordId)} lance un sort sur ${nomDe(l.cibleId)} : *${l.sortLabel}*${tiers}`;
+          const clone =
+            l.valeurClone == null
+              ? ""
+              : l.valeurClone > 0
+                ? ` (tu avances encore de ${l.valeurClone})`
+                : " (sans effet, pas de dé lancé)";
+          return `✨ ${nomDe(l.discordId)} lance un sort sur ${nomDe(l.cibleId)} : *${l.sortLabel}*${clone}${tiers}`;
         }
         default:
           return null;
@@ -268,9 +284,11 @@ function buildJourEmbed(jour, config, resumeLignes) {
 // ou tiers entraîné par un échange aléatoire de sort).
 function buildJournalEmbed(jour, config, joueurs, bilanLignes, discordId) {
   const lines = [...formatRankingLines(joueurs, config)];
+  const moi = joueurs[discordId];
+  if (moi) lines.push("", ...etatPersonnelLignes(moi, config));
   const bilanPersonnel = filterLignesForPlayer(bilanLignes || [], discordId);
   if (bilanPersonnel.length)
-    lines.push(...formatBilanLignes(bilanPersonnel, joueurs));
+    lines.push(...formatBilanLignes(bilanPersonnel, joueurs, config));
   return {
     title: `📜 Journal — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
@@ -330,9 +348,113 @@ function buildFinEmbed(joueurs, config, manches, currentManche) {
 const OBJET_EFFET_TEXTE = {
   accelerateur: "tu avances de 4 cases",
   bombe: "l'adversaire choisi recule de 3",
-  etoile: "insensible aux objets et sorts ce jour",
+  etoile: "renvoie les objets adverses ce jour (l'attaquant recule de 3) et bloque les sorts",
   banane: "échange ta place avec un adversaire choisi",
+  carapace: "le joueur en tête à la clôture recule de 5 (si c'est toi, elle frappe le 2e)",
 };
+
+function describeDe(de) {
+  const cases =
+    de.min === de.max
+      ? `toujours ${de.min} cases`
+      : `${de.min} ${de.max - de.min === 1 ? "ou" : "à"} ${de.max} cases`;
+  return `${cases}, +${de.or} Or`;
+}
+
+function describeCaseSpeciale(c) {
+  if (c.avance > 0) return `avance de ${c.avance}`;
+  if (c.avance < 0) return `recule de ${-c.avance}`;
+  if (c.or > 0) return `+${c.or} Or`;
+  if (c.or < 0) return `perd ${-c.or} Or`;
+  return "";
+}
+
+// Même effet, formulé à la 2e personne pour la réponse au lancer.
+function effetCaseTexte(c) {
+  if (c.avance > 0) return `tu avances de ${c.avance} cases`;
+  if (c.avance < 0) return `tu recules de ${-c.avance} cases`;
+  if (c.or > 0) return `tu gagnes ${c.or} Or`;
+  if (c.or < 0) return `tu perds ${c.or * -1} Or`;
+  return "rien ne se passe";
+}
+
+// Regroupées par type (label identique) : "🔥 Feu (cases 20, 45) : recule de 3".
+function buildCasesSpecialesLines(config) {
+  const groupes = new Map();
+  for (const [numero, c] of Object.entries(config.cases_speciales || {})) {
+    const groupe = groupes.get(c.label) || { c, numeros: [] };
+    groupe.numeros.push(numero);
+    groupes.set(c.label, groupe);
+  }
+  return [...groupes.values()].map(
+    ({ c, numeros }) =>
+      `${c.emoji} **${c.label}** (case${numeros.length > 1 ? "s" : ""} ${numeros.join(", ")}) : ${describeCaseSpeciale(c)}`,
+  );
+}
+
+// Déplacements possibles au dé aujourd'hui, tous dés confondus, en tenant
+// compte d'un Gel (1 case) ou d'une Rage (bonus) posés par le sort d'hier
+// — même calcul que rollDiceForPlayer().
+function avancesPossibles(joueur, config) {
+  if (joueur.gel) return [1];
+  const avances = new Set();
+  for (const de of Object.values(config.des)) {
+    for (let v = de.min; v <= de.max; v++) avances.add(v + (joueur.rage || 0));
+  }
+  return [...avances].sort((a, b) => a - b);
+}
+
+// Cases spéciales atteignables au dé aujourd'hui — affichées au moment de
+// choisir son dé.
+function casesSpecialesDevant(joueur, config) {
+  const lignes = [];
+  for (const pas of avancesPossibles(joueur, config)) {
+    const numero = joueur.position + pas;
+    const c = config.cases_speciales?.[numero];
+    if (c) lignes.push(`${c.emoji} case ${numero} (${c.label}, ${describeCaseSpeciale(c)})`);
+  }
+  return lignes;
+}
+
+function etatDeLigne(joueur) {
+  if (joueur.gel) return "🧊 Gelé : ton dé ne fera avancer que d'1 case aujourd'hui.";
+  if (joueur.rage) return `😡 Rage : +${joueur.rage} cases sur ton dé aujourd'hui.`;
+  return null;
+}
+
+function concentrationLigne(joueur, config) {
+  const niveau = joueur.concentration || 0;
+  const retires = config.sorts
+    .filter((s) => s.retire_concentration && s.retire_concentration <= niveau)
+    .map((s) => s.nom || s.label);
+  const suffixe = retires.length ? ` (${retires.join(" et ")} retiré${retires.length > 1 ? "s" : ""} de ton prochain sort)` : "";
+  return `🔋 Concentration : ${niveau}/${config.concentration_max}${suffixe}`;
+}
+
+function etatPersonnelLignes(joueur, config) {
+  return [etatDeLigne(joueur), concentrationLigne(joueur, config)].filter(Boolean);
+}
+
+function buildDiceSelect(jour, config) {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: `marioclash_dice_select:${jour}`,
+          placeholder: "Choisis ton dé",
+          options: Object.entries(config.des).map(([id, d]) => ({
+            label: d.label,
+            description: describeDe(d),
+            value: id,
+            emoji: { name: d.emoji },
+          })),
+        },
+      ],
+    },
+  ];
+}
 
 const SORT_TYPE_EMOJI = { negatif: "🔻", positif: "✅", neutre: "🔄" };
 
@@ -342,21 +464,30 @@ function buildReglesEmbed(config) {
       `${o.emoji} **${o.label}** (${o.cout} Or) : ${OBJET_EFFET_TEXTE[id] || ""}`,
   );
   const sortsLines = config.sorts.map(
-    (s) => `${SORT_TYPE_EMOJI[s.type] || "•"} ${s.label}`,
+    (s) =>
+      `${SORT_TYPE_EMOJI[s.type] || "•"} ${s.label}${s.retire_concentration ? ` *(retiré dès Concentration ${s.retire_concentration})*` : ""}`,
+  );
+  const desLines = Object.values(config.des).map(
+    (d) => `${d.emoji} **${d.label}** : ${describeDe(d)}`,
   );
   return {
     title: "📖 Règles — Mario Clash",
     description: [
       "Chaque jour, choisis librement parmi :",
-      "🎲 **Lancer le dé** — avance de 1 à 6 cases et rapporte 1 Or.",
+      "🎲 **Lancer le dé** : choisis ton dé parmi",
+      ...desLines,
       "🛍️ **Boutique** — achète 1 objet spécial ; l'objet est utilisé automatiquement dès l'achat (cible à choisir s'il vise un adversaire), effet appliqué à la clôture.",
-      "✨ **Lancer un sort** — toujours sur toi-même, effet totalement aléatoire (50% de chances que ce soit négatif), annoncé immédiatement mais appliqué à la clôture.",
+      "✨ **Lancer un sort** — toujours sur toi-même, effet aléatoire annoncé immédiatement mais appliqué à la clôture.",
+      `🔋 **Concentration** : chaque jour sans sort charge ta jauge (${config.concentration_max} max). Chaque niveau retire un effet négatif de ton prochain sort, puis la jauge retombe à 0.`,
       "",
       "**Objets spéciaux**",
       ...objetsLines,
       "",
       "**Sorts possibles** *(1 tiré au hasard)*",
       ...sortsLines,
+      "",
+      "**Cases spéciales** *(seulement si ton dé s'y arrête)*",
+      ...buildCasesSpecialesLines(config),
     ].join("\n"),
     color: MARIOCLASH_COLOR,
   };
@@ -709,14 +840,43 @@ async function guardActiveDay(webhookUrl, jour) {
   return state;
 }
 
-// ── Bouton [🎲 Lancer le dé] ─────────────────────────────────────────
+// ── Bouton [🎲 Lancer le dé] + select du type de dé ──────────────────
 
 export async function handleDiceButton(webhookUrl, jour, discordId, username) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
+    const joueur = await ensureJoueur(discordId, username);
+    const actions = await readActions(jour);
+    if (actions[discordId]?.dice) {
+      await patchOriginal(webhookUrl, {
+        content: "🎲 Tu as déjà lancé le dé aujourd'hui.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const devant = casesSpecialesDevant(joueur, config);
+    const lignes = [`🎲 Tu es case **${joueur.position}**. Choisis ton dé :`];
+    const etat = etatDeLigne(joueur);
+    if (etat) lignes.push(etat);
+    if (devant.length) lignes.push(`Devant toi : ${devant.join(", ")}`);
+    await patchOriginal(webhookUrl, {
+      content: lignes.join("\n"),
+      embeds: [],
+      components: buildDiceSelect(jour, config),
+    });
+  } catch (err) {
+    console.error("[MarioClash] Échec bouton dé:", err.message);
+  }
+}
+
+export async function handleDiceSelect(webhookUrl, jour, discordId, username, deId) {
+  try {
+    if (!(await guardActiveDay(webhookUrl, jour))) return;
+    const config = await loadMarioClashConfig();
     await ensureJoueur(discordId, username);
-    const result = await rollDiceForPlayer(Number(jour), discordId, config);
+    const result = await rollDiceForPlayer(Number(jour), discordId, deId, config);
     if (result.status === "alreadyRolled") {
       await patchOriginal(webhookUrl, {
         content: "🎲 Tu as déjà lancé le dé aujourd'hui.",
@@ -725,14 +885,32 @@ export async function handleDiceButton(webhookUrl, jour, discordId, username) {
       });
       return;
     }
+    if (result.status !== "ok") {
+      await patchOriginal(webhookUrl, {
+        content: "🎲 Lancer impossible.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
     const arrivee = result.position >= config.case_arrivee ? " 🏁" : "";
+    const lignes = [
+      `${result.de.emoji} Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.positionDe}**. +${result.pointsGagnes} Or.`,
+    ];
+    if (result.gel) lignes.push("🧊 Gelé : tu n'avances que d'1 case.");
+    else if (result.rage) lignes.push(`😡 Rage : +${result.rage} cases incluses.`);
+    if (result.caseSpeciale) {
+      const c = result.caseSpeciale;
+      lignes.push(`${c.emoji} Case **${c.label}** : ${effetCaseTexte(c)} !`);
+    }
+    lignes.push(`📍 Case **${result.position}**${arrivee} · ${result.points} Or au total.`);
     await patchOriginal(webhookUrl, {
-      content: `🎲 Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.position}**${arrivee}. +${result.pointsGagnes} Or (total : ${result.points} Or).`,
+      content: lignes.join("\n"),
       embeds: [],
       components: [],
     });
   } catch (err) {
-    console.error("[MarioClash] Échec bouton dé:", err.message);
+    console.error("[MarioClash] Échec select dé:", err.message);
   }
 }
 
@@ -818,6 +996,16 @@ export async function handleBoutiqueSelect(
     if (result.status !== "ok") {
       await patchOriginal(webhookUrl, {
         content: "🛍️ Achat impossible.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    if (item.cible === "leader") {
+      await recordItemUse(jour, discordId, null);
+      await patchOriginal(webhookUrl, {
+        content: `🛍️ Acheté et activé : ${item.emoji} **${item.label}** ! Elle frappera le joueur en tête à la clôture.`,
         embeds: [],
         components: [],
       });
@@ -921,7 +1109,14 @@ export async function handleSpellButton(webhookUrl, jour, discordId, username) {
       return;
     }
     await patchOriginal(webhookUrl, {
-      content: `✨ Sort lancé sur toi-même : *${result.sort.label}* — appliqué à la clôture du jour !`,
+      content: [
+        result.concentration
+          ? `🔋 Concentration ${result.concentration}/${config.concentration_max} utilisée.`
+          : null,
+        `✨ Sort lancé sur toi-même : *${result.sort.label}*. Appliqué à la clôture du jour !`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
       embeds: [],
       components: [],
     });

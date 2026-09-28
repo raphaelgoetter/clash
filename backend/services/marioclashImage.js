@@ -1,7 +1,7 @@
 // ============================================================
 // marioclashImage.js — Synthèse de l'image du plateau pour Mario Clash :
 // compose le décor statique (data/marioclash/images/mario-clash-board.jpg)
-// avec les pions des joueurs positionnés sur leur case (1 à 49). Même
+// avec les pions des joueurs positionnés sur leur case (0 à 48). Même
 // technique que goblinhuntersImage.js/zoomImage.js : SVG avec un
 // `<image href="data:...">` de fond, rastérisé en PNG via @resvg/resvg-js.
 //
@@ -40,7 +40,7 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
-import { readJoueurs } from "./marioclash.js";
+import { readJoueurs, loadMarioClashConfig } from "./marioclash.js";
 import { readBlobAsset, readBlobFontPath } from "./blobAssets.js";
 
 const BOARD_IMAGE_PATH = "marioclash/images/mario-clash-board.jpg";
@@ -61,19 +61,24 @@ const ROW_Y = [126.8, 231.7, 330.7, 431, 530, 626.7, 724.3];
 // X mesuré par rangée, dans l'ordre PHYSIQUE gauche→droite (7 valeurs par
 // rangée) — chaque rangée a sa propre étendue piste, distincte des autres.
 const ROW_X = [
-  [174, 263, 351, 440, 529, 617, 706], // rangée 1 (cases 1-7)
-  [127, 227, 327, 427, 527, 627, 727], // rangée 2 (cases 8-14, sens inverse)
-  [126, 227, 328, 429, 530, 631, 732], // rangée 3 (cases 15-21)
-  [106, 207, 308, 410, 511, 612, 713], // rangée 4 (cases 22-28, sens inverse)
-  [126, 221, 316, 411, 506, 601, 696], // rangée 5 (cases 29-35)
-  [136, 232, 328, 424, 520, 616, 712], // rangée 6 (cases 36-42, sens inverse)
-  [138, 234, 330, 426, 521, 617, 713], // rangée 7 (cases 43-49)
+  [174, 263, 351, 440, 529, 617, 706], // rangée 1 (cases 0-6)
+  [127, 227, 327, 427, 527, 627, 727], // rangée 2 (cases 7-13, sens inverse)
+  [126, 227, 328, 429, 530, 631, 732], // rangée 3 (cases 14-20)
+  [106, 207, 308, 410, 511, 612, 713], // rangée 4 (cases 21-27, sens inverse)
+  [126, 221, 316, 411, 506, 601, 696], // rangée 5 (cases 28-34)
+  [136, 232, 328, 424, 520, 616, 712], // rangée 6 (cases 35-41, sens inverse)
+  [138, 234, 330, 426, 521, 617, 713], // rangée 7 (cases 42-48)
 ];
 
 // Grille serpentin : rangée paire (0-indexée) = sens gauche→droite, rangée
 // impaire = sens inverse (le tracé remonte visuellement dans l'autre sens).
+// Case 0 = la couronne sur fond bleu (départ, tous les joueurs y
+// commencent), case 48 = le damier (arrivée, config.case_arrivee) : 49
+// cases dessinées, numérotées 0 à 48. Une numérotation 1-49 laissait la
+// position de départ (0) sans case propre, dessinée sur la couronne comme
+// la case 1.
 export const CASE_COUNT = 49;
-const CASE_ANCHORS = [null]; // index 0 inutilisé, les cases sont numérotées 1-49
+const CASE_ANCHORS = [];
 for (let r = 0; r < 7; r++) {
   const y = ROW_Y[r];
   for (let i = 0; i < 7; i++) {
@@ -83,7 +88,7 @@ for (let r = 0; r < 7; r++) {
 }
 
 function anchorForCase(position) {
-  const clamped = Math.min(CASE_COUNT, Math.max(1, Math.round(position)));
+  const clamped = Math.min(CASE_COUNT - 1, Math.max(0, Math.round(position)));
   return CASE_ANCHORS[clamped];
 }
 
@@ -167,12 +172,42 @@ function buildTokensSvg(joueurs) {
   return circles.join("\n");
 }
 
+// Badge d'effet en haut de chaque case spéciale (config.cases_speciales) :
+// l'illustration du plateau montre déjà la case (chevrons, glace, feu,
+// coffre), le badge précise juste l'effet chiffré. Placé au-dessus du
+// centre pour ne jamais être masqué par les pions (centrés sur l'ancre).
+function badgeTexte(c) {
+  if (c.avance) return c.avance > 0 ? `+${c.avance}` : `−${-c.avance}`;
+  if (c.or) return c.or > 0 ? `+${c.or} Or` : `−${-c.or} Or`;
+  return "";
+}
+
+function buildCasesSpecialesSvg(casesSpeciales) {
+  const badges = [];
+  for (const [numero, c] of Object.entries(casesSpeciales || {})) {
+    const texte = badgeTexte(c);
+    if (!texte) continue;
+    const anchor = anchorForCase(Number(numero));
+    const positif = (c.avance || c.or) > 0;
+    const largeur = texte.length * 8 + 12;
+    const x = anchor.x - largeur / 2;
+    const y = anchor.y - 38;
+    badges.push(
+      `<rect x="${x}" y="${y}" width="${largeur}" height="18" rx="9" fill="${positif ? "#15803d" : "#b91c1c"}" stroke="#ffffff" stroke-width="1.5"/>`,
+      `<text x="${anchor.x}" y="${y + 13.5}" font-family="${FONT_FAMILY}" font-size="12" text-anchor="middle" fill="#ffffff">${escapeText(texte)}</text>`,
+    );
+  }
+  return badges.join("\n");
+}
+
 async function buildBoardSvg(joueurs) {
   const dataUrl = await loadBoardDataUrl();
+  const config = await loadMarioClashConfig();
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${BOARD_WIDTH}" height="${BOARD_HEIGHT}" viewBox="0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
   <rect width="100%" height="100%" fill="${BACKGROUND}"/>
   <image x="0" y="0" width="${BOARD_WIDTH}" height="${BOARD_HEIGHT}" href="${dataUrl}"/>
+  ${buildCasesSpecialesSvg(config.cases_speciales)}
   ${buildTokensSvg(joueurs)}
 </svg>`;
 }
@@ -193,7 +228,7 @@ async function rasterize(svg) {
 }
 
 // Rendu du plateau pour un état de jeu donné — `joueurs` = liste de
-// { discordId, username, position } (position 1-49). Ne dépend d'aucun
+// { discordId, username, position } (position 0-48). Ne dépend d'aucun
 // state Redis : l'appelant (backend/services/marioclash.js, à venir) est
 // responsable de lire l'état et d'appeler cette fonction avec les joueurs
 // vivants du jour.

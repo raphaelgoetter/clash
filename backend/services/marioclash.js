@@ -1,6 +1,6 @@
 // ============================================================
 // marioclash.js — Mario Clash, course communautaire façon Mario Kart sur
-// plateau à 49 cases (thème Clash Royale). Couche métier : config statique,
+// plateau à 49 cases, départ case 0 et arrivée case 48 (thème Clash Royale). Couche métier : config statique,
 // état de la partie (phase/jour/joueurs), actions quotidiennes, clôture,
 // historique, manches.
 //
@@ -18,9 +18,10 @@
 //
 // ⚠️ Ordre de résolution à la clôture (décision explicite, voir
 // CONTRIBUTING.md) : 1) objets déjà actifs (Étoile → immunité du jour)
-// 2) objets appliqués (Accélérateur/Bombe/Banane) 3) sorts. L'Étoile
-// protège ainsi contre TOUT le reste de la journée (objets ET sorts
-// d'autrui, y compris un sort qu'on se lancerait à soi-même).
+// 2) objets appliqués (Accélérateur/Bombe/Banane, puis Carapace bleue) 3) sorts. L'Étoile
+// protège ainsi contre TOUT le reste de la journée : elle RENVOIE les
+// objets adverses (l'attaquant recule) et bloque les sorts (y compris un
+// sort qu'on se lancerait à soi-même).
 //
 // ⚠️ Le dé et la boutique sont résolus EN DIRECT au clic, PAS à la
 // clôture (voir rollDiceForPlayer()/purchaseItem()) : ce sont des actions
@@ -221,8 +222,17 @@ export function rollDice(rng = Math.random) {
 }
 
 export function rollSort(sorts, rng = Math.random) {
-  const id = Math.floor(rng() * sorts.length) + 1;
-  return sorts.find((s) => s.id === id) || sorts[0];
+  return sorts[Math.floor(rng() * sorts.length)] || sorts[0];
+}
+
+// ── Concentration — chaque jour SANS sort charge la jauge du joueur
+// (config.concentration_max, 2), incrémentée à la clôture ; le sort
+// suivant est tiré sans les effets dont `retire_concentration` <= niveau
+// (Gel au niveau 1, puis Recul au niveau 2), et remet la jauge à 0.
+// Équilibrage : attendre ne rapporte quasiment rien de plus en moyenne par
+// jour, mais réduit le risque (voir règles).
+export function sortsDisponibles(sorts, niveau = 0) {
+  return sorts.filter((s) => !s.retire_concentration || s.retire_concentration > niveau);
 }
 
 export function clampPosition(position, caseArrivee) {
@@ -236,21 +246,61 @@ export function clampPosition(position, caseArrivee) {
 // joueurs, donc aucune raison d'en différer la résolution. Même principe
 // que la boutique (action individuelle, effet immédiat).
 //
-// ⚠️ Le point de boutique quotidien n'est PAS un octroi automatique
-// (décision explicite, revenue sur la conception initiale) : il faut
-// lancer le dé pour le gagner — jamais deux fois le même jour, comme le
-// reste de l'action.
-export async function rollDiceForPlayer(jour, discordId, config, rng = Math.random) {
+// ⚠️ L'Or quotidien n'est PAS un octroi automatique (décision explicite,
+// revenue sur la conception initiale) : il faut lancer le dé pour le
+// gagner — jamais deux fois le même jour, comme le reste de l'action.
+//
+// Le joueur CHOISIT son dé (config.des : classique / prudent / épargne) :
+// arbitrage avancer vs Or, et précision pour viser ou éviter une case
+// spéciale.
+export function rollDieOfType(de, rng = Math.random) {
+  return de.min + Math.floor(rng() * (de.max - de.min + 1));
+}
+
+// Cases spéciales (config.cases_speciales, calquées sur les cases
+// illustrées du plateau) : déclenchées UNIQUEMENT quand le dé y arrête le
+// joueur — jamais par un objet/sort à la clôture (le dé est le seul
+// déplacement que le joueur maîtrise). Pas d'enchaînement : la case
+// d'arrivée d'un Turbo/Feu n'est pas réévaluée.
+export function applyCaseSpeciale(position, points, config) {
+  const caseSpeciale = config.cases_speciales?.[position] || null;
+  if (!caseSpeciale) return { position, points, caseSpeciale: null };
+  return {
+    position: clampPosition(position + (caseSpeciale.avance || 0), config.case_arrivee),
+    points: Math.max(0, points + (caseSpeciale.or || 0)),
+    caseSpeciale,
+  };
+}
+
+export async function rollDiceForPlayer(jour, discordId, deId, config, rng = Math.random) {
+  const de = config.des[deId];
+  if (!de) return { status: "unknownDie" };
   const actions = await readActions(jour);
   if (actions[discordId]?.dice) return { status: "alreadyRolled" };
   const joueur = await readJoueur(discordId);
   if (!joueur) return { status: "unknownPlayer" };
-  const valeur = rollDice(rng);
-  const position = clampPosition(joueur.position + valeur, config.case_arrivee);
-  const points = joueur.points + config.points_boutique_par_jour;
-  await writeJoueur(discordId, { ...joueur, position, points });
-  await updateAction(jour, discordId, { dice: true, diceValue: valeur });
-  return { status: "ok", valeur, positionAvant: joueur.position, position, pointsGagnes: config.points_boutique_par_jour, points };
+  const valeur = rollDieOfType(de, rng);
+  // Gel/Rage : posés par le sort de la veille (voir computeCloture), valables
+  // pour le dé de ce jour uniquement. Gel : 1 case quel que soit le dé
+  // (l'Or du dé reste acquis). Rage : bonus ajouté au résultat.
+  const avance = joueur.gel ? 1 : valeur + (joueur.rage || 0);
+  const positionDe = clampPosition(joueur.position + avance, config.case_arrivee);
+  const { position, points, caseSpeciale } = applyCaseSpeciale(positionDe, joueur.points + de.or, config);
+  await writeJoueur(discordId, { ...joueur, position, points, gel: false, rage: 0 });
+  // Détail du lancer conservé pour le bilan du Journal (voir computeCloture) :
+  // le dé est résolu ici, mais n'apparaîtrait sinon nulle part après coup.
+  await updateAction(jour, discordId, {
+    dice: true,
+    diceValue: valeur,
+    diceAvance: avance,
+    deId,
+    positionDe,
+    caseSpeciale: caseSpeciale ? positionDe : null,
+  });
+  return {
+    status: "ok", de, valeur, avance, gel: !!joueur.gel, rage: joueur.rage || 0,
+    positionAvant: joueur.position, positionDe, position, pointsGagnes: de.or, points, caseSpeciale,
+  };
 }
 
 // ── Sort — toujours sur SOI-MÊME (décision explicite : un sort ne doit
@@ -259,17 +309,21 @@ export async function rollDiceForPlayer(jour, discordId, config, rng = Math.rand
 // l'APPLICATION (déplacement, blocage éventuel par l'Étoile si on est
 // devenu immunisé entre-temps) reste différée à la clôture, dans l'ordre
 // de résolution documenté en tête de fichier. Aucun choix du joueur sur
-// l'effet (1 à 6, voir data/marioclash/marioclash.json) — seul le sort #3
-// (échange aléatoire) implique un second joueur, tiré au sort à la
-// clôture parmi tous les participants (voir plus bas).
+// l'effet (voir data/marioclash/marioclash.json), seul levier : ne PAS
+// lancer pour charger la Concentration — seul l'échange aléatoire implique
+// un second joueur, tiré au sort à la clôture parmi tous les participants
+// (voir plus bas).
 export async function castSpellForPlayer(jour, discordId, config, rng = Math.random) {
   const actions = await readActions(jour);
   if (actions[discordId]?.spell) return { status: "alreadyCast" };
   const joueurs = await readJoueurs();
-  if (!joueurs[discordId]) return { status: "unknownPlayer" };
-  const sort = rollSort(config.sorts, rng);
-  await updateAction(jour, discordId, { spell: { target: discordId, sortId: sort.id } });
-  return { status: "ok", target: discordId, sort };
+  const joueur = joueurs[discordId];
+  if (!joueur) return { status: "unknownPlayer" };
+  const concentration = joueur.concentration || 0;
+  const sort = rollSort(sortsDisponibles(config.sorts, concentration), rng);
+  await writeJoueur(discordId, { ...joueur, concentration: 0 });
+  await updateAction(jour, discordId, { spell: { target: discordId, sortId: sort.id, concentration } });
+  return { status: "ok", target: discordId, sort, concentration };
 }
 
 // `actionsRaw`/`joueursAvant` : objets { discordId: {...} }, déjà
@@ -281,6 +335,33 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
   for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j };
   const lignes = [];
 
+  // 0) Lancers de dé du jour — DÉJÀ appliqués au clic (rollDiceForPlayer),
+  // simplement rapportés ici pour le bilan personnel du Journal.
+  for (const [id, action] of Object.entries(actionsRaw)) {
+    if (!joueurs[id] || !action.dice) continue;
+    lignes.push({
+      type: "de",
+      discordId: id,
+      deId: action.deId || null,
+      valeur: action.diceValue,
+      positionDe: action.positionDe ?? null,
+      caseSpeciale: action.caseSpeciale ?? null,
+    });
+  }
+
+  // Gel/Rage posés hier ne valaient que pour le dé d'aujourd'hui (déjà
+  // consommés au clic s'il a été lancé) : on les purge AVANT les sorts du
+  // jour, qui peuvent en poser de nouveaux pour demain. Même passe : la
+  // jauge de Concentration monte pour qui n'a pas lancé de sort aujourd'hui
+  // (celle des lanceurs a déjà été remise à 0 au clic).
+  for (const [id, joueur] of Object.entries(joueurs)) {
+    joueur.gel = false;
+    joueur.rage = 0;
+    if (!actionsRaw[id]?.spell) {
+      joueur.concentration = Math.min(config.concentration_max ?? 0, (joueur.concentration || 0) + 1);
+    }
+  }
+
   // 1) Objets déjà actifs ce jour → immunité (Étoile).
   const immunises = new Set();
   for (const [id, action] of Object.entries(actionsRaw)) {
@@ -290,7 +371,26 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
   }
 
   // 2) Objets appliqués (hors Étoile, déjà traitée ci-dessus).
-  for (const [id, action] of Object.entries(actionsRaw)) {
+  // Carapaces bleues (cible "leader") résolues APRÈS tous les autres objets,
+  // sur le classement de ce moment-là (une Banane qui fait passer quelqu'un
+  // en tête détourne donc la Carapace vers lui) — classement figé une seule
+  // fois pour toutes les Carapaces du jour, sinon leur effet dépendrait de
+  // l'ordre (arbitraire) des actions. Jamais le lanceur (s'il mène, elle
+  // frappe son poursuivant) ; à égalité, départage par pseudo, même ordre
+  // que le classement affiché.
+  const estCarapace = ([id]) => config.objets[joueurs[id]?.objet]?.cible === "leader";
+  const actionsOrdonnees = [
+    ...Object.entries(actionsRaw).filter((e) => !estCarapace(e)),
+    ...Object.entries(actionsRaw).filter(estCarapace),
+  ];
+  let classementCarapace = null;
+  const leaderHorsDe = (id) => {
+    classementCarapace ??= Object.entries(joueurs)
+      .map(([jid, j]) => ({ id: jid, position: j.position, username: j.username || "" }))
+      .sort((x, y) => y.position - x.position || x.username.localeCompare(y.username));
+    return classementCarapace.find((j) => j.id !== id)?.id || null;
+  };
+  for (const [id, action] of actionsOrdonnees) {
     const joueur = joueurs[id];
     if (!joueur || !action.item || !joueur.objet) continue;
     const itemId = joueur.objet;
@@ -307,12 +407,18 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
       joueur.objet = null;
       continue;
     }
-    // cible === "adversaire"
-    const targetId = action.item.target;
+    // cible === "adversaire" (choisie à l'achat) ou "leader" (automatique)
+    const targetId = item.cible === "leader" ? leaderHorsDe(id) : action.item.target;
     const cible = targetId ? joueurs[targetId] : null;
     if (!cible) { joueur.objet = null; continue; }
+    // L'Étoile RENVOIE l'objet : l'attaquant recule à la place de sa cible
+    // (dissuasion, les achats du jour restent cachés jusqu'au bilan). Le
+    // renvoi ne peut pas lui-même être bloqué : l'attaquant a acheté cet
+    // objet-ci, il ne peut pas avoir d'Étoile active le même jour.
     if (immunises.has(targetId)) {
-      lignes.push({ type: "objet", discordId: id, itemId, effet: "bloque", cibleId: targetId });
+      const recul = item.recul_renvoi ?? item.recul ?? 0;
+      joueur.position = clampPosition(joueur.position - recul, config.case_arrivee);
+      lignes.push({ type: "objet", discordId: id, itemId, effet: "renvoi", cibleId: targetId, valeur: recul });
       joueur.objet = null;
       continue;
     }
@@ -351,6 +457,15 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     if (sort.pointsBoutique) {
       cible.points += sort.pointsBoutique;
     }
+    if (sort.gel) cible.gel = true;
+    if (sort.rage) cible.rage = sort.rage;
+    // Clone : rejoue le déplacement du dé du jour (bonus Rage/Gel compris),
+    // sans case spéciale (déclenchées par le dé seul). Sans dé : sans effet.
+    let valeurClone = null;
+    if (sort.clone) {
+      valeurClone = actionsRaw[targetId]?.diceAvance ?? actionsRaw[targetId]?.diceValue ?? 0;
+      cible.position = clampPosition(cible.position + valeurClone, config.case_arrivee);
+    }
     let autreEchangeId = null;
     if (sort.echangeAleatoire) {
       const autres = Object.keys(joueurs).filter((otherId) => otherId !== targetId);
@@ -361,7 +476,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
         joueurs[autreEchangeId].position = posCible;
       }
     }
-    lignes.push({ type: "sort", discordId: id, cibleId: targetId, sortId: sort.id, sortLabel: sort.label, autreEchangeId });
+    lignes.push({ type: "sort", discordId: id, cibleId: targetId, sortId: sort.id, sortLabel: sort.label, autreEchangeId, valeurClone });
   }
   // Le dé n'est plus résolu ici : action individuelle sans interaction avec
   // les autres joueurs, elle est résolue EN DIRECT au clic (voir
