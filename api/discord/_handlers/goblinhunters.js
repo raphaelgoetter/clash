@@ -635,14 +635,41 @@ async function sendInvestigationDM(investigation, joueursApres, config) {
   await sendGoblinHuntersDM(investigation.investigatorId, embed);
 }
 
+// Camp(s) des attaquants ayant frappé la victime ce jour-là (tous comptés,
+// comme pour le Guet-Apens), regroupés par camp. Identités jamais révélées.
+function formatAttaquantsCamps(discordId, closure, config) {
+  const attackerIds = [
+    ...new Set(
+      (closure.attacks || [])
+        .filter((a) => a.targetId === discordId)
+        .map((a) => a.attackerId),
+    ),
+  ];
+  const parCamp = new Map();
+  for (const id of attackerIds) {
+    const camp = closure.joueursApres.find((j) => j.discordId === id)?.camp;
+    if (camp) parCamp.set(camp, (parCamp.get(camp) || 0) + 1);
+  }
+  if (!parCamp.size) return "";
+  if (attackerIds.length === 1) {
+    const camp = config.camps[[...parCamp.keys()][0]];
+    return `, sous les coups d'un(e) ${camp.emoji} **${camp.labelSingulier}**`;
+  }
+  const parts = [...parCamp].map(([key, n]) => {
+    const camp = config.camps[key];
+    return `${n} ${camp.emoji} **${n > 1 ? camp.label : camp.labelSingulier}**`;
+  });
+  return `, sous les coups de ${parts.join(" et ")}`;
+}
+
 // DM envoyé au joueur qui vient d'être éliminé (vote ou combat) — sur
 // demande explicite, "description complète de ce qu'il s'est passé". Rappelle
 // son propre camp/rôle (seule trace, l'embed public ne montre que le camp),
 // la cause précise, et les effets de mort déclenchés le concernant (Guet-
-// Apens/Explosif s'il détenait l'un de ces rôles). Ne révèle PAS qui a voté
-// contre lui ni l'identité/camp de son attaquant au combat — décision de
-// conception : préserver le mystère même après élimination, un joueur mort
-// pourrait sinon relayer cette info aux vivants hors-jeu (voir la simulation
+// Apens/Explosif s'il détenait l'un de ces rôles). Au combat, révèle le CAMP
+// du/des attaquant(s) qui l'ont achevé, jamais leur identité ; ne révèle pas
+// non plus qui a voté contre lui — décision de conception : un joueur mort
+// pourrait relayer ces infos aux vivants hors-jeu (voir la simulation
 // d'équilibrage sur l'impact de la communication externe, mémoire projet).
 async function sendEliminationDM(discordId, cause, closure, jourClos, config) {
   const joueur = closure.joueursApres.find((j) => j.discordId === discordId);
@@ -661,15 +688,14 @@ async function sendEliminationDM(discordId, cause, closure, jourClos, config) {
       `⚖️ Le village t'a accusé(e) au Château (${votes} vote${votes > 1 ? "s" : ""}).`,
     );
   } else {
-    lines.push(`⚔️ Tu es tombé(e) au combat à l'Arène.`);
+    lines.push(
+      `⚔️ Tu es tombé(e) au combat à l'Arène${formatAttaquantsCamps(discordId, closure, config)}.`,
+    );
   }
 
   if (closure.guetApensReveal?.guetApensId === discordId) {
-    const camps = closure.guetApensReveal.attackers
-      .map((a) => config.camps[a.campReporte].labelSingulier)
-      .join(", ");
     lines.push(
-      `🪤 Ton piège de Guet-Apens s'est déclenché : le camp de qui t'a achevé(e) a été révélé publiquement (${camps}).`,
+      `🪤 Ton piège de Guet-Apens s'est déclenché : ce camp a été révélé publiquement.`,
     );
   }
   if (closure.explosifRetaliation?.gobelinId === discordId) {
