@@ -36,6 +36,7 @@ import {
   archiveManche,
   listManches,
   isTooSoonSinceLastClosure,
+  ciblesObjet,
 } from "../../../backend/services/marioclash.js";
 import {
   getRoleIdByName,
@@ -349,7 +350,7 @@ const OBJET_EFFET_TEXTE = {
   accelerateur: "tu avances de 4 cases",
   bombe: "l'adversaire choisi recule de 3",
   etoile: "renvoie les objets adverses ce jour (l'attaquant recule de 3) et bloque les sorts",
-  banane: "échange ta place avec un adversaire choisi",
+  banane: "échange ta place avec un adversaire choisi (10 cases devant toi au maximum)",
   carapace: "le joueur en tête à la clôture recule de 5 (si c'est toi, elle frappe le 2e)",
 };
 
@@ -969,6 +970,23 @@ export async function handleBoutiqueSelect(
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
+    const item = config.objets[itemId];
+    // Cibles vérifiées AVANT le débit : sans adversaire à portée, l'Or
+    // n'est pas dépensé pour rien.
+    let candidats = null;
+    if (item?.cible === "adversaire") {
+      candidats = ciblesObjet(await readJoueurs(), discordId, item);
+      if (!candidats.length) {
+        await patchOriginal(webhookUrl, {
+          content: item.portee
+            ? `🛍️ Aucun adversaire à ${item.portee} cases devant toi ou moins : ${item.emoji} **${item.label}** non acheté(e).`
+            : `🛍️ Aucun autre joueur à cibler pour l'instant : ${item.emoji} **${item.label}** non acheté(e).`,
+          embeds: [],
+          components: [],
+        });
+        return;
+      }
+    }
     const result = await purchaseItem(
       discordId,
       username,
@@ -976,7 +994,6 @@ export async function handleBoutiqueSelect(
       Number(jour),
       config,
     );
-    const item = config.objets[itemId];
     if (result.status === "insufficientPoints") {
       await patchOriginal(webhookUrl, {
         content: `🛍️ Pas assez d'Or (tu as ${result.joueur.points} Or, il en faut ${item.cout}).`,
@@ -1022,18 +1039,6 @@ export async function handleBoutiqueSelect(
       return;
     }
 
-    const joueurs = await readJoueurs();
-    const candidats = Object.entries(joueurs)
-      .filter(([id]) => id !== discordId)
-      .map(([id, j]) => ({ discordId: id, username: j.username }));
-    if (!candidats.length) {
-      await patchOriginal(webhookUrl, {
-        content: `🛍️ Acheté : ${item.emoji} **${item.label}** — mais aucun autre joueur à cibler pour l'instant, l'objet ne sera pas utilisé.`,
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
     const components = buildTargetSelectRow(
       `marioclash_item_target:${jour}`,
       candidats,
@@ -1075,9 +1080,18 @@ export async function handleItemTargetSelect(
       });
       return;
     }
+    const item = config.objets[joueur.objet];
+    const candidats = ciblesObjet(await readJoueurs(), discordId, item);
+    if (!candidats.some((c) => c.discordId === targetId)) {
+      await patchOriginal(webhookUrl, {
+        content: `${item.emoji} Cible hors de portée, choisis-en une autre :`,
+        embeds: [],
+        components: buildTargetSelectRow(`marioclash_item_target:${jour}`, candidats),
+      });
+      return;
+    }
     await recordItemUse(jour, discordId, targetId);
     const cible = await readJoueur(targetId);
-    const item = config.objets[joueur.objet];
     await patchOriginal(webhookUrl, {
       content: `${item.emoji} ${item.label} activé sur **${cible?.username || "?"}** — effet révélé à la clôture !`,
       embeds: [],

@@ -1,5 +1,5 @@
 import assert from "assert";
-import { computeCloture, rollDice, rollSort, sortsDisponibles, clampPosition, isTooSoonSinceLastClosure, rollDieOfType, applyCaseSpeciale } from "./marioclash.js";
+import { computeCloture, rollDice, rollSort, sortsDisponibles, clampPosition, isTooSoonSinceLastClosure, rollDieOfType, applyCaseSpeciale, ciblesObjet } from "./marioclash.js";
 
 const CONFIG = {
   duree_jours: 7,
@@ -304,6 +304,20 @@ async function main() {
     assert.strictEqual(r2.joueursApres.a.position, 11);
     assert.strictEqual(r2.joueursApres.c.position, 5);
     assert.strictEqual(r2.lignes.find((l) => l.type === "sort" && l.discordId === "c").valeurClone, 0);
+  }
+
+  // ── ciblesObjet : portée de la Banane (devant soi, 10 cases max) ─────
+  {
+    const joueurs = {
+      a: { username: "A", position: 10 },
+      b: { username: "B", position: 20 }, // pile à 10 cases : ok
+      c: { username: "C", position: 21 }, // 11 cases : hors portée
+      d: { username: "D", position: 5 },  // derrière : exclu
+      e: { username: "E", position: 10 }, // même case : exclu
+    };
+    const ids = (item) => ciblesObjet(joueurs, "a", item).map((c) => c.discordId).sort();
+    assert.deepStrictEqual(ids({ cible: "adversaire", echange: true, portee: 10 }), ["b"]);
+    assert.deepStrictEqual(ids({ cible: "adversaire", recul: 3 }), ["b", "c", "d", "e"]);
   }
 
   // ── isTooSoonSinceLastClosure ────────────────────────────────────────

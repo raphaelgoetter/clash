@@ -235,6 +235,22 @@ export function sortsDisponibles(sorts, niveau = 0) {
   return sorts.filter((s) => !s.retire_concentration || s.retire_concentration > niveau);
 }
 
+// Adversaires ciblables par un objet "adversaire". Avec `portee` (Banane),
+// seuls les joueurs situés devant soi, à `portee` cases au plus, sont
+// éligibles — évaluée sur les positions au moment du choix (celles de la
+// dernière clôture), pas sur celles d'après les dés du jour.
+export function ciblesObjet(joueurs, discordId, item) {
+  const posJoueur = joueurs[discordId]?.position ?? 0;
+  return Object.entries(joueurs)
+    .filter(([id, j]) => {
+      if (id === discordId) return false;
+      if (item.portee == null) return true;
+      const ecart = (j.position ?? 0) - posJoueur;
+      return ecart > 0 && ecart <= item.portee;
+    })
+    .map(([id, j]) => ({ discordId: id, username: j.username }));
+}
+
 export function clampPosition(position, caseArrivee) {
   return Math.max(0, Math.min(caseArrivee, position));
 }

@@ -44,9 +44,10 @@
     "banane": {
       "label": "Peau de banane",
       "emoji": "🍌",
-      "cout": 3,
+      "cout": 5,
       "cible": "adversaire",
       "echange": true,
+      "portee": 10,
       "recul_renvoi": 3
     },
     "carapace": {

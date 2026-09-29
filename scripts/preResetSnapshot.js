@@ -171,9 +171,17 @@ async function main() {
   const now = new Date();
   const today = utcDayName(now);
 
-  // Le cron (war-summary.yml) est la seule source de vérité sur les jours d'exécution.
-  // Pas de guard ici : si le script tourne un jour sans reset GDC, les clans auront
-  // msUntilReset < 0 et seront simplement sautés.
+  // Garde-fou contre les déclenchements `schedule` parasites de GitHub (ex. un mardi) :
+  // sans lui, le runner attendrait ~2h30 jusqu'aux resets pour capturer un jour sans GDC.
+  // Les lancements manuels (workflow_dispatch) ou locaux ne sont pas filtrés.
+  const GDC_RESET_DAYS = ["friday", "saturday", "sunday", "monday"];
+  if (
+    process.env.GITHUB_EVENT_NAME === "schedule" &&
+    !GDC_RESET_DAYS.includes(today)
+  ) {
+    console.log(`Pas de reset GDC le ${today} : snapshot pré-reset ignoré.`);
+    return;
+  }
 
   // Construire la liste des clans triés par heure de reset (le plus tôt d'abord).
   const clansWithReset = ALLOWED_CLANS.map((tag) => {
