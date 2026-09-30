@@ -247,7 +247,7 @@ const commands = [
       {
         type: 1, // SUB_COMMAND
         name: "consulte",
-        description: "Affiche la Liste Noire avec clan actuel et dernier clan connu.",
+        description: "Affiche la Liste Noire avec clan actuel et clan précédent (avant).",
       },
     ],
   },
