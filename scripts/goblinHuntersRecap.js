@@ -271,6 +271,33 @@ const voteOf = (action) =>
   console.log(`  Villageois innocentés : ${Object.keys(enquetes.cibles.chasseur).length} joueur(s), en ${enquetes.reportes.chasseur} enquête(s) : ${revelés("chasseur")}`);
   console.log(`Jours surpeuplés (aucune enquête) : ${enquetes.surpeuplee.map((j) => `J${j}`).join(", ") || "aucun"}`);
 
+  // Connaissance des camps : nombre d'autres joueurs dont chacun a connu le
+  // camp. Un Gobelin les connaît tous par construction (il connaît tous les
+  // Gobelins, donc tous les autres sont Villageois) ; un Villageois ne
+  // connaît que les cibles distinctes de ses enquêtes (l'Infiltré y passe
+  // pour Villageois, compté comme identification erronée).
+  titre("Connaissance des camps");
+  const autres = state.joueurs.length - 1;
+  const connaissance = state.joueurs.map((j) => {
+    if (j.camp === "gobelin") return { j, n: autres, faux: 0 };
+    const vus = new Map();
+    for (const i of indices.find(([id]) => id === j.discordId)?.[1] ?? []) {
+      if (i.type === "enquete") vus.set(i.cibleId, { camp: i.campReporte, jour: i.jour });
+    }
+    const faux = [...vus].filter(([id, v]) => v.camp !== campAt(byId.get(id), v.jour)).length;
+    return { j, n: vus.size, faux };
+  });
+  const groupe = (list) =>
+    list.map(({ j, n, faux }) => `${nom(j.discordId)}${n > 1 && n < autres ? ` (${n})` : ""}${faux ? ` [${faux} erroné(s), Infiltré]` : ""}`).join(", ") || "—";
+  const gobs = connaissance.filter((c) => c.j.camp === "gobelin");
+  const vills = connaissance.filter((c) => c.j.camp !== "gobelin");
+  console.log(`Tous les camps (${autres}/${autres}) : ${groupe(gobs)} (Gobelins${gobs.some((c) => c.j.converti) ? ", converti compris" : ""} : ils se connaissent entre eux, donc savent qui est Villageois)`);
+  const villTous = vills.filter((c) => c.n === autres);
+  if (villTous.length) console.log(`Tous les camps, côté Villageois : ${groupe(villTous)}`);
+  console.log(`Plusieurs camps : ${groupe(vills.filter((c) => c.n > 1 && c.n < autres).sort((a, b) => b.n - a.n))}`);
+  console.log(`Un seul camp : ${groupe(vills.filter((c) => c.n === 1))}`);
+  console.log(`Aucun camp : ${groupe(vills.filter((c) => c.n === 0))}`);
+
   if (actionsDetaillees) {
     titre("Fréquentation des lieux (jours détaillés)");
     for (const [lieu, n] of Object.entries(frequentation).sort((a, b) => b[1] - a[1])) {

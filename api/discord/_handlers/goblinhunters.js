@@ -1554,6 +1554,29 @@ function otherGobelinsLine(joueur, joueurs) {
   return `Les autres Gobelins sont : ${noms.join(", ")}.`;
 }
 
+// Joueurs encore en vie (hors soi-même), annotés du camp que le joueur
+// connaît : un Gobelin connaît tous les Gobelins, donc tous les autres sont
+// Villageois ; un Villageois ne connaît que ses résultats d'enquête (le plus
+// récent par cible — l'Infiltré y apparaît Villageois, comme dans le DM).
+function vivantsLine(joueur, joueurs, indices, config) {
+  const campConnu = new Map();
+  if (joueur.camp === "gobelin") {
+    for (const j of joueurs) campConnu.set(j.discordId, j.camp);
+  } else {
+    for (const e of indices) {
+      if (e.type === "enquete") campConnu.set(e.cibleId, e.campReporte);
+    }
+  }
+  const vivants = joueurs.filter(
+    (j) => j.alive && j.discordId !== joueur.discordId,
+  );
+  const noms = vivants.map((j) => {
+    const camp = campConnu.get(j.discordId);
+    return camp ? `${config.camps[camp].emoji} ${j.username}` : j.username;
+  });
+  return `**👥 Encore en vie (${vivants.length})** : ${noms.join(", ")}`;
+}
+
 function formatIndiceLine(entry, config) {
   const lieu = config.lieux[entry.lieu];
   if (entry.type === "enquete") {
@@ -1639,9 +1662,10 @@ export async function handleJournal(webhookUrl, discordId) {
       );
     }
 
-    lines.push("", "**🔍 Indices récoltés**");
-
     const indices = await readPlayerIndices(discordId);
+    lines.push("", vivantsLine(joueur, state.joueurs, indices, config));
+
+    lines.push("", "**🔍 Indices récoltés**");
     lines.push(
       ...(indices.length
         ? indices.map((e) => formatIndiceLine(e, config))
