@@ -19,6 +19,7 @@ import { getDiscordLinks } from "../backend/services/discordLinks.js";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
+import { isSupremeChampionLeague } from "../backend/services/rankedLeagues.js";
 
 let _redis = null;
 function getRedis() {
@@ -125,14 +126,19 @@ const RELIABILITY_BADGES = {
 // playerAnalysis.js ; on ne fait ici que l'afficher, jamais le recalculer.
 const VERDICT_SHORT_LABELS = {
   highReliability: "Fiable",
-  lowRisk: "Faible",
-  highRisk: "Élevé",
-  extremeRisk: "Extrême",
+  lowRisk: "Risque Faible",
+  highRisk: "Risque Élevé",
+  extremeRisk: "Risque Extrême",
 };
 
-function formatMemberLine(m) {
+/**
+ * Formate le bloc d'un membre arrivé/parti : nom puis puces fiabilité et trophées.
+ * @param {object} m - { tag, name, analysis? }
+ * @returns {string}
+ */
+function formatMemberBlock(m) {
   const playerUrl = `https://trustroyale.vercel.app/player/${m.tag.replace(/^#/, "")}`;
-  let reliabilityStr = "";
+  const lines = [`**[${m.name}](${playerUrl})** :`];
 
   const scoreObj = m.analysis?.warScore ?? m.analysis?.reliability;
   if (scoreObj) {
@@ -140,11 +146,26 @@ function formatMemberLine(m) {
     const emoji = RELIABILITY_BADGES[scoreObj.color] ?? RELIABILITY_BADGES.red;
     const verdict =
       VERDICT_SHORT_LABELS[scoreObj.verdictKey] ?? scoreObj.verdict ?? "";
-
-    reliabilityStr = ` · ${emoji} ${verdict} (${pct}%)`;
+    lines.push(`• ${emoji} ${verdict} (${pct}%)`);
   }
 
-  return `**[${m.name}](${playerUrl})**${reliabilityStr}`;
+  const overview = m.analysis?.overview;
+  if (overview) {
+    if (
+      isSupremeChampionLeague(
+        overview.bestPathOfLegendLeagueNumber,
+        overview.bestPathOfLegendTrophies,
+      )
+    ) {
+      lines.push("• <:CS:1549458633396588544> Champion Suprême");
+    } else {
+      lines.push(
+        `• <:trophy:1498645869224792105> ${overview.trophies ?? 0} trophées`,
+      );
+    }
+  }
+
+  return lines.join("\n");
 }
 
 const ROLE_ORDER = {
@@ -207,48 +228,6 @@ async function postDiscordEmbed(
   const hasPromotions = promotions.length > 0;
   const hasDemotions = demotions.length > 0;
 
-  // Couleur : vert = arrivées/promotions uniquement, rouge = départs/rétrogradations uniquement, bleu = mixte
-  let color;
-  if ((hasArrivals || hasPromotions) && !(hasDepartures || hasDemotions))
-    color = 0x57f287; // vert
-  else if ((hasDepartures || hasDemotions) && !(hasArrivals || hasPromotions))
-    color = 0xed4245; // rouge
-  else color = 0x5865f2; // bleu
-
-  const fields = [];
-
-  if (arrivals.length > 0) {
-    fields.push({
-      name: `<:hi:1493849416514277426> Arrivée${arrivals.length > 1 ? "s" : ""} (${arrivals.length})`,
-      value: arrivals.map(formatMemberLine).join("\n"),
-      inline: false,
-    });
-  }
-
-  if (departures.length > 0) {
-    fields.push({
-      name: `<:bye:1493849413901222019> Départ${departures.length > 1 ? "s" : ""} (${departures.length})`,
-      value: departures.map(formatMemberLine).join("\n"),
-      inline: false,
-    });
-  }
-
-  if (promotions.length > 0) {
-    fields.push({
-      name: `<:victory:1504136468900352070> Promotions (${promotions.length})`,
-      value: promotions.map(formatRoleChangeLine).join("\n"),
-      inline: false,
-    });
-  }
-
-  if (demotions.length > 0) {
-    fields.push({
-      name: `<:eyeclosed:1504138067580158053> Rétrogradations (${demotions.length})`,
-      value: demotions.map(formatRoleChangeLine).join("\n"),
-      inline: false,
-    });
-  }
-
   const now = new Date();
   const date = now.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" }); // JJ/MM/AAAA
   const time = now.toLocaleTimeString("fr-FR", {
@@ -258,18 +237,58 @@ async function postDiscordEmbed(
     hour12: false,
   });
 
-  const embed = {
-    title: `<:stats:1499284927894650950> ${clanName} · Nouveautés`,
-    color,
-    fields,
-    footer: { text: `Constat fait le : ${date} ${time}` },
+  // Un embed par type de changement : arrivées (vert), départs (rouge), rôles (bleu)
+  const embeds = [];
+
+  if (hasArrivals) {
+    embeds.push({
+      title: `<:hi:1493849416514277426> ${clanName} · Arrivées (${arrivals.length})`,
+      color: 0x57f287,
+      description: arrivals.map(formatMemberBlock).join("\n\n"),
+    });
+  }
+
+  if (hasDepartures) {
+    embeds.push({
+      title: `<:bye:1493849413901222019> ${clanName} · Départs (${departures.length})`,
+      color: 0xed4245,
+      description: departures.map(formatMemberBlock).join("\n\n"),
+    });
+  }
+
+  if (hasPromotions || hasDemotions) {
+    const fields = [];
+    if (hasPromotions) {
+      fields.push({
+        name: `<:victory:1504136468900352070> Promotions (${promotions.length})`,
+        value: promotions.map(formatRoleChangeLine).join("\n"),
+        inline: false,
+      });
+    }
+    if (hasDemotions) {
+      fields.push({
+        name: `<:eyeclosed:1504138067580158053> Rétrogradations (${demotions.length})`,
+        value: demotions.map(formatRoleChangeLine).join("\n"),
+        inline: false,
+      });
+    }
+    embeds.push({
+      title: `<:stats:1499284927894650950> ${clanName} · Rôles`,
+      color: 0x5865f2,
+      fields,
+    });
+  }
+
+  // Horodatage uniquement sur le dernier embed
+  embeds[embeds.length - 1].footer = {
+    text: `Constat fait le : ${date} ${time}`,
   };
 
   if (DRY_RUN) {
     console.log(
       `\n[${tag}] ── DRY-RUN ── embed qui serait posté dans le channel ${channelId ?? "(non configuré)"} :`,
     );
-    console.log(JSON.stringify({ embeds: [embed] }, null, 2));
+    console.log(JSON.stringify({ embeds }, null, 2));
     return;
   }
 
@@ -290,7 +309,7 @@ async function postDiscordEmbed(
       "Content-Type": "application/json",
       Authorization: `Bot ${token}`,
     },
-    body: JSON.stringify({ embeds: [embed] }),
+    body: JSON.stringify({ embeds }),
   });
 
   if (!res.ok) {
