@@ -1147,6 +1147,11 @@ export function computeCloture({
   const vivantsApresIds = new Set(vivantsApres.map((j) => j.discordId));
 
   return {
+    // Actions du jour (bots inclus) : archivées dans l'historique par
+    // closeDayAndAdvance() avant la purge de clearActions(), pour le
+    // compte-rendu de fin de partie (camp des votants, votes/attaques
+    // contre son propre camp — scripts/goblinHuntersRecap.js).
+    actionsRaw,
     joueursApres,
     absents: absents.filter((id) => vivantsApresIds.has(id)),
     remplacements,
@@ -1308,6 +1313,7 @@ export async function closeDayAndAdvance(jour, config) {
     conversionId: result.conversionId,
     immuneId: result.immuneId,
     victory: result.victory,
+    actions: result.actionsRaw,
     resolvedAt: new Date().toISOString(),
   });
 
