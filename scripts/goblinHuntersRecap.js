@@ -418,6 +418,86 @@ const voteOf = (action) =>
 
   interpretations.forEach((l) => console.log(`• ${l}`));
 
+  // ── Classement des joueurs ─────────────────────────────────────────
+  // Score indicatif (barème arbitraire, à ajuster) calculé sur les traces
+  // disponibles : carnets d'indices (enquêtes, coups portés), absences et,
+  // pour les jours détaillés uniquement, votes au Château. Le camp retenu
+  // est celui du joueur le jour de l'action (conversion prise en compte).
+  titre("Classement des joueurs (score indicatif)");
+  const BAREME = {
+    chasseur: { enqGob: 3, enqVill: 1, coupEnnemi: 2, coupAllie: -2, mortEnnemi: 3, mortAllie: -3, voteEnnemi: 2, voteAllie: -2, elimEnnemi: 2, elimAllie: -3, absence: -2, vivant: 1 },
+    // Les Gobelins se connaissent : frapper ou voter contre un allié est
+    // une vraie erreur, plus pénalisée.
+    gobelin: { enqGob: 0, enqVill: 0, coupEnnemi: 2, coupAllie: -3, mortEnnemi: 3, mortAllie: -3, voteEnnemi: 2, voteAllie: -3, elimEnnemi: 2, elimAllie: -3, absence: -2, vivant: 2 },
+  };
+  const stats = new Map(
+    state.joueurs.map((j) => [
+      j.discordId,
+      { enqGob: 0, enqVill: 0, coupEnnemi: 0, coupAllie: 0, mortEnnemi: 0, mortAllie: 0, voteEnnemi: 0, voteAllie: 0, elimEnnemi: 0, elimAllie: 0, absence: 0, score: 0 },
+    ]),
+  );
+  const note = (id, jour, cleEnnemi, cleAllie, cibleId) => {
+    const allie = campDe(id, jour) === campDe(cibleId, jour);
+    const cle = allie ? cleAllie : cleEnnemi;
+    stats.get(id)[cle]++;
+    stats.get(id).score += BAREME[campDe(id, jour)][cle];
+  };
+  for (const [id, list] of indices) {
+    for (const i of list) {
+      if (i.type === "enquete") {
+        const cle = i.campReporte === "gobelin" ? "enqGob" : "enqVill";
+        stats.get(id)[cle]++;
+        stats.get(id).score += BAREME[campDe(id, i.jour)][cle];
+      }
+      if (i.type === "combat") {
+        note(id, i.jour, "coupEnnemi", "coupAllie", i.cibleId);
+        // Participation à la mort du jour (pas forcément le coup décisif)
+        if (mortsCombat.some((x) => x.jour === i.jour && x.id === i.cibleId)) {
+          note(id, i.jour, "mortEnnemi", "mortAllie", i.cibleId);
+        }
+      }
+    }
+  }
+  for (const e of jours) {
+    for (const id of e.absents ?? []) {
+      stats.get(id).absence++;
+      stats.get(id).score += BAREME[campDe(id, e.jour)].absence;
+    }
+    for (const [voterId, action] of Object.entries(e.actions ?? {})) {
+      const cibleId = voteOf(action);
+      if (!cibleId || !stats.has(voterId)) continue;
+      note(voterId, e.jour, "voteEnnemi", "voteAllie", cibleId);
+      if (e.eliminationsParVote === cibleId) note(voterId, e.jour, "elimEnnemi", "elimAllie", cibleId);
+    }
+  }
+  const detailJoueur = (st) =>
+    [
+      st.enqGob && `${st.enqGob} Gob démasqué(s)`,
+      st.enqVill && `${st.enqVill} Vill vérifié(s)`,
+      (st.coupEnnemi || st.coupAllie) && `coups ${st.coupEnnemi} ennemi / ${st.coupAllie} allié`,
+      st.mortEnnemi && `${st.mortEnnemi} mort(s) ennemie(s)`,
+      st.mortAllie && `${st.mortAllie} mort(s) alliée(s)`,
+      (st.voteEnnemi || st.voteAllie) && `votes ${st.voteEnnemi} ennemi / ${st.voteAllie} allié`,
+      st.elimEnnemi && `${st.elimEnnemi} élimination(s) ennemie(s)`,
+      st.elimAllie && `${st.elimAllie} élimination(s) alliée(s)`,
+      st.absence && `${st.absence} absence(s)`,
+    ]
+      .filter(Boolean)
+      .join(", ") || "aucune trace";
+  const classement = state.joueurs
+    .map((j) => {
+      const st = stats.get(j.discordId);
+      if (j.alive) st.score += BAREME[j.camp].vivant;
+      return { j, st };
+    })
+    .sort((a, b) => b.st.score - a.st.score);
+  classement.forEach(({ j, st }, i) => {
+    console.log(`  ${String(i + 1).padStart(2)}. ${campLabel(j.camp)} ${nom(j.discordId)} : ${st.score} pts (${detailJoueur(st)})`);
+  });
+  console.log(
+    `  ⚠️ Votes pris en compte uniquement sur ${joursDetailles.length ? joursDetailles.map((d) => `J${d}`).join(", ") : "aucun jour"} ; présence à la Taverne invisible ; « mort ennemie » = a frappé la victime le jour de sa mort.`,
+  );
+
   titre("Bilan final des joueurs");
   for (const j of state.joueurs) {
     const role = roleLabel(j.converti ? j.roleOrigine : j.role);
