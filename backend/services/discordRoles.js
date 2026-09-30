@@ -62,3 +62,19 @@ export function buildRolePingFields(roleId) {
     allowed_mentions: { parse: [], roles: [roleId] },
   };
 }
+
+// Vrai si le membre (body.member d'une interaction) possède au moins un rôle
+// dont le nom commence par `prefix` (insensible à la casse, emojis et
+// suffixes ignorés : « STAFF 🛠️ », « STAFF La Resistance »…). Faux hors
+// serveur (DM) ou si la liste des rôles du serveur est indisponible.
+export async function memberHasRolePrefix(member, prefix) {
+  const memberRoleIds = member?.roles;
+  if (!Array.isArray(memberRoleIds) || memberRoleIds.length === 0) return false;
+  const wanted = normalizeRoleName(prefix);
+  const roles = await loadGuildRoles();
+  return roles.some(
+    (r) =>
+      memberRoleIds.includes(r?.id) &&
+      normalizeRoleName(r?.name).replace(/^@/, "").startsWith(wanted),
+  );
+}

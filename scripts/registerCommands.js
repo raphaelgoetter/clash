@@ -208,6 +208,43 @@ const commands = [
     ],
   },
   {
+    name: "blacklist",
+    description: "Gère la Liste Noire des joueurs (réservé au staff).",
+    options: [
+      {
+        type: 1, // SUB_COMMAND
+        name: "ajoute",
+        description: "Ajoute un joueur à la Liste Noire.",
+        options: [
+          {
+            type: 3, // STRING
+            name: "tag",
+            description: "Tag du joueur (ex : #2YLYUPCUG ou 2YLYUPCUG)",
+            required: true,
+          },
+        ],
+      },
+      {
+        type: 1, // SUB_COMMAND
+        name: "retire",
+        description: "Retire un joueur de la Liste Noire.",
+        options: [
+          {
+            type: 3, // STRING
+            name: "tag",
+            description: "Tag du joueur (ex : #2YLYUPCUG ou 2YLYUPCUG)",
+            required: true,
+          },
+        ],
+      },
+      {
+        type: 1, // SUB_COMMAND
+        name: "consulte",
+        description: "Affiche la Liste Noire avec clan actuel et dernier clan connu.",
+      },
+    ],
+  },
+  {
     name: "late-ping",
     description:
       "Liste les joueurs en retard dans leurs combats GDC avant le reset, avec ping des membres lies.",

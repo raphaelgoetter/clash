@@ -53,6 +53,10 @@ npm run discord-links:set -- "#TAG" discordUserId ["#TAG2" discordUserId2 ...]
 npm run discord-links:remove -- "#TAG" [...]
 ```
 
+### Liste Noire (`/blacklist`)
+
+Stockée dans Upstash Redis (hash `blacklist`, `backend/services/blacklist.js`) : un champ par tag `#TAG`, valeur JSON `{ name, clans, addedBy, addedAt }`. `clans` est l'historique des clans distincts du joueur (plus récent en tête, 5 max), initialisé à l'ajout depuis le journal de combats (25 derniers) puis le clan actuel, et mis à jour à chaque `consulte`. « Dernier clan connu » = premier clan de l'historique différent du clan actuel. Accès réservé aux membres ayant un rôle Discord dont le nom commence par `STAFF` (`memberHasRolePrefix()` dans `discordRoles.js`) ; réponses éphémères.
+
 ### Thread Discord dédié aux notifications automatiques (test clan 2)
 
 Pour éviter que les posts automatiques parasitent les discussions manuelles du salon d'un clan, certains scripts peuvent poster dans un thread dédié plutôt que dans le salon principal.

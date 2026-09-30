@@ -109,6 +109,7 @@ import {
   handleIdeaModalSubmit as handlePollIdeaModalSubmit,
 } from "./_handlers/poll.js";
 import { handleMiniJeuxCommand } from "./_handlers/minijeux.js";
+import { handleBlacklistCommand } from "./_handlers/blacklist.js";
 import {
   handleMiniJeuxHistory,
   handleMiniJeuxHistoryPage,
@@ -6019,6 +6020,15 @@ export default async function handler(req, res) {
         });
       }
     });
+    return;
+  }
+
+  // Commande /blacklist (réservée au staff, vérifié en arrière-plan car la
+  // résolution des noms de rôles nécessite un appel à l'API Discord)
+  if (body.type === 2 && body.data?.name === "blacklist") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBlacklistCommand(webhookUrl, body));
     return;
   }
 

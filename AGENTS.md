@@ -123,6 +123,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/chelem clan:N [season:X]` | Joueurs 16/16 decks par semaine |
 | `/champion-history clan:N` | Historique des vrais champions GDC passés d'un clan |
 | `/recap [saison:-1\|-2]` | Bottom 10 La Resistance / top 10 Les Resistants (saison passée) |
+| `/blacklist ajoute\|retire tag:#TAG` / `/blacklist consulte` | Liste Noire (rôle commençant par `STAFF`) |
 | `/frame` | Scores personnels au jeu Frame (devine le film) — manche en cours, historique, total saison |
 
 ## Sous-agents
