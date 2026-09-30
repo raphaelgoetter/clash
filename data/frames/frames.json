@@ -279,5 +279,33 @@
     "indice2": "Luc Besson",
     "titre": "Léon: The Professional (Léon)",
     "accepte": ["léon", "professional", "leon"]
+  },
+  {
+    "image": "041.webp",
+    "indice1": "2006",
+    "indice2": "Zack Snyder",
+    "titre": "300",
+    "accepte": ["300"]
+  },
+  {
+    "image": "042.webp",
+    "indice1": "1987",
+    "indice2": "Tony Scott",
+    "titre": "Beverly Hills Cop (Le flic de Beverly Hills)",
+    "accepte": ["beverly hills"]
+  },
+  {
+    "image": "043.webp",
+    "indice1": "2006",
+    "indice2": "Martin Campbell",
+    "titre": "Casino Royale",
+    "accepte": ["casino royale"]
+  },
+  {
+    "image": "044.webp",
+    "indice1": "1990",
+    "indice2": "Paul Verhoeven",
+    "titre": "Total Recall",
+    "accepte": ["total recall"]
   }
 ]
