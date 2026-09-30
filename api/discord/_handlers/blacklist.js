@@ -8,6 +8,8 @@
 import {
   normalizeBlacklistTag,
   pushClanHistory,
+  clanHistoryFromBattles,
+  lastKnownClan,
   getBlacklist,
   isBlacklisted,
   setBlacklistEntries,
@@ -19,6 +21,7 @@ import { fetchPlayer, fetchBattleLog } from "../../../backend/services/clashApi.
 const STAFF_ROLE_PREFIX = "STAFF";
 const BLACKLIST_COLOR = 0x2b2d31;
 const EMBED_DESCRIPTION_MAX = 4000;
+const REASON_MAX = 150;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 const playerUrl = (tag) =>
@@ -48,28 +51,33 @@ async function post(webhookUrl, payload) {
 // Historique des clans déduit du journal de combats (25 derniers), puis du
 // clan actuel — permet de connaître le clan précédent dès l'ajout.
 async function buildInitialClanHistory(tag, player) {
-  let clans = [];
   const battles = await fetchBattleLog(tag).catch(() => []);
-  for (const battle of [...battles].reverse()) {
-    const me = (battle.team ?? []).find((p) => p.tag === tag);
-    clans = pushClanHistory(clans, me?.clan);
-  }
-  return pushClanHistory(clans, player?.clan);
+  return clanHistoryFromBattles(tag, battles, player?.clan);
 }
 
-// Dernier clan connu = clan le plus récent de l'historique différent du clan
-// actuel (sinon on répéterait le clan actuel).
-function lastKnownClan(clans, currentClanTag) {
-  return (clans ?? []).find((c) => c.tag !== currentClanTag) ?? null;
+// Raison nettoyée : une seule ligne (liste compacte), longueur bornée
+function cleanReason(raw) {
+  const reason = String(raw ?? "").replace(/\s+/g, " ").trim();
+  return reason ? reason.slice(0, REASON_MAX) : null;
 }
 
-async function handleAdd(webhookUrl, rawTag, discordUserId) {
+async function handleAdd(webhookUrl, rawTag, rawReason, discordUserId) {
   const tag = normalizeBlacklistTag(rawTag);
   if (!tag) {
     await post(webhookUrl, { content: `❌ Tag \`${rawTag}\` invalide.` });
     return;
   }
+  const reason = cleanReason(rawReason);
   if (await isBlacklisted(tag)) {
+    // Déjà présent : une raison fournie remplace l'ancienne
+    if (reason) {
+      const entry = (await getBlacklist())[tag] ?? {};
+      await setBlacklistEntries({ [tag]: { ...entry, reason } });
+      await post(webhookUrl, {
+        content: `✅ Raison mise à jour pour **${entry.name ?? "?"}** (\`${tag}\`) : ${reason}`,
+      });
+      return;
+    }
     await post(webhookUrl, {
       content: `ℹ️ \`${tag}\` est déjà dans la Liste Noire.`,
     });
@@ -91,6 +99,7 @@ async function handleAdd(webhookUrl, rawTag, discordUserId) {
     [tag]: {
       name: player.name,
       clans,
+      reason,
       addedBy: discordUserId ?? null,
       addedAt: new Date().toISOString(),
     },
@@ -100,7 +109,8 @@ async function handleAdd(webhookUrl, rawTag, discordUserId) {
   await post(webhookUrl, {
     content:
       `✅ **${player.name}** (\`${tag}\`) ajouté à la Liste Noire.\n` +
-      `Clan actuel : ${player.clan?.name ?? "Aucun"} (dernier clan connu : ${previous?.name ?? "❓"})`,
+      `Clan actuel : ${player.clan?.name ?? "Aucun"} (dernier clan connu : ${previous?.name ?? "❓"})` +
+      (reason ? `\nRaison : ${reason}` : ""),
   });
 }
 
@@ -164,7 +174,8 @@ async function handleList(webhookUrl) {
     const previous = lastKnownClan(clans, player?.clan?.tag);
     return (
       `${i + 1}. [${name}](${playerUrl(tag)}) \`${tag}\` · ` +
-      `Clan : **${current}** · Dernier clan connu : ${previous?.name ?? "❓"}`
+      `Clan : **${current}** · Dernier clan connu : ${previous?.name ?? "❓"}` +
+      (entry.reason ? ` · Raison : ${entry.reason}` : "")
     );
   });
 
@@ -211,9 +222,10 @@ export async function handleBlacklistCommand(webhookUrl, body) {
 
     const sub = body.data?.options?.[0];
     const tagOpt = sub?.options?.find((o) => o.name === "tag")?.value;
+    const reasonOpt = sub?.options?.find((o) => o.name === "raison")?.value;
     const discordUserId = body.member?.user?.id ?? body.user?.id;
 
-    if (sub?.name === "ajoute") return await handleAdd(webhookUrl, tagOpt, discordUserId);
+    if (sub?.name === "ajoute") return await handleAdd(webhookUrl, tagOpt, reasonOpt, discordUserId);
     if (sub?.name === "retire") return await handleRemove(webhookUrl, tagOpt);
     if (sub?.name === "consulte") return await handleList(webhookUrl);
 

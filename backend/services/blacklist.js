@@ -2,7 +2,7 @@
 // services/blacklist.js — Liste Noire du staff (commande /blacklist)
 // Stockage : Upstash Redis (hash `blacklist`, même instance que
 // discordLinks.js). Un champ par tag Clash (« #TAG »), valeur JSON :
-//   { name, clans: [{ tag, name }], addedBy, addedAt }
+//   { name, clans: [{ tag, name }], reason, addedBy, addedAt }
 // `clans` = historique des clans distincts où le joueur a été vu, du plus
 // récent au plus ancien (plafonné à MAX_CLAN_HISTORY) — sert à afficher le
 // « dernier clan connu » même quand le joueur a quitté tout clan.
@@ -56,6 +56,43 @@ export function pushClanHistory(clans, clan) {
     0,
     MAX_CLAN_HISTORY,
   );
+}
+
+/**
+ * Historique des clans d'un joueur déduit de son journal de combats (du plus
+ * ancien au plus récent), puis de son clan actuel. Même format que `clans`.
+ */
+export function clanHistoryFromBattles(tag, battles, currentClan) {
+  let clans = [];
+  for (const battle of [...(battles ?? [])].reverse()) {
+    const me = (battle?.team ?? []).find((p) => p.tag === tag);
+    clans = pushClanHistory(clans, me?.clan);
+  }
+  return pushClanHistory(clans, currentClan);
+}
+
+/**
+ * Dernier clan connu = clan le plus récent de l'historique différent du clan
+ * actuel (sinon on répéterait le clan actuel). null si aucun.
+ */
+export function lastKnownClan(clans, currentClanTag) {
+  return (clans ?? []).find((c) => c.tag !== currentClanTag) ?? null;
+}
+
+/**
+ * Clans « à risque » : tous les clans de l'historique des joueurs de la
+ * Liste Noire. Retourne Map<"#CLANTAG", Set<"#TAG joueur">>.
+ */
+export function buildRiskyClanMap(blacklist) {
+  const map = new Map();
+  for (const [playerTag, entry] of Object.entries(blacklist ?? {})) {
+    for (const clan of entry?.clans ?? []) {
+      if (!clan?.tag) continue;
+      if (!map.has(clan.tag)) map.set(clan.tag, new Set());
+      map.get(clan.tag).add(playerTag);
+    }
+  }
+  return map;
 }
 
 /**

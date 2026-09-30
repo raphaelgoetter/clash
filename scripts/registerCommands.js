@@ -222,6 +222,13 @@ const commands = [
             description: "Tag du joueur (ex : #2YLYUPCUG ou 2YLYUPCUG)",
             required: true,
           },
+          {
+            type: 3, // STRING
+            name: "raison",
+            description: "Raison de l'ajout (remplace la raison existante si le joueur est déjà listé)",
+            required: false,
+            max_length: 150,
+          },
         ],
       },
       {

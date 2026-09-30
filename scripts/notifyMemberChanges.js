@@ -13,7 +13,16 @@ dotenv.config({ path: "./.env" });
 
 import fetch from "node-fetch";
 import { Redis } from "@upstash/redis";
-import { fetchClanMembers } from "../backend/services/clashApi.js";
+import {
+  fetchClanMembers,
+  fetchBattleLog,
+} from "../backend/services/clashApi.js";
+import {
+  getBlacklist,
+  buildRiskyClanMap,
+  clanHistoryFromBattles,
+  lastKnownClan,
+} from "../backend/services/blacklist.js";
 import { getPlayerAnalysis } from "../backend/services/playerAnalysis.js";
 import { getDiscordLinks } from "../backend/services/discordLinks.js";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
@@ -139,6 +148,13 @@ const VERDICT_SHORT_LABELS = {
 function formatMemberBlock(m) {
   const playerUrl = `https://trustroyale.vercel.app/player/${m.tag.replace(/^#/, "")}`;
   const lines = [`**[${m.name}](${playerUrl})** :`];
+
+  if (m.blacklisted) {
+    lines.push("• ⚠️ Joueur figurant dans la Liste Noire");
+  }
+  if (m.riskyClan) {
+    lines.push(`• ⚠️ Clan à risque (${m.riskyClan.name})`);
+  }
 
   const scoreObj = m.analysis?.warScore ?? m.analysis?.reliability;
   if (scoreObj) {
@@ -365,6 +381,16 @@ async function main() {
     return Object.prototype.hasOwnProperty.call(discordLinks, normalized);
   };
 
+  // Liste Noire : joueurs signalés et clans « à risque » (clans de leur
+  // historique, hors clans de la famille). Une erreur Redis ne doit pas
+  // bloquer la notification : on continue sans avertissement.
+  const blacklist = await getBlacklist().catch((err) => {
+    console.error(`Liste Noire indisponible : ${err.message}`);
+    return {};
+  });
+  const riskyClans = buildRiskyClanMap(blacklist);
+  for (const familyTag of ALLOWED_CLANS) riskyClans.delete(`#${familyTag}`);
+
   for (const tag of ALLOWED_CLANS) {
     try {
       const [cached, current, clanName] = await Promise.all([
@@ -460,6 +486,22 @@ async function main() {
       if (newArrivals.length > 0) {
         await Promise.all(
           newArrivals.map(async (arrival) => {
+            arrival.blacklisted = Boolean(blacklist[arrival.tag]);
+            // Clan précédent déduit du journal de combats (le clan actuel
+            // est le clan de la famille qu'il vient de rejoindre).
+            const riskyClanCheck = fetchBattleLog(arrival.tag)
+              .then((battles) => {
+                const previous = lastKnownClan(
+                  clanHistoryFromBattles(arrival.tag, battles),
+                  `#${tag}`,
+                );
+                // Le joueur lui-même ne rend pas son ancien clan « à risque »
+                const flagged = [...(riskyClans.get(previous?.tag) ?? [])];
+                if (flagged.some((t) => t !== arrival.tag)) {
+                  arrival.riskyClan = previous;
+                }
+              })
+              .catch(() => {});
             try {
               arrival.analysis = await getPlayerAnalysis(
                 arrival.tag,
@@ -472,6 +514,7 @@ async function main() {
                 );
               }
             }
+            await riskyClanCheck;
           }),
         );
       }

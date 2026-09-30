@@ -55,7 +55,9 @@ npm run discord-links:remove -- "#TAG" [...]
 
 ### Liste Noire (`/blacklist`)
 
-Stockée dans Upstash Redis (hash `blacklist`, `backend/services/blacklist.js`) : un champ par tag `#TAG`, valeur JSON `{ name, clans, addedBy, addedAt }`. `clans` est l'historique des clans distincts du joueur (plus récent en tête, 5 max), initialisé à l'ajout depuis le journal de combats (25 derniers) puis le clan actuel, et mis à jour à chaque `consulte`. « Dernier clan connu » = premier clan de l'historique différent du clan actuel. Accès réservé aux membres ayant un rôle Discord dont le nom commence par `STAFF` (`memberHasRolePrefix()` dans `discordRoles.js`) ; réponses éphémères.
+Stockée dans Upstash Redis (hash `blacklist`, `backend/services/blacklist.js`) : un champ par tag `#TAG`, valeur JSON `{ name, clans, reason, addedBy, addedAt }`. `clans` est l'historique des clans distincts du joueur (plus récent en tête, 5 max), initialisé à l'ajout depuis le journal de combats (25 derniers) puis le clan actuel, et mis à jour à chaque `consulte`. « Dernier clan connu » = premier clan de l'historique différent du clan actuel. Accès réservé aux membres ayant un rôle Discord dont le nom commence par `STAFF` (`memberHasRolePrefix()` dans `discordRoles.js`) ; réponses éphémères.
+
+`notifyMemberChanges.js` s'en sert pour les arrivées : `⚠️ Joueur figurant dans la Liste Noire` si le tag y figure, et `⚠️ Clan à risque (NOM)` si le dernier clan connu du nouveau venu (déduit de son journal de combats, `lastKnownClan()`) apparaît dans l'historique de clans d'un *autre* joueur de la Liste Noire (`buildRiskyClanMap()`, clans de la famille exclus). Si Redis est indisponible, la notification part sans ces avertissements.
 
 ### Thread Discord dédié aux notifications automatiques (test clan 2)
 

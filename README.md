@@ -50,7 +50,7 @@ Liste des commandes :
 13. **`/family`** : affiche un résumé des clans de la famille. Options : aucune
 14. **`/clan`** : affiche la fiche récapitulative d'un clan (membres, trophées GDC, ligue, statut, fiabilité). Options : `clan:N` ou `tag:#TAG`
 15. **`/recap`** : récap GDC de la saison passée — 10 moins bons scoreurs de La Resistance, 10 meilleurs de Les Resistants. Options : `saison:[-1|-2]` (défaut -1)
-16. **`/blacklist`** : gère la Liste Noire (réservé aux membres ayant un rôle commençant par `STAFF`). Sous-commandes : `ajoute tag:#TAG`, `retire tag:#TAG`, `consulte` (pseudo, tag, clan actuel, dernier clan connu)
+16. **`/blacklist`** : gère la Liste Noire (réservé aux membres ayant un rôle commençant par `STAFF`). Sous-commandes : `ajoute tag:#TAG [raison]`, `retire tag:#TAG`, `consulte` (pseudo, tag, clan actuel, dernier clan connu)
 
 > Remarque : l'installation de ce bot n'est réalisable que par displaynone.
 
