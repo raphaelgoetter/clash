@@ -163,8 +163,8 @@ async function handleList(webhookUrl) {
       : "Indisponible";
     const previous = lastKnownClan(clans, player?.clan?.tag);
     return (
-      `${i + 1}. [${name}](${playerUrl(tag)}) \`${tag}\`\n` +
-      `Clan actuel : **${current}** · Dernier clan connu : ${previous?.name ?? "❓"}`
+      `${i + 1}. [${name}](${playerUrl(tag)}) \`${tag}\` · ` +
+      `Clan : **${current}** · Dernier clan connu : ${previous?.name ?? "❓"}`
     );
   });
 
@@ -178,7 +178,7 @@ async function handleList(webhookUrl) {
   const chunks = [];
   let current = "";
   for (const line of lines) {
-    const next = current ? `${current}\n\n${line}` : line;
+    const next = current ? `${current}\n${line}` : line;
     if (next.length > EMBED_DESCRIPTION_MAX && current) {
       chunks.push(current);
       current = line;
