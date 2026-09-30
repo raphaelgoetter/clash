@@ -228,8 +228,7 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
   // Une partie inactive depuis STALE_HOURS (ex. un joueur seul qui attend un
   // adversaire jamais venu, voir isMancheReady) est considérée abandonnée :
   // relancer la commande la remplace, sans cron de nettoyage.
-  const hoursSince = existing ? (Date.now() - new Date(existing.lastActivityAt).getTime()) / 3_600_000 : 0;
-  if (existing && !existing.termine && hoursSince < STALE_HOURS) {
+  if (existing && !existing.termine && !isStale(existing)) {
     return { alreadyActive: true, state: existing };
   }
 
@@ -508,11 +507,36 @@ async function updateHighScore(totalManches, ranking) {
 // horodatage (lastActivityAt, mis à jour à chaque action) suffit à couvrir
 // les deux cas.
 
+function hoursSinceActivity(state, now) {
+  return (now - new Date(state.lastActivityAt).getTime()) / 3_600_000;
+}
+
+// Pure : partie en cours sans aucune action depuis STALE_HOURS.
+export function isStale(state, now = Date.now()) {
+  return !!state && !state.termine && hoursSinceActivity(state, now) >= STALE_HOURS;
+}
+
+// Clôture paresseuse (sans cron) : appelée à chaque interaction Gobelet
+// Duel. Une partie inactive depuis STALE_HOURS est marquée terminée
+// (expired) avec le classement cumulé figé, pour que le handler repeigne le
+// message public en "Partie terminée". Points conservés jusqu'au prochain
+// /gobelet (startGame nettoie une partie terminée). Pas de high score : la
+// partie n'est pas allée au bout.
+export async function expireIfStale(now = Date.now()) {
+  const state = await readState();
+  if (!isStale(state, now)) return { expired: false };
+
+  const newState = { ...state, termine: true, expired: true };
+  await writeState(newState);
+  const [points, usernames] = await Promise.all([readPoints(), hgetallRaw(USERNAMES_KEY)]);
+  return { expired: true, state: newState, ranking: buildRanking(points, usernames) };
+}
+
 export async function resetIfStale(now = Date.now()) {
   const state = await readState();
   if (!state || state.termine) return { skipped: true };
 
-  const hoursSince = (now - new Date(state.lastActivityAt).getTime()) / 3_600_000;
+  const hoursSince = hoursSinceActivity(state, now);
   if (hoursSince < STALE_HOURS) return { skipped: true, hoursSince };
 
   await resetGobeletDuel();

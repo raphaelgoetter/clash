@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking } from "./gobeletDuel.js";
+import { applyJoin, isMancheReady, isStale, isNewHighScore, computeMancheOutcome, buildRanking } from "./gobeletDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -119,6 +119,16 @@ async function main() {
     const outcome = computeMancheOutcome(state, hands, {});
     assert.strictEqual(outcome.results[0].category, "Gobelet");
     assert.strictEqual(outcome.pointsAfter.a, 60);
+  }
+
+  // ── isStale — seuil de 2h d'inactivité, jamais sur une partie terminée ──
+  {
+    const now = Date.parse("2026-09-30T19:41:00Z");
+    const at = (iso) => baseState({ lastActivityAt: iso });
+    assert.strictEqual(isStale(at("2026-09-30T17:01:00Z"), now), true);
+    assert.strictEqual(isStale(at("2026-09-30T18:00:00Z"), now), false);
+    assert.strictEqual(isStale({ ...at("2026-09-30T17:01:00Z"), termine: true }, now), false);
+    assert.strictEqual(isStale(null, now), false);
   }
 
   console.log("✓ gobeletDuel service tests passed");

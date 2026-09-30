@@ -22,6 +22,7 @@ import {
   valider,
   checkAndResolveManche,
   listHands,
+  expireIfStale,
 } from "../../../backend/services/gobeletDuel.js";
 import {
   loadGobeletConfig,
@@ -276,6 +277,54 @@ async function buildFinalEmbed(state, results, ranking, highScore) {
   };
 }
 
+// Partie close pour inactivité (voir expireIfStale) : même titre que la fin
+// normale, classement cumulé figé à la dernière manche jouée.
+async function buildExpiredEmbed(state, ranking) {
+  const resolvedRanking = await Promise.all(
+    ranking.map(async (r) => ({
+      ...r,
+      username: await resolveDisplayName(r.discordId, r.username),
+    })),
+  );
+  const lines = [
+    `⌛ Partie expirée après 2h d'inactivité (manche ${state.manche}/${state.totalManches}).`,
+    "",
+    "**Classement final :**",
+    ...(resolvedRanking.length
+      ? resolvedRanking.map(
+          (r, i) =>
+            `${i + 1}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
+        )
+      : ["Personne n'a marqué de point."]),
+  ];
+  return {
+    title: `🏁 Gobelet Duel — Partie terminée (${state.totalManches} manches)`,
+    description: lines.join("\n"),
+    color: GOBELETDUEL_COLOR,
+  };
+}
+
+// Clôture paresseuse, sans cron : à chaque interaction, une partie inactive
+// depuis 2h est close et son message public repeint en "Partie terminée".
+// Renvoie true si la partie vient d'expirer.
+async function closeIfStale() {
+  const result = await expireIfStale();
+  if (!result.expired) return false;
+  const embed = await buildExpiredEmbed(result.state, result.ranking);
+  await patchPublicMessage(result.state, { embeds: [embed], components: [] });
+  return true;
+}
+
+async function replyIfExpired(webhookUrl) {
+  if (!(await closeIfStale())) return false;
+  await patchOriginal(webhookUrl, {
+    content: "Cette partie du Jeu du Gobelet Duel a expiré après 2h d'inactivité.",
+    embeds: [],
+    components: [],
+  });
+  return true;
+}
+
 // ── Commande /gobelet ──────────────────────────────────────────────
 
 export async function handleGobeletCommand(
@@ -285,6 +334,8 @@ export async function handleGobeletCommand(
 ) {
   try {
     const channelId = body.channel_id;
+    // Repeint l'ancien message avant que startGame ne remplace la partie.
+    await closeIfStale();
     const result = await startGame(channelId, { maxPlayers, totalManches });
 
     if (result.alreadyActive) {
@@ -482,6 +533,7 @@ async function refreshPublicMessage() {
 
 export async function handleJouer(webhookUrl, discordId, username) {
   try {
+    if (await replyIfExpired(webhookUrl)) return;
     const result = await joinAndDeal(discordId, username);
 
     if (result.inactive) {
@@ -520,6 +572,7 @@ export async function handleJouer(webhookUrl, discordId, username) {
 
 export async function handleToggle(webhookUrl, discordId, index) {
   try {
+    if (await replyIfExpired(webhookUrl)) return;
     const result = await toggleKept(discordId, Number(index));
 
     if (result.inactive) {
@@ -559,6 +612,7 @@ export async function handleToggle(webhookUrl, discordId, index) {
 
 export async function handleRelancer(webhookUrl, discordId) {
   try {
+    if (await replyIfExpired(webhookUrl)) return;
     const result = await relance(discordId);
 
     if (result.inactive) {
@@ -600,6 +654,7 @@ export async function handleRelancer(webhookUrl, discordId) {
 
 export async function handleValider(webhookUrl, discordId) {
   try {
+    if (await replyIfExpired(webhookUrl)) return;
     const result = await valider(discordId);
 
     if (result.inactive) {
@@ -671,7 +726,7 @@ function buildReglesEmbed() {
       "**Barème (la catégorie libre la plus valorisée est toujours retenue) :**",
       ...formatBaremeLines(),
       "",
-      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini ses 3 tirages. Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 2h peut être remplacée en relançant /gobelet.",
+      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini ses 3 tirages. Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 2h est close automatiquement.",
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };
@@ -679,6 +734,7 @@ function buildReglesEmbed() {
 
 export async function handleRegles(webhookUrl) {
   try {
+    await closeIfStale();
     await patchOriginal(webhookUrl, {
       embeds: [buildReglesEmbed()],
       components: [],
