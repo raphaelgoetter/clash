@@ -100,7 +100,7 @@ async function handleAdd(webhookUrl, rawTag, discordUserId) {
   await post(webhookUrl, {
     content:
       `✅ **${player.name}** (\`${tag}\`) ajouté à la Liste Noire.\n` +
-      `Clan actuel : ${player.clan?.name ?? "Aucun"} (dernier clan connu : ${previous?.name ?? "inconnu"})`,
+      `Clan actuel : ${player.clan?.name ?? "Aucun"} (dernier clan connu : ${previous?.name ?? "❓"})`,
   });
 }
 
@@ -164,7 +164,7 @@ async function handleList(webhookUrl) {
     const previous = lastKnownClan(clans, player?.clan?.tag);
     return (
       `${i + 1}. [${name}](${playerUrl(tag)}) \`${tag}\`\n` +
-      `Clan actuel : **${current}** · Dernier clan connu : ${previous?.name ?? "inconnu"}`
+      `Clan actuel : **${current}** · Dernier clan connu : ${previous?.name ?? "❓"}`
     );
   });
 
