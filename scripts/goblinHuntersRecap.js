@@ -21,6 +21,7 @@ import {
   readState,
   listHistorique,
   readPlayerIndices,
+  resolveVoteElimination,
 } from "../backend/services/goblinhunters.js";
 
 const VICTOIRES = {
@@ -281,6 +282,141 @@ const voteOf = (action) =>
   console.log(`Absences : ${absences.total} (${absences.parJour.join(", ")})`);
   console.log(`Remplacements par un bot : ${remplacements.length}`);
   remplacements.forEach((l) => console.log(`  ${l}`));
+
+  // ── Interprétations ───────────────────────────────────────────────
+  titre("Interprétations");
+  const interpretations = [];
+  const dit = (l) => interpretations.push(l);
+  const campDe = (id, jour) => campAt(byId.get(id), jour);
+  const aliveAt = (j, jour) => j.alive || (j.campReveleAt ?? Infinity) >= jour;
+  const listeJ = (list) => list.map((x) => `${nom(x.id)} (J${x.jour})`).join(", ");
+
+  // Château : premières éliminations par camp
+  const premierVillVote = elimVote.find((x) => campDe(x.id, x.jour) === "chasseur");
+  const premierGobVote = elimVote.find((x) => campDe(x.id, x.jour) === "gobelin");
+  dit(
+    premierVillVote
+      ? `Les Gobelins se connaissent dès le J1, mais ce n'est qu'au J${premierVillVote.jour} qu'un premier Villageois est éliminé par vote (${nom(premierVillVote.id)}).`
+      : `Les Gobelins se connaissent dès le J1, mais aucun Villageois n'a été éliminé par vote en ${dernier.jour} jours.`,
+  );
+  dit(
+    premierGobVote
+      ? `Les Villageois éliminent leur premier Gobelin par vote au J${premierGobVote.jour} (${nom(premierGobVote.id)}).`
+      : `Les Villageois n'ont éliminé aucun Gobelin par vote.`,
+  );
+  const joursDeVote = jours.filter((e) => e.jour > 1).length;
+  if (joursDeVote) {
+    dit(`${joursDeVote - elimVote.length} jour(s) sur ${joursDeVote} sans élimination au Château (égalité ou pas assez de votants).`);
+  }
+
+  // Précision des votes comparée au hasard : part de Gobelins parmi les
+  // vivants de chaque jour, pondérée par le nombre de votes du jour.
+  let attendu = 0;
+  for (const e of jours) {
+    const nbVotes = Object.values(e.voteTally ?? {}).reduce((a, b) => a + b, 0);
+    const vivants = state.joueurs.filter((j) => aliveAt(j, e.jour));
+    const gob = vivants.filter((j) => campAt(j, e.jour) === "gobelin").length;
+    attendu += vivants.length ? (nbVotes * gob) / vivants.length : 0;
+  }
+  if (votes.total) {
+    const reel = votes.recusParCamp.gobelin / votes.total;
+    const hasard = attendu / votes.total;
+    dit(
+      `${pct(votes.recusParCamp.gobelin, votes.total)} des votes visent des Gobelins, contre ${Math.round(hasard * 100)} % attendus en votant au hasard : ` +
+        (reel > hasard + 0.05 ? "le Château vise plutôt juste." : reel < hasard - 0.05 ? "le Château vise moins bien que le hasard." : "pas mieux que le hasard."),
+    );
+  }
+
+  // Votes contre son camp décisifs : sans les voix de son propre camp, la
+  // victime n'aurait pas été éliminée. Calculable seulement les jours
+  // détaillés.
+  const quorum = config.vote_quorum_min ?? 2;
+  for (const camp of ["chasseur", "gobelin"]) {
+    const elimsCamp = elimVote.filter((x) => campDe(x.id, x.jour) === camp);
+    const decisifs = [];
+    const inconnus = [];
+    for (const x of elimsCamp) {
+      const e = jours.find((h) => h.jour === x.jour);
+      if (!e.actions) {
+        inconnus.push(x);
+        continue;
+      }
+      const votesAllies = Object.entries(e.actions).filter(
+        ([voterId, a]) => voteOf(a) === x.id && campDe(voterId, x.jour) === camp,
+      ).length;
+      if (!votesAllies) continue;
+      const sansAllies = { ...e.voteTally, [x.id]: e.voteTally[x.id] - votesAllies };
+      if (resolveVoteElimination(sansAllies, quorum) !== x.id) decisifs.push(x);
+    }
+    const label = camp === "chasseur" ? "Villageois" : "Gobelins";
+    const suffixe = inconnus.length ? ` (non calculable pour ${listeJ(inconnus)} : détail des votes indisponible)` : "";
+    dit(
+      `Les ${label} ont perdu ${decisifs.length} joueur(s) à cause de votes de leur propre camp${decisifs.length ? ` : ${listeJ(decisifs)}` : ""}${suffixe}.`,
+    );
+  }
+
+  // Arène : morts au combat frappés par leur propre camp le jour même
+  for (const camp of ["chasseur", "gobelin"]) {
+    const morts = mortsCombat.filter((x) => campDe(x.id, x.jour) === camp);
+    const touches = morts.filter((x) =>
+      combat.contreSonCamp.some((a) => a.jour === x.jour && a.targetId === x.id),
+    );
+    if (!morts.length) continue;
+    const label = camp === "chasseur" ? "Villageois" : "Gobelins";
+    dit(
+      `Sur ${morts.length} ${label} mort(s) au combat, ${touches.length} ${touches.length > 1 ? "avaient été frappés" : "avait été frappé"} par leur propre camp le jour même${touches.length ? ` : ${listeJ(touches)}` : ""}.`,
+    );
+  }
+  const coupsVill = combat.parCamp.chasseur;
+  const coupsVillSurVill = combat.contreSonCamp.filter((a) => campDe(a.attackerId, a.jour) === "chasseur").length;
+  if (coupsVill) {
+    dit(`À l'Arène, ${pct(coupsVill - coupsVillSurVill, coupsVill)} des coups villageois ont touché un Gobelin (${coupsVillSurVill} sur ${coupsVill} contre un Villageois).`);
+  }
+  const coupsGobSurGob = combat.contreSonCamp.filter((a) => campDe(a.attackerId, a.jour) === "gobelin");
+  if (coupsGobSurGob.length) {
+    dit(`Les Gobelins, qui se connaissent pourtant, se sont frappés entre eux ${coupsGobSurGob.length} fois.`);
+  }
+  const conversions = jours.filter((e) => e.conversionId);
+  if (conversions.length) {
+    dit(`Le Zombie a converti ${conversions.map((e) => `${nom(e.conversionId)} (J${e.jour})`).join(", ")} : un Villageois de moins, un Gobelin de plus.`);
+  }
+
+  // Tour de Guet : exploitation des Gobelins démasqués (le résultat arrive
+  // en MP à la clôture, donc exploitable dès le lendemain).
+  const premiereRevelation = {};
+  for (const e of jours) {
+    for (const inv of e.investigations ?? []) {
+      if (inv.campReporte === "gobelin") premiereRevelation[inv.cibleId] ??= e.jour;
+    }
+  }
+  for (const [id, jourRev] of Object.entries(premiereRevelation)) {
+    const j = byId.get(id);
+    const vote = elimVote.find((x) => x.id === id);
+    const mort = mortsCombat.find((x) => x.id === id);
+    const devenir = vote
+      ? `éliminé(e) au vote au J${vote.jour} (${vote.jour - jourRev} jour(s) plus tard)`
+      : mort
+        ? `tué(e) au combat au J${mort.jour}`
+        : j.alive
+          ? "toujours en vie : information non exploitée au Château"
+          : `éliminé(e) au J${j.campReveleAt}`;
+    dit(`${nom(id)} démasqué(e) à la Tour de Guet au J${jourRev}, ${devenir}.`);
+  }
+  if (enquetes.trompeuses) {
+    dit(`L'Infiltré a trompé ${enquetes.trompeuses} enquête(s) (vu comme Villageois).`);
+  }
+
+  // Bilan des pertes par camp
+  const pertes = (camp) =>
+    state.joueurs.filter((j) => (j.converti ? "chasseur" : j.camp) === camp && (!j.alive || (camp === "chasseur" && j.converti))).length;
+  dit(
+    `Pertes : ${pertes("chasseur")}/${initiaux.chasseur || 0} Villageois (conversions comprises), ${pertes("gobelin")}/${initiaux.gobelin || 0} Gobelins.`,
+  );
+  if (absences.total) {
+    dit(`${absences.total} absence(s) au total : chaque absent est replacé au Château sans voter, ce qui affaiblit les votes.`);
+  }
+
+  interpretations.forEach((l) => console.log(`• ${l}`));
 
   titre("Bilan final des joueurs");
   for (const j of state.joueurs) {
