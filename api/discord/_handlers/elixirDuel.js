@@ -662,7 +662,7 @@ function buildReglesEmbed() {
       "",
       `${EMOJI.question.text} **${SPECIALS.joker.fr}** (dès la manche 4) : devient en fin de partie la carte qui te rapporte le plus.`,
       "",
-      `${EMOJI.trophy.text} **Score** : 1 pt par carte, plus :`,
+      `${EMOJI.trophy.text} **Score** : chaque carte rapporte son coût en élixir (Joker : 3), plus :`,
       ...buildScoreLines(),
     ].join("\n"),
     color: ELIXIRDUEL_COLOR,
@@ -682,7 +682,7 @@ export async function handleDetails(webhookUrl, messageId) {
     for (const [i, r] of state.finalRanking.entries()) {
       const name = await displayName(r.id, r.username);
       lines.push(`${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.total, "pt")}`);
-      lines.push(`• ${plural(r.cardPoints, "carte")} : **+${r.cardPoints}**`);
+      lines.push(`• ${plural(r.cardCount, "carte")} : **+${r.cardPoints}**`);
       for (const a of r.achieved) lines.push(`• ${a.label} : **+${a.points}**`);
       lines.push(`• Élixir restant : ${r.stock} ${ELIXIR}`, "");
     }

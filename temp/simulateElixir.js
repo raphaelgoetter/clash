@@ -40,7 +40,7 @@ function run(maxPlayers, totalManches) {
   }
   const np = N * nPlayers;
   console.log(`\n== ${maxPlayers === 1 ? "solo (bot vs bot)" : maxPlayers + " joueurs"}, ${totalManches} manches ==`);
-  console.log(`cartes/joueur ${(cards / np).toFixed(2)} | score moyen ${(total / np).toFixed(2)} | élixir restant ${(left / np).toFixed(2)} | égalités/partie ${(ties / N).toFixed(2)} | passes ${(100 * passes / offers).toFixed(1)}%`);
+  console.log(`pts cartes/joueur ${(cards / np).toFixed(2)} | score moyen ${(total / np).toFixed(2)} | élixir restant ${(left / np).toFixed(2)} | égalités/partie ${(ties / N).toFixed(2)} | passes ${(100 * passes / offers).toFixed(1)}%`);
   for (const o of [...OBJECTIVES, ...MAJORITIES]) console.log(`  ${o.id.padEnd(16)} ${o.points}pts  ${(100 * (freq[o.id] || 0) / np).toFixed(1)}%`);
 }
 

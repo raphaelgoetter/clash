@@ -125,13 +125,16 @@ async function main() {
     // Gargouilles et champions : 3 aussi
     assert.ok(!ids(scoreCollection([card("Minions"), card("Mega Minion"), card("Zap")])).includes("gargouilles"));
     assert.ok(ids(scoreCollection([card("Minions"), card("Mega Minion"), card("Minion Horde")])).includes("gargouilles"));
-    // Deck lourd : +8
+    // Deck lourd : +3
     const lourd = scoreCollection([card("Lava Hound"), card("Lightning"), card("X-Bow")]);
-    assert.strictEqual(lourd.achieved.find((a) => a.id === "lourd")?.points, 8);
+    assert.strictEqual(lourd.achieved.find((a) => a.id === "lourd")?.points, 3);
     // Trio
     assert.ok(ids(scoreCollection([card("Goblins"), card("Zap"), card("Cannon")])).includes("trio"));
-    // Total = 1 pt par carte + objectifs
-    assert.strictEqual(gob.total, 3 + gob.achieved.reduce((s, a) => s + a.points, 0));
+    // Total = coût des cartes + objectifs
+    const gobCost = card("Goblins").elixir + card("Spear Goblins").elixir + card("Dart Goblin").elixir;
+    assert.strictEqual(gob.cardPoints, gobCost);
+    assert.strictEqual(gob.cardCount, 3);
+    assert.strictEqual(gob.total, gobCost + gob.achieved.reduce((s, a) => s + a.points, 0));
   }
 
   // ── scoreCollection : le Joker prend la forme la plus avantageuse ──
@@ -156,7 +159,7 @@ async function main() {
     const ranking = computeFinalScores(
       {
         a: { username: "A", stock: 2, collection: ["Bats"] },
-        b: { username: "B", stock: 5, collection: ["Minions"] },
+        b: { username: "B", stock: 5, collection: ["Bats"] },
       },
       catalog,
       5,

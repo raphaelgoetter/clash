@@ -11,7 +11,8 @@
 // passe. Pour chaque carte, la meilleure offre l'emporte et SEUL le gagnant
 // paie ; en cas d'égalité la carte est défaussée et personne ne paie. Le
 // budget d'élixir est fixe pour toute la partie (aucune recharge). En fin de
-// partie : 1 pt par carte + tous les objectifs atteints (cumulables).
+// partie : chaque carte rapporte son coût en élixir + tous les objectifs
+// atteints (cumulables).
 // ============================================================
 
 // ── Paramètres de partie ────────────────────────────────────────────
@@ -174,25 +175,30 @@ function themeObjective(id, noun, points, predicate) {
   };
 }
 
+// Barème (01/10, cartes payées à leur coût) : un thème de 3 cartes doit
+// rapporter à peu près autant au total (coût des cartes + bonus), qu'il soit
+// bon marché (3 squelettes ≈ 9 élixir) ou cher (3 bâtiments ≈ 13). Les
+// thèmes peu fournis dans le pool (gargouilles : 4 cartes) valent un peu
+// plus, les très fournis (humains : 10 cartes) un peu moins.
 export const OBJECTIVES = [
-  themeObjective("humains", "humains", 2, (c) => c.family === "human"),
-  themeObjective("sorts", "sorts", 5, (c) => c.type === "spell"),
-  themeObjective("volants", "volants", 5, (c) => c.type === "flying"),
-  themeObjective("batiments", "bâtiments", 5, (c) => c.type === "building"),
-  themeObjective("gobelins", "gobelins", 5, (c) => c.family === "goblin"),
-  themeObjective("squelettes", "squelettes", 5, (c) => c.family === "skeleton"),
-  themeObjective("gargouilles", "gargouilles", 6, (c) => c.family === "minion"),
+  themeObjective("humains", "humains", 4, (c) => c.family === "human"),
+  themeObjective("sorts", "sorts", 8, (c) => c.type === "spell"),
+  themeObjective("volants", "volants", 6, (c) => c.type === "flying"),
+  themeObjective("batiments", "bâtiments", 6, (c) => c.type === "building"),
+  themeObjective("gobelins", "gobelins", 8, (c) => c.family === "goblin"),
+  themeObjective("squelettes", "squelettes", 10, (c) => c.family === "skeleton"),
+  themeObjective("gargouilles", "gargouilles", 10, (c) => c.family === "minion"),
   themeObjective("champions", "champions", 6, (c) => c.rarity === "champion"),
   {
     id: "raretes",
     label: "Une carte de chaque rareté",
-    points: 6,
+    points: 8,
     test: (cards) => RARITIES.every((r) => cards.some((c) => c.rarity === r)),
   },
   {
     id: "trio",
     label: "Trio troupe + sort + bâtiment",
-    points: 3,
+    points: 4,
     test: (cards) =>
       cards.some((c) => c.type === "troop" || c.type === "flying") &&
       cards.some((c) => c.type === "spell") &&
@@ -201,7 +207,8 @@ export const OBJECTIVES = [
   {
     id: "cycle",
     label: "Deck cycle (coût moyen ≤ 3, 3+ cartes)",
-    points: 3,
+    // Compense des cartes qui rapportent peu (et l'élixir perdu au plafond)
+    points: 6,
     test: (cards) => {
       const avg = averageElixir(cards);
       return avg != null && avg <= 3;
@@ -210,8 +217,8 @@ export const OBJECTIVES = [
   {
     id: "lourd",
     label: "Deck lourd (coût moyen ≥ 5, 3+ cartes)",
-    // Valorise l'achat de cartes chères
-    points: 8,
+    // Les cartes chères rapportent déjà leur coût : petit bonus seulement
+    points: 3,
     test: (cards) => {
       const avg = averageElixir(cards);
       return avg != null && avg >= 5;
@@ -225,16 +232,16 @@ export const MAJORITIES = [
   {
     id: "maj_champions",
     label: "Le plus de champions",
-    points: 3,
+    points: 4,
     count: (cards) => cards.filter((c) => !c.joker && c.rarity === "champion").length,
   },
   {
     id: "maj_legendaires",
     label: "Le plus de légendaires",
-    points: 3,
+    points: 4,
     count: (cards) => cards.filter((c) => !c.joker && c.rarity === "legendary").length,
   },
-  { id: "maj_cartes", label: "Le plus de cartes", points: 3, count: (cards) => cards.length },
+  { id: "maj_cartes", label: "Le plus de cartes", points: 4, count: (cards) => cards.length },
 ];
 
 // Toutes les formes possibles d'un Joker
@@ -278,9 +285,10 @@ export function scoreCollection(collection, opponents = [], ctx = { totalManches
   });
 
   const achieved = [...best.achieved, ...majorities].map(({ id, label, points }) => ({ id, label, points }));
-  const cardPoints = collection.length;
+  // Chaque carte rapporte son coût ; le Joker, sa mise minimale
+  const cardPoints = collection.reduce((s, c) => s + (c.joker ? SPECIALS.joker.minBid : c.elixir), 0);
   const total = cardPoints + achieved.reduce((s, o) => s + o.points, 0);
-  return { total, cardPoints, achieved };
+  return { total, cardPoints, cardCount: collection.length, achieved };
 }
 
 // ── Résolution d'une manche ─────────────────────────────────────────
