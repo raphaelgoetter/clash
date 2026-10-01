@@ -43,6 +43,10 @@
     "⏳ Le temps presse — si les Gobelins ne referment pas l'écart avant la fin, les Villageois l'emporteront par défaut.",
     "📯 Les derniers jours de la partie commencent — chaque décision pèse désormais plus lourd."
   ],
+  "tension_dernier_jour": [
+    "⏳ Dernier jour — si les Gobelins n'atteignent pas la parité aujourd'hui, les Villageois l'emporteront.",
+    "📯 C'est le dernier jour de la partie — chaque décision sera décisive."
+  ],
   "victoire_gobelins": [
     "👺 Les Gobelins ont fini par prendre le dessus — le village leur appartient désormais."
   ],
@@ -50,6 +54,6 @@
     "🗡️ Le dernier Gobelin est tombé — les Villageois ont purgé le village."
   ],
   "victoire_chasseurs_survie": [
-    "🏰 Les dix jours sont écoulés sans que les Gobelins n'aient jamais pris l'avantage — les Villageois l'emportent."
+    "🏰 Les sept jours sont écoulés sans que les Gobelins n'aient jamais pris l'avantage — les Villageois l'emportent."
   ]
 }

@@ -298,9 +298,12 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
   } else if (gobelinsPresDeLaParite) {
     lines.push(pickFlavor(narratifs.tension_parite_proche, jour));
   }
-  // Approche du Jour 10 : rappel de l'échéance (victoire par défaut des
-  // Villageois si rien ne bouge), indépendant du compte de joueurs.
-  if (jour >= config.duree_jours - 1) {
+  // Approche du dernier jour : rappel de l'échéance (victoire par défaut des
+  // Villageois si rien ne bouge), indépendant du compte de joueurs. Pool
+  // distinct le dernier jour (« les derniers jours commencent » sonnerait faux).
+  if (Number(jour) === config.duree_jours) {
+    lines.push(pickFlavor(narratifs.tension_dernier_jour, jour));
+  } else if (jour >= config.duree_jours - 1) {
     lines.push(pickFlavor(narratifs.tension_derniers_jours, jour));
   }
 
