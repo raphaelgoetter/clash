@@ -592,7 +592,7 @@ const commands = [
   },
   {
     name: "elixir",
-    description: "Lance une partie d'Élixir (enchères de cartes, 1-3 joueurs) dans ce salon, réservé au rôle MINI-JEUX.",
+    description: "Lance une partie d'Élixir (enchères de cartes, 1-3 joueurs), réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 4, // INTEGER
