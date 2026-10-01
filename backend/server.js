@@ -25,6 +25,8 @@ import { getCurrentFrameImage, getFrameImageByGameId } from "./services/frames.j
 import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "./services/zoomImage.js";
 import { getPaletteQuestionImage, getPaletteResultImage } from "./services/paletteImage.js";
 import { getPeleMeleRackImage } from "./services/pelemeleImage.js";
+import { getElixirCardsImage } from "./services/elixirImage.js";
+import { loadCatalog as loadElixirCatalog } from "./services/elixirDuel.js";
 import {
   getBoardImage as getGoblinHuntersBoardImage,
   getEndImage as getGoblinHuntersEndImage,
@@ -318,6 +320,20 @@ app.get("/api/pelemele/image", async (req, res) => {
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", "image/png");
   res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Élixir : image des cartes aux enchères (manche en cours en grand,
+// manche suivante en petit). Rendu sans état à partir des clés passées dans
+// l'URL (c = cartes de la manche, n = manche suivante, séparées par "|") :
+// une même liste donne toujours la même image, d'où le cache long.
+app.get("/api/elixir/image", async (req, res) => {
+  const split = (v) => (v ? String(v).split("|").filter(Boolean) : []);
+  const catalog = await loadElixirCatalog().catch(() => null);
+  const image = catalog ? await getElixirCardsImage(split(req.query.c), split(req.query.n), catalog).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400");
   res.send(image.buffer);
 });
 

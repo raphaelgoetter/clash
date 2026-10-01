@@ -50,15 +50,43 @@ import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 const ELIXIRDUEL_COLOR = 0xd63bd6;
 const MAX_BID_OPTIONS = 25;
 
+// ── Emojis personnalisés (emojis d'application TrustRoyale) ─────────
+
+// Goutte d'élixir : uploadée via `node scripts/uploadElixirEmojis.js`, qui
+// affiche l'ID à reporter ici. Repli sur 💧 tant qu'elle n'existe pas.
+const ELIXIR_EMOJI_ID = null;
+
+function appEmoji(name, id) {
+  return { text: `<:${name}:${id}>`, component: { name, id } };
+}
+
+const EMOJI = {
+  elixir: ELIXIR_EMOJI_ID ? appEmoji("elixir", ELIXIR_EMOJI_ID) : { text: "💧", component: { name: "💧" } },
+  cards: appEmoji("cards", "1493711279121104926"),
+  stats: appEmoji("stats", "1499284927894650950"),
+  members: appEmoji("members", "1506175789731811399"),
+  check: appEmoji("check", "1504136472872222761"),
+  late: appEmoji("late", "1504138659622948985"),
+  trophy: appEmoji("trophy", "1498645869224792105"),
+  topplayers: appEmoji("topplayers", "1493708397407899648"),
+  victory: appEmoji("victory", "1504136468900352070"),
+  boohoo: appEmoji("boohoo", "1493849412387209357"),
+  bye: appEmoji("bye", "1493849413901222019"),
+  scroll: appEmoji("scroll", "1493850130560847892"),
+  battle: appEmoji("battle", "1493710671244689449"),
+  exclamation: appEmoji("exclamation", "1493849415235014678"),
+  question: appEmoji("question", "1493704366786482376"),
+  bot: appEmoji("dragon", "1504136471408541706"),
+  warning: appEmoji("warning", "1499002725965500577"),
+};
+
+const ELIXIR = EMOJI.elixir.text;
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+
 // ── Rendu des cartes ────────────────────────────────────────────────
 
-const RARITY_EMOJI = {
-  common: "⚪",
-  rare: "🟠",
-  epic: "🟣",
-  legendary: "🌈",
-  champion: "👑",
-};
+const TYPE_LABELS = { troop: "Troupe", flying: "Volant", spell: "Sort", building: "Bâtiment" };
+const FAMILY_LABELS = { goblin: "Gobelin", skeleton: "Squelette", human: "Humain", minion: "Gargouille" };
 const RARITY_LABELS = {
   common: "Commune",
   rare: "Rare",
@@ -66,31 +94,32 @@ const RARITY_LABELS = {
   legendary: "Légendaire",
   champion: "Champion",
 };
-const TYPE_LABELS = { troop: "Troupe", flying: "Volant", spell: "Sort", building: "Bâtiment" };
-const FAMILY_LABELS = { goblin: "Gobelin", skeleton: "Squelette", human: "Humain", minion: "Gargouille" };
 
 function cardTags(card) {
   const tags = [TYPE_LABELS[card.type]];
   if (card.family) tags.push(FAMILY_LABELS[card.family]);
-  return tags.join(", ");
+  if (card.rarity === "champion" || card.rarity === "legendary") tags.push(RARITY_LABELS[card.rarity]);
+  return tags.join(" · ");
 }
 
+// Illustrations, coût et nom sont sur l'image : le texte ne garde que ce
+// qui compte pour les objectifs (type, famille, rareté notable)
 function formatCardLine(card) {
   if (card.special) {
     const special = Object.values(SPECIALS).find((s) => s.key === card.key);
-    return `✨ **${card.fr}** (carte spéciale, mise min ${card.minBid}💧) : ${special.description}`;
+    return `**${card.fr}** · carte spéciale · ${special.description}`;
   }
-  return `${RARITY_EMOJI[card.rarity]} **${card.fr}** (${cardTags(card)}) · ${card.minBid}💧`;
+  return `**${card.fr}** · ${cardTags(card)}`;
 }
 
 function shortCardName(key, catalog) {
   const card = resolveCard(key, catalog);
   if (!card) return key;
-  return card.special ? `✨ ${card.fr}` : `${RARITY_EMOJI[card.rarity]} ${card.fr}`;
+  return card.key === SPECIALS.joker.key ? `${EMOJI.question.text} Joker` : card.fr;
 }
 
 function formatCollection(keys, catalog) {
-  return keys.length ? keys.map((k) => shortCardName(k, catalog)).join(", ") : "aucune carte";
+  return keys.length ? keys.map((k) => shortCardName(k, catalog)).join(" · ") : "*aucune carte*";
 }
 
 function plural(n, word) {
@@ -98,8 +127,18 @@ function plural(n, word) {
 }
 
 async function displayName(id, fallback) {
-  if (id === BOT_ID) return `🤖 ${BOT_NAME}`;
+  if (id === BOT_ID) return BOT_NAME;
   return resolveDisplayName(id, fallback);
+}
+
+// Image des cartes de la manche (+ aperçu de la suivante), rendue par
+// backend/services/elixirImage.js. Les clés dans l'URL suffisent au rendu.
+function cardsImageUrl(state, manche) {
+  const current = state.deck?.[manche - 1];
+  if (!current) return null;
+  const next = state.deck?.[manche] ?? [];
+  const params = new URLSearchParams({ c: current.join("|"), n: next.join("|") });
+  return `${TRUST_ROYALE_URL}/api/elixir/image?${params}`;
 }
 
 // ── Résolution des rôles/utilisateurs ────────────────────────────────
@@ -169,8 +208,8 @@ function buildJoinComponents() {
     {
       type: 1,
       components: [
-        { type: 2, style: 3, label: "Jouer", emoji: { name: "💧" }, custom_id: "elixirduel_jouer" },
-        { type: 2, style: 2, label: "Règles", emoji: { name: "📖" }, custom_id: "elixirduel_regles" },
+        { type: 2, style: 3, label: "Jouer", emoji: EMOJI.elixir.component, custom_id: "elixirduel_jouer" },
+        { type: 2, style: 2, label: "Règles", emoji: EMOJI.scroll.component, custom_id: "elixirduel_regles" },
       ],
     },
   ];
@@ -182,23 +221,24 @@ async function buildResultsLines(lastResults, players, catalog) {
   const names = {};
   for (const id of Object.keys(players)) names[id] = await displayName(id, players[id]?.username);
 
-  const lines = [`**📊 Bilan de la manche ${lastResults.manche}**`];
+  const lines = [`${EMOJI.stats.text} **Bilan de la manche ${lastResults.manche}**`];
   for (const r of lastResults.results) {
     const label = shortCardName(r.key, catalog);
-    const bids = r.bidders.map((b) => `${names[b.id] ?? "?"} ${b.bid}💧${b.effective !== b.bid ? " 😡x2" : ""}`);
+    const bids = r.bidders.map((b) => `${names[b.id] ?? "?"} ${b.bid}${b.effective !== b.bid ? " (Rage x2)" : ""}`);
     if (r.winner) {
       const others = bids.slice(1);
-      lines.push(`${label} → **${names[r.winner]}** pour ${r.price}💧${others.length ? ` (${others.join(", ")})` : ""}`);
+      lines.push(
+        `${EMOJI.victory.text} **${label}** pour **${names[r.winner]}** (${r.price} ${ELIXIR})${others.length ? ` · ${others.join(", ")}` : ""}`,
+      );
     } else if (r.tie) {
-      lines.push(`${label} → égalité (${bids.join(", ")}), carte défaussée`);
-    } else {
-      lines.push(`${label} → personne`);
+      lines.push(`${EMOJI.boohoo.text} **${label}** : égalité (${bids.join(", ")}), carte défaussée`);
     }
   }
   const passers = Object.entries(lastResults.offers || {})
     .filter(([, o]) => o && o.card == null)
     .map(([id]) => names[id] ?? "?");
-  if (passers.length) lines.push(`🙅 ${passers.length > 1 ? "Ont passé" : "A passé"} : ${passers.join(", ")}`);
+  if (passers.length) lines.push(`${EMOJI.bye.text} ${passers.length > 1 ? "Ont passé" : "A passé"} : ${passers.join(", ")}`);
+  if (lines.length === 1) lines.push("Aucune carte remportée.");
   lines.push("");
   return lines;
 }
@@ -206,18 +246,19 @@ async function buildResultsLines(lastResults, players, catalog) {
 async function buildPlayersLines(state, players, offers, scores, catalog) {
   const scoreById = Object.fromEntries(scores.map((s) => [s.id, s.total]));
   const ids = [...state.players, ...(players[BOT_ID] ? [BOT_ID] : [])];
-  const lines = ["**Joueurs**"];
+  const lines = [`${EMOJI.members.text} **Joueurs**`];
   for (const id of ids) {
     const p = players[id];
     if (!p) continue;
     const name = await displayName(id, p.username);
-    const status = id === BOT_ID ? "" : offers[id] ? " · ✅" : " · ⏳";
-    const rage = p.rageNext ? " · 😡 Rage active" : "";
-    lines.push(`**${name}** · 💧 ${p.stock} · ${plural(scoreById[id] ?? 0, "pt")}${status}${rage}`);
+    // Statut de l'offre : le bot a toujours déjà joué
+    const status = id === BOT_ID ? EMOJI.bot.text : offers[id] ? EMOJI.check.text : EMOJI.late.text;
+    const rage = p.rageNext ? ` · ${EMOJI.exclamation.text} Rage` : "";
+    lines.push(`${status} **${name}** · ${p.stock} ${ELIXIR} · ${plural(scoreById[id] ?? 0, "pt")}${rage}`);
     lines.push(`└ ${formatCollection(p.collection, catalog)}`);
   }
   const missing = state.maxPlayers - state.players.length;
-  if (missing > 0) lines.push(`⏳ En attente de ${plural(missing, "joueur")}`);
+  if (missing > 0) lines.push(`${EMOJI.late.text} En attente de ${plural(missing, "joueur")}`);
   return lines;
 }
 
@@ -229,23 +270,22 @@ async function buildTableEmbed(state) {
     loadCatalog(),
   ]);
   const cards = mancheCards(state, state.manche, catalog);
-  const next = mancheCards(state, state.manche + 1, catalog);
+  const isLast = state.manche >= state.totalManches;
 
   const lines = [
     ...(await buildResultsLines(state.lastResults, players, catalog)),
-    "## 💧 Cartes aux enchères",
+    `${EMOJI.cards.text} **Cartes aux enchères**${isLast ? " (dernière manche)" : ""}`,
     ...cards.map(formatCardLine),
-    "",
-    next ? `**Manche suivante :** ${next.map((c) => shortCardName(c.key, catalog)).join(", ")}` : "**Dernière manche !**",
     "",
     ...(await buildPlayersLines(state, players, offers, scores, catalog)),
   ];
   if (state.players.length === 0) lines.push("", "Clique sur **Jouer** pour t'inscrire.");
 
   return {
-    title: `💧 Élixir, manche ${state.manche}/${state.totalManches}`,
+    title: `Élixir · Manche ${state.manche}/${state.totalManches}`,
     description: lines.join("\n"),
     color: ELIXIRDUEL_COLOR,
+    image: { url: cardsImageUrl(state, state.manche) },
     footer: {
       text: state.rosterLocked
         ? "Inscriptions closes, la partie a commencé."
@@ -264,7 +304,8 @@ async function buildRankingLines(ranking, players, catalog) {
   const lines = [];
   for (const [i, r] of ranking.entries()) {
     const name = await displayName(r.id, r.username);
-    lines.push(`${i + 1}. **${name}** · ${plural(r.total, "pt")} (${formatScoreDetail(r)})`);
+    const medal = i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `;
+    lines.push(`${medal}**${name}** · ${plural(r.total, "pt")} (${formatScoreDetail(r)})`);
     lines.push(`└ ${formatCollection(players[r.id]?.collection ?? [], catalog)}`);
   }
   return lines;
@@ -274,16 +315,16 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
   const [players, catalog, highScore] = await Promise.all([readPlayers(), loadCatalog(), readHighScore(state.totalManches)]);
   const ranking = state.finalRanking ?? computeFinalScores(players, catalog, state.totalManches);
   const lines = expired
-    ? [`⌛ Partie expirée après 2h d'inactivité (manche ${state.manche}/${state.totalManches}).`, ""]
+    ? [`${EMOJI.late.text} Partie expirée après 2h d'inactivité (manche ${state.manche}/${state.totalManches}).`, ""]
     : await buildResultsLines(state.lastResults, players, catalog);
-  lines.push("**Classement final :**", ...(await buildRankingLines(ranking, players, catalog)));
+  lines.push(`${EMOJI.topplayers.text} **Classement final**`, ...(await buildRankingLines(ranking, players, catalog)));
 
   if (highScore && !expired) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
-    lines.push("", `<:topplayers:1493708397407899648> High score : ${name} (${plural(highScore.points, "pt")})`);
+    lines.push("", `${EMOJI.topplayers.text} High score : ${name} (${plural(highScore.points, "pt")})`);
   }
   return {
-    title: `🏁 Élixir : partie terminée (${state.totalManches} manches)`,
+    title: `Élixir · Partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     color: ELIXIRDUEL_COLOR,
   };
@@ -353,7 +394,7 @@ export async function handleElixirCommand(webhookUrl, body, { maxPlayers, totalM
     await deleteOriginal(webhookUrl);
   } catch (err) {
     console.error("[ElixirDuel] Échec lancement:", err.message);
-    await patchOriginal(webhookUrl, textPayload("⚠️ Erreur lors du lancement de la partie."));
+    await patchOriginal(webhookUrl, textPayload(`${EMOJI.warning.text} Erreur lors du lancement de la partie.`));
   }
 }
 
@@ -366,27 +407,32 @@ export async function handleElixirRoleRejected(webhookUrl) {
 function buildOfferStatus(view) {
   const { offer, draft, cards } = view;
   if (offer) {
-    if (offer.card == null) return "🙅 Tu passes cette manche.";
-    return `✅ Offre envoyée : **${cards[offer.card].fr}** pour **${offer.bid}💧**. Résultat quand tout le monde aura joué.`;
+    if (offer.card == null) return `${EMOJI.bye.text} Tu passes cette manche.`;
+    return `${EMOJI.check.text} Offre envoyée : **${cards[offer.card].fr}** pour **${offer.bid}** ${ELIXIR}. Résultat quand tout le monde aura joué.`;
   }
   if (draft.card == null) return "Choisis une carte, puis ta mise.";
   const card = cards[draft.card];
-  if (draft.bid == null) return `**${card.fr}** : pas assez d'élixir (mise min ${card.minBid}💧). Choisis une autre carte ou passe.`;
-  return `Offre en préparation : **${card.fr}** pour **${draft.bid}💧**. Clique sur **Valider** pour l'envoyer.`;
+  if (draft.bid == null) return `**${card.fr}** : pas assez d'élixir (mise min ${card.minBid} ${ELIXIR}). Choisis une autre carte ou passe.`;
+  return `Offre en préparation : **${card.fr}** pour **${draft.bid}** ${ELIXIR}. Clique sur **Valider** pour l'envoyer.`;
 }
 
 function buildHandEmbed(view) {
-  const { state, me, players, catalog } = view;
+  const { state, me, players, catalog, offer } = view;
   const scores = computeFinalScores(players, catalog, state.totalManches);
   const myScore = scores.find((s) => s.id === view.discordId);
   const lines = [
-    `💧 Ton élixir : **${me.stock}**${me.rageNext ? " · 😡 Rage active (ta mise compte double)" : ""}`,
-    `🃏 Ta collection : ${formatCollection(me.collection, catalog)}`,
-    `🎯 Score actuel : **${plural(myScore?.total ?? 0, "pt")}**${myScore?.achieved.length ? ` (${myScore.achieved.map((a) => a.label).join(", ")})` : ""}`,
+    `${ELIXIR} Ton élixir : **${me.stock}**${me.rageNext ? ` · ${EMOJI.exclamation.text} Rage active (ta mise compte double)` : ""}`,
+    `${EMOJI.cards.text} Ta collection : ${formatCollection(me.collection, catalog)}`,
+    `${EMOJI.stats.text} Score actuel : **${plural(myScore?.total ?? 0, "pt")}**${myScore?.achieved.length ? ` (${myScore.achieved.map((a) => a.label).join(", ")})` : ""}`,
     "",
     buildOfferStatus(view),
   ];
-  return { title: `💧 Ton offre, manche ${state.manche}/${state.totalManches}`, description: lines.join("\n"), color: ELIXIRDUEL_COLOR };
+  return {
+    title: `Ton offre · Manche ${state.manche}/${state.totalManches}`,
+    description: lines.join("\n"),
+    color: ELIXIRDUEL_COLOR,
+    image: offer ? undefined : { url: cardsImageUrl(state, state.manche) },
+  };
 }
 
 function buildHandComponents(view) {
@@ -403,7 +449,8 @@ function buildHandComponents(view) {
           placeholder: "Choisis une carte",
           options: cards.map((c, i) => ({
             label: `${c.fr} (min ${c.minBid} élixir)`.slice(0, 100),
-            description: (c.special ? "Carte spéciale" : `${RARITY_LABELS[c.rarity]}, ${cardTags(c)}`).slice(0, 100),
+            description: (c.special ? "Carte spéciale" : `${RARITY_LABELS[c.rarity]} · ${cardTags(c)}`).slice(0, 100),
+            emoji: EMOJI.elixir.component,
             value: String(i),
             default: draft.card === i,
           })),
@@ -429,11 +476,11 @@ function buildHandComponents(view) {
         type: 2,
         style: 3,
         label: "Valider",
-        emoji: { name: "✅" },
+        emoji: EMOJI.check.component,
         custom_id: `elixirduel_valider:${manche}`,
         disabled: draft.card == null || draft.bid == null,
       },
-      { type: 2, style: 2, label: "Passer", emoji: { name: "🙅" }, custom_id: `elixirduel_passer:${manche}` },
+      { type: 2, style: 2, label: "Passer", emoji: EMOJI.bye.component, custom_id: `elixirduel_passer:${manche}` },
     ],
   });
   return rows;
@@ -516,29 +563,29 @@ export async function handlePasser(webhookUrl, discordId) {
   }
 }
 
-// ── Bouton [📖 Règles] ──────────────────────────────────────────────
+// ── Bouton [Règles] ──────────────────────────────────────────────
 
 function buildReglesEmbed() {
   const objectiveLines = OBJECTIVES.map((o) => `• ${o.rulesLabel ?? o.label} : **+${o.points}**`);
   const majorityLines = MAJORITIES.map((m) => `• ${m.label} : **+${m.points}**`);
-  const specialLines = Object.values(SPECIALS).map((s) => `✨ **${s.fr}** (mise min ${s.minBid}) : ${s.description}`);
+  const specialLines = Object.values(SPECIALS).map((s) => `• **${s.fr}** (mise min ${s.minBid}) : ${s.description}`);
   return {
-    title: "📖 Règles du jeu : Élixir",
+    title: "Règles du jeu : Élixir",
     description: [
       "Enchères secrètes sur des cartes Clash Royale, de 1 à 3 joueurs (en solo, contre un bot).",
       "",
-      `**Élixir :** ${STARTING_ELIXIR}💧 au départ, +${ELIXIR_PER_MANCHE}💧 à chaque nouvelle manche, ${ELIXIR_CAP}💧 au maximum (le surplus est perdu).`,
+      `${ELIXIR} **Élixir :** ${STARTING_ELIXIR} au départ, +${ELIXIR_PER_MANCHE} à chaque nouvelle manche, ${ELIXIR_CAP} au maximum (le surplus est perdu).`,
       "",
-      "**À chaque manche :**",
+      `${EMOJI.battle.text} **À chaque manche :**`,
       "• Des cartes sont mises aux enchères (une de plus que de joueurs). La manche suivante est visible.",
       "• Fais **une seule offre secrète** : une carte et une mise (au moins le coût de la carte), ou passe.",
       "• La meilleure offre remporte la carte et **seul le gagnant paie**. En cas d'égalité, la carte est défaussée et personne ne paie.",
       "• Toutes les mises sont révélées après la manche. Élixir et collections sont visibles par tous.",
       "",
-      "**Cartes spéciales** (à partir de la manche 4) :",
+      `${EMOJI.question.text} **Cartes spéciales** (à partir de la manche 4) :`,
       ...specialLines,
       "",
-      "**Score final :** 1 pt par carte, plus chaque objectif atteint (cumulables).",
+      `${EMOJI.trophy.text} **Score final :** 1 pt par carte, plus chaque objectif atteint (cumulables).`,
       ...objectiveLines,
       "Majorités (strictement plus que chaque adversaire) :",
       ...majorityLines,

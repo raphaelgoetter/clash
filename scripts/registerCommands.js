@@ -608,8 +608,8 @@ const commands = [
       {
         type: 4, // INTEGER
         name: "manches",
-        description: "Nombre de manches (5 par défaut).",
-        required: false,
+        description: "Nombre de manches.",
+        required: true,
         choices: [
           { name: "5", value: 5 },
           { name: "10", value: 10 },

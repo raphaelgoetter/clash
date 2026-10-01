@@ -1958,6 +1958,10 @@ Troisième duel à la demande, lancé via `/elixir joueurs:<1-3> [manches:<5|10>
 
 **Équilibrage** : `temp/simulateElixir.js [parties] [départ] [recharge] [plafond]` (local, bots contre bots) mesure la fréquence de chaque objectif, les cartes et l'élixir restant par joueur. Barème et budget actuels en sont issus.
 
+**Image des cartes** : `backend/services/elixirImage.js`, servie par `/api/elixir/image?c=<clés>&n=<clés>` (clés séparées par `|`, `c` = manche en cours en grand, `n` = manche suivante en petit). Rendu sans état à partir de l'URL (cache public 24h) : illustrations officielles (`iconUrls.medium`, recadrées sur la bande opaque y 67→387 des PNG 285×420), goutte d'élixir avec le coût, nom en dessous ; cartes spéciales dessinées en SVG. Affichée dans l'embed public et dans la main éphémère.
+
+**Emojis** : uniquement des emojis d'application TrustRoyale (constante `EMOJI` du handler). La goutte `:elixir:` se génère et s'uploade via `node scripts/uploadElixirEmojis.js` (`--dry-run` pour générer `data/elixir/images/elixir.png` sans upload), puis son ID se reporte dans `ELIXIR_EMOJI_ID` (repli 💧 tant qu'il est vide).
+
 **Interface** : main éphémère avec un menu « Carte » puis un menu « Mise » (de la mise min jusqu'au stock, 10 au plus), boutons Valider / Passer. custom_id `elixirduel_jouer`, `elixirduel_regles`, `elixirduel_carte:<manche>`, `elixirduel_mise:<manche>`, `elixirduel_valider:<manche>`, `elixirduel_passer:<manche>`.
 
 Stockage Redis dédié `elixirduel:*` (`state`, `players` : stock/collection/rage par joueur, `offer:<manche>`, `draft:<manche>:<id>` : un champ par menu pour éviter les écrasements concurrents, `resolving`, `highscore`). Scripts npm : `npm run elixirduel:status`, `npm run elixirduel:watchdog`, `npm run elixirduel:reset`.
