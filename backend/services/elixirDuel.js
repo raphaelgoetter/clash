@@ -107,7 +107,7 @@ async function scanDelete(pattern) {
 }
 
 const STATE_KEY = "elixirduel:state";
-// Hash discordId (ou "bot") → { username, stock, collection, rageNext }
+// Hash discordId (ou "bot") → { username, stock, collection }
 const PLAYERS_KEY = "elixirduel:players";
 const RESOLVING_KEY = "elixirduel:resolving";
 // Meilleur score final de tous les temps, un record par format (5 ou 10
@@ -221,7 +221,7 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
   await writeState(state);
 
   if (maxPlayers === 1) {
-    const bot = { username: BOT_NAME, stock: STARTING_ELIXIR, collection: [], rageNext: false };
+    const bot = { username: BOT_NAME, stock: STARTING_ELIXIR, collection: [] };
     await writePlayers({ [BOT_ID]: bot });
     await placeBotOffer(state, { [BOT_ID]: bot }, catalog);
   }
@@ -266,7 +266,7 @@ export async function joinGame(discordId, username) {
   if (!decision.allowed) return { rosterLocked: true, state };
   if (decision.isSeated) return { state, isNew: false };
 
-  const player = { username, stock: STARTING_ELIXIR, collection: [], rageNext: false };
+  const player = { username, stock: STARTING_ELIXIR, collection: [] };
   await writePlayers({ [discordId]: player });
   const newState = touch({ ...state, players: decision.players, rosterLocked: decision.rosterLocked });
   await writeState(newState);
@@ -402,7 +402,7 @@ export async function checkAndResolveManche() {
 async function resolveManche(state, offers) {
   const [catalog, players] = await Promise.all([loadCatalog(), readPlayers()]);
   const cards = mancheCards(state, state.manche, catalog);
-  const results = resolveOffers(cards, offers, players);
+  const results = resolveOffers(cards, offers);
   const nextPlayers = applyResults(players, results);
   await writePlayers(nextPlayers);
 

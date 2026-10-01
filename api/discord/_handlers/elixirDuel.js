@@ -42,6 +42,7 @@ import {
   OBJECTIVES,
   MAJORITIES,
   SPECIALS,
+  THEME_MIN,
   resolveCard,
   computeFinalScores,
 } from "../../../backend/services/elixirRules.js";
@@ -75,7 +76,6 @@ const EMOJI = {
   bye: appEmoji("bye", "1493849413901222019"),
   scroll: appEmoji("scroll", "1493850130560847892"),
   battle: appEmoji("battle", "1493710671244689449"),
-  exclamation: appEmoji("exclamation", "1493849415235014678"),
   question: appEmoji("question", "1493704366786482376"),
   bot: appEmoji("dragon", "1504136471408541706"),
   warning: appEmoji("warning", "1499002725965500577"),
@@ -253,7 +253,7 @@ async function buildResultsLines(lastResults, players, catalog) {
   const lines = [`${EMOJI.stats.text} **Bilan de la manche ${lastResults.manche}**`];
   for (const r of lastResults.results) {
     const label = shortCardName(r.key, catalog);
-    const bids = r.bidders.map((b) => `${names[b.id] ?? "?"} ${b.bid}${b.effective !== b.bid ? " (Rage x2)" : ""}`);
+    const bids = r.bidders.map((b) => `${names[b.id] ?? "?"} ${b.bid}`);
     if (r.winner) {
       const others = bids.slice(1);
       lines.push(
@@ -282,8 +282,7 @@ async function buildPlayersLines(state, players, offers, scores, catalog) {
     const name = await displayName(id, p.username);
     // Statut de l'offre : le bot a toujours déjà joué
     const status = id === BOT_ID ? EMOJI.bot.text : offers[id] ? EMOJI.check.text : EMOJI.late.text;
-    const rage = p.rageNext ? ` · ${EMOJI.exclamation.text} Rage` : "";
-    lines.push(`${status} **${name}** · ${p.stock} ${ELIXIR} · ${plural(scoreById[id] ?? 0, "pt")}${rage}`);
+    lines.push(`${status} **${name}** · ${p.stock} ${ELIXIR} · ${plural(scoreById[id] ?? 0, "pt")}`);
     lines.push(`└ ${formatCollection(p.collection, catalog)}`);
   }
   const missing = state.maxPlayers - state.players.length;
@@ -475,7 +474,7 @@ function buildHandEmbed(view) {
   const myScore = scores.find((s) => s.id === view.discordId);
   const lines = [
     ...(view.recap ?? []),
-    `${ELIXIR} Ton élixir : **${me.stock}**${me.rageNext ? ` · ${EMOJI.exclamation.text} Rage active (ta mise compte double)` : ""}`,
+    `${ELIXIR} Ton élixir : **${me.stock}**`,
     `${EMOJI.cards.text} Ta collection : ${formatCollection(me.collection, catalog)}`,
     `${EMOJI.stats.text} Score actuel : **${plural(myScore?.total ?? 0, "pt")}**${myScore?.achieved.length ? ` (${myScore.achieved.map((a) => a.label).join(", ")})` : ""}`,
     "",
@@ -646,32 +645,42 @@ export async function handlePasser(webhookUrl, discordId) {
 
 // ── Bouton [Règles] ──────────────────────────────────────────────
 
+// « a, b ou c »
+function joinOu(items) {
+  return items.length > 1 ? `${items.slice(0, -1).join(", ")} ou ${items.at(-1)}` : items[0];
+}
+
+// Objectifs de même valeur regroupés sur une ligne (« 3 sorts, volants ou
+// bâtiments : +5 chacun ») pour garder des règles courtes. Les valeurs
+// viennent toujours d'OBJECTIVES / MAJORITIES, jamais recopiées.
+function buildScoreLines() {
+  const lines = [];
+  const themes = OBJECTIVES.filter((o) => o.noun);
+  for (const points of [...new Set(themes.map((o) => o.points))].sort((a, b) => a - b)) {
+    const nouns = themes.filter((o) => o.points === points).map((o) => o.noun);
+    lines.push(`• ${THEME_MIN} ${joinOu(nouns)} : **+${points}**${nouns.length > 1 ? " chacun" : ""}`);
+  }
+  for (const o of OBJECTIVES.filter((o) => !o.noun)) lines.push(`• ${o.label} : **+${o.points}**`);
+  const majorities = MAJORITIES.map((m) => m.label.replace(/^Le plus de /, ""));
+  lines.push(`• Le plus de ${joinOu(majorities)} : **+${MAJORITIES[0].points}** chacun`);
+  return lines;
+}
+
 function buildReglesEmbed() {
-  const objectiveLines = OBJECTIVES.map((o) => `• ${o.rulesLabel ?? o.label} : **+${o.points}**`);
-  const majorityLines = MAJORITIES.map((m) => `• ${m.label} : **+${m.points}**`);
-  const specialLines = Object.values(SPECIALS).map((s) => `• **${s.fr}** (mise min ${s.minBid}) : ${s.description}`);
   return {
     title: "Règles du jeu : Élixir",
     description: [
-      "Enchères secrètes sur des cartes Clash Royale, de 1 à 3 joueurs (en solo, contre un bot).",
+      "Enchères secrètes sur des cartes Clash Royale, de 1 à 3 joueurs (en solo contre un bot).",
       "",
-      `${ELIXIR} **Élixir :** ${STARTING_ELIXIR} au départ, +${ELIXIR_PER_MANCHE} à chaque nouvelle manche, ${ELIXIR_CAP} au maximum (le surplus est perdu).`,
+      `${EMOJI.battle.text} **Chaque manche**`,
+      "• Fais une offre secrète sur une carte (mise ≥ son coût), ou passe.",
+      "• La meilleure offre gagne, seul le gagnant paie. Égalité : carte défaussée.",
+      `• ${ELIXIR} ${STARTING_ELIXIR} au départ, +${ELIXIR_PER_MANCHE} par manche, ${ELIXIR_CAP} au maximum.`,
       "",
-      `${EMOJI.battle.text} **À chaque manche :**`,
-      "• Des cartes sont mises aux enchères (une de plus que de joueurs). La manche suivante est visible.",
-      "• Fais **une seule offre secrète** : une carte et une mise (au moins le coût de la carte), ou passe.",
-      "• La meilleure offre remporte la carte et **seul le gagnant paie**. En cas d'égalité, la carte est défaussée et personne ne paie.",
-      "• Toutes les mises sont révélées après la manche. Élixir et collections sont visibles par tous.",
+      `${EMOJI.question.text} **${SPECIALS.joker.fr}** (dès la manche 4) : devient en fin de partie la carte qui te rapporte le plus.`,
       "",
-      `${EMOJI.question.text} **Cartes spéciales** (à partir de la manche 4) :`,
-      ...specialLines,
-      "",
-      `${EMOJI.trophy.text} **Score final :** 1 pt par carte, plus chaque objectif atteint (cumulables).`,
-      ...objectiveLines,
-      "Majorités (strictement plus que chaque adversaire) :",
-      ...majorityLines,
-      "",
-      "Départage : élixir restant. Une partie inactive depuis plus de 2h est close automatiquement.",
+      `${EMOJI.trophy.text} **Score** : 1 pt par carte, plus :`,
+      ...buildScoreLines(),
     ].join("\n"),
     color: ELIXIRDUEL_COLOR,
   };

@@ -56,60 +56,45 @@ async function main() {
       assert.strictEqual(specials.length, totalManches === 10 ? 2 : 1);
       for (const s of specials) {
         assert.ok(s.manche >= 4);
-        if (s.manche === totalManches) assert.strictEqual(s.k, SPECIALS.joker.key);
+        assert.strictEqual(s.k, SPECIALS.joker.key);
       }
     }
   }
 
-  // ── resolveOffers : meilleure offre, égalité, passe, Rage ──
+  // ── resolveOffers : meilleure offre, égalité, passe ──
   {
     const cards = [card("Bats"), card("Fireball")];
-    const players = { a: { stock: 10 }, b: { stock: 10 }, c: { stock: 10, rageNext: true } };
-    const res = resolveOffers(cards, { a: { card: 0, bid: 5 }, b: { card: 0, bid: 4 }, c: { card: null, bid: 0 } }, players);
+    const res = resolveOffers(cards, { a: { card: 0, bid: 5 }, b: { card: 0, bid: 4 }, c: { card: null, bid: 0 } });
     assert.strictEqual(res[0].winner, "a");
     assert.strictEqual(res[0].price, 5);
     assert.strictEqual(res[1].winner, null);
     assert.strictEqual(res[1].tie, false);
 
-    const tie = resolveOffers(cards, { a: { card: 1, bid: 4 }, b: { card: 1, bid: 4 } }, players);
+    const tie = resolveOffers(cards, { a: { card: 1, bid: 4 }, b: { card: 1, bid: 4 } });
     assert.strictEqual(tie[1].winner, null);
     assert.strictEqual(tie[1].tie, true);
-
-    // Rage : 3 x2 = 6 bat 5, mais ne paie que 3
-    const rage = resolveOffers(cards, { a: { card: 0, bid: 5 }, c: { card: 0, bid: 3 } }, players);
-    assert.strictEqual(rage[0].winner, "c");
-    assert.strictEqual(rage[0].price, 3);
   }
 
-  // ── applyResults : seul le gagnant paie, effets des spéciales ──
+  // ── applyResults : seul le gagnant paie, Joker en collection, recharge plafonnée ──
   {
     const players = {
-      a: { stock: 10, collection: [], rageNext: true },
-      b: { stock: 10, collection: [], rageNext: false },
+      a: { stock: 10, collection: [] },
+      b: { stock: 10, collection: [] },
     };
-    const next = applyResults(
-      players,
-      [
-        { key: "Knight", winner: "a", price: 4 },
-        { key: SPECIALS.collecteur.key, winner: "b", price: 2 },
-        { key: "Zap", winner: null, price: 0, tie: true },
-      ],
-      { regen: 0, cap: 99 },
-    );
+    const results = [
+      { key: "Knight", winner: "a", price: 4 },
+      { key: SPECIALS.joker.key, winner: "b", price: 3 },
+      { key: "Zap", winner: null, price: 0, tie: true },
+    ];
+    const next = applyResults(players, results, { regen: 0, cap: 99 });
     assert.strictEqual(next.a.stock, 6);
     assert.deepStrictEqual(next.a.collection, ["Knight"]);
-    assert.strictEqual(next.a.rageNext, false);
-    assert.strictEqual(next.b.stock, 13);
-    assert.deepStrictEqual(next.b.collection, []);
-    // Recharge plafonnée : 10 - 4 + 4 = 10 ; 10 - 2 + 5 + 4 = 17 → 10
-    const capped = applyResults(players, [
-      { key: "Knight", winner: "a", price: 4 },
-      { key: SPECIALS.collecteur.key, winner: "b", price: 2 },
-    ]);
+    assert.strictEqual(next.b.stock, 7);
+    assert.deepStrictEqual(next.b.collection, [SPECIALS.joker.key]);
+    // Recharge plafonnée : 10 - 4 + 4 = 10 ; 10 - 3 + 4 = 11 → 10
+    const capped = applyResults(players, results);
     assert.strictEqual(capped.a.stock, 10);
     assert.strictEqual(capped.b.stock, 10);
-    const rage = applyResults(players, [{ key: SPECIALS.rage.key, winner: "b", price: 2 }]);
-    assert.strictEqual(rage.b.rageNext, true);
     // Les objets d'entrée ne sont pas mutés
     assert.strictEqual(players.a.stock, 10);
   }
@@ -127,21 +112,22 @@ async function main() {
   // ── scoreCollection : objectifs ──
   {
     const ids = (s) => s.achieved.map((a) => a.id).sort();
-    // 2 sorts en 5 manches : objectif « 2 sorts » (seuil 2)
-    const sorts = scoreCollection([card("Zap"), card("Fireball")], [], { totalManches: 5 });
-    assert.ok(ids(sorts).includes("sorts"));
-    // ... mais pas en 10 manches (seuil 3)
-    assert.ok(!ids(scoreCollection([card("Zap"), card("Fireball")], [], { totalManches: 10 })).includes("sorts"));
-    // 3 gobelins en 10 manches, avec un libellé adapté au format
+    // Seuil de 3 cartes du thème, quel que soit le format
+    assert.ok(!ids(scoreCollection([card("Zap"), card("Fireball")], [], { totalManches: 5 })).includes("sorts"));
+    assert.ok(ids(scoreCollection([card("Zap"), card("Fireball"), card("Arrows")], [], { totalManches: 5 })).includes("sorts"));
     const gob = scoreCollection([card("Goblins"), card("Spear Goblins"), card("Dart Goblin")], [], { totalManches: 10 });
     assert.ok(ids(gob).includes("gobelins"));
     assert.ok(ids(gob).includes("cycle"));
     assert.strictEqual(gob.achieved.find((a) => a.id === "gobelins").label, "3 gobelins");
     // « Au moins » : une carte hors thème ne fait pas perdre l'objectif
-    const mixte = scoreCollection([card("Goblins"), card("Spear Goblins"), card("Zap")], [], { totalManches: 5 });
+    const mixte = scoreCollection([card("Goblins"), card("Spear Goblins"), card("Dart Goblin"), card("Zap")], [], { totalManches: 5 });
     assert.ok(ids(mixte).includes("gobelins"));
-    // Gargouilles : seuil fixe de 2, même en 10 manches
-    assert.ok(ids(scoreCollection([card("Minions"), card("Mega Minion"), card("Zap")], [], { totalManches: 10 })).includes("gargouilles"));
+    // Gargouilles et champions : 3 aussi
+    assert.ok(!ids(scoreCollection([card("Minions"), card("Mega Minion"), card("Zap")])).includes("gargouilles"));
+    assert.ok(ids(scoreCollection([card("Minions"), card("Mega Minion"), card("Minion Horde")])).includes("gargouilles"));
+    // Deck lourd : +8
+    const lourd = scoreCollection([card("Lava Hound"), card("Lightning"), card("X-Bow")]);
+    assert.strictEqual(lourd.achieved.find((a) => a.id === "lourd")?.points, 8);
     // Trio
     assert.ok(ids(scoreCollection([card("Goblins"), card("Zap"), card("Cannon")])).includes("trio"));
     // Total = 1 pt par carte + objectifs
@@ -185,7 +171,7 @@ async function main() {
     const deck = buildDeck(pool, { totalManches: 5, maxPlayers: 1 }, rng);
     const cards = deck[0].map(card);
     const stock = Math.floor(rng() * (STARTING_ELIXIR + 1));
-    const offer = botOffer(cards, { stock, collection: [], rageNext: false }, [[]], { manchesLeft: 5, totalManches: 5, catalog }, rng);
+    const offer = botOffer(cards, { stock, collection: [] }, [[]], { manchesLeft: 5, totalManches: 5, catalog }, rng);
     if (offer.card != null) {
       assert.ok(offer.bid <= stock);
       assert.ok(offer.bid >= cards[offer.card].minBid);

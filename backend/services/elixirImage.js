@@ -105,8 +105,6 @@ async function fetchDataUrl(url) {
 
 const SPECIAL_SYMBOLS = {
   [SPECIALS.joker.key]: "?",
-  [SPECIALS.rage.key]: "x2",
-  [SPECIALS.collecteur.key]: "+5",
 };
 
 function specialCardSvg(card, x, y, w, h) {

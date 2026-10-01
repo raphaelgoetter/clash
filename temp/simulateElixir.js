@@ -20,7 +20,7 @@ function run(maxPlayers, totalManches) {
     const deck = buildDeck(pool, { totalManches, maxPlayers }, Math.random);
     const start = START;
     let players = {};
-    for (let i = 0; i < nPlayers; i++) players["p" + i] = { username: "p" + i, stock: start, collection: [], rageNext: false };
+    for (let i = 0; i < nPlayers; i++) players["p" + i] = { username: "p" + i, stock: start, collection: [] };
     for (let m = 0; m < totalManches; m++) {
       const mc = deck[m].map((k) => resolveCard(k, catalog));
       const o = {};

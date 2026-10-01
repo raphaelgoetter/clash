@@ -30,33 +30,16 @@ export const EXCLUDED_CARDS = new Set(["Mirror", "Spirit Empress"]);
 const SPECIAL_FIRST_MANCHE = 4;
 
 // Cartes spéciales : mises aux enchères comme les autres, en PLUS des cartes
-// normales de leur manche
+// normales de leur manche. Seul le Joker est conservé (Collecteur d'élixir
+// et Rage retirés le 01/10, décision de Raphaël).
 export const SPECIALS = {
-  collecteur: {
-    key: "special:collecteur",
-    fr: "Collecteur d'élixir",
-    minBid: 2,
-    description: "+5 élixirs immédiatement.",
-    // Inutile à la dernière manche (l'élixir restant ne rapporte rien)
-    lastMancheAllowed: false,
-  },
-  rage: {
-    key: "special:rage",
-    fr: "Rage",
-    minBid: 2,
-    description: "Ta mise de la manche suivante compte double (tu ne paies que ta vraie mise).",
-    lastMancheAllowed: false,
-  },
   joker: {
     key: "special:joker",
     fr: "Joker",
     minBid: 3,
-    description: "Compte comme une carte de n'importe quel type, famille et rareté pour les objectifs.",
-    lastMancheAllowed: true,
+    description: "En fin de partie, devient la carte qui te rapporte le plus de points (type, famille et rareté au choix).",
   },
 };
-
-const COLLECTEUR_BONUS = 5;
 
 export const TYPES = ["troop", "flying", "spell", "building"];
 export const FAMILIES = ["goblin", "skeleton", "human", "minion", null];
@@ -158,14 +141,7 @@ export function buildDeck(pool, { totalManches, maxPlayers }, rng = Math.random)
   for (let m = SPECIAL_FIRST_MANCHE; m <= totalManches; m++) candidates.push(m);
   const specialManches = shuffle(candidates, rng).slice(0, specialCountFor(totalManches));
 
-  // Type tiré indépendamment pour chaque spéciale (deux identiques
-  // possibles), seul le Joker est autorisé à la dernière manche
-  for (const manche of specialManches) {
-    const isLast = manche === totalManches;
-    const allowed = Object.keys(SPECIALS).filter((id) => !isLast || SPECIALS[id].lastMancheAllowed);
-    const id = allowed[Math.floor(rng() * allowed.length)];
-    deck[manche - 1].push(SPECIALS[id].key);
-  }
+  for (const manche of specialManches) deck[manche - 1].push(SPECIALS.joker.key);
   return deck;
 }
 
@@ -174,11 +150,9 @@ export function buildDeck(pool, { totalManches, maxPlayers }, rng = Math.random)
 // famille et une rareté, voir scoreCollection). Chaque objectif atteint
 // rapporte ses points, tous sont cumulables.
 
-// Nombre minimal de cartes d'un thème pour valider son objectif : 2 en 5
-// manches, 3 en 10 manches (une carte au plus par manche et par joueur)
-export function themeMin(totalManches) {
-  return totalManches >= 10 ? 3 : 2;
-}
+// Nombre minimal de cartes d'un thème pour valider son objectif, quel que
+// soit le format (barème de Raphaël, 01/10)
+export const THEME_MIN = 3;
 
 function averageElixir(cards) {
   const real = cards.filter((c) => !c.joker);
@@ -186,31 +160,29 @@ function averageElixir(cards) {
   return real.reduce((s, c) => s + c.elixir, 0) / real.length;
 }
 
-// Objectifs de thème : AU MOINS N cartes du thème, les autres cartes ne
-// gênent pas (décision du 01/10 : un objectif « uniquement » obligeait à
-// ne plus rien acheter pendant des manches entières en 10 manches).
-// `fixedMin` : seuil indépendant du format (thèmes de 4 à 6 cartes
-// seulement dans le pool).
-function themeObjective(id, noun, points, predicate, fixedMin = null) {
-  const min = (ctx) => fixedMin ?? themeMin(ctx.totalManches);
+// Objectifs de thème : AU MOINS THEME_MIN cartes du thème, les autres
+// cartes ne gênent pas (décision du 01/10 : un objectif « uniquement »
+// obligeait à ne plus rien acheter pendant des manches entières).
+function themeObjective(id, noun, points, predicate) {
   return {
     id,
     points,
-    label: (ctx) => `${min(ctx)} ${noun}`,
-    rulesLabel: fixedMin ? `Au moins ${fixedMin} ${noun}` : `Au moins ${themeMin(5)} ${noun} (${themeMin(10)} en 10 manches)`,
-    test: (cards, ctx) => cards.filter(predicate).length >= min(ctx),
+    noun,
+    label: `${THEME_MIN} ${noun}`,
+    rulesLabel: `Au moins ${THEME_MIN} ${noun}`,
+    test: (cards) => cards.filter(predicate).length >= THEME_MIN,
   };
 }
 
 export const OBJECTIVES = [
-  themeObjective("humains", "humains", 4, (c) => c.family === "human"),
-  themeObjective("sorts", "sorts", 6, (c) => c.type === "spell"),
-  themeObjective("volants", "volants", 6, (c) => c.type === "flying"),
-  themeObjective("batiments", "bâtiments", 6, (c) => c.type === "building"),
-  themeObjective("gobelins", "gobelins", 6, (c) => c.family === "goblin"),
-  themeObjective("squelettes", "squelettes", 6, (c) => c.family === "skeleton"),
-  themeObjective("gargouilles", "gargouilles", 6, (c) => c.family === "minion", 2),
-  themeObjective("champions", "champions", 4, (c) => c.rarity === "champion", 2),
+  themeObjective("humains", "humains", 2, (c) => c.family === "human"),
+  themeObjective("sorts", "sorts", 5, (c) => c.type === "spell"),
+  themeObjective("volants", "volants", 5, (c) => c.type === "flying"),
+  themeObjective("batiments", "bâtiments", 5, (c) => c.type === "building"),
+  themeObjective("gobelins", "gobelins", 5, (c) => c.family === "goblin"),
+  themeObjective("squelettes", "squelettes", 5, (c) => c.family === "skeleton"),
+  themeObjective("gargouilles", "gargouilles", 6, (c) => c.family === "minion"),
+  themeObjective("champions", "champions", 6, (c) => c.rarity === "champion"),
   {
     id: "raretes",
     label: "Une carte de chaque rareté",
@@ -238,7 +210,8 @@ export const OBJECTIVES = [
   {
     id: "lourd",
     label: "Deck lourd (coût moyen ≥ 5, 3+ cartes)",
-    points: 4,
+    // Valorise l'achat de cartes chères
+    points: 8,
     test: (cards) => {
       const avg = averageElixir(cards);
       return avg != null && avg >= 5;
@@ -281,7 +254,6 @@ function evaluateObjectives(cards, ctx) {
 // (`{ joker: true }`). Les Jokers prennent la forme la plus avantageuse
 // (énumération exhaustive, au plus 2 Jokers par partie).
 // `opponents` = collections des adversaires (pour les majorités).
-// `ctx.totalManches` fixe le seuil des objectifs de thème.
 export function scoreCollection(collection, opponents = [], ctx = { totalManches: 5 }) {
   const real = collection.filter((c) => !c.joker);
   const jokerCount = collection.length - real.length;
@@ -305,11 +277,7 @@ export function scoreCollection(collection, opponents = [], ctx = { totalManches
     return mine >= 1 && opponents.every((opp) => mine > m.count(opp));
   });
 
-  const achieved = [...best.achieved, ...majorities].map(({ id, label, points }) => ({
-    id,
-    label: typeof label === "function" ? label(ctx) : label,
-    points,
-  }));
+  const achieved = [...best.achieved, ...majorities].map(({ id, label, points }) => ({ id, label, points }));
   const cardPoints = collection.length;
   const total = cardPoints + achieved.reduce((s, o) => s + o.points, 0);
   return { total, cardPoints, achieved };
@@ -319,39 +287,34 @@ export function scoreCollection(collection, opponents = [], ctx = { totalManches
 
 // cards   : cartes de la manche (resolveCard, spéciales comprises)
 // offers  : { [id]: { card: index | null, bid } } (null = passe)
-// players : { [id]: { stock, rageNext } }
 // Renvoie un résultat par carte : gagnant (ou null), prix payé, égalité.
-export function resolveOffers(cards, offers, players) {
+export function resolveOffers(cards, offers) {
   return cards.map((card, index) => {
     const bidders = Object.entries(offers)
       .filter(([, o]) => o && o.card === index)
-      .map(([id, o]) => ({ id, bid: o.bid, effective: o.bid * (players[id]?.rageNext ? 2 : 1) }))
-      .sort((a, b) => b.effective - a.effective);
+      .map(([id, o]) => ({ id, bid: o.bid }))
+      .sort((a, b) => b.bid - a.bid);
     if (bidders.length === 0) return { index, key: card.key, winner: null, price: 0, tie: false, bidders };
-    const top = bidders[0].effective;
-    const tie = bidders.filter((b) => b.effective === top).length > 1;
+    const top = bidders[0].bid;
+    const tie = bidders.filter((b) => b.bid === top).length > 1;
     if (tie) return { index, key: card.key, winner: null, price: 0, tie: true, bidders };
     return { index, key: card.key, winner: bidders[0].id, price: bidders[0].bid, tie: false, bidders };
   });
 }
 
-// Applique les résultats : paiement, ajout à la collection, effets des
-// spéciales, puis recharge pour la manche suivante (plafonnée, le Collecteur
-// aussi). La Rage de la manche résolue est consommée, celle gagnée pendant
-// cette manche s'applique à la suivante.
-// players : { [id]: { stock, collection: [clé], rageNext } }
+// Applique les résultats : paiement, ajout à la collection (Joker compris),
+// puis recharge plafonnée pour la manche suivante.
+// players : { [id]: { stock, collection: [clé] } }
 export function applyResults(players, results, { regen = ELIXIR_PER_MANCHE, cap = ELIXIR_CAP } = {}) {
   const next = {};
   for (const [id, p] of Object.entries(players)) {
-    next[id] = { ...p, collection: [...p.collection], rageNext: false };
+    next[id] = { ...p, collection: [...p.collection] };
   }
   for (const r of results) {
     if (!r.winner) continue;
     const p = next[r.winner];
     p.stock -= r.price;
-    if (r.key === SPECIALS.collecteur.key) p.stock += COLLECTEUR_BONUS;
-    else if (r.key === SPECIALS.rage.key) p.rageNext = true;
-    else p.collection.push(r.key);
+    p.collection.push(r.key);
   }
   for (const p of Object.values(next)) p.stock = Math.min(cap, p.stock + regen);
   return next;
@@ -387,13 +350,10 @@ export function computeFinalScores(players, catalog, totalManches) {
 
 // ── Bot (mode solo, et simulation) ──────────────────────────────────
 
-// Valeur estimée (en points) d'une spéciale pour le bot
-const SPECIAL_VALUE = { collecteur: 2, rage: 1.5 };
-
 // Offre du bot : choisit la carte au meilleur rapport gain/prix, avec une
 // mise d'autant plus haute que la carte l'intéresse, sans dépenser plus que
 // sa part du budget restant (sauf à la dernière manche).
-// me        : { stock, collection: [clé], rageNext }
+// me        : { stock, collection: [clé] }
 // opponents : collections (clés) des adversaires
 export function botOffer(cards, me, opponents, { manchesLeft, totalManches, catalog, aggressiveness = 1, regen = ELIXIR_PER_MANCHE }, rng = Math.random) {
   const myCards = collectionToCards(me.collection, catalog);
@@ -406,13 +366,8 @@ export function botOffer(cards, me, opponents, { manchesLeft, totalManches, cata
 
   let best = null;
   cards.forEach((card, index) => {
-    let gain;
-    if (card.key === SPECIALS.collecteur.key) gain = manchesLeft > 1 ? SPECIAL_VALUE.collecteur : 0;
-    else if (card.key === SPECIALS.rage.key) gain = manchesLeft > 1 ? SPECIAL_VALUE.rage : 0;
-    else {
-      const added = card.key === SPECIALS.joker.key ? { joker: true } : card;
-      gain = scoreCollection([...myCards, added], oppCards, ctx).total - base;
-    }
+    const added = card.key === SPECIALS.joker.key ? { joker: true } : card;
+    const gain = scoreCollection([...myCards, added], oppCards, ctx).total - base;
     if (gain <= 0) return;
 
     const cap = manchesLeft <= 1 ? me.stock : Math.min(me.stock, Math.round(perManche * (1 + gain / 4) * aggressiveness));
