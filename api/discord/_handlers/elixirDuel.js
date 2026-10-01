@@ -30,7 +30,6 @@ import {
   readHighScore,
   readPlayerView,
   loadCatalog,
-  mancheCards,
   expireIfStale,
   BOT_ID,
   BOT_NAME,
@@ -99,18 +98,7 @@ const RARITY_LABELS = {
 function cardTags(card) {
   const tags = [TYPE_LABELS[card.type]];
   if (card.family) tags.push(FAMILY_LABELS[card.family]);
-  if (card.rarity === "champion" || card.rarity === "legendary") tags.push(RARITY_LABELS[card.rarity]);
   return tags.join(" · ");
-}
-
-// Illustrations, coût et nom sont sur l'image : le texte ne garde que ce
-// qui compte pour les objectifs (type, famille, rareté notable)
-function formatCardLine(card) {
-  if (card.special) {
-    const special = Object.values(SPECIALS).find((s) => s.key === card.key);
-    return `**${card.fr}** · carte spéciale · ${special.description}`;
-  }
-  return `**${card.fr}** · ${cardTags(card)}`;
 }
 
 function shortCardName(key, catalog) {
@@ -297,14 +285,9 @@ async function buildTableEmbed(state) {
     readCurrentScores(state),
     loadCatalog(),
   ]);
-  const cards = mancheCards(state, state.manche, catalog);
-  const isLast = state.manche >= state.totalManches;
-
+  // Les cartes aux enchères sont visibles sur l'image
   const lines = [
     ...(await buildResultsLines(state.lastResults, players, catalog)),
-    `${EMOJI.cards.text} **Cartes aux enchères**${isLast ? " (dernière manche)" : ""}`,
-    ...cards.map(formatCardLine),
-    "",
     ...(await buildPlayersLines(state, players, offers, scores, catalog)),
   ];
   if (state.players.length === 0) lines.push("", "Clique sur **Jouer** pour t'inscrire.");
