@@ -41,7 +41,7 @@ async function main() {
     assert.ok(!pool.some((c) => c.cardKey === "Golem"));
   }
 
-  // ── buildDeck : joueurs + 1 cartes par manche, aucun doublon, spéciales ──
+  // ── buildDeck : participants + 1 cartes par manche (bot compris en solo), aucun doublon, spéciales ──
   for (let seed = 1; seed <= 50; seed++) {
     for (const [maxPlayers, totalManches] of [
       [1, 5],
@@ -50,7 +50,7 @@ async function main() {
       const deck = buildDeck(pool, { totalManches, maxPlayers }, seeded(seed));
       assert.strictEqual(deck.length, totalManches);
       const normal = deck.flat().filter((k) => !isSpecialKey(k));
-      assert.strictEqual(normal.length, (maxPlayers + 1) * totalManches);
+      assert.strictEqual(normal.length, ((maxPlayers === 1 ? 2 : maxPlayers) + 1) * totalManches);
       assert.strictEqual(new Set(normal).size, normal.length);
       const specials = deck.flatMap((keys, i) => keys.filter(isSpecialKey).map((k) => ({ k, manche: i + 1 })));
       assert.strictEqual(specials.length, totalManches === 10 ? 2 : 1);

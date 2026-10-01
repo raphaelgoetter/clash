@@ -34,10 +34,16 @@ for (let m = 1; m <= 5; m++) {
     if (m === 1 && i === 0) console.log("--- éphémère après choix carte ---\n" + JSON.stringify(lastEphemeral().body, null, 1).slice(0, 1500));
     await H.handleMise("wh", id, String(Math.min(view.me.stock, view.cards[idx].minBid + (i === 0 ? 1 : 0))));
     await H.handleValider("wh", id);
+    if (i === 0 && (m === 1 || m === 5)) console.log(`--- éphémère après Valider (manche ${m}) ---\n` + lastEphemeral().body.embeds[0].description + "\ncomposants: " + (lastEphemeral().body.components?.length ?? 0));
   }
   const pub = lastPublic().body.embeds[0];
   console.log(`\n===== ${pub.title} =====\n${pub.description}`);
 }
+{ const fin = lastPublic().body; console.log("FINAL image:", fin.embeds[0].image?.url, "| boutons:", JSON.stringify(fin.components?.[0]?.components?.map((c) => c.label))); }
+await H.handleDetails("wh", "msg1");
+console.log("\n===== Détails =====\n" + lastEphemeral().body.embeds[0].description);
+await H.handleDetails("wh", "ancien");
+console.log("ancien message:", lastEphemeral().body.content);
 await H.handleRegles("wh");
 console.log("\n===== Règles =====\n" + lastEphemeral().body.embeds[0].description);
 await S.resetElixirDuel();

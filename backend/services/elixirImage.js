@@ -23,7 +23,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { fetchCards } from "./clashApi.js";
 import { getOrSet } from "./cache.js";
 import { readBlobFontPath } from "./blobAssets.js";
-import { resolveCard, specialFromKey, SPECIALS } from "./elixirRules.js";
+import { resolveCard, SPECIALS } from "./elixirRules.js";
 
 const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
@@ -36,14 +36,18 @@ const ICON_H = 420;
 const CROP_Y = 67;
 const CROP_H = 320;
 const RATIO = CROP_H / ICON_W;
-const BIG = { w: 170, gap: 22, drop: 50, font: 18, nameGap: 30 };
-const SMALL = { w: 92, gap: 14, drop: 30, font: 12, nameGap: 20 };
+// Aucun nom sous les cartes : les illustrations suffisent, et les cartes
+// de la manche sont déjà listées dans le texte de l'embed
+const BIG = { w: 170, gap: 22, drop: 50 };
+const SMALL = { w: 92, gap: 14, drop: 30 };
+// Collection du vainqueur (fin de partie) : grille de 5 cartes par ligne
+const MEDIUM = { w: 120, gap: 16, drop: 38 };
+const COLLECTION_COLS = 5;
 const PADDING = 24;
 const SECTION_GAP = 26;
 const LABEL_SIZE = 16;
 
 const BACKGROUND = "#1e1f22";
-const TEXT_COLOR = "#f2f3f5";
 const LABEL_COLOR = "#b5bac1";
 
 function escapeXml(value) {
@@ -105,11 +109,6 @@ const SPECIAL_SYMBOLS = {
   [SPECIALS.collecteur.key]: "+5",
 };
 
-function fitFont(text, width, max) {
-  // Largeur moyenne d'un caractère Inter Bold ≈ 0,6 em
-  return Math.min(max, Math.floor(width / (text.length * 0.6)));
-}
-
 function specialCardSvg(card, x, y, w, h) {
   const fontSize = Math.round(w * (SPECIAL_SYMBOLS[card.key].length > 1 ? 0.36 : 0.5));
   return `
@@ -125,11 +124,8 @@ function cardSvg(card, dataUrl, x, y, size) {
     : dataUrl
       ? `<svg x="${x}" y="${y}" width="${size.w}" height="${h}" viewBox="0 ${CROP_Y} ${ICON_W} ${CROP_H}"><image width="${ICON_W}" height="${ICON_H}" href="${dataUrl}"/></svg>`
       : `<rect x="${x}" y="${y}" width="${size.w}" height="${h}" rx="10" fill="#2b2d31"/>`;
-  const name = card.special ? specialFromKey(card.key).fr : card.fr;
-  const fontSize = fitFont(name, size.w + size.gap - 4, size.font);
   return `${art}
-  ${elixirDropSvg(x - size.drop * 0.25, y - size.drop * 0.2, size.drop, card.minBid)}
-  <text x="${x + size.w / 2}" y="${y + h + size.nameGap - 6}" font-family="${FONT_FAMILY}" font-size="${fontSize}" text-anchor="middle" fill="${TEXT_COLOR}">${escapeXml(name)}</text>`;
+  ${elixirDropSvg(x - size.drop * 0.25, y - size.drop * 0.2, size.drop, card.minBid)}`;
 }
 
 function rowWidth(count, size) {
@@ -137,15 +133,26 @@ function rowWidth(count, size) {
 }
 
 function rowHeight(size) {
-  return Math.round(size.w * RATIO) + size.nameGap;
+  return Math.round(size.w * RATIO);
+}
+
+async function loadDataUrls(cards) {
+  const iconUrls = await loadIconUrls();
+  return new Map(
+    await Promise.all(cards.filter((c) => !c.special).map(async (c) => [c.key, await fetchDataUrl(iconUrls.get(c.key))])),
+  );
+}
+
+function wrapSvg(width, height, parts) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+<rect width="100%" height="100%" rx="16" fill="${BACKGROUND}"/>
+${parts.join("\n")}
+</svg>`;
 }
 
 async function buildSvg(current, next) {
-  const iconUrls = await loadIconUrls();
-  const all = [...current, ...next];
-  const dataUrls = new Map(
-    await Promise.all(all.filter((c) => !c.special).map(async (c) => [c.key, await fetchDataUrl(iconUrls.get(c.key))])),
-  );
+  const dataUrls = await loadDataUrls([...current, ...next]);
 
   // Marge haute/gauche supplémentaire pour la goutte qui déborde du coin
   const top = PADDING + BIG.drop * 0.2;
@@ -165,16 +172,30 @@ async function buildSvg(current, next) {
     parts.push(...next.map((c, i) => cardSvg(c, dataUrls.get(c.key), smallLeft + i * (SMALL.w + SMALL.gap), y, SMALL)));
     y += rowHeight(SMALL);
   }
-  const height = Math.round(y + PADDING - 8);
+  const height = Math.round(y + PADDING);
 
-  return {
-    width: Math.round(width),
-    svg: `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${Math.round(width)}" height="${height}" viewBox="0 0 ${Math.round(width)} ${height}" xmlns="http://www.w3.org/2000/svg">
-<rect width="100%" height="100%" rx="16" fill="${BACKGROUND}"/>
-${parts.join("\n")}
-</svg>`,
-  };
+  return { width: Math.round(width), svg: wrapSvg(Math.round(width), height, parts) };
+}
+
+// Grille de cartes (collection du vainqueur), COLLECTION_COLS par ligne
+async function buildCollectionSvg(cards) {
+  const dataUrls = await loadDataUrls(cards);
+  const left = PADDING + MEDIUM.drop * 0.25;
+  const top = PADDING + MEDIUM.drop * 0.2;
+  const rowStep = rowHeight(MEDIUM) + MEDIUM.drop * 0.2 + MEDIUM.gap;
+  const parts = cards.map((c, i) =>
+    cardSvg(
+      c,
+      dataUrls.get(c.key),
+      left + (i % COLLECTION_COLS) * (MEDIUM.w + MEDIUM.gap),
+      top + Math.floor(i / COLLECTION_COLS) * rowStep,
+      MEDIUM,
+    ),
+  );
+  const rows = Math.ceil(cards.length / COLLECTION_COLS);
+  const width = Math.round(left + rowWidth(Math.min(cards.length, COLLECTION_COLS), MEDIUM) + PADDING);
+  const height = Math.round(top + rows * rowStep - MEDIUM.gap + PADDING);
+  return { width, svg: wrapSvg(width, height, parts) };
 }
 
 export async function rasterize(svg, width) {
@@ -189,6 +210,14 @@ export async function rasterize(svg, width) {
 // currentKeys / nextKeys : clés de cartes (normales ou spéciales). Les clés
 // inconnues du catalogue sont ignorées (URL forgée). null si rien à
 // afficher.
+// Collection d'un joueur (au plus 10 cartes, une par manche)
+export async function getElixirCollectionImage(keys, catalog) {
+  const cards = keys.map((k) => resolveCard(k, catalog)).filter(Boolean).slice(0, 10);
+  if (!cards.length) return null;
+  const { svg, width } = await buildCollectionSvg(cards);
+  return { buffer: await rasterize(svg, width), mimeType: "image/png" };
+}
+
 export async function getElixirCardsImage(currentKeys, nextKeys, catalog) {
   const resolve = (keys) => keys.map((k) => resolveCard(k, catalog)).filter(Boolean).slice(0, 6);
   const current = resolve(currentKeys);

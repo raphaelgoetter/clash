@@ -194,6 +194,7 @@ import {
   handleValider as handleElixirDuelValider,
   handlePasser as handleElixirDuelPasser,
   handleRegles as handleElixirDuelRegles,
+  handleDetails as handleElixirDuelDetails,
   extractMember as extractElixirDuelMember,
 } from "./_handlers/elixirDuel.js";
 import {
@@ -9194,6 +9195,19 @@ export default async function handler(req, res) {
     else if (action === "elixirduel_mise") runBackground(() => handleElixirDuelMise(webhookUrl, discordId, value));
     else if (action === "elixirduel_valider") runBackground(() => handleElixirDuelValider(webhookUrl, discordId));
     else runBackground(() => handleElixirDuelPasser(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Élixir : bouton "Détails" (fin de partie, détail des scores, éphémère) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("elixirduel_details:")
+  ) {
+    const messageId = body.data.custom_id.split(":")[1];
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleElixirDuelDetails(webhookUrl, messageId));
     return;
   }
 

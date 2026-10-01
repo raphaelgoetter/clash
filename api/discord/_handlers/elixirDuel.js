@@ -15,6 +15,7 @@
 // ============================================================
 
 import {
+  readState,
   writeState,
   startGame,
   joinGame,
@@ -215,6 +216,34 @@ function buildJoinComponents() {
   ];
 }
 
+// Fin de partie : plus de bouton Jouer, seulement Règles et Détails des
+// scores. L'ID du message dans le custom_id de Détails permet de refuser un
+// clic sur une ancienne partie une fois la suivante lancée.
+function buildEndComponents(state) {
+  return [
+    {
+      type: 1,
+      components: [
+        { type: 2, style: 2, label: "Règles", emoji: EMOJI.scroll.component, custom_id: "elixirduel_regles" },
+        {
+          type: 2,
+          style: 2,
+          label: "Détails",
+          emoji: EMOJI.stats.component,
+          custom_id: `elixirduel_details:${state.messageId}`,
+        },
+      ],
+    },
+  ];
+}
+
+// Image de la collection d'un joueur (vainqueur en fin de partie)
+function collectionImageUrl(keys) {
+  if (!keys?.length) return null;
+  const params = new URLSearchParams({ mode: "collection", c: keys.join("|") });
+  return `${TRUST_ROYALE_URL}/api/elixir/image?${params}`;
+}
+
 // Bilan de la manche résolue : toutes les mises sont révélées
 async function buildResultsLines(lastResults, players, catalog) {
   if (!lastResults) return [];
@@ -294,18 +323,12 @@ async function buildTableEmbed(state) {
   };
 }
 
-function formatScoreDetail(score) {
-  const parts = [plural(score.cardPoints, "carte")];
-  for (const a of score.achieved) parts.push(`${a.label} +${a.points}`);
-  return parts.join(", ");
-}
-
 async function buildRankingLines(ranking, players, catalog) {
   const lines = [];
   for (const [i, r] of ranking.entries()) {
     const name = await displayName(r.id, r.username);
     const medal = i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `;
-    lines.push(`${medal}**${name}** · ${plural(r.total, "pt")} (${formatScoreDetail(r)})`);
+    lines.push(`${medal}**${name}** · ${plural(r.total, "pt")}`);
     lines.push(`└ ${formatCollection(players[r.id]?.collection ?? [], catalog)}`);
   }
   return lines;
@@ -318,6 +341,7 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
     ? [`${EMOJI.late.text} Partie expirée après 2h d'inactivité (manche ${state.manche}/${state.totalManches}).`, ""]
     : await buildResultsLines(state.lastResults, players, catalog);
   lines.push(`${EMOJI.topplayers.text} **Classement final**`, ...(await buildRankingLines(ranking, players, catalog)));
+  const winnerImage = collectionImageUrl(players[ranking[0]?.id]?.collection);
 
   if (highScore && !expired) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
@@ -327,6 +351,7 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
     title: `Élixir · Partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     color: ELIXIRDUEL_COLOR,
+    image: winnerImage ? { url: winnerImage } : undefined,
   };
 }
 
@@ -336,7 +361,7 @@ async function closeIfStale() {
   const result = await expireIfStale();
   if (!result.expired) return false;
   const embed = await buildFinalEmbed(result.state, { expired: true });
-  await patchPublicMessage(result.state, { embeds: [embed], components: [] });
+  await patchPublicMessage(result.state, { embeds: [embed], components: buildEndComponents(result.state) });
   return true;
 }
 
@@ -348,16 +373,19 @@ async function replyIfExpired(webhookUrl) {
 
 // Après une offre validée ou un passe : résout la manche si tout le monde a
 // joué, puis rafraîchit le message public en place.
+// Renvoie le résultat de checkAndResolveManche (pour enchaîner la main
+// éphémère du joueur sur la manche suivante).
 async function refreshPublicMessage() {
   const outcome = await checkAndResolveManche();
-  if (outcome.inactive) return;
+  if (outcome.inactive) return outcome;
   if (outcome.resolved && outcome.final) {
     const embed = await buildFinalEmbed(outcome.state);
-    await patchPublicMessage(outcome.state, { embeds: [embed], components: [] });
-    return;
+    await patchPublicMessage(outcome.state, { embeds: [embed], components: buildEndComponents(outcome.state) });
+    return outcome;
   }
   const embed = await buildTableEmbed(outcome.state);
   await patchPublicMessage(outcome.state, { embeds: [embed], components: buildJoinComponents() });
+  return outcome;
 }
 
 // ── Commande /elixir ────────────────────────────────────────────────
@@ -405,10 +433,13 @@ export async function handleElixirRoleRejected(webhookUrl) {
 // ── Main éphémère (offre du joueur) ─────────────────────────────────
 
 function buildOfferStatus(view) {
-  const { offer, draft, cards } = view;
+  const { offer, draft, cards, state } = view;
   if (offer) {
-    if (offer.card == null) return `${EMOJI.bye.text} Tu passes cette manche.`;
-    return `${EMOJI.check.text} Offre envoyée : **${cards[offer.card].fr}** pour **${offer.bid}** ${ELIXIR}. Résultat quand tout le monde aura joué.`;
+    // En solo, le bot a déjà joué : la manche se résout aussitôt, pas
+    // d'attente à annoncer
+    const waiting = state.maxPlayers > 1 ? " En attente des autres joueurs." : "";
+    if (offer.card == null) return `${EMOJI.bye.text} Tu passes cette manche.${waiting}`;
+    return `${EMOJI.check.text} Offre envoyée : **${cards[offer.card].fr}** pour **${offer.bid}** ${ELIXIR}.${waiting}`;
   }
   if (draft.card == null) return "Choisis une carte, puis ta mise.";
   const card = cards[draft.card];
@@ -416,11 +447,34 @@ function buildOfferStatus(view) {
   return `Offre en préparation : **${card.fr}** pour **${draft.bid}** ${ELIXIR}. Clique sur **Valider** pour l'envoyer.`;
 }
 
+// Bilan de la manche qui vient de se résoudre, vu par le joueur : ce qu'il
+// a remporté ou manqué, et ce que les autres ont remporté
+async function buildMyRecap(lastResults, discordId, players, catalog) {
+  if (!lastResults) return [];
+  const lines = [`${EMOJI.stats.text} **Manche ${lastResults.manche}**`];
+  const myOffer = lastResults.offers?.[discordId];
+  if (!myOffer || myOffer.card == null) lines.push(`${EMOJI.bye.text} Tu as passé.`);
+  for (const r of lastResults.results) {
+    const label = shortCardName(r.key, catalog);
+    const mine = myOffer?.card === r.index;
+    if (r.winner === discordId) {
+      lines.push(`${EMOJI.victory.text} Tu remportes **${label}** pour ${r.price} ${ELIXIR}.`);
+    } else if (r.winner) {
+      const name = await displayName(r.winner, players[r.winner]?.username);
+      lines.push(`${mine ? EMOJI.boohoo.text : EMOJI.victory.text} **${label}** pour ${name} (${r.price} ${ELIXIR})${mine ? `, ta mise : ${myOffer.bid}` : ""}.`);
+    } else if (r.tie) {
+      lines.push(`${EMOJI.boohoo.text} Égalité sur **${label}**, carte défaussée.`);
+    }
+  }
+  return [...lines, ""];
+}
+
 function buildHandEmbed(view) {
   const { state, me, players, catalog, offer } = view;
   const scores = computeFinalScores(players, catalog, state.totalManches);
   const myScore = scores.find((s) => s.id === view.discordId);
   const lines = [
+    ...(view.recap ?? []),
     `${ELIXIR} Ton élixir : **${me.stock}**${me.rageNext ? ` · ${EMOJI.exclamation.text} Rage active (ta mise compte double)` : ""}`,
     `${EMOJI.cards.text} Ta collection : ${formatCollection(me.collection, catalog)}`,
     `${EMOJI.stats.text} Score actuel : **${plural(myScore?.total ?? 0, "pt")}**${myScore?.achieved.length ? ` (${myScore.achieved.map((a) => a.label).join(", ")})` : ""}`,
@@ -545,10 +599,37 @@ export async function handleMise(webhookUrl, discordId, value) {
   }
 }
 
+// Après une offre (ou un passe) : résout la manche si tout le monde a joué.
+// Si c'est le cas, la main éphémère du joueur affiche directement le bilan
+// et l'offre de la manche suivante (en solo, le bot a toujours déjà joué :
+// sans ça, la main restait figée sur « Offre envoyée »).
+async function continueAfterOffer(webhookUrl, discordId) {
+  const outcome = await refreshPublicMessage();
+  if (!outcome?.resolved) return;
+  const [players, catalog] = await Promise.all([readPlayers(), loadCatalog()]);
+  const recap = await buildMyRecap(outcome.state.lastResults, discordId, players, catalog);
+  if (outcome.final) {
+    await patchOriginal(webhookUrl, {
+      content: "",
+      embeds: [
+        {
+          title: "Élixir · Partie terminée",
+          description: [...recap, `${EMOJI.topplayers.text} Le classement final est affiché dans le salon.`].join("\n"),
+          color: ELIXIRDUEL_COLOR,
+        },
+      ],
+      components: [],
+    });
+    return;
+  }
+  const view = await readPlayerView(outcome.state, discordId);
+  await patchOriginal(webhookUrl, buildHandPayload({ ...view, recap }, discordId));
+}
+
 export async function handleValider(webhookUrl, discordId) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
-    if (await respondToAction(webhookUrl, discordId, await validateOffer(discordId))) await refreshPublicMessage();
+    if (await respondToAction(webhookUrl, discordId, await validateOffer(discordId))) await continueAfterOffer(webhookUrl, discordId);
   } catch (err) {
     console.error("[ElixirDuel] Échec Valider:", err.message);
   }
@@ -557,7 +638,7 @@ export async function handleValider(webhookUrl, discordId) {
 export async function handlePasser(webhookUrl, discordId) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
-    if (await respondToAction(webhookUrl, discordId, await passOffer(discordId))) await refreshPublicMessage();
+    if (await respondToAction(webhookUrl, discordId, await passOffer(discordId))) await continueAfterOffer(webhookUrl, discordId);
   } catch (err) {
     console.error("[ElixirDuel] Échec Passer:", err.message);
   }
@@ -594,6 +675,32 @@ function buildReglesEmbed() {
     ].join("\n"),
     color: ELIXIRDUEL_COLOR,
   };
+}
+
+// ── Bouton [Détails] (fin de partie) — détail des scores, éphémère ──
+
+export async function handleDetails(webhookUrl, messageId) {
+  try {
+    const state = await readState();
+    if (!state?.termine || !state.finalRanking || state.messageId !== messageId) {
+      await patchOriginal(webhookUrl, textPayload("Les détails de cette partie ne sont plus disponibles."));
+      return;
+    }
+    const lines = [];
+    for (const [i, r] of state.finalRanking.entries()) {
+      const name = await displayName(r.id, r.username);
+      lines.push(`${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.total, "pt")}`);
+      lines.push(`• ${plural(r.cardPoints, "carte")} : **+${r.cardPoints}**`);
+      for (const a of r.achieved) lines.push(`• ${a.label} : **+${a.points}**`);
+      lines.push(`• Élixir restant : ${r.stock} ${ELIXIR}`, "");
+    }
+    await patchOriginal(webhookUrl, {
+      embeds: [{ title: "Élixir · Détail des scores", description: lines.join("\n").trim(), color: ELIXIRDUEL_COLOR }],
+      components: [],
+    });
+  } catch (err) {
+    console.error("[ElixirDuel] Échec Détails:", err.message);
+  }
 }
 
 export async function handleRegles(webhookUrl) {

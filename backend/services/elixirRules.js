@@ -135,10 +135,15 @@ export function specialCountFor(totalManches) {
 
 // Tire toutes les cartes de la partie d'un coup (aperçu de la manche
 // suivante possible, aucun doublon). deck[i] = clés de la manche i+1.
-// Cartes par manche = joueurs + 1 (décision validée : il y a toujours une
-// carte de plus que de joueurs, en solo le bot ne compte pas).
+// Cartes par manche = participants + 1 : toujours une carte de plus que de
+// joueurs qui misent. En solo, le bot mise aussi, il compte donc comme un
+// joueur (3 cartes, comme à 2 joueurs).
+export function participantsCount(maxPlayers) {
+  return maxPlayers === 1 ? 2 : maxPlayers;
+}
+
 export function buildDeck(pool, { totalManches, maxPlayers }, rng = Math.random) {
-  const perManche = maxPlayers + 1;
+  const perManche = participantsCount(maxPlayers) + 1;
   const keys = shuffle(
     pool.map((c) => c.cardKey),
     rng,
