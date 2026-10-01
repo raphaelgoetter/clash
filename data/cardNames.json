@@ -12,7 +12,9 @@
       "category": null,
       "value": 5,
       "rank": 8
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Archers",
@@ -27,13 +29,18 @@
       "category": null,
       "value": 5,
       "rank": 8
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Arrows",
     "rarity": "common",
     "fr": "Flèches",
-    "sound": "arrows.mp3"
+    "sound": "arrows.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 3
   },
   {
     "cardKey": "Baby Dragon",
@@ -48,7 +55,9 @@
       "category": null,
       "value": 3.5,
       "rank": 6.5
-    }
+    },
+    "type": "flying",
+    "family": null
   },
   {
     "cardKey": "Balloon",
@@ -63,7 +72,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "flying",
+    "family": null
   },
   {
     "cardKey": "Bandit",
@@ -77,18 +88,26 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Barbarian Barrel",
     "rarity": "epic",
     "fr": "Fût à barbare",
-    "sound": "barbarian-barrel.mp3"
+    "sound": "barbarian-barrel.mp3",
+    "type": "spell",
+    "family": "human",
+    "elixir": 2
   },
   {
     "cardKey": "Barbarian Hut",
     "rarity": "rare",
-    "fr": "Cabane de barbare"
+    "fr": "Cabane de barbare",
+    "type": "building",
+    "family": "human",
+    "elixir": 6
   },
   {
     "cardKey": "Barbarians",
@@ -103,7 +122,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Bats",
@@ -118,7 +139,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "flying",
+    "family": null
   },
   {
     "cardKey": "Battle Healer",
@@ -133,7 +156,9 @@
       "category": "long",
       "value": null,
       "rank": 3
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Battle Ram",
@@ -148,7 +173,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Berserker",
@@ -163,13 +190,18 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Bomb Tower",
     "rarity": "rare",
     "fr": "Tour à bombes",
-    "sound": "bomb-tower.mp3"
+    "sound": "bomb-tower.mp3",
+    "type": "building",
+    "family": null,
+    "elixir": 4
   },
   {
     "cardKey": "Bomber",
@@ -184,7 +216,9 @@
       "category": null,
       "value": 4.5,
       "rank": 7.5
-    }
+    },
+    "type": "troop",
+    "family": "skeleton"
   },
   {
     "cardKey": "Boss Bandit",
@@ -199,7 +233,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Bowler",
@@ -214,13 +250,18 @@
       "category": null,
       "value": 4,
       "rank": 7
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Cannon",
     "rarity": "common",
     "fr": "Canon",
-    "sound": "cannon.mp3"
+    "sound": "cannon.mp3",
+    "type": "building",
+    "family": null,
+    "elixir": 3
   },
   {
     "cardKey": "Cannon Cart",
@@ -235,13 +276,18 @@
       "category": null,
       "value": 5.5,
       "rank": 8.5
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Clone",
     "rarity": "epic",
     "fr": "Clonage",
-    "sound": "clone.mp3"
+    "sound": "clone.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 3
   },
   {
     "cardKey": "Dark Prince",
@@ -256,7 +302,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Dart Goblin",
@@ -271,13 +319,18 @@
       "category": null,
       "value": 6.5,
       "rank": 9.5
-    }
+    },
+    "type": "troop",
+    "family": "goblin"
   },
   {
     "cardKey": "Earthquake",
     "rarity": "rare",
     "fr": "Séisme",
-    "sound": "earthquake.mp3"
+    "sound": "earthquake.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 3
   },
   {
     "cardKey": "Electro Dragon",
@@ -292,7 +345,9 @@
       "category": null,
       "value": 3.5,
       "rank": 6.5
-    }
+    },
+    "type": "flying",
+    "family": null
   },
   {
     "cardKey": "Electro Giant",
@@ -307,7 +362,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Electro Spirit",
@@ -322,7 +379,9 @@
       "category": null,
       "value": 2.5,
       "rank": 5.5
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Electro Wizard",
@@ -337,7 +396,9 @@
       "category": null,
       "value": 5,
       "rank": 8
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Elite Barbarians",
@@ -352,13 +413,18 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Elixir Collector",
     "rarity": "rare",
     "fr": "Extracteur d'élixir",
-    "sound": "elixir-collector.mp3"
+    "sound": "elixir-collector.mp3",
+    "type": "building",
+    "family": null,
+    "elixir": 6
   },
   {
     "cardKey": "Elixir Golem",
@@ -373,7 +439,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Executioner",
@@ -388,7 +456,9 @@
       "category": null,
       "value": 4.5,
       "rank": 7.5
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Fire Spirit",
@@ -403,13 +473,18 @@
       "category": null,
       "value": 2.5,
       "rank": 5.5
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Fireball",
     "rarity": "rare",
     "fr": "Boule de feu",
-    "sound": "fireball.mp3"
+    "sound": "fireball.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 4
   },
   {
     "cardKey": "Firecracker",
@@ -424,7 +499,9 @@
       "category": null,
       "value": 6,
       "rank": 9
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Fisherman",
@@ -439,7 +516,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Flying Machine",
@@ -454,13 +533,18 @@
       "category": null,
       "value": 6,
       "rank": 9
-    }
+    },
+    "type": "flying",
+    "family": null
   },
   {
     "cardKey": "Freeze",
     "rarity": "epic",
     "fr": "Gel",
-    "sound": "freeze.mp3"
+    "sound": "freeze.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 4
   },
   {
     "cardKey": "Furnace",
@@ -475,7 +559,9 @@
       "category": null,
       "value": 5.5,
       "rank": 8.5
-    }
+    },
+    "type": "building",
+    "family": null
   },
   {
     "cardKey": "Giant",
@@ -490,7 +576,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Giant Skeleton",
@@ -505,31 +593,45 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "skeleton"
   },
   {
     "cardKey": "Giant Snowball",
     "rarity": "common",
     "fr": "Méga boule de neige",
-    "sound": "giant-snowball.mp3"
+    "sound": "giant-snowball.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 2
   },
   {
     "cardKey": "Goblin Barrel",
     "rarity": "epic",
     "fr": "Fût à gobelins",
-    "sound": "goblin-barrel.mp3"
+    "sound": "goblin-barrel.mp3",
+    "type": "spell",
+    "family": "goblin",
+    "elixir": 3
   },
   {
     "cardKey": "Goblin Cage",
     "rarity": "rare",
     "fr": "Cage gobeline",
-    "sound": "goblin-cage.mp3"
+    "sound": "goblin-cage.mp3",
+    "type": "building",
+    "family": "goblin",
+    "elixir": 4
   },
   {
     "cardKey": "Goblin Curse",
     "rarity": "epic",
     "fr": "Malédiction gobeline",
-    "sound": "goblin-curse.mp3"
+    "sound": "goblin-curse.mp3",
+    "type": "spell",
+    "family": "goblin",
+    "elixir": 2
   },
   {
     "cardKey": "Goblin Demolisher",
@@ -544,37 +646,54 @@
       "category": null,
       "value": 5,
       "rank": 8
-    }
+    },
+    "type": "troop",
+    "family": "goblin"
   },
   {
     "cardKey": "Goblin Drill",
     "rarity": "epic",
     "fr": "Foreuse gobeline",
-    "sound": "goblin-drill.mp3"
+    "sound": "goblin-drill.mp3",
+    "type": "building",
+    "family": "goblin",
+    "elixir": 4
   },
   {
     "cardKey": "Goblin Gang",
     "rarity": "common",
     "fr": "Gang de gobelins",
-    "sound": "goblin-gang.mp3"
+    "sound": "goblin-gang.mp3",
+    "type": "troop",
+    "family": "goblin",
+    "elixir": 3
   },
   {
     "cardKey": "Goblin Giant",
     "rarity": "epic",
     "fr": "Gobelin géant",
-    "sound": "goblin-giant.mp3"
+    "sound": "goblin-giant.mp3",
+    "type": "troop",
+    "family": "goblin",
+    "elixir": 6
   },
   {
     "cardKey": "Goblin Hut",
     "rarity": "rare",
     "fr": "Cabane de gobelin",
-    "sound": "goblin-hut.mp3"
+    "sound": "goblin-hut.mp3",
+    "type": "building",
+    "family": "goblin",
+    "elixir": 4
   },
   {
     "cardKey": "Goblin Machine",
     "rarity": "legendary",
     "fr": "Machine gobeline",
-    "sound": "goblin-machine.mp3"
+    "sound": "goblin-machine.mp3",
+    "type": "troop",
+    "family": "goblin",
+    "elixir": 5
   },
   {
     "cardKey": "Goblins",
@@ -589,7 +708,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "goblin"
   },
   {
     "cardKey": "Goblinstein",
@@ -603,7 +724,9 @@
       "category": null,
       "value": 5.5,
       "rank": 8.5
-    }
+    },
+    "type": "troop",
+    "family": "goblin"
   },
   {
     "cardKey": "Golden Knight",
@@ -618,7 +741,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Golem",
@@ -633,13 +758,18 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Graveyard",
     "rarity": "legendary",
     "fr": "Cimetière",
-    "sound": "graveyard.mp3"
+    "sound": "graveyard.mp3",
+    "type": "spell",
+    "family": "skeleton",
+    "elixir": 5
   },
   {
     "cardKey": "Guards",
@@ -653,7 +783,9 @@
       "category": "long",
       "value": null,
       "rank": 3
-    }
+    },
+    "type": "troop",
+    "family": "skeleton"
   },
   {
     "cardKey": "Heal Spirit",
@@ -668,7 +800,9 @@
       "category": null,
       "value": 2.5,
       "rank": 5.5
-    }
+    },
+    "type": "spell",
+    "family": null
   },
   {
     "cardKey": "Hog Rider",
@@ -683,7 +817,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Hunter",
@@ -698,7 +834,9 @@
       "category": null,
       "value": 4,
       "rank": 7
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Ice Golem",
@@ -713,7 +851,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Ice Spirit",
@@ -728,7 +868,9 @@
       "category": null,
       "value": 2.5,
       "rank": 5.5
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Ice Wizard",
@@ -743,19 +885,27 @@
       "category": null,
       "value": 5.5,
       "rank": 8.5
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Inferno Dragon",
     "rarity": "legendary",
     "fr": "Dragon de l'enfer",
-    "sound": "inferno-dragon.mp3"
+    "sound": "inferno-dragon.mp3",
+    "type": "flying",
+    "family": null,
+    "elixir": 4
   },
   {
     "cardKey": "Inferno Tower",
     "rarity": "rare",
     "fr": "Tour de l'enfer",
-    "sound": "inferno-tower.mp3"
+    "sound": "inferno-tower.mp3",
+    "type": "building",
+    "family": null,
+    "elixir": 5
   },
   {
     "cardKey": "Knight",
@@ -770,7 +920,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Lava Hound",
@@ -785,13 +937,18 @@
       "category": null,
       "value": 3.5,
       "rank": 6.5
-    }
+    },
+    "type": "flying",
+    "family": null
   },
   {
     "cardKey": "Lightning",
     "rarity": "epic",
     "fr": "Foudre",
-    "sound": "lightning.mp3"
+    "sound": "lightning.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 6
   },
   {
     "cardKey": "Little Prince",
@@ -806,7 +963,9 @@
       "category": null,
       "value": 5.5,
       "rank": 8.5
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Lumberjack",
@@ -821,7 +980,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Magic Archer",
@@ -836,7 +997,9 @@
       "category": null,
       "value": 7,
       "rank": 10
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Mega Knight",
@@ -851,7 +1014,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Mega Minion",
@@ -866,13 +1031,18 @@
       "category": "long",
       "value": null,
       "rank": 3
-    }
+    },
+    "type": "flying",
+    "family": "minion"
   },
   {
     "cardKey": "Mighty Miner",
     "rarity": "champion",
     "fr": "Maitre Mineur",
-    "sound": "mighty-miner.mp3"
+    "sound": "mighty-miner.mp3",
+    "type": "troop",
+    "family": "human",
+    "elixir": 4
   },
   {
     "cardKey": "Miner",
@@ -887,7 +1057,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Mini P.E.K.K.A",
@@ -902,7 +1074,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Minion Giant",
@@ -916,7 +1090,9 @@
       "category": null,
       "value": 4,
       "rank": 7
-    }
+    },
+    "type": "flying",
+    "family": "minion"
   },
   {
     "cardKey": "Minion Horde",
@@ -931,7 +1107,9 @@
       "category": null,
       "value": 2.5,
       "rank": 5.5
-    }
+    },
+    "type": "flying",
+    "family": "minion"
   },
   {
     "cardKey": "Minions",
@@ -946,25 +1124,35 @@
       "category": null,
       "value": 2.5,
       "rank": 5.5
-    }
+    },
+    "type": "flying",
+    "family": "minion"
   },
   {
     "cardKey": "Mirror",
     "rarity": "epic",
     "fr": "Miroir",
-    "sound": "mirror.mp3"
+    "sound": "mirror.mp3",
+    "type": "spell",
+    "family": null
   },
   {
     "cardKey": "Monk",
     "rarity": "champion",
     "fr": "Moine",
-    "sound": "monk.mp3"
+    "sound": "monk.mp3",
+    "type": "troop",
+    "family": "human",
+    "elixir": 5
   },
   {
     "cardKey": "Mortar",
     "rarity": "common",
     "fr": "Mortier",
-    "sound": "mortar.mp3"
+    "sound": "mortar.mp3",
+    "type": "building",
+    "family": null,
+    "elixir": 4
   },
   {
     "cardKey": "Mother Witch",
@@ -979,7 +1167,9 @@
       "category": null,
       "value": 5.5,
       "rank": 8.5
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Musketeer",
@@ -994,7 +1184,9 @@
       "category": null,
       "value": 6,
       "rank": 9
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Night Witch",
@@ -1009,7 +1201,9 @@
       "category": "long",
       "value": null,
       "rank": 3
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "P.E.K.K.A",
@@ -1024,7 +1218,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Phoenix",
@@ -1039,13 +1235,18 @@
       "category": "long",
       "value": null,
       "rank": 3
-    }
+    },
+    "type": "flying",
+    "family": null
   },
   {
     "cardKey": "Poison",
     "rarity": "epic",
     "fr": "Poison",
-    "sound": "poison.mp3"
+    "sound": "poison.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 4
   },
   {
     "cardKey": "Prince",
@@ -1060,7 +1261,9 @@
       "category": "long",
       "value": null,
       "rank": 3
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Princess",
@@ -1075,42 +1278,62 @@
       "category": null,
       "value": 9,
       "rank": 12
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Rage",
     "rarity": "epic",
     "fr": "Rage",
-    "sound": "rage.mp3"
+    "sound": "rage.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 2
   },
   {
     "cardKey": "Ram Rider",
     "rarity": "legendary",
     "fr": "Cavabélier",
-    "sound": "ram-rider.mp3"
+    "sound": "ram-rider.mp3",
+    "type": "troop",
+    "family": "human",
+    "elixir": 5
   },
   {
     "cardKey": "Rascals",
     "rarity": "common",
     "fr": "Fripons",
-    "sound": "rascals.mp3"
+    "sound": "rascals.mp3",
+    "type": "troop",
+    "family": "human",
+    "elixir": 5
   },
   {
     "cardKey": "Rocket",
     "rarity": "rare",
     "fr": "Roquette",
-    "sound": "rocket.mp3"
+    "sound": "rocket.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 6
   },
   {
     "cardKey": "Ronin",
     "rarity": "legendary",
-    "fr": "Ronin"
+    "fr": "Ronin",
+    "type": "troop",
+    "family": "human",
+    "elixir": 5
   },
   {
     "cardKey": "Royal Delivery",
     "rarity": "common",
     "fr": "Colis royal",
-    "sound": "royal-delivery.mp3"
+    "sound": "royal-delivery.mp3",
+    "type": "spell",
+    "family": "human",
+    "elixir": 3
   },
   {
     "cardKey": "Royal Ghost",
@@ -1125,7 +1348,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Royal Giant",
@@ -1140,7 +1365,9 @@
       "category": null,
       "value": 5,
       "rank": 8
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Royal Hogs",
@@ -1155,7 +1382,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Royal Recruits",
@@ -1170,7 +1399,9 @@
       "category": "long",
       "value": null,
       "rank": 3
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Rune Giant",
@@ -1185,7 +1416,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Skeleton Army",
@@ -1200,7 +1433,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "skeleton"
   },
   {
     "cardKey": "Skeleton Barrel",
@@ -1215,7 +1450,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "flying",
+    "family": "skeleton"
   },
   {
     "cardKey": "Skeleton Dragons",
@@ -1230,7 +1467,9 @@
       "category": null,
       "value": 3.5,
       "rank": 6.5
-    }
+    },
+    "type": "flying",
+    "family": "skeleton"
   },
   {
     "cardKey": "Skeleton King",
@@ -1245,7 +1484,9 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "skeleton"
   },
   {
     "cardKey": "Skeletons",
@@ -1260,7 +1501,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "skeleton"
   },
   {
     "cardKey": "Sparky",
@@ -1274,7 +1517,9 @@
       "category": null,
       "value": 5,
       "rank": 8
-    }
+    },
+    "type": "troop",
+    "family": null
   },
   {
     "cardKey": "Spear Goblins",
@@ -1289,49 +1534,72 @@
       "category": null,
       "value": 5,
       "rank": 8
-    }
+    },
+    "type": "troop",
+    "family": "goblin"
   },
   {
     "cardKey": "Spirit Empress",
     "rarity": "legendary",
     "fr": "Impératrice spirituelle",
-    "sound": "spirit-empress.mp3"
+    "sound": "spirit-empress.mp3",
+    "type": "troop",
+    "family": null,
+    "elixir": 6
   },
   {
     "cardKey": "Suspicious Bush",
     "rarity": "rare",
     "fr": "Buisson suspicieux",
-    "sound": "suspicious-bush.mp3"
+    "sound": "suspicious-bush.mp3",
+    "type": "troop",
+    "family": null,
+    "elixir": 2
   },
   {
     "cardKey": "Tesla",
     "rarity": "common",
     "fr": "Tesla",
-    "sound": "tesla.mp3"
+    "sound": "tesla.mp3",
+    "type": "building",
+    "family": null,
+    "elixir": 4
   },
   {
     "cardKey": "The Log",
     "rarity": "legendary",
     "fr": "La bûche",
-    "sound": "the-log.mp3"
+    "sound": "the-log.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 2
   },
   {
     "cardKey": "Three Musketeers",
     "rarity": "rare",
     "fr": "Trois mousquetaires",
-    "sound": "three-musketeers.mp3"
+    "sound": "three-musketeers.mp3",
+    "type": "troop",
+    "family": "human",
+    "elixir": 9
   },
   {
     "cardKey": "Tombstone",
     "rarity": "rare",
     "fr": "Pierre tombale",
-    "sound": "tombstone.mp3"
+    "sound": "tombstone.mp3",
+    "type": "building",
+    "family": "skeleton",
+    "elixir": 3
   },
   {
     "cardKey": "Tornado",
     "rarity": "epic",
     "fr": "Tornade",
-    "sound": "tornado.mp3"
+    "sound": "tornado.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 3
   },
   {
     "cardKey": "Valkyrie",
@@ -1346,17 +1614,25 @@
       "category": "medium",
       "value": null,
       "rank": 2
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Vines",
     "rarity": "epic",
-    "fr": "Ronces"
+    "fr": "Ronces",
+    "type": "spell",
+    "family": null,
+    "elixir": 3
   },
   {
     "cardKey": "Void",
     "rarity": "epic",
-    "fr": "Néant"
+    "fr": "Néant",
+    "type": "spell",
+    "family": null,
+    "elixir": 5
   },
   {
     "cardKey": "Wall Breakers",
@@ -1371,7 +1647,9 @@
       "category": "short",
       "value": null,
       "rank": 1
-    }
+    },
+    "type": "troop",
+    "family": "skeleton"
   },
   {
     "cardKey": "Witch",
@@ -1386,7 +1664,9 @@
       "category": null,
       "value": 5.5,
       "rank": 8.5
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "Wizard",
@@ -1401,19 +1681,27 @@
       "category": null,
       "value": 5.5,
       "rank": 8.5
-    }
+    },
+    "type": "troop",
+    "family": "human"
   },
   {
     "cardKey": "X-Bow",
     "rarity": "epic",
     "fr": "Arc-X",
-    "sound": "x-bow.mp3"
+    "sound": "x-bow.mp3",
+    "type": "building",
+    "family": null,
+    "elixir": 6
   },
   {
     "cardKey": "Zap",
     "rarity": "common",
     "fr": "Électrocution",
-    "sound": "zap.mp3"
+    "sound": "zap.mp3",
+    "type": "spell",
+    "family": null,
+    "elixir": 2
   },
   {
     "cardKey": "Zappies",
@@ -1428,6 +1716,8 @@
       "category": null,
       "value": 4.5,
       "rank": 7.5
-    }
+    },
+    "type": "troop",
+    "family": null
   }
 ]

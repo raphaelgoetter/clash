@@ -169,6 +169,9 @@
     "gobeletduel:watchdog": "node scripts/gobeletDuelWatchdog.js",
     "gobeletduel:reset": "node scripts/resetGobeletDuel.js",
     "gobeletduel:status": "node scripts/gobeletDuelStatus.js",
+    "elixirduel:watchdog": "node scripts/elixirDuelWatchdog.js",
+    "elixirduel:reset": "node scripts/resetElixirDuel.js",
+    "elixirduel:status": "node scripts/elixirDuelStatus.js",
     "poll:test": "node scripts/postPoll.js",
     "poll:test:dry": "node scripts/postPoll.js --dry-run",
     "poll:test:force": "node scripts/postPoll.js --force",
@@ -185,7 +188,7 @@
     "cache:clear": "rm -f frontend/public/clan-cache/*.json",
     "deploy": "npm run cache:clear && npm run build && vercel --prod --confirm --force",
     "build": "cd frontend && npm run build && cd .. && vercel --prod",
-    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node backend/services/dateUtils.test.js && node backend/services/tamagotchi.test.js && node backend/services/robinson.test.js && node backend/services/bossraid.test.js && node backend/services/goblinhunters.test.js && node backend/services/blackjack.test.js && node backend/services/blackjackDuel.test.js && node backend/services/marioclash.test.js && node backend/services/gobelet.test.js && node backend/services/gobeletDuel.test.js && node backend/services/pelemele.test.js && node backend/services/jeuxdelettres.test.js && node backend/services/championHistory.test.js"
+    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node backend/services/dateUtils.test.js && node backend/services/tamagotchi.test.js && node backend/services/robinson.test.js && node backend/services/bossraid.test.js && node backend/services/goblinhunters.test.js && node backend/services/blackjack.test.js && node backend/services/blackjackDuel.test.js && node backend/services/marioclash.test.js && node backend/services/gobelet.test.js && node backend/services/gobeletDuel.test.js && node backend/services/elixirRules.test.js && node backend/services/elixirDuel.test.js && node backend/services/pelemele.test.js && node backend/services/jeuxdelettres.test.js && node backend/services/championHistory.test.js"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.3.0",
