@@ -3,8 +3,8 @@
 // N manches), lancé à la demande via /elixir.
 //
 // Même structure que _handlers/gobeletDuel.js : message public ÉDITÉ EN
-// PLACE à chaque avancée (jamais supprimé/reposté), main éphémère par
-// joueur. custom_id préfixés `elixirduel_*`, état Redis dans
+// PLACE à chaque avancée, main éphémère par joueur. En fin de partie, le
+// récapitulatif est reposté dans un nouveau message et l'original supprimé. custom_id préfixés `elixirduel_*`, état Redis dans
 // backend/services/elixirDuel.js (`elixirduel:*`), règles pures dans
 // backend/services/elixirRules.js.
 //
@@ -30,6 +30,7 @@ import {
   readCurrentScores,
   readHighScore,
   readPlayerView,
+  readHandWebhooks,
   loadCatalog,
   expireIfStale,
   BOT_ID,
@@ -184,28 +185,55 @@ async function deleteOriginal(webhookUrl) {
 
 // `files` : [{ buffer, filename }] envoyés en pièces jointes (multipart),
 // référencés dans l'embed par `attachment://<filename>`
+function buildMessageRequest(payload, files) {
+  const headers = { Authorization: `Bot ${process.env.DISCORD_TOKEN}` };
+  if (!files.length) return { headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(payload) };
+  const body = new FormData();
+  const attachments = files.map((f, i) => ({ id: i, filename: f.filename }));
+  body.append("payload_json", JSON.stringify({ ...payload, attachments }));
+  files.forEach((f, i) => body.append(`files[${i}]`, new Blob([f.buffer], { type: "image/png" }), f.filename));
+  return { headers, body };
+}
+
 async function patchPublicMessage(state, payload, files = []) {
-  const token = process.env.DISCORD_TOKEN;
-  if (!token || !state?.channelId || !state?.messageId) return;
+  if (!process.env.DISCORD_TOKEN || !state?.channelId || !state?.messageId) return;
   try {
-    let body = JSON.stringify(payload);
-    const headers = { Authorization: `Bot ${token}` };
-    if (files.length) {
-      body = new FormData();
-      const attachments = files.map((f, i) => ({ id: i, filename: f.filename }));
-      body.append("payload_json", JSON.stringify({ ...payload, attachments }));
-      files.forEach((f, i) => body.append(`files[${i}]`, new Blob([f.buffer], { type: "image/png" }), f.filename));
-    } else {
-      headers["Content-Type"] = "application/json";
-    }
     const res = await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
       method: "PATCH",
-      headers,
-      body,
+      ...buildMessageRequest(payload, files),
     });
     if (!res.ok) console.warn(`[ElixirDuel] Échec édition du message public (${res.status}).`);
   } catch (err) {
     console.warn("[ElixirDuel] Erreur réseau à l'édition du message public:", err.message);
+  }
+}
+
+// Renvoie true si le message a bien été posté
+async function postChannelMessage(channelId, payload, files = []) {
+  if (!process.env.DISCORD_TOKEN || !channelId) return false;
+  try {
+    const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+      method: "POST",
+      ...buildMessageRequest(payload, files),
+    });
+    if (!res.ok) console.warn(`[ElixirDuel] Échec envoi du récapitulatif (${res.status}).`);
+    return res.ok;
+  } catch (err) {
+    console.warn("[ElixirDuel] Erreur réseau à l'envoi du récapitulatif:", err.message);
+    return false;
+  }
+}
+
+async function deletePublicMessage(state) {
+  if (!process.env.DISCORD_TOKEN || !state?.channelId || !state?.messageId) return;
+  try {
+    const res = await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` },
+    });
+    if (!res.ok && res.status !== 404) console.warn(`[ElixirDuel] Échec suppression du message de la partie (${res.status}).`);
+  } catch (err) {
+    console.warn("[ElixirDuel] Erreur réseau à la suppression du message de la partie:", err.message);
   }
 }
 
@@ -285,7 +313,7 @@ async function buildResultsLines(lastResults, players, catalog) {
   return lines;
 }
 
-async function buildPlayersLines(state, players, offers, scores, catalog) {
+async function buildPlayersLines(state, players, offers, scores) {
   const scoreById = Object.fromEntries(scores.map((s) => [s.id, s.total]));
   const ids = [...state.players, ...(players[BOT_ID] ? [BOT_ID] : [])];
   const lines = [`${EMOJI.members.text} **Joueurs**`];
@@ -295,8 +323,9 @@ async function buildPlayersLines(state, players, offers, scores, catalog) {
     const name = await displayName(id, p.username);
     // Statut de l'offre : le bot a toujours déjà joué
     const status = id === BOT_ID ? EMOJI.bot.text : offers[id] ? EMOJI.check.text : EMOJI.late.text;
+    // Collections dans la main éphémère, pas ici : évite de remonter au
+    // message public à chaque manche
     lines.push(`${status} **${name}** · ${p.stock} ${ELIXIR} · ${plural(scoreById[id] ?? 0, "pt")}`);
-    lines.push(`└ ${formatCollection(p.collection, catalog)}`);
   }
   const missing = state.maxPlayers - state.players.length;
   if (missing > 0) lines.push(`${EMOJI.late.text} En attente de ${plural(missing, "joueur")}`);
@@ -313,7 +342,7 @@ async function buildTableEmbed(state) {
   // Les cartes aux enchères sont visibles sur l'image
   const lines = [
     ...(await buildResultsLines(state.lastResults, players, catalog)),
-    ...(await buildPlayersLines(state, players, offers, scores, catalog)),
+    ...(await buildPlayersLines(state, players, offers, scores)),
   ];
   if (state.players.length === 0) lines.push("", "Clique sur **Jouer** pour t'inscrire.");
 
@@ -362,29 +391,34 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
   };
 }
 
-// Fin de partie : l'image de la collection du vainqueur est téléchargée ici
-// puis jointe au message. Par simple URL, le proxy de Discord abandonnait
-// parfois pendant le rendu à froid (image affichée puis masquée, largeur
-// 0) et ne réessayait jamais. Repli sur l'URL si le téléchargement échoue.
-async function patchFinalMessage(state, embed) {
-  const components = buildEndComponents(state);
+// Fin de partie : le récapitulatif complet est publié dans un NOUVEAU post
+// (visible en bas du salon), puis le message de la partie est supprimé.
+// `state.messageId` reste l'ID de la partie d'origine : il sert
+// d'identifiant de partie au bouton Détails.
+// L'image de la collection du vainqueur est téléchargée ici puis jointe au
+// message. Par simple URL, le proxy de Discord abandonnait parfois pendant
+// le rendu à froid (image affichée puis masquée, largeur 0) et ne
+// réessayait jamais. Repli sur l'URL si le téléchargement échoue.
+async function postFinalMessage(state, embed) {
+  const payload = { embeds: [embed], components: buildEndComponents(state) };
   const url = embed.image?.url;
+  let files = [];
   if (url) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
       if (res.ok) {
         const filename = "collection.png";
-        const buffer = Buffer.from(await res.arrayBuffer());
-        await patchPublicMessage(state, { embeds: [{ ...embed, image: { url: `attachment://${filename}` } }], components }, [
-          { buffer, filename },
-        ]);
-        return;
+        files = [{ buffer: Buffer.from(await res.arrayBuffer()), filename }];
+        payload.embeds = [{ ...embed, image: { url: `attachment://${filename}` } }];
       }
     } catch (err) {
       console.warn("[ElixirDuel] Image de collection indisponible, repli sur l'URL:", err.message);
     }
   }
-  await patchPublicMessage(state, { embeds: [embed], components });
+  // Repli : si le nouveau post échoue, on édite l'ancien plutôt que de
+  // perdre le récapitulatif
+  if (await postChannelMessage(state.channelId, payload, files)) await deletePublicMessage(state);
+  else await patchPublicMessage(state, payload, files);
 }
 
 // Clôture paresseuse, sans cron : une partie inactive depuis 2h est close
@@ -392,7 +426,7 @@ async function patchFinalMessage(state, embed) {
 async function closeIfStale() {
   const result = await expireIfStale();
   if (!result.expired) return false;
-  await patchFinalMessage(result.state, await buildFinalEmbed(result.state, { expired: true }));
+  await postFinalMessage(result.state, await buildFinalEmbed(result.state, { expired: true }));
   return true;
 }
 
@@ -410,7 +444,7 @@ async function refreshPublicMessage() {
   const outcome = await checkAndResolveManche();
   if (outcome.inactive) return outcome;
   if (outcome.resolved && outcome.final) {
-    await patchFinalMessage(outcome.state, await buildFinalEmbed(outcome.state));
+    await postFinalMessage(outcome.state, await buildFinalEmbed(outcome.state));
     return outcome;
   }
   const embed = await buildTableEmbed(outcome.state);
@@ -499,12 +533,26 @@ async function buildMyRecap(lastResults, discordId, players, catalog) {
   return [...lines, ""];
 }
 
-function buildHandEmbed(view) {
-  // Collection et scores sont sur le message public : ici, seulement ce
-  // qui sert à faire son offre
-  const { state, me, offer } = view;
+// Collections de tous les joueurs (bot compris), pour enchérir sans
+// remonter au message public
+async function buildCollectionsLines(state, players, catalog) {
+  const ids = [...state.players, ...(players[BOT_ID] ? [BOT_ID] : [])];
+  const lines = [`${EMOJI.members.text} **Collections**`];
+  for (const id of ids) {
+    const p = players[id];
+    if (!p) continue;
+    lines.push(`**${await displayName(id, p.username)}** : ${formatCollection(p.collection, catalog)}`);
+  }
+  return [...lines, ""];
+}
+
+async function buildHandEmbed(view) {
+  // Scores et statuts sont sur le message public : ici, ce qui sert à
+  // faire son offre
+  const { state, me, offer, players, catalog } = view;
   const lines = [
     ...(view.recap ?? []),
+    ...(await buildCollectionsLines(state, players, catalog)),
     `${ELIXIR} Ton élixir : **${me.stock}**`,
     "",
     buildOfferStatus(view),
@@ -573,9 +621,9 @@ function buildHandComponents(view) {
   return rows;
 }
 
-function buildHandPayload(view, discordId) {
+async function buildHandPayload(view, discordId) {
   const v = { ...view, discordId };
-  return { content: "", embeds: [buildHandEmbed(v)], components: buildHandComponents(v) };
+  return { content: "", embeds: [await buildHandEmbed(v)], components: buildHandComponents(v) };
 }
 
 // Réponses communes aux actions sur l'offre. Renvoie true si l'action a
@@ -589,7 +637,7 @@ async function respondToAction(webhookUrl, discordId, result) {
     await patchOriginal(webhookUrl, textPayload("Clique d'abord sur **Jouer** pour rejoindre la partie !"));
     return false;
   }
-  await patchOriginal(webhookUrl, buildHandPayload(result.view, discordId));
+  await patchOriginal(webhookUrl, await buildHandPayload(result.view, discordId));
   return !result.alreadyDone && !result.invalid;
 }
 
@@ -607,7 +655,7 @@ export async function handleJouer(webhookUrl, discordId, username) {
     }
 
     const view = await readPlayerView(result.state, discordId);
-    await patchOriginal(webhookUrl, buildHandPayload(view, discordId));
+    await patchOriginal(webhookUrl, await buildHandPayload(view, discordId));
     if (result.isNew) await refreshPublicMessage();
   } catch (err) {
     console.error("[ElixirDuel] Échec Jouer:", err.message);
@@ -632,17 +680,12 @@ export async function handleMise(webhookUrl, discordId, value) {
   }
 }
 
-// Après une offre (ou un passe) : résout la manche si tout le monde a joué.
-// Si c'est le cas, la main éphémère du joueur affiche directement le bilan
-// et l'offre de la manche suivante (en solo, le bot a toujours déjà joué :
-// sans ça, la main restait figée sur « Offre envoyée »).
-async function continueAfterOffer(webhookUrl, discordId) {
-  const outcome = await refreshPublicMessage();
-  if (!outcome?.resolved) return;
-  const [players, catalog] = await Promise.all([readPlayers(), loadCatalog()]);
+// Main éphémère d'un joueur juste après la résolution : bilan de la manche
+// puis offre de la manche suivante (ou renvoi au classement final).
+async function buildPostResolutionPayload(outcome, discordId, players, catalog) {
   const recap = await buildMyRecap(outcome.state.lastResults, discordId, players, catalog);
   if (outcome.final) {
-    await patchOriginal(webhookUrl, {
+    return {
       content: "",
       embeds: [
         {
@@ -652,17 +695,38 @@ async function continueAfterOffer(webhookUrl, discordId) {
         },
       ],
       components: [],
-    });
-    return;
+    };
   }
   const view = await readPlayerView(outcome.state, discordId);
-  await patchOriginal(webhookUrl, buildHandPayload({ ...view, recap }, discordId));
+  return buildHandPayload({ ...view, recap }, discordId);
+}
+
+// Après une offre (ou un passe) : résout la manche si tout le monde a joué.
+// Si c'est le cas, la main éphémère de CHAQUE joueur (celui qui vient de
+// jouer et ceux restés « En attente des autres joueurs ») affiche
+// directement le bilan et l'offre de la manche suivante, sans recliquer sur
+// Jouer. Les mains des autres sont repeintes via le webhook de leur
+// validation (jeton valable 15 min, au-delà Jouer reste le recours).
+async function continueAfterOffer(webhookUrl, discordId) {
+  const outcome = await refreshPublicMessage();
+  if (!outcome?.resolved) return;
+  const [players, catalog, webhooks] = await Promise.all([
+    readPlayers(),
+    loadCatalog(),
+    readHandWebhooks(outcome.state.lastResults.manche),
+  ]);
+  const targets = { ...webhooks, [discordId]: webhookUrl };
+  await Promise.all(
+    Object.entries(targets).map(async ([id, url]) =>
+      patchOriginal(url, await buildPostResolutionPayload(outcome, id, players, catalog)),
+    ),
+  );
 }
 
 export async function handleValider(webhookUrl, discordId) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
-    if (await respondToAction(webhookUrl, discordId, await validateOffer(discordId))) await continueAfterOffer(webhookUrl, discordId);
+    if (await respondToAction(webhookUrl, discordId, await validateOffer(discordId, webhookUrl))) await continueAfterOffer(webhookUrl, discordId);
   } catch (err) {
     console.error("[ElixirDuel] Échec Valider:", err.message);
   }
@@ -671,7 +735,7 @@ export async function handleValider(webhookUrl, discordId) {
 export async function handlePasser(webhookUrl, discordId) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
-    if (await respondToAction(webhookUrl, discordId, await passOffer(discordId))) await continueAfterOffer(webhookUrl, discordId);
+    if (await respondToAction(webhookUrl, discordId, await passOffer(discordId, webhookUrl))) await continueAfterOffer(webhookUrl, discordId);
   } catch (err) {
     console.error("[ElixirDuel] Échec Passer:", err.message);
   }

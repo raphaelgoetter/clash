@@ -126,6 +126,14 @@ function draftKey(manche, discordId) {
   return `elixirduel:draft:${manche}:${discordId}`;
 }
 
+// Webhook de l'interaction qui a validé l'offre : hash discordId → URL,
+// pour repeindre la main éphémère des joueurs en attente à la résolution.
+// Le jeton d'interaction Discord expire après 15 min, d'où le TTL.
+function handKey(manche) {
+  return `elixirduel:hand:${manche}`;
+}
+const HAND_TTL_SECONDS = 15 * 60;
+
 const STALE_HOURS = 2;
 
 // ── Catalogue ───────────────────────────────────────────────────────
@@ -173,6 +181,16 @@ export async function readOffers(manche) {
   return hgetallJson(offerKey(manche));
 }
 
+async function saveHandWebhook(manche, discordId, webhookUrl) {
+  if (!webhookUrl) return;
+  await getRedis().hset(handKey(manche), { [discordId]: webhookUrl });
+  await getRedis().expire(handKey(manche), HAND_TTL_SECONDS);
+}
+
+export async function readHandWebhooks(manche) {
+  return hgetallRaw(handKey(manche));
+}
+
 async function readDraft(manche, discordId) {
   const raw = await hgetallRaw(draftKey(manche, discordId));
   return {
@@ -191,6 +209,7 @@ export async function resetElixirDuel() {
   await getRedis().del(STATE_KEY, PLAYERS_KEY, RESOLVING_KEY);
   await scanDelete("elixirduel:offer:*");
   await scanDelete("elixirduel:draft:*");
+  await scanDelete("elixirduel:hand:*");
 }
 
 // ── Lancement d'une partie ──────────────────────────────────────────
@@ -343,7 +362,7 @@ export async function selectBid(discordId, bid) {
   return { state: newState, view: await readPlayerView(newState, discordId) };
 }
 
-export async function validateOffer(discordId) {
+export async function validateOffer(discordId, webhookUrl) {
   const guard = await guardOfferAction(discordId);
   if (!guard.state || guard.alreadyDone || guard.notSeated) return guard;
   const { state } = guard;
@@ -353,16 +372,19 @@ export async function validateOffer(discordId) {
   if (offer.card == null || !isValidOffer(view.cards, offer, view.me?.stock ?? 0)) {
     return { invalid: true, state, view };
   }
-  return lockOffer(state, discordId, offer);
+  return lockOffer(state, discordId, offer, webhookUrl);
 }
 
-export async function passOffer(discordId) {
+export async function passOffer(discordId, webhookUrl) {
   const guard = await guardOfferAction(discordId);
   if (!guard.state || guard.alreadyDone || guard.notSeated) return guard;
-  return lockOffer(guard.state, discordId, { card: null, bid: 0 });
+  return lockOffer(guard.state, discordId, { card: null, bid: 0 }, webhookUrl);
 }
 
-async function lockOffer(state, discordId, offer) {
+// Le webhook est enregistré AVANT l'offre : le joueur qui complète la
+// manche le trouve forcément, même en cas de validations simultanées.
+async function lockOffer(state, discordId, offer, webhookUrl) {
+  await saveHandWebhook(state.manche, discordId, webhookUrl);
   await getRedis().hset(offerKey(state.manche), { [discordId]: toJson(offer) });
   await getRedis().del(draftKey(state.manche, discordId));
   const newState = touch(state);
