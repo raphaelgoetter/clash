@@ -6,7 +6,8 @@
 //
 // Usage :
 //   node scripts/postPoll.js                — poste sur le salon de test
-//   node scripts/postPoll.js --public        — poste sur le salon public (Général)
+//   node scripts/postPoll.js --public        — poste sur le salon public (Annonces),
+//                                               avec @everyone sur le premier message
 //   node scripts/postPoll.js --dry-run       — simulation, affiche les sondages sans les poster
 //   node scripts/postPoll.js --force         — si un sondage est déjà actif sur ce salon,
 //                                               supprime les anciens messages et reposte
@@ -23,22 +24,27 @@ const PUBLIC = process.argv.includes("--public");
 const FORCE = process.argv.includes("--force");
 
 const channelId = PUBLIC
-  ? process.env.DISCORD_CHANNEL_GENERAL
+  ? process.env.DISCORD_CHANNEL_ANNONCES
   : process.env.DISCORD_CHANNEL_FRAME_TEST;
 
 if (!channelId) {
   console.error(
-    `Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_GENERAL" : "DISCORD_CHANNEL_FRAME_TEST"}`,
+    `Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_ANNONCES" : "DISCORD_CHANNEL_FRAME_TEST"}`,
   );
   process.exit(1);
 }
 
 (async () => {
   try {
-    const result = await postPoll(channelId, { dryRun: DRY_RUN, force: FORCE });
+    const result = await postPoll(channelId, {
+      dryRun: DRY_RUN,
+      force: FORCE,
+      pingEveryone: PUBLIC,
+    });
 
     if (DRY_RUN) {
       console.log(`DRY-RUN — sondages qui seraient postés dans ${channelId} :`);
+      if (result.pingEveryone) console.log("(@everyone sur le premier message)");
       for (const q of result.questions) {
         console.log(`\n— ${q.id} —`);
         console.log(JSON.stringify(q.poll ?? q.freetext, null, 2));

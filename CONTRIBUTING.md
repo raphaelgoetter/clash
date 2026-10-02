@@ -649,7 +649,7 @@ Utilise l'endpoint Discord "Get Answer Voters" (`GET /channels/{id}/polls/{messa
 | `npm run poll:test`       | Poste les questions sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`, réutilisé — voir règle générale plus haut), aucun ping.                     |
 | `npm run poll:test:dry`   | Aperçu console des objets `poll` qui seraient postés, sans rien écrire ni poster.                                                                   |
 | `npm run poll:test:force` | Si un sondage est déjà actif sur ce salon, supprime les anciens messages puis reposte — utile pour itérer sur le salon de test.                     |
-| `npm run poll:public`     | Poste sur le salon "Général" (`DISCORD_CHANNEL_GENERAL`) — à lancer une fois le contenu de `data/poll/poll.json` finalisé et validé.                |
+| `npm run poll:public`     | Poste sur le salon "Annonces" (`DISCORD_CHANNEL_ANNONCES`), avec `@everyone` sur le premier message — à lancer une fois le contenu de `data/poll/poll.json` finalisé et validé.                |
 | `npm run poll:public:dry` | Équivalent dry-run de `poll:public`.                                                                                                                |
 | `npm run poll:status`     | Affiche les votes "extrêmes" (voir section dédiée ci-dessus) + les idées soumises — pas le décompte complet, déjà visible dans Discord.             |
 | `npm run poll:reset`      | Supprime les messages de sondage postés (best-effort) et efface l'état — repart de zéro pour un prochain `poll:test`/`poll:public`. **Destructif**. |
@@ -658,7 +658,7 @@ Utilise l'endpoint Discord "Get Answer Voters" (`GET /channels/{id}/polls/{messa
 
 ```text
 DISCORD_CHANNEL_FRAME_TEST=      # salon de test (réutilisé, pas de salon dédié)
-DISCORD_CHANNEL_GENERAL=         # salon public "Général"
+DISCORD_CHANNEL_ANNONCES=        # salon public "Annonces"
 DISCORD_TOKEN=
 KV_REST_API_URL=                 # Upstash Redis
 KV_REST_API_TOKEN=

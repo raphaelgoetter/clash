@@ -101,8 +101,8 @@ async function postMessage(token, channelId, body) {
 // Poste une question comme sondage natif Discord (POST .../messages avec le
 // champ `poll`) et renvoie le message créé (contient l'id assigné à chaque
 // réponse, utile pour pollStatus.js).
-function postQuestionMessage(token, channelId, questionConfig) {
-  return postMessage(token, channelId, { poll: buildPollObject(questionConfig) });
+function postQuestionMessage(token, channelId, questionConfig, extra = {}) {
+  return postMessage(token, channelId, { ...extra, poll: buildPollObject(questionConfig) });
 }
 
 // ── Question "freetext" : message + bouton "Proposer une idée" ──
@@ -132,9 +132,16 @@ function buildIdeaMessageBody(questionConfig) {
   };
 }
 
-function postIdeaMessage(token, channelId, questionConfig) {
-  return postMessage(token, channelId, buildIdeaMessageBody(questionConfig));
+function postIdeaMessage(token, channelId, questionConfig, extra = {}) {
+  return postMessage(token, channelId, { ...extra, ...buildIdeaMessageBody(questionConfig) });
 }
+
+// Mention @everyone ajoutée au premier message du sondage (uniquement en
+// public) — allowed_mentions est requis pour que Discord notifie réellement.
+const EVERYONE_PING = {
+  content: "@everyone",
+  allowed_mentions: { parse: ["everyone"] },
+};
 
 // Contenu de la Modal ouverte par le bouton "Proposer une idée" — même
 // principe que buildAnswerModal() dans frames.js (Discord n'autorise pas de
@@ -204,7 +211,8 @@ export async function handleIdeaModalSubmit(webhookUrl, discordId, username, raw
 //   ne republie rien (protège d'un double `poll:public` par erreur).
 // - Si `force` est passé, les anciens messages déjà trackés sont supprimés
 //   avant de reposter (utile en boucle sur le salon de test).
-export async function postPoll(channelId, { dryRun = false, force = false } = {}) {
+// - Si `pingEveryone` est passé, le premier message notifie @everyone.
+export async function postPoll(channelId, { dryRun = false, force = false, pingEveryone = false } = {}) {
   const config = await loadPollConfig();
   const state = await readState();
 
@@ -216,6 +224,7 @@ export async function postPoll(channelId, { dryRun = false, force = false } = {}
     return {
       dryRun: true,
       channelId,
+      pingEveryone,
       questions: config.questions.map((q) =>
         q.type === "freetext"
           ? { id: q.id, freetext: buildIdeaMessageBody(q) }
@@ -240,11 +249,12 @@ export async function postPoll(channelId, { dryRun = false, force = false } = {}
   }
 
   const messages = [];
-  for (const questionConfig of config.questions) {
+  for (const [index, questionConfig] of config.questions.entries()) {
+    const extra = pingEveryone && index === 0 ? EVERYONE_PING : {};
     const message =
       questionConfig.type === "freetext"
-        ? await postIdeaMessage(token, channelId, questionConfig)
-        : await postQuestionMessage(token, channelId, questionConfig);
+        ? await postIdeaMessage(token, channelId, questionConfig, extra)
+        : await postQuestionMessage(token, channelId, questionConfig, extra);
     messages.push({
       questionId: questionConfig.id,
       question: questionConfig.question,
