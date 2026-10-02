@@ -183,78 +183,89 @@ function formatBilanLigne(joueurId, joueursApres, config) {
   return `**${j.username}** était un(e) ${camp.emoji} **${camp.labelSingulier}**.`;
 }
 
+// Lignes du bilan d'une clôture (éliminations, effets de rôles, absents,
+// remplacements) — partagées entre l'embed du jour suivant et l'embed de
+// fin de partie, pour que le dernier jour ne disparaisse pas du récap final.
+function buildBilanLines(closure, joueursApres, config) {
+  const lines = [];
+  const voteLine = closure.eliminationsParVote
+    ? formatBilanLigne(closure.eliminationsParVote, joueursApres, config)
+    : null;
+  const combatLine = closure.deathIdCombat
+    ? formatBilanLigne(closure.deathIdCombat, joueursApres, config)
+    : null;
+  if (voteLine) lines.push(`⚖️ Accusé(e) par le village : ${voteLine}`);
+  if (combatLine) lines.push(`⚔️ Tombé(e) au combat : ${combatLine}`);
+  if (closure.conversionId) {
+    lines.push(
+      "🧟 Un villageois a été tué et converti en Gobelin par le zombie !",
+    );
+  } else if (!voteLine && !combatLine) {
+    lines.push("🕊️ Personne n'a été éliminé.");
+  }
+
+  // Guet-Apens/Explosif : effets déclenchés à la mort d'un rôle spécial,
+  // annoncés publiquement au même titre que le reveal de camp habituel
+  // (même logique de transparence que "Révélation à l'élimination").
+  if (closure.guetApensReveal) {
+    for (const { attackerId, campReporte } of closure.guetApensReveal
+      .attackers) {
+      const attacker = joueursApres.find((p) => p.discordId === attackerId);
+      const camp = config.camps[campReporte];
+      lines.push(
+        `🪤 Piège du Guet-Apens : **${attacker?.username || "?"}** est démasqué(e) — camp ${camp.emoji} **${camp.labelSingulier}** !`,
+      );
+    }
+  }
+  if (closure.explosifRetaliation) {
+    const gobelin = joueursApres.find(
+      (p) => p.discordId === closure.explosifRetaliation.gobelinId,
+    );
+    const target = joueursApres.find(
+      (p) => p.discordId === closure.explosifRetaliation.targetId,
+    );
+    lines.push(
+      `💣 **${gobelin?.username || "?"}** explose en mourant — **${target?.username || "?"}** encaisse ${config.roles.explosif.degats_riposte} dégât.`,
+    );
+  }
+  // Tour de Guet surpeuplée (plus de la moitié des vivants) : aucune
+  // enquête n'a abouti — sans cette ligne, les enquêteurs n'auraient aucune
+  // explication au silence inhabituel de leur DM habituel.
+  if (closure.tourDeGuetSurpeuplee) {
+    lines.push(
+      "🔭 La Tour de Guet était trop encombrée — personne n'a rien pu observer.",
+    );
+  }
+  if (closure.absents?.length) {
+    const noms = closure.absents
+      .map((id) => {
+        const p = joueursApres.find((x) => x.discordId === id);
+        return p?.usernameOrigine || p?.username || "?";
+      })
+      .map((nom) => `**${nom}**`);
+    lines.push(
+      `💤 N'a pas joué (pion placé au Château) : ${noms.join(", ")}`,
+    );
+  }
+  for (const r of closure.remplacements || []) {
+    lines.push(
+      `🔄 ${r.ancienUsername} a quitté le village, **${r.nouveauUsername}** reprend sa place.`,
+    );
+  }
+
+  return lines;
+}
+
 async function buildJourEmbed(jour, joueursApres, config, closure) {
   const narrative = await buildNarrative(jour, closure);
   const lines = [narrative, ""];
 
   if (closure) {
-    lines.push("**Bilan du jour précédent**");
-    const voteLine = closure.eliminationsParVote
-      ? formatBilanLigne(closure.eliminationsParVote, joueursApres, config)
-      : null;
-    const combatLine = closure.deathIdCombat
-      ? formatBilanLigne(closure.deathIdCombat, joueursApres, config)
-      : null;
-    if (voteLine) lines.push(`⚖️ Accusé(e) par le village : ${voteLine}`);
-    if (combatLine) lines.push(`⚔️ Tombé(e) au combat : ${combatLine}`);
-    if (closure.conversionId) {
-      lines.push(
-        "🧟 Hier, un villageois a été tué et converti en Gobelin par le zombie !",
-      );
-    } else if (!voteLine && !combatLine) {
-      lines.push("🕊️ Personne n'a été éliminé.");
-    }
-
-    // Guet-Apens/Explosif : effets déclenchés à la mort d'un rôle spécial,
-    // annoncés publiquement au même titre que le reveal de camp habituel
-    // (même logique de transparence que "Révélation à l'élimination").
-    if (closure.guetApensReveal) {
-      for (const { attackerId, campReporte } of closure.guetApensReveal
-        .attackers) {
-        const attacker = joueursApres.find((p) => p.discordId === attackerId);
-        const camp = config.camps[campReporte];
-        lines.push(
-          `🪤 Piège du Guet-Apens : **${attacker?.username || "?"}** est démasqué(e) — camp ${camp.emoji} **${camp.labelSingulier}** !`,
-        );
-      }
-    }
-    if (closure.explosifRetaliation) {
-      const gobelin = joueursApres.find(
-        (p) => p.discordId === closure.explosifRetaliation.gobelinId,
-      );
-      const target = joueursApres.find(
-        (p) => p.discordId === closure.explosifRetaliation.targetId,
-      );
-      lines.push(
-        `💣 **${gobelin?.username || "?"}** explose en mourant — **${target?.username || "?"}** encaisse ${config.roles.explosif.degats_riposte} dégât.`,
-      );
-    }
-    // Tour de Guet surpeuplée (plus de la moitié des vivants) : aucune
-    // enquête n'a abouti — sans cette ligne, les enquêteurs n'auraient aucune
-    // explication au silence inhabituel de leur DM habituel.
-    if (closure.tourDeGuetSurpeuplee) {
-      lines.push(
-        "🔭 La Tour de Guet était trop encombrée hier — personne n'a rien pu observer.",
-      );
-    }
-    if (closure.absents?.length) {
-      const noms = closure.absents
-        .map((id) => {
-          const p = joueursApres.find((x) => x.discordId === id);
-          return p?.usernameOrigine || p?.username || "?";
-        })
-        .map((nom) => `**${nom}**`);
-      lines.push(
-        `💤 N'a pas joué (pion placé au Château) : ${noms.join(", ")}`,
-      );
-    }
-    for (const r of closure.remplacements || []) {
-      lines.push(
-        `🔄 ${r.ancienUsername} a quitté le village, **${r.nouveauUsername}** reprend sa place.`,
-      );
-    }
-
-    lines.push("");
+    lines.push(
+      "**Bilan du jour précédent**",
+      ...buildBilanLines(closure, joueursApres, config),
+      "",
+    );
   }
 
   // Le total de Gobelins n'est PAS un secret : il découle mécaniquement de
@@ -426,12 +437,23 @@ function buildEclaireurSecondButtonRow(jour) {
   ];
 }
 
+// Libellé lisible d'une clé de victoire archivée (ex. "chasseurs_survie"),
+// pour l'historique des manches.
+function victoireCourte(victory, config) {
+  const camp = victory?.startsWith("gobelins")
+    ? config.camps.gobelin
+    : config.camps.chasseur;
+  return `${camp.emoji} Victoire des ${camp.label}`;
+}
+
 function buildOutcomeEmbed(
   victory,
   joueursApres,
   config,
   manches,
   currentManche,
+  closure,
+  jourClos,
 ) {
   const victoireTexte = {
     gobelins_parite: `${config.camps.gobelin.emoji} Les **Gobelins** l'emportent — parité atteinte !`,
@@ -453,7 +475,7 @@ function buildOutcomeEmbed(
         "**📊 Manches précédentes**",
         ...manches.map(
           (m) =>
-            `Manche ${m.manche} — ${m.victory}${m.manche === currentManche ? " *(cette manche)*" : ""}`,
+            `Manche ${m.manche} — ${victoireCourte(m.victory, config)}${m.manche === currentManche ? " *(cette manche)*" : ""}`,
         ),
       ]
     : [];
@@ -463,6 +485,13 @@ function buildOutcomeEmbed(
     description: [
       victoireTexte,
       "",
+      ...(closure
+        ? [
+            `**Bilan du Jour ${jourClos}**`,
+            ...buildBilanLines(closure, joueursApres, config),
+            "",
+          ]
+        : []),
       "**Révélation des identités**",
       reveal,
       ...mancheLines,
@@ -984,6 +1013,8 @@ export async function postGoblinHunters(
       config,
       manches,
       currentManche,
+      closure,
+      jourClos,
     );
     if (dryRun) return { dryRun: true, final: true, embed, closure };
 
