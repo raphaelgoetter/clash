@@ -13,7 +13,7 @@
 // Illustrations : `iconUrls.medium` de l'API Clash Royale (fetchCards, même
 // cache partagé "clashCardDefinitions" que lajustecarte.js), téléchargées
 // puis intégrées en data URL (resvg ne charge aucune ressource distante).
-// Les cartes spéciales n'ont pas d'illustration : carte dessinée en SVG.
+// La carte mystère n'a pas d'illustration : carte dessinée en SVG.
 //
 // ⚠️ Police embarquée obligatoire (voir pelemeleImage.js) : aucune police
 // système sur le runtime Vercel.
@@ -23,7 +23,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { fetchCards } from "./clashApi.js";
 import { getOrSet } from "./cache.js";
 import { readBlobFontPath } from "./blobAssets.js";
-import { resolveCard, SPECIALS } from "./elixirRules.js";
+import { resolveCard } from "./elixirRules.js";
 
 const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
@@ -103,22 +103,18 @@ async function fetchDataUrl(url) {
 
 // ── Cartes ──────────────────────────────────────────────────────────
 
-const SPECIAL_SYMBOLS = {
-  [SPECIALS.joker.key]: "?",
-};
-
-function specialCardSvg(card, x, y, w, h) {
-  const fontSize = Math.round(w * (SPECIAL_SYMBOLS[card.key].length > 1 ? 0.36 : 0.5));
+function mysteryCardSvg(x, y, w, h) {
+  const fontSize = Math.round(w * 0.5);
   return `
   <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${w * 0.08}" fill="#3b1a5c" stroke="#f0c040" stroke-width="${Math.max(2, w * 0.03)}"/>
   <rect x="${x + w * 0.07}" y="${y + w * 0.07}" width="${w * 0.86}" height="${h - w * 0.14}" rx="${w * 0.06}" fill="#5b2a8c"/>
-  <text x="${x + w / 2}" y="${y + h * 0.56}" font-family="${FONT_FAMILY}" font-size="${fontSize}" text-anchor="middle" fill="#f0c040">${escapeXml(SPECIAL_SYMBOLS[card.key])}</text>`;
+  <text x="${x + w / 2}" y="${y + h * 0.56}" font-family="${FONT_FAMILY}" font-size="${fontSize}" text-anchor="middle" fill="#f0c040">?</text>`;
 }
 
 function cardSvg(card, dataUrl, x, y, size) {
   const h = Math.round(size.w * RATIO);
-  const art = card.special
-    ? specialCardSvg(card, x, y, size.w, h)
+  const art = card.mystery
+    ? mysteryCardSvg(x, y, size.w, h)
     : dataUrl
       ? `<svg x="${x}" y="${y}" width="${size.w}" height="${h}" viewBox="0 ${CROP_Y} ${ICON_W} ${CROP_H}"><image width="${ICON_W}" height="${ICON_H}" href="${dataUrl}"/></svg>`
       : `<rect x="${x}" y="${y}" width="${size.w}" height="${h}" rx="10" fill="#2b2d31"/>`;
@@ -137,7 +133,7 @@ function rowHeight(size) {
 async function loadDataUrls(cards) {
   const iconUrls = await loadIconUrls();
   return new Map(
-    await Promise.all(cards.filter((c) => !c.special).map(async (c) => [c.key, await fetchDataUrl(iconUrls.get(c.key))])),
+    await Promise.all(cards.filter((c) => !c.mystery).map(async (c) => [c.key, await fetchDataUrl(iconUrls.get(c.key))])),
   );
 }
 
@@ -205,7 +201,7 @@ export async function rasterize(svg, width) {
   return Buffer.from(resvg.render().asPng());
 }
 
-// currentKeys / nextKeys : clés de cartes (normales ou spéciales). Les clés
+// currentKeys / nextKeys : clés de cartes (normales ou `mystery`). Les clés
 // inconnues du catalogue sont ignorées (URL forgée). null si rien à
 // afficher.
 // Collection d'un joueur (au plus 10 cartes, une par manche)

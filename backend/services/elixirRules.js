@@ -27,31 +27,32 @@ export const ELIXIR_CAP = 10;
 // ambiguë troupe/sort, volante/au sol (Impératrice spirituelle)
 export const EXCLUDED_CARDS = new Set(["Mirror", "Spirit Empress"]);
 
-// Première manche où une carte spéciale peut apparaître
-const SPECIAL_FIRST_MANCHE = 4;
-
-// Cartes spéciales : mises aux enchères comme les autres, en PLUS des cartes
-// normales de leur manche. Seul le Joker est conservé (Collecteur d'élixir
-// et Rage retirés le 01/10, décision de Raphaël).
-export const SPECIALS = {
-  joker: {
-    key: "special:joker",
-    fr: "Joker",
-    minBid: 3,
-    description: "En fin de partie, devient la carte qui te rapporte le plus de points (type, famille et rareté au choix).",
-  },
-};
+// Carte mystère (remplace le Joker, jugé trop décisif, le 02/10) : à chaque
+// manche paire, une des cartes aux enchères est cachée. Mise minimale fixe,
+// révélée à l'achat, elle rapporte son vrai coût et compte pour les
+// objectifs. Elle permet d'acheter à chaque manche quand l'élixir manque.
+// Dans le deck : `mystery:<clé réelle>` ; dans les URL d'image, la clé
+// réelle est masquée (`mystery`) pour ne rien révéler.
+export const MYSTERY_MIN_BID = 2;
+export const MYSTERY_KEY = "mystery";
+const MYSTERY_PREFIX = `${MYSTERY_KEY}:`;
 
 export const TYPES = ["troop", "flying", "spell", "building"];
 export const FAMILIES = ["goblin", "skeleton", "human", "minion", null];
 export const RARITIES = ["common", "rare", "epic", "legendary", "champion"];
 
-export function isSpecialKey(key) {
-  return typeof key === "string" && key.startsWith("special:");
+export function isMysteryKey(key) {
+  return key === MYSTERY_KEY || (typeof key === "string" && key.startsWith(MYSTERY_PREFIX));
 }
 
-export function specialFromKey(key) {
-  return Object.values(SPECIALS).find((s) => s.key === key) || null;
+// Clé réelle d'une carte mystère achetée (inchangée pour une carte normale)
+export function revealKey(key) {
+  return typeof key === "string" && key.startsWith(MYSTERY_PREFIX) ? key.slice(MYSTERY_PREFIX.length) : key;
+}
+
+// Clé affichable publiquement (URL d'image) : la carte mystère reste cachée
+export function publicKey(key) {
+  return isMysteryKey(key) ? MYSTERY_KEY : key;
 }
 
 // ── Catalogue ───────────────────────────────────────────────────────
@@ -79,17 +80,17 @@ export function poolKeysFrom(poolJson) {
   return Object.values(poolJson).flat();
 }
 
-// Résout une clé (carte normale ou spéciale) en objet carte. `catalog` est
-// une Map cardKey → entrée de cardNames.json.
+// Résout une clé (carte normale ou mystère) en objet carte. `catalog` est
+// une Map cardKey → entrée de cardNames.json. Une carte mystère n'expose
+// rien de la carte réelle.
 export function resolveCard(key, catalog) {
-  const special = specialFromKey(key);
-  if (special) return { key, fr: special.fr, special: true, minBid: special.minBid };
+  if (isMysteryKey(key)) return { key, fr: "Carte mystère", mystery: true, minBid: MYSTERY_MIN_BID };
   const c = catalog.get(key);
   if (!c) return null;
   return {
     key,
     fr: c.fr || c.cardKey,
-    special: false,
+    mystery: false,
     minBid: c.elixir,
     elixir: c.elixir,
     rarity: c.rarity,
@@ -113,10 +114,6 @@ function shuffle(array, rng) {
   return a;
 }
 
-export function specialCountFor(totalManches) {
-  return totalManches >= 10 ? 2 : 1;
-}
-
 // Tire toutes les cartes de la partie d'un coup (aperçu de la manche
 // suivante possible, aucun doublon). deck[i] = clés de la manche i+1.
 // Cartes par manche = participants + 1 : toujours une carte de plus que de
@@ -137,28 +134,34 @@ export function buildDeck(pool, { totalManches, maxPlayers }, rng = Math.random)
     deck.push(keys.slice(m * perManche, (m + 1) * perManche));
   }
 
-  // Manches des cartes spéciales : distinctes, à partir de la manche 4
-  const candidates = [];
-  for (let m = SPECIAL_FIRST_MANCHE; m <= totalManches; m++) candidates.push(m);
-  const specialManches = shuffle(candidates, rng).slice(0, specialCountFor(totalManches));
-
-  for (const manche of specialManches) deck[manche - 1].push(SPECIALS.joker.key);
+  // Manches paires : une des cartes tirées devient la carte mystère
+  for (let m = 2; m <= totalManches; m += 2) {
+    const keysOfManche = deck[m - 1];
+    const i = Math.floor(rng() * keysOfManche.length);
+    keysOfManche[i] = MYSTERY_PREFIX + keysOfManche[i];
+  }
   return deck;
 }
 
 // ── Objectifs ───────────────────────────────────────────────────────
-// Évalués sur des "profils" concrets (un Joker a déjà reçu un type, une
-// famille et une rareté, voir scoreCollection). Chaque objectif atteint
-// rapporte ses points, tous sont cumulables.
+// Chaque objectif atteint rapporte ses points, tous sont cumulables.
 
 // Nombre minimal de cartes d'un thème pour valider son objectif, quel que
 // soit le format (barème de Raphaël, 01/10)
 export const THEME_MIN = 3;
 
 function averageElixir(cards) {
-  const real = cards.filter((c) => !c.joker);
-  if (real.length < 3) return null;
-  return real.reduce((s, c) => s + c.elixir, 0) / real.length;
+  if (cards.length < 3) return null;
+  return cards.reduce((s, c) => s + c.elixir, 0) / cards.length;
+}
+
+// Progression d'un objectif de coût moyen (Journal) : tant que la moyenne
+// des cartes actuelles respecte le seuil, chaque carte compte vers les 3
+// requises ; sinon l'objectif est considéré hors d'atteinte (null).
+function averageProgress(cards, ok) {
+  if (!cards.length) return { have: 0, need: 3 };
+  const avg = cards.reduce((s, c) => s + c.elixir, 0) / cards.length;
+  return ok(avg) ? { have: Math.min(cards.length, 3), need: 3 } : null;
 }
 
 // Objectifs de thème : AU MOINS THEME_MIN cartes du thème, les autres
@@ -172,6 +175,7 @@ function themeObjective(id, noun, points, predicate) {
     label: `${THEME_MIN} ${noun}`,
     rulesLabel: `Au moins ${THEME_MIN} ${noun}`,
     test: (cards) => cards.filter(predicate).length >= THEME_MIN,
+    progress: (cards) => ({ have: Math.min(cards.filter(predicate).length, THEME_MIN), need: THEME_MIN }),
   };
 }
 
@@ -194,6 +198,7 @@ export const OBJECTIVES = [
     label: "Une carte de chaque rareté",
     points: 8,
     test: (cards) => RARITIES.every((r) => cards.some((c) => c.rarity === r)),
+    progress: (cards) => ({ have: RARITIES.filter((r) => cards.some((c) => c.rarity === r)).length, need: RARITIES.length }),
   },
   {
     id: "trio",
@@ -203,6 +208,14 @@ export const OBJECTIVES = [
       cards.some((c) => c.type === "troop" || c.type === "flying") &&
       cards.some((c) => c.type === "spell") &&
       cards.some((c) => c.type === "building"),
+    progress: (cards) => ({
+      have: [
+        cards.some((c) => c.type === "troop" || c.type === "flying"),
+        cards.some((c) => c.type === "spell"),
+        cards.some((c) => c.type === "building"),
+      ].filter(Boolean).length,
+      need: 3,
+    }),
   },
   {
     id: "cycle",
@@ -213,6 +226,7 @@ export const OBJECTIVES = [
       const avg = averageElixir(cards);
       return avg != null && avg <= 3;
     },
+    progress: (cards) => averageProgress(cards, (avg) => avg <= 3),
   },
   {
     id: "lourd",
@@ -223,70 +237,49 @@ export const OBJECTIVES = [
       const avg = averageElixir(cards);
       return avg != null && avg >= 5;
     },
+    progress: (cards) => averageProgress(cards, (avg) => avg >= 5),
   },
 ];
 
-// Majorités : strictement plus que CHAQUE adversaire (au moins 1). Les
-// Jokers n'y comptent pas, sauf pour "le plus de cartes".
+// Journal : objectifs commencés et encore atteignables avec les cartes que
+// le joueur peut encore remporter (une par manche restante), les plus
+// avancés d'abord. `cards` = collection résolue (collectionToCards).
+export function objectivesProgress(cards, manchesLeft) {
+  return OBJECTIVES.map((o) => ({ id: o.id, label: o.label, points: o.points, ...o.progress(cards) }))
+    .filter((p) => p.need != null && p.have >= 1 && p.need - p.have <= manchesLeft)
+    .sort((a, b) => b.have / b.need - a.have / a.need || b.points - a.points);
+}
+
+// Majorités : strictement plus que CHAQUE adversaire (au moins 1).
 export const MAJORITIES = [
   {
     id: "maj_champions",
     label: "Le plus de champions",
     points: 4,
-    count: (cards) => cards.filter((c) => !c.joker && c.rarity === "champion").length,
+    count: (cards) => cards.filter((c) => c.rarity === "champion").length,
   },
   {
     id: "maj_legendaires",
     label: "Le plus de légendaires",
     points: 4,
-    count: (cards) => cards.filter((c) => !c.joker && c.rarity === "legendary").length,
+    count: (cards) => cards.filter((c) => c.rarity === "legendary").length,
   },
   { id: "maj_cartes", label: "Le plus de cartes", points: 4, count: (cards) => cards.length },
 ];
 
-// Toutes les formes possibles d'un Joker
-const JOKER_PROFILES = [];
-for (const type of TYPES) {
-  for (const family of FAMILIES) {
-    for (const rarity of RARITIES) JOKER_PROFILES.push({ type, family, rarity, joker: true });
-  }
-}
-
-function evaluateObjectives(cards, ctx) {
-  const achieved = OBJECTIVES.filter((o) => o.test(cards, ctx));
-  return { achieved, points: achieved.reduce((s, o) => s + o.points, 0) };
-}
-
-// Collection = cartes normales résolues (resolveCard) + Jokers
-// (`{ joker: true }`). Les Jokers prennent la forme la plus avantageuse
-// (énumération exhaustive, au plus 2 Jokers par partie).
+// Collection = cartes résolues (resolveCard), cartes mystère déjà révélées.
 // `opponents` = collections des adversaires (pour les majorités).
 export function scoreCollection(collection, opponents = [], ctx = { totalManches: 5 }) {
-  const real = collection.filter((c) => !c.joker);
-  const jokerCount = collection.length - real.length;
-
-  let best = evaluateObjectives(real, ctx);
-  if (jokerCount > 0) {
-    const explore = (current, remaining) => {
-      if (remaining === 0) {
-        const res = evaluateObjectives(current, ctx);
-        if (res.points > best.points) best = res;
-        return;
-      }
-      for (const profile of JOKER_PROFILES) explore([...current, profile], remaining - 1);
-    };
-    best = { achieved: [], points: -1 };
-    explore(real, jokerCount);
-  }
+  const objectives = OBJECTIVES.filter((o) => o.test(collection, ctx));
 
   const majorities = MAJORITIES.filter((m) => {
     const mine = m.count(collection);
     return mine >= 1 && opponents.every((opp) => mine > m.count(opp));
   });
 
-  const achieved = [...best.achieved, ...majorities].map(({ id, label, points }) => ({ id, label, points }));
-  // Chaque carte rapporte son coût ; le Joker, sa mise minimale
-  const cardPoints = collection.reduce((s, c) => s + (c.joker ? SPECIALS.joker.minBid : c.elixir), 0);
+  const achieved = [...objectives, ...majorities].map(({ id, label, points }) => ({ id, label, points }));
+  // Chaque carte rapporte son coût (pas la mise)
+  const cardPoints = collection.reduce((s, c) => s + c.elixir, 0);
   const total = cardPoints + achieved.reduce((s, o) => s + o.points, 0);
   return { total, cardPoints, cardCount: collection.length, achieved };
 }
@@ -310,8 +303,8 @@ export function resolveOffers(cards, offers) {
   });
 }
 
-// Applique les résultats : paiement, ajout à la collection (Joker compris),
-// puis recharge plafonnée pour la manche suivante.
+// Applique les résultats : paiement, ajout à la collection (carte mystère
+// révélée), puis recharge plafonnée pour la manche suivante.
 // players : { [id]: { stock, collection: [clé] } }
 export function applyResults(players, results, { regen = ELIXIR_PER_MANCHE, cap = ELIXIR_CAP } = {}) {
   const next = {};
@@ -322,7 +315,7 @@ export function applyResults(players, results, { regen = ELIXIR_PER_MANCHE, cap 
     if (!r.winner) continue;
     const p = next[r.winner];
     p.stock -= r.price;
-    p.collection.push(r.key);
+    p.collection.push(revealKey(r.key));
   }
   for (const p of Object.values(next)) p.stock = Math.min(cap, p.stock + regen);
   return next;
@@ -339,7 +332,7 @@ export function isValidOffer(cards, offer, stock) {
 // ── Collections résolues (clés → objets pour scoreCollection) ───────
 
 export function collectionToCards(keys, catalog) {
-  return keys.map((k) => (k === SPECIALS.joker.key ? { joker: true } : resolveCard(k, catalog))).filter(Boolean);
+  return keys.map((k) => resolveCard(revealKey(k), catalog)).filter(Boolean);
 }
 
 // Score final de chaque joueur, puis classement : total décroissant, puis
@@ -372,10 +365,19 @@ export function botOffer(cards, me, opponents, { manchesLeft, totalManches, cata
   const future = me.stock + regen * (manchesLeft - 1);
   const perManche = future / Math.max(1, manchesLeft);
 
+  const gainOf = (card) => scoreCollection([...myCards, card], oppCards, ctx).total - base;
+  // Carte mystère : gain moyen sur les cartes du pool encore inconnues
+  let mysteryGain = 0;
+  if (cards.some((c) => c.mystery)) {
+    const unknown = [...catalog.keys()]
+      .filter((k) => !me.collection.includes(k) && !cards.some((c) => c.key === k))
+      .map((k) => resolveCard(k, catalog));
+    if (unknown.length) mysteryGain = unknown.reduce((s, c) => s + gainOf(c), 0) / unknown.length;
+  }
+
   let best = null;
   cards.forEach((card, index) => {
-    const added = card.key === SPECIALS.joker.key ? { joker: true } : card;
-    const gain = scoreCollection([...myCards, added], oppCards, ctx).total - base;
+    const gain = card.mystery ? mysteryGain : gainOf(card);
     if (gain <= 0) return;
 
     const cap = manchesLeft <= 1 ? me.stock : Math.min(me.stock, Math.round(perManche * (1 + gain / 4) * aggressiveness));

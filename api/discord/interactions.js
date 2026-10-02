@@ -194,6 +194,7 @@ import {
   handleValider as handleElixirDuelValider,
   handlePasser as handleElixirDuelPasser,
   handleRegles as handleElixirDuelRegles,
+  handleJournal as handleElixirDuelJournal,
   handleDetails as handleElixirDuelDetails,
   extractMember as extractElixirDuelMember,
 } from "./_handlers/elixirDuel.js";
@@ -9208,6 +9209,15 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleElixirDuelDetails(webhookUrl, messageId));
+    return;
+  }
+
+  // ── Élixir : bouton "Journal" (progression des objectifs, éphémère) ──
+  if (body.type === 3 && body.data?.custom_id === "elixirduel_journal") {
+    const { discordId } = extractElixirDuelMember(body);
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleElixirDuelJournal(webhookUrl, discordId));
     return;
   }
 

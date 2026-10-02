@@ -9,9 +9,10 @@
 // backend/services/elixirRules.js.
 //
 // Main éphémère : un menu « Carte » puis un menu « Mise » (de la mise
-// minimale jusqu'à 24 au-dessus, dans la limite du stock), puis Valider ou
-// Passer. Les offres restent secrètes jusqu'à la résolution, où toutes les
-// mises sont révélées dans le bilan public.
+// minimale jusqu'à 24 au-dessus, dans la limite du stock), puis Valider ;
+// Journal affiche la progression des objectifs, Passer n'apparaît que si
+// aucune carte n'est abordable. Les offres restent secrètes jusqu'à la
+// résolution, où toutes les mises sont révélées dans le bilan public.
 // ============================================================
 
 import {
@@ -40,10 +41,15 @@ import {
   ELIXIR_CAP,
   OBJECTIVES,
   MAJORITIES,
-  SPECIALS,
+  MYSTERY_MIN_BID,
+  publicKey,
+  revealKey,
+  isMysteryKey,
   THEME_MIN,
   resolveCard,
   computeFinalScores,
+  collectionToCards,
+  objectivesProgress,
 } from "../../../backend/services/elixirRules.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
@@ -104,7 +110,14 @@ function cardTags(card) {
 function shortCardName(key, catalog) {
   const card = resolveCard(key, catalog);
   if (!card) return key;
-  return card.key === SPECIALS.joker.key ? `${EMOJI.question.text} Joker` : card.fr;
+  return card.fr;
+}
+
+// Nom d'une carte dans un bilan : la carte mystère est révélée une fois
+// achetée, et reste cachée si personne ne l'a remportée
+function resultCardName(r, catalog) {
+  if (isMysteryKey(r.key) && r.winner) return `Carte mystère (${shortCardName(revealKey(r.key), catalog)})`;
+  return shortCardName(r.key, catalog);
 }
 
 function formatCollection(keys, catalog) {
@@ -126,7 +139,7 @@ function cardsImageUrl(state, manche) {
   const current = state.deck?.[manche - 1];
   if (!current) return null;
   const next = state.deck?.[manche] ?? [];
-  const params = new URLSearchParams({ c: current.join("|"), n: next.join("|") });
+  const params = new URLSearchParams({ c: current.map(publicKey).join("|"), n: next.map(publicKey).join("|") });
   return `${TRUST_ROYALE_URL}/api/elixir/image?${params}`;
 }
 
@@ -240,7 +253,7 @@ async function buildResultsLines(lastResults, players, catalog) {
 
   const lines = [`${EMOJI.stats.text} **Bilan de la manche ${lastResults.manche}**`];
   for (const r of lastResults.results) {
-    const label = shortCardName(r.key, catalog);
+    const label = resultCardName(r, catalog);
     const bids = r.bidders.map((b) => `${names[b.id] ?? "?"} ${b.bid}`);
     if (r.winner) {
       const others = bids.slice(1);
@@ -425,7 +438,7 @@ function buildOfferStatus(view) {
   }
   if (draft.card == null) return "Choisis une carte, puis ta mise.";
   const card = cards[draft.card];
-  if (draft.bid == null) return `**${card.fr}** : pas assez d'élixir (mise min ${card.minBid} ${ELIXIR}). Choisis une autre carte ou passe.`;
+  if (draft.bid == null) return `**${card.fr}** : pas assez d'élixir (mise min ${card.minBid} ${ELIXIR}). Choisis une autre carte.`;
   return `Offre en préparation : **${card.fr}** pour **${draft.bid}** ${ELIXIR}. Clique sur **Valider** pour l'envoyer.`;
 }
 
@@ -437,7 +450,7 @@ async function buildMyRecap(lastResults, discordId, players, catalog) {
   const myOffer = lastResults.offers?.[discordId];
   if (!myOffer || myOffer.card == null) lines.push(`${EMOJI.bye.text} Tu as passé.`);
   for (const r of lastResults.results) {
-    const label = shortCardName(r.key, catalog);
+    const label = resultCardName(r, catalog);
     const mine = myOffer?.card === r.index;
     if (r.winner === discordId) {
       lines.push(`${EMOJI.victory.text} Tu remportes **${label}** pour ${r.price} ${ELIXIR}.`);
@@ -485,7 +498,7 @@ function buildHandComponents(view) {
           placeholder: "Choisis une carte",
           options: cards.map((c, i) => ({
             label: `${c.fr} (min ${c.minBid} élixir)`.slice(0, 100),
-            description: (c.special ? "Carte spéciale" : `${RARITY_LABELS[c.rarity]} · ${cardTags(c)}`).slice(0, 100),
+            description: (c.mystery ? "Révélée à l'achat, rapporte son vrai coût" : `${RARITY_LABELS[c.rarity]} · ${cardTags(c)}`).slice(0, 100),
             emoji: EMOJI.elixir.component,
             value: String(i),
             default: draft.card === i,
@@ -516,7 +529,12 @@ function buildHandComponents(view) {
         custom_id: `elixirduel_valider:${manche}`,
         disabled: draft.card == null || draft.bid == null,
       },
-      { type: 2, style: 2, label: "Passer", emoji: EMOJI.bye.component, custom_id: `elixirduel_passer:${manche}` },
+      { type: 2, style: 2, label: "Journal", emoji: EMOJI.stats.component, custom_id: "elixirduel_journal" },
+      // Passer seulement quand aucune carte n'est abordable (sinon on
+      // enchérit toujours) : évite de bloquer la manche
+      ...(cards.every((c) => c.minBid > me.stock)
+        ? [{ type: 2, style: 2, label: "Passer", emoji: EMOJI.bye.component, custom_id: `elixirduel_passer:${manche}` }]
+        : []),
     ],
   });
   return rows;
@@ -626,6 +644,48 @@ export async function handlePasser(webhookUrl, discordId) {
   }
 }
 
+// ── Bouton [Journal] — progression des objectifs, éphémère ─────────
+
+// Pions : verts si l'objectif est atteint, orange à mi-chemin ou plus,
+// rouges en dessous ; les conditions restantes en blanc.
+function formatPions({ have, need }) {
+  const color = have >= need ? "🟢" : have / need >= 0.5 ? "🟠" : "🔴";
+  return color.repeat(have) + "⚪".repeat(Math.max(0, need - have));
+}
+
+function buildJournalEmbed(state, me, catalog) {
+  const manchesLeft = state.termine ? 0 : state.totalManches - state.manche + 1;
+  const progress = objectivesProgress(collectionToCards(me.collection, catalog), manchesLeft);
+  const lines = progress.length
+    ? progress.map((p) => `${formatPions(p)} ${p.label} (**+${p.points}**)`)
+    : ["Aucune combinaison commencée pour l'instant."];
+  return {
+    title: "Élixir · Ton journal",
+    description: lines.join("\n"),
+    color: ELIXIRDUEL_COLOR,
+  };
+}
+
+export async function handleJournal(webhookUrl, discordId) {
+  try {
+    if (await replyIfExpired(webhookUrl)) return;
+    const state = await readState();
+    if (!state || state.termine) {
+      await patchOriginal(webhookUrl, textPayload("Aucune partie d'Élixir en cours pour le moment."));
+      return;
+    }
+    const [players, catalog] = await Promise.all([readPlayers(), loadCatalog()]);
+    const me = players[discordId];
+    if (!me) {
+      await patchOriginal(webhookUrl, textPayload("Clique d'abord sur **Jouer** pour rejoindre la partie !"));
+      return;
+    }
+    await patchOriginal(webhookUrl, { content: "", embeds: [buildJournalEmbed(state, me, catalog)], components: [] });
+  } catch (err) {
+    console.error("[ElixirDuel] Échec Journal:", err.message);
+  }
+}
+
 // ── Bouton [Règles] ──────────────────────────────────────────────
 
 // « a, b ou c »
@@ -656,13 +716,13 @@ function buildReglesEmbed() {
       "Enchères secrètes sur des cartes Clash Royale, de 1 à 3 joueurs (en solo contre un bot).",
       "",
       `${EMOJI.battle.text} **Chaque manche**`,
-      "• Fais une offre secrète sur une carte (mise ≥ son coût), ou passe.",
+      "• Fais une offre secrète sur une carte (mise ≥ son coût).",
       "• La meilleure offre gagne, seul le gagnant paie. Égalité : carte défaussée.",
       `• ${ELIXIR} ${STARTING_ELIXIR} au départ, +${ELIXIR_PER_MANCHE} par manche, ${ELIXIR_CAP} au maximum.`,
       "",
-      `${EMOJI.question.text} **${SPECIALS.joker.fr}** (dès la manche 4) : devient en fin de partie la carte qui te rapporte le plus.`,
+      `${EMOJI.question.text} **Carte mystère** (manches paires) : mise min ${MYSTERY_MIN_BID}, révélée à l'achat, elle rapporte son vrai coût.`,
       "",
-      `${EMOJI.trophy.text} **Score** : chaque carte rapporte son coût en élixir (Joker : 3), plus :`,
+      `${EMOJI.trophy.text} **Score** : chaque carte rapporte son coût en élixir, plus :`,
       ...buildScoreLines(),
     ].join("\n"),
     color: ELIXIRDUEL_COLOR,

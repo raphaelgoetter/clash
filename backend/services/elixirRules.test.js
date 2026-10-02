@@ -11,9 +11,12 @@ import {
   scoreCollection,
   botOffer,
   computeFinalScores,
-  SPECIALS,
   STARTING_ELIXIR,
-  isSpecialKey,
+  MYSTERY_MIN_BID,
+  isMysteryKey,
+  revealKey,
+  publicKey,
+  objectivesProgress,
 } from "./elixirRules.js";
 
 const all = JSON.parse(fs.readFileSync(new URL("../../data/cardNames.json", import.meta.url)));
@@ -41,7 +44,7 @@ async function main() {
     assert.ok(!pool.some((c) => c.cardKey === "Golem"));
   }
 
-  // ── buildDeck : participants + 1 cartes par manche (bot compris en solo), aucun doublon, spéciales ──
+  // ── buildDeck : participants + 1 cartes par manche (bot compris en solo), aucun doublon, une carte mystère par manche paire ──
   for (let seed = 1; seed <= 50; seed++) {
     for (const [maxPlayers, totalManches] of [
       [1, 5],
@@ -49,16 +52,26 @@ async function main() {
     ]) {
       const deck = buildDeck(pool, { totalManches, maxPlayers }, seeded(seed));
       assert.strictEqual(deck.length, totalManches);
-      const normal = deck.flat().filter((k) => !isSpecialKey(k));
-      assert.strictEqual(normal.length, ((maxPlayers === 1 ? 2 : maxPlayers) + 1) * totalManches);
-      assert.strictEqual(new Set(normal).size, normal.length);
-      const specials = deck.flatMap((keys, i) => keys.filter(isSpecialKey).map((k) => ({ k, manche: i + 1 })));
-      assert.strictEqual(specials.length, totalManches === 10 ? 2 : 1);
-      for (const s of specials) {
-        assert.ok(s.manche >= 4);
-        assert.strictEqual(s.k, SPECIALS.joker.key);
-      }
+      const real = deck.flat().map(revealKey);
+      assert.strictEqual(real.length, ((maxPlayers === 1 ? 2 : maxPlayers) + 1) * totalManches);
+      assert.strictEqual(new Set(real).size, real.length);
+      assert.ok(real.every((k) => catalog.has(k)));
+      deck.forEach((keys, i) => {
+        assert.strictEqual(keys.filter(isMysteryKey).length, (i + 1) % 2 === 0 ? 1 : 0);
+      });
     }
+  }
+
+  // ── Carte mystère : rien de la carte réelle n'est exposé ──
+  {
+    const m = card("mystery:Golden Knight");
+    assert.ok(m.mystery);
+    assert.strictEqual(m.minBid, MYSTERY_MIN_BID);
+    assert.strictEqual(m.elixir, undefined);
+    assert.strictEqual(m.fr, "Carte mystère");
+    assert.strictEqual(publicKey("mystery:Golden Knight"), "mystery");
+    assert.strictEqual(publicKey("Knight"), "Knight");
+    assert.ok(card("mystery").mystery);
   }
 
   // ── resolveOffers : meilleure offre, égalité, passe ──
@@ -75,7 +88,7 @@ async function main() {
     assert.strictEqual(tie[1].tie, true);
   }
 
-  // ── applyResults : seul le gagnant paie, Joker en collection, recharge plafonnée ──
+  // ── applyResults : seul le gagnant paie, carte mystère révélée, recharge plafonnée ──
   {
     const players = {
       a: { stock: 10, collection: [] },
@@ -83,14 +96,15 @@ async function main() {
     };
     const results = [
       { key: "Knight", winner: "a", price: 4 },
-      { key: SPECIALS.joker.key, winner: "b", price: 3 },
+      { key: "mystery:Golden Knight", winner: "b", price: 3 },
       { key: "Zap", winner: null, price: 0, tie: true },
     ];
     const next = applyResults(players, results, { regen: 0, cap: 99 });
     assert.strictEqual(next.a.stock, 6);
     assert.deepStrictEqual(next.a.collection, ["Knight"]);
     assert.strictEqual(next.b.stock, 7);
-    assert.deepStrictEqual(next.b.collection, [SPECIALS.joker.key]);
+    // Payée à la mise, révélée en collection, elle rapporte son vrai coût
+    assert.deepStrictEqual(next.b.collection, ["Golden Knight"]);
     // Recharge plafonnée : 10 - 4 + 4 = 10 ; 10 - 3 + 4 = 11 → 10
     const capped = applyResults(players, results);
     assert.strictEqual(capped.a.stock, 10);
@@ -137,12 +151,21 @@ async function main() {
     assert.strictEqual(gob.total, gobCost + gob.achieved.reduce((s, a) => s + a.points, 0));
   }
 
-  // ── scoreCollection : le Joker prend la forme la plus avantageuse ──
+  // ── objectivesProgress : Journal ──
   {
-    const avec = scoreCollection([card("Goblins"), card("Spear Goblins"), { joker: true }], [], { totalManches: 10 });
-    assert.ok(avec.achieved.some((a) => a.id === "gobelins"));
-    // Le Joker ne compte pas dans la moyenne d'élixir (2 vraies cartes < 3)
-    assert.ok(!avec.achieved.some((a) => a.id === "cycle"));
+    const byId = (cards, left) => Object.fromEntries(objectivesProgress(cards, left).map((p) => [p.id, p]));
+    // 2 squelettes à 2 et 1 élixir : squelettes et cycle à 2/3, raretés à 1/5
+    const p = byId([card("Bomber"), card("Skeletons")], 4);
+    assert.deepStrictEqual([p.squelettes.have, p.squelettes.need], [2, 3]);
+    assert.deepStrictEqual([p.cycle.have, p.cycle.need], [2, 3]);
+    assert.deepStrictEqual([p.raretes.have, p.raretes.need], [1, 5]);
+    // Rien de commencé : non affiché ; moyenne hors seuil : non affiché
+    assert.ok(!p.gobelins && !p.lourd);
+    // Hors d'atteinte avec les manches restantes : non affiché
+    assert.ok(!byId([card("Bomber"), card("Skeletons")], 2).raretes);
+    // Objectif atteint : affiché, le plus avancé en tête
+    const done = objectivesProgress([card("Zap"), card("Arrows"), card("Fireball")], 0);
+    assert.strictEqual(done[0].have, done[0].need);
   }
 
   // ── scoreCollection : majorités strictes ──
@@ -172,7 +195,8 @@ async function main() {
   for (let seed = 1; seed <= 200; seed++) {
     const rng = seeded(seed);
     const deck = buildDeck(pool, { totalManches: 5, maxPlayers: 1 }, rng);
-    const cards = deck[0].map(card);
+    // Manches 1 et 2 : avec et sans carte mystère
+    const cards = deck[seed % 2].map(card);
     const stock = Math.floor(rng() * (STARTING_ELIXIR + 1));
     const offer = botOffer(cards, { stock, collection: [] }, [[]], { manchesLeft: 5, totalManches: 5, catalog }, rng);
     if (offer.card != null) {
