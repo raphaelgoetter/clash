@@ -182,14 +182,26 @@ async function deleteOriginal(webhookUrl) {
   }
 }
 
-async function patchPublicMessage(state, payload) {
+// `files` : [{ buffer, filename }] envoyés en pièces jointes (multipart),
+// référencés dans l'embed par `attachment://<filename>`
+async function patchPublicMessage(state, payload, files = []) {
   const token = process.env.DISCORD_TOKEN;
   if (!token || !state?.channelId || !state?.messageId) return;
   try {
+    let body = JSON.stringify(payload);
+    const headers = { Authorization: `Bot ${token}` };
+    if (files.length) {
+      body = new FormData();
+      const attachments = files.map((f, i) => ({ id: i, filename: f.filename }));
+      body.append("payload_json", JSON.stringify({ ...payload, attachments }));
+      files.forEach((f, i) => body.append(`files[${i}]`, new Blob([f.buffer], { type: "image/png" }), f.filename));
+    } else {
+      headers["Content-Type"] = "application/json";
+    }
     const res = await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
       method: "PATCH",
-      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      headers,
+      body,
     });
     if (!res.ok) console.warn(`[ElixirDuel] Échec édition du message public (${res.status}).`);
   } catch (err) {
@@ -309,7 +321,7 @@ async function buildTableEmbed(state) {
     title: `Élixir · Manche ${state.manche}/${state.totalManches}`,
     description: lines.join("\n"),
     color: ELIXIRDUEL_COLOR,
-    image: { url: cardsImageUrl(state, state.manche) },
+    // Pas d'image ici : les cartes aux enchères sont dans la main éphémère
     footer: {
       text: state.rosterLocked
         ? "Inscriptions closes, la partie a commencé."
@@ -350,13 +362,37 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
   };
 }
 
+// Fin de partie : l'image de la collection du vainqueur est téléchargée ici
+// puis jointe au message. Par simple URL, le proxy de Discord abandonnait
+// parfois pendant le rendu à froid (image affichée puis masquée, largeur
+// 0) et ne réessayait jamais. Repli sur l'URL si le téléchargement échoue.
+async function patchFinalMessage(state, embed) {
+  const components = buildEndComponents(state);
+  const url = embed.image?.url;
+  if (url) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      if (res.ok) {
+        const filename = "collection.png";
+        const buffer = Buffer.from(await res.arrayBuffer());
+        await patchPublicMessage(state, { embeds: [{ ...embed, image: { url: `attachment://${filename}` } }], components }, [
+          { buffer, filename },
+        ]);
+        return;
+      }
+    } catch (err) {
+      console.warn("[ElixirDuel] Image de collection indisponible, repli sur l'URL:", err.message);
+    }
+  }
+  await patchPublicMessage(state, { embeds: [embed], components });
+}
+
 // Clôture paresseuse, sans cron : une partie inactive depuis 2h est close
 // et son message public repeint en "Partie terminée".
 async function closeIfStale() {
   const result = await expireIfStale();
   if (!result.expired) return false;
-  const embed = await buildFinalEmbed(result.state, { expired: true });
-  await patchPublicMessage(result.state, { embeds: [embed], components: buildEndComponents(result.state) });
+  await patchFinalMessage(result.state, await buildFinalEmbed(result.state, { expired: true }));
   return true;
 }
 
@@ -374,8 +410,7 @@ async function refreshPublicMessage() {
   const outcome = await checkAndResolveManche();
   if (outcome.inactive) return outcome;
   if (outcome.resolved && outcome.final) {
-    const embed = await buildFinalEmbed(outcome.state);
-    await patchPublicMessage(outcome.state, { embeds: [embed], components: buildEndComponents(outcome.state) });
+    await patchFinalMessage(outcome.state, await buildFinalEmbed(outcome.state));
     return outcome;
   }
   const embed = await buildTableEmbed(outcome.state);
@@ -465,14 +500,12 @@ async function buildMyRecap(lastResults, discordId, players, catalog) {
 }
 
 function buildHandEmbed(view) {
-  const { state, me, players, catalog, offer } = view;
-  const scores = computeFinalScores(players, catalog, state.totalManches);
-  const myScore = scores.find((s) => s.id === view.discordId);
+  // Collection et scores sont sur le message public : ici, seulement ce
+  // qui sert à faire son offre
+  const { state, me, offer } = view;
   const lines = [
     ...(view.recap ?? []),
     `${ELIXIR} Ton élixir : **${me.stock}**`,
-    `${EMOJI.cards.text} Ta collection : ${formatCollection(me.collection, catalog)}`,
-    `${EMOJI.stats.text} Score actuel : **${plural(myScore?.total ?? 0, "pt")}**${myScore?.achieved.length ? ` (${myScore.achieved.map((a) => a.label).join(", ")})` : ""}`,
     "",
     buildOfferStatus(view),
   ];
