@@ -1832,7 +1832,7 @@ Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre da
 
 Règle d'unicité (retour utilisateur, 26/09) : chaque combinaison ne rapporte des points **qu'une seule fois par partie** — le joueur doit varier ses combinaisons (12 catégories + le Joker pour 7 jours ou 5/10 manches). Si la meilleure combinaison des dés est déjà réalisée, la meilleure combinaison encore libre est retenue automatiquement (ex. 6-6-6-6-6 avec Gobelet déjà fait → Somme ≥ 28). Les petites combinaisons (Double quelconque, Brelan) servent précisément de repli pour éviter le 0.
 
-🃏 **Joker (27/09, la « Chance » du Yahtzee)** : vaut la **moitié de la somme** des 5 dés (arrondie à l'inférieur, 2 à 15 pts — la somme entière, testée d'abord, battait la moitié des vraies combinaisons alors que le Joker est un lot de consolation), une seule fois par partie, retenu **uniquement** si aucune autre combinaison n'est libre (sinon il serait consommé dès la 1ʳᵉ manche). Ajouté avec le Juste total parce qu'en 10 manches les joueurs finissaient souvent sur "Aucune combinaison" (Somme ≤ 7, Somme ≥ 28 et Gobelet étant quasi inaccessibles). Le bouton Valider l'ignore (`allowJoker: false`, option retenue par l'utilisateur) : il ne s'applique qu'à la fin des 3 tirages ou à la clôture d'une main en cours — impossible de le griller par erreur dès le 1ᵉʳ tirage. Hors de `COMBINATIONS` (valeur variable), constante `JOKER`.
+🃏 **Joker (27/09, la « Chance » du Yahtzee)** : vaut la **somme** des 5 dés (5 à 30 pts ; la moitié de la somme jusqu'au 02/10, relevée à la somme entière par choix de l'utilisateur : le Joker peut battre les petites combinaisons, c'est assumé), une seule fois par partie, retenu **uniquement** si aucune autre combinaison n'est libre (sinon il serait consommé dès la 1ʳᵉ manche). Ajouté avec le Juste total parce qu'en 10 manches les joueurs finissaient souvent sur "Aucune combinaison" (Somme ≤ 7, Somme ≥ 28 et Gobelet étant quasi inaccessibles). Le bouton Valider l'ignore (`allowJoker: false`, option retenue par l'utilisateur) : il ne s'applique qu'à la fin des 3 tirages ou à la clôture d'une main en cours — impossible de le griller par erreur dès le 1ᵉʳ tirage. Hors de `COMBINATIONS` (valeur variable), constante `JOKER`.
 
 ⚠️ **"Aucune combinaison" vaut 0 pt** (auparavant la somme des dés) : une main sans motif ne doit pas rapporter plus qu'une combinaison répétée. Elle n'est jamais "consommée" (`withUsedCategory()`).
 
@@ -1845,7 +1845,7 @@ Combinaisons réalisées stockées dans `gobelet:used` / `gobeletduel:used` (has
 | Résultat | Condition | Points |
 | -------- | --------- | ------ |
 | Aucune combinaison | rien de libre, Joker déjà utilisé | 0 |
-| Joker | rien d'autre de libre (hors Valider) | somme des 5 dés ÷ 2 (arrondi inférieur) |
+| Joker | rien d'autre de libre (hors Valider) | somme des 5 dés |
 | Double quelconque | au moins 2 dés identiques | 10 |
 | Brelan | au moins 3 dés identiques | 20 |
 | Pairs | 5 dés pairs | 25 |

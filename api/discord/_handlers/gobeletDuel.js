@@ -177,6 +177,14 @@ async function postFinalMessage(state, payload) {
 // d'un NOUVEAU joueur une fois les inscriptions verrouillées est géré
 // côté serveur (joinAndDeal) avec un message de rejet éphémère, pas en
 // désactivant le bouton pour tout le monde.
+const REGLES_BUTTON = {
+  type: 2,
+  style: 2,
+  label: "Règles",
+  emoji: { name: "📖" },
+  custom_id: "gobeletduel_regles",
+};
+
 function buildJoinComponents() {
   return [
     {
@@ -189,16 +197,15 @@ function buildJoinComponents() {
           emoji: { name: "🎲" },
           custom_id: "gobeletduel_jouer",
         },
-        {
-          type: 2,
-          style: 2,
-          label: "Règles",
-          emoji: { name: "📖" },
-          custom_id: "gobeletduel_regles",
-        },
+        REGLES_BUTTON,
       ],
     },
   ];
+}
+
+// Récapitulatif de fin de partie : seul le bouton Règles reste utile.
+function buildFinalComponents() {
+  return [{ type: 1, components: [REGLES_BUTTON] }];
 }
 
 async function buildPendingLabel(state, hands) {
@@ -353,7 +360,7 @@ async function closeIfStale() {
   const result = await expireIfStale();
   if (!result.expired) return false;
   const embed = await buildExpiredEmbed(result.state, result.ranking);
-  await postFinalMessage(result.state, { embeds: [embed], components: [] });
+  await postFinalMessage(result.state, { embeds: [embed], components: buildFinalComponents() });
   return true;
 }
 
@@ -558,7 +565,7 @@ async function refreshPublicMessage() {
     );
     await postFinalMessage(outcome.state, {
       embeds: [embed],
-      components: [],
+      components: buildFinalComponents(),
     });
     return;
   }
