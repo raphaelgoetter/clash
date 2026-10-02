@@ -264,7 +264,6 @@ export const MAJORITIES = [
     points: 4,
     count: (cards) => cards.filter((c) => c.rarity === "legendary").length,
   },
-  { id: "maj_cartes", label: "Le plus de cartes", points: 4, count: (cards) => cards.length },
 ];
 
 // Collection = cartes résolues (resolveCard), cartes mystère déjà révélées.

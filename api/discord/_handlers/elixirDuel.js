@@ -744,7 +744,7 @@ export async function handleDetails(webhookUrl, messageId) {
       lines.push(`${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.total, "pt")}`);
       lines.push(`• ${plural(r.cardCount, "carte")} : **+${r.cardPoints}**`);
       for (const a of r.achieved) lines.push(`• ${a.label} : **+${a.points}**`);
-      lines.push(`• Élixir restant : ${r.stock} ${ELIXIR}`, "");
+      lines.push("");
     }
     await patchOriginal(webhookUrl, {
       embeds: [{ title: "Élixir · Détail des scores", description: lines.join("\n").trim(), color: ELIXIRDUEL_COLOR }],

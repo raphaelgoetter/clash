@@ -172,9 +172,11 @@ async function main() {
   {
     const mine = [card("Golden Knight"), card("Bats")];
     const opp = [card("Archer Queen")];
+    // Égalité à 1 champion : pas de majorité
     const res = scoreCollection(mine, [opp]);
-    assert.ok(res.achieved.some((a) => a.id === "maj_cartes"));
     assert.ok(!res.achieved.some((a) => a.id === "maj_champions"));
+    const plus = scoreCollection([...mine, card("Skeleton King")], [opp]);
+    assert.ok(plus.achieved.some((a) => a.id === "maj_champions"));
   }
 
   // ── computeFinalScores : départage à l'élixir restant ──
