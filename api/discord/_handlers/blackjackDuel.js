@@ -8,8 +8,9 @@
 // (`blackjackduel:*`), aucun import du service du jeu spécial.
 //
 // Contrairement au jeu spécial, le message public est ÉDITÉ EN PLACE à
-// chaque avancée (jamais supprimé/reposté) : il n'y a pas de "jour" qui
-// change, seulement des manches qui s'enchaînent en direct.
+// chaque avancée : il n'y a pas de "jour" qui change, seulement des
+// manches qui s'enchaînent en direct. En fin de partie, le récapitulatif
+// est reposté dans un nouveau message et l'original supprimé.
 // ============================================================
 
 import {
@@ -121,6 +122,47 @@ async function patchPublicMessage(state, payload) {
       "[BlackjackDuel] Erreur réseau à l'édition du message public:",
       err.message,
     );
+  }
+}
+
+// Fin de partie : le récapitulatif complet est publié dans un NOUVEAU post
+// (visible en bas du salon), puis le message de la partie est supprimé.
+// Repli : si le nouveau post échoue, on édite l'ancien plutôt que de perdre
+// le récapitulatif.
+async function postFinalMessage(state, payload) {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token || !state?.channelId) return;
+  const headers = { Authorization: `Bot ${token}` };
+  try {
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages`,
+      {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    if (!res.ok) {
+      console.warn(`[BlackjackDuel] Échec envoi du récapitulatif (${res.status}).`);
+      await patchPublicMessage(state, payload);
+      return;
+    }
+  } catch (err) {
+    console.warn("[BlackjackDuel] Erreur réseau à l'envoi du récapitulatif:", err.message);
+    await patchPublicMessage(state, payload);
+    return;
+  }
+  if (!state.messageId) return;
+  try {
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      { method: "DELETE", headers },
+    );
+    if (!res.ok && res.status !== 404) {
+      console.warn(`[BlackjackDuel] Échec suppression du message de la partie (${res.status}).`);
+    }
+  } catch (err) {
+    console.warn("[BlackjackDuel] Erreur réseau à la suppression du message de la partie:", err.message);
   }
 }
 
@@ -468,8 +510,8 @@ function buildHandComponents(manche, hand) {
 
 // Après chaque action (Jouer, Piocher, Arrêter) qui peut terminer une main :
 // vérifie si la manche (ou la partie) doit se résoudre, puis rafraîchit le
-// message public en place — jamais de suppression/repost (contrairement au
-// jeu spécial), il n'y a pas de "jour" qui change.
+// message public en place. Seule la fin de partie est repostée
+// (postFinalMessage).
 async function refreshPublicMessage() {
   const outcome = await checkAndResolveManche();
   if (outcome.inactive) return;
@@ -487,7 +529,7 @@ async function refreshPublicMessage() {
 
   if (outcome.final) {
     const embed = await buildFinalEmbed(outcome.state, outcome.ranking, outcome.highScore);
-    await patchPublicMessage(outcome.state, { embeds: [embed], components: [] });
+    await postFinalMessage(outcome.state, { embeds: [embed], components: [] });
     return;
   }
 

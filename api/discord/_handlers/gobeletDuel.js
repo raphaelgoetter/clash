@@ -9,8 +9,9 @@
 // relue via loadGobeletConfig, qui ne touche aucun état).
 //
 // Contrairement au jeu spécial, le message public est ÉDITÉ EN PLACE à
-// chaque avancée (jamais supprimé/reposté) : il n'y a pas de "jour" qui
-// change, seulement des manches qui s'enchaînent en direct.
+// chaque avancée : il n'y a pas de "jour" qui change, seulement des
+// manches qui s'enchaînent en direct. En fin de partie, le récapitulatif
+// est reposté dans un nouveau message et l'original supprimé.
 // ============================================================
 
 import {
@@ -125,6 +126,47 @@ async function patchPublicMessage(state, payload) {
       "[GobeletDuel] Erreur réseau à l'édition du message public:",
       err.message,
     );
+  }
+}
+
+// Fin de partie : le récapitulatif complet est publié dans un NOUVEAU post
+// (visible en bas du salon), puis le message de la partie est supprimé.
+// Repli : si le nouveau post échoue, on édite l'ancien plutôt que de perdre
+// le récapitulatif.
+async function postFinalMessage(state, payload) {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token || !state?.channelId) return;
+  const headers = { Authorization: `Bot ${token}` };
+  try {
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages`,
+      {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    if (!res.ok) {
+      console.warn(`[GobeletDuel] Échec envoi du récapitulatif (${res.status}).`);
+      await patchPublicMessage(state, payload);
+      return;
+    }
+  } catch (err) {
+    console.warn("[GobeletDuel] Erreur réseau à l'envoi du récapitulatif:", err.message);
+    await patchPublicMessage(state, payload);
+    return;
+  }
+  if (!state.messageId) return;
+  try {
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      { method: "DELETE", headers },
+    );
+    if (!res.ok && res.status !== 404) {
+      console.warn(`[GobeletDuel] Échec suppression du message de la partie (${res.status}).`);
+    }
+  } catch (err) {
+    console.warn("[GobeletDuel] Erreur réseau à la suppression du message de la partie:", err.message);
   }
 }
 
@@ -305,13 +347,13 @@ async function buildExpiredEmbed(state, ranking) {
 }
 
 // Clôture paresseuse, sans cron : à chaque interaction, une partie inactive
-// depuis 2h est close et son message public repeint en "Partie terminée".
+// depuis 2h est close et son récapitulatif reposté en "Partie terminée".
 // Renvoie true si la partie vient d'expirer.
 async function closeIfStale() {
   const result = await expireIfStale();
   if (!result.expired) return false;
   const embed = await buildExpiredEmbed(result.state, result.ranking);
-  await patchPublicMessage(result.state, { embeds: [embed], components: [] });
+  await postFinalMessage(result.state, { embeds: [embed], components: [] });
   return true;
 }
 
@@ -491,8 +533,7 @@ function buildHandComponents(manche, hand, kept, diceEmojis, used) {
 
 // Après une relance qui peut terminer une main (3ᵉ tirage atteint) : vérifie
 // si la manche (ou la partie) doit se résoudre, puis rafraîchit le message
-// public en place — jamais de suppression/repost (contrairement au jeu
-// spécial), il n'y a pas de "jour" qui change.
+// public en place. Seule la fin de partie est repostée (postFinalMessage).
 async function refreshPublicMessage() {
   const outcome = await checkAndResolveManche();
   if (outcome.inactive) return;
@@ -515,7 +556,7 @@ async function refreshPublicMessage() {
       outcome.ranking,
       outcome.highScore,
     );
-    await patchPublicMessage(outcome.state, {
+    await postFinalMessage(outcome.state, {
       embeds: [embed],
       components: [],
     });
