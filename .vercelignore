@@ -1,0 +1,11 @@
+# Fichiers locaux à ne jamais envoyer via `vercel --prod` (la CLI n'utilise
+# pas le .gitignore) — le socket CodeGraph fait même planter l'upload.
+.codegraph
+.agent
+.claude
+.gemini
+.vscode
+.env
+.env.local
+temp
+tmp_*
