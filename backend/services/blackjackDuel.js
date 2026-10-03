@@ -115,6 +115,25 @@ function handKey(manche) {
   return `blackjackduel:hand:${manche}`;
 }
 
+// Webhook de la main éphémère de chaque joueur ayant fini sa manche : à la
+// résolution, le bouton « Manche suivante » y est activé (jeton valable
+// 15 min, au-delà le bouton Jouer du message public reste le recours).
+const WEBHOOK_TTL_SECONDS = 15 * 60;
+
+function webhookKey(manche) {
+  return `blackjackduel:webhook:${manche}`;
+}
+
+export async function saveHandWebhook(manche, discordId, webhookUrl) {
+  if (!webhookUrl) return;
+  await getRedis().hset(webhookKey(manche), { [discordId]: webhookUrl });
+  await getRedis().expire(webhookKey(manche), WEBHOOK_TTL_SECONDS);
+}
+
+export async function readHandWebhooks(manche) {
+  return hgetallRaw(webhookKey(manche));
+}
+
 // Mêmes bornes que le Croupier du jeu spécial (data/blackjack/blackjack.json)
 // — pas de fichier de config séparé, rien d'autre à y régler ici (le nombre
 // de manches est un paramètre de commande, pas une config statique).
@@ -174,6 +193,7 @@ export { buildRanking, isDealerRevealed, pointsForResult };
 export async function resetBlackjackDuel() {
   await getRedis().del(STATE_KEY, POINTS_KEY, USERNAMES_KEY, RESOLVING_KEY);
   await scanDelete("blackjackduel:hand:*");
+  await scanDelete("blackjackduel:webhook:*");
 }
 
 // ── Lancement d'une partie ──────────────────────────────────────────

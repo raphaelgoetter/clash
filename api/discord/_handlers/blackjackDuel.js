@@ -22,6 +22,8 @@ import {
   listHands,
   isDealerRevealed,
   pointsForResult,
+  saveHandWebhook,
+  readHandWebhooks,
 } from "../../../backend/services/blackjackDuel.js";
 import {
   getRoleIdByName,
@@ -483,8 +485,32 @@ function buildHandEmbed(manche, hand, message) {
   };
 }
 
-function buildHandComponents(manche, hand) {
-  if (hand.status !== "en_cours") return [];
+// Main terminée : « Manche suivante » reste grisé jusqu'à la résolution de
+// la manche (activé ensuite par activateNextButtons), pour enchaîner depuis
+// l'éphémère sans remonter jusqu'au message public. Rien après la dernière
+// manche.
+function buildNextComponents(manche, totalManches, ready) {
+  if (manche >= totalManches) return [];
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 3,
+          label: "Manche suivante",
+          emoji: { name: "🃏" },
+          custom_id: `blackjackduel_suivante:${manche + 1}`,
+          disabled: !ready,
+        },
+      ],
+    },
+  ];
+}
+
+function buildHandComponents(state, hand) {
+  const manche = state.manche;
+  if (hand.status !== "en_cours") return buildNextComponents(manche, state.totalManches, false);
   return [
     {
       type: 1,
@@ -514,7 +540,7 @@ function buildHandComponents(manche, hand) {
 // (postFinalMessage).
 async function refreshPublicMessage() {
   const outcome = await checkAndResolveManche();
-  if (outcome.inactive) return;
+  if (outcome.inactive) return outcome;
 
   if (!outcome.resolved) {
     // Rien à résoudre pour l'instant (ou résolution déjà prise par un autre
@@ -524,13 +550,13 @@ async function refreshPublicMessage() {
       embeds: [embed],
       components: buildJoinComponents(),
     });
-    return;
+    return outcome;
   }
 
   if (outcome.final) {
     const embed = await buildFinalEmbed(outcome.state, outcome.ranking, outcome.highScore);
     await postFinalMessage(outcome.state, { embeds: [embed], components: [] });
-    return;
+    return outcome;
   }
 
   const embed = await buildTableEmbed(outcome.state, {
@@ -541,6 +567,31 @@ async function refreshPublicMessage() {
     embeds: [embed],
     components: buildJoinComponents(),
   });
+  return outcome;
+}
+
+// Après une action sur la main : mémorise le webhook de l'éphémère si la
+// main est terminée, rafraîchit le message public puis, si la manche vient
+// d'être résolue, active « Manche suivante » sur l'éphémère de chaque joueur.
+async function afterHandAction(webhookUrl, discordId, state, hand) {
+  const done = hand.status !== "en_cours";
+  if (done) await saveHandWebhook(state.manche, discordId, webhookUrl);
+  const outcome = await refreshPublicMessage();
+  if (!done || outcome.inactive || outcome.final) return;
+  if (outcome.resolved) {
+    const webhooks = await readHandWebhooks(state.manche);
+    await activateNextButtons(state, Object.values({ ...webhooks, [discordId]: webhookUrl }));
+  } else if (outcome.alreadyResolving) {
+    // Résolution prise par un clic concurrent qui a pu lire les webhooks
+    // avant l'enregistrement du nôtre.
+    await activateNextButtons(state, [webhookUrl]);
+  }
+}
+
+// PATCH des seuls composants : l'embed de la main reste affiché.
+async function activateNextButtons(state, webhookUrls) {
+  const components = buildNextComponents(state.manche, state.totalManches, true);
+  await Promise.all(webhookUrls.map((url) => patchOriginal(url, { components })));
 }
 
 export async function handleJouer(webhookUrl, discordId, username) {
@@ -573,11 +624,11 @@ export async function handleJouer(webhookUrl, discordId, username) {
           handStatusMessage(result.hand, state.dealer, state.manche, state.maxPlayers === 1),
         ),
       ],
-      components: buildHandComponents(state.manche, result.hand),
+      components: buildHandComponents(state, result.hand),
     });
 
-    if (result.isNew) {
-      await refreshPublicMessage();
+    if (result.isNew || result.hand.status !== "en_cours") {
+      await afterHandAction(webhookUrl, discordId, state, result.hand);
     }
   } catch (err) {
     console.error("[BlackjackDuel] Échec Jouer:", err.message);
@@ -621,10 +672,10 @@ async function handleDrawOrStand(webhookUrl, discordId, { draw }) {
           handStatusMessage(result.hand, state.dealer, state.manche, state.maxPlayers === 1),
         ),
       ],
-      components: buildHandComponents(state.manche, result.hand),
+      components: buildHandComponents(state, result.hand),
     });
 
-    await refreshPublicMessage();
+    await afterHandAction(webhookUrl, discordId, state, result.hand);
   } catch (err) {
     console.error(`[BlackjackDuel] Échec ${draw ? "Piocher" : "Arrêter"}:`, err.message);
   }

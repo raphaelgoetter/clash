@@ -116,6 +116,25 @@ function handKey(manche) {
   return `gobeletduel:hand:${manche}`;
 }
 
+// Webhook de la main éphémère de chaque joueur ayant fini sa manche : à la
+// résolution, le bouton « Manche suivante » y est activé (jeton valable
+// 15 min, au-delà le bouton Jouer du message public reste le recours).
+const WEBHOOK_TTL_SECONDS = 15 * 60;
+
+function webhookKey(manche) {
+  return `gobeletduel:webhook:${manche}`;
+}
+
+export async function saveHandWebhook(manche, discordId, webhookUrl) {
+  if (!webhookUrl) return;
+  await getRedis().hset(webhookKey(manche), { [discordId]: webhookUrl });
+  await getRedis().expire(webhookKey(manche), WEBHOOK_TTL_SECONDS);
+}
+
+export async function readHandWebhooks(manche) {
+  return hgetallRaw(webhookKey(manche));
+}
+
 // ── Délai d'inactivité avant nettoyage automatique (watchdog) ─────
 const STALE_HOURS = 2;
 
@@ -216,6 +235,7 @@ export { buildRanking };
 export async function resetGobeletDuel() {
   await getRedis().del(STATE_KEY, POINTS_KEY, USERNAMES_KEY, RESOLVING_KEY, USED_KEY);
   await scanDelete("gobeletduel:hand:*");
+  await scanDelete("gobeletduel:webhook:*");
   await scanDelete("gobeletduel:kept:*");
 }
 

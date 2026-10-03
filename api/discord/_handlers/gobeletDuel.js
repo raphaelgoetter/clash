@@ -24,6 +24,8 @@ import {
   checkAndResolveManche,
   listHands,
   expireIfStale,
+  saveHandWebhook,
+  readHandWebhooks,
 } from "../../../backend/services/gobeletDuel.js";
 import {
   loadGobeletConfig,
@@ -499,8 +501,32 @@ function buildDieEmoji(value, kept, diceEmojis) {
 // combinaison pas encore réalisée, dès le 1ᵉʳ tirage — même règle que le
 // jeu spécial (_handlers/gobelet.js). Le libellé ne nomme volontairement
 // pas la combinaison : à chacun de la repérer.
-function buildHandComponents(manche, hand, kept, diceEmojis, used) {
-  if (hand.status !== "en_cours") return [];
+// Main terminée : « Manche suivante » reste grisé jusqu'à la résolution de
+// la manche (activé ensuite par activateNextButtons), pour enchaîner depuis
+// l'éphémère sans remonter jusqu'au message public. Rien après la dernière
+// manche.
+function buildNextComponents(manche, totalManches, ready) {
+  if (manche >= totalManches) return [];
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 3,
+          label: "Manche suivante",
+          emoji: { name: "🎲" },
+          custom_id: `gobeletduel_suivante:${manche + 1}`,
+          disabled: !ready,
+        },
+      ],
+    },
+  ];
+}
+
+function buildHandComponents(state, hand, kept, diceEmojis, used) {
+  const manche = state.manche;
+  if (hand.status !== "en_cours") return buildNextComponents(manche, state.totalManches, false);
   const { category } = computeBestCombination(hand.dice, used, {
     allowJoker: false,
   });
@@ -543,7 +569,7 @@ function buildHandComponents(manche, hand, kept, diceEmojis, used) {
 // public en place. Seule la fin de partie est repostée (postFinalMessage).
 async function refreshPublicMessage() {
   const outcome = await checkAndResolveManche();
-  if (outcome.inactive) return;
+  if (outcome.inactive) return outcome;
 
   if (!outcome.resolved) {
     // Rien à résoudre pour l'instant (ou résolution déjà prise par un autre
@@ -553,7 +579,7 @@ async function refreshPublicMessage() {
       embeds: [embed],
       components: buildJoinComponents(),
     });
-    return;
+    return outcome;
   }
 
   if (outcome.final) {
@@ -567,7 +593,7 @@ async function refreshPublicMessage() {
       embeds: [embed],
       components: buildFinalComponents(),
     });
-    return;
+    return outcome;
   }
 
   const embed = await buildTableEmbed(outcome.state, {
@@ -577,6 +603,31 @@ async function refreshPublicMessage() {
     embeds: [embed],
     components: buildJoinComponents(),
   });
+  return outcome;
+}
+
+// Après une action sur la main : mémorise le webhook de l'éphémère si la
+// main est terminée, rafraîchit le message public puis, si la manche vient
+// d'être résolue, active « Manche suivante » sur l'éphémère de chaque joueur.
+async function afterHandAction(webhookUrl, discordId, state, hand) {
+  const done = hand.status !== "en_cours";
+  if (done) await saveHandWebhook(state.manche, discordId, webhookUrl);
+  const outcome = await refreshPublicMessage();
+  if (!done || outcome.inactive || outcome.final) return;
+  if (outcome.resolved) {
+    const webhooks = await readHandWebhooks(state.manche);
+    await activateNextButtons(state, Object.values({ ...webhooks, [discordId]: webhookUrl }));
+  } else if (outcome.alreadyResolving) {
+    // Résolution prise par un clic concurrent qui a pu lire les webhooks
+    // avant l'enregistrement du nôtre.
+    await activateNextButtons(state, [webhookUrl]);
+  }
+}
+
+// PATCH des seuls composants : l'embed de la main reste affiché.
+async function activateNextButtons(state, webhookUrls) {
+  const components = buildNextComponents(state.manche, state.totalManches, true);
+  await Promise.all(webhookUrls.map((url) => patchOriginal(url, { components })));
 }
 
 export async function handleJouer(webhookUrl, discordId, username) {
@@ -607,11 +658,11 @@ export async function handleJouer(webhookUrl, discordId, username) {
     const state = result.state;
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(state.manche, result.hand, result.kept, result.used, result.opponents)],
-      components: buildHandComponents(state.manche, result.hand, result.kept, diceEmojis, result.used),
+      components: buildHandComponents(state, result.hand, result.kept, diceEmojis, result.used),
     });
 
-    if (result.isNew) {
-      await refreshPublicMessage();
+    if (result.isNew || result.hand.status !== "en_cours") {
+      await afterHandAction(webhookUrl, discordId, state, result.hand);
     }
   } catch (err) {
     console.error("[GobeletDuel] Échec Jouer:", err.message);
@@ -651,7 +702,7 @@ export async function handleToggle(webhookUrl, discordId, index) {
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
-      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
+      components: buildHandComponents(result.state, result.hand, result.kept, diceEmojis, result.used),
     });
   } catch (err) {
     console.error("[GobeletDuel] Échec sélection de dé:", err.message);
@@ -691,10 +742,10 @@ export async function handleRelancer(webhookUrl, discordId) {
     const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
-      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
+      components: buildHandComponents(result.state, result.hand, result.kept, diceEmojis, result.used),
     });
 
-    await refreshPublicMessage();
+    await afterHandAction(webhookUrl, discordId, result.state, result.hand);
   } catch (err) {
     console.error("[GobeletDuel] Échec Relancer:", err.message);
   }
@@ -736,17 +787,17 @@ export async function handleValider(webhookUrl, discordId) {
       // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
-        components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
+        components: buildHandComponents(result.state, result.hand, result.kept, diceEmojis, result.used),
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
-      components: buildHandComponents(result.state.manche, result.hand, result.kept, diceEmojis, result.used),
+      components: buildHandComponents(result.state, result.hand, result.kept, diceEmojis, result.used),
     });
 
-    await refreshPublicMessage();
+    await afterHandAction(webhookUrl, discordId, result.state, result.hand);
   } catch (err) {
     console.error("[GobeletDuel] Échec Valider:", err.message);
   }

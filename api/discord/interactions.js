@@ -9080,6 +9080,21 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── Blackjack Duel : bouton "Manche suivante" (message éphémère) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("blackjackduel_suivante:")
+  ) {
+    const { discordId, username } = extractBlackjackDuelMember(body);
+    // type 6 = DEFERRED_UPDATE_MESSAGE : la main de la nouvelle manche
+    // remplace la précédente dans le même message éphémère.
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleBlackjackDuelJouer(webhookUrl, discordId, username));
+    return;
+  }
+
   // ── Blackjack Duel : bouton "Règles" (éphémère, statique) ──
   if (body.type === 3 && body.data?.custom_id === "blackjackduel_regles") {
     res.status(200).json({ type: 5, data: { flags: 64 } });
@@ -9139,6 +9154,21 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleGobeletDuelValider(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Gobelet Duel : bouton "Manche suivante" (message éphémère) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobeletduel_suivante:")
+  ) {
+    const { discordId, username } = extractGobeletDuelMember(body);
+    // type 6 = DEFERRED_UPDATE_MESSAGE : la main de la nouvelle manche
+    // remplace la précédente dans le même message éphémère.
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletDuelJouer(webhookUrl, discordId, username));
     return;
   }
 
