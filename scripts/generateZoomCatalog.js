@@ -59,6 +59,21 @@ const ZOOM_IMAGES_DIR = path.join(ZOOM_DIR, "images");
 
 const REFERENCE_PLAYER_TAG = "#YRGJGR8R";
 
+// Cartes/variantes ajoutées à la main, hors pool anagrams.json et hors
+// collection du joueur de référence. Icônes lues directement dans
+// fetchCards() (iconUrls.evolutionMedium / heroMedium y sont exposées).
+const EXTRA_ENTRIES = [
+  { cardKey: "Bandit", variant: "base" },
+  { cardKey: "Royal Giant", variant: "base" },
+  { cardKey: "Royal Giant", variant: "evolution" },
+  { cardKey: "Valkyrie", variant: "hero" },
+  { cardKey: "Princess", variant: "evolution" },
+  { cardKey: "Ronin", variant: "base" },
+  { cardKey: "Ice Wizard", variant: "hero" },
+  { cardKey: "Minion Giant", variant: "base" },
+];
+const ICON_KEY_BY_VARIANT = { base: "medium", evolution: "evolutionMedium", hero: "heroMedium" };
+
 function slugifyCardKey(cardKey) {
   return String(cardKey)
     .toLowerCase()
@@ -199,6 +214,17 @@ async function main() {
     if (countHeroes([playerCard]) > 0 && playerCard.iconUrls?.heroMedium) {
       await upsertEntry({ cardKey, variant: "hero", sourceUrl: playerCard.iconUrls.heroMedium });
     }
+  }
+
+  for (const { cardKey, variant } of EXTRA_ENTRIES) {
+    const sourceUrl = catalogByName.get(cardKey)?.iconUrls?.[ICON_KEY_BY_VARIANT[variant]];
+    if (!sourceUrl) {
+      console.warn(`  ⚠️  "${cardKey}" (${variant}) absent du catalogue générique — ignorée.`);
+      skipped += 1;
+      continue;
+    }
+    if (keptIds.has(`${slugifyCardKey(cardKey)}-${variant}`)) continue;
+    await upsertEntry({ cardKey, variant, sourceUrl });
   }
 
   // Purge : toute entrée existante dont le cardKey n'est plus dans le pool

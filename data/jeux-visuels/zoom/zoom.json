@@ -985,5 +985,131 @@
     "height": 420,
     "sourceUrl": "https://api-assets.clashroyale.com/cards/300/vCB4DWCcrGbTkarjcOiVz4aNDx6GWLm0yUepg9E1MGo.png",
     "fetchedAt": "2026-08-07T13:35:09.475Z"
+  },
+  {
+    "id": "valkyrie-hero",
+    "cardKey": "Valkyrie",
+    "variant": "hero",
+    "answer": "Valkyrie",
+    "accept": [
+      "Valkyrie"
+    ],
+    "image": "valkyrie-hero.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardheroes/300/0lIoYf3Y_plFTzo95zZL93JVxpfb3MMgFDDhgSDGU9A.png",
+    "fetchedAt": "2026-10-03T07:08:03.670Z"
+  },
+  {
+    "id": "royal-giant-evolution",
+    "cardKey": "Royal Giant",
+    "variant": "evolution",
+    "answer": "Géant royal",
+    "accept": [
+      "Géant royal"
+    ],
+    "image": "royal-giant-evolution.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/mnlRaNtmfpQx2e6mp70sLd0ND-pKPF70Cf87_agEKg4.png",
+    "fetchedAt": "2026-10-03T07:08:03.623Z"
+  },
+  {
+    "id": "mega-minion-hero",
+    "cardKey": "Mega Minion",
+    "variant": "hero",
+    "answer": "Méga gargouille",
+    "accept": [
+      "Méga gargouille"
+    ],
+    "image": "mega-minion-hero.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardheroes/300/-T_e4YLbuhPBKbYnBwQfXgynNpp5eOIN_0RracYwL9c.png",
+    "fetchedAt": "2026-10-03T07:08:03.555Z"
+  },
+  {
+    "id": "ronin-base",
+    "cardKey": "Ronin",
+    "variant": "base",
+    "answer": "Ronin",
+    "accept": [
+      "Ronin"
+    ],
+    "image": "ronin-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/X0dTFs7OGUavreDEzOtYd_YNZ8Zly6qgAE-dd-bNfWU.png",
+    "fetchedAt": "2026-10-03T07:08:03.718Z"
+  },
+  {
+    "id": "royal-giant-base",
+    "cardKey": "Royal Giant",
+    "variant": "base",
+    "answer": "Géant royal",
+    "accept": [
+      "Géant royal"
+    ],
+    "image": "royal-giant-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/mnlRaNtmfpQx2e6mp70sLd0ND-pKPF70Cf87_agEKg4.png",
+    "fetchedAt": "2026-10-03T07:08:03.599Z"
+  },
+  {
+    "id": "elite-barbarians-evolution",
+    "cardKey": "Elite Barbarians",
+    "variant": "evolution",
+    "answer": "Barbares d'élite",
+    "accept": [
+      "Barbares d'élite"
+    ],
+    "image": "elite-barbarians-evolution.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/C88C5JH_F3lLZj6K-tLcMo5DPjrFmvzIb1R2M6xCfTE.png",
+    "fetchedAt": "2026-10-03T07:08:03.529Z"
+  },
+  {
+    "id": "ice-wizard-hero",
+    "cardKey": "Ice Wizard",
+    "variant": "hero",
+    "answer": "Sorcier de glace",
+    "accept": [
+      "Sorcier de glace"
+    ],
+    "image": "ice-wizard-hero.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardheroes/300/W3dkw0HTw9n1jB-zbknY2w3wHuyuLxSRIAV5fUT1SEY.png",
+    "fetchedAt": "2026-10-03T07:08:03.740Z"
+  },
+  {
+    "id": "bandit-base",
+    "cardKey": "Bandit",
+    "variant": "base",
+    "answer": "Voleuse",
+    "accept": [
+      "Voleuse"
+    ],
+    "image": "bandit-base.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cards/300/QWDdXMKJNpv0go-HYaWQWP6p8uIOHjqn-zX7G0p3DyM.png",
+    "fetchedAt": "2026-10-03T07:08:03.576Z"
+  },
+  {
+    "id": "princess-evolution",
+    "cardKey": "Princess",
+    "variant": "evolution",
+    "answer": "Princesse",
+    "accept": [
+      "Princesse"
+    ],
+    "image": "princess-evolution.png",
+    "width": 285,
+    "height": 420,
+    "sourceUrl": "https://api-assets.clashroyale.com/cardevolutions/300/bAwMcqp9EKVIKH3ZLm_m0MqZFSG72zG-vKxpx8aKoVs.png",
+    "fetchedAt": "2026-10-03T07:08:03.694Z"
   }
 ]
