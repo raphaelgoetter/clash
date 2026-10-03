@@ -235,6 +235,15 @@ async function buildPendingLabel(state, hands) {
   return lines.join("\n");
 }
 
+// Bilan d'une manche : en solo, pas de « meilleur » score, juste le score
+// du joueur.
+function formatMancheScoreLine(state, points, names) {
+  const pts = `${points} pt${points > 1 ? "s" : ""}`;
+  if (state.maxPlayers === 1) return `🎲 Score (${pts}) : ${names.join(", ")}`;
+  const plural = names.length > 1 ? "s" : "";
+  return `🏆 Meilleur${plural} score${plural} (${pts}) : ${names.join(", ")}`;
+}
+
 // Sans `previousResults` explicite (rafraîchissement après un clic Jouer,
 // Relancer…), le bilan est relu depuis l'état : il reste affiché pendant
 // toute la manche suivante au lieu de disparaître au premier clic.
@@ -253,7 +262,7 @@ async function buildTableEmbed(
     );
     lines.push(
       `**📊 Bilan de la manche ${state.manche - 1}**`,
-      `🏆 Meilleur${winnerNames.length > 1 ? "s" : ""} score${winnerNames.length > 1 ? "s" : ""} (${maxPoints} pt${maxPoints > 1 ? "s" : ""}) : ${winnerNames.join(", ")}`,
+      formatMancheScoreLine(state, maxPoints, winnerNames),
       "",
     );
   }
@@ -305,7 +314,7 @@ async function buildFinalEmbed(state, results, ranking, highScore) {
 
   const lines = [
     `**📊 Bilan de la dernière manche**`,
-    `🏆 Meilleur${lastWinnerNames.length > 1 ? "s" : ""} score${lastWinnerNames.length > 1 ? "s" : ""} (${lastManchePoints} pt${lastManchePoints > 1 ? "s" : ""}) : ${lastWinnerNames.join(", ")}`,
+    formatMancheScoreLine(state, lastManchePoints, lastWinnerNames),
     "",
     "**Classement final :**",
     ...(resolvedRanking.length
