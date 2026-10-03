@@ -108,7 +108,10 @@ import {
   buildIdeaModal as buildPollIdeaModal,
   handleIdeaModalSubmit as handlePollIdeaModalSubmit,
 } from "./_handlers/poll.js";
-import { handleMiniJeuxCommand } from "./_handlers/minijeux.js";
+import {
+  handleMiniJeuxCommand,
+  handleMiniJeuxParticipation,
+} from "./_handlers/minijeux.js";
 import { handleBlacklistCommand } from "./_handlers/blacklist.js";
 import {
   handleMiniJeuxHistory,
@@ -8965,17 +8968,27 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── /mini-jeux : bouton "Rafraîchir" ──
+  // ── /mini-jeux : bouton "Ma participation" ──
+  // Les anciens messages /mini-jeux portent encore "minijeux_refresh" :
+  // même traitement, le bouton ouvrant de toute façon un message à part.
   if (
     body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "minijeux_refresh"
+    (body.data?.custom_id === "minijeux_participation" ||
+      body.data?.custom_id === "minijeux_refresh")
   ) {
-    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message public
-    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
-    res.status(200).json({ type: 6 });
+    const discordId = body.member?.user?.id ?? body.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    // type 5 + flags 64 : NOUVEAU message éphémère (personnel), le tableau
+    // de bord public reste inchangé.
+    res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleMiniJeuxCommand(webhookUrl));
+    runBackground(() =>
+      handleMiniJeuxParticipation(webhookUrl, discordId, username),
+    );
     return;
   }
 

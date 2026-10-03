@@ -11,13 +11,17 @@
 // en garde de scripts/goblinHuntersStatus.js).
 // ============================================================
 
-import { readState as readBlindRoyaleState } from "../../../backend/services/blindroyale.js";
-import { readState as readFrameState } from "../../../backend/services/frames.js";
-import { readState as readZoomState } from "../../../backend/services/zoom.js";
-import { readState as readPaletteState } from "../../../backend/services/palette.js";
-import { readState as readAnagramState } from "../../../backend/services/anagrams.js";
-import { readState as readPeleMeleState } from "../../../backend/services/pelemele.js";
-import { readState as readJusteCarteState } from "../../../backend/services/lajustecarte.js";
+// Imports en namespace : /mini-jeux n'a besoin que de readState(), mais le
+// bouton "Ma participation" lit aussi la progression du joueur
+// (readParticipant, computeSeasonRanking...) — même interface sur les 8 jeux.
+import * as blindRoyaleSvc from "../../../backend/services/blindroyale.js";
+import * as frameSvc from "../../../backend/services/frames.js";
+import * as zoomSvc from "../../../backend/services/zoom.js";
+import * as paletteSvc from "../../../backend/services/palette.js";
+import * as anagramSvc from "../../../backend/services/anagrams.js";
+import * as peleMeleSvc from "../../../backend/services/pelemele.js";
+import * as justeCarteSvc from "../../../backend/services/lajustecarte.js";
+import * as triviaSvc from "../../../backend/services/trivia.js";
 import {
   getCurrentSeasonId as getAveugleSeasonId,
   getActiveBlindGame,
@@ -34,7 +38,6 @@ import {
   getCurrentSeasonId as getCultureSeasonId,
   getActiveCultureGame,
 } from "../../../backend/services/jeuxculture.js";
-import { readState as readTriviaState } from "../../../backend/services/trivia.js";
 
 import {
   readState as readQuizState,
@@ -50,31 +53,39 @@ import {
   readState as readRobinsonState,
   loadRobinsonConfig,
   countUniqueVoters as countRobinsonVoters,
+  listVotes as listRobinsonVotes,
 } from "../../../backend/services/robinson.js";
 import {
   readState as readBossraidState,
   loadBossRaidConfig,
   countUniqueVoters as countBossraidVoters,
+  listVotes as listBossraidVotes,
 } from "../../../backend/services/bossraid.js";
 import {
   readState as readGoblinState,
   loadGoblinHuntersConfig,
   listInscriptions as listGoblinInscriptions,
+  readPlayerAction as readGoblinPlayerAction,
 } from "../../../backend/services/goblinhunters.js";
 import {
   readState as readBlackjackState,
   loadBlackjackConfig,
   listHands as listBlackjackHands,
+  readHand as readBlackjackHand,
+  readPoints as readBlackjackPoints,
 } from "../../../backend/services/blackjack.js";
 import {
   readState as readMarioClashState,
   loadMarioClashConfig,
   readActions as readMarioClashActions,
+  readJoueur as readMarioClashJoueur,
 } from "../../../backend/services/marioclash.js";
 import {
   readState as readGobeletState,
   loadGobeletConfig,
   listHands as listGobeletHands,
+  readHand as readGobeletHand,
+  readPoints as readGobeletPoints,
 } from "../../../backend/services/gobelet.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
@@ -101,8 +112,8 @@ function channelLink() {
 // actif à la fois, jamais les deux en même temps (même mécanisme que
 // VISUELS_GAMES/LETTRES_GAMES/CULTURE_GAMES ci-dessous).
 const AVEUGLE_GAMES = {
-  blindroyale: { title: "🎧 Blind Royale", readState: readBlindRoyaleState },
-  lajustecarte: { title: "🃏 La Juste Carte", readState: readJusteCarteState },
+  blindroyale: { title: "🎧 Blind Royale", svc: blindRoyaleSvc },
+  lajustecarte: { title: "🃏 La Juste Carte", svc: justeCarteSvc },
 };
 
 // "Jeux visuels" (vendredi) et "Jeux de lettres" (samedi) alternent chacun
@@ -111,19 +122,19 @@ const AVEUGLE_GAMES = {
 // et postJeuxDeLettres.js pour la publication) — /mini-jeux doit donc
 // résoudre le jeu réellement actif plutôt que d'en référencer un seul en dur.
 const VISUELS_GAMES = {
-  zoom: { title: "🔍 Zoom carte", readState: readZoomState },
-  palette: { title: "🎨 Palette", readState: readPaletteState },
+  zoom: { title: "🔍 Zoom carte", svc: zoomSvc },
+  palette: { title: "🎨 Palette", svc: paletteSvc },
 };
 const LETTRES_GAMES = {
-  anagram: { title: "🔤 Anagram", readState: readAnagramState },
-  pelemele: { title: "🔤 Pêle-mêle", readState: readPeleMeleState },
+  anagram: { title: "🔤 Anagram", svc: anagramSvc },
+  pelemele: { title: "🔤 Pêle-mêle", svc: peleMeleSvc },
 };
 // "Mini-jeux de Culture" (mercredi) : Frame et Trivia alternent une saison
 // Clash Royale sur deux (voir jeuxculture.js), même mécanisme que
 // VISUELS_GAMES/LETTRES_GAMES ci-dessus.
 const CULTURE_GAMES = {
-  frame: { title: "🎬 Trouve le film !", readState: readFrameState },
-  trivia: { title: "🧠 Trivia", readState: readTriviaState },
+  frame: { title: "🎬 Trouve le film !", svc: frameSvc },
+  trivia: { title: "🧠 Trivia", svc: triviaSvc },
 };
 
 // getCurrentSeasonId() peut renvoyer null (API Clash Royale indisponible) :
@@ -132,25 +143,25 @@ const CULTURE_GAMES = {
 async function resolveActiveAveugleGame() {
   const seasonId = await getAveugleSeasonId();
   const key = seasonId == null ? "lajustecarte" : getActiveBlindGame(seasonId);
-  return AVEUGLE_GAMES[key];
+  return { ...AVEUGLE_GAMES[key], seasonId };
 }
 
 async function resolveActiveVisuelsGame() {
   const seasonId = await getVisuelsSeasonId();
   const key = seasonId == null ? "zoom" : getActiveVisualGame(seasonId);
-  return VISUELS_GAMES[key];
+  return { ...VISUELS_GAMES[key], seasonId };
 }
 
 async function resolveActiveLettresGame() {
   const seasonId = await getLettresSeasonId();
   const key = seasonId == null ? "anagram" : getActiveLetterGame(seasonId);
-  return LETTRES_GAMES[key];
+  return { ...LETTRES_GAMES[key], seasonId };
 }
 
 async function resolveActiveCultureGame() {
   const seasonId = await getCultureSeasonId();
   const key = seasonId == null ? "frame" : getActiveCultureGame(seasonId);
-  return CULTURE_GAMES[key];
+  return { ...CULTURE_GAMES[key], seasonId };
 }
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"
@@ -162,6 +173,12 @@ const SPECIAL_GAMES = [
     title: "Quiz",
     style: "Trivia",
     readState: readQuizState,
+    // Classement Quiz volontairement secret (voir quiz.js) : participation
+    // du jour uniquement, jamais de score.
+    async participation(state, discordId) {
+      const votes = await listQuizVotes(state.manche, state.jour);
+      return { played: votes.some((v) => v.discordId === discordId) };
+    },
     async detail(state) {
       const config = await loadQuizConfig();
       const dureeJours =
@@ -179,6 +196,10 @@ const SPECIAL_GAMES = [
     title: "Tamagotchi",
     style: "Collaboratif",
     readState: readTamaState,
+    async participation(state, discordId) {
+      const votes = await listTamaVotes(state.jour);
+      return { played: votes.some((v) => v.discordId === discordId) };
+    },
     async detail(state) {
       const config = await loadTamagotchiConfig();
       const votes = await listTamaVotes(state.jour);
@@ -194,6 +215,10 @@ const SPECIAL_GAMES = [
     title: "Robinson",
     style: "Collaboratif",
     readState: readRobinsonState,
+    async participation(state, discordId) {
+      const votes = await listRobinsonVotes(state.jour);
+      return { played: votes.some((v) => v.discordId === discordId) };
+    },
     async detail(state) {
       const config = await loadRobinsonConfig();
       const participants = await countRobinsonVoters(state.jour);
@@ -209,6 +234,11 @@ const SPECIAL_GAMES = [
     title: "Boss Raid",
     style: "Collaboratif",
     readState: readBossraidState,
+    async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
+      const votes = await listBossraidVotes(state.jour);
+      return { played: votes.some((v) => v.discordId === discordId) };
+    },
     async detail(state) {
       const config = await loadBossRaidConfig();
       if (state.phase === "annonce") {
@@ -235,6 +265,20 @@ const SPECIAL_GAMES = [
     title: "Goblin Hunters",
     style: "Identité secrète",
     readState: readGoblinState,
+    // Jamais camp/rôle/PV ici non plus, même pour le joueur lui-même :
+    // seule l'inscription et l'action du jour sont affichées.
+    async participation(state, discordId) {
+      if (state.phase === "inscription") {
+        const inscriptions = await listGoblinInscriptions();
+        const inscrit = inscriptions.some((i) => i.discordId === discordId);
+        return { statusLabel: inscrit ? "✅ Inscrit" : "❌ Pas inscrit" };
+      }
+      if (!state.joueurs.some((j) => j.discordId === discordId)) {
+        return { statusLabel: "Pas inscrit à cette partie" };
+      }
+      const action = await readGoblinPlayerAction(state.jour, discordId);
+      return { played: action != null };
+    },
     async detail(state) {
       const config = await loadGoblinHuntersConfig();
       if (state.phase === "inscription") {
@@ -265,6 +309,16 @@ const SPECIAL_GAMES = [
     title: "Blackjack",
     style: "Casino",
     readState: readBlackjackState,
+    async participation(state, discordId) {
+      const [hand, points] = await Promise.all([
+        readBlackjackHand(state.jour, discordId),
+        readBlackjackPoints(),
+      ]);
+      return {
+        played: hand != null,
+        scoreLabel: `Score de la partie : **${formatPoints(points[discordId] ?? 0)}**`,
+      };
+    },
     async detail(state) {
       const config = await loadBlackjackConfig();
       const hands = await listBlackjackHands(state.jour);
@@ -280,6 +334,17 @@ const SPECIAL_GAMES = [
     title: "Mario Clash",
     style: "Course",
     readState: readMarioClashState,
+    async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
+      const [actions, joueur] = await Promise.all([
+        readMarioClashActions(state.jour),
+        readMarioClashJoueur(discordId),
+      ]);
+      return {
+        played: actions[discordId] != null,
+        scoreLabel: joueur ? `Position : **case ${joueur.position}**` : null,
+      };
+    },
     async detail(state) {
       const config = await loadMarioClashConfig();
       if (state.phase === "annonce") {
@@ -305,6 +370,16 @@ const SPECIAL_GAMES = [
     title: "Gobelet",
     style: "Casino",
     readState: readGobeletState,
+    async participation(state, discordId) {
+      const [hand, points] = await Promise.all([
+        readGobeletHand(state.jour, discordId),
+        readGobeletPoints(),
+      ]);
+      return {
+        played: hand != null,
+        scoreLabel: `Score de la partie : **${formatPoints(points[discordId] ?? 0)}**`,
+      };
+    },
     async detail(state) {
       const config = await loadGobeletConfig();
       const hands = await listGobeletHands(state.jour);
@@ -367,7 +442,9 @@ function buildCountdownBar(daysUntil) {
   return "🟦".repeat(filled) + "⬜".repeat(BAR_SEGMENTS - filled);
 }
 
-async function buildRegularGamesBlock(now) {
+// Les 4 jeux réguliers actifs, triés par fin la plus proche — même ordre
+// pour /mini-jeux et pour le bouton "Ma participation".
+async function resolveRegularGames(now) {
   const [aveugleGame, visuelsGame, lettresGame, cultureGame] = await Promise.all([
     resolveActiveAveugleGame(),
     resolveActiveVisuelsGame(),
@@ -379,19 +456,21 @@ async function buildRegularGamesBlock(now) {
     { key: "visuels", weekday: 5, ...visuelsGame },
     { key: "lettres", weekday: 6, ...lettresGame },
     { key: "culture", weekday: 3, ...cultureGame },
-  ];
+  ].map((game) => ({ ...game, daysUntil: daysUntilWeekday(now, game.weekday) }));
+  return games.sort((a, b) => a.daysUntil - b.daysUntil);
+}
 
+async function buildRegularGamesBlock(now) {
+  const games = await resolveRegularGames(now);
   const entries = await Promise.all(
     games.map(async (game) => ({
       ...game,
-      daysUntil: daysUntilWeekday(now, game.weekday),
       // null seulement si aucune manche n'a jamais été postée pour ce jeu
       // (readState() ne renvoie rien tant que startNewGame() n'a jamais
       // tourné) — pas un indicateur "en pause", juste "jamais lancé".
-      neverStarted: (await game.readState()) == null,
+      neverStarted: (await game.svc.readState()) == null,
     })),
   );
-  entries.sort((a, b) => a.daysUntil - b.daysUntil);
 
   const lines = entries.map((entry, index) => {
     if (entry.neverStarted) {
@@ -488,12 +567,112 @@ function buildMiniJeuxComponents() {
         {
           type: 2,
           style: 2,
-          label: "🔄 Rafraîchir",
-          custom_id: "minijeux_refresh",
+          label: "🙋 Ma participation",
+          custom_id: "minijeux_participation",
         },
       ],
     },
   ];
+}
+
+// ── Bouton "Ma participation" (message éphémère personnel) ──────────
+
+function formatPoints(n) {
+  return `${n} pt${n > 1 ? "s" : ""}`;
+}
+
+function formatRank(rank) {
+  return rank === 1 ? "1er" : `${rank}e`;
+}
+
+// Un joueur a-t-il interagi avec la manche en cours ? readParticipant()
+// suffit pour Trivia/Palette (une seule réponse = un document participant),
+// les autres jeux écrivent d'abord des tentatives/indices sans document
+// participant (voir hasPlayerInteracted() dans chaque service).
+async function hasPlayedRound(svc, gameId, discordId) {
+  if (await svc.readParticipant(gameId, discordId)) return true;
+  return svc.hasPlayerInteracted
+    ? svc.hasPlayerInteracted(gameId, discordId)
+    : false;
+}
+
+async function buildRegularParticipationLine(game, discordId) {
+  const { svc, seasonId } = game;
+  const state = await svc.readState();
+  // Jeux en alternance : l'état peut dater d'une saison précédente tant que
+  // la première manche de la saison n'a pas été postée — ni manche en
+  // cours, ni score à afficher dans ce cas.
+  const currentSeasonId = seasonId ?? state?.seasonId ?? null;
+  const liveThisSeason = state != null && state.seasonId === currentSeasonId;
+
+  const [played, ranking] = await Promise.all([
+    liveThisSeason ? hasPlayedRound(svc, state.gameId, discordId) : false,
+    currentSeasonId != null ? svc.computeSeasonRanking(currentSeasonId) : [],
+  ]);
+
+  const status = !liveThisSeason
+    ? "Pas encore de manche cette saison"
+    : played
+      ? "✅ Déjà joué à la manche en cours"
+      : "❌ Pas encore joué à la manche en cours";
+
+  const entry = ranking.find((e) => e.discordId === discordId);
+  const score = entry
+    ? `${formatPoints(entry.totalScore)} (${formatRank(svc.findTiedRank(ranking, discordId, "totalScore"))}/${ranking.length})`
+    : formatPoints(0);
+
+  return `**${game.title}**\n${status}\nScore saison : **${score}**`;
+}
+
+async function buildSpecialParticipationBlock(discordId) {
+  const active = await findActiveSpecialGame();
+  if (!active) {
+    return "## 🎲 Jeu spécial du moment\nAucun jeu spécial en cours actuellement.";
+  }
+  const { game, state } = active;
+  const participation = await game.participation(state, discordId);
+  const lines = [];
+  if (!participation) {
+    lines.push("Phase de présentation du jeu");
+  } else {
+    if (participation.statusLabel) {
+      lines.push(participation.statusLabel);
+    } else {
+      lines.push(
+        participation.played
+          ? "✅ Déjà joué aujourd'hui"
+          : "❌ Pas encore joué aujourd'hui",
+      );
+    }
+    if (participation.scoreLabel) lines.push(participation.scoreLabel);
+  }
+  return `## 🎲 Jeu spécial du moment: ${game.title}\n${lines.join("\n")}`;
+}
+
+export async function buildParticipationEmbed(discordId, username, now = new Date()) {
+  const games = await resolveRegularGames(now);
+  const [regularLines, specialBlock] = await Promise.all([
+    Promise.all(games.map((game) => buildRegularParticipationLine(game, discordId))),
+    buildSpecialParticipationBlock(discordId),
+  ]);
+
+  return {
+    title: `🙋 Participation de ${username}`,
+    description: `## Les Mini-jeux hebdomadaires\n${regularLines.join("\n\n")}\n\n${specialBlock}`,
+    color: MINIJEUX_COLOR,
+  };
+}
+
+export async function handleMiniJeuxParticipation(webhookUrl, discordId, username) {
+  try {
+    const embed = await buildParticipationEmbed(discordId, username);
+    await patchOriginal(webhookUrl, { embeds: [embed] });
+  } catch (err) {
+    console.error("[MiniJeux] Erreur Ma participation:", err);
+    await patchOriginal(webhookUrl, {
+      content: "⚠️ Erreur lors de la récupération de ta participation.",
+    });
+  }
 }
 
 async function patchOriginal(webhookUrl, payload) {
