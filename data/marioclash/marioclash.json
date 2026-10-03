@@ -29,7 +29,7 @@
     "bombe": {
       "label": "Bombe",
       "emoji": "💣",
-      "cout": 2,
+      "cout": 3,
       "cible": "adversaire",
       "recul": 3,
       "recul_renvoi": 3
@@ -37,7 +37,7 @@
     "etoile": {
       "label": "Étoile",
       "emoji": "⭐",
-      "cout": 3,
+      "cout": 4,
       "cible": "soi",
       "invincible": true
     },
