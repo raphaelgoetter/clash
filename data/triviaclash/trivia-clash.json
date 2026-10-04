@@ -5,17 +5,17 @@
       "Project Laser √",
       "Battle Clash",
       "Royal Strike",
-      "Clash Mini Alpha"
+      "SuperClash"
     ],
     "source": "Archives des concepts originaux de Supercell / Bêta interne"
   },
   {
     "question": "Lors de leur toute première apparition dans le jeu, avec quoi payait-on les emotes ?",
     "choices": [
-      "De l'or direct √",
+      "De l'or √",
       "Des gemmes",
       "Des couronnes de tournoi",
-      "Des points stellaires"
+      "Des pièces magiques"
     ],
     "source": "Notes de mise à jour initiales de Clash Royale (2016)"
   },
@@ -24,7 +24,7 @@
     "choices": [
       "Deux frères jumeaux brouillés pour un gisement d'Élixir √",
       "Deux sorciers rivaux ayant maudit l'arène principale",
-      "Deux généraux d'une armée de gobelins mutés",
+      "Deux cousins qui se disputent le trône",
       "Les deux créateurs du jeu dans une version satirique"
     ],
     "source": "Anciens documents de design de Supercell"
@@ -33,8 +33,8 @@
     "question": "Quel était le nom de code interne du Géant Squelette dans la phase alpha du jeu ?",
     "choices": [
       "The Bomber's Grandfather √",
-      "Big Bones McGee",
-      "Undead Tank v1",
+      "Big Bones McDonald",
+      "Undead Giant",
       "Exploding Uncle"
     ],
     "source": "Fichiers de données internes (Data-mining de la alpha)"
@@ -88,8 +88,8 @@
     "question": "Qu'avaient de particulier les squelettes invoqués par le Cimetière dans la toute première arène d'hiver du jeu ?",
     "choices": [
       "Ils avaient de minuscules bonnets de Noël dans le code √",
-      "Ils étaient de couleur bleue au lieu d'os blanc",
-      "Ils dansaient une valse avant chaque attaque",
+      "Ils étaient de couleur rouge au lieu d'os blanc",
+      "Ils lançaient des flocons à chaque attaque",
       "Ils gelaient les ennemis touchés à leur mort"
     ],
     "source": "Datamining des assets graphiques saisonniers (Bêta/Hiver 2016)"
@@ -100,7 +100,7 @@
     "source": "Fichiers de portée (Range data) de la carte Princesse"
   },
   {
-    "question": "À son lancement en mars 2016, combien de trophées fallait-il pour atteindre l'Arène Légendaire originale (Palais Légendaire) ?",
+    "question": "À son lancement en mars 2016, combien de trophées fallait-il pour atteindre l'Arène Légendaire originelle (Palais Légendaire) ?",
     "choices": [
       "3000 trophées √",
       "4000 trophées",
@@ -122,10 +122,10 @@
   {
     "question": "Quel nom a failli porter le Coffre Légendaire avant qu'un sondage interne ne choisisse son nom définitif ?",
     "choices": [
-      "Le 'Coffre Mythique' √",
-      "Le 'Coffre Suprême'",
-      "Le 'Coffre du Destin'",
-      "Le 'Coffre Ancestral'"
+      "Le Coffre Mythique √",
+      "Le Coffre Suprême",
+      "Le Coffre du Destin",
+      "Le Coffre Ancestral"
     ],
     "source": "Archives des concepts de design de Supercell"
   },
@@ -133,7 +133,7 @@
     "question": "Que peut-on apercevoir en zoomant à l'extrême sur le casque du Prince dans son illustration officielle ?",
     "choices": [
       "Le reflet minuscule d'un Gobelin écrasé √",
-      "Le logo secret et discret de Clash of Clans",
+      "Le logo discret de Clash of Clans",
       "Le visage souriant d'un roi caché",
       "La date de sortie cachée en chiffres romains"
     ],
