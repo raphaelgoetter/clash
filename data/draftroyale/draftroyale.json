@@ -14,7 +14,12 @@
     { "id": "volants", "label": "volants", "critere": { "type": "flying" }, "points": [6, 12] },
     { "id": "gobelins", "label": "gobelins", "critere": { "family": "goblin" }, "points": [6, 12] },
     { "id": "squelettes", "label": "squelettes", "critere": { "family": "skeleton" }, "points": [6, 12] },
-    { "id": "batiments", "label": "bâtiments", "critere": { "type": "building" }, "points": [7, 14] }
+    { "id": "batiments", "label": "bâtiments", "critere": { "type": "building" }, "points": [7, 14] },
+    { "id": "geants", "label": "géants", "groupe": "nom", "critere": { "nom": "\\bgeant" }, "points": [6, 12] },
+    { "id": "electro", "label": "cartes électro", "groupe": "nom", "critere": { "nom": "\\belectr" }, "points": [6, 12] },
+    { "id": "glace", "label": "cartes de glace", "groupe": "nom", "critere": { "nom": "\\b(glace|gel\\b|neige)" }, "points": [7, 14] },
+    { "id": "feu", "label": "cartes de feu", "groupe": "nom", "critere": { "nom": "\\b(feu|enfer|artifici)" }, "points": [7, 14] },
+    { "id": "dragons", "label": "dragons", "groupe": "nom", "critere": { "nom": "\\bdragons?\\b" }, "points": [8, 16] }
   ],
   "bonus": {
     "raretes": { "label": "Une carte de chaque rareté", "points": 4 },
@@ -22,6 +27,23 @@
     "lourd": { "label": "Deck lourd (coût moyen ≥ 5)", "points": 4, "seuil": 5 },
     "trio": { "label": "Trio troupe + sort + bâtiment", "points": 2 }
   },
+  "suite": { "label": "Suite d'élixir", "paliers": [7], "points": [10] },
+  "archetypes": [
+    { "id": "lavaloon", "cartes": ["Lava Hound", "Balloon"], "points": 6 },
+    { "id": "golem_sorciere", "cartes": ["Golem", "Night Witch"], "points": 6 },
+    { "id": "hog_golem_glace", "cartes": ["Hog Rider", "Ice Golem"], "points": 6 },
+    { "id": "mineur_poison", "cartes": ["Miner", "Poison"], "points": 6 },
+    { "id": "cimetiere_gel", "cartes": ["Graveyard", "Freeze"], "points": 6 },
+    { "id": "geant_sorciere", "cartes": ["Giant", "Witch"], "points": 6 },
+    { "id": "arc_x_tesla", "cartes": ["X-Bow", "Tesla"], "points": 6 },
+    { "id": "rg_pecheur", "cartes": ["Royal Giant", "Fisherman"], "points": 6 },
+    { "id": "pekka_belier", "cartes": ["P.E.K.K.A", "Battle Ram"], "points": 6 },
+    { "id": "log_bait", "cartes": ["Goblin Barrel", "Princess"], "points": 6 },
+    { "id": "cochons_seisme", "cartes": ["Royal Hogs", "Earthquake"], "points": 6 },
+    { "id": "mousquetaires_collecteur", "cartes": ["Three Musketeers", "Elixir Collector"], "points": 6 },
+    { "id": "bucheron_ballon", "cartes": ["Lumberjack", "Balloon"], "points": 6 },
+    { "id": "electro_geant_tornade", "cartes": ["Electro Giant", "Tornado"], "points": 6 }
+  ],
   "duel": { "manches": 7, "marchand_en_plus": 2, "stale_heures": 2 },
   "majorites": [
     { "id": "champions", "label": "Le plus de champions", "rarete": "champion", "points": 12 },

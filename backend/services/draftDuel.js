@@ -134,7 +134,7 @@ export function construireMarche(depots, nbMarchand, catalog, rng = Math.random)
 }
 
 // Valeur d'une main pour le bot : score réel + crédit partiel des thèmes
-// commencés + poids des raretés (majorités).
+// et archétypes commencés + poids des raretés (majorités).
 const RARITY_WEIGHT = { champion: 4, legendary: 1.5, epic: 0.6 };
 
 export function valeurMain(cards, config) {
@@ -142,6 +142,9 @@ export function valeurMain(cards, config) {
   for (const theme of config.themes) {
     const n = countTheme(cards, theme);
     if (n < config.paliers[0]) v += theme.points[0] * (n / config.paliers[0]) * 0.6;
+  }
+  for (const a of config.archetypes) {
+    if (a.cartes.filter((k) => cards.some((c) => c.cardKey === k)).length === 1) v += a.points * 0.3;
   }
   for (const c of cards) v += RARITY_WEIGHT[c.rarity] || 0;
   return v;

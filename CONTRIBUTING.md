@@ -1943,14 +1943,17 @@ Le coût en élixir des cartes ne rapporte rien. Barème dans `data/draftroyale/
 | Élément | Points |
 | ------- | ------ |
 | Thèmes (3 cartes / 4 et plus, seul le palier le plus haut compte) | humains 2/4, sorts 5/10, volants 6/12, gobelins 6/12, squelettes 6/12, bâtiments 7/14 |
+| Noms de cartes (mêmes paliers, regex sur le nom français normalisé, critère `nom`) | géants 6/12, cartes électro 6/12, cartes de glace 7/14, cartes de feu 7/14, dragons 8/16 |
 | Une carte de chaque rareté | 4 |
 | Deck cycle (coût moyen ≤ 3) / deck lourd (≥ 5) | 4 / 4 |
 | Trio troupe (ou volant) + sort + bâtiment | 2 |
+| Suite d'élixir : 7 coûts consécutifs (`longueurSuite()`) | 10 |
+| Archétype : les 2 cartes d'un duo célèbre de la méta (`archetypes`, 14 duos, ex. Molosse de lave + Ballon) | 6 par duo |
 | Majorités : le plus de champions / légendaires / épiques | 12 / 10 / 8, **tous les ex aequo en tête marquent** (au moins 1 carte) |
 | Contrat réussi | voir ci-dessus |
 | Popularité | +1 par carte reprise, plafonnée à 5 |
 
-Gargouilles retirées des thèmes (4 cartes seulement dans le catalogue, objectif atteint dans 2 % des cas en simulation). Paliers à 3 et 4 cartes (un palier à 5 n'était atteint que par 1 % des joueurs).
+Gargouilles retirées des thèmes (4 cartes seulement dans le catalogue, objectif atteint dans 2 % des cas en simulation). Thèmes de noms (ajoutés le 04/10) : les mots déjà couverts par une famille (gobelin, squelette) sont exclus ; pools de 4 à 7 cartes, donc rares (3 à 7 % des decks en simulation), d'où des points égaux ou supérieurs aux familles. Ils sont aussi proposés en contrat (22 contrats, sous la limite de 25 options du select). Suite d'élixir : une suite de 4 coûts sortait dans 97 % des decks, de 6 dans 65 % (le choix des 8 cartes parmi la main l'aligne facilement) ; à 7 coûts, environ 30 %, au niveau des thèmes classiques. Paliers à 3 et 4 cartes (un palier à 5 n'était atteint que par 1 % des joueurs).
 
 **Deck final** (`choisirDeckFinal()`) : si la main dépasse 8 cartes, on retire une à une la carte dont l'absence garde le meilleur score hors majorités (contrat compris) ; à score égal, la rareté la plus basse, puis la moins chère.
 
@@ -1958,7 +1961,7 @@ Gargouilles retirées des thèmes (4 cartes seulement dans le catalogue, objecti
 
 ### Informations visibles (Draft Royale)
 
-Mains et contrats restent secrets jusqu'au bilan final (bluff autour du marché et des majorités). Le message du jour affiche le marché ouvert aux vœux (image du tapis) et des chiffres agrégés de la veille ; le Journal (éphémère) montre au joueur sa main, son contrat, son score provisoire hors majorités, les **combinaisons** (`combinaisonsEnCours()` : réalisées, jauge verte pleine, en tête, puis en cours, avec le prochain palier de chaque thème entamé, raretés, trio et decks cycle/lourd une fois réalisés ; pions 🟢🟠🔴⚪ ; une piste en cours n'apparaît que si elle reste réalisable avec les pioches et vœux restants ; reprise de l'ancien Journal du duel Élixir), son bilan de la veille et le top 5 public de la popularité. Après le bilan final, le Journal affiche le rang, le détail du score et le deck retenu.
+Mains et contrats restent secrets jusqu'au bilan final (bluff autour du marché et des majorités). Le message du jour affiche le marché ouvert aux vœux (image du tapis) et des chiffres agrégés de la veille ; le Journal (éphémère) montre au joueur sa main, son contrat, son score provisoire hors majorités, les **combinaisons** (`combinaisonsEnCours()` : réalisées, jauge verte pleine, en tête, puis en cours, avec le prochain palier de chaque thème entamé, raretés, trio et decks cycle/lourd une fois réalisés ; suite d'élixir à partir de 2 coûts consécutifs, archétypes dès une des deux cartes ; pions 🟢🟠🔴⚪ ; une piste en cours n'apparaît que si elle reste réalisable avec les pioches et vœux restants ; reprise de l'ancien Journal du duel Élixir), son bilan de la veille et le top 5 public de la popularité. Après le bilan final, le Journal affiche le rang, le détail du score et le deck retenu. Le barème complet est sous le bouton `[🧩 Combinaisons]` (éphémère, `lignesCombinaisons()`, partagé avec le duel `/draft`), et non dans les Règles : la liste devenait trop longue.
 
 ### Images (Draft Royale)
 
@@ -2026,7 +2029,7 @@ Stockage Redis dédié `gobeletduel:*`. Scripts npm : `npm run gobeletduel:statu
 
 Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEUX requis pour lancer). **Remplace le duel Élixir** (enchères avec budget d'élixir, supprimé le 04/10) : le duel reprend désormais les règles du jeu spécial [Draft Royale](#draft-royale--deck-de-8-cartes-en-7-jours) pour éviter les mécompréhensions entre les deux jeux. Mêmes principes structurels que Blackjack/Gobelet Duel (lobby fermé, avancement par les actions des joueurs, message public réédité en place, clôture paresseuse après `duel.stale_heures` (2h) d'inactivité, high score jamais effacé, nettoyage 100% manuel). Code : `backend/services/draftDuel.js`, `api/discord/_handlers/draftDuel.js`.
 
-**Règles communes avec le Draft Royale** (importées de `draftroyale.js`, barème dans `data/draftroyale/draftroyale.json`) : 2 cartes au départ, pioche sans doublon, dépôt facultatif (manches 1 à 6) puis jusqu'à 3 vœux classés la manche suivante, 2 joueurs max par carte déposée, service par popularité puis au hasard, carte rendue à défaut, même barème (thèmes, bonus de deck, majorités avec ex aequo, popularité plafonnée à 5), deck final de 8 choisi automatiquement, même départage.
+**Règles communes avec le Draft Royale** (importées de `draftroyale.js`, barème dans `data/draftroyale/draftroyale.json`) : 2 cartes au départ, pioche sans doublon, dépôt facultatif (manches 1 à 6) puis jusqu'à 3 vœux classés la manche suivante, 2 joueurs max par carte déposée, service par popularité puis au hasard, carte rendue à défaut, même barème (thèmes, noms de cartes, bonus de deck, suite d'élixir, archétypes, majorités avec ex aequo, popularité plafonnée à 5, détaillé sous le bouton `[🧩 Combinaisons]`), deck final de 8 choisi automatiquement, même départage.
 
 **Différences avec le Draft Royale** :
 - **Pas de contrat** (04/10) : jugé trop lourd pour une partie courte.

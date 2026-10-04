@@ -127,8 +127,21 @@ export function cardsFromKeys(keys, catalog) {
 
 // ── Règles pures : thèmes, contrats, score ─────────────────────────
 
+// Nom français sans accents ni majuscules ("Électro-géant" → "electro-geant").
+function nomNormalise(card) {
+  return (card.fr || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+const _nomRegex = new Map();
+
+// Critère `nom` : expression régulière testée sur le nom normalisé (thèmes
+// "Noms de cartes"). Les autres champs : égalité stricte.
 export function matchesCritere(card, critere) {
-  return Object.entries(critere).every(([field, value]) => card[field] === value);
+  return Object.entries(critere).every(([field, value]) => {
+    if (field !== "nom") return card[field] === value;
+    if (!_nomRegex.has(value)) _nomRegex.set(value, new RegExp(value));
+    return _nomRegex.get(value).test(nomNormalise(card));
+  });
 }
 
 export function countTheme(cards, theme) {
@@ -179,6 +192,37 @@ function averageElixir(cards) {
   return cards.reduce((s, c) => s + c.elixir, 0) / cards.length;
 }
 
+// Plus longue suite de coûts d'élixir consécutifs (2-3-4-5 = 4).
+export function longueurSuite(cards) {
+  const couts = new Set(cards.map((c) => c.elixir).filter(Number.isInteger));
+  let best = 0;
+  for (const c of couts) {
+    if (couts.has(c - 1)) continue;
+    let n = 1;
+    while (couts.has(c + n)) n++;
+    best = Math.max(best, n);
+  }
+  return best;
+}
+
+function palierSuite(longueur, config) {
+  let index = -1;
+  config.suite.paliers.forEach((p, i) => {
+    if (longueur >= p) index = i;
+  });
+  return index;
+}
+
+// Libellé d'un archétype à partir des noms français ("Molosse de lave + Ballon").
+export function archetypeLabel(archetype, catalog) {
+  return archetype.cartes.map((k) => catalog?.get(k)?.fr || k).join(" + ");
+}
+
+// Nombre de cartes d'un archétype présentes dans le deck.
+function countArchetype(cards, archetype) {
+  return archetype.cartes.filter((k) => cards.some((c) => c.cardKey === k)).length;
+}
+
 // Score d'un deck SANS les majorités (elles dépendent des autres joueurs)
 // ni la popularité. `contrat` : contrat signé ({ themeId, palier, points,
 // multiplicateur }) ou null.
@@ -198,6 +242,14 @@ export function scoreDeck(cards, contrat, config) {
     cards.some((c) => c.type === "spell") &&
     cards.some((c) => c.type === "building");
   if (trio) details.push({ id: "trio", label: b.trio.label, points: b.trio.points });
+  const suite = palierSuite(longueurSuite(cards), config);
+  if (suite >= 0) details.push({ id: "suite", label: `${config.suite.label} (${config.suite.paliers[suite]} coûts)`, points: config.suite.points[suite] });
+  for (const a of config.archetypes) {
+    if (countArchetype(cards, a) === a.cartes.length) {
+      const label = a.cartes.map((k) => cards.find((c) => c.cardKey === k).fr).join(" + ");
+      details.push({ id: `archetype_${a.id}`, label: `Archétype ${label}`, points: a.points });
+    }
+  }
   if (contrat && contratReussi(cards, contrat, config)) {
     details.push({ id: "contrat", label: `Contrat ${contrat.label} (×${contrat.multiplicateur})`, points: contratBonus(contrat) });
   }
@@ -208,9 +260,10 @@ export function scoreDeck(cards, contrat, config) {
 // et en cours. Thèmes : palier atteint + prochain palier ; raretés, trio ;
 // decks cycle / lourd seulement une fois réalisés (seuil de coût moyen, pas
 // de jauge). `cartesRestantes` : cartes encore obtenables (pioches et vœux
-// restants), pour écarter ce qui ne peut plus aboutir. Réalisées d'abord
+// restants), pour écarter ce qui ne peut plus aboutir. `catalog` : noms
+// français des cartes d'archétype pas encore en main. Réalisées d'abord
 // (les plus rentables en tête), puis les plus avancées.
-export function combinaisonsEnCours(cards, config, cartesRestantes) {
+export function combinaisonsEnCours(cards, config, cartesRestantes, catalog) {
   const pistes = [];
   for (const theme of config.themes) {
     const have = countTheme(cards, theme);
@@ -231,6 +284,22 @@ export function combinaisonsEnCours(cards, config, cartesRestantes) {
     cards.some((c) => c.type === "building"),
   ].filter(Boolean).length;
   if (trio >= 1) pistes.push({ label: config.bonus.trio.label, have: trio, need: 3, points: config.bonus.trio.points });
+  const suite = longueurSuite(cards);
+  const suiteAtteinte = palierSuite(suite, config);
+  if (suiteAtteinte >= 0) {
+    const need = config.suite.paliers[suiteAtteinte];
+    pistes.push({ label: `${config.suite.label} (${need} coûts)`, have: need, need, points: config.suite.points[suiteAtteinte] });
+  }
+  const suiteSuivante = config.suite.paliers.findIndex((p) => suite < p);
+  if (suite >= 2 && suiteSuivante >= 0) {
+    const need = config.suite.paliers[suiteSuivante];
+    pistes.push({ label: `${config.suite.label} (${need} coûts)`, have: suite, need, points: config.suite.points[suiteSuivante] });
+  }
+  for (const a of config.archetypes) {
+    const have = countArchetype(cards, a);
+    if (have < 1) continue;
+    pistes.push({ label: `Archétype ${archetypeLabel(a, catalog)}`, have, need: a.cartes.length, points: a.points });
+  }
   for (const id of ["cycle", "lourd"]) {
     if (scoreDeck(cards, null, config).details.some((d) => d.id === id)) pistes.push({ label: config.bonus[id].label, have: 1, need: 1, points: config.bonus[id].points });
   }
@@ -238,6 +307,39 @@ export function combinaisonsEnCours(cards, config, cartesRestantes) {
   return pistes
     .filter((p) => fait(p) || p.need - p.have <= cartesRestantes)
     .sort((a, b) => fait(b) - fait(a) || (fait(a) ? b.points - a.points : b.have / b.need - a.have / a.need || b.points - a.points));
+}
+
+// Barème complet (bouton Combinaisons, Draft Royale et duel /draft) : une
+// ligne par combinaison, regroupées par famille. Thèmes de noms : liste des
+// cartes concernées (le mot n'est pas toujours évident).
+export function lignesCombinaisons(config, catalog) {
+  const paliers = (t) => config.paliers.map((p, i) => `${p} = +${t.points[i]}`).join(", ");
+  const cartesDuTheme = (t) =>
+    [...catalog.values()]
+      .filter((c) => matchesCritere(c, t.critere))
+      .map((c) => c.fr)
+      .join(", ");
+  const s = config.suite;
+  const archetypePoints = [...new Set(config.archetypes.map((a) => a.points))];
+  return [
+    `**Thèmes** (nombre de cartes)`,
+    ...config.themes.filter((t) => t.groupe !== "nom").map((t) => `• ${t.label} : ${paliers(t)}`),
+    "",
+    `**Noms de cartes** (le mot figure dans le nom)`,
+    ...config.themes.filter((t) => t.groupe === "nom").map((t) => `• ${t.label} : ${paliers(t)} (${cartesDuTheme(t)})`),
+    "",
+    "**Bonus de deck**",
+    ...Object.values(config.bonus).map((b) => `• ${b.label} : +${b.points}`),
+    `• ${s.label} (coûts qui se suivent, ex. 1 à 7) : ${s.paliers.map((p, i) => `${p} coûts = +${s.points[i]}`).join(", ")}`,
+    "",
+    `**Archétypes** (les 2 cartes${archetypePoints.length === 1 ? `, +${archetypePoints[0]} chacun` : ""})`,
+    ...config.archetypes.map((a) => `• ${archetypeLabel(a, catalog)}${archetypePoints.length === 1 ? "" : ` : +${a.points}`}`),
+    "",
+    "**Majorités** (tous les ex aequo en tête marquent)",
+    ...config.majorites.map((m) => `• ${m.label} : +${m.points}`),
+    "",
+    `**Popularité** : +1 par carte que tu as déposée et qu'un autre joueur a prise (${config.popularite_max} max)`,
+  ];
 }
 
 // Pions de progression : verts si atteint, orange à mi-chemin ou plus,

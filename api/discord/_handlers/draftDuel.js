@@ -32,7 +32,7 @@ import {
   BOT_ID,
   BOT_NAME,
 } from "../../../backend/services/draftDuel.js";
-import { loadDraftRoyaleConfig, loadCatalog, combinaisonsEnCours, formatPions, cardsFromKeys } from "../../../backend/services/draftroyale.js";
+import { loadDraftRoyaleConfig, loadCatalog, combinaisonsEnCours, lignesCombinaisons, formatPions, cardsFromKeys } from "../../../backend/services/draftroyale.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
@@ -212,6 +212,7 @@ function buildJoinComponents() {
       components: [
         { type: 2, style: 3, label: "Jouer", emoji: EMOJI.cards.component, custom_id: "draftduel_jouer" },
         { type: 2, style: 2, label: "Règles", emoji: EMOJI.scroll.component, custom_id: "draftduel_regles" },
+        { type: 2, style: 2, label: "Combinaisons", emoji: { name: "🧩" }, custom_id: "draftduel_combinaisons" },
       ],
     },
   ];
@@ -223,6 +224,7 @@ function buildEndComponents(state) {
       type: 1,
       components: [
         { type: 2, style: 2, label: "Règles", emoji: EMOJI.scroll.component, custom_id: "draftduel_regles" },
+        { type: 2, style: 2, label: "Combinaisons", emoji: { name: "🧩" }, custom_id: "draftduel_combinaisons" },
         { type: 2, style: 2, label: "Détails", emoji: EMOJI.stats.component, custom_id: `draftduel_details:${state.messageId}` },
       ],
     },
@@ -438,7 +440,7 @@ function buildHandEmbed(view, recap = []) {
   // Cartes encore obtenables : pioche + vœu par manche restante, plus la
   // pioche de la manche si elle n'est pas faite et le vœu en attente.
   const cartesRestantes = (state.totalManches - state.manche) * 2 + (action.pioche ? 0 : 1) + (depotVeille ? 1 : 0);
-  const pistes = combinaisonsEnCours(cardsFromKeys(me.main, catalog), config, cartesRestantes).slice(0, 10);
+  const pistes = combinaisonsEnCours(cardsFromKeys(me.main, catalog), config, cartesRestantes, catalog).slice(0, 10);
   const lines = [
     ...recap,
     `**Ta main** (${plural(me.main.length, "carte")})`,
@@ -504,8 +506,22 @@ function buildHandComponents(view) {
   return rows;
 }
 
+// Cartes du marché de la manche, visibles sans ouvrir les menus de vœux.
+function buildMarcheEmbed(view) {
+  const { state, catalog } = view;
+  if (!state.marche?.length) return null;
+  const image = marcheImageUrl(state.marche);
+  return {
+    title: "Marché",
+    description: state.marche.map((m) => cardName(m.key, catalog)).join(" · "),
+    color: DRAFTDUEL_COLOR,
+    image: image ? { url: image } : undefined,
+  };
+}
+
 function buildHandPayload(view, recap = []) {
-  return { content: "", embeds: [buildHandEmbed(view, recap)], components: buildHandComponents(view) };
+  const embeds = [buildHandEmbed(view, recap), buildMarcheEmbed(view)].filter(Boolean);
+  return { content: "", embeds, components: buildHandComponents(view) };
 }
 
 // Réponses communes aux actions du tour. Renvoie true si l'action a abouti.
@@ -641,7 +657,6 @@ export async function handleDetails(webhookUrl, messageId) {
 // ── Bouton [Règles] ──────────────────────────────────────────────────
 
 function buildReglesEmbed(config) {
-  const themes = config.themes.map((t) => `• ${t.label} : ${config.paliers.map((p, i) => `${p} = +${t.points[i]}`).join(", ")}`);
   return {
     title: "Règles du jeu : Draft",
     description: [
@@ -657,11 +672,7 @@ function buildReglesEmbed(config) {
       "",
       `**Marché** : les cartes déposées (${config.copies_par_depot} joueurs max par carte) et celles du Marchand (joueurs + ${config.duel.marchand_en_plus}, en solo ${nbCartesMarchand(1, config)}, une seule fois chacune). Les joueurs les plus populaires sont servis en premier, puis au hasard.`,
       "",
-      `**Score** (meilleur deck de ${config.taille_deck} retenu automatiquement à la fin)`,
-      ...themes,
-      ...Object.values(config.bonus).map((b) => `• ${b.label} : +${b.points}`),
-      ...config.majorites.map((m) => `• ${m.label} : +${m.points} (ex aequo compris)`),
-      `• Popularité : +1 par carte que tu as déposée et qu'un autre joueur a prise (${config.popularite_max} max)`,
+      `**Score** : meilleur deck de ${config.taille_deck} retenu automatiquement à la fin. Le barème est détaillé sous *Combinaisons*.`,
     ].join("\n"),
     color: DRAFTDUEL_COLOR,
   };
@@ -673,5 +684,19 @@ export async function handleRegles(webhookUrl) {
     await patchOriginal(webhookUrl, { embeds: [buildReglesEmbed(await loadDraftRoyaleConfig())], components: [] });
   } catch (err) {
     console.error("[DraftDuel] Échec Règles:", err.message);
+  }
+}
+
+// ── Bouton [Combinaisons] ────────────────────────────────────────────
+
+export async function handleCombinaisons(webhookUrl) {
+  try {
+    const [config, catalog] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog()]);
+    await patchOriginal(webhookUrl, {
+      embeds: [{ title: "Draft · Combinaisons", description: lignesCombinaisons(config, catalog).join("\n").slice(0, 4096), color: DRAFTDUEL_COLOR }],
+      components: [],
+    });
+  } catch (err) {
+    console.error("[DraftDuel] Échec Combinaisons:", err.message);
   }
 }

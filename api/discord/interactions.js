@@ -160,6 +160,7 @@ import {
   handleContratSelect as handleDraftRoyaleContratSelect,
   handleJournal as handleDraftRoyaleJournal,
   handleRegles as handleDraftRoyaleRegles,
+  handleCombinaisons as handleDraftRoyaleCombinaisons,
 } from "./_handlers/draftroyale.js";
 import {
   handleJouer as handleBlackjackJouer,
@@ -207,6 +208,7 @@ import {
   handleVoeu as handleDraftDuelVoeu,
   handleFinTour as handleDraftDuelFinTour,
   handleRegles as handleDraftDuelRegles,
+  handleCombinaisons as handleDraftDuelCombinaisons,
   handleDetails as handleDraftDuelDetails,
   extractMember as extractDraftDuelMember,
 } from "./_handlers/draftDuel.js";
@@ -9263,6 +9265,14 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── Draft (duel) : bouton "Combinaisons" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "draftduel_combinaisons") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleDraftDuelCombinaisons(webhookUrl));
+    return;
+  }
+
   // ── Draft (duel) : bouton "Règles" (éphémère, statique) ──
   if (body.type === 3 && body.data?.custom_id === "draftduel_regles") {
     res.status(200).json({ type: 5, data: { flags: 64 } });
@@ -10166,6 +10176,14 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleDraftRoyaleJournal(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Draft Royale : bouton "Combinaisons" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "draftroyale_combinaisons") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleDraftRoyaleCombinaisons(webhookUrl));
     return;
   }
 

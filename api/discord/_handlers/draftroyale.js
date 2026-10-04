@@ -36,6 +36,7 @@ import {
   scoreDeck,
   popularitePoints,
   combinaisonsEnCours,
+  lignesCombinaisons,
   formatPions,
   cartesSouhaitables,
   depotDuJour,
@@ -195,8 +196,6 @@ function buildFinEmbed(ranking, config, manches, currentManche) {
 }
 
 function buildReglesEmbed(config) {
-  const themes = config.themes.map((t) => `• ${t.label} : ${config.paliers.map((p, i) => `${p} cartes = ${t.points[i]} pts`).join(", ")}`);
-  const b = config.bonus;
   const mults = Object.entries(config.contrat_multiplicateurs).map(([j, m]) => `J${j} ×${m}`).join(", ");
   return {
     title: "📖 Règles — Draft Royale",
@@ -211,17 +210,18 @@ function buildReglesEmbed(config) {
       `• Chaque carte déposée peut être prise par ${config.copies_par_depot} joueurs maximum. Les joueurs les plus populaires sont servis en premier, puis au hasard.`,
       `✍️ **Contrat** (J1 à J4) : signe en secret un objectif de thème. S'il est atteint au J${config.duree_jours}, il rapporte en plus ses points × (multiplicateur − 1), selon le jour de signature (${mults}). Raté : aucun bonus. Tu peux en changer, au multiplicateur du jour.`,
       "",
-      `**Score final** (meilleur deck de ${config.taille_deck} retenu automatiquement au J${config.duree_jours})`,
-      "**Thèmes**",
-      ...themes,
-      "**Bonus de deck**",
-      ...Object.values(b).map((x) => `• ${x.label} : ${x.points} pts`),
-      "**Majorités** (tous les ex aequo en tête marquent)",
-      ...config.majorites.map((m) => `• ${m.label} : ${m.points} pts`),
-      `**Popularité** : +1 pt chaque fois qu'un autre joueur prend une carte que tu as déposée (${config.popularite_max} max).`,
+      `**Score final** : meilleur deck de ${config.taille_deck} retenu automatiquement au J${config.duree_jours}. Le barème est détaillé sous *Combinaisons*.`,
       "",
       "Égalité : la popularité totale départage, puis l'ordre d'arrivée dans le jeu.",
     ].join("\n"),
+    color: DRAFT_COLOR,
+  };
+}
+
+function buildCombinaisonsEmbed(config, catalog) {
+  return {
+    title: "🧩 Combinaisons — Draft Royale",
+    description: lignesCombinaisons(config, catalog).join("\n").slice(0, 4096),
     color: DRAFT_COLOR,
   };
 }
@@ -231,6 +231,7 @@ function buildReglesEmbed(config) {
 function utilityButtons() {
   return [
     { type: 2, style: 3, label: "Règles", emoji: { name: "📖" }, custom_id: "draftroyale_regles" },
+    { type: 2, style: 2, label: "Combinaisons", emoji: { name: "🧩" }, custom_id: "draftroyale_combinaisons" },
     { type: 2, style: 2, label: "Journal", emoji: { name: "📜" }, custom_id: "draftroyale_journal" },
   ];
 }
@@ -641,7 +642,7 @@ export async function handleJournal(webhookUrl, discordId) {
     const action = await readAction(state.jour, discordId);
     const cartesRestantes =
       (config.duree_jours - state.jour) * 2 + (action.pioche ? 0 : 1) + (depotDuJour(joueur, state.jour - 1) ? 1 : 0);
-    const pistes = combinaisonsEnCours(cards, config, cartesRestantes).slice(0, 10);
+    const pistes = combinaisonsEnCours(cards, config, cartesRestantes, catalog).slice(0, 10);
     const lignes = [
       `**Ta main** (${plural(joueur.main.length, "carte")})`,
       ...joueur.main.map((k) => `• ${cardLine(k, catalog)}`),
@@ -677,5 +678,16 @@ export async function handleRegles(webhookUrl) {
     await patchOriginal(webhookUrl, { embeds: [buildReglesEmbed(await loadDraftRoyaleConfig())] });
   } catch (err) {
     console.error("[DraftRoyale] Échec Règles:", err.message);
+  }
+}
+
+// ── Bouton [🧩 Combinaisons] (éphémère, statique) ─────────────────────
+
+export async function handleCombinaisons(webhookUrl) {
+  try {
+    const [config, catalog] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog()]);
+    await patchOriginal(webhookUrl, { embeds: [buildCombinaisonsEmbed(config, catalog)] });
+  } catch (err) {
+    console.error("[DraftRoyale] Échec Combinaisons:", err.message);
   }
 }

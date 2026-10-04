@@ -16,6 +16,8 @@ import {
   isTooSoonSinceLastClosure,
   combinaisonsEnCours,
   formatPions,
+  longueurSuite,
+  matchesCritere,
 } from "./draftroyale.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/draftroyale/draftroyale.json", import.meta.url), "utf8"));
@@ -87,6 +89,24 @@ async function main() {
     assert.strictEqual(deck.length, 8);
     assert.ok(["sq1", "sq2", "sq3", "sq4"].every((k) => deck.includes(k)));
     assert.deepStrictEqual(choisirDeckFinal(["sq1", "sq2"], null, CONFIG, CATALOG), ["sq1", "sq2"]);
+  }
+
+  // ── Thèmes de noms, suite d'élixir, archétypes ─────────────────────
+  {
+    assert.ok(matchesCritere({ fr: "Électro-géant" }, { nom: "\\bgeant" }));
+    assert.ok(!matchesCritere({ fr: "Gargouilles" }, { nom: "\\bgeant" }));
+    const el = (elixir) => ({ cardKey: `e${elixir}`, fr: `e${elixir}`, rarity: "common", type: "troop", family: null, elixir });
+    assert.strictEqual(longueurSuite([1, 2, 3, 5, 6, 7, 8].map(el)), 4);
+    assert.strictEqual(longueurSuite([]), 0);
+    assert.ok(!scoreDeck([2, 3, 4, 5, 6].map(el), null, CONFIG).details.some((d) => d.id === "suite"));
+    const suite = scoreDeck([1, 2, 3, 4, 5, 6, 7].map(el), null, CONFIG);
+    assert.deepStrictEqual(suite.details.filter((d) => d.id === "suite").map((d) => d.points), [10]);
+    const a = CONFIG.archetypes[0];
+    const duo = a.cartes.map((k) => ({ cardKey: k, fr: k, rarity: "epic", type: "troop", family: null, elixir: 9 }));
+    assert.ok(scoreDeck(duo, null, CONFIG).details.some((d) => d.id === `archetype_${a.id}` && d.points === a.points));
+    assert.ok(!scoreDeck(duo.slice(0, 1), null, CONFIG).details.some((d) => d.id.startsWith("archetype_")));
+    const pistes = combinaisonsEnCours(duo.slice(0, 1), CONFIG, 3, new Map(duo.map((c) => [c.cardKey, c])));
+    assert.ok(pistes.some((p) => p.label === `Archétype ${a.cartes.join(" + ")}` && p.have === 1 && p.need === 2));
   }
 
   // ── Combinaisons en cours : prochain palier, réalisables seulement ────
