@@ -695,7 +695,10 @@ function buildHandComponents(view) {
           {
             type: 3,
             custom_id: `draftduel_voeu:${manche}:${rang}`,
-            placeholder: config.nb_voeux === 1 ? "Ton choix" : `${rang === 1 ? "1er" : `${rang}e`} vœu`,
+            placeholder:
+              config.nb_voeux === 1
+                ? "Ton choix"
+                : `${rang === 1 ? "1er" : `${rang}e`} vœu`,
             options: options.map((k) =>
               cardOption(k, catalog, action.voeux?.[rang - 1] === k),
             ),
@@ -953,14 +956,14 @@ function buildReglesEmbed(config) {
   return {
     title: "Règles du jeu : Draft",
     description: [
-      `Construis le meilleur deck de ${config.taille_deck} cartes en ${config.duel.manches} manches, de 1 à 3 joueurs (en solo contre un bot).`,
+      `Le but du jeu est de réaliser le plus de combinaisons de cartes possibles en réunissant un deck de ${config.taille_deck} cartes en ${config.duel.manches} manches.`,
       "",
       `Tu reçois ${plural(config.cartes_depart, "carte")} au départ, jamais deux fois la même.`,
       "",
       "**À chaque manche**",
       "👆 **Piocher** (obligatoire) : une carte au hasard.",
-      `${EMOJI.trade.text} **Déposer** (manches 1 à ${config.jour_dernier_depot}, facultatif) : une carte de ta main part au marché, définitivement.`,
-      `${EMOJI.trade.text} **Vœu** (la manche après un dépôt) : choisis une carte du marché. À la fin de la manche, tu la reçois si elle est encore disponible, sinon ta carte te revient.`,
+      `${EMOJI.trade.text} **Déposer** (facultatif) : une carte de ta main part au marché, définitivement.`,
+      `${EMOJI.trade.text} **Choix** (la manche après un dépôt) : choisis une carte du marché. À la fin de la manche, tu la reçois si elle est encore disponible, sinon ta carte te revient.`,
       `${EMOJI.check.text} **Fin de tour** : la manche se termine quand tous les joueurs ont fini.`,
       "",
       `**Marché** : les cartes déposées (${config.copies_par_depot} joueurs max par carte) et celles du Marchand (joueurs + ${config.duel.marchand_en_plus}, en solo ${nbCartesMarchand(1, config)}, une seule fois chacune). Les joueurs les plus populaires sont servis en premier, puis au hasard.`,
