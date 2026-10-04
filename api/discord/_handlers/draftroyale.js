@@ -35,6 +35,8 @@ import {
   countTheme,
   scoreDeck,
   popularitePoints,
+  combinaisonsEnCours,
+  formatPions,
   cartesSouhaitables,
   depotDuJour,
   cardsFromKeys,
@@ -630,10 +632,16 @@ export async function handleJournal(webhookUrl, discordId) {
       return;
     }
     const cards = cardsFromKeys(joueur.main, catalog);
-    const { details, total } = scoreDeck(cards, joueur.contrat, config);
+    const { total } = scoreDeck(cards, joueur.contrat, config);
     const pop = popularitePoints(joueur, config);
     const depots = (joueur.depots || []).map((d) => `${cardName(d.key, catalog)} (déposée J${d.jour})`);
     const bilan = bilanPersonnel(veille?.lignes || [], discordId, catalog);
+    // Cartes encore obtenables : pioche + vœu par jour restant, plus la
+    // pioche du jour si elle n'est pas faite et le vœu en attente.
+    const action = await readAction(state.jour, discordId);
+    const cartesRestantes =
+      (config.duree_jours - state.jour) * 2 + (action.pioche ? 0 : 1) + (depotDuJour(joueur, state.jour - 1) ? 1 : 0);
+    const pistes = combinaisonsEnCours(cards, config, cartesRestantes).slice(0, 10);
     const lignes = [
       `**Ta main** (${plural(joueur.main.length, "carte")})`,
       ...joueur.main.map((k) => `• ${cardLine(k, catalog)}`),
@@ -643,7 +651,7 @@ export async function handleJournal(webhookUrl, discordId) {
       `⭐ Popularité : ${joueur.popularite || 0} (${pop} pt${pop > 1 ? "s" : ""} compté${pop > 1 ? "s" : ""}, ${config.popularite_max} max)`,
       "",
       `**Score provisoire : ${total + pop} pts** (hors majorités)`,
-      ...details.map((d) => `• ${d.label} : +${d.points}`),
+      ...(pistes.length ? ["", "**Combinaisons**", ...pistes.map((p) => `${formatPions(p)} ${p.label} (+${p.points})`)] : []),
       ...(bilan.length ? ["", "**Hier**", ...bilan] : []),
       ...popularitesLignes(joueurs),
     ];

@@ -204,6 +204,49 @@ export function scoreDeck(cards, contrat, config) {
   return { details, total: details.reduce((s, d) => s + d.points, 0) };
 }
 
+// Combinaisons du deck (Journal / main du duel) : réalisées (jauge pleine)
+// et en cours. Thèmes : palier atteint + prochain palier ; raretés, trio ;
+// decks cycle / lourd seulement une fois réalisés (seuil de coût moyen, pas
+// de jauge). `cartesRestantes` : cartes encore obtenables (pioches et vœux
+// restants), pour écarter ce qui ne peut plus aboutir. Réalisées d'abord
+// (les plus rentables en tête), puis les plus avancées.
+export function combinaisonsEnCours(cards, config, cartesRestantes) {
+  const pistes = [];
+  for (const theme of config.themes) {
+    const have = countTheme(cards, theme);
+    if (have < 1) continue;
+    const atteint = palierAtteint(have, config);
+    if (atteint >= 0) {
+      const need = config.paliers[atteint];
+      pistes.push({ label: `${need} ${theme.label}`, have: need, need, points: theme.points[atteint] });
+    }
+    const suivant = config.paliers.findIndex((p) => have < p);
+    if (suivant >= 0) pistes.push({ label: `${config.paliers[suivant]} ${theme.label}`, have, need: config.paliers[suivant], points: theme.points[suivant] });
+  }
+  const raretes = RARITIES.filter((r) => cards.some((c) => c.rarity === r)).length;
+  if (raretes >= 1) pistes.push({ label: config.bonus.raretes.label, have: raretes, need: RARITIES.length, points: config.bonus.raretes.points });
+  const trio = [
+    cards.some((c) => c.type === "troop" || c.type === "flying"),
+    cards.some((c) => c.type === "spell"),
+    cards.some((c) => c.type === "building"),
+  ].filter(Boolean).length;
+  if (trio >= 1) pistes.push({ label: config.bonus.trio.label, have: trio, need: 3, points: config.bonus.trio.points });
+  for (const id of ["cycle", "lourd"]) {
+    if (scoreDeck(cards, null, config).details.some((d) => d.id === id)) pistes.push({ label: config.bonus[id].label, have: 1, need: 1, points: config.bonus[id].points });
+  }
+  const fait = (p) => p.have >= p.need;
+  return pistes
+    .filter((p) => fait(p) || p.need - p.have <= cartesRestantes)
+    .sort((a, b) => fait(b) - fait(a) || (fait(a) ? b.points - a.points : b.have / b.need - a.have / a.need || b.points - a.points));
+}
+
+// Pions de progression : verts si atteint, orange à mi-chemin ou plus,
+// rouges en dessous, blancs pour ce qui manque.
+export function formatPions({ have, need }) {
+  const color = have >= need ? "🟢" : have / need >= 0.5 ? "🟠" : "🔴";
+  return color.repeat(have) + "⚪".repeat(Math.max(0, need - have));
+}
+
 export function popularitePoints(joueur, config) {
   return Math.min(config.popularite_max, joueur.popularite || 0);
 }

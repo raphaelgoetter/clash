@@ -32,7 +32,7 @@ import {
   BOT_ID,
   BOT_NAME,
 } from "../../../backend/services/draftDuel.js";
-import { loadDraftRoyaleConfig, loadCatalog } from "../../../backend/services/draftroyale.js";
+import { loadDraftRoyaleConfig, loadCatalog, combinaisonsEnCours, formatPions, cardsFromKeys } from "../../../backend/services/draftroyale.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
@@ -433,16 +433,20 @@ function buildStatusLines(view) {
 }
 
 function buildHandEmbed(view, recap = []) {
-  const { state, me, catalog, config } = view;
-  const { details, total, popularite } = scoreProvisoire(me, config, catalog);
+  const { state, me, catalog, config, action, depotVeille } = view;
+  const { total, popularite } = scoreProvisoire(me, config, catalog);
+  // Cartes encore obtenables : pioche + vœu par manche restante, plus la
+  // pioche de la manche si elle n'est pas faite et le vœu en attente.
+  const cartesRestantes = (state.totalManches - state.manche) * 2 + (action.pioche ? 0 : 1) + (depotVeille ? 1 : 0);
+  const pistes = combinaisonsEnCours(cardsFromKeys(me.main, catalog), config, cartesRestantes).slice(0, 10);
   const lines = [
     ...recap,
     `**Ta main** (${plural(me.main.length, "carte")})`,
     me.main.map((k) => cardName(k, catalog)).join(" · ") || "*aucune carte*",
     "",
     `**Score provisoire : ${plural(total, "pt")}** (hors majorités)`,
-    ...details.map((d) => `• ${d.label} : +${d.points}`),
     ...(popularite ? [`• Popularité : +${popularite}`] : []),
+    ...(pistes.length ? ["", "**Combinaisons**", ...pistes.map((p) => `${formatPions(p)} ${p.label} (+${p.points})`)] : []),
     "",
     ...buildStatusLines(view),
   ];

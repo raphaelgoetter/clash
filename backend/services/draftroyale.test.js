@@ -14,6 +14,8 @@ import {
   computeCloture,
   computeFinal,
   isTooSoonSinceLastClosure,
+  combinaisonsEnCours,
+  formatPions,
 } from "./draftroyale.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/draftroyale/draftroyale.json", import.meta.url), "utf8"));
@@ -85,6 +87,17 @@ async function main() {
     assert.strictEqual(deck.length, 8);
     assert.ok(["sq1", "sq2", "sq3", "sq4"].every((k) => deck.includes(k)));
     assert.deepStrictEqual(choisirDeckFinal(["sq1", "sq2"], null, CONFIG, CATALOG), ["sq1", "sq2"]);
+  }
+
+  // ── Combinaisons en cours : prochain palier, réalisables seulement ────
+  {
+    const pistes = combinaisonsEnCours(cards(["sq1", "sq2", "sq3", "sort1"]), CONFIG, 5);
+    assert.ok(pistes.some((p) => p.label === "4 squelettes" && p.have === 3 && p.points === 12));
+    assert.ok(pistes.some((p) => p.label === "3 sorts" && p.have === 1));
+    assert.ok(!combinaisonsEnCours(cards(["sort1"]), CONFIG, 1).some((p) => p.label === "3 sorts"));
+    // Réalisées incluses (jauge pleine) et en tête de liste
+    assert.deepStrictEqual(pistes[0], { label: "3 squelettes", have: 3, need: 3, points: 6 });
+    assert.strictEqual(formatPions({ have: 2, need: 3 }), "🟠🟠⚪");
   }
 
   // ── Arrivée en cours de partie : 2 cartes + 1 par jour manqué ─────────
