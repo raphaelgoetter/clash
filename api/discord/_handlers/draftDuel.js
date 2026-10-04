@@ -32,8 +32,18 @@ import {
   BOT_ID,
   BOT_NAME,
 } from "../../../backend/services/draftDuel.js";
-import { loadDraftRoyaleConfig, loadCatalog, combinaisonsEnCours, lignesCombinaisons, formatPions, cardsFromKeys } from "../../../backend/services/draftroyale.js";
-import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
+import {
+  loadDraftRoyaleConfig,
+  loadCatalog,
+  combinaisonsEnCours,
+  lignesCombinaisons,
+  formatPions,
+  cardsFromKeys,
+} from "../../../backend/services/draftroyale.js";
+import {
+  getRoleIdByName,
+  MINI_JEUX_ROLE_NAME,
+} from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
 
 const DRAFTDUEL_COLOR = 0x2f5bd3;
@@ -62,9 +72,25 @@ const EMOJI = {
 
 // ── Cartes ──────────────────────────────────────────────────────────
 
-const TYPE_LABELS = { troop: "Troupe", flying: "Volant", spell: "Sort", building: "Bâtiment" };
-const FAMILY_LABELS = { goblin: "Gobelin", skeleton: "Squelette", human: "Humain", minion: "Gargouille" };
-const RARITY_LABELS = { common: "Commune", rare: "Rare", epic: "Épique", legendary: "Légendaire", champion: "Champion" };
+const TYPE_LABELS = {
+  troop: "Troupe",
+  flying: "Volant",
+  spell: "Sort",
+  building: "Bâtiment",
+};
+const FAMILY_LABELS = {
+  goblin: "Gobelin",
+  skeleton: "Squelette",
+  human: "Humain",
+  minion: "Gargouille",
+};
+const RARITY_LABELS = {
+  common: "Commune",
+  rare: "Rare",
+  epic: "Épique",
+  legendary: "Légendaire",
+  champion: "Champion",
+};
 
 function cardTags(card) {
   const tags = [RARITY_LABELS[card.rarity], TYPE_LABELS[card.type]];
@@ -110,7 +136,11 @@ function mainImageUrl(keys) {
 
 export function extractMember(body) {
   const discordId = body.member?.user?.id;
-  const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+  const username =
+    body.member?.nick ||
+    body.member?.user?.global_name ||
+    body.member?.user?.username ||
+    "Inconnu";
   return { discordId, username };
 }
 
@@ -149,51 +179,94 @@ async function deleteOriginal(webhookUrl) {
 // référencés dans l'embed par `attachment://<filename>`
 function buildMessageRequest(payload, files) {
   const headers = { Authorization: `Bot ${process.env.DISCORD_TOKEN}` };
-  if (!files.length) return { headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(payload) };
+  if (!files.length)
+    return {
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    };
   const body = new FormData();
-  body.append("payload_json", JSON.stringify({ ...payload, attachments: files.map((f, i) => ({ id: i, filename: f.filename })) }));
-  files.forEach((f, i) => body.append(`files[${i}]`, new Blob([f.buffer], { type: "image/png" }), f.filename));
+  body.append(
+    "payload_json",
+    JSON.stringify({
+      ...payload,
+      attachments: files.map((f, i) => ({ id: i, filename: f.filename })),
+    }),
+  );
+  files.forEach((f, i) =>
+    body.append(
+      `files[${i}]`,
+      new Blob([f.buffer], { type: "image/png" }),
+      f.filename,
+    ),
+  );
   return { headers, body };
 }
 
 async function patchPublicMessage(state, payload, files = []) {
-  if (!process.env.DISCORD_TOKEN || !state?.channelId || !state?.messageId) return;
+  if (!process.env.DISCORD_TOKEN || !state?.channelId || !state?.messageId)
+    return;
   try {
-    const res = await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
-      method: "PATCH",
-      ...buildMessageRequest(payload, files),
-    });
-    if (!res.ok) console.warn(`[DraftDuel] Échec édition du message public (${res.status}).`);
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      {
+        method: "PATCH",
+        ...buildMessageRequest(payload, files),
+      },
+    );
+    if (!res.ok)
+      console.warn(
+        `[DraftDuel] Échec édition du message public (${res.status}).`,
+      );
   } catch (err) {
-    console.warn("[DraftDuel] Erreur réseau à l'édition du message public:", err.message);
+    console.warn(
+      "[DraftDuel] Erreur réseau à l'édition du message public:",
+      err.message,
+    );
   }
 }
 
 async function postChannelMessage(channelId, payload, files = []) {
   if (!process.env.DISCORD_TOKEN || !channelId) return false;
   try {
-    const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-      method: "POST",
-      ...buildMessageRequest(payload, files),
-    });
-    if (!res.ok) console.warn(`[DraftDuel] Échec envoi du récapitulatif (${res.status}).`);
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${channelId}/messages`,
+      {
+        method: "POST",
+        ...buildMessageRequest(payload, files),
+      },
+    );
+    if (!res.ok)
+      console.warn(`[DraftDuel] Échec envoi du récapitulatif (${res.status}).`);
     return res.ok;
   } catch (err) {
-    console.warn("[DraftDuel] Erreur réseau à l'envoi du récapitulatif:", err.message);
+    console.warn(
+      "[DraftDuel] Erreur réseau à l'envoi du récapitulatif:",
+      err.message,
+    );
     return false;
   }
 }
 
 async function deletePublicMessage(state) {
-  if (!process.env.DISCORD_TOKEN || !state?.channelId || !state?.messageId) return;
+  if (!process.env.DISCORD_TOKEN || !state?.channelId || !state?.messageId)
+    return;
   try {
-    const res = await fetch(`https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` },
-    });
-    if (!res.ok && res.status !== 404) console.warn(`[DraftDuel] Échec suppression du message de la partie (${res.status}).`);
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` },
+      },
+    );
+    if (!res.ok && res.status !== 404)
+      console.warn(
+        `[DraftDuel] Échec suppression du message de la partie (${res.status}).`,
+      );
   } catch (err) {
-    console.warn("[DraftDuel] Erreur réseau à la suppression du message de la partie:", err.message);
+    console.warn(
+      "[DraftDuel] Erreur réseau à la suppression du message de la partie:",
+      err.message,
+    );
   }
 }
 
@@ -210,9 +283,27 @@ function buildJoinComponents() {
     {
       type: 1,
       components: [
-        { type: 2, style: 3, label: "Jouer", emoji: EMOJI.cards.component, custom_id: "draftduel_jouer" },
-        { type: 2, style: 2, label: "Règles", emoji: EMOJI.scroll.component, custom_id: "draftduel_regles" },
-        { type: 2, style: 2, label: "Combinaisons", emoji: { name: "🧩" }, custom_id: "draftduel_combinaisons" },
+        {
+          type: 2,
+          style: 3,
+          label: "Jouer",
+          emoji: EMOJI.cards.component,
+          custom_id: "draftduel_jouer",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Règles",
+          emoji: EMOJI.scroll.component,
+          custom_id: "draftduel_regles",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Combinaisons",
+          emoji: { name: "🧩" },
+          custom_id: "draftduel_combinaisons",
+        },
       ],
     },
   ];
@@ -223,9 +314,27 @@ function buildEndComponents(state) {
     {
       type: 1,
       components: [
-        { type: 2, style: 2, label: "Règles", emoji: EMOJI.scroll.component, custom_id: "draftduel_regles" },
-        { type: 2, style: 2, label: "Combinaisons", emoji: { name: "🧩" }, custom_id: "draftduel_combinaisons" },
-        { type: 2, style: 2, label: "Détails", emoji: EMOJI.stats.component, custom_id: `draftduel_details:${state.messageId}` },
+        {
+          type: 2,
+          style: 2,
+          label: "Règles",
+          emoji: EMOJI.scroll.component,
+          custom_id: "draftduel_regles",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Combinaisons",
+          emoji: { name: "🧩" },
+          custom_id: "draftduel_combinaisons",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Détails",
+          emoji: EMOJI.stats.component,
+          custom_id: `draftduel_details:${state.messageId}`,
+        },
       ],
     },
   ];
@@ -235,10 +344,15 @@ function buildEndComponents(state) {
 // secrètes jusqu'à la fin, seules les cartes échangées sont révélées).
 async function buildRecapLines(lastRecap, players, catalog) {
   if (!lastRecap) return [];
-  const lines = [`${EMOJI.stats.text} **Marché de la manche ${lastRecap.manche}**`];
+  const lines = [
+    `${EMOJI.stats.text} **Marché de la manche ${lastRecap.manche}**`,
+  ];
   for (const l of lastRecap.lignes) {
     const name = await displayName(l.discordId, players[l.discordId]?.username);
-    if (l.type === "voeu") lines.push(`${EMOJI.check.text} **${name}** obtient **${cardName(l.key, catalog)}** (vœu n°${l.rang})`);
+    if (l.type === "voeu")
+      lines.push(
+        `${EMOJI.check.text} **${name}** obtient **${cardName(l.key, catalog)}** (vœu n°${l.rang})`,
+      );
     if (l.type === "retour") lines.push(`↩️ **${name}** récupère sa carte`);
   }
   if (lines.length === 1) lines.push("Aucun échange.");
@@ -252,12 +366,20 @@ async function buildPlayersLines(state, players, actions, config, catalog) {
     const p = players[id];
     if (!p) continue;
     const name = await displayName(id, p.username);
-    const status = id === BOT_ID ? EMOJI.bot.text : actions[id]?.fini ? EMOJI.check.text : EMOJI.late.text;
+    const status =
+      id === BOT_ID
+        ? EMOJI.bot.text
+        : actions[id]?.fini
+          ? EMOJI.check.text
+          : EMOJI.late.text;
     const { total } = scoreProvisoire(p, config, catalog);
-    lines.push(`${status} **${name}** · ${plural(p.main.length, "carte")} · ${plural(total, "pt")}`);
+    lines.push(
+      `${status} **${name}** · ${plural(p.main.length, "carte")} · ${plural(total, "pt")}`,
+    );
   }
   const missing = state.maxPlayers - state.players.length;
-  if (missing > 0) lines.push(`${EMOJI.late.text} En attente de ${plural(missing, "joueur")}`);
+  if (missing > 0)
+    lines.push(`${EMOJI.late.text} En attente de ${plural(missing, "joueur")}`);
   return lines;
 }
 
@@ -277,32 +399,54 @@ async function buildTableEmbed(state) {
     "",
     ...(await buildPlayersLines(state, players, actions, config, catalog)),
   ];
-  if (state.players.length === 0) lines.push("", "Clique sur **Jouer** pour t'inscrire.");
+  if (state.players.length === 0)
+    lines.push("", "Clique sur **Jouer** pour t'inscrire.");
   const image = marcheImageUrl(state.marche);
   return {
     title: `Draft · Manche ${state.manche}/${state.totalManches}`,
     description: lines.join("\n"),
     color: DRAFTDUEL_COLOR,
     image: image ? { url: image } : undefined,
-    footer: { text: state.rosterLocked ? "Inscriptions closes, la partie a commencé." : `Places restantes : ${state.maxPlayers - state.players.length}` },
+    footer: {
+      text: state.rosterLocked
+        ? "Inscriptions closes, la partie a commencé."
+        : `Places restantes : ${state.maxPlayers - state.players.length}`,
+    },
   };
 }
 
 async function buildFinalEmbed(state, { expired = false } = {}) {
-  const [catalog, players, highScore] = await Promise.all([loadCatalog(), readPlayers(), readHighScore()]);
+  const [catalog, players, highScore] = await Promise.all([
+    loadCatalog(),
+    readPlayers(),
+    readHighScore(),
+  ]);
   const ranking = state.finalRanking || [];
   const lines = expired
-    ? [`${EMOJI.late.text} Partie expirée après ${state.staleHours ?? 2}h d'inactivité (manche ${state.manche}/${state.totalManches}).`, ""]
+    ? [
+        `${EMOJI.late.text} Partie expirée après ${state.staleHours ?? 2}h d'inactivité (manche ${state.manche}/${state.totalManches}).`,
+        "",
+      ]
     : await buildRecapLines(state.lastRecap, players, catalog);
   lines.push(`${EMOJI.topplayers.text} **Classement final**`);
   for (const [i, r] of ranking.entries()) {
     const name = await displayName(r.discordId, r.username);
-    lines.push(`${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}`);
-    lines.push(`└ ${r.deck.map((k) => cardName(k, catalog)).join(" · ") || "*aucune carte*"}`);
+    lines.push(
+      `${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}`,
+    );
+    lines.push(
+      `└ ${r.deck.map((k) => cardName(k, catalog)).join(" · ") || "*aucune carte*"}`,
+    );
   }
   if (highScore && !expired) {
-    const name = await resolveDisplayName(highScore.discordId, highScore.username);
-    lines.push("", `${EMOJI.topplayers.text} High score : ${name} (${plural(highScore.points, "pt")})`);
+    const name = await resolveDisplayName(
+      highScore.discordId,
+      highScore.username,
+    );
+    lines.push(
+      "",
+      `${EMOJI.topplayers.text} High score : ${name} (${plural(highScore.points, "pt")})`,
+    );
   }
   const image = mainImageUrl(ranking[0]?.deck);
   return {
@@ -328,26 +472,38 @@ async function postFinalMessage(state, embed) {
       if (res.ok) {
         const filename = "deck.png";
         files = [{ buffer: Buffer.from(await res.arrayBuffer()), filename }];
-        payload.embeds = [{ ...embed, image: { url: `attachment://${filename}` } }];
+        payload.embeds = [
+          { ...embed, image: { url: `attachment://${filename}` } },
+        ];
       }
     } catch (err) {
-      console.warn("[DraftDuel] Image du deck indisponible, repli sur l'URL:", err.message);
+      console.warn(
+        "[DraftDuel] Image du deck indisponible, repli sur l'URL:",
+        err.message,
+      );
     }
   }
-  if (await postChannelMessage(state.channelId, payload, files)) await deletePublicMessage(state);
+  if (await postChannelMessage(state.channelId, payload, files))
+    await deletePublicMessage(state);
   else await patchPublicMessage(state, payload, files);
 }
 
 async function closeIfStale() {
   const result = await expireIfStale();
   if (!result.expired) return false;
-  await postFinalMessage(result.state, await buildFinalEmbed(result.state, { expired: true }));
+  await postFinalMessage(
+    result.state,
+    await buildFinalEmbed(result.state, { expired: true }),
+  );
   return true;
 }
 
 async function replyIfExpired(webhookUrl) {
   if (!(await closeIfStale())) return false;
-  await patchOriginal(webhookUrl, textPayload("Cette partie de Draft a expiré faute d'activité."));
+  await patchOriginal(
+    webhookUrl,
+    textPayload("Cette partie de Draft a expiré faute d'activité."),
+  );
   return true;
 }
 
@@ -360,7 +516,10 @@ async function refreshPublicMessage() {
     await postFinalMessage(outcome.state, await buildFinalEmbed(outcome.state));
     return outcome;
   }
-  await patchPublicMessage(outcome.state, { embeds: [await buildTableEmbed(outcome.state)], components: buildJoinComponents() });
+  await patchPublicMessage(outcome.state, {
+    embeds: [await buildTableEmbed(outcome.state)],
+    components: buildJoinComponents(),
+  });
   return outcome;
 }
 
@@ -374,15 +533,26 @@ export async function handleDraftCommand(webhookUrl, body, { maxPlayers }) {
     if (result.alreadyActive) {
       await patchOriginal(
         webhookUrl,
-        textPayload(`Une partie de Draft est déjà en cours dans <#${result.state.channelId}>. Attends qu'elle se termine (ou qu'elle expire faute d'activité).`),
+        textPayload(
+          `Une partie de Draft est déjà en cours dans <#${result.state.channelId}>. Attends qu'elle se termine (ou qu'elle expire faute d'activité).`,
+        ),
       );
       return;
     }
-    const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [await buildTableEmbed(result.state)], components: buildJoinComponents() }),
-    });
+    const res = await fetch(
+      `https://discord.com/api/v10/channels/${channelId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          embeds: [await buildTableEmbed(result.state)],
+          components: buildJoinComponents(),
+        }),
+      },
+    );
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
@@ -392,12 +562,22 @@ export async function handleDraftCommand(webhookUrl, body, { maxPlayers }) {
     await deleteOriginal(webhookUrl);
   } catch (err) {
     console.error("[DraftDuel] Échec lancement:", err.message);
-    await patchOriginal(webhookUrl, textPayload(`${EMOJI.warning.text} Erreur lors du lancement de la partie.`));
+    await patchOriginal(
+      webhookUrl,
+      textPayload(
+        `${EMOJI.warning.text} Erreur lors du lancement de la partie.`,
+      ),
+    );
   }
 }
 
 export async function handleDraftRoleRejected(webhookUrl) {
-  await patchOriginal(webhookUrl, textPayload("Tu n'as pas le rôle nécessaire (MINI-JEUX) pour lancer une partie."));
+  await patchOriginal(
+    webhookUrl,
+    textPayload(
+      "Tu n'as pas le rôle nécessaire (MINI-JEUX) pour lancer une partie.",
+    ),
+  );
 }
 
 // ── Main éphémère du joueur ─────────────────────────────────────────
@@ -409,17 +589,31 @@ function buildMyRecap(lastRecap, discordId, catalog) {
   if (!mine.length) return [];
   const lines = [`${EMOJI.stats.text} **Manche ${lastRecap.manche}**`];
   for (const l of mine) {
-    if (l.type === "voeu") lines.push(`${EMOJI.check.text} Vœu n°${l.rang} exaucé : tu reçois **${cardName(l.key, catalog)}**.`);
-    if (l.type === "retour") lines.push(`↩️ ${l.sansVoeu ? "Sans vœu" : "Aucun vœu disponible"} : **${cardName(l.key, catalog)}** te revient.`);
-    if (l.type === "popularite") lines.push(`⭐ ${plural(l.nb, "joueur")} ${l.nb > 1 ? "ont" : "a"} pris ta carte ${cardName(l.key, catalog)} (+${l.nb} popularité).`);
+    if (l.type === "voeu")
+      lines.push(
+        `${EMOJI.check.text} Vœu n°${l.rang} exaucé : tu reçois **${cardName(l.key, catalog)}**.`,
+      );
+    if (l.type === "retour")
+      lines.push(
+        `↩️ ${l.sansVoeu ? "Sans vœu" : "Aucun vœu disponible"} : **${cardName(l.key, catalog)}** te revient.`,
+      );
+    if (l.type === "popularite")
+      lines.push(
+        `⭐ ${plural(l.nb, "joueur")} ${l.nb > 1 ? "ont" : "a"} pris ta carte ${cardName(l.key, catalog)} (+${l.nb} popularité).`,
+      );
   }
   return [...lines, ""];
 }
 
 function buildStatusLines(view) {
-  const { state, action, me, depotVeille, souhaitables, catalog, config } = view;
+  const { state, action, me, depotVeille, souhaitables, catalog, config } =
+    view;
   const lines = [];
-  lines.push(action.pioche ? `👆 Pioché : **${cardName(action.pioche, catalog)}**` : "👆 Pioche une carte pour pouvoir finir ton tour.");
+  lines.push(
+    action.pioche
+      ? `👆 Pioché : **${cardName(action.pioche, catalog)}**`
+      : "👆 Pioche une carte pour pouvoir finir ton tour.",
+  );
   if (depotVeille) {
     lines.push(
       souhaitables.length
@@ -428,9 +622,20 @@ function buildStatusLines(view) {
     );
   }
   const depotJour = me.depots.find((d) => Number(d.jour) === state.manche);
-  if (depotJour) lines.push(`${EMOJI.trade.text} Déposé : **${cardName(depotJour.key, catalog)}** (au marché à la prochaine manche).`);
-  else if (state.manche <= config.jour_dernier_depot) lines.push(`${EMOJI.trade.text} Dépôt facultatif : il te permettra de faire des vœux à la prochaine manche.`);
-  if (action.fini) lines.push(state.maxPlayers > 1 ? `${EMOJI.check.text} Tour terminé. En attente des autres joueurs.` : `${EMOJI.check.text} Tour terminé.`);
+  if (depotJour)
+    lines.push(
+      `${EMOJI.trade.text} Déposé : **${cardName(depotJour.key, catalog)}** (au marché à la prochaine manche).`,
+    );
+  else if (state.manche <= config.jour_dernier_depot)
+    lines.push(
+      `${EMOJI.trade.text} Dépôt facultatif : il te permettra de faire des vœux à la prochaine manche.`,
+    );
+  if (action.fini)
+    lines.push(
+      state.maxPlayers > 1
+        ? `${EMOJI.check.text} Tour terminé. En attente des autres joueurs.`
+        : `${EMOJI.check.text} Tour terminé.`,
+    );
   return lines;
 }
 
@@ -439,8 +644,16 @@ function buildHandEmbed(view, recap = []) {
   const { total, popularite } = scoreProvisoire(me, config, catalog);
   // Cartes encore obtenables : pioche + vœu par manche restante, plus la
   // pioche de la manche si elle n'est pas faite et le vœu en attente.
-  const cartesRestantes = (state.totalManches - state.manche) * 2 + (action.pioche ? 0 : 1) + (depotVeille ? 1 : 0);
-  const pistes = combinaisonsEnCours(cardsFromKeys(me.main, catalog), config, cartesRestantes, catalog).slice(0, 10);
+  const cartesRestantes =
+    (state.totalManches - state.manche) * 2 +
+    (action.pioche ? 0 : 1) +
+    (depotVeille ? 1 : 0);
+  const pistes = combinaisonsEnCours(
+    cardsFromKeys(me.main, catalog),
+    config,
+    cartesRestantes,
+    catalog,
+  ).slice(0, 10);
   const lines = [
     ...recap,
     `**Ta main** (${plural(me.main.length, "carte")})`,
@@ -448,7 +661,13 @@ function buildHandEmbed(view, recap = []) {
     "",
     `**Score provisoire : ${plural(total, "pt")}** (hors majorités)`,
     ...(popularite ? [`• Popularité : +${popularite}`] : []),
-    ...(pistes.length ? ["", "**Combinaisons**", ...pistes.map((p) => `${formatPions(p)} ${p.label} (+${p.points})`)] : []),
+    ...(pistes.length
+      ? [
+          "",
+          "**Combinaisons**",
+          ...pistes.map((p) => `${formatPions(p)} ${p.label} (+${p.points})`),
+        ]
+      : []),
     "",
     ...buildStatusLines(view),
   ];
@@ -462,7 +681,8 @@ function buildHandEmbed(view, recap = []) {
 }
 
 function buildHandComponents(view) {
-  const { state, action, me, depotVeille, souhaitables, catalog, config } = view;
+  const { state, action, me, depotVeille, souhaitables, catalog, config } =
+    view;
   if (action.fini) return [];
   const manche = state.manche;
   const rows = [];
@@ -476,7 +696,9 @@ function buildHandComponents(view) {
             type: 3,
             custom_id: `draftduel_voeu:${manche}:${rang}`,
             placeholder: `${rang === 1 ? "1er" : `${rang}e`} vœu`,
-            options: options.map((k) => cardOption(k, catalog, action.voeux?.[rang - 1] === k)),
+            options: options.map((k) =>
+              cardOption(k, catalog, action.voeux?.[rang - 1] === k),
+            ),
           },
         ],
       });
@@ -499,8 +721,22 @@ function buildHandComponents(view) {
   rows.push({
     type: 1,
     components: [
-      { type: 2, style: 1, label: "Piocher", emoji: EMOJI.pioche.component, custom_id: `draftduel_pioche:${manche}`, disabled: !!action.pioche },
-      { type: 2, style: 3, label: "Fin de tour", emoji: EMOJI.check.component, custom_id: `draftduel_fin:${manche}`, disabled: !action.pioche },
+      {
+        type: 2,
+        style: 1,
+        label: "Piocher",
+        emoji: EMOJI.pioche.component,
+        custom_id: `draftduel_pioche:${manche}`,
+        disabled: !!action.pioche,
+      },
+      {
+        type: 2,
+        style: 3,
+        label: "Fin de tour",
+        emoji: EMOJI.check.component,
+        custom_id: `draftduel_fin:${manche}`,
+        disabled: !action.pioche,
+      },
     ],
   });
   return rows;
@@ -520,18 +756,26 @@ function buildMarcheEmbed(view) {
 }
 
 function buildHandPayload(view, recap = []) {
-  const embeds = [buildHandEmbed(view, recap), buildMarcheEmbed(view)].filter(Boolean);
+  const embeds = [buildHandEmbed(view, recap), buildMarcheEmbed(view)].filter(
+    Boolean,
+  );
   return { content: "", embeds, components: buildHandComponents(view) };
 }
 
 // Réponses communes aux actions du tour. Renvoie true si l'action a abouti.
 async function respondToAction(webhookUrl, result) {
   if (result.inactive) {
-    await patchOriginal(webhookUrl, textPayload("Aucune partie de Draft en cours pour le moment."));
+    await patchOriginal(
+      webhookUrl,
+      textPayload("Aucune partie de Draft en cours pour le moment."),
+    );
     return false;
   }
   if (result.notSeated) {
-    await patchOriginal(webhookUrl, textPayload("Clique d'abord sur **Jouer** pour rejoindre la partie !"));
+    await patchOriginal(
+      webhookUrl,
+      textPayload("Clique d'abord sur **Jouer** pour rejoindre la partie !"),
+    );
     return false;
   }
   await patchOriginal(webhookUrl, buildHandPayload(result.view));
@@ -543,15 +787,29 @@ export async function handleJouer(webhookUrl, discordId, username) {
     if (await replyIfExpired(webhookUrl)) return;
     const result = await joinGame(discordId, username);
     if (result.inactive) {
-      await patchOriginal(webhookUrl, textPayload("Aucune partie de Draft en cours pour le moment."));
+      await patchOriginal(
+        webhookUrl,
+        textPayload("Aucune partie de Draft en cours pour le moment."),
+      );
       return;
     }
     if (result.rosterLocked) {
-      await patchOriginal(webhookUrl, textPayload("Cette partie a déjà commencé (ou les places sont toutes prises), tu ne peux pas la rejoindre."));
+      await patchOriginal(
+        webhookUrl,
+        textPayload(
+          "Cette partie a déjà commencé (ou les places sont toutes prises), tu ne peux pas la rejoindre.",
+        ),
+      );
       return;
     }
     const view = await readPlayerView(result.state, discordId);
-    await patchOriginal(webhookUrl, buildHandPayload(view, buildMyRecap(result.state.lastRecap, discordId, view.catalog)));
+    await patchOriginal(
+      webhookUrl,
+      buildHandPayload(
+        view,
+        buildMyRecap(result.state.lastRecap, discordId, view.catalog),
+      ),
+    );
     if (result.isNew) await refreshPublicMessage();
   } catch (err) {
     console.error("[DraftDuel] Échec Jouer:", err.message);
@@ -579,7 +837,10 @@ export async function handleDepot(webhookUrl, discordId, key) {
 export async function handleVoeu(webhookUrl, discordId, rang, key) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
-    await respondToAction(webhookUrl, await enregistrerVoeu(discordId, Number(rang), key));
+    await respondToAction(
+      webhookUrl,
+      await enregistrerVoeu(discordId, Number(rang), key),
+    );
   } catch (err) {
     console.error("[DraftDuel] Échec vœu:", err.message);
   }
@@ -595,14 +856,20 @@ async function buildPostResolutionPayload(outcome, discordId, catalog) {
       embeds: [
         {
           title: "Draft · Partie terminée",
-          description: [...recap, `${EMOJI.topplayers.text} Le classement final est affiché dans le salon.`].join("\n"),
+          description: [
+            ...recap,
+            `${EMOJI.topplayers.text} Le classement final est affiché dans le salon.`,
+          ].join("\n"),
           color: DRAFTDUEL_COLOR,
         },
       ],
       components: [],
     };
   }
-  return buildHandPayload(await readPlayerView(outcome.state, discordId), recap);
+  return buildHandPayload(
+    await readPlayerView(outcome.state, discordId),
+    recap,
+  );
 }
 
 // Après une fin de tour : résout la manche si tout le monde a fini. Si
@@ -612,17 +879,28 @@ async function buildPostResolutionPayload(outcome, discordId, catalog) {
 async function continueAfterTurn(webhookUrl, discordId) {
   const outcome = await refreshPublicMessage();
   if (!outcome?.resolved) return;
-  const [catalog, webhooks] = await Promise.all([loadCatalog(), readHandWebhooks(outcome.state.lastRecap.manche)]);
+  const [catalog, webhooks] = await Promise.all([
+    loadCatalog(),
+    readHandWebhooks(outcome.state.lastRecap.manche),
+  ]);
   const targets = { ...webhooks, [discordId]: webhookUrl };
   await Promise.all(
-    Object.entries(targets).map(async ([id, url]) => patchOriginal(url, await buildPostResolutionPayload(outcome, id, catalog))),
+    Object.entries(targets).map(async ([id, url]) =>
+      patchOriginal(
+        url,
+        await buildPostResolutionPayload(outcome, id, catalog),
+      ),
+    ),
   );
 }
 
 export async function handleFinTour(webhookUrl, discordId) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
-    if (await respondToAction(webhookUrl, await finirTour(discordId, webhookUrl))) await continueAfterTurn(webhookUrl, discordId);
+    if (
+      await respondToAction(webhookUrl, await finirTour(discordId, webhookUrl))
+    )
+      await continueAfterTurn(webhookUrl, discordId);
   } catch (err) {
     console.error("[DraftDuel] Échec fin de tour:", err.message);
   }
@@ -633,20 +911,35 @@ export async function handleFinTour(webhookUrl, discordId) {
 export async function handleDetails(webhookUrl, messageId) {
   try {
     const state = await readState();
-    if (!state?.termine || !state.finalRanking || state.messageId !== messageId) {
-      await patchOriginal(webhookUrl, textPayload("Les détails de cette partie ne sont plus disponibles."));
+    if (
+      !state?.termine ||
+      !state.finalRanking ||
+      state.messageId !== messageId
+    ) {
+      await patchOriginal(
+        webhookUrl,
+        textPayload("Les détails de cette partie ne sont plus disponibles."),
+      );
       return;
     }
     const lines = [];
     for (const [i, r] of state.finalRanking.entries()) {
       const name = await displayName(r.discordId, r.username);
-      lines.push(`${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.score, "pt")}`);
+      lines.push(
+        `${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.score, "pt")}`,
+      );
       for (const d of r.details) lines.push(`• ${d.label} : **+${d.points}**`);
       if (!r.details.length) lines.push("• Aucun point");
       lines.push("");
     }
     await patchOriginal(webhookUrl, {
-      embeds: [{ title: "Draft · Détail des scores", description: lines.join("\n").trim().slice(0, 4096), color: DRAFTDUEL_COLOR }],
+      embeds: [
+        {
+          title: "Draft · Détail des scores",
+          description: lines.join("\n").trim().slice(0, 4096),
+          color: DRAFTDUEL_COLOR,
+        },
+      ],
       components: [],
     });
   } catch (err) {
@@ -660,7 +953,7 @@ function buildReglesEmbed(config) {
   return {
     title: "Règles du jeu : Draft",
     description: [
-      `Construis le meilleur deck de ${config.taille_deck} cartes en ${config.duel.manches} manches, de 1 à 3 joueurs (en solo contre un bot). Mêmes règles que le jeu spécial Draft Royale, sans contrat.`,
+      `Construis le meilleur deck de ${config.taille_deck} cartes en ${config.duel.manches} manches, de 1 à 3 joueurs (en solo contre un bot).`,
       "",
       `Tu reçois ${plural(config.cartes_depart, "carte")} au départ, jamais deux fois la même.`,
       "",
@@ -681,7 +974,10 @@ function buildReglesEmbed(config) {
 export async function handleRegles(webhookUrl) {
   try {
     await closeIfStale();
-    await patchOriginal(webhookUrl, { embeds: [buildReglesEmbed(await loadDraftRoyaleConfig())], components: [] });
+    await patchOriginal(webhookUrl, {
+      embeds: [buildReglesEmbed(await loadDraftRoyaleConfig())],
+      components: [],
+    });
   } catch (err) {
     console.error("[DraftDuel] Échec Règles:", err.message);
   }
@@ -691,9 +987,20 @@ export async function handleRegles(webhookUrl) {
 
 export async function handleCombinaisons(webhookUrl) {
   try {
-    const [config, catalog] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog()]);
+    const [config, catalog] = await Promise.all([
+      loadDraftRoyaleConfig(),
+      loadCatalog(),
+    ]);
     await patchOriginal(webhookUrl, {
-      embeds: [{ title: "Draft · Combinaisons", description: lignesCombinaisons(config, catalog).join("\n").slice(0, 4096), color: DRAFTDUEL_COLOR }],
+      embeds: [
+        {
+          title: "Draft · Combinaisons",
+          description: lignesCombinaisons(config, catalog)
+            .join("\n")
+            .slice(0, 4096),
+          color: DRAFTDUEL_COLOR,
+        },
+      ],
       components: [],
     });
   } catch (err) {
