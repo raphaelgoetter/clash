@@ -43,7 +43,7 @@ import { loadMarioClashConfig, readState, readJoueurs, readActions } from "../ba
     console.log("Classement :");
     ranking.forEach((j, i) => {
       const objet = j.objet ? ` [${config.objets[j.objet]?.label}]` : "";
-      console.log(`  ${i + 1}. ${j.username} — case ${j.position}/${config.case_arrivee}, ${j.points} Or${objet}`);
+      console.log(`  ${i + 1}. ${j.username} — case ${j.position}, ${j.points} Or${objet}`);
     });
   }
 
@@ -54,8 +54,14 @@ import { loadMarioClashConfig, readState, readJoueurs, readActions } from "../ba
     const username = joueurs[discordId]?.username || discordId;
     const parts = [];
     if (action.dice) parts.push(`${config.des[action.deId]?.emoji || "🎲"} dé (${action.diceValue})`);
-    if (action.item) parts.push("🎒 objet");
-    if (action.spell) parts.push("✨ sort");
+    if (action.item) {
+      const objet = config.objets[joueurs[discordId]?.objet];
+      parts.push(`${objet?.emoji || "🎒"} ${objet?.label || "objet"}`);
+    }
+    if (action.spell) {
+      const sort = config.sorts.find((s) => s.id === action.spell.sortId);
+      parts.push(`✨ ${sort?.nom || sort?.label || "sort"}`);
+    }
     console.log(`  - ${username} : ${parts.join(", ") || "(aucune)"}`);
   }
 })();
