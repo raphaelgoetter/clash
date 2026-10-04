@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // tagCards.js
-// Enrichit data/cardNames.json avec les champs nécessaires au jeu Duel
-// "Élixir" (/elixir) : `type`, `family`, et complète `elixir` pour les
+// Enrichit data/cardNames.json avec les champs nécessaires aux jeux de
+// draft (Draft Royale, duel /draft) : `type`, `family`, et complète `elixir` pour les
 // cartes qui n'en ont pas encore (sorts, bâtiments, troupes à stats
 // composites — generateCardStats.js ne remplit que les troupes éligibles à
 // La Juste Carte). Usage PONCTUEL, jamais dans un flux hebdomadaire.

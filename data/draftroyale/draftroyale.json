@@ -22,6 +22,7 @@
     "lourd": { "label": "Deck lourd (coût moyen ≥ 5)", "points": 4, "seuil": 5 },
     "trio": { "label": "Trio troupe + sort + bâtiment", "points": 2 }
   },
+  "duel": { "manches": 7, "marchand_en_plus": 2, "stale_heures": 2 },
   "majorites": [
     { "id": "champions", "label": "Le plus de champions", "rarete": "champion", "points": 12 },
     { "id": "legendaires", "label": "Le plus de légendaires", "rarete": "legendary", "points": 10 },

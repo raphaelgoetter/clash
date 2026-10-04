@@ -7,7 +7,7 @@
 //   - l'illustration statique (présentation / fin de partie).
 // Même technique que marioclashImage.js : SVG avec un `<image href="data:...">`
 // de fond, rastérisé en PNG via @resvg/resvg-js. Dessin des cartes (illustration
-// officielle + goutte d'élixir) partagé avec elixirImage.js.
+// officielle + goutte d'élixir) partagé via cardImage.js.
 //
 // ⚠️ Tapis en JPEG, jamais en WebP : resvg ne décode pas le WebP embarqué et
 // échoue SILENCIEUSEMENT (fond absent) — voir marioclashImage.js.
@@ -18,8 +18,8 @@
 // ============================================================
 
 import { readBlobAsset } from "./blobAssets.js";
-import { cardSvg, loadDataUrls, rasterize, getElixirCollectionImage } from "./elixirImage.js";
-import { resolveCard } from "./elixirRules.js";
+import { cardSvg, loadDataUrls, rasterize, getCollectionImage, RATIO_CARTE } from "./cardImage.js";
+import { resolveCard } from "./cards.js";
 import { readMarche, loadCatalog } from "./draftroyale.js";
 
 const MAT_IMAGE_PATH = "draftroyale/images/draft-game.jpg";
@@ -31,7 +31,7 @@ const FONT_FAMILY = "Inter";
 const MAT_WIDTH = 1200;
 const MAT_HEIGHT = 658;
 const ZONE = { x: 120, y: 85, w: 960, h: 470 };
-const RATIO = 320 / 285; // hauteur / largeur d'une illustration recadrée (elixirImage.js)
+const RATIO = RATIO_CARTE;
 const GAP = 18;
 const MAX_CARD_WIDTH = 150;
 
@@ -114,9 +114,16 @@ export async function getMarcheImage(jour) {
   return { buffer: await rasterize(svg, MAT_WIDTH), mimeType: "image/png" };
 }
 
+// Marché du duel Draft : clés passées dans l'URL, rendu sans état.
+export async function getMarcheImageFromKeys(keys) {
+  const catalog = await loadCatalog();
+  const svg = await buildMarcheSvg(groupMarche(keys.map((key) => ({ key }))), catalog);
+  return { buffer: await rasterize(svg, MAT_WIDTH), mimeType: "image/png" };
+}
+
 // Main d'un joueur (ou deck final) : clés passées dans l'URL, rendu sans état.
 export async function getMainImage(keys) {
-  return getElixirCollectionImage(keys, await loadCatalog());
+  return getCollectionImage(keys, await loadCatalog());
 }
 
 let illustrationCache = null;

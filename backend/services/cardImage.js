@@ -1,19 +1,14 @@
 // ============================================================
-// elixirImage.js — Image des cartes aux enchères du jeu Élixir : les
-// cartes de la manche en grand (illustration officielle, goutte d'élixir
-// avec le coût, nom), puis celles de la manche suivante en plus petit.
-// Même technique que pelemeleImage.js / zoomImage.js : SVG généré à la
-// volée, rastérisé en PNG via @resvg/resvg-js.
-//
-// Rendu SANS état : la route (backend/server.js, /api/elixir/image) reçoit
-// directement les clés de cartes dans l'URL. L'image d'une même liste de
-// cartes ne change jamais, elle peut donc être mise en cache longtemps, et
-// chaque manche a naturellement une URL différente.
+// cardImage.js — Rendu des cartes Clash Royale (illustration officielle +
+// goutte d'élixir avec le coût) pour les jeux de draft : grille de cartes
+// (main ou deck d'un joueur) et briques réutilisées par le marché
+// (draftroyaleImage.js). Même technique que pelemeleImage.js /
+// zoomImage.js : SVG généré à la volée, rastérisé en PNG via
+// @resvg/resvg-js.
 //
 // Illustrations : `iconUrls.medium` de l'API Clash Royale (fetchCards, même
 // cache partagé "clashCardDefinitions" que lajustecarte.js), téléchargées
 // puis intégrées en data URL (resvg ne charge aucune ressource distante).
-// La carte mystère n'a pas d'illustration : carte dessinée en SVG.
 //
 // ⚠️ Police embarquée obligatoire (voir pelemeleImage.js) : aucune police
 // système sur le runtime Vercel.
@@ -23,7 +18,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { fetchCards } from "./clashApi.js";
 import { getOrSet } from "./cache.js";
 import { readBlobFontPath } from "./blobAssets.js";
-import { resolveCard } from "./elixirRules.js";
+import { resolveCard } from "./cards.js";
 
 const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
@@ -36,19 +31,14 @@ const ICON_H = 420;
 const CROP_Y = 67;
 const CROP_H = 320;
 const RATIO = CROP_H / ICON_W;
-// Aucun nom sous les cartes : les illustrations suffisent, et les cartes
-// de la manche sont déjà listées dans le texte de l'embed
-const BIG = { w: 170, gap: 22, drop: 50 };
-const SMALL = { w: 92, gap: 14, drop: 30 };
-// Collection du vainqueur (fin de partie) : grille de 5 cartes par ligne
+// Main ou deck d'un joueur : grille de 5 cartes par ligne, sans nom (les
+// cartes sont déjà listées dans le texte de l'embed)
+export const RATIO_CARTE = RATIO;
 const MEDIUM = { w: 120, gap: 16, drop: 38 };
 const COLLECTION_COLS = 5;
 const PADDING = 24;
-const SECTION_GAP = 26;
-const LABEL_SIZE = 16;
 
 const BACKGROUND = "#1e1f22";
-const LABEL_COLOR = "#b5bac1";
 
 function escapeXml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -56,11 +46,10 @@ function escapeXml(value) {
 
 // ── Goutte d'élixir ─────────────────────────────────────────────────
 // Dessinée dans un repère 100×116, mise à l'échelle par `size` (largeur).
-// Partagée avec scripts/uploadElixirEmojis.js (emoji :elixir:).
 
 let gradientSeq = 0;
 
-export function elixirDropSvg(x, y, size, label = null) {
+function elixirDropSvg(x, y, size, label = null) {
   const id = `elx${gradientSeq++}`;
   const scale = size / 100;
   const text = label == null
@@ -103,19 +92,9 @@ async function fetchDataUrl(url) {
 
 // ── Cartes ──────────────────────────────────────────────────────────
 
-function mysteryCardSvg(x, y, w, h) {
-  const fontSize = Math.round(w * 0.5);
-  return `
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${w * 0.08}" fill="#3b1a5c" stroke="#f0c040" stroke-width="${Math.max(2, w * 0.03)}"/>
-  <rect x="${x + w * 0.07}" y="${y + w * 0.07}" width="${w * 0.86}" height="${h - w * 0.14}" rx="${w * 0.06}" fill="#5b2a8c"/>
-  <text x="${x + w / 2}" y="${y + h * 0.56}" font-family="${FONT_FAMILY}" font-size="${fontSize}" text-anchor="middle" fill="#f0c040">?</text>`;
-}
-
 export function cardSvg(card, dataUrl, x, y, size) {
   const h = Math.round(size.w * RATIO);
-  const art = card.mystery
-    ? mysteryCardSvg(x, y, size.w, h)
-    : dataUrl
+  const art = dataUrl
       ? `<svg x="${x}" y="${y}" width="${size.w}" height="${h}" viewBox="0 ${CROP_Y} ${ICON_W} ${CROP_H}"><image width="${ICON_W}" height="${ICON_H}" href="${dataUrl}"/></svg>`
       : `<rect x="${x}" y="${y}" width="${size.w}" height="${h}" rx="10" fill="#2b2d31"/>`;
   return `${art}
@@ -133,7 +112,7 @@ function rowHeight(size) {
 export async function loadDataUrls(cards) {
   const iconUrls = await loadIconUrls();
   return new Map(
-    await Promise.all(cards.filter((c) => !c.mystery).map(async (c) => [c.key, await fetchDataUrl(iconUrls.get(c.key))])),
+    await Promise.all(cards.map(async (c) => [c.key, await fetchDataUrl(iconUrls.get(c.key))])),
   );
 }
 
@@ -145,33 +124,7 @@ ${parts.join("\n")}
 </svg>`;
 }
 
-async function buildSvg(current, next) {
-  const dataUrls = await loadDataUrls([...current, ...next]);
-
-  // Marge haute/gauche supplémentaire pour la goutte qui déborde du coin
-  const top = PADDING + BIG.drop * 0.2;
-  const left = PADDING + BIG.drop * 0.25;
-  const width = Math.max(rowWidth(current.length, BIG), next.length ? rowWidth(next.length, SMALL) : 0) + left + PADDING;
-  let y = top;
-  const parts = current.map((c, i) => cardSvg(c, dataUrls.get(c.key), left + i * (BIG.w + BIG.gap), y, BIG));
-  y += rowHeight(BIG);
-
-  if (next.length) {
-    y += SECTION_GAP;
-    parts.push(
-      `<text x="${PADDING}" y="${y}" font-family="${FONT_FAMILY}" font-size="${LABEL_SIZE}" fill="${LABEL_COLOR}">MANCHE SUIVANTE</text>`,
-    );
-    y += 14 + SMALL.drop * 0.2;
-    const smallLeft = PADDING + SMALL.drop * 0.25;
-    parts.push(...next.map((c, i) => cardSvg(c, dataUrls.get(c.key), smallLeft + i * (SMALL.w + SMALL.gap), y, SMALL)));
-    y += rowHeight(SMALL);
-  }
-  const height = Math.round(y + PADDING);
-
-  return { width: Math.round(width), svg: wrapSvg(Math.round(width), height, parts) };
-}
-
-// Grille de cartes (collection du vainqueur), COLLECTION_COLS par ligne
+// Grille de cartes, COLLECTION_COLS par ligne
 async function buildCollectionSvg(cards) {
   const dataUrls = await loadDataUrls(cards);
   const left = PADDING + MEDIUM.drop * 0.25;
@@ -201,21 +154,11 @@ export async function rasterize(svg, width) {
   return Buffer.from(resvg.render().asPng());
 }
 
-// currentKeys / nextKeys : clés de cartes (normales ou `mystery`). Les clés
-// inconnues du catalogue sont ignorées (URL forgée). null si rien à
-// afficher.
-// Collection d'un joueur (au plus 10 cartes, une par manche)
-export async function getElixirCollectionImage(keys, catalog) {
+// Grille des cartes d'un joueur (au plus 10). Les clés inconnues du
+// catalogue sont ignorées (URL forgée). null si rien à afficher.
+export async function getCollectionImage(keys, catalog) {
   const cards = keys.map((k) => resolveCard(k, catalog)).filter(Boolean).slice(0, 10);
   if (!cards.length) return null;
   const { svg, width } = await buildCollectionSvg(cards);
-  return { buffer: await rasterize(svg, width), mimeType: "image/png" };
-}
-
-export async function getElixirCardsImage(currentKeys, nextKeys, catalog) {
-  const resolve = (keys) => keys.map((k) => resolveCard(k, catalog)).filter(Boolean).slice(0, 6);
-  const current = resolve(currentKeys);
-  if (!current.length) return null;
-  const { svg, width } = await buildSvg(current, resolve(nextKeys));
   return { buffer: await rasterize(svg, width), mimeType: "image/png" };
 }

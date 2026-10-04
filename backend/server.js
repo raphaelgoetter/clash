@@ -25,8 +25,6 @@ import { getCurrentFrameImage, getFrameImageByGameId } from "./services/frames.j
 import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "./services/zoomImage.js";
 import { getPaletteQuestionImage, getPaletteResultImage } from "./services/paletteImage.js";
 import { getPeleMeleRackImage } from "./services/pelemeleImage.js";
-import { getElixirCardsImage, getElixirCollectionImage } from "./services/elixirImage.js";
-import { loadCatalog as loadElixirCatalog } from "./services/elixirDuel.js";
 import {
   getBoardImage as getGoblinHuntersBoardImage,
   getEndImage as getGoblinHuntersEndImage,
@@ -40,6 +38,7 @@ import {
   getMarcheImage as getDraftRoyaleMarcheImage,
   getMainImage as getDraftRoyaleMainImage,
   getIllustrationImage as getDraftRoyaleIllustrationImage,
+  getMarcheImageFromKeys as getDraftMarcheImage,
 } from "./services/draftroyaleImage.js";
 
 const app = express();
@@ -328,25 +327,6 @@ app.get("/api/pelemele/image", async (req, res) => {
   res.send(image.buffer);
 });
 
-// Jeu Élixir : image des cartes aux enchères (manche en cours en grand,
-// manche suivante en petit), ou collection d'un joueur (mode=collection). Rendu sans état à partir des clés passées dans
-// l'URL (c = cartes de la manche, n = manche suivante, séparées par "|") :
-// une même liste donne toujours la même image, d'où le cache long.
-app.get("/api/elixir/image", async (req, res) => {
-  const split = (v) => (v ? String(v).split("|").filter(Boolean) : []);
-  const catalog = await loadElixirCatalog().catch(() => null);
-  // mode=collection : grille des cartes d'un joueur (fin de partie)
-  const render =
-    req.query.mode === "collection"
-      ? () => getElixirCollectionImage(split(req.query.c), catalog)
-      : () => getElixirCardsImage(split(req.query.c), split(req.query.n), catalog);
-  const image = catalog ? await render().catch(() => null) : null;
-  if (!image) return res.status(404).end();
-  res.setHeader("Content-Type", image.mimeType);
-  res.setHeader("Cache-Control", "public, max-age=86400");
-  res.send(image.buffer);
-});
-
 // Jeu Goblin Hunters : sert l'image du plateau (positions publiques). Le
 // paramètre jour n'est PAS une clé de lookup (contrairement à gameId côté
 // Frame/Zoom) : le rendu reflète toujours l'état COURANT de la partie —
@@ -423,10 +403,22 @@ app.get("/api/draftroyale/marche", async (req, res) => {
 
 // Draft Royale : main ou deck d'un joueur, rendu sans état à partir des clés
 // passées dans l'URL (c = cartes séparées par "|"), même principe que
-// /api/elixir/image?mode=collection.
+// celle du duel Draft.
 app.get("/api/draftroyale/main", async (req, res) => {
   const keys = req.query.c ? String(req.query.c).split("|").filter(Boolean) : [];
   const image = keys.length ? await getDraftRoyaleMainImage(keys).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(image.buffer);
+});
+
+// Duel Draft : marché de la manche posé sur le tapis, rendu sans état à
+// partir des clés de l'URL (c = cartes séparées par "|", une carte répétée
+// affiche un badge ×N).
+app.get("/api/draft/marche", async (req, res) => {
+  const keys = req.query.c ? String(req.query.c).split("|").filter(Boolean).slice(0, 30) : [];
+  const image = keys.length ? await getDraftMarcheImage(keys).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400");

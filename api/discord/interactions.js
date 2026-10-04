@@ -198,19 +198,18 @@ import {
   extractMember as extractGobeletDuelMember,
 } from "./_handlers/gobeletDuel.js";
 import {
-  handleElixirCommand as handleElixirDuelCommand,
-  handleElixirRoleRejected as handleElixirDuelRoleRejected,
-  memberHasMiniJeuxRole as elixirDuelMemberHasMiniJeuxRole,
-  handleJouer as handleElixirDuelJouer,
-  handleCarte as handleElixirDuelCarte,
-  handleMise as handleElixirDuelMise,
-  handleValider as handleElixirDuelValider,
-  handlePasser as handleElixirDuelPasser,
-  handleRegles as handleElixirDuelRegles,
-  handleJournal as handleElixirDuelJournal,
-  handleDetails as handleElixirDuelDetails,
-  extractMember as extractElixirDuelMember,
-} from "./_handlers/elixirDuel.js";
+  handleDraftCommand as handleDraftDuelCommand,
+  handleDraftRoleRejected as handleDraftDuelRoleRejected,
+  memberHasMiniJeuxRole as draftDuelMemberHasMiniJeuxRole,
+  handleJouer as handleDraftDuelJouer,
+  handlePioche as handleDraftDuelPioche,
+  handleDepot as handleDraftDuelDepot,
+  handleVoeu as handleDraftDuelVoeu,
+  handleFinTour as handleDraftDuelFinTour,
+  handleRegles as handleDraftDuelRegles,
+  handleDetails as handleDraftDuelDetails,
+  extractMember as extractDraftDuelMember,
+} from "./_handlers/draftDuel.js";
 import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
@@ -9203,82 +9202,72 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── /elixir — jeu Duel « Élixir » (enchères secrètes, 1 à 3 joueurs,
-  // N manches). Réservé au rôle MINI-JEUX, même principe que /gobelet.
-  if (body.type === 2 && body.data?.name === "elixir") {
+  // ── /draft — jeu Duel « Draft » (version duel du Draft Royale, 1 à 3
+  // joueurs, 7 manches). Réservé au rôle MINI-JEUX, même principe que /gobelet.
+  if (body.type === 2 && body.data?.name === "draft") {
     const joueursOpt = body.data.options?.find((o) => o.name === "joueurs");
-    const manchesOpt = body.data.options?.find((o) => o.name === "manches");
     const maxPlayers = Number(joueursOpt?.value) || 1;
-    const totalManches = Number(manchesOpt?.value) || 5;
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(async () => {
-      const allowed = await elixirDuelMemberHasMiniJeuxRole(body);
+      const allowed = await draftDuelMemberHasMiniJeuxRole(body);
       if (!allowed) {
-        await handleElixirDuelRoleRejected(webhookUrl);
+        await handleDraftDuelRoleRejected(webhookUrl);
         return;
       }
-      await handleElixirDuelCommand(webhookUrl, body, { maxPlayers, totalManches });
+      await handleDraftDuelCommand(webhookUrl, body, { maxPlayers });
     });
     return;
   }
 
-  // ── Élixir : bouton "Jouer" (inscription + offre éphémère) ──
-  if (body.type === 3 && body.data?.custom_id === "elixirduel_jouer") {
-    const { discordId, username } = extractElixirDuelMember(body);
+  // ── Draft (duel) : bouton "Jouer" (inscription + main éphémère) ──
+  if (body.type === 3 && body.data?.custom_id === "draftduel_jouer") {
+    const { discordId, username } = extractDraftDuelMember(body);
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleElixirDuelJouer(webhookUrl, discordId, username));
+    runBackground(() => handleDraftDuelJouer(webhookUrl, discordId, username));
     return;
   }
 
-  // ── Élixir : menus "Carte" / "Mise" et boutons "Valider" / "Passer"
-  // (type 6 : édition en place du message éphémère) ──
+  // ── Draft (duel) : Piocher / Fin de tour / menus dépôt et vœux
+  // (type 6 : édition en place de la main éphémère) ──
+  // custom_id : draftduel_pioche:<m>, draftduel_fin:<m>, draftduel_depot:<m>, draftduel_voeu:<m>:<rang>
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    /^elixirduel_(carte|mise|valider|passer):/.test(body.data.custom_id)
+    /^draftduel_(pioche|fin|depot|voeu):/.test(body.data.custom_id)
   ) {
-    const action = body.data.custom_id.split(":")[0];
-    const { discordId } = extractElixirDuelMember(body);
+    const [action, , rang] = body.data.custom_id.split(":");
+    const { discordId } = extractDraftDuelMember(body);
     const value = body.data.values?.[0];
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "elixirduel_carte") runBackground(() => handleElixirDuelCarte(webhookUrl, discordId, value));
-    else if (action === "elixirduel_mise") runBackground(() => handleElixirDuelMise(webhookUrl, discordId, value));
-    else if (action === "elixirduel_valider") runBackground(() => handleElixirDuelValider(webhookUrl, discordId));
-    else runBackground(() => handleElixirDuelPasser(webhookUrl, discordId));
+    if (action === "draftduel_pioche") runBackground(() => handleDraftDuelPioche(webhookUrl, discordId));
+    else if (action === "draftduel_fin") runBackground(() => handleDraftDuelFinTour(webhookUrl, discordId));
+    else if (action === "draftduel_depot") runBackground(() => handleDraftDuelDepot(webhookUrl, discordId, value));
+    else runBackground(() => handleDraftDuelVoeu(webhookUrl, discordId, rang, value));
     return;
   }
 
-  // ── Élixir : bouton "Détails" (fin de partie, détail des scores, éphémère) ──
+  // ── Draft (duel) : bouton "Détails" (fin de partie, éphémère) ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("elixirduel_details:")
+    body.data.custom_id.startsWith("draftduel_details:")
   ) {
     const messageId = body.data.custom_id.split(":")[1];
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleElixirDuelDetails(webhookUrl, messageId));
+    runBackground(() => handleDraftDuelDetails(webhookUrl, messageId));
     return;
   }
 
-  // ── Élixir : bouton "Journal" (progression des objectifs, éphémère) ──
-  if (body.type === 3 && body.data?.custom_id === "elixirduel_journal") {
-    const { discordId } = extractElixirDuelMember(body);
+  // ── Draft (duel) : bouton "Règles" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "draftduel_regles") {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleElixirDuelJournal(webhookUrl, discordId));
-    return;
-  }
-
-  // ── Élixir : bouton "Règles" (éphémère, statique) ──
-  if (body.type === 3 && body.data?.custom_id === "elixirduel_regles") {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleElixirDuelRegles(webhookUrl));
+    runBackground(() => handleDraftDuelRegles(webhookUrl));
     return;
   }
 

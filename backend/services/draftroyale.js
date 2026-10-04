@@ -34,7 +34,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { filterCardPool } from "./elixirRules.js";
+import { filterCardPool, RARITIES } from "./cards.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "draftroyale", "draftroyale.json");
@@ -49,7 +49,7 @@ const MANCHE_SEQ_KEY = "draftroyale:manche_seq";
 const actionsKey = (jour) => `draftroyale:actions:${jour}`;
 const marcheKey = (jour) => `draftroyale:marche:${jour}`;
 
-export const RARITIES = ["common", "rare", "epic", "legendary", "champion"];
+export { RARITIES };
 
 let _redis = null;
 function getRedis() {
@@ -110,9 +110,8 @@ export async function loadDraftRoyaleConfig() {
   return _configCache;
 }
 
-// Catalogue complet des cartes jouables (mêmes exclusions que le jeu
-// Élixir, mais sans sa liste choisie à la main : le draft a besoin de
-// variété). Map cardKey → carte de data/cardNames.json.
+// Catalogue complet des cartes jouables (voir cards.js).
+// Map cardKey → carte de data/cardNames.json.
 let _catalogCache = null;
 
 export async function loadCatalog() {
@@ -286,8 +285,11 @@ function shuffle(array, rng) {
 }
 
 // Résolution des vœux du jour `jour` sur le marché de la veille
-// (`marcheVeille` = [{ key, discordId, at }]). Mute `joueurs` (copie
-// fournie par computeCloture) et renvoie les lignes du bilan.
+// (`marcheVeille` = [{ key, discordId, at, copies? }]). Une entrée sans
+// déposant (`discordId` null, cartes du Marchand du Draft en duel) ne
+// rapporte de popularité à personne ; `copies` remplace alors
+// `copies_par_depot`. Mute `joueurs` (copie fournie par l'appelant) et
+// renvoie les lignes du bilan.
 export function resoudreVoeux({ jour, joueurs, actionsRaw, marcheVeille, config, rng = Math.random }) {
   const lignes = [];
   // Stock : `copies_par_depot` exemplaires par carte déposée, attribués au
@@ -295,7 +297,7 @@ export function resoudreVoeux({ jour, joueurs, actionsRaw, marcheVeille, config,
   const stock = new Map();
   for (const m of [...marcheVeille].sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))) {
     const slots = stock.get(m.key) || [];
-    for (let i = 0; i < config.copies_par_depot; i++) slots.push(m.discordId);
+    for (let i = 0; i < (m.copies ?? config.copies_par_depot); i++) slots.push(m.discordId ?? null);
     stock.set(m.key, slots);
   }
 
