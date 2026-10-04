@@ -306,6 +306,19 @@ async function main() {
     assert.strictEqual(r2.lignes.find((l) => l.type === "sort" && l.discordId === "c").valeurClone, 0);
   }
 
+  // ── Objet acheté sans cible choisie : remboursé et retiré ────────────
+  {
+    const joueursAvant = {
+      a: { username: "A", position: 5, points: 1, objet: "bombe" },
+      b: { username: "B", position: 8, points: 0, objet: null },
+    };
+    const r = computeCloture({ actionsRaw: {}, joueursAvant, config: CONFIG, rng: Math.random });
+    assert.strictEqual(r.joueursApres.a.objet, null);
+    assert.strictEqual(r.joueursApres.a.points, 3);
+    assert.strictEqual(r.joueursApres.b.position, 8);
+    assert.ok(r.lignes.some((l) => l.effet === "rembourse" && l.discordId === "a" && l.valeur === 2));
+  }
+
   // ── ciblesObjet : portée de la Banane (devant soi, 10 cases max) ─────
   {
     const joueurs = {

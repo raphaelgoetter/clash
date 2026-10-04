@@ -450,6 +450,17 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     joueur.objet = null;
   }
 
+  // Objet acheté mais jamais activé (Bombe/Banane dont le select de cible a
+  // été abandonné : l'Or est débité à l'achat, la cible choisie ensuite) :
+  // remboursé et retiré, sinon il bloquerait la boutique les jours suivants.
+  for (const [id, joueur] of Object.entries(joueurs)) {
+    if (!joueur.objet || actionsRaw[id]?.item) continue;
+    const cout = config.objets[joueur.objet]?.cout || 0;
+    joueur.points += cout;
+    lignes.push({ type: "objet", discordId: id, itemId: joueur.objet, effet: "rembourse", valeur: cout });
+    joueur.objet = null;
+  }
+
   // 3) Sorts — cible et effet déjà tirés au clic (castSpellForPlayer), on
   // se contente ici de les APPLIQUER (ou de les bloquer si la cible est
   // devenue immunisée entre-temps) : jamais un second tirage.

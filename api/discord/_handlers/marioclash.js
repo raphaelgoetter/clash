@@ -222,6 +222,8 @@ function formatBilanLignes(lignes, joueurs, config) {
             return `🍌 ${nomDe(l.discordId)} échange sa place avec ${nomDe(l.cibleId)}`;
           if (l.effet === "renvoi")
             return `⭐ L'Étoile de ${nomDe(l.cibleId)} renvoie l'objet de ${nomDe(l.discordId)}, qui recule de ${l.valeur}`;
+          if (l.effet === "rembourse")
+            return `${config.objets[l.itemId]?.emoji || "🎒"} ${config.objets[l.itemId]?.label || "Objet"} sans cible : ${l.valeur} Or remboursés`;
           return null;
         case "sort": {
           if (l.effet === "bloque")
@@ -935,7 +937,7 @@ export async function handleBoutiqueButton(
     const joueur = await ensureJoueur(discordId, username);
     if (joueur.objet) {
       await patchOriginal(webhookUrl, {
-        content: `🛍️ Tu possèdes déjà ${config.objets[joueur.objet]?.emoji || ""} **${config.objets[joueur.objet]?.label}** — utilise-le ou attends qu'il soit consommé avant d'en racheter un.`,
+        content: `🛍️ Tu as déjà acheté ${config.objets[joueur.objet]?.emoji || ""} **${config.objets[joueur.objet]?.label}** aujourd'hui, il s'appliquera à la clôture. Un seul objet par jour.`,
         embeds: [],
         components: [],
       });
