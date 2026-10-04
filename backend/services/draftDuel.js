@@ -38,6 +38,13 @@ import {
 } from "./draftroyale.js";
 
 export const BOT_ID = "bot";
+
+// Barème du Draft Royale, avec les réglages propres au duel : un seul
+// vœu par manche (peu de joueurs, donc peu de conflits sur le marché).
+export async function loadDraftDuelConfig() {
+  const config = await loadDraftRoyaleConfig();
+  return { ...config, nb_voeux: config.duel.nb_voeux ?? config.nb_voeux };
+}
 export const BOT_NAME = "Bot";
 
 let _redis = null;
@@ -243,7 +250,7 @@ export async function startGame(channelId, { maxPlayers }, rng = Math.random) {
     return { alreadyActive: true, state: existing };
   }
   await resetDraftDuel();
-  const [config, catalog] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog()]);
+  const [config, catalog] = await Promise.all([loadDraftDuelConfig(), loadCatalog()]);
   const state = {
     channelId,
     messageId: null,
@@ -284,7 +291,7 @@ export async function joinGame(discordId, username, rng = Math.random) {
   if (!decision.allowed) return { rosterLocked: true, state };
   if (decision.isSeated) return { state, isNew: false };
 
-  const [config, catalog] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog()]);
+  const [config, catalog] = await Promise.all([loadDraftDuelConfig(), loadCatalog()]);
   await writePlayer(discordId, nouveauJoueur(username, state.players.length, config, catalog, rng));
   const newState = touch({ ...state, players: decision.players, rosterLocked: decision.rosterLocked });
   await writeState(newState);
@@ -295,7 +302,7 @@ export async function joinGame(discordId, username, rng = Math.random) {
 
 export async function readPlayerView(state, discordId) {
   const [config, catalog, players, action] = await Promise.all([
-    loadDraftRoyaleConfig(),
+    loadDraftDuelConfig(),
     loadCatalog(),
     readPlayers(),
     readAction(state.manche, discordId),
@@ -347,7 +354,7 @@ export async function deposer(discordId, key) {
   const guard = await guardTurn(discordId);
   if (!guard.action) return guard;
   const { state, action } = guard;
-  const [config, players] = await Promise.all([loadDraftRoyaleConfig(), readPlayers()]);
+  const [config, players] = await Promise.all([loadDraftDuelConfig(), readPlayers()]);
   const me = players[discordId];
   if (action.depot || state.manche > config.jour_dernier_depot || !me.main.includes(key)) {
     return { ...(await afterAction(state, discordId)), invalid: true };
@@ -365,7 +372,7 @@ export async function enregistrerVoeu(discordId, rang, key) {
   const guard = await guardTurn(discordId);
   if (!guard.action) return guard;
   const { state, action } = guard;
-  const config = await loadDraftRoyaleConfig();
+  const config = await loadDraftDuelConfig();
   const view = await readPlayerView(state, discordId);
   if (!view.souhaitables.includes(key) || rang < 1 || rang > config.nb_voeux) return { ...(await afterAction(state, discordId)), invalid: true };
   const voeux = Array.from({ length: config.nb_voeux }, (_, i) => action.voeux?.[i] ?? null).map((k) => (k === key ? null : k));
@@ -393,7 +400,7 @@ export async function finirTour(discordId, webhookUrl) {
 // ── Tour du bot (solo) ──────────────────────────────────────────────
 
 async function playBotTurn(state, rng = Math.random) {
-  const [config, catalog, players] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readPlayers()]);
+  const [config, catalog, players] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
   const bot = players[BOT_ID];
   if (!bot) return;
   const main = [...bot.main];
@@ -449,7 +456,7 @@ export function computeMancheDuel({ state, joueursAvant, actions, config, catalo
 }
 
 async function resolveManche(state, actions, rng) {
-  const [config, catalog, joueursAvant] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readPlayers()]);
+  const [config, catalog, joueursAvant] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
   const { joueurs, lignes, final, marche } = computeMancheDuel({ state, joueursAvant, actions, config, catalog, rng });
   for (const [id, j] of Object.entries(joueurs)) await writePlayer(id, j);
 
@@ -508,7 +515,7 @@ export function isStale(state, now = Date.now(), staleHours = state?.staleHours 
 export async function expireIfStale(now = Date.now()) {
   const state = await readState();
   if (!isStale(state, now)) return { expired: false };
-  const [config, catalog, joueurs] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readPlayers()]);
+  const [config, catalog, joueurs] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
   const ranking = computeFinal({ joueurs, config, catalog });
   const newState = { ...state, termine: true, expired: true, finalRanking: ranking };
   await writeState(newState);

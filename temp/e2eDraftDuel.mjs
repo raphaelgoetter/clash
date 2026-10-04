@@ -32,7 +32,7 @@ for (let m = 1; m <= 7; m++) {
     await H.handlePioche(`wh-${id}`, id);
     let view = await S.readPlayerView(await S.readState(), id);
     if (view.souhaitables.length) {
-      for (let r = 1; r <= Math.min(3, view.souhaitables.length); r++) await H.handleVoeu(`wh-${id}`, id, String(r), view.souhaitables[r - 1]);
+      for (let r = 1; r <= Math.min(view.config.nb_voeux, view.souhaitables.length); r++) await H.handleVoeu(`wh-${id}`, id, String(r), view.souhaitables[r - 1]);
     }
     if (m <= 6) await H.handleDepot(`wh-${id}`, id, view.me.main[0]);
     if (id === "u1" && (m === 2 || m === 3)) {

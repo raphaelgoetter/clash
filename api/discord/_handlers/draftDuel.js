@@ -29,11 +29,11 @@ import {
   expireIfStale,
   scoreProvisoire,
   nbCartesMarchand,
+  loadDraftDuelConfig,
   BOT_ID,
   BOT_NAME,
 } from "../../../backend/services/draftDuel.js";
 import {
-  loadDraftRoyaleConfig,
   loadCatalog,
   combinaisonsEnCours,
   lignesCombinaisons,
@@ -351,7 +351,7 @@ async function buildRecapLines(lastRecap, players, catalog) {
     const name = await displayName(l.discordId, players[l.discordId]?.username);
     if (l.type === "voeu")
       lines.push(
-        `${EMOJI.check.text} **${name}** obtient **${cardName(l.key, catalog)}** (vœu n°${l.rang})`,
+        `${EMOJI.check.text} **${name}** obtient **${cardName(l.key, catalog)}**`,
       );
     if (l.type === "retour") lines.push(`↩️ **${name}** récupère sa carte`);
   }
@@ -385,14 +385,14 @@ async function buildPlayersLines(state, players, actions, config, catalog) {
 
 async function buildTableEmbed(state) {
   const [config, catalog, players, actions] = await Promise.all([
-    loadDraftRoyaleConfig(),
+    loadDraftDuelConfig(),
     loadCatalog(),
     readPlayers(),
     readActions(state.manche),
   ]);
   const marcheLigne = state.marche?.length
     ? `${EMOJI.trade.text} **Marché** : ${plural(state.marche.length, "carte")} (dépôts et Marchand), pour ceux qui ont déposé à la manche précédente.`
-    : `${EMOJI.trade.text} Le marché ouvre à la manche 2 : dépose une carte pour y faire des vœux.`;
+    : `${EMOJI.trade.text} Le marché ouvre à la manche 2 : dépose une carte pour pouvoir y choisir une carte.`;
   const lines = [
     ...(await buildRecapLines(state.lastRecap, players, catalog)),
     marcheLigne,
@@ -591,11 +591,11 @@ function buildMyRecap(lastRecap, discordId, catalog) {
   for (const l of mine) {
     if (l.type === "voeu")
       lines.push(
-        `${EMOJI.check.text} Vœu n°${l.rang} exaucé : tu reçois **${cardName(l.key, catalog)}**.`,
+        `${EMOJI.check.text} Vœu exaucé : tu reçois **${cardName(l.key, catalog)}**.`,
       );
     if (l.type === "retour")
       lines.push(
-        `↩️ ${l.sansVoeu ? "Sans vœu" : "Aucun vœu disponible"} : **${cardName(l.key, catalog)}** te revient.`,
+        `↩️ ${l.sansVoeu ? "Sans vœu" : "Vœu indisponible"} : **${cardName(l.key, catalog)}** te revient.`,
       );
     if (l.type === "popularite")
       lines.push(
@@ -617,7 +617,7 @@ function buildStatusLines(view) {
   if (depotVeille) {
     lines.push(
       souhaitables.length
-        ? `${EMOJI.trade.text} Vœux (tu as déposé ${cardName(depotVeille.key, catalog)}) : à défaut, ta carte te revient.`
+        ? `${EMOJI.trade.text} Vœu (tu as déposé ${cardName(depotVeille.key, catalog)}) : choisis une carte du marché, à défaut ta carte te revient.`
         : `${EMOJI.trade.text} Aucune carte du marché ne te manque : ${cardName(depotVeille.key, catalog)} te reviendra.`,
     );
   }
@@ -628,7 +628,7 @@ function buildStatusLines(view) {
     );
   else if (state.manche <= config.jour_dernier_depot)
     lines.push(
-      `${EMOJI.trade.text} Dépôt facultatif : il te permettra de faire des vœux à la prochaine manche.`,
+      `${EMOJI.trade.text} Dépôt facultatif : il te permettra de choisir une carte du marché à la prochaine manche.`,
     );
   if (action.fini)
     lines.push(
@@ -695,7 +695,7 @@ function buildHandComponents(view) {
           {
             type: 3,
             custom_id: `draftduel_voeu:${manche}:${rang}`,
-            placeholder: `${rang === 1 ? "1er" : `${rang}e`} vœu`,
+            placeholder: config.nb_voeux === 1 ? "Ton choix" : `${rang === 1 ? "1er" : `${rang}e`} vœu`,
             options: options.map((k) =>
               cardOption(k, catalog, action.voeux?.[rang - 1] === k),
             ),
@@ -742,7 +742,7 @@ function buildHandComponents(view) {
   return rows;
 }
 
-// Cartes du marché de la manche, visibles sans ouvrir les menus de vœux.
+// Cartes du marché de la manche, visibles sans ouvrir le menu de choix.
 function buildMarcheEmbed(view) {
   const { state, catalog } = view;
   if (!state.marche?.length) return null;
@@ -960,7 +960,7 @@ function buildReglesEmbed(config) {
       "**À chaque manche**",
       "👆 **Piocher** (obligatoire) : une carte au hasard.",
       `${EMOJI.trade.text} **Déposer** (manches 1 à ${config.jour_dernier_depot}, facultatif) : une carte de ta main part au marché, définitivement.`,
-      `${EMOJI.trade.text} **Vœux** (la manche après un dépôt) : classe jusqu'à ${config.nb_voeux} cartes du marché. À la fin de la manche, tu reçois ton premier vœu encore disponible, sinon ta carte te revient.`,
+      `${EMOJI.trade.text} **Vœu** (la manche après un dépôt) : choisis une carte du marché. À la fin de la manche, tu la reçois si elle est encore disponible, sinon ta carte te revient.`,
       `${EMOJI.check.text} **Fin de tour** : la manche se termine quand tous les joueurs ont fini.`,
       "",
       `**Marché** : les cartes déposées (${config.copies_par_depot} joueurs max par carte) et celles du Marchand (joueurs + ${config.duel.marchand_en_plus}, en solo ${nbCartesMarchand(1, config)}, une seule fois chacune). Les joueurs les plus populaires sont servis en premier, puis au hasard.`,
@@ -975,7 +975,7 @@ export async function handleRegles(webhookUrl) {
   try {
     await closeIfStale();
     await patchOriginal(webhookUrl, {
-      embeds: [buildReglesEmbed(await loadDraftRoyaleConfig())],
+      embeds: [buildReglesEmbed(await loadDraftDuelConfig())],
       components: [],
     });
   } catch (err) {
@@ -988,7 +988,7 @@ export async function handleRegles(webhookUrl) {
 export async function handleCombinaisons(webhookUrl) {
   try {
     const [config, catalog] = await Promise.all([
-      loadDraftRoyaleConfig(),
+      loadDraftDuelConfig(),
       loadCatalog(),
     ]);
     await patchOriginal(webhookUrl, {

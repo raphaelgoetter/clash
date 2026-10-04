@@ -9,8 +9,8 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { readState, readPlayers, readActions, scoreProvisoire, isStale } from "../backend/services/draftDuel.js";
-import { loadDraftRoyaleConfig, loadCatalog } from "../backend/services/draftroyale.js";
+import { readState, readPlayers, readActions, scoreProvisoire, isStale, loadDraftDuelConfig } from "../backend/services/draftDuel.js";
+import { loadCatalog } from "../backend/services/draftroyale.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {
@@ -29,7 +29,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   console.log(`Manche ${state.manche}/${state.totalManches} · ${state.players.length}/${state.maxPlayers} joueur(s)${state.rosterLocked ? " (inscriptions closes)" : ""}`);
   console.log(`Dernière activité il y a ${hoursSince.toFixed(1)}h${staleWarning}\n`);
 
-  const [config, catalog, players, actions] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readPlayers(), readActions(state.manche)]);
+  const [config, catalog, players, actions] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers(), readActions(state.manche)]);
   const nom = (k) => catalog.get(k)?.fr || k;
   console.log(`Marché : ${state.marche?.length ? state.marche.map((m) => `${nom(m.key)}${m.discordId ? "" : " (Marchand)"}`).join(", ") : "(vide)"}\n`);
 

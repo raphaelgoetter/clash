@@ -39,7 +39,7 @@
     { "id": "bucheron_ballon", "cartes": ["Lumberjack", "Balloon"], "points": 6 },
     { "id": "electro_geant_tornade", "cartes": ["Electro Giant", "Tornado"], "points": 6 }
   ],
-  "duel": { "manches": 7, "marchand_en_plus": 2, "stale_heures": 2 },
+  "duel": { "manches": 7, "marchand_en_plus": 2, "stale_heures": 2, "nb_voeux": 1 },
   "majorites": [
     { "id": "champions", "label": "Le plus de champions", "rarete": "champion", "points": 12 },
     { "id": "legendaires", "label": "Le plus de légendaires", "rarete": "legendary", "points": 10 },
