@@ -36,6 +36,11 @@ import {
   getBoardImage as getMarioClashBoardImage,
   getIllustrationImage as getMarioClashIllustrationImage,
 } from "./services/marioclashImage.js";
+import {
+  getMarcheImage as getDraftRoyaleMarcheImage,
+  getMainImage as getDraftRoyaleMainImage,
+  getIllustrationImage as getDraftRoyaleIllustrationImage,
+} from "./services/draftroyaleImage.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -397,6 +402,40 @@ app.get("/api/marioclash/image", async (req, res) => {
 // course), servie telle quelle — même principe que /api/goblinhunters/end-image.
 app.get("/api/marioclash/illustration", async (req, res) => {
   const image = await getMarioClashIllustrationImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Draft Royale : marché ouvert aux vœux le jour `jour` (dépôts de la veille,
+// posés sur le tapis). `jour` est une vraie clé de lookup ici (marché du
+// jour précédent), `v` sert seulement à invalider le cache Discord.
+app.get("/api/draftroyale/marche", async (req, res) => {
+  const jour = Number(req.query.jour);
+  if (!Number.isInteger(jour) || jour < 1) return res.status(400).end();
+  const image = await getDraftRoyaleMarcheImage(jour).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Draft Royale : main ou deck d'un joueur, rendu sans état à partir des clés
+// passées dans l'URL (c = cartes séparées par "|"), même principe que
+// /api/elixir/image?mode=collection.
+app.get("/api/draftroyale/main", async (req, res) => {
+  const keys = req.query.c ? String(req.query.c).split("|").filter(Boolean) : [];
+  const image = keys.length ? await getDraftRoyaleMainImage(keys).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(image.buffer);
+});
+
+// Draft Royale : illustration statique (présentation / jour 1).
+app.get("/api/draftroyale/illustration", async (req, res) => {
+  const image = await getDraftRoyaleIllustrationImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");

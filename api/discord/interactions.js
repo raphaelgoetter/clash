@@ -152,6 +152,16 @@ import {
   handleRegles as handleMarioClashRegles,
 } from "./_handlers/marioclash.js";
 import {
+  handlePiocheButton as handleDraftRoyalePioche,
+  handleMarcheButton as handleDraftRoyaleMarche,
+  handleContratButton as handleDraftRoyaleContrat,
+  handleDepotSelect as handleDraftRoyaleDepot,
+  handleVoeuSelect as handleDraftRoyaleVoeu,
+  handleContratSelect as handleDraftRoyaleContratSelect,
+  handleJournal as handleDraftRoyaleJournal,
+  handleRegles as handleDraftRoyaleRegles,
+} from "./_handlers/draftroyale.js";
+import {
   handleJouer as handleBlackjackJouer,
   handlePiocher as handleBlackjackPiocher,
   handleArreter as handleBlackjackArreter,
@@ -10116,6 +10126,65 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleMarioClashRegles(webhookUrl));
+    return;
+  }
+
+  // ── Draft Royale : boutons du jour (pioche / marché / contrat) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("draftroyale_pioche:") ||
+      body.data.custom_id.startsWith("draftroyale_marche:") ||
+      body.data.custom_id.startsWith("draftroyale_contrat:"))
+  ) {
+    const [action, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "draftroyale_pioche") runBackground(() => handleDraftRoyalePioche(webhookUrl, jour, discordId, username));
+    else if (action === "draftroyale_marche") runBackground(() => handleDraftRoyaleMarche(webhookUrl, jour, discordId, username));
+    else if (action === "draftroyale_contrat") runBackground(() => handleDraftRoyaleContrat(webhookUrl, jour, discordId, username));
+    return;
+  }
+
+  // ── Draft Royale : selects (dépôt / vœu / contrat), édition en place de l'éphémère ──
+  // custom_id : draftroyale_depot:<jour>, draftroyale_voeu:<jour>:<rang>, draftroyale_contrat_select:<jour>
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("draftroyale_depot:") ||
+      body.data.custom_id.startsWith("draftroyale_voeu:") ||
+      body.data.custom_id.startsWith("draftroyale_contrat_select:"))
+  ) {
+    const [action, jour, rang] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    const value = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "draftroyale_depot") runBackground(() => handleDraftRoyaleDepot(webhookUrl, jour, discordId, username, value));
+    else if (action === "draftroyale_voeu") runBackground(() => handleDraftRoyaleVoeu(webhookUrl, jour, rang, discordId, username, value));
+    else runBackground(() => handleDraftRoyaleContratSelect(webhookUrl, jour, discordId, username, value));
+    return;
+  }
+
+  // ── Draft Royale : bouton "Journal" (main, contrat, score provisoire, éphémère) ──
+  if (body.type === 3 && body.data?.custom_id === "draftroyale_journal") {
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleDraftRoyaleJournal(webhookUrl, discordId));
+    return;
+  }
+
+  // ── Draft Royale : bouton "Règles" (éphémère, statique) ──
+  if (body.type === 3 && body.data?.custom_id === "draftroyale_regles") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleDraftRoyaleRegles(webhookUrl));
     return;
   }
 

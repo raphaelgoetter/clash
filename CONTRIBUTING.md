@@ -576,6 +576,8 @@ Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 | Tamagoshi      | `10 8 * * *` (📦 archivé, cron commenté) |
 | Blackjack      | `12 8 * * *` |
 | Jeu du Gobelet | `16 8 * * *` |
+| Mario Clash    | `14 8 * * *` |
+| Draft Royale   | `18 8 * * *` (🧪 en test, cron commenté) |
 
 ⚠️ **Incident du 27/08** : les 5 crons alors existants étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont _best-effort_ et que le délai augmente aux heures rondes, justement à cause de la charge — caler plusieurs workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Blackjack a suivi le même principe à son activation, décalé sur la minute suivante (`12 8 * * *`).
 
@@ -596,7 +598,7 @@ Ordre chronologique de lancement **public** des jeux collaboratifs à avancée q
 - (2026-08-24) Robinson (10 jours)
 - (2026-08-31) Quiz (7 jours)
 
-**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours), Goblin Hunters (7 jours), Blackjack (7 jours).
+**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours), Goblin Hunters (7 jours), Blackjack (7 jours), Draft Royale (7 jours).
 
 ---
 
@@ -1909,6 +1911,94 @@ Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le cla
 ### Variables d'environnement requises (Jeu du Gobelet)
 
 Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `DISCORD_APP_ID`/`DISCORD_TOKEN` (upload emoji). Le `schedule` du cron (`16 8 * * *`) est actif dans `.github/workflows/gobelet.yml`, comme Blackjack.
+
+## Draft Royale — deck de 8 cartes en 7 jours
+
+Jeu spécial à avancée quotidienne : chaque joueur construit le deck de 8 cartes qui marque le plus de points de synergie. Participation libre (joueur créé au premier clic, avec ses cartes de départ). Code : `backend/services/draftroyale.js` (règles pures + Redis), `backend/services/draftroyaleImage.js` (images), `api/discord/_handlers/draftroyale.js` (Discord), `scripts/postDraftRoyale.js`. Équilibrage simulé avec `temp/simulateDraft.mjs` sur 15-20 joueurs (taille réelle des parties).
+
+### Déroulement (Draft Royale)
+
+- **Départ** : `cartes_depart` (2) cartes aléatoires au premier clic, plus une par jour manqué pour un joueur qui arrive en cours de partie (`cartesDeDepart()`). Jamais deux fois la même carte dans une main ; deux joueurs peuvent avoir la même.
+- **Catalogue** : toutes les cartes jouables de `data/cardNames.json` (mêmes exclusions que le jeu Élixir via `filterCardPool()`, mais **sans** sa liste `pool.json` choisie à la main, soit 121 cartes).
+- **Trois actions par jour**, une fois chacune :
+  - 👆 **Piocher** : carte aléatoire ajoutée en direct, hors main et hors cartes déposées en attente de retour.
+  - **Marché** (emoji `<:trade:1493849418611294279>`) : **dépôt** facultatif d'une carte (J1 à `jour_dernier_depot` = J6), retirée de la main tout de suite et définitivement ; le lendemain d'un dépôt, jusqu'à `nb_voeux` (3) **vœux** classés sur le marché de la veille, modifiables jusqu'à la clôture. Sans dépôt la veille, pas de vœux.
+  - ✍️ **Contrat** (J1 à J4) : objectif de thème secret, un thème à un palier (`"squelettes:4"`). Bonus si atteint au J7 : `round(points du palier × (multiplicateur − 1))`, multiplicateur selon le jour de signature (J1 ×2, J2 ×1,75, J3 ×1,5, J4 ×1,25). **Aucune pénalité** en cas d'échec (décision du 04/10 : une pénalité compliquait les règles sans toucher les joueurs actifs). Changement possible, au multiplicateur du jour, une signature par jour.
+- **Clôture** (`computeCloture()`, pure) : résolution des vœux, puis le marché du jour (dépôts du jour) est figé dans `draftroyale:marche:<jour>`.
+- **Nombre de cartes** : au plus `2 + jours écoulés`, soit 8 en fin de J6 ; 9 au J7 (pioche + vœu), le deck final de 8 est choisi automatiquement.
+
+### Résolution des vœux (Draft Royale)
+
+Résolus à la clôture et non au premier clic : l'heure de connexion ne doit donner aucun avantage.
+
+1. **Stock** : chaque carte déposée peut être prise par `copies_par_depot` (2) joueurs (4 si elle a été déposée deux fois). Limite décidée le 04/10 : en copies illimitées, les contrats réussissaient à plus de 80 % (aucun pari) ; à 1 copie, un joueur sur quatre n'obtenait aucun vœu.
+2. **Ordre de service** : popularité (avant clôture) décroissante, puis tirage au sort.
+3. Chaque joueur reçoit son premier vœu encore disponible et qu'il ne possède pas ; sinon sa propre carte lui revient.
+4. **Popularité** : +1 au déposant chaque fois qu'un AUTRE joueur prend sa carte (copies attribuées dans l'ordre de dépôt).
+
+### Score final (Draft Royale)
+
+Le coût en élixir des cartes ne rapporte rien. Barème dans `data/draftroyale/draftroyale.json` :
+
+| Élément | Points |
+| ------- | ------ |
+| Thèmes (3 cartes / 4 et plus, seul le palier le plus haut compte) | humains 2/4, sorts 5/10, volants 6/12, gobelins 6/12, squelettes 6/12, bâtiments 7/14 |
+| Une carte de chaque rareté | 4 |
+| Deck cycle (coût moyen ≤ 3) / deck lourd (≥ 5) | 4 / 4 |
+| Trio troupe (ou volant) + sort + bâtiment | 2 |
+| Majorités : le plus de champions / légendaires / épiques | 12 / 10 / 8, **tous les ex aequo en tête marquent** (au moins 1 carte) |
+| Contrat réussi | voir ci-dessus |
+| Popularité | +1 par carte reprise, plafonnée à 5 |
+
+Gargouilles retirées des thèmes (4 cartes seulement dans le catalogue, objectif atteint dans 2 % des cas en simulation). Paliers à 3 et 4 cartes (un palier à 5 n'était atteint que par 1 % des joueurs).
+
+**Deck final** (`choisirDeckFinal()`) : si la main dépasse 8 cartes, on retire une à une la carte dont l'absence garde le meilleur score hors majorités (contrat compris) ; à score égal, la rareté la plus basse, puis la moins chère.
+
+**Départage** : popularité brute (non plafonnée), puis ordre d'arrivée dans le jeu (`arrivee`).
+
+### Informations visibles (Draft Royale)
+
+Mains et contrats restent secrets jusqu'au bilan final (bluff autour du marché et des majorités). Le message du jour affiche le marché ouvert aux vœux (image du tapis) et des chiffres agrégés de la veille ; le Journal (éphémère) montre au joueur sa main, son contrat, son score provisoire hors majorités, son bilan de la veille et le top 5 public de la popularité. Après le bilan final, le Journal affiche le rang, le détail du score et le deck retenu.
+
+### Images (Draft Royale)
+
+- `/api/draftroyale/marche?jour=N` : dépôts du jour N−1 posés en grille sur le tapis `draft-game.jpg` (badge `×N` pour une carte déposée plusieurs fois). ⚠️ Tapis en **JPEG** : resvg ne décode pas le WebP embarqué (même piège que Mario Clash) ; `draft-game.webp` reste pour archive.
+- `/api/draftroyale/main?c=k1|k2|…` : main ou deck, rendu sans état (grille du jeu Élixir, `getElixirCollectionImage()` avec le catalogue complet).
+- `/api/draftroyale/illustration` : `draft-launch.webp` (présentation, Jour 1).
+
+Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob` après modification.
+
+### Manches (comparaison entre parties) — Draft Royale
+
+`draftroyale:manches` archive `{ manche, vainqueur, scoreGagnant, ranking: [{ discordId, username, score }], resolvedAt }` à chaque fin de partie publique. Comptabilisé dans l'historique de saison des mini-jeux comme jeu à score cumulé (`MANCHE_SCORE_GAMES`, champ `score`).
+
+### Stockage — Upstash Redis (`draftroyale:*`)
+
+| Clé Redis | Type | Contenu |
+| --------- | ---- | ------- |
+| `draftroyale:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine }` |
+| `draftroyale:joueurs` | HASH | `discordId → { username, main, contrat, depots: [{ key, jour, at }], popularite, arrivee }` |
+| `draftroyale:actions:<jour>` | HASH | `discordId → { pioche, depot, voeux, contrat }` |
+| `draftroyale:marche:<jour>` | STRING | Dépôts du jour, figés à la clôture : `[{ key, discordId, at }]` |
+| `draftroyale:historique` | HASH | `jour → { lignes, resolvedAt }` (vœux exaucés, retours, popularité) |
+| `draftroyale:resultat` | STRING | Classement final détaillé (decks, détail des points) |
+| `draftroyale:manches` / `draftroyale:manche_seq` | HASH / compteur | Archive des manches, jamais nettoyée sauf `--manches` |
+
+### Scripts npm (Draft Royale)
+
+| Commande | Effet |
+| -------- | ----- |
+| `npm run draftroyale:test` | Poste manuellement le jour sur le salon de test. |
+| `npm run draftroyale:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
+| `npm run draftroyale:public` | Poste sur le salon public (cron `draftroyale.yml`). |
+| `npm run draftroyale:public:dry` | Équivalent dry-run. |
+| `npm run draftroyale:reset` | Remet le draft à zéro (préserve l'archive des manches). **Destructif**. |
+| `npm run draftroyale:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
+| `npm run draftroyale:status` | Vue organisateur sans Discord (mains et contrats visibles). |
+
+### Variables d'environnement requises (Draft Royale)
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (images). Le `schedule` du cron (`18 8 * * *`) reste commenté dans `.github/workflows/draftroyale.yml` tant que le jeu est en test.
 
 ## Blackjack Duel (duel à la demande, 1-3 joueurs)
 

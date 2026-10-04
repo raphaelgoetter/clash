@@ -1,0 +1,30 @@
+{
+  "duree_jours": 7,
+  "cartes_depart": 2,
+  "taille_deck": 8,
+  "jour_dernier_depot": 6,
+  "copies_par_depot": 2,
+  "nb_voeux": 3,
+  "popularite_max": 5,
+  "contrat_multiplicateurs": { "1": 2, "2": 1.75, "3": 1.5, "4": 1.25 },
+  "paliers": [3, 4],
+  "themes": [
+    { "id": "humains", "label": "humains", "critere": { "family": "human" }, "points": [2, 4] },
+    { "id": "sorts", "label": "sorts", "critere": { "type": "spell" }, "points": [5, 10] },
+    { "id": "volants", "label": "volants", "critere": { "type": "flying" }, "points": [6, 12] },
+    { "id": "gobelins", "label": "gobelins", "critere": { "family": "goblin" }, "points": [6, 12] },
+    { "id": "squelettes", "label": "squelettes", "critere": { "family": "skeleton" }, "points": [6, 12] },
+    { "id": "batiments", "label": "bâtiments", "critere": { "type": "building" }, "points": [7, 14] }
+  ],
+  "bonus": {
+    "raretes": { "label": "Une carte de chaque rareté", "points": 4 },
+    "cycle": { "label": "Deck cycle (coût moyen ≤ 3)", "points": 4, "seuil": 3 },
+    "lourd": { "label": "Deck lourd (coût moyen ≥ 5)", "points": 4, "seuil": 5 },
+    "trio": { "label": "Trio troupe + sort + bâtiment", "points": 2 }
+  },
+  "majorites": [
+    { "id": "champions", "label": "Le plus de champions", "rarete": "champion", "points": 12 },
+    { "id": "legendaires", "label": "Le plus de légendaires", "rarete": "legendary", "points": 10 },
+    { "id": "epiques", "label": "Le plus d'épiques", "rarete": "epic", "points": 8 }
+  ]
+}

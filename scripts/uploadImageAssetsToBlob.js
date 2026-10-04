@@ -24,6 +24,8 @@
 // (nouvelle carte Palette/Zoom, changement de police, etc.).
 //
 // Usage : npm run assets:upload-blob
+//        npm run assets:upload-blob -- draftroyale   — seulement les chemins
+//        commençant par l'un des préfixes donnés (ex. nouvel asset d'un jeu)
 // ============================================================
 
 import fs from "fs/promises";
@@ -55,6 +57,8 @@ const TARGETS = [
   { file: "goblinhunters/images/start.webp" },
   { file: "marioclash/images/mario-clash-board.jpg" },
   { file: "marioclash/images/mario-clash.webp" },
+  { file: "draftroyale/images/draft-game.jpg" },
+  { file: "draftroyale/images/draft-launch.webp" },
   { dir: "jeux-visuels/palette/images" },
   { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },
@@ -100,7 +104,8 @@ async function main() {
     process.exit(1);
   }
 
-  const relPaths = await collectFiles();
+  const prefixes = process.argv.slice(2);
+  const relPaths = (await collectFiles()).filter((p) => !prefixes.length || prefixes.some((prefix) => p.startsWith(prefix)));
   console.log(`${relPaths.length} fichiers à uploader vers Blob (private)...`);
 
   let ok = 0;

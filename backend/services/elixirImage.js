@@ -111,7 +111,7 @@ function mysteryCardSvg(x, y, w, h) {
   <text x="${x + w / 2}" y="${y + h * 0.56}" font-family="${FONT_FAMILY}" font-size="${fontSize}" text-anchor="middle" fill="#f0c040">?</text>`;
 }
 
-function cardSvg(card, dataUrl, x, y, size) {
+export function cardSvg(card, dataUrl, x, y, size) {
   const h = Math.round(size.w * RATIO);
   const art = card.mystery
     ? mysteryCardSvg(x, y, size.w, h)
@@ -130,7 +130,7 @@ function rowHeight(size) {
   return Math.round(size.w * RATIO);
 }
 
-async function loadDataUrls(cards) {
+export async function loadDataUrls(cards) {
   const iconUrls = await loadIconUrls();
   return new Map(
     await Promise.all(cards.filter((c) => !c.mystery).map(async (c) => [c.key, await fetchDataUrl(iconUrls.get(c.key))])),

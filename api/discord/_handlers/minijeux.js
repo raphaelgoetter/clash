@@ -3,7 +3,8 @@
 // les mini-jeux réguliers (Frame, Jeux de lettres [Anagram/Pêle-mêle en
 // alternance], Jeux visuels [Zoom carte/Palette en alternance], La Juste
 // Carte) et du jeu spécial actuellement actif (Quiz, Robinson, Boss Raid,
-// Goblin Hunters, Blackjack, Mario Clash ou Gobelet ; Tamagotchi archivé).
+// Goblin Hunters, Blackjack, Mario Clash, Gobelet ou Draft Royale ;
+// Tamagotchi archivé).
 // Lecture seule, aucune écriture Redis.
 //
 // ⚠️ Goblin Hunters : ne jamais lire/afficher state.joueurs[].camp/role/pv —
@@ -87,6 +88,12 @@ import {
   readHand as readGobeletHand,
   readPoints as readGobeletPoints,
 } from "../../../backend/services/gobelet.js";
+import {
+  readState as readDraftRoyaleState,
+  loadDraftRoyaleConfig,
+  readActions as readDraftRoyaleActions,
+  readJoueur as readDraftRoyaleJoueur,
+} from "../../../backend/services/draftroyale.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -390,6 +397,40 @@ const SPECIAL_GAMES = [
         jour: state.jour,
         dureeJours: config.duree_jours,
         participantsLabel: formatParticipantsToday(Object.keys(hands).length),
+      };
+    },
+  },
+  {
+    key: "draftroyale",
+    title: "Draft Royale",
+    style: "Draft",
+    readState: readDraftRoyaleState,
+    async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
+      const [actions, joueur] = await Promise.all([
+        readDraftRoyaleActions(state.jour),
+        readDraftRoyaleJoueur(discordId),
+      ]);
+      return {
+        played: actions[discordId] != null,
+        scoreLabel: joueur ? `Main : **${joueur.main.length} carte${joueur.main.length > 1 ? "s" : ""}**` : null,
+      };
+    },
+    async detail(state) {
+      if (state.phase === "annonce") {
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: null,
+          phaseLabel: "Phase de présentation du jeu",
+        };
+      }
+      const config = await loadDraftRoyaleConfig();
+      const actions = await readDraftRoyaleActions(state.jour);
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(Object.keys(actions).length),
       };
     },
   },

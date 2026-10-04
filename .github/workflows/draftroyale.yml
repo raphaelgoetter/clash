@@ -1,0 +1,39 @@
+name: Draft Royale — deck de 8 cartes en 7 jours
+
+permissions:
+  contents: read
+
+on:
+  # Jeu en phase de test : schedule volontairement commenté (seul
+  # workflow_dispatch actif) — à décommenter une fois le jeu validé, même
+  # convention que les autres jeux spéciaux au lancement (voir
+  # CONTRIBUTING.md). Créneau réservé : minute 18 (prochaine libre après
+  # marioclash=14, gobelet=16 — jamais la même minute que les autres crons
+  # de 8h UTC, voir CONTRIBUTING.md, incident du 27/08).
+  # schedule:
+  #   - cron: "18 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Poste le jour du Draft Royale (salon public)
+        run: npm run draftroyale:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}
