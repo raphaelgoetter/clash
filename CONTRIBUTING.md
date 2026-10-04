@@ -573,7 +573,7 @@ Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 | Goblin Hunters | `4 8 * * *`  |
 | Quiz           | `6 8 * * *`  |
 | Robinson       | `8 8 * * *`  |
-| Tamagoshi      | `10 8 * * *` |
+| Tamagoshi      | `10 8 * * *` (📦 archivé, cron commenté) |
 | Blackjack      | `12 8 * * *` |
 | Jeu du Gobelet | `16 8 * * *` |
 
@@ -592,7 +592,7 @@ Ordre chronologique de lancement **public** des jeux collaboratifs à avancée q
 ⚠️ Une date ici est celle du **premier run `workflow_dispatch` réel sur GitHub Actions** (le vrai Jour 1 public), vérifiée via `GET /repos/raphaelgoetter/clash/actions/workflows/{id}/runs?event=workflow_dispatch` — **pas** la date du commit qui a ajouté le code du jeu (celle-ci ne reflète que le début du développement/test, souvent plusieurs jours avant le lancement réel ; confondre les deux a produit une première version fausse de cet historique) :
 
 - (2026-07-31) Aventure (10 jours)
-- (2026-08-10) Tamagotchi (10 jours)
+- (2026-08-10) Tamagotchi (10 jours) — 📦 **archivé** le 2026-10-04 (voir [Tamagoshi](#tamagoshi-bébé-dragon-lilith))
 - (2026-08-24) Robinson (10 jours)
 - (2026-08-31) Quiz (7 jours)
 
@@ -1299,6 +1299,8 @@ Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHAN
 ---
 
 ## Tamagoshi (bébé dragon "Lilith")
+
+> 📦 **Statut : archivé** (04/10/2026) — pas de relance prévue pour le moment. Le code, les données et l'archive des manches (`tamagotchi:manches`) sont conservés tels quels. Le `schedule` de `.github/workflows/tamagotchi.yml` est commenté (seul `workflow_dispatch` reste disponible) et l'entrée `tamagotchi` de `SPECIAL_GAMES` (`api/discord/_handlers/minijeux.js`) porte `archived: true`, ce qui l'exclut de `/mini-jeux` même si un état périmé reste dans Redis. **Pour relancer** : décommenter le `schedule`, retirer `archived: true`, puis `npm run tamagotchi:reset` avant le lancement manuel du Jour 1.
 
 Mini-jeu communautaire quotidien indépendant du Clash Royale : Mohamed Light confie son Bébé Dragon "Lilith" à la communauté pendant `tamagotchi.json.duree_jours` jours (7 en Manche 2, était 10 en Manche 1). Les membres doivent maintenir 3 jauges (Estomac 🔥, Énergie ⚡, Moral 🥨, 0-100%) dans la « zone verte » (40-70%) via des votes par bouton, avec un Cron quotidien à 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postTamagotchi.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`. Le jeu est rejoué plusieurs fois dans l'année (une **manche** = une partie complète de `duree_jours` jours) ; les mécaniques ci-dessous ont été retravaillées entre la manche 1 (2026-08) et la manche 2 suite au constat que le jeu restait trop facile en répétant une même stratégie tout du long. Rien dans le code ne suppose une durée fixe : `duree_jours` pilote tout (paliers de fin de partie, fenêtre de la Pilule, texte d'intro du Jour 1), seul le calendrier d'événements (`evenements_possibles`) doit être redimensionné à la main si la durée change.
 

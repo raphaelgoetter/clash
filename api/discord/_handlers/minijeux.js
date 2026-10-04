@@ -2,9 +2,9 @@
 // minijeux.js — Handler Discord pour /mini-jeux : état des lieux de tous
 // les mini-jeux réguliers (Frame, Jeux de lettres [Anagram/Pêle-mêle en
 // alternance], Jeux visuels [Zoom carte/Palette en alternance], La Juste
-// Carte) et du jeu spécial actuellement actif (Quiz, Tamagotchi, Robinson, Boss Raid,
-// Goblin Hunters, Blackjack, Mario Clash ou Gobelet). Lecture seule, aucune
-// écriture Redis.
+// Carte) et du jeu spécial actuellement actif (Quiz, Robinson, Boss Raid,
+// Goblin Hunters, Blackjack, Mario Clash ou Gobelet ; Tamagotchi archivé).
+// Lecture seule, aucune écriture Redis.
 //
 // ⚠️ Goblin Hunters : ne jamais lire/afficher state.joueurs[].camp/role/pv —
 // seuls le nombre d'inscrits/vivants et le jour sont publics (voir la mise
@@ -195,6 +195,9 @@ const SPECIAL_GAMES = [
     key: "tamagotchi",
     title: "Tamagotchi",
     style: "Collaboratif",
+    // Jeu archivé (04/10, pas de relance prévue) : ignoré par
+    // findActiveSpecialGame(), même si un état périmé traîne dans Redis.
+    archived: true,
     readState: readTamaState,
     async participation(state, discordId) {
       const votes = await listTamaVotes(state.jour);
@@ -490,6 +493,7 @@ async function buildRegularGamesBlock(now) {
 
 async function findActiveSpecialGame() {
   for (const game of SPECIAL_GAMES) {
+    if (game.archived) continue;
     const state = await game.readState();
     if (isLiveOnPublicChannel(state)) {
       return { game, state };
