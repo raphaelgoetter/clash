@@ -135,7 +135,7 @@ export function construireMarche(depots, nbMarchand, catalog, rng = Math.random)
 
 // Valeur d'une main pour le bot : score réel + crédit partiel des thèmes
 // et archétypes commencés + poids des raretés (majorités).
-const RARITY_WEIGHT = { champion: 4, legendary: 1.5, epic: 0.6 };
+const RARITY_WEIGHT = { champion: 4, legendary: 1.5, epic: 0.6, rare: 0.3 };
 
 export function valeurMain(cards, config) {
   let v = scoreDeck(cards, null, config).total;

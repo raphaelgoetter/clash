@@ -14,12 +14,7 @@
     { "id": "volants", "label": "volants", "critere": { "type": "flying" }, "points": [6, 12] },
     { "id": "gobelins", "label": "gobelins", "critere": { "family": "goblin" }, "points": [6, 12] },
     { "id": "squelettes", "label": "squelettes", "critere": { "family": "skeleton" }, "points": [6, 12] },
-    { "id": "batiments", "label": "bâtiments", "critere": { "type": "building" }, "points": [7, 14] },
-    { "id": "geants", "label": "géants", "groupe": "nom", "critere": { "nom": "\\bgeant" }, "points": [6, 12] },
-    { "id": "electro", "label": "cartes électro", "groupe": "nom", "critere": { "nom": "\\belectr" }, "points": [6, 12] },
-    { "id": "glace", "label": "cartes de glace", "groupe": "nom", "critere": { "nom": "\\b(glace|gel\\b|neige)" }, "points": [7, 14] },
-    { "id": "feu", "label": "cartes de feu", "groupe": "nom", "critere": { "nom": "\\b(feu|enfer|artifici)" }, "points": [7, 14] },
-    { "id": "dragons", "label": "dragons", "groupe": "nom", "critere": { "nom": "\\bdragons?\\b" }, "points": [8, 16] }
+    { "id": "batiments", "label": "bâtiments", "critere": { "type": "building" }, "points": [7, 14] }
   ],
   "bonus": {
     "raretes": { "label": "Une carte de chaque rareté", "points": 4 },
@@ -48,6 +43,7 @@
   "majorites": [
     { "id": "champions", "label": "Le plus de champions", "rarete": "champion", "points": 12 },
     { "id": "legendaires", "label": "Le plus de légendaires", "rarete": "legendary", "points": 10 },
-    { "id": "epiques", "label": "Le plus d'épiques", "rarete": "epic", "points": 8 }
+    { "id": "epiques", "label": "Le plus d'épiques", "rarete": "epic", "points": 8 },
+    { "id": "rares", "label": "Le plus de rares", "rarete": "rare", "points": 6 }
   ]
 }

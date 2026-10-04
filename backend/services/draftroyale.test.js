@@ -17,7 +17,6 @@ import {
   combinaisonsEnCours,
   formatPions,
   longueurSuite,
-  matchesCritere,
 } from "./draftroyale.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/draftroyale/draftroyale.json", import.meta.url), "utf8"));
@@ -91,10 +90,8 @@ async function main() {
     assert.deepStrictEqual(choisirDeckFinal(["sq1", "sq2"], null, CONFIG, CATALOG), ["sq1", "sq2"]);
   }
 
-  // ── Thèmes de noms, suite d'élixir, archétypes ─────────────────────
+  // ── Suite d'élixir, archétypes ─────────────────────
   {
-    assert.ok(matchesCritere({ fr: "Électro-géant" }, { nom: "\\bgeant" }));
-    assert.ok(!matchesCritere({ fr: "Gargouilles" }, { nom: "\\bgeant" }));
     const el = (elixir) => ({ cardKey: `e${elixir}`, fr: `e${elixir}`, rarity: "common", type: "troop", family: null, elixir });
     assert.strictEqual(longueurSuite([1, 2, 3, 5, 6, 7, 8].map(el)), 4);
     assert.strictEqual(longueurSuite([]), 0);
@@ -181,7 +178,7 @@ async function main() {
   {
     const joueurs = {
       a: { username: "A", main: ["champ1", "sq1"], popularite: 9, arrivee: 1 },
-      b: { username: "B", main: ["champ2", "sq2"], popularite: 0, arrivee: 0 },
+      b: { username: "B", main: ["champ2", "sort1"], popularite: 0, arrivee: 0 },
       c: { username: "C", main: ["sq3"], popularite: 0, arrivee: 2 },
     };
     const ranking = computeFinal({ joueurs, config: CONFIG, catalog: CATALOG });

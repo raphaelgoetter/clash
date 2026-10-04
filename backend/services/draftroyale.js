@@ -127,21 +127,8 @@ export function cardsFromKeys(keys, catalog) {
 
 // ── Règles pures : thèmes, contrats, score ─────────────────────────
 
-// Nom français sans accents ni majuscules ("Électro-géant" → "electro-geant").
-function nomNormalise(card) {
-  return (card.fr || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-const _nomRegex = new Map();
-
-// Critère `nom` : expression régulière testée sur le nom normalisé (thèmes
-// "Noms de cartes"). Les autres champs : égalité stricte.
 export function matchesCritere(card, critere) {
-  return Object.entries(critere).every(([field, value]) => {
-    if (field !== "nom") return card[field] === value;
-    if (!_nomRegex.has(value)) _nomRegex.set(value, new RegExp(value));
-    return _nomRegex.get(value).test(nomNormalise(card));
-  });
+  return Object.entries(critere).every(([field, value]) => card[field] === value);
 }
 
 export function countTheme(cards, theme) {
@@ -310,23 +297,14 @@ export function combinaisonsEnCours(cards, config, cartesRestantes, catalog) {
 }
 
 // Barème complet (bouton Combinaisons, Draft Royale et duel /draft) : une
-// ligne par combinaison, regroupées par famille. Thèmes de noms : liste des
-// cartes concernées (le mot n'est pas toujours évident).
+// ligne par combinaison, regroupées par famille.
 export function lignesCombinaisons(config, catalog) {
   const paliers = (t) => config.paliers.map((p, i) => `${p} = +${t.points[i]}`).join(", ");
-  const cartesDuTheme = (t) =>
-    [...catalog.values()]
-      .filter((c) => matchesCritere(c, t.critere))
-      .map((c) => c.fr)
-      .join(", ");
   const s = config.suite;
   const archetypePoints = [...new Set(config.archetypes.map((a) => a.points))];
   return [
     `**Thèmes** (nombre de cartes)`,
-    ...config.themes.filter((t) => t.groupe !== "nom").map((t) => `• ${t.label} : ${paliers(t)}`),
-    "",
-    `**Noms de cartes** (le mot figure dans le nom)`,
-    ...config.themes.filter((t) => t.groupe === "nom").map((t) => `• ${t.label} : ${paliers(t)} (${cartesDuTheme(t)})`),
+    ...config.themes.map((t) => `• ${t.label} : ${paliers(t)}`),
     "",
     "**Bonus de deck**",
     ...Object.values(config.bonus).map((b) => `• ${b.label} : +${b.points}`),
