@@ -577,7 +577,7 @@ Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 | Blackjack      | `12 8 * * *` |
 | Jeu du Gobelet | `16 8 * * *` |
 | Mario Clash    | `14 8 * * *` |
-| Draft Royale   | `18 8 * * *` (🧪 en test, cron commenté) |
+| Draft Royale   | `18 8 * * *` |
 
 ⚠️ **Incident du 27/08** : les 5 crons alors existants étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont _best-effort_ et que le délai augmente aux heures rondes, justement à cause de la charge — caler plusieurs workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Blackjack a suivi le même principe à son activation, décalé sur la minute suivante (`12 8 * * *`).
 
@@ -1998,7 +1998,7 @@ Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob` après 
 
 ### Variables d'environnement requises (Draft Royale)
 
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (images). Le `schedule` du cron (`18 8 * * *`) reste commenté dans `.github/workflows/draftroyale.yml` tant que le jeu est en test.
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (images). Le `schedule` du cron (`18 8 * * *`) est actif dans `.github/workflows/draftroyale.yml` : avec `--require-active`, il n'avance qu'un draft déjà lancé à la main (`workflow_dispatch`).
 
 ## Blackjack Duel (duel à la demande, 1-3 joueurs)
 

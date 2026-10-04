@@ -4,14 +4,12 @@ permissions:
   contents: read
 
 on:
-  # Jeu en phase de test : schedule volontairement commenté (seul
-  # workflow_dispatch actif) — à décommenter une fois le jeu validé, même
-  # convention que les autres jeux spéciaux au lancement (voir
-  # CONTRIBUTING.md). Créneau réservé : minute 18 (prochaine libre après
-  # marioclash=14, gobelet=16 — jamais la même minute que les autres crons
-  # de 8h UTC, voir CONTRIBUTING.md, incident du 27/08).
-  # schedule:
-  #   - cron: "18 8 * * *"
+  # Créneau réservé : minute 18 (prochaine libre après marioclash=14,
+  # gobelet=16 — jamais la même minute que les autres crons de 8h UTC, voir
+  # CONTRIBUTING.md, incident du 27/08). Le cron passe --require-active : il
+  # n'avance qu'un draft déjà lancé à la main (workflow_dispatch).
+  schedule:
+    - cron: "18 8 * * *"
   workflow_dispatch: {}
 
 jobs:
