@@ -78,11 +78,11 @@ function sortedRanking(joueurs) {
 function formatRankingLines(
   joueurs,
   config,
-  { limit = 10, detailed = true } = {},
+  { limit = 10, detailed = true, inclureId = null } = {},
 ) {
   const ranking = sortedRanking(joueurs);
   if (!ranking.length) return ["*Personne n'a encore rejoint la course.*"];
-  return ranking.slice(0, limit).map((j, index) => {
+  const formatLigne = (j, index) => {
     const medal =
       index === 0
         ? "🥇"
@@ -95,7 +95,12 @@ function formatRankingLines(
     if (!detailed)
       return `${medal} **${j.username}** — case ${j.position}${arrivee}`;
     return `${medal} **${j.username}** — case ${j.position}${arrivee} · ${j.points} Or`;
-  });
+  };
+  const lignes = ranking.slice(0, limit).map(formatLigne);
+  // Joueur hors du top affiché : on ajoute quand même sa propre ligne.
+  const indexInclus = inclureId ? ranking.findIndex((j) => j.discordId === inclureId) : -1;
+  if (indexInclus >= limit) lignes.push("…", formatLigne(ranking[indexInclus], indexInclus));
+  return lignes;
 }
 
 // ── Résumé narratif du jour (remplace la description statique du message
@@ -286,7 +291,7 @@ function buildJourEmbed(jour, config, resumeLignes) {
 // événements où le joueur qui consulte est impliqué, comme auteur, cible,
 // ou tiers entraîné par un échange aléatoire de sort).
 function buildJournalEmbed(jour, config, joueurs, bilanLignes, discordId) {
-  const lines = [...formatRankingLines(joueurs, config)];
+  const lines = [...formatRankingLines(joueurs, config, { limit: 20, inclureId: discordId })];
   const moi = joueurs[discordId];
   if (moi) lines.push("", ...etatPersonnelLignes(moi, config));
   const bilanPersonnel = filterLignesForPlayer(bilanLignes || [], discordId);
