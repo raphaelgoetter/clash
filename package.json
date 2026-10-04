@@ -135,6 +135,7 @@
     "draftroyale:reset": "node scripts/resetDraftRoyale.js",
     "draftroyale:reset:manches": "node scripts/resetDraftRoyale.js --manches",
     "draftroyale:status": "node scripts/draftRoyaleStatus.js",
+    "draftroyale:bots": "node scripts/draftRoyaleBots.js",
     "goblinhunters:test": "node scripts/postGoblinHunters.js",
     "goblinhunters:test:dry": "node scripts/postGoblinHunters.js --dry-run",
     "goblinhunters:test:force-close": "node scripts/postGoblinHunters.js --force-close",

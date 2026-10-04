@@ -142,8 +142,7 @@ function buildResumeLignes(jour, config, lignesVeille, marcheDuJour) {
     );
   }
   if (jour <= config.jour_dernier_depot) lignes.push(`Les cartes déposées aujourd'hui seront au marché demain (${config.copies_par_depot} joueurs max par carte).`);
-  if (multiplicateurDuJour(config, jour)) lignes.push(`✍️ Contrat signé aujourd'hui : bonus ×${multiplicateurDuJour(config, jour)}.`);
-  else lignes.push("✍️ Les contrats sont fermés.");
+  if (!multiplicateurDuJour(config, jour)) lignes.push("✍️ Les contrats sont fermés.");
   if (jour === config.duree_jours) lignes.push(`🏁 **Dernier jour** : plus de dépôt. À la clôture, ton meilleur deck de ${config.taille_deck} cartes est retenu automatiquement.`);
   return lignes;
 }
@@ -415,8 +414,10 @@ async function buildMarcheView(jour, discordId, username, entete = null) {
           ],
         });
       }
+    } else if (marche.every((m) => m.key === depotVeille.key)) {
+      lignes.push(`Le marché ne contient que ta carte (${cardName(depotVeille.key, catalog)}) : elle te reviendra à la clôture.`);
     } else {
-      lignes.push(`Aucune carte du marché ne te manque : ${cardName(depotVeille.key, catalog)} te reviendra à la clôture.`);
+      lignes.push(`Tu possèdes déjà toutes les cartes du marché : ${cardName(depotVeille.key, catalog)} te reviendra à la clôture.`);
     }
   } else if (jour > 1) {
     lignes.push("Pas de vœux aujourd'hui : il faut avoir déposé une carte hier.");
