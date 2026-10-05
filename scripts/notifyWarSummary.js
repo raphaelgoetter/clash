@@ -1024,9 +1024,8 @@ async function postWarSummary(
     // (race.periodLogs) est une métrique distincte qui peut rester figée avec une valeur
     // obsolète (snapshot.js gèle periodPointsEarned au premier écrit et ne le recalcule
     // jamais — vu en prod : mêmes valeurs J1-J3 dupliquées sur 3 semaines d'affilée).
-    // On calcule donc un delta de référence basé sur le cumul fame (même ordre de repli
-    // que l'ancienne logique), et on ne fait confiance à periodPointsEarned que s'il
-    // reste cohérent avec cette référence — sinon on utilise directement le cumul fame.
+    // On utilise donc le delta basé sur le cumul fame, et periodPointsEarned uniquement
+    // si ce delta est indisponible.
     const j1j2j3Sum = allWeekDays
       .slice(0, 3)
       .reduce((s, d) => s + (d.periodPointsEarned ?? 0), 0);
@@ -1046,17 +1045,14 @@ async function postWarSummary(
       j1j2j3Sum > 0 && apiWeekFame > j1j2j3Sum
         ? apiWeekFame - j1j2j3Sum
         : null;
-    const periodSumIsConsistent =
-      periodSumDelta != null &&
-      (cumulDelta == null ||
-        Math.abs(periodSumDelta - cumulDelta) <=
-          Math.max(500, cumulDelta * 0.15));
-
-    if (periodSumIsConsistent) {
-      totalFame = periodSumDelta;
-      isExactFame = true;
-    } else if (cumulDelta != null) {
+    // Le delta de cumul (même base que apiWeekFame) est prioritaire : periodPointsEarned
+    // a été vu faux de plusieurs milliers de pts tout en restant sous la tolérance
+    // (05/10/2026 : 28 350 affichés au lieu de 32 000). Il ne sert qu'en dernier recours.
+    if (cumulDelta != null) {
       totalFame = Math.max(0, cumulDelta);
+      isExactFame = true;
+    } else if (periodSumDelta != null) {
+      totalFame = periodSumDelta;
       isExactFame = true;
     }
 
