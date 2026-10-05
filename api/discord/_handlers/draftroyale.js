@@ -34,7 +34,7 @@ import {
   listManches,
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/draftroyale.js";
-import { compterCartes, pointsMain, trierMain } from "../../../backend/services/draftRules.js";
+import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
 import { JOKER_EMOJI, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes } from "./draftJoker.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
@@ -108,11 +108,11 @@ function buildAnnonceEmbed(config) {
 
 function classementLignes(joueurs, limit = 10) {
   const top = Object.values(joueurs)
-    .filter((j) => (j.points || 0) > 0)
+    .filter((j) => (j.points || 0) > 0 || (j.joker || 0) > 0)
     .sort((a, b) => b.points - a.points || (b.carres || 0) - (a.carres || 0) || a.username.localeCompare(b.username))
     .slice(0, limit);
   if (!top.length) return [];
-  return ["", "**🏆 Classement**", ...top.map((j, i) => `${MEDALS[i] || `${i + 1}.`} ${j.username} (${plural(j.points, "pt")}${j.carres ? `, ${plural(j.carres, "quadruplé")}` : ""})`)];
+  return ["", "**🏆 Classement**", ...top.map((j, i) => `${MEDALS[i] || `${i + 1}.`} ${j.username} (${plural(j.points || 0, "pt")}, ${jokerPointsLabel(j.joker || 0)}${j.carres ? `, ${plural(j.carres, "quadruplé")}` : ""})`)];
 }
 
 // Message du jour : infos générales uniquement (la journée en cours, le
@@ -371,8 +371,6 @@ async function buildJeuView(jour, discordId, username, entete = null) {
     ...(nouveau ? [`Bienvenue ! Voici tes ${config.taille_main} cartes.`, ""] : []),
     ...(bilan.length ? ["**Hier**", ...bilan, ""] : []),
     `**Ta main** : ${formatGroupes(main, catalog)}`,
-    `Points au prochain décompte : ${plural(pointsMain(main, config), "pt")}`,
-    `🏆 Total : ${plural(joueur.points || 0, "pt")} · ${jokerPointsLabel(joueur.joker || 0)}`,
     "",
     ...tourStatutLignes({
       action,

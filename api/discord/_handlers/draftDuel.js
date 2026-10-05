@@ -31,7 +31,7 @@ import {
   isBot,
 } from "../../../backend/services/draftDuel.js";
 import { loadCatalog } from "../../../backend/services/draftroyale.js";
-import { compterCartes, pointsMain, trierMain } from "../../../backend/services/draftRules.js";
+import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
 import { echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
 import {
   getRoleIdByName,
@@ -314,7 +314,7 @@ async function buildPlayersLines(state, players, actions) {
     if (!p) continue;
     const name = await displayName(id, p.username);
     const status = isBot(id) ? EMOJI.bot.text : actions[id]?.fini ? EMOJI.check.text : EMOJI.late.text;
-    lines.push(`${status} **${name}** · ${plural(p.points || 0, "pt")}${p.carres ? ` · ${plural(p.carres, "quadruplé")}` : ""}`);
+    lines.push(`${status} **${name}** · ${plural(p.points || 0, "pt")} · ${jokerPointsLabel(p.joker || 0)}${p.carres ? ` · ${plural(p.carres, "quadruplé")}` : ""}`);
   }
   const missing = state.maxPlayers - state.players.length;
   if (missing > 0) lines.push(`${EMOJI.late.text} En attente de ${plural(missing, "joueur")}`);
@@ -542,8 +542,6 @@ function buildHandEmbed(view, recap, noms) {
   const lines = [
     ...recap,
     `**Ta main** : ${formatGroupes(main, catalog)}`,
-    `Points au prochain décompte : ${plural(pointsMain(main, config), "pt")}`,
-    `${EMOJI.trophy.text} Total : ${plural(me.points || 0, "pt")} · ${jokerPointsLabel(me.joker || 0)}`,
     "",
     ...buildStatusLines(view),
     jokerStatutLigne(action.joker, noms, (k) => cardName(k, catalog)),

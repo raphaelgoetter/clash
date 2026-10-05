@@ -69,7 +69,6 @@ export function tourStatutLignes({ action, id, joueurs, marche, config, cardName
   else if (marche.includes(action.prise)) lignes.push(`⚠️ Tu prends **${cardName(action.prise)}** : choisis aussi la carte à déposer.`);
   else if (main.includes(action.depot)) lignes.push(`⚠️ Tu déposes **${cardName(action.depot)}** : choisis aussi la carte à prendre.`);
   else if (jokerOk) lignes.push(`${trade} Pas d'échange au marché : ton tour se joue avec ton Joker. ${suite}`);
-  else lignes.push(`${trade} Choisis un échange au marché (une carte à prendre, une à déposer), une action Joker, ou les deux.`);
   if (echangeOk && jokerEnConflit(action, main)) {
     lignes.push(`⚠️ Tu déposes déjà ton seul ${cardName(action.depot)} au marché : l'Échange Joker ne sera pas joué. Annule l'échange au marché ou choisis une autre carte.`);
   }
