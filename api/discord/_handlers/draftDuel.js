@@ -32,7 +32,7 @@ import {
 } from "../../../backend/services/draftDuel.js";
 import { loadCatalog } from "../../../backend/services/draftroyale.js";
 import { compterCartes, pointsMain, trierMain } from "../../../backend/services/draftRules.js";
-import { echangeLigne, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
+import { echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -355,7 +355,7 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
   lines.push(`${EMOJI.topplayers.text} **Classement final**`);
   for (const [i, r] of ranking.entries()) {
     const name = await displayName(r.discordId, r.username);
-    lines.push(`${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}${r.carres ? ` · ${plural(r.carres, "quadruplé")}` : ""}`);
+    lines.push(`${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}${r.joker ? ` dont ${r.joker} Joker` : ""}${r.carres ? ` · ${plural(r.carres, "quadruplé")}` : ""}`);
   }
   if (highScore && !expired) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
@@ -520,16 +520,20 @@ function buildRecapLines(lastRecap, noms, discordId, config, catalog) {
   return [...lines, ""];
 }
 
-function buildStatusLine(view) {
-  const { state, action, me, complet, catalog } = view;
-  if (!state.rosterLocked) return `${EMOJI.late.text} En attente des autres joueurs : le marché bouge encore à chaque arrivée.`;
-  if (action.fini) return state.maxPlayers > 1 ? `${EMOJI.check.text} Tour terminé. En attente des autres joueurs.` : `${EMOJI.check.text} Tour terminé.`;
-  if (complet) return `${EMOJI.trade.text} Tu prends **${cardName(action.prise, catalog)}** et tu déposes **${cardName(action.depot, catalog)}**. Valide avec Fin de tour.`;
-  const prise = state.marche.includes(action.prise) ? action.prise : null;
-  const depot = me.main.includes(action.depot) ? action.depot : null;
-  if (prise) return `${EMOJI.trade.text} Tu prends **${cardName(prise, catalog)}** : choisis aussi la carte à déposer.`;
-  if (depot) return `${EMOJI.trade.text} Tu déposes **${cardName(depot, catalog)}** : choisis aussi la carte à prendre.`;
-  return `${EMOJI.trade.text} Choisis une carte à prendre au marché et une carte de ta main à déposer.`;
+function buildStatusLines(view) {
+  const { state, action, catalog, config, players, discordId } = view;
+  if (!state.rosterLocked) return [`${EMOJI.late.text} En attente des autres joueurs : le marché bouge encore à chaque arrivée.`];
+  if (action.fini) return [state.maxPlayers > 1 ? `${EMOJI.check.text} Tour terminé. En attente des autres joueurs.` : `${EMOJI.check.text} Tour terminé.`];
+  return tourStatutLignes({
+    action,
+    id: discordId,
+    joueurs: players,
+    marche: state.marche,
+    config,
+    cardName: (k) => cardName(k, catalog),
+    trade: EMOJI.trade.text,
+    suite: "Valide avec Fin de tour.",
+  });
 }
 
 function buildHandEmbed(view, recap, noms) {
@@ -541,7 +545,7 @@ function buildHandEmbed(view, recap, noms) {
     `Points au prochain décompte : ${plural(pointsMain(main, config), "pt")}`,
     `${EMOJI.trophy.text} Total : ${plural(me.points || 0, "pt")} · ${jokerPointsLabel(me.joker || 0)}`,
     "",
-    buildStatusLine(view),
+    ...buildStatusLines(view),
     jokerStatutLigne(action.joker, noms, (k) => cardName(k, catalog)),
   ].filter((l) => l !== null);
   const image = mainImageUrl(main);
@@ -554,7 +558,7 @@ function buildHandEmbed(view, recap, noms) {
 }
 
 function buildHandComponents(view) {
-  const { state, action, me, complet, catalog } = view;
+  const { state, action, me, pret, catalog } = view;
   if (action.fini || !state.rosterLocked) return [];
   const manche = state.manche;
   return [
@@ -589,9 +593,10 @@ function buildHandComponents(view) {
           label: "Fin de tour",
           emoji: EMOJI.check.component,
           custom_id: `draftduel_fin:${manche}`,
-          disabled: !complet,
+          disabled: !pret,
         },
         jokerButton("draftduel", manche, me.joker || 0, action.joker),
+        annulerEchangeButton("draftduel", manche, action),
       ],
     },
   ];
@@ -799,7 +804,7 @@ export async function handleDetails(webhookUrl, messageId) {
       lines.push(
         `${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.score, "pt")}`,
       );
-      lines.push(`• ${plural(r.carres || 0, "quadruplé")} · ${plural(r.joker || 0, "point")} Joker`);
+      lines.push(`• ${plural(r.carres || 0, "quadruplé")} · ${plural(r.pointsCartes ?? r.score, "pt")} de cartes + ${plural(r.joker || 0, "point")} Joker restant${(r.joker || 0) > 1 ? "s" : ""}`);
       lines.push("");
     }
     await patchOriginal(webhookUrl, {
@@ -828,14 +833,14 @@ function buildReglesEmbed(config) {
       `Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
       "",
       "**À chaque manche**",
-      `${EMOJI.trade.text} **Échange** (obligatoire) : choisis une carte à prendre au marché et une carte de ta main à y déposer.`,
+      `${EMOJI.trade.text} **Échange** : une carte à prendre au marché et une carte de ta main à y déposer. Tu peux aussi jouer une action ${JOKER_EMOJI} Joker, à la place ou en plus.`,
       `${EMOJI.check.text} **Fin de tour** : la manche se résout quand tous les joueurs ont validé. Les échanges ont lieu en même temps.`,
       "",
       `**Carte disputée** : si plusieurs joueurs veulent la même carte et qu'il n'y en a pas assez, celui qui a le plus de points Joker l'emporte (tirage au sort à égalité). Les autres reçoivent une autre carte du marché au hasard et gagnent +${config.joker.gain_perte} points Joker.`,
       "",
-      `**${JOKER_EMOJI} Joker** : +${config.joker.gain_tour} point Joker par échange réalisé, +${config.joker.gain_perte} de plus si ta carte t'échappe. Dépense-les au magasin (une action par manche, résolue en fin de manche) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
+      `**${JOKER_EMOJI} Joker** : +${config.joker.gain_tour} point Joker par tour joué, +${config.joker.gain_perte} de plus si ta carte t'échappe. Dépense-les au magasin (une action par manche, résolue en fin de manche) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
       "",
-      `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts, les autres 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées. À la dernière manche, tout le monde marque ses points.`,
+      `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts, les autres 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées. À la dernière manche, tout le monde marque ses points, et les points Joker restants s'ajoutent au score final.`,
     ].join("\n"),
     color: DRAFTDUEL_COLOR,
   };

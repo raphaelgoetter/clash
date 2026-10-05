@@ -15,6 +15,7 @@ import {
   classement,
   choixGlouton,
   jokerValide,
+  jokerEnConflit,
   jokerDuBot,
 } from "./draftRules.js";
 
@@ -79,12 +80,12 @@ function main() {
   assert.ok(!echangeValide({ prise: "a" }, ["b"], ["a"]));
   assert.ok(!echangeValide({ prise: "z", depot: "b" }, ["b"], ["a"]));
 
-  // Carte non disputée : obtenue, +gain_tour point Joker ; dépôt au marché
+  // Carte non disputée : obtenue, points Joker inchangés ; dépôt au marché
   {
     const joueurs = { p1: { main: ["b", "c", "c", "d"], joker: 2 } };
     const r = resoudreEchanges({ joueurs, actions: { p1: { prise: "a", depot: "b" } }, marche: ["a", "e"], config: CONFIG });
     assert.deepStrictEqual([...joueurs.p1.main].sort(), ["a", "c", "c", "d"]);
-    assert.strictEqual(joueurs.p1.joker, 2 + CONFIG.joker.gain_tour);
+    assert.strictEqual(joueurs.p1.joker, 2);
     assert.deepStrictEqual([...r.marche].sort(), ["b", "e"]);
   }
 
@@ -95,15 +96,15 @@ function main() {
     assert.ok(r.lignes.every((l) => l.type === "prise" && !l.disputee));
   }
 
-  // Dispute : le plus de points Joker gagne (points conservés, +gain_tour),
-  // le perdant gagne en plus gain_perte et reçoit une autre carte du marché
+  // Dispute : le plus de points Joker gagne (points conservés), le perdant
+  // gagne gain_perte et reçoit une autre carte du marché
   {
     const joueurs = { p1: { main: ["b"], joker: 3 }, p2: { main: ["c"], joker: 1 } };
     const r = resoudreEchanges({ joueurs, actions: { p1: { prise: "a", depot: "b" }, p2: { prise: "a", depot: "c" } }, marche: ["a", "e"], config: CONFIG });
     assert.deepStrictEqual(joueurs.p1.main, ["a"]);
-    assert.strictEqual(joueurs.p1.joker, 3 + CONFIG.joker.gain_tour);
+    assert.strictEqual(joueurs.p1.joker, 3);
     assert.deepStrictEqual(joueurs.p2.main, ["e"]);
-    assert.strictEqual(joueurs.p2.joker, 1 + CONFIG.joker.gain_tour + CONFIG.joker.gain_perte);
+    assert.strictEqual(joueurs.p2.joker, 1 + CONFIG.joker.gain_perte);
     assert.ok(r.lignes.some((l) => l.type === "perdue" && l.discordId === "p2" && l.voulue === "a" && l.key === "e"));
     assert.deepStrictEqual([...r.marche].sort(), ["b", "c"]);
   }
@@ -152,11 +153,40 @@ function main() {
     assert.ok(!jokerValide({ type: "echanger", cible: "p2", carte: "a" }, "p1", j, CONFIG));
     assert.ok(!jokerValide({ type: "priorite" }, "p1", j, CONFIG, false));
 
-    // Voir main : main de la cible, point dépensé
+    // Voir main : main de la cible ; le Joker seul suffit à jouer le tour
+    // (points dépensés, +gain_tour)
     {
       const t = tour(base(), { p1: { joker: { type: "voir", cible: "p2" } } });
       assert.ok(t.lignes.some((l) => l.action === "voir" && l.cible === "p2" && l.main.length === 4));
-      assert.strictEqual(t.joueurs.p1.joker, 0);
+      assert.strictEqual(t.joueurs.p1.joker, COUT - CONFIG.joker.couts.voir + CONFIG.joker.gain_tour);
+      assert.strictEqual(t.joueurs.p2.joker, COUT);
+    }
+
+    // Exemple de Raphael : 3 Géants + 1 Prince, Échange Joker seul (sans
+    // marché) Prince contre le Géant d'un adversaire → quadruplé
+    {
+      const joueursAvant = { p1: { main: ["g", "g", "g", "p"], joker: COUT, points: 0 }, p2: { main: ["g", "a", "a", "b"], joker: 0, points: 0 } };
+      const t = computeTour({
+        joueursAvant,
+        actions: { p1: { joker: { type: "echanger", cible: "p2", carte: "g", maCarte: "p" } } },
+        marche: ["a", "b"],
+        familles: ["g", "p", "a", "b"],
+        config: CONFIG,
+        dernier: false,
+      });
+      assert.deepStrictEqual(t.carres, ["p1"]);
+    }
+
+    // Même carte unique donnée au marché et à l'Échange Joker : le Joker
+    // n'est ni joué ni payé, le marché se fait
+    {
+      const joueursAvant = { p1: { main: ["g", "g", "g", "p"], joker: COUT, points: 0 }, p2: { main: ["g", "a", "a", "b"], joker: 0, points: 0 } };
+      const action = { prise: "a", depot: "p", joker: { type: "echanger", cible: "p2", carte: "g", maCarte: "p" } };
+      assert.ok(jokerEnConflit(action, joueursAvant.p1.main));
+      const t = computeTour({ joueursAvant, actions: { p1: action }, marche: ["a", "b"], familles: ["g", "p", "a", "b"], config: CONFIG, dernier: false });
+      assert.deepStrictEqual([...t.joueurs.p1.main].sort(), ["a", "g", "g", "g"]);
+      assert.strictEqual(t.joueurs.p1.joker, COUT + CONFIG.joker.gain_tour);
+      assert.ok(!jokerEnConflit({ ...action, depot: "g" }, joueursAvant.p1.main));
     }
 
     // Échanger carte : réussi, puis carte absente (point perdu)
@@ -166,7 +196,7 @@ function main() {
       assert.deepStrictEqual([...t.joueurs.p2.main].sort(), ["b", "d", "d", "e"]);
       const rate = tour(base(), { p1: { joker: { type: "echanger", cible: "p2", carte: "c", maCarte: "b" } } });
       assert.ok(rate.lignes.some((l) => l.action === "echanger" && l.echec === "absente"));
-      assert.strictEqual(rate.joueurs.p1.joker, 0);
+      assert.strictEqual(rate.joueurs.p1.joker, CONFIG.joker.gain_tour);
     }
 
     // Saboter : une carte de la cible part au marché contre une autre
@@ -182,7 +212,7 @@ function main() {
       const t = tour(base(), { p1: { joker: { type: "saboter", cible: "p2" } }, p2: { joker: { type: "proteger" } } });
       assert.ok(t.lignes.some((l) => l.action === "saboter" && l.echec === "protege"));
       assert.deepStrictEqual([...t.joueurs.p2.main].sort(), ["a", "d", "d", "e"]);
-      assert.strictEqual(t.joueurs.p1.joker + t.joueurs.p2.joker, 0);
+      assert.strictEqual(t.joueurs.p1.joker + t.joueurs.p2.joker, 2 * CONFIG.joker.gain_tour);
     }
 
     // Saboter peut empêcher un carré tout juste complété
@@ -240,7 +270,11 @@ function main() {
     assert.ok(!fin.redistribution);
   }
 
-  // ── Classement : points, puis carrés, puis arrivée ─────────────────────
+  // ── Classement : points + Joker restants, puis quadruplés, puis arrivée ──
+  {
+    const c = classement({ x: { username: "x", points: 10, joker: 3, carres: 1 }, y: { username: "y", points: 12, joker: 0, carres: 1 } });
+    assert.deepStrictEqual(c.map((r) => [r.discordId, r.score]), [["x", 13], ["y", 12]]);
+  }
   {
     const c = classement({
       x: { username: "x", points: 12, carres: 1, arrivee: 2 },

@@ -42,6 +42,12 @@ for (let m = 1; m <= 7; m++) {
       const mag = lastEph(id).body;
       console.log(`--- magasin ${id}, manche ${m} (${mag.components.length} rangées) ---\n${mag.embeds[0].description.split("\n").at(-1)}`);
       await H.handleJoker(`wh-${id}`, id, "retour");
+      // Une manche jouée avec le Joker seul : échange au marché annulé
+      if (id === "u1" && m === 5) {
+        await H.handleChoix(`wh-${id}`, id, "annuler");
+        const e = lastEph(id).body;
+        console.log(`--- u1 Joker seul, manche ${m} : fin de tour ${e.components[2].components[0].disabled ? "désactivée" : "active"}, annuler ${e.components[2].components[2].disabled ? "désactivé" : "actif"} ---\n${e.embeds[0].description.split("\n").slice(-2).join("\n")}`);
+      }
     }
     if (id === "u1" && m >= 3 && m <= 4) {
       const e = lastEph(id).body;

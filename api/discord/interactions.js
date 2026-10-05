@@ -9227,11 +9227,11 @@ export default async function handler(req, res) {
 
   // ── Draft (duel) : Fin de tour / menus de l'échange
   // (type 6 : édition en place de la main éphémère) ──
-  // custom_id : draftduel_fin:<m>, draftduel_prise:<m>, draftduel_depot:<m>
+  // custom_id : draftduel_fin:<m>, draftduel_prise:<m>, draftduel_depot:<m>, draftduel_annuler:<m>
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    /^draftduel_(fin|prise|depot):/.test(body.data.custom_id)
+    /^draftduel_(fin|prise|depot|annuler):/.test(body.data.custom_id)
   ) {
     const [action] = body.data.custom_id.split(":");
     const { discordId } = extractDraftDuelMember(body);
@@ -9239,7 +9239,7 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (action === "draftduel_fin") runBackground(() => handleDraftDuelFinTour(webhookUrl, discordId));
-    else runBackground(() => handleDraftDuelChoix(webhookUrl, discordId, action === "draftduel_prise" ? "prise" : "depot", value));
+    else runBackground(() => handleDraftDuelChoix(webhookUrl, discordId, action.replace("draftduel_", ""), value));
     return;
   }
 
@@ -10136,14 +10136,14 @@ export default async function handler(req, res) {
   }
 
   // ── Draft Royale : menus de l'échange, édition en place de l'éphémère ──
-  // custom_id : draftroyale_prise:<jour>, draftroyale_depot:<jour>
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^draftroyale_(prise|depot):/.test(body.data.custom_id)) {
+  // custom_id : draftroyale_prise:<jour>, draftroyale_depot:<jour>, draftroyale_annuler:<jour> (bouton)
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^draftroyale_(prise|depot|annuler):/.test(body.data.custom_id)) {
     const [action, jour] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
     const value = body.data.values?.[0];
-    const champ = action === "draftroyale_prise" ? "prise" : "depot";
+    const champ = action.replace("draftroyale_", "");
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleDraftRoyaleChoix(webhookUrl, jour, champ, discordId, username, value));

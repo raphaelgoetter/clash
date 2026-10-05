@@ -34,8 +34,8 @@ import {
   listManches,
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/draftroyale.js";
-import { compterCartes, pointsMain, trierMain, echangeValide } from "../../../backend/services/draftRules.js";
-import { JOKER_EMOJI, echangeLigne, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes } from "./draftJoker.js";
+import { compterCartes, pointsMain, trierMain } from "../../../backend/services/draftRules.js";
+import { JOKER_EMOJI, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes } from "./draftJoker.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -161,7 +161,7 @@ function buildFinEmbed(ranking, config, manches, currentManche) {
       `Après ${config.duree_jours} jours de draft, ${titre}`,
       "",
       "**Classement final**",
-      ...ranking.slice(0, 10).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** (${plural(r.score, "pt")}${r.carres ? `, ${plural(r.carres, "quadruplé")}` : ""})`),
+      ...ranking.slice(0, 10).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** (${plural(r.score, "pt")}${r.joker ? ` dont ${r.joker} Joker` : ""}${r.carres ? `, ${plural(r.carres, "quadruplé")}` : ""})`),
       ...buildManchesSection(manches, currentManche),
     ]
       .join("\n")
@@ -177,17 +177,17 @@ function buildReglesEmbed(config) {
     description: [
       `Réunis **${config.taille_main} exemplaires d'une même carte** (un quadruplé) ! Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes à ton premier clic. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
       "",
-      `**Chaque jour** : ${TRADE_TEXT} choisis une carte à prendre au marché et une carte de ta main à y déposer. Tu peux changer d'avis jusqu'à la clôture.`,
+      `**Chaque jour** : ${TRADE_TEXT} échange une carte au marché (une à prendre, une de ta main à déposer), joue une action ${JOKER_EMOJI} Joker, ou les deux. Tu peux changer d'avis jusqu'à la clôture.`,
       "",
       "**À la clôture**, tous les échanges ont lieu en même temps :",
       "• Une carte voulue par plus de joueurs qu'il n'y a d'exemplaires va à celui qui a le plus de points Joker (tirage au sort à égalité).",
       `• Les autres reçoivent une autre carte du marché au hasard et gagnent +${config.joker.gain_perte} points Joker.`,
       "",
-      `**${JOKER_EMOJI} Joker** : +${config.joker.gain_tour} point Joker par échange réalisé, +${config.joker.gain_perte} de plus si ta carte t'échappe. Dépense-les au magasin (une action par tour, résolue à la clôture) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
+      `**${JOKER_EMOJI} Joker** : +${config.joker.gain_tour} point Joker par tour joué, +${config.joker.gain_perte} de plus si ta carte t'échappe. Dépense-les au magasin (une action par tour, résolue à la clôture) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
       "",
       `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts. Les autres marquent 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées.`,
       "",
-      `**Dernier jour** (J${config.duree_jours}) : tout le monde marque ses points, même sans quadruplé.`,
+      `**Dernier jour** (J${config.duree_jours}) : tout le monde marque ses points, même sans quadruplé. Les points Joker restants s'ajoutent au score final.`,
       "",
       "Égalité : le nombre de quadruplés départage, puis l'ordre d'arrivée dans le jeu.",
     ].join("\n"),
@@ -352,16 +352,6 @@ function nomsJoueurs(joueurs, discordId) {
   return Object.fromEntries(Object.entries(joueurs).map(([id, j]) => [id, id === discordId ? "Toi" : j.username || "?"]));
 }
 
-function statutEchange(action, joueur, partie, catalog) {
-  if (echangeValide(action, joueur.main, partie.marche)) {
-    return `${TRADE_TEXT} Échange prévu : tu prends **${cardName(action.prise, catalog)}**, tu déposes **${cardName(action.depot, catalog)}**. Modifiable jusqu'à la clôture.`;
-  }
-  const prise = action.prise && partie.marche.includes(action.prise) ? action.prise : null;
-  const depot = action.depot && joueur.main.includes(action.depot) ? action.depot : null;
-  if (prise) return `⚠️ Tu prends **${cardName(prise, catalog)}** : choisis aussi la carte à déposer, sinon pas d'échange.`;
-  if (depot) return `⚠️ Tu déposes **${cardName(depot, catalog)}** : choisis aussi la carte à prendre, sinon pas d'échange.`;
-  return `${TRADE_TEXT} Choisis une carte à prendre au marché et une carte de ta main à déposer.`;
-}
 
 // Vue éphémère du joueur : main, bilan de la veille, échange prévu,
 // marché, et les deux menus de l'échange.
@@ -384,7 +374,16 @@ async function buildJeuView(jour, discordId, username, entete = null) {
     `Points au prochain décompte : ${plural(pointsMain(main, config), "pt")}`,
     `🏆 Total : ${plural(joueur.points || 0, "pt")} · ${jokerPointsLabel(joueur.joker || 0)}`,
     "",
-    statutEchange(action, joueur, partie, catalog),
+    ...tourStatutLignes({
+      action,
+      id: discordId,
+      joueurs,
+      marche: partie.marche,
+      config,
+      cardName: (k) => cardName(k, catalog),
+      trade: TRADE_TEXT,
+      suite: "Modifiable jusqu'à la clôture.",
+    }),
     jokerStatutLigne(action.joker, nomsJoueurs(joueurs, discordId), (k) => cardName(k, catalog)),
   ].filter((l) => l !== null);
   const marcheTrie = [...partie.marche].sort();
@@ -426,7 +425,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
           },
         ],
       },
-      { type: 1, components: [jokerButton("draftroyale", jour, joueur.joker || 0, action.joker)] },
+      { type: 1, components: [jokerButton("draftroyale", jour, joueur.joker || 0, action.joker), annulerEchangeButton("draftroyale", jour, action)] },
     ],
   };
 }
@@ -479,7 +478,7 @@ const CHOIX_ERREURS = {
   unknownPlayer: "Joueur introuvable.",
 };
 
-// Menus de l'échange : `champ` = "prise" ou "depot".
+// Menus de l'échange : `champ` = "prise", "depot" ou "annuler" (bouton).
 export async function handleChoixSelect(webhookUrl, jour, champ, discordId, username, key) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;

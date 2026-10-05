@@ -1924,7 +1924,7 @@ Config dans `data/draftroyale/draftroyale.json`.
 - **Ordre d'entrée des cartes** (`config.cartes`, `choisirFamilles()`) : Princesse, Prince, Géant, Archères, Chevalier, Mousquetaire, Gargouilles, Gobelins, Sorcier, Bébé dragon, puis Mini P.E.K.K.A, Valkyrie, Armée de squelettes, Chevaucheur de cochon, etc. (30 cartes) ; au-delà, cartes jouables du catalogue au hasard.
 - **Jour 1** (`initPartie()`) : aucune carte en jeu, elles arrivent avec les joueurs.
 - **Arrivée d'un joueur** (`ensureJoueur()` → `ajouterJoueur()`, sous verrou `draftroyale:lock`) : les cartes manquantes entrent en jeu (exemplaires à l'écart), le joueur tire ses 4 cartes à l'écart (jamais un quadruplé d'emblée), puis une carte à l'écart complète le marché. Le marché existant n'est jamais retiré (les échanges prévus restent valides).
-- **Chaque jour** : un échange, **obligatoire pour jouer** : une carte à prendre au marché et une carte de sa main à y déposer, modifiables jusqu'à la clôture. Un échange incomplet (une seule des deux cartes choisie) ne compte pas.
+- **Chaque jour, un tour se joue par un échange au marché, une action Joker, ou les deux** (décision du 05/10 : avec 3 Géants et 1 Prince, l'Échange Joker Prince contre Géant doit pouvoir se faire seul). Échange au marché : une carte à prendre et une carte de sa main à y déposer, modifiables jusqu'à la clôture (bouton « Annuler l'échange » pour les effacer). Un échange incomplet (une seule des deux cartes choisie) ne compte pas. Si l'Échange Joker donne la même carte que le dépôt au marché alors que la main n'en a qu'un exemplaire (`jokerEnConflit()`), un avertissement s'affiche et, à la clôture, le Joker n'est ni joué ni payé.
 - **Marché** : toujours visible dans l'éphémère (liste et image).
 
 ### Résolution des échanges (Draft Royale)
@@ -1938,7 +1938,7 @@ Résolus tous ensemble à la clôture (`resoudreEchanges()`, pure) : l'heure de 
 
 ### Joker (Draft Royale et duel)
 
-Décision du 05/10, pour casser la répétitivité et les quadruplés simultanés. Les **points Joker** (ex-« popularité ») se gagnent à chaque échange réalisé (`gain_tour`, +1) et en perdant une carte disputée (`gain_perte`, +2 de plus) ; ils ne baissent qu'en les dépensant au **magasin Joker** (bouton Joker de l'éphémère, `_handlers/draftJoker.js`, partagé par les deux jeux). Une action par tour, modifiable jusqu'à la clôture, payée et résolue à la clôture ; coûts dans `joker.couts` (2 pts chacune) :
+Décision du 05/10, pour casser la répétitivité et les quadruplés simultanés. Les **points Joker** (ex-« popularité ») se gagnent à chaque tour joué (échange au marché ou Joker, `gain_tour`, +1, ajouté après le départage des disputes) et en perdant une carte disputée (`gain_perte`, +2 de plus) ; ils ne baissent qu'en les dépensant au **magasin Joker** (bouton Joker de l'éphémère, `_handlers/draftJoker.js`, partagé par les deux jeux). Une action par tour, modifiable jusqu'à la clôture, payée et résolue à la clôture ; coûts dans `joker.couts` (2 pts, Priorité et Voir main 1 pt) :
 
 - **Priorité** : servi en premier si la carte prise est disputée (sans échange complet, l'action n'est ni utilisée ni payée). Plusieurs joueurs en Priorité sur la même carte : départagés entre eux par les points Joker restants.
 - **Protéger** : aucune action Joker ne peut cibler le joueur ce tour-ci ; une action contre lui échoue et son auteur perd le point.
@@ -1953,7 +1953,7 @@ Décision du 05/10, pour casser la répétitivité et les quadruplés simultané
 - **Décompte** dès qu'au moins un joueur a un quadruplé après les échanges : `points_carre` (10) pts par quadruplé, sinon 1, 2 ou 3 pts selon le plus grand nombre de cartes identiques de la main (`pointsMain()`). Tous les joueurs inscrits marquent, même absents ce jour-là.
 - Après un décompte, **toutes les cartes sont redistribuées** (mêmes cartes en jeu, `distribuer()` : 4 par main, une par joueur au marché, le reste à l'écart, aucune main ne commence par un quadruplé) : nouvelle donne.
 - **Dernier jour** : décompte pour tous, même sans quadruplé, puis classement final.
-- **Départage** : nombre de quadruplés, puis ordre d'arrivée dans le jeu (`classement()`).
+- **Score final** (05/10) : points des décomptes **+ points Joker restants** (dépenser au magasin coûte donc des points au classement). **Départage** : nombre de quadruplés, puis ordre d'arrivée dans le jeu (`classement()`).
 
 Simulation (`temp/simulateDraft.mjs`, 05/10, joueurs gloutons, 7 tours) : à 15-20 joueurs (70 % actifs chaque jour), environ 1,5 tour à quadruplé par partie, 35 % d'entre eux à plusieurs quadruplés, 23 % des échanges disputés perdus, vainqueur autour de 13 pts. À 3 joueurs (duel) : 2 tours à quadruplé, 21 % à plusieurs quadruplés (41 % avec l'ancien marché de 8 cartes).
 
@@ -2030,7 +2030,7 @@ Stockage Redis dédié `gobeletduel:*`. Scripts npm : `npm run gobeletduel:statu
 Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEUX requis pour lancer). **Remplace le duel Élixir** (supprimé le 04/10) et reprend les règles du jeu spécial [Draft Royale](#draft-royale--quadruplés-en-7-jours) (refonte « Kilo de merde » du 05/10, règles pures communes dans `draftRules.js`). Mêmes principes structurels que Blackjack/Gobelet Duel (lobby fermé, avancement par les actions des joueurs, message public réédité en place, clôture paresseuse après `duel.stale_heures` (2h) d'inactivité, high score jamais effacé, nettoyage 100% manuel). Code : `backend/services/draftDuel.js`, `api/discord/_handlers/draftDuel.js`.
 
 **Différences avec le Draft Royale** :
-- **7 manches** (`duel.manches`) au lieu de 7 jours : une manche se résout quand tous les joueurs ont cliqué **Fin de tour**, possible seulement avec un échange complet. Verrou `HSETNX` par manche, comme les autres duels.
+- **7 manches** (`duel.manches`) au lieu de 7 jours : une manche se résout quand tous les joueurs ont cliqué **Fin de tour**, possible avec un échange au marché complet ou une action Joker complète (`tourJouable()`). Verrou `HSETNX` par manche, comme les autres duels.
 - **Toujours 3 joueurs au moins** (05/10, demande de Raphael) : des bots complètent la table, Kévina (bot) à 2 joueurs, Kévina et Josette (bot) en solo (`BOTS`, `botsDeLaPartie()`).
 - **Cartes en jeu** : même calcul que le Draft Royale, bots compris (3 joueurs : Princesse, Prince, Géant, Archères, marché de 3 cartes, 1 exemplaire à l'écart). Chaque joueur (bots d'abord) tire sa main en s'inscrivant ; les échanges ne s'ouvrent qu'une fois tous les joueurs arrivés.
 - **Bots** : chacun choisit son échange et son Joker au moment de la résolution (`choixGlouton()` : l'échange qui grossit le plus son plus gros groupe ; `jokerDuBot()`), sans voir les choix des joueurs. Le high score ne retient que les joueurs humains.

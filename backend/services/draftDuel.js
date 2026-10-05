@@ -21,7 +21,7 @@
 
 import { Redis } from "@upstash/redis";
 import { loadDraftRoyaleConfig, loadCatalog } from "./draftroyale.js";
-import { ajouterJoueur, echangeValide, computeTour, classement, choixGlouton, jokerDuBot, appliquerChoixJoker } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, jokerValide, computeTour, classement, choixGlouton, jokerDuBot, appliquerChoixJoker } from "./draftRules.js";
 
 // Bots qui complètent la table jusqu'à `MIN_JOUEURS`, dans cet ordre.
 export const BOTS = [
@@ -120,6 +120,11 @@ const HAND_TTL_SECONDS = 15 * 60;
 
 // Pure : tous les sièges occupés et chaque joueur humain a validé son
 // échange (les bots choisissent le leur à la résolution).
+// Pure : le tour peut être validé (échange au marché ou Joker complet).
+export function tourJouable(action, id, players, state, config) {
+  return echangeValide(action, players[id]?.main, state.marche) || jokerValide(action?.joker, id, players, config, false);
+}
+
 export function isMancheReady(state, actions) {
   if (state.players.length < state.maxPlayers) return false;
   return state.players.every((id) => actions[id]?.fini);
@@ -257,7 +262,7 @@ export async function readPlayerView(state, discordId) {
     readAction(state.manche, discordId),
   ]);
   const me = players[discordId] || null;
-  return { state, discordId, config, catalog, players, me, action, complet: !!me && echangeValide(action, me.main, state.marche) };
+  return { state, discordId, config, catalog, players, me, action, pret: !!me && tourJouable(action, discordId, players, state, config) };
 }
 
 // Préconditions communes : partie active, joueur inscrit, tous les
@@ -277,12 +282,16 @@ async function afterAction(state, discordId, extra = {}) {
   return { state: newState, view: await readPlayerView(newState, discordId), ...extra };
 }
 
-// `champ` : "prise" (carte du marché) ou "depot" (carte de la main),
-// modifiable jusqu'à la fin de tour.
+// `champ` : "prise" (carte du marché), "depot" (carte de la main) ou
+// "annuler" (efface les deux), modifiable jusqu'à la fin de tour.
 export async function choisir(discordId, champ, key) {
   const guard = await guardTurn(discordId);
   if (!guard.action) return guard;
   const { state } = guard;
+  if (champ === "annuler") {
+    await updateAction(state.manche, discordId, { prise: null, depot: null });
+    return afterAction(state, discordId);
+  }
   const players = await readPlayers();
   const valide = champ === "prise" ? state.marche.includes(key) : champ === "depot" && players[discordId].main.includes(key);
   if (!valide) return { ...(await afterAction(state, discordId)), invalid: true };
@@ -303,7 +312,8 @@ export async function choisirJoker(discordId, patch) {
   return afterAction(state, discordId);
 }
 
-// Fin de tour : définitive, l'échange doit être complet. Le webhook est
+// Fin de tour : définitive, il faut un échange au marché complet ou une
+// action Joker complète (le Joker seul suffit à jouer le tour). Le webhook est
 // enregistré AVANT le drapeau `fini` : le joueur qui complète la manche le
 // trouve forcément, même en cas de fins de tour simultanées.
 export async function finirTour(discordId, webhookUrl) {
@@ -311,7 +321,7 @@ export async function finirTour(discordId, webhookUrl) {
   if (!guard.action) return guard;
   const { state, action } = guard;
   const players = await readPlayers();
-  if (!echangeValide(action, players[discordId].main, state.marche)) return { ...(await afterAction(state, discordId)), invalid: true };
+  if (!tourJouable(action, discordId, players, state, await loadDraftDuelConfig())) return { ...(await afterAction(state, discordId)), invalid: true };
   if (webhookUrl) {
     await getRedis().hset(handKey(state.manche), { [discordId]: webhookUrl });
     await getRedis().expire(handKey(state.manche), HAND_TTL_SECONDS);

@@ -233,10 +233,16 @@ export async function readAction(jour, discordId) {
   return fromJson(await getRedis().hget(actionsKey(jour), discordId)) || {};
 }
 
-// `champ` : "prise" (carte du marché) ou "depot" (carte de la main).
+// `champ` : "prise" (carte du marché), "depot" (carte de la main) ou
+// "annuler" (efface les deux).
 export async function enregistrerChoix(jour, discordId, champ, key) {
   const [joueur, partie] = await Promise.all([readJoueur(discordId), readPartie()]);
   if (!joueur) return { status: "unknownPlayer" };
+  if (champ === "annuler") {
+    const action = { ...(await readAction(jour, discordId)), prise: null, depot: null };
+    await getRedis().hset(actionsKey(jour), { [discordId]: toJson(action) });
+    return { status: "ok", action, complet: false };
+  }
   if (champ === "prise" && !partie.marche.includes(key)) return { status: "unavailable" };
   if (champ === "depot" && !joueur.main.includes(key)) return { status: "notInHand" };
   const action = { ...(await readAction(jour, discordId)), [champ]: key };

@@ -8,7 +8,7 @@
 // annuler (boutons) ou type, cible, carte, maCarte (menus).
 // ============================================================
 
-import { JOKER_ACTIONS, jokerCout, compterCartes } from "../../../backend/services/draftRules.js";
+import { JOKER_ACTIONS, jokerCout, compterCartes, echangeValide, jokerValide, jokerEnConflit } from "../../../backend/services/draftRules.js";
 
 export const JOKER_EMOJI = "🃏";
 
@@ -56,6 +56,36 @@ export function jokerStatutLigne(joker, noms, cardName) {
   if (AVEC_CIBLE.has(joker.type)) return `${JOKER_EMOJI} Joker prévu : ${a.label} **${noms[joker.cible]}**.`;
   if (joker.type === "priorite") return `${JOKER_EMOJI} Joker prévu : Priorité (sans échange complet, il ne sera pas utilisé).`;
   return `${JOKER_EMOJI} Joker prévu : ${a.label}.`;
+}
+
+// Lignes d'état du tour : un tour se joue par un échange au marché, une
+// action Joker, ou les deux. `suite` : fin de la ligne d'un tour prêt.
+export function tourStatutLignes({ action, id, joueurs, marche, config, cardName, trade, suite }) {
+  const main = joueurs[id]?.main || [];
+  const echangeOk = echangeValide(action, main, marche);
+  const jokerOk = jokerValide(action.joker, id, joueurs, config, false);
+  const lignes = [];
+  if (echangeOk) lignes.push(`${trade} Échange prévu : tu prends **${cardName(action.prise)}**, tu déposes **${cardName(action.depot)}**. ${suite}`);
+  else if (marche.includes(action.prise)) lignes.push(`⚠️ Tu prends **${cardName(action.prise)}** : choisis aussi la carte à déposer.`);
+  else if (main.includes(action.depot)) lignes.push(`⚠️ Tu déposes **${cardName(action.depot)}** : choisis aussi la carte à prendre.`);
+  else if (jokerOk) lignes.push(`${trade} Pas d'échange au marché : ton tour se joue avec ton Joker. ${suite}`);
+  else lignes.push(`${trade} Choisis un échange au marché (une carte à prendre, une à déposer), une action Joker, ou les deux.`);
+  if (echangeOk && jokerEnConflit(action, main)) {
+    lignes.push(`⚠️ Tu déposes déjà ton seul ${cardName(action.depot)} au marché : l'Échange Joker ne sera pas joué. Annule l'échange au marché ou choisis une autre carte.`);
+  }
+  return lignes;
+}
+
+// Bouton qui efface les deux choix du marché (le tour peut se jouer avec
+// le Joker seul).
+export function annulerEchangeButton(prefixe, tour, action) {
+  return {
+    type: 2,
+    style: 2,
+    label: "Annuler l'échange",
+    custom_id: `${prefixe}_annuler:${tour}`,
+    disabled: !action.prise && !action.depot,
+  };
 }
 
 export function jokerButton(prefixe, tour, points, joker) {

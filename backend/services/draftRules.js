@@ -141,7 +141,8 @@ export function echangeValide(action, main, marche) {
 }
 
 // ── Joker ────────────────────────────────────────────────────────────
-// Points Joker : +`joker.gain_tour` par échange réalisé, plus
+// Un tour se joue par un échange au marché, une action Joker, ou les
+// deux. Points Joker : +`joker.gain_tour` par tour joué, plus
 // `joker.gain_perte` à chaque carte disputée perdue ; ils ne baissent que
 // par les achats au magasin (une action par tour, payée à la clôture). Ils
 // départagent les disputes (points restants après achat, avant les gains
@@ -172,6 +173,14 @@ export function appliquerChoixJoker(actuel, patch, { id, joueurs, familles, conf
   if (patch.carte !== undefined && !familles.includes(patch.carte)) return { erreur: "carte" };
   if (patch.maCarte !== undefined && !moi.main.includes(patch.maCarte)) return { erreur: "carte" };
   return { joker: { ...actuel, ...patch } };
+}
+
+// Échange Joker qui donne la carte déjà déposée au marché alors que la main
+// n'en a qu'un exemplaire : impossible, il n'est ni joué ni payé.
+export function jokerEnConflit(action, main) {
+  const j = action?.joker;
+  if (j?.type !== "echanger" || !j.maCarte || j.maCarte !== action.depot) return false;
+  return (main || []).filter((k) => k === j.maCarte).length < 2;
 }
 
 export function jokerValide(joker, id, joueurs, config, echangeOk = true) {
@@ -233,9 +242,8 @@ export function resoudreEchanges({ joueurs, actions, marche, config, priorites =
     j.main.push(o.key);
     depots.push(depot);
     const priorite = priorites.has(id);
-    j.joker = (j.joker || 0) + config.joker.gain_tour;
     if (o.perdue) {
-      j.joker += config.joker.gain_perte;
+      j.joker = (j.joker || 0) + config.joker.gain_perte;
       lignes.push({ type: "perdue", discordId: id, voulue: o.perdue, key: o.key, depot, priorite, gain: config.joker.gain_perte });
     } else {
       lignes.push({ type: "prise", discordId: id, key: o.key, disputee: o.disputee, depot, priorite });
@@ -310,14 +318,19 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   const jokers = {};
   for (const id of Object.keys(joueurs)) {
     const joker = actions[id]?.joker;
-    if (!jokerValide(joker, id, joueurs, config, echangeValide(actions[id], joueurs[id].main, marche))) continue;
+    const echangeOk = echangeValide(actions[id], joueurs[id].main, marche);
+    if (!jokerValide(joker, id, joueurs, config, echangeOk)) continue;
+    if (echangeOk && jokerEnConflit(actions[id], joueurs[id].main)) continue;
     joueurs[id].joker -= jokerCout(joker.type, config);
     jokers[id] = joker;
   }
+  // Tour joué (échange au marché ou Joker) : +gain_tour, après le départage
+  const joues = Object.keys(joueurs).filter((id) => jokers[id] || echangeValide(actions[id], joueurs[id].main, marche));
   const priorites = new Set(Object.keys(jokers).filter((id) => jokers[id].type === "priorite"));
   const protegees = new Set(Object.keys(jokers).filter((id) => jokers[id].type === "proteger"));
 
   const echanges = resoudreEchanges({ joueurs, actions, marche, config, priorites, rng });
+  for (const id of joues) joueurs[id].joker = (joueurs[id].joker || 0) + config.joker.gain_tour;
   const ciblees = Object.fromEntries(Object.entries(jokers).filter(([, j]) => AVEC_CIBLE.has(j.type) || j.type === "proteger"));
   const effets = resoudreJokers({ joueurs, jokers: ciblees, protegees, marche: echanges.marche, rng });
 
@@ -347,13 +360,15 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   return { joueurs, marche: newMarche, reserve: newReserve, lignes: [...echanges.lignes, ...effets.lignes], carres, scores, redistribution };
 }
 
-// Classement : points, puis nombre de carrés, puis ordre d'arrivée.
+// Classement final : points des décomptes + points Joker restants, puis
+// nombre de quadruplés, puis ordre d'arrivée.
 export function classement(joueurs) {
   return Object.entries(joueurs)
     .map(([discordId, j]) => ({
       discordId,
       username: j.username,
-      score: j.points || 0,
+      score: (j.points || 0) + (j.joker || 0),
+      pointsCartes: j.points || 0,
       carres: j.carres || 0,
       joker: j.joker || 0,
       arrivee: j.arrivee ?? 0,

@@ -6,7 +6,7 @@
   "joker": {
     "gain_tour": 1,
     "gain_perte": 2,
-    "couts": { "priorite": 2, "proteger": 2, "voir": 2, "saboter": 2, "echanger": 2 }
+    "couts": { "priorite": 1, "proteger": 2, "voir": 1, "saboter": 2, "echanger": 2 }
   },
   "cartes": [
     "Princess",
