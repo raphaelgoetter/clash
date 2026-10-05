@@ -37,10 +37,20 @@ for (let m = 1; m <= 7; m++) {
     if ((view.me.joker || 0) >= 1) {
       const cible = Object.keys(view.players).find((x) => x !== id);
       await H.handleJoker(`wh-${id}`, id, "ouvrir");
-      await H.handleJoker(`wh-${id}`, id, "type", m % 2 ? "voir" : "saboter");
-      await H.handleJoker(`wh-${id}`, id, "cible", cible);
+      await H.handleJoker(`wh-${id}`, id, "voirmenu");
+      await H.handleJoker(`wh-${id}`, id, "voir", cible);
+      const apres = await S.readPlayerView(await S.readState(), id);
+      // Voir main puis Échanger carte avec une carte vue, si les points suffisent
+      if (apres.action.vu?.main && (apres.me.joker || 0) >= 2) {
+        const visee = apres.action.vu.main.find((k) => !apres.me.main.includes(k)) || apres.action.vu.main[0];
+        const donnee = apres.me.main.find((k) => k !== choix.depot) || apres.me.main[0];
+        await H.handleJoker(`wh-${id}`, id, "type", "echanger");
+        await H.handleJoker(`wh-${id}`, id, "cible", cible);
+        await H.handleJoker(`wh-${id}`, id, "carte", visee);
+        await H.handleJoker(`wh-${id}`, id, "maCarte", donnee);
+      }
       const mag = lastEph(id).body;
-      console.log(`--- magasin ${id}, manche ${m} (${mag.components.length} rangées) ---\n${mag.embeds[0].description.split("\n").at(-1)}`);
+      console.log(`--- magasin ${id}, manche ${m} (${mag.components.length} rangées) ---\n${mag.embeds[0].description.split("\n").filter((l) => /👁️|Joker prévu/.test(l)).join("\n")}`);
       await H.handleJoker(`wh-${id}`, id, "retour");
       // Une manche jouée avec le Joker seul : échange au marché annulé
       if (id === "u1" && m === 5) {

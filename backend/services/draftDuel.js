@@ -21,7 +21,7 @@
 
 import { Redis } from "@upstash/redis";
 import { loadDraftRoyaleConfig, loadCatalog } from "./draftroyale.js";
-import { ajouterJoueur, echangeValide, jokerValide, computeTour, classement, choixGlouton, jokerDuBot, appliquerChoixJoker } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, jokerValide, computeTour, classement, choixGlouton, jokerDuBot, appliquerChoixJoker, voirMain as voirMainRegle, jokerCout } from "./draftRules.js";
 
 // Bots qui complètent la table jusqu'à `MIN_JOUEURS`, dans cet ordre.
 export const BOTS = [
@@ -309,6 +309,19 @@ export async function choisirJoker(discordId, patch) {
   const r = appliquerChoixJoker(action.joker, patch, { id: discordId, joueurs: players, familles: state.familles, config });
   if (r.erreur) return { ...(await afterAction(state, discordId)), invalid: true };
   await updateAction(state.manche, discordId, { joker: r.joker });
+  return afterAction(state, discordId);
+}
+
+// Voir main : instantané, payé tout de suite (une fois par manche).
+export async function voirMain(discordId, cible) {
+  const guard = await guardTurn(discordId);
+  if (!guard.action) return guard;
+  const { state } = guard;
+  const [config, players, actions] = await Promise.all([loadDraftDuelConfig(), readPlayers(), readActions(state.manche)]);
+  const r = voirMainRegle({ id: discordId, cible, joueurs: players, actions, config });
+  if (r.erreur) return { ...(await afterAction(state, discordId)), invalid: true };
+  await writePlayer(discordId, { ...players[discordId], joker: players[discordId].joker - jokerCout("voir", config) });
+  await updateAction(state.manche, discordId, { vu: r.vu });
   return afterAction(state, discordId);
 }
 

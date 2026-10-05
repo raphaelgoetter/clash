@@ -34,7 +34,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { filterCardPool } from "./cards.js";
-import { ajouterJoueur, echangeValide, computeTour, classement, appliquerChoixJoker } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, computeTour, classement, appliquerChoixJoker, voirMain, jokerCout } from "./draftRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "draftroyale", "draftroyale.json");
@@ -259,6 +259,20 @@ export async function enregistrerJoker(jour, discordId, patch) {
   if (r.erreur) return { status: r.erreur };
   await getRedis().hset(actionsKey(jour), { [discordId]: toJson({ ...action, joker: r.joker }) });
   return { status: "ok", joker: r.joker };
+}
+
+// Voir main : instantané, payé tout de suite (une fois par jour). Sous le
+// verrou des arrivées : les points Joker du joueur changent.
+export async function voirMainJoueur(jour, discordId, cible) {
+  return withLock(async () => {
+    const [config, joueurs, actions] = await Promise.all([loadDraftRoyaleConfig(), readJoueurs(), readActions(jour)]);
+    const r = voirMain({ id: discordId, cible, joueurs, actions, config });
+    if (r.erreur) return { status: r.erreur };
+    const moi = joueurs[discordId];
+    await writeJoueur(discordId, { ...moi, joker: moi.joker - jokerCout("voir", config) });
+    await getRedis().hset(actionsKey(jour), { [discordId]: toJson({ ...(actions[discordId] || {}), vu: r.vu }) });
+    return { status: "ok", vu: r.vu };
+  });
 }
 
 // ── Clôture ─────────────────────────────────────────────────────────

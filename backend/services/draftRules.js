@@ -148,8 +148,10 @@ export function echangeValide(action, main, marche) {
 // départagent les disputes (points restants après achat, avant les gains
 // du tour).
 
-export const JOKER_ACTIONS = ["priorite", "proteger", "voir", "saboter", "echanger"];
-const AVEC_CIBLE = new Set(["voir", "saboter", "echanger"]);
+// Actions résolues à la clôture (une par tour). Voir main est à part :
+// instantanée, en plus de l'action du tour (voir voirMain).
+export const JOKER_ACTIONS = ["priorite", "proteger", "saboter", "echanger"];
+const AVEC_CIBLE = new Set(["saboter", "echanger"]);
 
 export function jokerCout(type, config) {
   return config.joker.couts[type] ?? null;
@@ -181,6 +183,20 @@ export function jokerEnConflit(action, main) {
   const j = action?.joker;
   if (j?.type !== "echanger" || !j.maCarte || j.maCarte !== action.depot) return false;
   return (main || []).filter((k) => k === j.maCarte).length < 2;
+}
+
+// Voir main (pure) : instantané, payé tout de suite, une fois par tour, en
+// plus de l'action du tour. Une cible qui a déjà choisi Protéger (et peut
+// le payer) reste cachée, le point est quand même dépensé. Renvoie
+// { erreur } ou { vu: { cible, main | null, protege } }.
+export function voirMain({ id, cible, joueurs, actions, config }) {
+  const moi = joueurs[id];
+  if (!moi) return { erreur: "inconnue" };
+  if (actions[id]?.vu) return { erreur: "deja" };
+  if ((moi.joker || 0) < jokerCout("voir", config)) return { erreur: "points" };
+  if (!cible || cible === id || !joueurs[cible]) return { erreur: "cible" };
+  const protege = actions[cible]?.joker?.type === "proteger" && jokerValide(actions[cible].joker, cible, joueurs, config);
+  return { vu: { cible, main: protege ? null : [...joueurs[cible].main], protege } };
 }
 
 export function jokerValide(joker, id, joueurs, config, echangeOk = true) {
@@ -253,8 +269,7 @@ export function resoudreEchanges({ joueurs, actions, marche, config, priorites =
 }
 
 // Actions Joker ciblées, après les échanges au marché : Échanger carte,
-// puis Saboter, puis Voir main (la main vue est celle d'après les
-// actions). Une cible protégée fait échouer l'action (point perdu).
+// puis Saboter. Une cible protégée fait échouer l'action (point perdu).
 // Renvoie le marché (Saboter y puise) et les lignes du bilan.
 export function resoudreJokers({ joueurs, jokers, protegees, marche, rng = Math.random }) {
   const lignes = [];
@@ -296,11 +311,6 @@ export function resoudreJokers({ joueurs, jokers, protegees, marche, rng = Math.
     lignes.push({ type: "joker", action: "saboter", discordId: id, cible: j.cible, retiree, recue });
   }
 
-  for (const id of ordre("voir")) {
-    const j = jokers[id];
-    if (bloquee(id, j)) continue;
-    lignes.push({ type: "joker", action: "voir", discordId: id, cible: j.cible, main: [...joueurs[j.cible].main] });
-  }
   for (const id of ordre("proteger")) lignes.push({ type: "joker", action: "proteger", discordId: id });
   return { marche: newMarche, lignes };
 }
@@ -333,6 +343,10 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   for (const id of joues) joueurs[id].joker = (joueurs[id].joker || 0) + config.joker.gain_tour;
   const ciblees = Object.fromEntries(Object.entries(jokers).filter(([, j]) => AVEC_CIBLE.has(j.type) || j.type === "proteger"));
   const effets = resoudreJokers({ joueurs, jokers: ciblees, protegees, marche: echanges.marche, rng });
+  // Voir main, déjà résolu dans la journée : mentionné au bilan
+  for (const [id, a] of Object.entries(actions)) {
+    if (a?.vu) effets.lignes.push({ type: "joker", action: "voir", discordId: id, cible: a.vu.cible, echec: a.vu.protege ? "protege" : undefined });
+  }
 
   const carres = Object.keys(joueurs).filter((id) => aUnCarre(joueurs[id].main, config));
   const decompte = carres.length > 0 || dernier;

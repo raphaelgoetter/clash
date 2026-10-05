@@ -18,6 +18,7 @@ import {
   joinGame,
   choisir,
   choisirJoker,
+  voirMain,
   finirTour,
   checkAndResolveManche,
   readPlayers,
@@ -32,7 +33,7 @@ import {
 } from "../../../backend/services/draftDuel.js";
 import { loadCatalog } from "../../../backend/services/draftroyale.js";
 import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
-import { echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
+import { echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, buildVoirMenu, voirLigne, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -545,6 +546,7 @@ function buildHandEmbed(view, recap, noms) {
     "",
     ...buildStatusLines(view),
     jokerStatutLigne(action.joker, noms, (k) => cardName(k, catalog)),
+    voirLigne(action.vu, noms, (keys) => formatGroupes(keys, catalog)),
   ].filter((l) => l !== null);
   const image = mainImageUrl(main);
   return {
@@ -676,11 +678,13 @@ export async function handleJoker(webhookUrl, discordId, champ, value) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
     let result;
-    if (champ === "retour" || champ === "ouvrir") {
+    if (champ === "retour" || champ === "ouvrir" || champ === "voirmenu") {
       const state = await readState();
       if (!state || state.termine) result = { inactive: true };
       else if (!state.players.includes(discordId)) result = { notSeated: true };
       else result = { state, view: await readPlayerView(state, discordId) };
+    } else if (champ === "voir") {
+      result = await voirMain(discordId, value);
     } else {
       result = await choisirJoker(discordId, champ === "annuler" ? null : { [champ]: value });
     }
@@ -690,18 +694,26 @@ export async function handleJoker(webhookUrl, discordId, champ, value) {
       return;
     }
     const noms = await nomsJoueurs(view.players, discordId);
+    const adversaires = Object.keys(view.players)
+      .filter((id) => id !== discordId)
+      .map((id) => ({ id, nom: noms[id] }));
+    if (champ === "voirmenu") {
+      const menu = buildVoirMenu({ prefixe: "draftduel", tour: view.state.manche, points: view.me.joker || 0, adversaires, config: view.config, color: DRAFTDUEL_COLOR });
+      await patchOriginal(webhookUrl, menu);
+      return;
+    }
     const vue = buildMagasin({
       prefixe: "draftduel",
       tour: view.state.manche,
       points: view.me.joker || 0,
       joker: view.action.joker,
-      adversaires: Object.keys(view.players)
-        .filter((id) => id !== discordId)
-        .map((id) => ({ id, nom: noms[id] })),
+      vu: view.action.vu,
+      adversaires,
       main: view.me.main,
       familles: view.state.familles,
       config: view.config,
       cardName: (k) => cardName(k, view.catalog),
+      formatGroupes: (keys) => formatGroupes(keys, view.catalog),
       noms,
       color: DRAFTDUEL_COLOR,
     });

@@ -27,6 +27,7 @@ import {
   initPartie,
   enregistrerChoix,
   enregistrerJoker,
+  voirMainJoueur,
   previewCloture,
   closeDayAndAdvance,
   getHistoriqueEntry,
@@ -35,7 +36,7 @@ import {
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/draftroyale.js";
 import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
-import { JOKER_EMOJI, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes } from "./draftJoker.js";
+import { JOKER_EMOJI, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, buildVoirMenu, voirLigne, jokerBilanLignes } from "./draftJoker.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -383,6 +384,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
       suite: "Modifiable jusqu'à la clôture.",
     }),
     jokerStatutLigne(action.joker, nomsJoueurs(joueurs, discordId), (k) => cardName(k, catalog)),
+    voirLigne(action.vu, nomsJoueurs(joueurs, discordId), (keys) => formatGroupes(keys, catalog)),
   ].filter((l) => l !== null);
   const marcheTrie = [...partie.marche].sort();
   return {
@@ -429,7 +431,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
 }
 
 // Magasin Joker (édition en place de l'éphémère).
-async function buildMagasinView(jour, discordId, entete = null) {
+async function buildMagasinView(jour, discordId, entete = null, { voirMenu = false } = {}) {
   const [config, catalog, joueurs, partie, action] = await Promise.all([
     loadDraftRoyaleConfig(),
     loadCatalog(),
@@ -439,19 +441,23 @@ async function buildMagasinView(jour, discordId, entete = null) {
   ]);
   const joueur = joueurs[discordId];
   const noms = nomsJoueurs(joueurs, discordId);
+  const adversaires = Object.keys(joueurs)
+    .filter((id) => id !== discordId)
+    .map((id) => ({ id, nom: noms[id] }))
+    .sort((a, b) => a.nom.localeCompare(b.nom));
+  if (voirMenu) return buildVoirMenu({ prefixe: "draftroyale", tour: jour, points: joueur?.joker || 0, adversaires, config, color: DRAFT_COLOR });
   const vue = buildMagasin({
     prefixe: "draftroyale",
     tour: jour,
     points: joueur?.joker || 0,
     joker: action.joker,
-    adversaires: Object.keys(joueurs)
-      .filter((id) => id !== discordId)
-      .map((id) => ({ id, nom: noms[id] }))
-      .sort((a, b) => a.nom.localeCompare(b.nom)),
+    vu: action.vu,
+    adversaires,
     main: joueur?.main || [],
     familles: partie.familles,
     config,
     cardName: (k) => cardName(k, catalog),
+    formatGroupes: (keys) => formatGroupes(keys, catalog),
     noms,
     color: DRAFT_COLOR,
   });
@@ -493,6 +499,7 @@ const JOKER_ERREURS = {
   cible: "Cible impossible.",
   carte: "Carte impossible.",
   inconnue: "Choisis d'abord une action.",
+  deja: "Tu as déjà regardé une main ce tour-ci.",
   unknownPlayer: "Clique d'abord sur Jouer.",
 };
 
@@ -505,9 +512,16 @@ export async function handleJoker(webhookUrl, jour, champ, discordId, username, 
       await patchOriginal(webhookUrl, await buildJeuView(Number(jour), discordId, username));
       return;
     }
+    if (champ === "voirmenu") {
+      await patchOriginal(webhookUrl, await buildMagasinView(Number(jour), discordId, null, { voirMenu: true }));
+      return;
+    }
     let entete = null;
     if (champ !== "ouvrir") {
-      const result = await enregistrerJoker(Number(jour), discordId, champ === "annuler" ? null : { [champ]: value });
+      const result =
+        champ === "voir"
+          ? await voirMainJoueur(Number(jour), discordId, value)
+          : await enregistrerJoker(Number(jour), discordId, champ === "annuler" ? null : { [champ]: value });
       if (result.status !== "ok") entete = `⚠️ ${JOKER_ERREURS[result.status] || "Choix impossible."}`;
     }
     await patchOriginal(webhookUrl, await buildMagasinView(Number(jour), discordId, entete));

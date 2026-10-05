@@ -5,7 +5,7 @@
 // lignes du bilan. Règles dans backend/services/draftRules.js.
 //
 // custom_id : `<prefixe>_jk:<champ>:<tour>` avec champ = ouvrir, retour,
-// annuler (boutons) ou type, cible, carte, maCarte (menus).
+// annuler, voirmenu (boutons) ou type, cible, carte, maCarte, voir (menus).
 // ============================================================
 
 import { JOKER_ACTIONS, jokerCout, compterCartes, echangeValide, jokerValide, jokerEnConflit } from "../../../backend/services/draftRules.js";
@@ -15,11 +15,11 @@ export const JOKER_EMOJI = "🃏";
 const ACTIONS = {
   priorite: { label: "Priorité", description: "Servi en premier si la carte que tu prends est disputée" },
   proteger: { label: "Protéger", description: "Aucune action Joker ne peut te cibler ce tour-ci" },
-  voir: { label: "Voir main", description: "Découvre la main d'un joueur après la clôture" },
+  voir: { label: "Voir main", description: "Découvre tout de suite la main d'un joueur, en plus de ton action" },
   saboter: { label: "Saboter", description: "Une carte au hasard de sa main part au marché contre une autre" },
   echanger: { label: "Échanger carte", description: "Échange une de tes cartes contre une carte choisie de sa main" },
 };
-const AVEC_CIBLE = new Set(["voir", "saboter", "echanger"]);
+const AVEC_CIBLE = new Set(["saboter", "echanger"]);
 
 // Accord d'un participe avec le nom de la carte (« Géant reçu »,
 // « Archères reçues ») : `config.accords` donne genre et nombre ("m",
@@ -100,15 +100,27 @@ export function jokerButton(prefixe, tour, points, joker) {
 
 // Vue du magasin. `adversaires` : [{ id, nom }] ; `main` : main du joueur ;
 // `familles` : cartes en jeu.
-export function buildMagasin({ prefixe, tour, points, joker, adversaires, main, familles, config, cardName, noms, color }) {
+// Main vue ce tour-ci (Voir main), pour le magasin et la main éphémère.
+export function voirLigne(vu, noms, formatGroupes) {
+  if (!vu) return null;
+  return vu.protege
+    ? `👁️ ${noms[vu.cible]} est protégé ce tour-ci : sa main reste cachée.`
+    : `👁️ Main de **${noms[vu.cible]}** (vue ce tour) : ${formatGroupes(vu.main)}`;
+}
+
+export function buildMagasin({ prefixe, tour, points, joker, vu, adversaires, main, familles, config, cardName, formatGroupes, noms, color }) {
+  const coutVoir = jokerCout("voir", config);
   const lignes = [
     `Tu as **${plural(points, "point")} Joker**. Une action par tour, payée et résolue à la clôture.`,
     "Les points restants départagent les cartes disputées.",
     "",
     ...JOKER_ACTIONS.map((t) => `• **${ACTIONS[t].label}** (${plural(jokerCout(t, config), "pt")}) : ${ACTIONS[t].description}.`),
+    `• **${ACTIONS.voir.label}** (${plural(coutVoir, "pt")}, immédiat, une fois par tour) : ${ACTIONS.voir.description}.`,
   ];
   const statut = jokerStatutLigne(joker, noms, cardName);
   if (statut) lignes.push("", statut);
+  const vuLigne = voirLigne(vu, noms, formatGroupes);
+  if (vuLigne) lignes.push("", vuLigne);
 
   const select = (champ, placeholder, options) => ({
     type: 1,
@@ -143,6 +155,14 @@ export function buildMagasin({ prefixe, tour, points, joker, adversaires, main, 
     type: 1,
     components: [
       { type: 2, style: 2, label: "Retour à ma main", custom_id: `${prefixe}_jk:retour:${tour}` },
+      {
+        type: 2,
+        style: 1,
+        label: `Voir une main (${plural(coutVoir, "pt")})`,
+        emoji: { name: "👁️" },
+        custom_id: `${prefixe}_jk:voirmenu:${tour}`,
+        disabled: !!vu || points < coutVoir || !adversaires.length,
+      },
       { type: 2, style: 4, label: "Annuler le Joker", custom_id: `${prefixe}_jk:annuler:${tour}`, disabled: !joker },
     ],
   });
@@ -166,7 +186,8 @@ export function jokerBilanLignes(lignes, viewerId, noms, cardName, formatGroupes
     else if (l.action === "proteger") {
       if (l.discordId === viewerId) out.push(`${JOKER_EMOJI} Tu étais protégé.`);
     } else if (l.action === "voir") {
-      out.push(l.discordId === viewerId ? `${JOKER_EMOJI} Main de ${cible} : ${formatGroupes(l.main)}` : `${JOKER_EMOJI} ${auteur} a regardé la main de ${cible}.`);
+      // L'auteur a déjà vu la main dans la journée
+      if (l.discordId !== viewerId) out.push(`${JOKER_EMOJI} ${auteur} a regardé la main de ${cible}.`);
     } else if (l.action === "saboter") {
       out.push(
         concerne
@@ -180,4 +201,32 @@ export function jokerBilanLignes(lignes, viewerId, noms, cardName, formatGroupes
     }
   }
   return out;
+}
+
+// Choix de la cible de Voir main (payé et résolu dès la sélection).
+export function buildVoirMenu({ prefixe, tour, points, adversaires, config, color }) {
+  return {
+    content: "",
+    embeds: [
+      {
+        title: "👁️ Voir une main",
+        description: `Choisis un joueur : sa main s'affiche tout de suite (${plural(jokerCout("voir", config), "point")} Joker, il t'en reste ${points}). Elle peut encore changer à la clôture.`,
+        color,
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 3,
+            custom_id: `${prefixe}_jk:voir:${tour}`,
+            placeholder: "Joueur à espionner",
+            options: adversaires.slice(0, 25).map((a) => ({ label: a.nom.slice(0, 100), value: a.id })),
+          },
+        ],
+      },
+      { type: 1, components: [{ type: 2, style: 2, label: "Retour au magasin", custom_id: `${prefixe}_jk:ouvrir:${tour}` }] },
+    ],
+  };
 }

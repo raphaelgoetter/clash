@@ -16,6 +16,7 @@ import {
   choixGlouton,
   jokerValide,
   jokerEnConflit,
+  voirMain,
   jokerDuBot,
 } from "./draftRules.js";
 
@@ -147,19 +148,28 @@ function main() {
 
     // Validité : points suffisants, cible autre que soi, champs complets
     const j = base();
-    assert.ok(jokerValide({ type: "voir", cible: "p2" }, "p1", j, CONFIG));
-    assert.ok(!jokerValide({ type: "voir", cible: "p1" }, "p1", j, CONFIG));
-    assert.ok(!jokerValide({ type: "voir", cible: "p2" }, "p1", base({ joker: 0 }), CONFIG));
+    assert.ok(jokerValide({ type: "saboter", cible: "p2" }, "p1", j, CONFIG));
+    assert.ok(!jokerValide({ type: "saboter", cible: "p1" }, "p1", j, CONFIG));
+    assert.ok(!jokerValide({ type: "saboter", cible: "p2" }, "p1", base({ joker: 0 }), CONFIG));
+    assert.ok(!jokerValide({ type: "voir", cible: "p2" }, "p1", j, CONFIG));
     assert.ok(!jokerValide({ type: "echanger", cible: "p2", carte: "a" }, "p1", j, CONFIG));
     assert.ok(!jokerValide({ type: "priorite" }, "p1", j, CONFIG, false));
 
-    // Voir main : main de la cible ; le Joker seul suffit à jouer le tour
-    // (points dépensés, +gain_tour)
+    // Voir main : instantané, une fois par tour, protection respectée
     {
-      const t = tour(base(), { p1: { joker: { type: "voir", cible: "p2" } } });
-      assert.ok(t.lignes.some((l) => l.action === "voir" && l.cible === "p2" && l.main.length === 4));
-      assert.strictEqual(t.joueurs.p1.joker, COUT - CONFIG.joker.couts.voir + CONFIG.joker.gain_tour);
-      assert.strictEqual(t.joueurs.p2.joker, COUT);
+      const j2 = base();
+      const r = voirMain({ id: "p1", cible: "p2", joueurs: j2, actions: {}, config: CONFIG });
+      assert.deepStrictEqual(r.vu, { cible: "p2", main: ["d", "d", "a", "e"], protege: false });
+      assert.strictEqual(voirMain({ id: "p1", cible: "p2", joueurs: j2, actions: { p1: { vu: r.vu } }, config: CONFIG }).erreur, "deja");
+      assert.strictEqual(voirMain({ id: "p1", cible: "p1", joueurs: j2, actions: {}, config: CONFIG }).erreur, "cible");
+      assert.strictEqual(voirMain({ id: "p1", cible: "p2", joueurs: base({ joker: 0 }), actions: {}, config: CONFIG }).erreur, "points");
+      const cache = voirMain({ id: "p1", cible: "p2", joueurs: j2, actions: { p2: { joker: { type: "proteger" } } }, config: CONFIG });
+      assert.deepStrictEqual(cache.vu, { cible: "p2", main: null, protege: true });
+      // Le Voir main seul ne joue pas le tour (pas de +gain_tour), il est
+      // mentionné au bilan
+      const t = tour(base(), { p1: { vu: r.vu } });
+      assert.strictEqual(t.joueurs.p1.joker, COUT);
+      assert.ok(t.lignes.some((l) => l.action === "voir" && l.discordId === "p1" && l.cible === "p2"));
     }
 
     // Exemple de Raphael : 3 Géants + 1 Prince, Échange Joker seul (sans
