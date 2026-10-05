@@ -1,11 +1,11 @@
 // ============================================================
 // draftDuel.js — Handlers Discord du jeu Duel « Draft » (1 à 3 joueurs,
 // 7 manches), lancé à la demande via /draft. Version duel du Draft Royale
-// (mêmes règles et même vocabulaire, sans contrat, avec un Marchand).
+// (mêmes règles : carré de 4 cartes identiques, échange au marché).
 //
 // Même structure que _handlers/gobeletDuel.js : message public ÉDITÉ EN
 // PLACE à chaque avancée (marché de la manche en image), main éphémère par
-// joueur (Piocher, dépôt, vœux, Fin de tour). En fin de partie, le
+// joueur (menus de l'échange, Fin de tour). En fin de partie, le
 // récapitulatif est reposté dans un nouveau message et l'original
 // supprimé. custom_id préfixés `draftduel_*`, état Redis dans
 // backend/services/draftDuel.js (`draftduel:*`).
@@ -16,9 +16,7 @@ import {
   writeState,
   startGame,
   joinGame,
-  piocher,
-  deposer,
-  enregistrerVoeu,
+  choisir,
   finirTour,
   checkAndResolveManche,
   readPlayers,
@@ -27,19 +25,12 @@ import {
   readPlayerView,
   readHandWebhooks,
   expireIfStale,
-  scoreProvisoire,
-  nbCartesMarchand,
   loadDraftDuelConfig,
-  BOT_ID,
-  BOT_NAME,
+  BOTS,
+  isBot,
 } from "../../../backend/services/draftDuel.js";
-import {
-  loadCatalog,
-  combinaisonsEnCours,
-  lignesCombinaisons,
-  formatPions,
-  cardsFromKeys,
-} from "../../../backend/services/draftroyale.js";
+import { loadCatalog } from "../../../backend/services/draftroyale.js";
+import { compterCartes, pointsMain, trierMain } from "../../../backend/services/draftRules.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -67,49 +58,32 @@ const EMOJI = {
   scroll: appEmoji("scroll", "1493850130560847892"),
   bot: appEmoji("dragon", "1504136471408541706"),
   warning: appEmoji("warning", "1499002725965500577"),
-  pioche: { text: "👆", component: { name: "👆" } },
 };
 
 // ── Cartes ──────────────────────────────────────────────────────────
-
-const TYPE_LABELS = {
-  troop: "Troupe",
-  flying: "Volant",
-  spell: "Sort",
-  building: "Bâtiment",
-};
-const FAMILY_LABELS = {
-  goblin: "Gobelin",
-  skeleton: "Squelette",
-  human: "Humain",
-  minion: "Gargouille",
-};
-const RARITY_LABELS = {
-  common: "Commune",
-  rare: "Rare",
-  epic: "Épique",
-  legendary: "Légendaire",
-  champion: "Champion",
-};
-
-function cardTags(card) {
-  const tags = [RARITY_LABELS[card.rarity], TYPE_LABELS[card.type]];
-  if (card.family) tags.push(FAMILY_LABELS[card.family]);
-  return `${tags.join(" · ")} · ${card.elixir} 💧`;
-}
 
 function cardName(key, catalog) {
   return catalog.get(key)?.fr || key;
 }
 
-function cardOption(key, catalog, selected = false) {
-  const card = catalog.get(key);
-  return {
-    label: (card?.fr || key).slice(0, 100),
-    description: card ? cardTags(card).slice(0, 100) : undefined,
-    value: key,
-    default: selected || undefined,
-  };
+// « Princesse ×2 · Géant ×1 », les plus gros groupes d'abord.
+function formatGroupes(keys, catalog) {
+  return [...compterCartes(keys)]
+    .sort((a, b) => b[1] - a[1] || cardName(a[0], catalog).localeCompare(cardName(b[0], catalog)))
+    .map(([k, n]) => `${cardName(k, catalog)} ×${n}`)
+    .join(" · ");
+}
+
+function groupOptions(keys, catalog, suffixe, selected) {
+  return [...compterCartes(keys)]
+    .sort((a, b) => cardName(a[0], catalog).localeCompare(cardName(b[0], catalog)))
+    .slice(0, 25)
+    .map(([k, n]) => ({
+      label: cardName(k, catalog).slice(0, 100),
+      description: `×${n} ${suffixe}`,
+      value: k,
+      default: k === selected || undefined,
+    }));
 }
 
 function plural(n, word) {
@@ -117,14 +91,14 @@ function plural(n, word) {
 }
 
 async function displayName(id, fallback) {
-  if (id === BOT_ID) return BOT_NAME;
+  if (isBot(id)) return BOTS.find((b) => b.id === id).name;
   return resolveDisplayName(id, fallback);
 }
 
 // Images rendues sans état à partir des clés passées dans l'URL.
 function marcheImageUrl(marche) {
   if (!marche?.length) return null;
-  return `${TRUST_ROYALE_URL}/api/draft/marche?${new URLSearchParams({ c: marche.map((m) => m.key).join("|") })}`;
+  return `${TRUST_ROYALE_URL}/api/draft/marche?${new URLSearchParams({ c: [...marche].sort().join("|") })}`;
 }
 
 function mainImageUrl(keys) {
@@ -297,13 +271,6 @@ function buildJoinComponents() {
           emoji: EMOJI.scroll.component,
           custom_id: "draftduel_regles",
         },
-        {
-          type: 2,
-          style: 2,
-          label: "Combinaisons",
-          emoji: { name: "🧩" },
-          custom_id: "draftduel_combinaisons",
-        },
       ],
     },
   ];
@@ -324,13 +291,6 @@ function buildEndComponents(state) {
         {
           type: 2,
           style: 2,
-          label: "Combinaisons",
-          emoji: { name: "🧩" },
-          custom_id: "draftduel_combinaisons",
-        },
-        {
-          type: 2,
-          style: 2,
           label: "Détails",
           emoji: EMOJI.stats.component,
           custom_id: `draftduel_details:${state.messageId}`,
@@ -340,46 +300,39 @@ function buildEndComponents(state) {
   ];
 }
 
-// Bilan public de la manche résolue : vœux exaucés (les mains restent
-// secrètes jusqu'à la fin, seules les cartes échangées sont révélées).
-async function buildRecapLines(lastRecap, players, catalog) {
+// Bilan public de la manche résolue : cartes prises (les mains restent
+// secrètes, seules les cartes échangées et les carrés sont révélés).
+async function buildRecapLines(lastRecap, players, config, catalog) {
   if (!lastRecap) return [];
-  const lines = [
-    `${EMOJI.stats.text} **Marché de la manche ${lastRecap.manche}**`,
-  ];
+  const lines = [`${EMOJI.stats.text} **Échanges de la manche ${lastRecap.manche}**`];
   for (const l of lastRecap.lignes) {
     const name = await displayName(l.discordId, players[l.discordId]?.username);
-    if (l.type === "voeu")
-      lines.push(
-        `${EMOJI.check.text} **${name}** obtient **${cardName(l.key, catalog)}**`,
-      );
-    if (l.type === "retour") lines.push(`↩️ **${name}** récupère sa carte`);
+    if (l.type === "prise") lines.push(`${EMOJI.trade.text} **${name}** prend **${cardName(l.key, catalog)}**`);
+    if (l.type === "perdue") lines.push(`${EMOJI.trade.text} **${name}** voulait ${cardName(l.voulue, catalog)} et reçoit **${cardName(l.key, catalog)}**`);
   }
   if (lines.length === 1) lines.push("Aucun échange.");
+  for (const id of lastRecap.carres || []) {
+    const name = await displayName(id, players[id]?.username);
+    const main = lastRecap.scores?.find((x) => x.discordId === id)?.main || [];
+    const [key] = [...compterCartes(main)].sort((a, b) => b[1] - a[1])[0] || [];
+    lines.push(`🎉 **Carré !** **${name}** réunit 4 ${cardName(key, catalog)} (+${config.points_carre} pts).`);
+  }
+  if (lastRecap.redistribution) lines.push("🔄 Décompte des points, puis toutes les cartes sont redistribuées.");
   return [...lines, ""];
 }
 
-async function buildPlayersLines(state, players, actions, config, catalog) {
-  const ids = [...state.players, ...(players[BOT_ID] ? [BOT_ID] : [])];
+async function buildPlayersLines(state, players, actions) {
+  const ids = [...state.players, ...BOTS.map((b) => b.id).filter((id) => players[id])];
   const lines = [`${EMOJI.members.text} **Joueurs**`];
   for (const id of ids) {
     const p = players[id];
     if (!p) continue;
     const name = await displayName(id, p.username);
-    const status =
-      id === BOT_ID
-        ? EMOJI.bot.text
-        : actions[id]?.fini
-          ? EMOJI.check.text
-          : EMOJI.late.text;
-    const { total } = scoreProvisoire(p, config, catalog);
-    lines.push(
-      `${status} **${name}** · ${plural(p.main.length, "carte")} · ${plural(total, "pt")}`,
-    );
+    const status = isBot(id) ? EMOJI.bot.text : actions[id]?.fini ? EMOJI.check.text : EMOJI.late.text;
+    lines.push(`${status} **${name}** · ${plural(p.points || 0, "pt")}${p.carres ? ` · ${plural(p.carres, "carré")}` : ""}`);
   }
   const missing = state.maxPlayers - state.players.length;
-  if (missing > 0)
-    lines.push(`${EMOJI.late.text} En attente de ${plural(missing, "joueur")}`);
+  if (missing > 0) lines.push(`${EMOJI.late.text} En attente de ${plural(missing, "joueur")}`);
   return lines;
 }
 
@@ -390,21 +343,17 @@ async function buildTableEmbed(state) {
     readPlayers(),
     readActions(state.manche),
   ]);
-  const marcheLigne = state.marche?.length
-    ? `${EMOJI.trade.text} **Marché** : ${plural(state.marche.length, "carte")} (dépôts et Marchand), pour ceux qui ont déposé à la manche précédente.`
-    : `${EMOJI.trade.text} Le marché ouvre à la manche 2 : dépose une carte pour pouvoir y choisir une carte.`;
   const lines = [
-    ...(await buildRecapLines(state.lastRecap, players, catalog)),
-    marcheLigne,
+    ...(await buildRecapLines(state.lastRecap, players, config, catalog)),
+    `${EMOJI.trade.text} **Marché** : ${formatGroupes(state.marche, catalog)}`,
     "",
-    ...(await buildPlayersLines(state, players, actions, config, catalog)),
+    ...(await buildPlayersLines(state, players, actions)),
   ];
-  if (state.players.length === 0)
-    lines.push("", "Clique sur **Jouer** pour t'inscrire.");
+  if (state.players.length === 0) lines.push("", "Clique sur **Jouer** pour t'inscrire.");
   const image = marcheImageUrl(state.marche);
   return {
     title: `Draft · Manche ${state.manche}/${state.totalManches}`,
-    description: lines.join("\n"),
+    description: lines.join("\n").slice(0, 4096),
     color: DRAFTDUEL_COLOR,
     image: image ? { url: image } : undefined,
     footer: {
@@ -416,7 +365,8 @@ async function buildTableEmbed(state) {
 }
 
 async function buildFinalEmbed(state, { expired = false } = {}) {
-  const [catalog, players, highScore] = await Promise.all([
+  const [config, catalog, players, highScore] = await Promise.all([
+    loadDraftDuelConfig(),
     loadCatalog(),
     readPlayers(),
     readHighScore(),
@@ -427,39 +377,26 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
         `${EMOJI.late.text} Partie expirée après ${state.staleHours ?? 2}h d'inactivité (manche ${state.manche}/${state.totalManches}).`,
         "",
       ]
-    : await buildRecapLines(state.lastRecap, players, catalog);
+    : await buildRecapLines(state.lastRecap, players, config, catalog);
   lines.push(`${EMOJI.topplayers.text} **Classement final**`);
   for (const [i, r] of ranking.entries()) {
     const name = await displayName(r.discordId, r.username);
-    lines.push(
-      `${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}`,
-    );
-    lines.push(
-      `└ ${r.deck.map((k) => cardName(k, catalog)).join(" · ") || "*aucune carte*"}`,
-    );
+    lines.push(`${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}${r.carres ? ` · ${plural(r.carres, "carré")}` : ""}`);
   }
   if (highScore && !expired) {
-    const name = await resolveDisplayName(
-      highScore.discordId,
-      highScore.username,
-    );
-    lines.push(
-      "",
-      `${EMOJI.topplayers.text} High score : ${name} (${plural(highScore.points, "pt")})`,
-    );
+    const name = await resolveDisplayName(highScore.discordId, highScore.username);
+    lines.push("", `${EMOJI.topplayers.text} High score : ${name} (${plural(highScore.points, "pt")})`);
   }
-  const image = mainImageUrl(ranking[0]?.deck);
   return {
     title: "Draft · Partie terminée",
     description: lines.join("\n").slice(0, 4096),
     color: DRAFTDUEL_COLOR,
-    image: image ? { url: image } : undefined,
   };
 }
 
 // Fin de partie : récapitulatif dans un NOUVEAU post, puis suppression du
 // message de la partie (`state.messageId` reste l'identifiant de la partie
-// pour le bouton Détails). L'image du deck gagnant est jointe au message :
+// pour le bouton Détails). Une éventuelle image est jointe au message :
 // par simple URL, le proxy Discord abandonnait parfois pendant le rendu à
 // froid (voir l'historique du duel Élixir). Repli sur l'URL sinon.
 async function postFinalMessage(state, embed) {
@@ -470,7 +407,7 @@ async function postFinalMessage(state, embed) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
       if (res.ok) {
-        const filename = "deck.png";
+        const filename = "draft.png";
         files = [{ buffer: Buffer.from(await res.arrayBuffer()), filename }];
         payload.embeds = [
           { ...embed, image: { url: `attachment://${filename}` } },
@@ -478,7 +415,7 @@ async function postFinalMessage(state, embed) {
       }
     } catch (err) {
       console.warn(
-        "[DraftDuel] Image du deck indisponible, repli sur l'URL:",
+        "[DraftDuel] Image indisponible, repli sur l'URL:",
         err.message,
       );
     }
@@ -583,95 +520,43 @@ export async function handleDraftRoleRejected(webhookUrl) {
 // ── Main éphémère du joueur ─────────────────────────────────────────
 
 // Bilan personnel de la manche qui vient de se résoudre.
-function buildMyRecap(lastRecap, discordId, catalog) {
+function buildMyRecap(lastRecap, discordId, config, catalog) {
   if (!lastRecap) return [];
-  const mine = lastRecap.lignes.filter((l) => l.discordId === discordId);
-  if (!mine.length) return [];
-  const lines = [`${EMOJI.stats.text} **Manche ${lastRecap.manche}**`];
-  for (const l of mine) {
-    if (l.type === "voeu")
-      lines.push(
-        `${EMOJI.check.text} Vœu exaucé : tu reçois **${cardName(l.key, catalog)}**.`,
-      );
-    if (l.type === "retour")
-      lines.push(
-        `↩️ ${l.sansVoeu ? "Sans vœu" : "Vœu indisponible"} : **${cardName(l.key, catalog)}** te revient.`,
-      );
-    if (l.type === "popularite")
-      lines.push(
-        `⭐ ${plural(l.nb, "joueur")} ${l.nb > 1 ? "ont" : "a"} pris ta carte ${cardName(l.key, catalog)} (+${l.nb} popularité).`,
-      );
+  const lines = [];
+  for (const l of lastRecap.lignes.filter((x) => x.discordId === discordId)) {
+    if (l.type === "prise") lines.push(`${EMOJI.check.text} Tu prends **${cardName(l.key, catalog)}**${l.disputee ? " face à un autre joueur (popularité remise à 0)" : ""}.`);
+    if (l.type === "perdue") lines.push(`${EMOJI.warning.text} ${cardName(l.voulue, catalog)} est allée à un joueur plus populaire : tu reçois **${cardName(l.key, catalog)}** (+1 popularité).`);
   }
-  return [...lines, ""];
+  const score = lastRecap.scores?.find((x) => x.discordId === discordId);
+  if (score) lines.push(score.carre ? `🎉 **Carré !** +${score.points} pts.` : `Décompte : +${plural(score.points, "pt")}.`);
+  if (lastRecap.redistribution) lines.push("🔄 Toutes les cartes ont été redistribuées : voici ta nouvelle main.");
+  return lines.length ? [`${EMOJI.stats.text} **Manche ${lastRecap.manche}**`, ...lines, ""] : [];
 }
 
-function buildStatusLines(view) {
-  const { state, action, me, depotVeille, souhaitables, catalog, config } =
-    view;
-  const lines = [];
-  lines.push(
-    action.pioche
-      ? `👆 Pioché : **${cardName(action.pioche, catalog)}**`
-      : "👆 Pioche une carte pour pouvoir finir ton tour.",
-  );
-  if (depotVeille) {
-    lines.push(
-      souhaitables.length
-        ? `${EMOJI.trade.text} Vœu (tu as déposé ${cardName(depotVeille.key, catalog)}) : choisis une carte du marché, à défaut ta carte te revient.`
-        : `${EMOJI.trade.text} Aucune carte du marché ne te manque : ${cardName(depotVeille.key, catalog)} te reviendra.`,
-    );
-  }
-  const depotJour = me.depots.find((d) => Number(d.jour) === state.manche);
-  if (depotJour)
-    lines.push(
-      `${EMOJI.trade.text} Déposé : **${cardName(depotJour.key, catalog)}** (au marché à la prochaine manche).`,
-    );
-  else if (state.manche <= config.jour_dernier_depot)
-    lines.push(
-      `${EMOJI.trade.text} Dépôt facultatif : il te permettra de choisir une carte du marché à la prochaine manche.`,
-    );
-  if (action.fini)
-    lines.push(
-      state.maxPlayers > 1
-        ? `${EMOJI.check.text} Tour terminé. En attente des autres joueurs.`
-        : `${EMOJI.check.text} Tour terminé.`,
-    );
-  return lines;
+function buildStatusLine(view) {
+  const { state, action, me, complet, catalog } = view;
+  if (!state.rosterLocked) return `${EMOJI.late.text} En attente des autres joueurs : le marché bouge encore à chaque arrivée.`;
+  if (action.fini) return state.maxPlayers > 1 ? `${EMOJI.check.text} Tour terminé. En attente des autres joueurs.` : `${EMOJI.check.text} Tour terminé.`;
+  if (complet) return `${EMOJI.trade.text} Tu prends **${cardName(action.prise, catalog)}** et tu déposes **${cardName(action.depot, catalog)}**. Valide avec Fin de tour.`;
+  const prise = state.marche.includes(action.prise) ? action.prise : null;
+  const depot = me.main.includes(action.depot) ? action.depot : null;
+  if (prise) return `${EMOJI.trade.text} Tu prends **${cardName(prise, catalog)}** : choisis aussi la carte à déposer.`;
+  if (depot) return `${EMOJI.trade.text} Tu déposes **${cardName(depot, catalog)}** : choisis aussi la carte à prendre.`;
+  return `${EMOJI.trade.text} Choisis une carte à prendre au marché et une carte de ta main à déposer.`;
 }
 
 function buildHandEmbed(view, recap = []) {
-  const { state, me, catalog, config, action, depotVeille } = view;
-  const { total, popularite } = scoreProvisoire(me, config, catalog);
-  // Cartes encore obtenables : pioche + vœu par manche restante, plus la
-  // pioche de la manche si elle n'est pas faite et le vœu en attente.
-  const cartesRestantes =
-    (state.totalManches - state.manche) * 2 +
-    (action.pioche ? 0 : 1) +
-    (depotVeille ? 1 : 0);
-  const pistes = combinaisonsEnCours(
-    cardsFromKeys(me.main, catalog),
-    config,
-    cartesRestantes,
-    catalog,
-  ).slice(0, 10);
+  const { state, me, config, catalog } = view;
+  const main = trierMain(me.main);
   const lines = [
     ...recap,
-    `**Ta main** (${plural(me.main.length, "carte")})`,
-    me.main.map((k) => cardName(k, catalog)).join(" · ") || "*aucune carte*",
+    `**Ta main** : ${formatGroupes(main, catalog)}`,
+    `Points au prochain décompte : ${plural(pointsMain(main, config), "pt")}`,
+    `${EMOJI.trophy.text} Total : ${plural(me.points || 0, "pt")} · ⭐ Popularité : ${me.popularite || 0}`,
     "",
-    `**Score provisoire : ${plural(total, "pt")}** (hors majorités)`,
-    ...(popularite ? [`• Popularité : +${popularite}`] : []),
-    ...(pistes.length
-      ? [
-          "",
-          "**Combinaisons**",
-          ...pistes.map((p) => `${formatPions(p)} ${p.label} (+${p.points})`),
-        ]
-      : []),
-    "",
-    ...buildStatusLines(view),
+    buildStatusLine(view),
   ];
-  const image = mainImageUrl(me.main);
+  const image = mainImageUrl(main);
   return {
     title: `Ton tour · Manche ${state.manche}/${state.totalManches}`,
     description: lines.join("\n").slice(0, 4096),
@@ -681,87 +566,63 @@ function buildHandEmbed(view, recap = []) {
 }
 
 function buildHandComponents(view) {
-  const { state, action, me, depotVeille, souhaitables, catalog, config } =
-    view;
-  if (action.fini) return [];
+  const { state, action, me, complet, catalog } = view;
+  if (action.fini || !state.rosterLocked) return [];
   const manche = state.manche;
-  const rows = [];
-  if (depotVeille && souhaitables.length) {
-    const options = souhaitables.slice(0, 25);
-    for (let rang = 1; rang <= config.nb_voeux; rang++) {
-      rows.push({
-        type: 1,
-        components: [
-          {
-            type: 3,
-            custom_id: `draftduel_voeu:${manche}:${rang}`,
-            placeholder:
-              config.nb_voeux === 1
-                ? "Ton choix"
-                : `${rang === 1 ? "1er" : `${rang}e`} vœu`,
-            options: options.map((k) =>
-              cardOption(k, catalog, action.voeux?.[rang - 1] === k),
-            ),
-          },
-        ],
-      });
-    }
-  }
-  const dejaDepose = me.depots.some((d) => Number(d.jour) === manche);
-  if (!dejaDepose && manche <= config.jour_dernier_depot && me.main.length) {
-    rows.push({
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: `draftduel_prise:${manche}`,
+          placeholder: "Carte à prendre au marché",
+          options: groupOptions(state.marche, catalog, "au marché", action.prise),
+        },
+      ],
+    },
+    {
       type: 1,
       components: [
         {
           type: 3,
           custom_id: `draftduel_depot:${manche}`,
-          placeholder: "Déposer une carte au marché (facultatif, définitif)",
-          options: me.main.slice(0, 25).map((k) => cardOption(k, catalog)),
+          placeholder: "Carte de ta main à déposer",
+          options: groupOptions(me.main, catalog, "dans ta main", action.depot),
         },
       ],
-    });
-  }
-  rows.push({
-    type: 1,
-    components: [
-      {
-        type: 2,
-        style: 1,
-        label: "Piocher",
-        emoji: EMOJI.pioche.component,
-        custom_id: `draftduel_pioche:${manche}`,
-        disabled: !!action.pioche,
-      },
-      {
-        type: 2,
-        style: 3,
-        label: "Fin de tour",
-        emoji: EMOJI.check.component,
-        custom_id: `draftduel_fin:${manche}`,
-        disabled: !action.pioche,
-      },
-    ],
-  });
-  return rows;
+    },
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 3,
+          label: "Fin de tour",
+          emoji: EMOJI.check.component,
+          custom_id: `draftduel_fin:${manche}`,
+          disabled: !complet,
+        },
+      ],
+    },
+  ];
 }
 
-// Cartes du marché de la manche, visibles sans ouvrir le menu de choix.
+// Cartes du marché de la manche, visibles sans ouvrir les menus.
 function buildMarcheEmbed(view) {
   const { state, catalog } = view;
   if (!state.marche?.length) return null;
   const image = marcheImageUrl(state.marche);
   return {
     title: "Marché",
-    description: state.marche.map((m) => cardName(m.key, catalog)).join(" · "),
+    description: formatGroupes(state.marche, catalog),
     color: DRAFTDUEL_COLOR,
     image: image ? { url: image } : undefined,
   };
 }
 
 function buildHandPayload(view, recap = []) {
-  const embeds = [buildHandEmbed(view, recap), buildMarcheEmbed(view)].filter(
-    Boolean,
-  );
+  const embeds = [buildHandEmbed(view, recap), buildMarcheEmbed(view)].filter(Boolean);
   return { content: "", embeds, components: buildHandComponents(view) };
 }
 
@@ -805,54 +666,29 @@ export async function handleJouer(webhookUrl, discordId, username) {
       );
       return;
     }
-    const view = await readPlayerView(result.state, discordId);
-    await patchOriginal(
-      webhookUrl,
-      buildHandPayload(
-        view,
-        buildMyRecap(result.state.lastRecap, discordId, view.catalog),
-      ),
-    );
+    // Arrivée d'un joueur : le marché change, le message public d'abord
     if (result.isNew) await refreshPublicMessage();
+    const view = await readPlayerView(result.state, discordId);
+    await patchOriginal(webhookUrl, buildHandPayload(view, buildMyRecap(result.state.lastRecap, discordId, view.config, view.catalog)));
   } catch (err) {
     console.error("[DraftDuel] Échec Jouer:", err.message);
   }
 }
 
-export async function handlePioche(webhookUrl, discordId) {
+// Menus de l'échange : `champ` = "prise" ou "depot".
+export async function handleChoix(webhookUrl, discordId, champ, key) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
-    await respondToAction(webhookUrl, await piocher(discordId));
+    await respondToAction(webhookUrl, await choisir(discordId, champ, key));
   } catch (err) {
-    console.error("[DraftDuel] Échec pioche:", err.message);
-  }
-}
-
-export async function handleDepot(webhookUrl, discordId, key) {
-  try {
-    if (await replyIfExpired(webhookUrl)) return;
-    await respondToAction(webhookUrl, await deposer(discordId, key));
-  } catch (err) {
-    console.error("[DraftDuel] Échec dépôt:", err.message);
-  }
-}
-
-export async function handleVoeu(webhookUrl, discordId, rang, key) {
-  try {
-    if (await replyIfExpired(webhookUrl)) return;
-    await respondToAction(
-      webhookUrl,
-      await enregistrerVoeu(discordId, Number(rang), key),
-    );
-  } catch (err) {
-    console.error("[DraftDuel] Échec vœu:", err.message);
+    console.error("[DraftDuel] Échec choix:", err.message);
   }
 }
 
 // Main d'un joueur juste après la résolution : bilan de la manche puis
 // tour suivant (ou renvoi au classement final).
-async function buildPostResolutionPayload(outcome, discordId, catalog) {
-  const recap = buildMyRecap(outcome.state.lastRecap, discordId, catalog);
+async function buildPostResolutionPayload(outcome, discordId, config, catalog) {
+  const recap = buildMyRecap(outcome.state.lastRecap, discordId, config, catalog);
   if (outcome.final) {
     return {
       content: "",
@@ -882,7 +718,8 @@ async function buildPostResolutionPayload(outcome, discordId, catalog) {
 async function continueAfterTurn(webhookUrl, discordId) {
   const outcome = await refreshPublicMessage();
   if (!outcome?.resolved) return;
-  const [catalog, webhooks] = await Promise.all([
+  const [config, catalog, webhooks] = await Promise.all([
+    loadDraftDuelConfig(),
     loadCatalog(),
     readHandWebhooks(outcome.state.lastRecap.manche),
   ]);
@@ -891,7 +728,7 @@ async function continueAfterTurn(webhookUrl, discordId) {
     Object.entries(targets).map(async ([id, url]) =>
       patchOriginal(
         url,
-        await buildPostResolutionPayload(outcome, id, catalog),
+        await buildPostResolutionPayload(outcome, id, config, catalog),
       ),
     ),
   );
@@ -931,8 +768,7 @@ export async function handleDetails(webhookUrl, messageId) {
       lines.push(
         `${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.score, "pt")}`,
       );
-      for (const d of r.details) lines.push(`• ${d.label} : **+${d.points}**`);
-      if (!r.details.length) lines.push("• Aucun point");
+      lines.push(`• ${plural(r.carres || 0, "carré")} · popularité ${r.popularite || 0}`);
       lines.push("");
     }
     await patchOriginal(webhookUrl, {
@@ -956,19 +792,17 @@ function buildReglesEmbed(config) {
   return {
     title: "Règles du jeu : Draft",
     description: [
-      `Le but du jeu est de réaliser le plus de combinaisons de cartes possibles en réunissant un deck de ${config.taille_deck} cartes en ${config.duel.manches} manches.`,
+      `Réunis **${config.taille_main} exemplaires d'une même carte** (un carré) en ${config.duel.manches} manches, de 1 à 3 joueurs. Des bots complètent la table jusqu'à 3 joueurs.`,
       "",
-      `Tu reçois ${plural(config.cartes_depart, "carte")} au départ, jamais deux fois la même.`,
+      `Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes, le reste est au marché, visible par tous.`,
       "",
       "**À chaque manche**",
-      "👆 **Piocher** (obligatoire) : une carte au hasard.",
-      `${EMOJI.trade.text} **Déposer** (facultatif) : une carte de ta main part au marché, définitivement.`,
-      `${EMOJI.trade.text} **Choix** (la manche après un dépôt) : choisis une carte du marché. À la fin de la manche, tu la reçois si elle est encore disponible, sinon ta carte te revient.`,
-      `${EMOJI.check.text} **Fin de tour** : la manche se termine quand tous les joueurs ont fini.`,
+      `${EMOJI.trade.text} **Échange** (obligatoire) : choisis une carte à prendre au marché et une carte de ta main à y déposer.`,
+      `${EMOJI.check.text} **Fin de tour** : la manche se résout quand tous les joueurs ont validé. Les échanges ont lieu en même temps.`,
       "",
-      `**Marché** : les cartes déposées (${config.copies_par_depot} joueurs max par carte) et celles du Marchand (joueurs + ${config.duel.marchand_en_plus}, en solo ${nbCartesMarchand(1, config)}, une seule fois chacune). Les joueurs les plus populaires sont servis en premier, puis au hasard.`,
+      "**Carte disputée** : si plusieurs joueurs veulent la même carte et qu'il n'y en a pas assez, le plus populaire l'emporte (tirage au sort à égalité) et sa popularité retombe à 0. Les autres reçoivent une autre carte du marché au hasard et gagnent +1 popularité.",
       "",
-      `**Score** : meilleur deck de ${config.taille_deck} retenu automatiquement à la fin. Le barème est détaillé sous *Combinaisons*.`,
+      `**Carré** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts, les autres 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées. À la dernière manche, tout le monde marque ses points.`,
     ].join("\n"),
     color: DRAFTDUEL_COLOR,
   };
@@ -983,30 +817,5 @@ export async function handleRegles(webhookUrl) {
     });
   } catch (err) {
     console.error("[DraftDuel] Échec Règles:", err.message);
-  }
-}
-
-// ── Bouton [Combinaisons] ────────────────────────────────────────────
-
-export async function handleCombinaisons(webhookUrl) {
-  try {
-    const [config, catalog] = await Promise.all([
-      loadDraftDuelConfig(),
-      loadCatalog(),
-    ]);
-    await patchOriginal(webhookUrl, {
-      embeds: [
-        {
-          title: "Draft · Combinaisons",
-          description: lignesCombinaisons(config, catalog)
-            .join("\n")
-            .slice(0, 4096),
-          color: DRAFTDUEL_COLOR,
-        },
-      ],
-      components: [],
-    });
-  } catch (err) {
-    console.error("[DraftDuel] Échec Combinaisons:", err.message);
   }
 }

@@ -1,30 +1,28 @@
 // ============================================================
-// draftroyale.js — Draft Royale, jeu spécial de 7 jours : chaque joueur
-// construit un deck de 8 cartes qui marque des points de synergie (thèmes,
-// bonus de deck, majorités de rareté, contrat, popularité). Couche métier :
-// config statique, catalogue, règles PURES (score, vœux, clôture), état de
-// la partie, actions quotidiennes, historique, manches.
+// draftroyale.js — Draft Royale, jeu spécial de 7 jours inspiré du « Kilo
+// de merde » : chaque carte en jeu existe en 5 exemplaires, chaque joueur
+// a 4 cartes en main, le reste est au marché (toujours visible). Chaque
+// jour, un joueur prend une carte du marché et y dépose une carte de sa
+// main. Le premier à réunir 4 exemplaires d'une même carte (un « carré »)
+// déclenche le décompte : 10 pts pour un carré, sinon 1 à 3 pts selon le
+// nombre d'exemplaires identiques, puis toutes les cartes sont
+// redistribuées. Règles pures dans draftRules.js.
+//
+// Couche métier : config statique, catalogue, état de la partie (cartes
+// en jeu et marché), joueurs, échanges du jour, clôture, historique,
+// manches.
 //
 // Stockage : Upstash Redis (mêmes conventions que marioclash.js) — espace
 // de clés `draftroyale:*`.
 //
-// Trois actions par jour, une fois chacune :
-//   - Piocher : résolue EN DIRECT au clic (action individuelle, comme le dé
-//     de Mario Clash) — jamais une carte déjà en main ni la carte déposée
-//     en attente de retour.
-//   - Marché : dépôt d'une carte (J1 à J6, facultatif, retirée de la main
-//     tout de suite) et, le lendemain d'un dépôt, jusqu'à 3 vœux classés sur
-//     le marché de la veille. Les vœux se résolvent UNE SEULE FOIS à la
-//     clôture (computeCloture, fonction pure, `rng` injectable) : chaque
-//     carte déposée peut être prise par `copies_par_depot` joueurs, servis
-//     par popularité décroissante puis au hasard. Sans vœu obtenu, le joueur
-//     récupère sa propre carte. Résolution différée (et non au premier
-//     clic) : l'heure de connexion ne doit donner aucun avantage.
-//   - Contrat : objectif de thème secret (J1 à J4), bonus = points du palier
-//     × (multiplicateur du jour de signature − 1), rien en cas d'échec.
+// Participation libre : un joueur reçoit sa main à son premier clic (une
+// carte de plus entre en jeu au-delà de `familles.min` joueurs). Les
+// échanges sont modifiables jusqu'à la clôture, où ils sont résolus tous
+// ensemble (computeCloture, fonction pure, `rng` injectable) : l'heure de
+// connexion ne doit donner aucun avantage.
 //
-// ⚠️ Toute modification de barème doit suivre CONTRIBUTING.md (section
-// Draft Royale), source de vérité des formules.
+// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// Draft Royale), source de vérité.
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord
 // corrompus sinon, voir bossraid.js) : JSON sérialisé/désérialisé nous-mêmes.
@@ -34,22 +32,24 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { filterCardPool, RARITIES } from "./cards.js";
+import { filterCardPool } from "./cards.js";
+import { choisirFamilles, nbFamilles, paquet, shuffle, ajouterJoueur, echangeValide, computeTour, classement } from "./draftRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "draftroyale", "draftroyale.json");
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.json");
 
 const STATE_KEY = "draftroyale:state";
+// { familles: [cardKey], marche: [cardKey] } — cartes en jeu et marché courant
+const PARTIE_KEY = "draftroyale:partie";
 const JOUEURS_KEY = "draftroyale:joueurs";
 const HISTORIQUE_KEY = "draftroyale:historique";
 const RESULTAT_KEY = "draftroyale:resultat";
 const MANCHES_KEY = "draftroyale:manches";
 const MANCHE_SEQ_KEY = "draftroyale:manche_seq";
+// Verrou des arrivées (le marché change quand un joueur reçoit sa main)
+const LOCK_KEY = "draftroyale:lock";
 const actionsKey = (jour) => `draftroyale:actions:${jour}`;
-const marcheKey = (jour) => `draftroyale:marche:${jour}`;
-
-export { RARITIES };
 
 let _redis = null;
 function getRedis() {
@@ -121,390 +121,22 @@ export async function loadCatalog() {
   return _catalogCache;
 }
 
-export function cardsFromKeys(keys, catalog) {
-  return (keys || []).map((k) => catalog.get(k)).filter(Boolean);
-}
-
-// ── Règles pures : thèmes, contrats, score ─────────────────────────
-
-export function matchesCritere(card, critere) {
-  return Object.entries(critere).every(([field, value]) => card[field] === value);
-}
-
-export function countTheme(cards, theme) {
-  return cards.filter((c) => matchesCritere(c, theme.critere)).length;
-}
-
-// Palier atteint (index dans config.paliers) ou -1.
-function palierAtteint(count, config) {
-  let index = -1;
-  config.paliers.forEach((p, i) => {
-    if (count >= p) index = i;
-  });
-  return index;
-}
-
-export function multiplicateurDuJour(config, jour) {
-  return config.contrat_multiplicateurs[String(jour)] ?? null;
-}
-
-// Contrats proposés : chaque thème à chaque palier ("squelettes:4").
-export function contratsDisponibles(config) {
-  return config.themes.flatMap((theme) =>
-    config.paliers.map((palier, i) => ({
-      id: `${theme.id}:${palier}`,
-      themeId: theme.id,
-      palier,
-      points: theme.points[i],
-      label: `${palier} ${theme.label}`,
-    })),
-  );
-}
-
-export function findContrat(config, contratId) {
-  return contratsDisponibles(config).find((c) => c.id === contratId) || null;
-}
-
-// Bonus d'un contrat réussi (arrondi à l'entier le plus proche).
-export function contratBonus(contrat) {
-  return Math.round(contrat.points * (contrat.multiplicateur - 1));
-}
-
-export function contratReussi(cards, contrat, config) {
-  const theme = config.themes.find((t) => t.id === contrat.themeId);
-  return !!theme && countTheme(cards, theme) >= contrat.palier;
-}
-
-function averageElixir(cards) {
-  return cards.reduce((s, c) => s + c.elixir, 0) / cards.length;
-}
-
-// Plus longue suite de coûts d'élixir consécutifs (2-3-4-5 = 4).
-export function longueurSuite(cards) {
-  const couts = new Set(cards.map((c) => c.elixir).filter(Number.isInteger));
-  let best = 0;
-  for (const c of couts) {
-    if (couts.has(c - 1)) continue;
-    let n = 1;
-    while (couts.has(c + n)) n++;
-    best = Math.max(best, n);
-  }
-  return best;
-}
-
-function palierSuite(longueur, config) {
-  let index = -1;
-  config.suite.paliers.forEach((p, i) => {
-    if (longueur >= p) index = i;
-  });
-  return index;
-}
-
-// Libellé d'un archétype à partir des noms français ("Molosse de lave + Ballon").
-export function archetypeLabel(archetype, catalog) {
-  return archetype.cartes.map((k) => catalog?.get(k)?.fr || k).join(" + ");
-}
-
-// Nombre de cartes d'un archétype présentes dans le deck.
-function countArchetype(cards, archetype) {
-  return archetype.cartes.filter((k) => cards.some((c) => c.cardKey === k)).length;
-}
-
-// Score d'un deck SANS les majorités (elles dépendent des autres joueurs)
-// ni la popularité. `contrat` : contrat signé ({ themeId, palier, points,
-// multiplicateur }) ou null.
-export function scoreDeck(cards, contrat, config) {
-  const details = [];
-  for (const theme of config.themes) {
-    const count = countTheme(cards, theme);
-    const i = palierAtteint(count, config);
-    if (i >= 0) details.push({ id: `theme_${theme.id}`, label: `${config.paliers[i]} ${theme.label}`, points: theme.points[i] });
-  }
-  const b = config.bonus;
-  if (RARITIES.every((r) => cards.some((c) => c.rarity === r))) details.push({ id: "raretes", label: b.raretes.label, points: b.raretes.points });
-  if (cards.length >= 3 && averageElixir(cards) <= b.cycle.seuil) details.push({ id: "cycle", label: b.cycle.label, points: b.cycle.points });
-  if (cards.length >= 3 && averageElixir(cards) >= b.lourd.seuil) details.push({ id: "lourd", label: b.lourd.label, points: b.lourd.points });
-  const trio =
-    cards.some((c) => c.type === "troop" || c.type === "flying") &&
-    cards.some((c) => c.type === "spell") &&
-    cards.some((c) => c.type === "building");
-  if (trio) details.push({ id: "trio", label: b.trio.label, points: b.trio.points });
-  const suite = palierSuite(longueurSuite(cards), config);
-  if (suite >= 0) details.push({ id: "suite", label: `${config.suite.label} (${config.suite.paliers[suite]} coûts)`, points: config.suite.points[suite] });
-  for (const a of config.archetypes) {
-    if (countArchetype(cards, a) === a.cartes.length) {
-      const label = a.cartes.map((k) => cards.find((c) => c.cardKey === k).fr).join(" + ");
-      details.push({ id: `archetype_${a.id}`, label: `Archétype ${label}`, points: a.points });
-    }
-  }
-  if (contrat && contratReussi(cards, contrat, config)) {
-    details.push({ id: "contrat", label: `Contrat ${contrat.label} (×${contrat.multiplicateur})`, points: contratBonus(contrat) });
-  }
-  return { details, total: details.reduce((s, d) => s + d.points, 0) };
-}
-
-// Combinaisons du deck (Journal / main du duel) : réalisées (jauge pleine)
-// et en cours. Thèmes : palier atteint + prochain palier ; raretés, trio ;
-// decks cycle / lourd seulement une fois réalisés (seuil de coût moyen, pas
-// de jauge). `cartesRestantes` : cartes encore obtenables (pioches et vœux
-// restants), pour écarter ce qui ne peut plus aboutir. `catalog` : noms
-// français des cartes d'archétype pas encore en main. Réalisées d'abord
-// (les plus rentables en tête), puis les plus avancées.
-export function combinaisonsEnCours(cards, config, cartesRestantes, catalog) {
-  const pistes = [];
-  for (const theme of config.themes) {
-    const have = countTheme(cards, theme);
-    if (have < 1) continue;
-    const atteint = palierAtteint(have, config);
-    if (atteint >= 0) {
-      const need = config.paliers[atteint];
-      pistes.push({ label: `${need} ${theme.label}`, have: need, need, points: theme.points[atteint] });
-    }
-    const suivant = config.paliers.findIndex((p) => have < p);
-    if (suivant >= 0) pistes.push({ label: `${config.paliers[suivant]} ${theme.label}`, have, need: config.paliers[suivant], points: theme.points[suivant] });
-  }
-  const raretes = RARITIES.filter((r) => cards.some((c) => c.rarity === r)).length;
-  if (raretes >= 1) pistes.push({ label: config.bonus.raretes.label, have: raretes, need: RARITIES.length, points: config.bonus.raretes.points });
-  const trio = [
-    cards.some((c) => c.type === "troop" || c.type === "flying"),
-    cards.some((c) => c.type === "spell"),
-    cards.some((c) => c.type === "building"),
-  ].filter(Boolean).length;
-  if (trio >= 1) pistes.push({ label: config.bonus.trio.label, have: trio, need: 3, points: config.bonus.trio.points });
-  const suite = longueurSuite(cards);
-  const suiteAtteinte = palierSuite(suite, config);
-  if (suiteAtteinte >= 0) {
-    const need = config.suite.paliers[suiteAtteinte];
-    pistes.push({ label: `${config.suite.label} (${need} coûts)`, have: need, need, points: config.suite.points[suiteAtteinte] });
-  }
-  const suiteSuivante = config.suite.paliers.findIndex((p) => suite < p);
-  if (suite >= 2 && suiteSuivante >= 0) {
-    const need = config.suite.paliers[suiteSuivante];
-    pistes.push({ label: `${config.suite.label} (${need} coûts)`, have: suite, need, points: config.suite.points[suiteSuivante] });
-  }
-  for (const a of config.archetypes) {
-    const have = countArchetype(cards, a);
-    if (have < 1) continue;
-    pistes.push({ label: `Archétype ${archetypeLabel(a, catalog)}`, have, need: a.cartes.length, points: a.points });
-  }
-  for (const id of ["cycle", "lourd"]) {
-    if (scoreDeck(cards, null, config).details.some((d) => d.id === id)) pistes.push({ label: config.bonus[id].label, have: 1, need: 1, points: config.bonus[id].points });
-  }
-  const fait = (p) => p.have >= p.need;
-  return pistes
-    .filter((p) => fait(p) || p.need - p.have <= cartesRestantes)
-    .sort((a, b) => fait(b) - fait(a) || (fait(a) ? b.points - a.points : b.have / b.need - a.have / a.need || b.points - a.points));
-}
-
-// Barème complet (bouton Combinaisons, Draft Royale et duel /draft) : une
-// ligne par combinaison, regroupées par famille.
-export function lignesCombinaisons(config, catalog) {
-  const paliers = (t) => config.paliers.map((p, i) => `${p} = +${t.points[i]}`).join(", ");
-  const s = config.suite;
-  const archetypePoints = [...new Set(config.archetypes.map((a) => a.points))];
-  return [
-    `**Thèmes** (nombre de cartes)`,
-    ...config.themes.map((t) => `• ${t.label} : ${paliers(t)}`),
-    "",
-    "**Bonus de deck**",
-    ...Object.values(config.bonus).map((b) => `• ${b.label} : +${b.points}`),
-    `• ${s.label} (coûts qui se suivent, ex. 1 à 7) : ${s.paliers.map((p, i) => `${p} coûts = +${s.points[i]}`).join(", ")}`,
-    "",
-    `**Archétypes** (les 2 cartes${archetypePoints.length === 1 ? `, +${archetypePoints[0]} chacun` : ""})`,
-    ...config.archetypes.map((a) => `• ${archetypeLabel(a, catalog)}${archetypePoints.length === 1 ? "" : ` : +${a.points}`}`),
-    "",
-    "**Majorités** (tous les ex aequo en tête marquent)",
-    ...config.majorites.map((m) => `• ${m.label} : +${m.points}`),
-    "",
-    `**Popularité** : +1 par carte que tu as déposée et qu'un autre joueur a prise (${config.popularite_max} max)`,
-  ];
-}
-
-// Pions de progression : verts si atteint, orange à mi-chemin ou plus,
-// rouges en dessous, blancs pour ce qui manque.
-export function formatPions({ have, need }) {
-  const color = have >= need ? "🟢" : have / need >= 0.5 ? "🟠" : "🔴";
-  return color.repeat(have) + "⚪".repeat(Math.max(0, need - have));
-}
-
-export function popularitePoints(joueur, config) {
-  return Math.min(config.popularite_max, joueur.popularite || 0);
-}
-
-// Deck final : si la main dépasse la taille du deck (9 cartes au J7), on
-// retire une à une la carte dont l'absence garde le meilleur score (contrat
-// compris). À score égal, on retire la carte de rareté la plus basse, puis
-// la moins chère : les majorités de rareté ne sont jamais pénalisées.
-export function choisirDeckFinal(keys, contrat, config, catalog) {
-  let deck = [...keys];
-  while (deck.length > config.taille_deck) {
-    let best = null;
-    deck.forEach((key, i) => {
-      const reste = deck.filter((_, j) => j !== i);
-      const card = catalog.get(key);
-      const candidat = {
-        i,
-        score: scoreDeck(cardsFromKeys(reste, catalog), contrat, config).total,
-        rarete: card ? RARITIES.indexOf(card.rarity) : -1,
-        elixir: card?.elixir ?? 0,
-      };
-      if (
-        !best ||
-        candidat.score > best.score ||
-        (candidat.score === best.score && (candidat.rarete < best.rarete || (candidat.rarete === best.rarete && candidat.elixir < best.elixir)))
-      ) {
-        best = candidat;
-      }
-    });
-    deck.splice(best.i, 1);
-  }
-  return deck;
-}
-
-// Nombre de cartes données à un joueur qui rejoint au jour `jour` : les
-// cartes de départ + une par jour manqué, pour qu'il puisse encore
-// atteindre un deck complet.
-export function cartesDeDepart(jour, config) {
-  return config.cartes_depart + Math.max(0, (Number(jour) || 1) - 1);
-}
-
-// Carte aléatoire jamais présente dans `exclues` (main + carte déposée en
-// attente de retour). null si le catalogue est épuisé.
-export function tirerCarte(exclues, catalog, rng = Math.random) {
-  const interdites = new Set(exclues);
-  const possibles = [...catalog.keys()].filter((k) => !interdites.has(k));
-  if (!possibles.length) return null;
-  return possibles[Math.floor(rng() * possibles.length)];
-}
-
-// Cartes que le joueur peut demander en vœu : celles du marché de la
-// veille, sans doublon, qu'il ne possède pas, hors la carte qu'il a
-// lui-même déposée (elle lui revient de toute façon par défaut).
-export function cartesSouhaitables(marche, joueur, jour) {
-  const possedees = new Set(joueur.main || []);
-  const propre = depotDuJour(joueur, jour - 1)?.key;
-  return [...new Set(marche.map((m) => m.key))].filter((k) => !possedees.has(k) && k !== propre);
-}
-
-// Dépôts d'un joueur : liste [{ key, jour, at }] — au plus deux à la fois
-// (celui de la veille, en attente de ses vœux, et celui du jour).
-export function depotDuJour(joueur, jour) {
-  return (joueur.depots || []).find((d) => Number(d.jour) === Number(jour)) || null;
-}
-
-function clesDeposees(joueur) {
-  return (joueur.depots || []).map((d) => d.key);
-}
-
 // ── Clôture (fonction pure) ─────────────────────────────────────────
 
-function shuffle(array, rng) {
-  const a = [...array];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// Résolution des vœux du jour `jour` sur le marché de la veille
-// (`marcheVeille` = [{ key, discordId, at, copies? }]). Une entrée sans
-// déposant (`discordId` null, cartes du Marchand du Draft en duel) ne
-// rapporte de popularité à personne ; `copies` remplace alors
-// `copies_par_depot`. Mute `joueurs` (copie fournie par l'appelant) et
-// renvoie les lignes du bilan.
-export function resoudreVoeux({ jour, joueurs, actionsRaw, marcheVeille, config, rng = Math.random }) {
-  const lignes = [];
-  // Stock : `copies_par_depot` exemplaires par carte déposée, attribués au
-  // premier déposant d'abord (ordre de dépôt) pour la popularité.
-  const stock = new Map();
-  for (const m of [...marcheVeille].sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))) {
-    const slots = stock.get(m.key) || [];
-    for (let i = 0; i < (m.copies ?? config.copies_par_depot); i++) slots.push(m.discordId ?? null);
-    stock.set(m.key, slots);
-  }
-
-  // Ordre de service : popularité (avant clôture) décroissante, puis hasard.
-  const demandeurs = shuffle(
-    Object.entries(joueurs).filter(([, j]) => depotDuJour(j, jour - 1)),
-    rng,
-  ).sort(([, a], [, b]) => (b.popularite || 0) - (a.popularite || 0));
-
-  const gains = new Map();
-  for (const [id, joueur] of demandeurs) {
-    const depot = depotDuJour(joueur, jour - 1);
-    const possedees = new Set(joueur.main);
-    const voeux = (actionsRaw[id]?.voeux || []).filter(Boolean);
-    let obtenu = null;
-    voeux.forEach((key, rang) => {
-      if (obtenu || possedees.has(key) || key === depot.key) return;
-      const slots = stock.get(key);
-      if (!slots?.length) return;
-      obtenu = { key, rang: rang + 1, deposantId: slots.shift() };
-    });
-    if (obtenu) {
-      joueur.main.push(obtenu.key);
-      lignes.push({ type: "voeu", discordId: id, key: obtenu.key, rang: obtenu.rang, rendue: depot.key });
-      if (obtenu.deposantId !== id && joueurs[obtenu.deposantId]) {
-        joueurs[obtenu.deposantId].popularite = (joueurs[obtenu.deposantId].popularite || 0) + 1;
-        const cle = `${obtenu.deposantId}|${obtenu.key}`;
-        gains.set(cle, (gains.get(cle) || 0) + 1);
-      }
-    } else {
-      if (!possedees.has(depot.key)) joueur.main.push(depot.key);
-      lignes.push({ type: "retour", discordId: id, key: depot.key, sansVoeu: voeux.length === 0 });
-    }
-    joueur.depots = joueur.depots.filter((d) => d !== depot);
-  }
-  for (const [cle, nb] of gains) {
-    const [discordId, key] = cle.split("|");
-    lignes.push({ type: "popularite", discordId, key, nb });
-  }
-  return lignes;
-}
-
-// Classement final : decks de 8 choisis, majorités (tous les ex aequo en
-// tête marquent, au moins 1 carte), popularité plafonnée. Départage :
-// popularité brute, puis ordre d'arrivée dans le jeu.
-export function computeFinal({ joueurs, config, catalog }) {
-  const resultats = Object.entries(joueurs).map(([discordId, j]) => {
-    const deck = choisirDeckFinal(j.main || [], j.contrat, config, catalog);
-    const cards = cardsFromKeys(deck, catalog);
-    const { details } = scoreDeck(cards, j.contrat, config);
-    return { discordId, username: j.username, deck, cards, details, popularite: j.popularite || 0, arrivee: j.arrivee ?? 0, contrat: j.contrat || null };
-  });
-  for (const maj of config.majorites) {
-    const counts = resultats.map((r) => r.cards.filter((c) => c.rarity === maj.rarete).length);
-    const max = Math.max(0, ...counts);
-    if (max < 1) continue;
-    resultats.forEach((r, i) => {
-      if (counts[i] === max) r.details.push({ id: `maj_${maj.id}`, label: maj.label, points: maj.points });
-    });
-  }
-  for (const r of resultats) {
-    const pop = Math.min(config.popularite_max, r.popularite);
-    if (pop > 0) r.details.push({ id: "popularite", label: "Popularité", points: pop });
-    r.score = r.details.reduce((s, d) => s + d.points, 0);
-    delete r.cards;
-  }
-  return resultats.sort((a, b) => b.score - a.score || b.popularite - a.popularite || a.arrivee - b.arrivee);
-}
-
-// Clôture du jour `jour` : vœux sur le marché de la veille, marché du jour
-// (dépôts du jour), et classement final au dernier jour. Aucune I/O.
-export function computeCloture({ jour, joueursAvant, actionsRaw, marcheVeille, config, catalog, rng = Math.random }) {
-  const joueurs = {};
-  for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j, main: [...(j.main || [])], depots: [...(j.depots || [])] };
-
-  const lignes = resoudreVoeux({ jour, joueurs, actionsRaw, marcheVeille, config, rng });
-
-  const marcheJour = Object.entries(joueurs)
-    .map(([discordId, j]) => ({ discordId, depot: depotDuJour(j, jour) }))
-    .filter(({ depot }) => depot)
-    .map(({ discordId, depot }) => ({ key: depot.key, discordId, at: depot.at || null }));
-
-  const final = jour >= config.duree_jours ? computeFinal({ joueurs, config, catalog }) : null;
-  return { joueursApres: joueurs, marcheJour, lignes, final };
+// Clôture du jour `jour` : échanges, décompte (carré ou dernier jour),
+// redistribution après un carré, classement final au dernier jour.
+export function computeCloture({ jour, joueursAvant, actionsRaw, partie, config, rng = Math.random }) {
+  const dernier = jour >= config.duree_jours;
+  const tour = computeTour({ joueursAvant, actions: actionsRaw, marche: partie.marche, familles: partie.familles, config, dernier, rng });
+  return {
+    joueursApres: tour.joueurs,
+    partieApres: { ...partie, marche: tour.marche },
+    lignes: tour.lignes,
+    carres: tour.carres,
+    scores: tour.scores,
+    redistribution: tour.redistribution,
+    final: dernier ? classement(tour.joueurs) : null,
+  };
 }
 
 // ── État de la partie ──────────────────────────────────────────────
@@ -517,10 +149,27 @@ export async function writeState(state) {
   await getRedis().set(STATE_KEY, toJson(state));
 }
 
+export async function readPartie() {
+  return fromJson(await getRedis().get(PARTIE_KEY)) || { familles: [], marche: [] };
+}
+
+async function writePartie(partie) {
+  await getRedis().set(PARTIE_KEY, toJson(partie));
+}
+
+// Début du draft (Jour 1) : `familles.min` cartes en jeu, tous leurs
+// exemplaires au marché en attendant les premiers joueurs.
+export async function initPartie(rng = Math.random) {
+  const [config, catalog] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog()]);
+  const familles = choisirFamilles(nbFamilles(0, config.familles), catalog, [], rng);
+  const partie = { familles, marche: shuffle(paquet(familles, config), rng) };
+  await writePartie(partie);
+  return partie;
+}
+
 // ── Joueurs ─────────────────────────────────────────────────────────
-// HASH discordId → JSON { username, main: [cardKey], contrat, depots,
-// popularite, arrivee }. Participation libre : un joueur est créé au tout
-// premier clic, avec ses cartes de départ.
+// HASH discordId → JSON { username, main: [cardKey], popularite, points,
+// carres, arrivee }.
 
 export async function readJoueurs() {
   return hgetallJson(JOUEURS_KEY);
@@ -534,36 +183,47 @@ export async function writeJoueur(discordId, joueur) {
   await getRedis().hset(JOUEURS_KEY, { [discordId]: toJson(joueur) });
 }
 
-export async function ensureJoueur(discordId, username, jour, rng = Math.random) {
+async function withLock(fn) {
+  for (let essai = 0; essai < 40; essai++) {
+    if (await getRedis().set(LOCK_KEY, "1", { nx: true, px: 10_000 })) {
+      try {
+        return await fn();
+      } finally {
+        await getRedis().del(LOCK_KEY);
+      }
+    }
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  throw new Error("Verrou du Draft Royale indisponible");
+}
+
+// Premier clic : le joueur tire sa main dans le marché (sous verrou, le
+// marché change). Renvoie { joueur, nouveau }.
+export async function ensureJoueur(discordId, username, rng = Math.random) {
   const existing = await readJoueur(discordId);
   if (existing) {
     if (username && existing.username !== username) {
       const updated = { ...existing, username };
       await writeJoueur(discordId, updated);
-      return updated;
+      return { joueur: updated, nouveau: false };
     }
-    return existing;
+    return { joueur: existing, nouveau: false };
   }
-  const [config, catalog, joueurs] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readJoueurs()]);
-  const main = [];
-  for (let i = 0; i < cartesDeDepart(jour, config); i++) {
-    const key = tirerCarte(main, catalog, rng);
-    if (key) main.push(key);
-  }
-  const fresh = { username: username || "?", main, contrat: null, depots: [], popularite: 0, arrivee: Object.keys(joueurs).length };
-  await writeJoueur(discordId, fresh);
-  return fresh;
+  return withLock(async () => {
+    const deja = await readJoueur(discordId);
+    if (deja) return { joueur: deja, nouveau: false };
+    const [config, catalog, joueurs, partie] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readJoueurs(), readPartie()]);
+    const nbAvant = Object.keys(joueurs).length;
+    const arrivee = ajouterJoueur({ ...partie, nbJoueursAvant: nbAvant, reglesFamilles: config.familles, config, catalog, rng });
+    const joueur = { username: username || "?", main: arrivee.main, popularite: 0, points: 0, carres: 0, arrivee: nbAvant };
+    await writePartie({ familles: arrivee.familles, marche: arrivee.marche });
+    await writeJoueur(discordId, joueur);
+    return { joueur, nouveau: true };
+  });
 }
 
-// ── Actions quotidiennes ────────────────────────────────────────────
-// HASH discordId → JSON { pioche, depot, voeux: [k1, k2, k3], contrat }.
-
-async function updateAction(jour, discordId, patch) {
-  const current = fromJson(await getRedis().hget(actionsKey(jour), discordId)) || {};
-  const updated = { ...current, ...patch };
-  await getRedis().hset(actionsKey(jour), { [discordId]: toJson(updated) });
-  return updated;
-}
+// ── Échanges du jour ────────────────────────────────────────────────
+// HASH discordId → JSON { prise, depot }, modifiable jusqu'à la clôture.
 
 export async function readActions(jour) {
   return hgetallJson(actionsKey(jour));
@@ -573,91 +233,22 @@ export async function readAction(jour, discordId) {
   return fromJson(await getRedis().hget(actionsKey(jour), discordId)) || {};
 }
 
-// Pioche — résolue en direct, une fois par jour.
-export async function piocher(jour, discordId, username, rng = Math.random) {
-  const action = await readAction(jour, discordId);
-  if (action.pioche) return { status: "alreadyDrawn", key: action.pioche };
-  const joueur = await ensureJoueur(discordId, username, jour, rng);
-  const catalog = await loadCatalog();
-  const key = tirerCarte([...joueur.main, ...clesDeposees(joueur)], catalog, rng);
-  if (!key) return { status: "empty" };
-  const updated = { ...joueur, main: [...joueur.main, key] };
-  await writeJoueur(discordId, updated);
-  await updateAction(jour, discordId, { pioche: key });
-  return { status: "ok", key, joueur: updated };
-}
-
-// Dépôt au marché — J1 à `jour_dernier_depot`, une carte par jour, retirée
-// de la main tout de suite (définitif).
-export async function deposer(jour, discordId, key, config) {
-  if (Number(jour) > config.jour_dernier_depot) return { status: "tooLate" };
-  const action = await readAction(jour, discordId);
-  if (action.depot) return { status: "alreadyDeposited" };
-  const joueur = await readJoueur(discordId);
+// `champ` : "prise" (carte du marché) ou "depot" (carte de la main).
+export async function enregistrerChoix(jour, discordId, champ, key) {
+  const [joueur, partie] = await Promise.all([readJoueur(discordId), readPartie()]);
   if (!joueur) return { status: "unknownPlayer" };
-  if (!joueur.main.includes(key)) return { status: "notInHand" };
-  if (depotDuJour(joueur, jour)) return { status: "alreadyDeposited" };
-  const updated = {
-    ...joueur,
-    main: joueur.main.filter((k) => k !== key),
-    depots: [...(joueur.depots || []), { key, jour: Number(jour), at: new Date().toISOString() }],
-  };
-  await writeJoueur(discordId, updated);
-  await updateAction(jour, discordId, { depot: key });
-  return { status: "ok", joueur: updated };
-}
-
-// Vœu de rang `rang` (1 à nb_voeux), modifiable jusqu'à la clôture.
-// Une même carte ne peut occuper qu'un rang : elle est retirée des autres.
-export async function enregistrerVoeu(jour, discordId, rang, key, config) {
-  const joueur = await readJoueur(discordId);
-  if (!joueur || !depotDuJour(joueur, Number(jour) - 1)) return { status: "noDeposit" };
-  const marche = await readMarche(Number(jour) - 1);
-  if (!cartesSouhaitables(marche, joueur, Number(jour)).includes(key)) return { status: "unavailable" };
-  const action = await readAction(jour, discordId);
-  const voeux = Array.from({ length: config.nb_voeux }, (_, i) => action.voeux?.[i] ?? null).map((k) => (k === key ? null : k));
-  voeux[rang - 1] = key;
-  await updateAction(jour, discordId, { voeux });
-  return { status: "ok", voeux };
-}
-
-// Contrat — J1 à J4 (jours ayant un multiplicateur), une signature par jour.
-export async function signerContrat(jour, discordId, username, contratId, config) {
-  const multiplicateur = multiplicateurDuJour(config, jour);
-  if (!multiplicateur) return { status: "tooLate" };
-  const contrat = findContrat(config, contratId);
-  if (!contrat) return { status: "unknown" };
-  const action = await readAction(jour, discordId);
-  if (action.contrat) return { status: "alreadySigned" };
-  const joueur = await ensureJoueur(discordId, username, jour);
-  if (joueur.contrat?.id === contrat.id) return { status: "same" };
-  const signe = { ...contrat, multiplicateur, jour: Number(jour) };
-  await writeJoueur(discordId, { ...joueur, contrat: signe });
-  await updateAction(jour, discordId, { contrat: true });
-  return { status: "ok", contrat: signe };
-}
-
-// ── Marché (dépôts figés à la clôture) ──────────────────────────────
-
-export async function readMarche(jour) {
-  return fromJson(await getRedis().get(marcheKey(jour))) || [];
-}
-
-async function writeMarche(jour, marche) {
-  await getRedis().set(marcheKey(jour), toJson(marche));
+  if (champ === "prise" && !partie.marche.includes(key)) return { status: "unavailable" };
+  if (champ === "depot" && !joueur.main.includes(key)) return { status: "notInHand" };
+  const action = { ...(await readAction(jour, discordId)), [champ]: key };
+  await getRedis().hset(actionsKey(jour), { [discordId]: toJson(action) });
+  return { status: "ok", action, complet: echangeValide(action, joueur.main, partie.marche) };
 }
 
 // ── Clôture ─────────────────────────────────────────────────────────
 
 async function loadClotureInputs(jour) {
-  const [config, catalog, joueursAvant, actionsRaw, marcheVeille] = await Promise.all([
-    loadDraftRoyaleConfig(),
-    loadCatalog(),
-    readJoueurs(),
-    readActions(jour),
-    readMarche(jour - 1),
-  ]);
-  return { config, catalog, joueursAvant, actionsRaw, marcheVeille };
+  const [config, joueursAvant, actionsRaw, partie] = await Promise.all([loadDraftRoyaleConfig(), readJoueurs(), readActions(jour), readPartie()]);
+  return { config, joueursAvant, actionsRaw, partie };
 }
 
 // Lecture seule (aucune écriture Redis) — branche --dry-run du script.
@@ -671,8 +262,14 @@ export async function closeDayAndAdvance(jour) {
   const inputs = await loadClotureInputs(jour);
   const closure = computeCloture({ jour, ...inputs });
 
-  await writeHistoriqueEntry(jour, { lignes: closure.lignes, resolvedAt: new Date().toISOString() });
-  await writeMarche(jour, closure.marcheJour);
+  await writeHistoriqueEntry(jour, {
+    lignes: closure.lignes,
+    carres: closure.carres,
+    scores: closure.scores,
+    redistribution: closure.redistribution,
+    resolvedAt: new Date().toISOString(),
+  });
+  await writePartie(closure.partieApres);
   for (const [id, j] of Object.entries(closure.joueursApres)) await writeJoueur(id, j);
   if (closure.final) await getRedis().set(RESULTAT_KEY, toJson(closure.final));
 
@@ -718,7 +315,7 @@ export async function listManches({ limit = 10 } = {}) {
 // ── Remise à zéro ────────────────────────────────────────────────────
 
 export async function resetDraftRoyale({ clearManches = false } = {}) {
-  await getRedis().del(STATE_KEY, JOUEURS_KEY, HISTORIQUE_KEY, RESULTAT_KEY);
+  await getRedis().del(STATE_KEY, PARTIE_KEY, JOUEURS_KEY, HISTORIQUE_KEY, RESULTAT_KEY, LOCK_KEY);
   await scanDelete("draftroyale:actions:*");
   await scanDelete("draftroyale:marche:*");
   if (clearManches) await getRedis().del(MANCHES_KEY, MANCHE_SEQ_KEY);

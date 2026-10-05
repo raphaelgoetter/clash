@@ -413,7 +413,7 @@ const SPECIAL_GAMES = [
       ]);
       return {
         played: actions[discordId] != null,
-        scoreLabel: joueur ? `Main : **${joueur.main.length} carte${joueur.main.length > 1 ? "s" : ""}**` : null,
+        scoreLabel: joueur ? `Score : **${joueur.points || 0} pt${(joueur.points || 0) > 1 ? "s" : ""}**` : null,
       };
     },
     async detail(state) {

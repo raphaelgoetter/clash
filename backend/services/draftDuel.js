@@ -1,15 +1,14 @@
 // ============================================================
 // draftDuel.js — Jeu Duel « Draft » (1 à 3 joueurs, 7 manches), lancé à la
 // demande via la commande /draft (rôle MINI-JEUX requis). Version duel du
-// jeu spécial Draft Royale, avec les MÊMES règles (pioche, marché, vœux,
-// barème, deck final de 8) importées de draftroyale.js, sauf :
-//   - pas de contrat (jugé trop lourd pour une partie courte) ;
+// jeu spécial Draft Royale, avec les MÊMES règles (draftRules.js : carré de
+// 4 cartes identiques, échange obligatoire au marché, popularité), sauf :
 //   - une manche remplace un jour : elle se résout dès que tous les joueurs
-//     ont cliqué « Fin de tour » (après avoir pioché), sans cron ;
-//   - le Marchand complète le marché de chaque manche avec
-//     (joueurs + marchand_en_plus) cartes uniques, le solo comptant pour
-//     2 joueurs : à 1 à 3 joueurs, les dépôts seuls laisseraient un marché
-//     presque vide.
+//     ont validé leur échange (« Fin de tour »), sans cron ;
+//   - les cartes en jeu sont fixées au lancement (`duel.familles` : joueurs
+//     + 1, bots compris) ;
+//   - toujours au moins 3 joueurs : des bots complètent la table (Kévina à
+//     2 joueurs, Kévina et Josette en solo).
 //
 // Même structure que gobeletDuel.js / blackjackDuel.js :
 // - lobby FERMÉ (1 à 3 joueurs inscrits via le bouton Jouer) ;
@@ -18,34 +17,36 @@
 //   paresseuse (expireIfStale) ; nettoyage manuel via
 //   `npm run draftduel:reset|watchdog|status`.
 //
-// En solo, l'adversaire est un bot (id "bot") : il joue sa manche dès
-// son ouverture, sans jamais voir les choix du joueur.
+// Les bots choisissent leur échange au moment de la résolution, sans
+// jamais voir les choix des joueurs.
 // ============================================================
 
 import { Redis } from "@upstash/redis";
-import {
-  loadDraftRoyaleConfig,
-  loadCatalog,
-  scoreDeck,
-  computeFinal,
-  resoudreVoeux,
-  cartesSouhaitables,
-  depotDuJour,
-  tirerCarte,
-  cardsFromKeys,
-  countTheme,
-  RARITIES,
-} from "./draftroyale.js";
+import { loadDraftRoyaleConfig, loadCatalog } from "./draftroyale.js";
+import { choisirFamilles, nbFamilles, paquet, shuffle, ajouterJoueur, echangeValide, computeTour, classement, choixGlouton } from "./draftRules.js";
 
-export const BOT_ID = "bot";
+// Bots qui complètent la table jusqu'à `MIN_JOUEURS`, dans cet ordre.
+export const BOTS = [
+  { id: "bot", name: "Kévina (bot)" },
+  { id: "bot2", name: "Josette (bot)" },
+];
+export const MIN_JOUEURS = 3;
 
-// Barème du Draft Royale, avec les réglages propres au duel : un seul
-// vœu par manche (peu de joueurs, donc peu de conflits sur le marché).
+export function isBot(id) {
+  return BOTS.some((b) => b.id === id);
+}
+
+export function botsDeLaPartie(maxPlayers) {
+  return BOTS.slice(0, Math.max(0, MIN_JOUEURS - maxPlayers));
+}
+// Format des parties : une partie d'un format antérieur est ignorée.
+const VERSION = 2;
+
+// Règles du Draft Royale, avec les réglages propres au duel.
 export async function loadDraftDuelConfig() {
   const config = await loadDraftRoyaleConfig();
-  return { ...config, nb_voeux: config.duel.nb_voeux ?? config.nb_voeux };
+  return { ...config, familles: config.duel.familles };
 }
-export const BOT_NAME = "Bot";
 
 let _redis = null;
 function getRedis() {
@@ -100,13 +101,13 @@ async function scanDelete(pattern) {
 }
 
 const STATE_KEY = "draftduel:state";
-// Hash discordId (ou "bot") → { username, main, depots, popularite, arrivee }
+// Hash discordId (ou id de bot) → { username, main, popularite, points, carres, arrivee }
 const PLAYERS_KEY = "draftduel:players";
 const RESOLVING_KEY = "draftduel:resolving";
 // Meilleur score final de tous les temps (joueurs humains). Jamais effacé.
 const HIGHSCORE_KEY = "draftduel:highscore";
 
-// Actions de la manche : hash discordId → { pioche, depot, voeux, fini }
+// Actions de la manche : hash discordId → { prise, depot, fini }
 function actionKey(manche) {
   return `draftduel:action:${manche}`;
 }
@@ -120,68 +121,13 @@ const HAND_TTL_SECONDS = 15 * 60;
 
 // ── Règles pures propres au duel ────────────────────────────────────
 
-// Nombre de cartes du Marchand : le solo compte pour 2 joueurs (le bot).
-export function nbCartesMarchand(maxPlayers, config) {
-  return Math.max(2, maxPlayers) + config.duel.marchand_en_plus;
+// Joueurs comptés pour les cartes en jeu, bots compris.
+export function nbJoueursEffectifs(maxPlayers) {
+  return maxPlayers + botsDeLaPartie(maxPlayers).length;
 }
 
-// Marché d'une manche : dépôts de la manche précédente (`copies_par_depot`
-// chacun) + cartes du Marchand (1 exemplaire, sans déposant), jamais une
-// carte déjà déposée.
-export function construireMarche(depots, nbMarchand, catalog, rng = Math.random) {
-  const marche = depots.map((d) => ({ key: d.key, discordId: d.discordId, at: d.at || null }));
-  const exclues = marche.map((m) => m.key);
-  for (let i = 0; i < nbMarchand; i++) {
-    const key = tirerCarte(exclues, catalog, rng);
-    if (!key) break;
-    exclues.push(key);
-    marche.push({ key, discordId: null, copies: 1 });
-  }
-  return marche;
-}
-
-// Valeur d'une main pour le bot : score réel + crédit partiel des thèmes
-// et archétypes commencés + poids des raretés (majorités).
-const RARITY_WEIGHT = { champion: 4, legendary: 1.5, epic: 0.6, rare: 0.3 };
-
-export function valeurMain(cards, config) {
-  let v = scoreDeck(cards, null, config).total;
-  for (const theme of config.themes) {
-    const n = countTheme(cards, theme);
-    if (n < config.paliers[0]) v += theme.points[0] * (n / config.paliers[0]) * 0.6;
-  }
-  for (const a of config.archetypes) {
-    if (a.cartes.filter((k) => cards.some((c) => c.cardKey === k)).length === 1) v += a.points * 0.3;
-  }
-  for (const c of cards) v += RARITY_WEIGHT[c.rarity] || 0;
-  return v;
-}
-
-// Carte la moins utile d'une main (celle dont le retrait coûte le moins).
-export function carteLaMoinsUtile(keys, config, catalog) {
-  const base = valeurMain(cardsFromKeys(keys, catalog), config);
-  let best = null;
-  for (const key of keys) {
-    const perte = base - valeurMain(cardsFromKeys(keys.filter((k) => k !== key), catalog), config);
-    const card = catalog.get(key);
-    const rang = card ? RARITIES.indexOf(card.rarity) : -1;
-    if (!best || perte < best.perte || (perte === best.perte && rang < best.rang)) best = { key, perte, rang };
-  }
-  return best?.key ?? null;
-}
-
-// Vœux du bot : les cartes souhaitables qui améliorent le plus sa main.
-export function voeuxDuBot(keys, souhaitables, config, catalog) {
-  const base = valeurMain(cardsFromKeys(keys, catalog), config);
-  return souhaitables
-    .map((key) => ({ key, gain: valeurMain(cardsFromKeys([...keys, key], catalog), config) - base }))
-    .sort((a, b) => b.gain - a.gain)
-    .slice(0, config.nb_voeux)
-    .map((v) => v.key);
-}
-
-// Pure : tous les sièges occupés et chaque joueur humain a fini son tour
-// (le bot joue dès l'ouverture de la manche).
+// Pure : tous les sièges occupés et chaque joueur humain a validé son
+// échange (les bots choisissent le leur à la résolution).
 export function isMancheReady(state, actions) {
   if (state.players.length < state.maxPlayers) return false;
   return state.players.every((id) => actions[id]?.fini);
@@ -189,8 +135,11 @@ export function isMancheReady(state, actions) {
 
 // ── État de la partie ──────────────────────────────────────────────
 
+// Une partie d'un format antérieur (ancien Draft à combinaisons) est
+// ignorée, comme s'il n'y en avait pas.
 export async function readState() {
-  return fromJson(await getRedis().get(STATE_KEY));
+  const state = fromJson(await getRedis().get(STATE_KEY));
+  return state?.version === VERSION ? state : null;
 }
 
 export async function writeState(state) {
@@ -235,13 +184,8 @@ export async function resetDraftDuel() {
 
 // ── Lancement et inscription ────────────────────────────────────────
 
-function nouveauJoueur(username, arrivee, config, catalog, rng) {
-  const main = [];
-  for (let i = 0; i < config.cartes_depart; i++) {
-    const key = tirerCarte(main, catalog, rng);
-    if (key) main.push(key);
-  }
-  return { username, main, depots: [], popularite: 0, arrivee };
+function nouveauJoueur(username, arrivee, main) {
+  return { username, main, popularite: 0, points: 0, carres: 0, arrivee };
 }
 
 export async function startGame(channelId, { maxPlayers }, rng = Math.random) {
@@ -251,7 +195,10 @@ export async function startGame(channelId, { maxPlayers }, rng = Math.random) {
   }
   await resetDraftDuel();
   const [config, catalog] = await Promise.all([loadDraftDuelConfig(), loadCatalog()]);
-  const state = {
+  // Cartes en jeu fixées dès le lancement (nombre de joueurs connu)
+  const familles = choisirFamilles(nbFamilles(nbJoueursEffectifs(maxPlayers), config.familles), catalog, [], rng);
+  let state = {
+    version: VERSION,
     channelId,
     messageId: null,
     maxPlayers,
@@ -260,18 +207,18 @@ export async function startGame(channelId, { maxPlayers }, rng = Math.random) {
     manche: 1,
     players: [],
     rosterLocked: false,
-    // Marché ouvert aux vœux pendant la manche en cours (vide en manche 1 :
-    // les vœux supposent un dépôt à la manche précédente)
-    marche: [],
+    familles,
+    marche: shuffle(paquet(familles, config), rng),
     lastRecap: null,
     lastActivityAt: new Date().toISOString(),
     termine: false,
   };
-  await writeState(state);
-  if (maxPlayers === 1) {
-    await writePlayer(BOT_ID, nouveauJoueur(BOT_NAME, 99, config, catalog, rng));
-    await playBotTurn(state, rng);
+  for (const [i, bot] of botsDeLaPartie(maxPlayers).entries()) {
+    const arrivee = ajouterJoueur({ familles, marche: state.marche, nbJoueursAvant: i, reglesFamilles: config.familles, config, catalog, rng });
+    await writePlayer(bot.id, nouveauJoueur(bot.name, 99 + i, arrivee.main));
+    state = { ...state, marche: arrivee.marche };
   }
+  await writeState(state);
   return { state };
 }
 
@@ -284,6 +231,7 @@ export function applyJoin(state, discordId) {
   return { allowed: true, isSeated, players, rosterLocked: state.rosterLocked || players.length >= state.maxPlayers };
 }
 
+// Inscription : le joueur tire sa main dans le marché.
 export async function joinGame(discordId, username, rng = Math.random) {
   const state = await readState();
   if (!state || state.termine) return { inactive: true };
@@ -291,9 +239,18 @@ export async function joinGame(discordId, username, rng = Math.random) {
   if (!decision.allowed) return { rosterLocked: true, state };
   if (decision.isSeated) return { state, isNew: false };
 
-  const [config, catalog] = await Promise.all([loadDraftDuelConfig(), loadCatalog()]);
-  await writePlayer(discordId, nouveauJoueur(username, state.players.length, config, catalog, rng));
-  const newState = touch({ ...state, players: decision.players, rosterLocked: decision.rosterLocked });
+  const [config, catalog, players] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
+  const arrivee = ajouterJoueur({
+    familles: state.familles,
+    marche: state.marche,
+    nbJoueursAvant: Object.keys(players).length,
+    reglesFamilles: config.familles,
+    config,
+    catalog,
+    rng,
+  });
+  await writePlayer(discordId, nouveauJoueur(username, state.players.length, arrivee.main));
+  const newState = touch({ ...state, familles: arrivee.familles, marche: arrivee.marche, players: decision.players, rosterLocked: decision.rosterLocked });
   await writeState(newState);
   return { state: newState, isNew: true };
 }
@@ -308,26 +265,17 @@ export async function readPlayerView(state, discordId) {
     readAction(state.manche, discordId),
   ]);
   const me = players[discordId] || null;
-  const depotVeille = me ? depotDuJour(me, state.manche - 1) : null;
-  return {
-    state,
-    config,
-    catalog,
-    players,
-    me,
-    action,
-    depotVeille,
-    souhaitables: me && depotVeille ? cartesSouhaitables(state.marche || [], me, state.manche) : [],
-  };
+  return { state, config, catalog, players, me, action, complet: !!me && echangeValide(action, me.main, state.marche) };
 }
 
-// Préconditions communes : partie active, joueur inscrit, tour pas fini.
+// Préconditions communes : partie active, joueur inscrit, tous les
+// joueurs arrivés (le marché ne bouge plus), tour pas fini.
 async function guardTurn(discordId) {
   const state = await readState();
   if (!state || state.termine) return { inactive: true };
   if (!state.players.includes(discordId)) return { notSeated: true, state };
   const action = await readAction(state.manche, discordId);
-  if (action.fini) return { alreadyDone: true, state, view: await readPlayerView(state, discordId) };
+  if (action.fini || !state.rosterLocked) return { alreadyDone: true, state, view: await readPlayerView(state, discordId) };
   return { state, action };
 }
 
@@ -337,89 +285,34 @@ async function afterAction(state, discordId, extra = {}) {
   return { state: newState, view: await readPlayerView(newState, discordId), ...extra };
 }
 
-export async function piocher(discordId, rng = Math.random) {
+// `champ` : "prise" (carte du marché) ou "depot" (carte de la main),
+// modifiable jusqu'à la fin de tour.
+export async function choisir(discordId, champ, key) {
   const guard = await guardTurn(discordId);
   if (!guard.action) return guard;
-  const { state, action } = guard;
-  if (action.pioche) return { ...(await afterAction(state, discordId)), invalid: true };
-  const [catalog, players] = await Promise.all([loadCatalog(), readPlayers()]);
-  const me = players[discordId];
-  const key = tirerCarte([...me.main, ...me.depots.map((d) => d.key)], catalog, rng);
-  if (key) await writePlayer(discordId, { ...me, main: [...me.main, key] });
-  await updateAction(state.manche, discordId, { pioche: key || "aucune" });
-  return afterAction(state, discordId, { pioche: key });
-}
-
-export async function deposer(discordId, key) {
-  const guard = await guardTurn(discordId);
-  if (!guard.action) return guard;
-  const { state, action } = guard;
-  const [config, players] = await Promise.all([loadDraftDuelConfig(), readPlayers()]);
-  const me = players[discordId];
-  if (action.depot || state.manche > config.jour_dernier_depot || !me.main.includes(key)) {
-    return { ...(await afterAction(state, discordId)), invalid: true };
-  }
-  await writePlayer(discordId, {
-    ...me,
-    main: me.main.filter((k) => k !== key),
-    depots: [...me.depots, { key, jour: state.manche, at: new Date().toISOString() }],
-  });
-  await updateAction(state.manche, discordId, { depot: key });
+  const { state } = guard;
+  const players = await readPlayers();
+  const valide = champ === "prise" ? state.marche.includes(key) : champ === "depot" && players[discordId].main.includes(key);
+  if (!valide) return { ...(await afterAction(state, discordId)), invalid: true };
+  await updateAction(state.manche, discordId, { [champ]: key });
   return afterAction(state, discordId);
 }
 
-export async function enregistrerVoeu(discordId, rang, key) {
-  const guard = await guardTurn(discordId);
-  if (!guard.action) return guard;
-  const { state, action } = guard;
-  const config = await loadDraftDuelConfig();
-  const view = await readPlayerView(state, discordId);
-  if (!view.souhaitables.includes(key) || rang < 1 || rang > config.nb_voeux) return { ...(await afterAction(state, discordId)), invalid: true };
-  const voeux = Array.from({ length: config.nb_voeux }, (_, i) => action.voeux?.[i] ?? null).map((k) => (k === key ? null : k));
-  voeux[rang - 1] = key;
-  await updateAction(state.manche, discordId, { voeux });
-  return afterAction(state, discordId);
-}
-
-// Fin de tour : définitif, il faut avoir pioché. Le webhook est enregistré
-// AVANT le drapeau `fini` : le joueur qui complète la manche le trouve
-// forcément, même en cas de fins de tour simultanées.
+// Fin de tour : définitive, l'échange doit être complet. Le webhook est
+// enregistré AVANT le drapeau `fini` : le joueur qui complète la manche le
+// trouve forcément, même en cas de fins de tour simultanées.
 export async function finirTour(discordId, webhookUrl) {
   const guard = await guardTurn(discordId);
   if (!guard.action) return guard;
   const { state, action } = guard;
-  if (!action.pioche) return { ...(await afterAction(state, discordId)), invalid: true };
+  const players = await readPlayers();
+  if (!echangeValide(action, players[discordId].main, state.marche)) return { ...(await afterAction(state, discordId)), invalid: true };
   if (webhookUrl) {
     await getRedis().hset(handKey(state.manche), { [discordId]: webhookUrl });
     await getRedis().expire(handKey(state.manche), HAND_TTL_SECONDS);
   }
   await updateAction(state.manche, discordId, { fini: true });
   return afterAction(state, discordId);
-}
-
-// ── Tour du bot (solo) ──────────────────────────────────────────────
-
-async function playBotTurn(state, rng = Math.random) {
-  const [config, catalog, players] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
-  const bot = players[BOT_ID];
-  if (!bot) return;
-  const main = [...bot.main];
-  const pioche = tirerCarte([...main, ...bot.depots.map((d) => d.key)], catalog, rng);
-  if (pioche) main.push(pioche);
-  const action = { pioche: pioche || "aucune", fini: true };
-
-  if (depotDuJour(bot, state.manche - 1)) {
-    action.voeux = voeuxDuBot(main, cartesSouhaitables(state.marche || [], { ...bot, main }, state.manche), config, catalog);
-  }
-  const depots = [...bot.depots];
-  if (state.manche <= config.jour_dernier_depot && main.length > 1) {
-    const key = carteLaMoinsUtile(main, config, catalog);
-    main.splice(main.indexOf(key), 1);
-    depots.push({ key, jour: state.manche, at: new Date().toISOString() });
-    action.depot = key;
-  }
-  await writePlayer(BOT_ID, { ...bot, main, depots });
-  await getRedis().hset(actionKey(state.manche), { [BOT_ID]: toJson(action) });
 }
 
 // ── Résolution de fin de manche ─────────────────────────────────────
@@ -438,46 +331,30 @@ export async function checkAndResolveManche(rng = Math.random) {
   return { resolved: true, ...(await resolveManche(state, actions, rng)) };
 }
 
-// Pure : résolution d'une manche (vœux, marché suivant, classement final).
-export function computeMancheDuel({ state, joueursAvant, actions, config, catalog, rng = Math.random }) {
-  const joueurs = {};
-  for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j, main: [...(j.main || [])], depots: [...(j.depots || [])] };
-  const lignes = resoudreVoeux({ jour: state.manche, joueurs, actionsRaw: actions, marcheVeille: state.marche || [], config, rng });
-
-  if (state.manche >= state.totalManches) {
-    return { joueurs, lignes, final: computeFinal({ joueurs, config, catalog }), marche: [] };
-  }
-  const depots = Object.entries(joueurs)
-    .map(([discordId, j]) => ({ discordId, depot: depotDuJour(j, state.manche) }))
-    .filter(({ depot }) => depot)
-    .map(({ discordId, depot }) => ({ key: depot.key, discordId, at: depot.at }));
-  const marche = construireMarche(depots, nbCartesMarchand(state.maxPlayers, config), catalog, rng);
-  return { joueurs, lignes, final: null, marche };
+// Pure : résolution d'une manche (échanges des bots compris).
+export function computeMancheDuel({ state, joueursAvant, actions, config, rng = Math.random }) {
+  const toutes = { ...actions };
+  for (const id of Object.keys(joueursAvant).filter(isBot)) toutes[id] = choixGlouton(joueursAvant[id].main, state.marche, rng);
+  const dernier = state.manche >= state.totalManches;
+  const tour = computeTour({ joueursAvant, actions: toutes, marche: state.marche, familles: state.familles, config, dernier, rng });
+  return { ...tour, actions: toutes, final: dernier ? classement(tour.joueurs) : null };
 }
 
 async function resolveManche(state, actions, rng) {
-  const [config, catalog, joueursAvant] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
-  const { joueurs, lignes, final, marche } = computeMancheDuel({ state, joueursAvant, actions, config, catalog, rng });
-  for (const [id, j] of Object.entries(joueurs)) await writePlayer(id, j);
+  const [config, joueursAvant] = await Promise.all([loadDraftDuelConfig(), readPlayers()]);
+  const tour = computeMancheDuel({ state, joueursAvant, actions, config, rng });
+  for (const [id, j] of Object.entries(tour.joueurs)) await writePlayer(id, j);
 
-  const lastRecap = { manche: state.manche, lignes, actions };
-  if (final) {
-    const newState = touch({ ...state, termine: true, lastRecap, finalRanking: final });
+  const lastRecap = { manche: state.manche, lignes: tour.lignes, carres: tour.carres, scores: tour.scores, redistribution: tour.redistribution };
+  if (tour.final) {
+    const newState = touch({ ...state, marche: tour.marche, termine: true, lastRecap, finalRanking: tour.final });
     await writeState(newState);
-    const highScore = await updateHighScore(final);
-    return { final: true, ranking: final, highScore, state: newState };
+    const highScore = await updateHighScore(tour.final);
+    return { final: true, ranking: tour.final, highScore, state: newState };
   }
-  const newState = touch({ ...state, manche: state.manche + 1, marche, lastRecap });
+  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, lastRecap });
   await writeState(newState);
-  await playBotTurn(newState, rng);
   return { final: false, state: newState };
-}
-
-// Score provisoire d'un joueur (hors majorités, popularité comprise).
-export function scoreProvisoire(player, config, catalog) {
-  const { details, total } = scoreDeck(cardsFromKeys(player.main, catalog), null, config);
-  const pop = Math.min(config.popularite_max, player.popularite || 0);
-  return { details, total: total + pop, popularite: pop };
 }
 
 // ── High score (joueurs humains uniquement) ─────────────────────────
@@ -488,7 +365,7 @@ export function isNewHighScore(current, points) {
 
 async function updateHighScore(ranking) {
   const current = await readHighScore();
-  const top = ranking?.find((r) => r.discordId !== BOT_ID);
+  const top = ranking?.find((r) => !isBot(r.discordId));
   if (!top || !isNewHighScore(current, top.score)) return current;
   const record = { discordId: top.discordId, username: top.username || null, points: top.score, at: new Date().toISOString() };
   await getRedis().set(HIGHSCORE_KEY, toJson(record));
@@ -515,8 +392,7 @@ export function isStale(state, now = Date.now(), staleHours = state?.staleHours 
 export async function expireIfStale(now = Date.now()) {
   const state = await readState();
   if (!isStale(state, now)) return { expired: false };
-  const [config, catalog, joueurs] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
-  const ranking = computeFinal({ joueurs, config, catalog });
+  const ranking = classement(await readPlayers());
   const newState = { ...state, termine: true, expired: true, finalRanking: ranking };
   await writeState(newState);
   return { expired: true, state: newState, ranking };

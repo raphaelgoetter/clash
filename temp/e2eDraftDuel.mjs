@@ -17,6 +17,7 @@ globalThis.fetch = async (url, opts = {}) => {
 
 const H = await import("../api/discord/_handlers/draftDuel.js");
 const S = await import("../backend/services/draftDuel.js");
+const { choixGlouton } = await import("../backend/services/draftRules.js");
 
 const nb = Number(process.argv[2] || 1);
 const ids = ["u1", "u2", "u3"].slice(0, nb);
@@ -29,20 +30,18 @@ for (const id of ids) await H.handleJouer(`wh-${id}`, id, "Joueur " + id);
 
 for (let m = 1; m <= 7; m++) {
   for (const id of ids) {
-    await H.handlePioche(`wh-${id}`, id);
-    let view = await S.readPlayerView(await S.readState(), id);
-    if (view.souhaitables.length) {
-      for (let r = 1; r <= Math.min(view.config.nb_voeux, view.souhaitables.length); r++) await H.handleVoeu(`wh-${id}`, id, String(r), view.souhaitables[r - 1]);
-    }
-    if (m <= 6) await H.handleDepot(`wh-${id}`, id, view.me.main[0]);
-    if (id === "u1" && (m === 2 || m === 3)) {
+    const view = await S.readPlayerView(await S.readState(), id);
+    const choix = choixGlouton(view.me.main, view.state.marche);
+    await H.handleChoix(`wh-${id}`, id, "prise", choix.prise);
+    await H.handleChoix(`wh-${id}`, id, "depot", choix.depot);
+    if (id === "u1" && m <= 2) {
       const e = lastEph(id).body;
-      console.log(`--- main u1, manche ${m} (${e.components.length} rangées) ---\n${e.embeds[0].description}`);
+      console.log(`--- main u1, manche ${m} (${e.components.length} rangées, fin de tour ${e.components[2]?.components[0].disabled ? "désactivée" : "active"}) ---\n${e.embeds[0].description}\n[${e.embeds[1]?.title}] ${e.embeds[1]?.description}`);
     }
     await H.handleFinTour(`wh-${id}`, id);
   }
   const pub = lastPublic().body;
-  console.log(`\n===== ${pub.embeds?.[0]?.title} =====\n${pub.embeds?.[0]?.description}\nimage: ${pub.embeds?.[0]?.image?.url ?? "-"}`);
+  console.log(`\n===== ${pub.embeds?.[0]?.title} =====\n${pub.embeds?.[0]?.description}`);
 }
 await H.handleDetails("wh-d", "msg1");
 console.log("\n===== Détails =====\n" + [...sent].reverse().find((s) => s.url === "wh-d/messages/@original").body.embeds[0].description);

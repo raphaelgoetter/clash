@@ -1,8 +1,8 @@
 // ============================================================
 // draftroyaleImage.js — Images du Draft Royale :
-//   - le marché du jour : cartes déposées la veille, posées en grille sur le
-//     tapis de jeu (data/draftroyale/images/draft-game.jpg), avec un badge
-//     « ×N » quand une même carte a été déposée plusieurs fois ;
+//   - le marché : cartes posées en grille sur le tapis de jeu
+//     (data/draftroyale/images/draft-game.jpg), regroupées avec un badge
+//     « ×N » pour les exemplaires d'une même carte ;
 //   - la main d'un joueur : grille de cartes réutilisée du jeu Élixir ;
 //   - l'illustration statique (présentation / fin de partie).
 // Même technique que marioclashImage.js : SVG avec un `<image href="data:...">`
@@ -20,7 +20,7 @@
 import { readBlobAsset } from "./blobAssets.js";
 import { cardSvg, loadDataUrls, rasterize, getCollectionImage, RATIO_CARTE } from "./cardImage.js";
 import { resolveCard } from "./cards.js";
-import { readMarche, loadCatalog } from "./draftroyale.js";
+import { readPartie, loadCatalog } from "./draftroyale.js";
 
 const MAT_IMAGE_PATH = "draftroyale/images/draft-game.jpg";
 const ILLUSTRATION_IMAGE_PATH = "draftroyale/images/draft-launch.webp";
@@ -100,24 +100,25 @@ export async function buildMarcheSvg(entrees, catalog, mat = null) {
 </svg>`;
 }
 
-// Regroupe les dépôts par carte (ordre de première apparition).
-export function groupMarche(marche) {
+// Regroupe les exemplaires par carte (ordre alphabétique des clés, pour
+// une image stable d'un jour à l'autre).
+export function groupMarche(keys) {
   const counts = new Map();
-  for (const m of marche) counts.set(m.key, (counts.get(m.key) || 0) + 1);
+  for (const k of [...keys].sort()) counts.set(k, (counts.get(k) || 0) + 1);
   return [...counts.entries()].map(([key, count]) => ({ key, count }));
 }
 
-// Marché ouvert aux vœux le jour `jour` = dépôts du jour précédent.
-export async function getMarcheImage(jour) {
-  const [marche, catalog] = await Promise.all([readMarche(Number(jour) - 1), loadCatalog()]);
-  const svg = await buildMarcheSvg(groupMarche(marche), catalog);
+// Marché courant du Draft Royale.
+export async function getMarcheImage() {
+  const [partie, catalog] = await Promise.all([readPartie(), loadCatalog()]);
+  const svg = await buildMarcheSvg(groupMarche(partie.marche), catalog);
   return { buffer: await rasterize(svg, MAT_WIDTH), mimeType: "image/png" };
 }
 
-// Marché du duel Draft : clés passées dans l'URL, rendu sans état.
+// Marché passé dans l'URL (duel, main éphémère), rendu sans état.
 export async function getMarcheImageFromKeys(keys) {
   const catalog = await loadCatalog();
-  const svg = await buildMarcheSvg(groupMarche(keys.map((key) => ({ key }))), catalog);
+  const svg = await buildMarcheSvg(groupMarche(keys), catalog);
   return { buffer: await rasterize(svg, MAT_WIDTH), mimeType: "image/png" };
 }
 

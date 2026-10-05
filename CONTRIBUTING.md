@@ -1912,61 +1912,48 @@ Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le cla
 
 Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `DISCORD_APP_ID`/`DISCORD_TOKEN` (upload emoji). Le `schedule` du cron (`16 8 * * *`) est actif dans `.github/workflows/gobelet.yml`, comme Blackjack.
 
-## Draft Royale — deck de 8 cartes en 7 jours
+## Draft Royale — carré de cartes en 7 jours
 
-Jeu spécial à avancée quotidienne : chaque joueur construit le deck de 8 cartes qui marque le plus de points de synergie. Participation libre (joueur créé au premier clic, avec ses cartes de départ). Code : `backend/services/draftroyale.js` (règles pures + Redis), `backend/services/draftroyaleImage.js` (images), `api/discord/_handlers/draftroyale.js` (Discord), `scripts/postDraftRoyale.js`. Équilibrage simulé avec `temp/simulateDraft.mjs` sur 15-20 joueurs (taille réelle des parties).
+Jeu spécial à avancée quotidienne, inspiré du [Kilo de merde](https://fr.wikipedia.org/wiki/Kilo_de_merde) : chaque joueur échange des cartes au marché pour réunir **4 exemplaires d'une même carte** (un « carré »). **Refonte du 05/10** : l'ancienne version (deck de 8 cartes, combinaisons, contrat, vœux) était trop complexe pour les testeurs. Participation libre (main reçue au premier clic). Code : `backend/services/draftRules.js` (règles pures, partagées avec le duel `/draft`), `backend/services/draftroyale.js` (Redis, jours), `backend/services/draftroyaleImage.js` (images), `api/discord/_handlers/draftroyale.js` (Discord), `scripts/postDraftRoyale.js`. Équilibrage simulé avec `temp/simulateDraft.mjs`.
 
 ### Déroulement (Draft Royale)
 
-- **Départ** : `cartes_depart` (2) cartes aléatoires au premier clic, plus une par jour manqué pour un joueur qui arrive en cours de partie (`cartesDeDepart()`). Jamais deux fois la même carte dans une main ; deux joueurs peuvent avoir la même.
-- **Catalogue** : toutes les cartes jouables de `data/cardNames.json`, filtrées par `filterCardPool()` (`backend/services/cards.js` : sans Miroir ni Impératrice spirituelle), soit 121 cartes.
-- **Trois actions par jour**, une fois chacune :
-  - 👆 **Piocher** : carte aléatoire ajoutée en direct, hors main et hors cartes déposées en attente de retour.
-  - **Marché** (emoji `<:trade:1493849418611294279>`) : **dépôt** facultatif d'une carte (J1 à `jour_dernier_depot` = J6), retirée de la main tout de suite et définitivement ; le lendemain d'un dépôt, jusqu'à `nb_voeux` (3) **vœux** classés sur le marché de la veille, modifiables jusqu'à la clôture. Sans dépôt la veille, pas de vœux.
-  - ✍️ **Contrat** (J1 à J4) : objectif de thème secret, un thème à un palier (`"squelettes:4"`). Bonus si atteint au J7 : `round(points du palier × (multiplicateur − 1))`, multiplicateur selon le jour de signature (J1 ×2, J2 ×1,75, J3 ×1,5, J4 ×1,25). **Aucune pénalité** en cas d'échec (décision du 04/10 : une pénalité compliquait les règles sans toucher les joueurs actifs). Changement possible, au multiplicateur du jour, une signature par jour.
-- **Clôture** (`computeCloture()`, pure) : résolution des vœux, puis le marché du jour (dépôts du jour) est figé dans `draftroyale:marche:<jour>`.
-- **Nombre de cartes** : au plus `2 + jours écoulés`, soit 8 en fin de J6 ; 9 au J7 (pioche + vœu), le deck final de 8 est choisi automatiquement.
+Config dans `data/draftroyale/draftroyale.json`.
 
-### Résolution des vœux (Draft Royale)
+- **Cartes en jeu** : chaque carte existe en `exemplaires` (5) exemplaires. Nombre de cartes différentes = `max(joueurs + familles.en_plus, familles.min)`, soit `max(joueurs, 6)` : avec N cartes × 5 exemplaires et 4 cartes par main, le marché garde N cartes (autant que de joueurs). Catalogue : cartes jouables de `data/cardNames.json` filtrées par `filterCardPool()`.
+- **Jour 1** (`initPartie()`) : `familles.min` (6) cartes tirées au hasard, tous leurs exemplaires au marché.
+- **Arrivée d'un joueur** (`ensureJoueur()` → `ajouterJoueur()`, sous verrou `draftroyale:lock`) : au-delà de 6 joueurs, une nouvelle carte entre en jeu (ses 5 exemplaires vont au marché) ; le joueur tire ensuite ses `taille_main` (4) cartes au hasard dans le marché, jamais un carré d'emblée.
+- **Chaque jour** : un échange, **obligatoire pour jouer** : une carte à prendre au marché et une carte de sa main à y déposer, modifiables jusqu'à la clôture. Un échange incomplet (une seule des deux cartes choisie) ne compte pas.
+- **Marché** : toujours visible (image du tapis dans le message du jour, liste et image dans l'éphémère).
 
-Résolus à la clôture et non au premier clic : l'heure de connexion ne doit donner aucun avantage.
+### Résolution des échanges (Draft Royale)
 
-1. **Stock** : chaque carte déposée peut être prise par `copies_par_depot` (2) joueurs (4 si elle a été déposée deux fois). Limite décidée le 04/10 : en copies illimitées, les contrats réussissaient à plus de 80 % (aucun pari) ; à 1 copie, un joueur sur quatre n'obtenait aucun vœu.
-2. **Ordre de service** : popularité (avant clôture) décroissante, puis tirage au sort.
-3. Chaque joueur reçoit son premier vœu encore disponible et qu'il ne possède pas ; sinon sa propre carte lui revient.
-4. **Popularité** : +1 au déposant chaque fois qu'un AUTRE joueur prend sa carte (copies attribuées dans l'ordre de dépôt).
+Résolus tous ensemble à la clôture (`resoudreEchanges()`, pure) : l'heure de connexion ne doit donner aucun avantage. Une carte choisie qui a quitté le marché entre-temps (arrivée d'un joueur) rend l'échange invalide.
 
-### Score final (Draft Royale)
+1. Une carte demandée par **au plus autant de joueurs qu'il y a d'exemplaires au marché** est obtenue par tous, popularité inchangée.
+2. Sinon elle est **disputée** : les plus populaires l'emportent (tirage au sort entre ex aequo, décision du 05/10 : sans tirage, personne ne l'emporterait au J1 où tout le monde est à 0) et leur popularité retombe à 0.
+3. Les perdants reçoivent au hasard une autre carte restée au marché et gagnent +1 popularité.
+4. Les cartes déposées rejoignent le marché (taille du marché inchangée).
 
-Le coût en élixir des cartes ne rapporte rien. Barème dans `data/draftroyale/draftroyale.json` :
+### Score (Draft Royale)
 
-| Élément | Points |
-| ------- | ------ |
-| Thèmes (3 cartes / 4 et plus, seul le palier le plus haut compte) | humains 2/4, sorts 5/10, volants 6/12, gobelins 6/12, squelettes 6/12, bâtiments 7/14 |
-| Une carte de chaque rareté | 4 |
-| Deck cycle (coût moyen ≤ 3) / deck lourd (≥ 5) | 4 / 4 |
-| Trio troupe (ou volant) + sort + bâtiment | 2 |
-| Suite d'élixir : 7 coûts consécutifs (`longueurSuite()`) | 10 |
-| Archétype : les 2 cartes d'un duo célèbre de la méta (`archetypes`, 14 duos, ex. Molosse de lave + Ballon) | 6 par duo |
-| Majorités : le plus de champions / légendaires / épiques / rares | 12 / 10 / 8 / 6, **tous les ex aequo en tête marquent** (au moins 1 carte) |
-| Contrat réussi | voir ci-dessus |
-| Popularité | +1 par carte reprise, plafonnée à 5 |
+- **Décompte** dès qu'au moins un joueur a un carré après les échanges : `points_carre` (10) pts par carré, sinon 1, 2 ou 3 pts selon le plus grand nombre de cartes identiques de la main (`pointsMain()`). Tous les joueurs inscrits marquent, même absents ce jour-là.
+- Après un décompte, **toutes les cartes sont redistribuées** (mêmes cartes en jeu, `distribuer()`, aucune main ne commence par un carré) : nouvelle manche.
+- **Dernier jour** : décompte pour tous, même sans carré, puis classement final.
+- **Départage** : nombre de carrés, puis ordre d'arrivée dans le jeu (`classement()`).
 
-Gargouilles retirées des thèmes (4 cartes seulement dans le catalogue, objectif atteint dans 2 % des cas en simulation). Thèmes sur le nom des cartes (géants, électro, glace, feu, dragons) essayés puis retirés le 04/10 : trop proches des familles et embed Combinaisons trop long. Suite d'élixir : une suite de 4 coûts sortait dans 97 % des decks, de 6 dans 65 % (le choix des 8 cartes parmi la main l'aligne facilement) ; à 7 coûts, environ 30 %, au niveau des thèmes classiques. Paliers à 3 et 4 cartes (un palier à 5 n'était atteint que par 1 % des joueurs).
-
-**Deck final** (`choisirDeckFinal()`) : si la main dépasse 8 cartes, on retire une à une la carte dont l'absence garde le meilleur score hors majorités (contrat compris) ; à score égal, la rareté la plus basse, puis la moins chère.
-
-**Départage** : popularité brute (non plafonnée), puis ordre d'arrivée dans le jeu (`arrivee`).
+Simulation (05/10, joueurs gloutons, 7 jours) : à 15-20 joueurs, 1 à 2 carrés par partie selon la participation (70 % des joueurs actifs : 1,7 décompte avant le dernier jour), environ 25 % des échanges disputés perdus, vainqueur autour de 15 pts.
 
 ### Informations visibles (Draft Royale)
 
-Mains et contrats restent secrets jusqu'au bilan final (bluff autour du marché et des majorités). Le message du jour affiche le marché ouvert aux vœux (image du tapis) et des chiffres agrégés de la veille ; le Journal (éphémère) montre au joueur sa main, son contrat, son score provisoire hors majorités, les **combinaisons** (`combinaisonsEnCours()` : réalisées, jauge verte pleine, en tête, puis en cours, avec le prochain palier de chaque thème entamé, raretés, trio et decks cycle/lourd une fois réalisés ; suite d'élixir à partir de 2 coûts consécutifs, archétypes dès une des deux cartes ; pions 🟢🟠🔴⚪ ; une piste en cours n'apparaît que si elle reste réalisable avec les pioches et vœux restants ; reprise de l'ancien Journal du duel Élixir), son bilan de la veille et le top 5 public de la popularité. Après le bilan final, le Journal affiche le rang, le détail du score et le deck retenu. Le barème complet est sous le bouton `[🧩 Combinaisons]` (éphémère, `lignesCombinaisons()`, partagé avec le duel `/draft`), et non dans les Règles : la liste devenait trop longue.
+Les mains restent secrètes. Le message du jour affiche le marché (`/api/draftroyale/marche`), les carrés de la veille (joueur et carte), le nombre d'échanges et de cartes disputées perdues, et le classement (points, carrés). Bouton **Jouer** (éphémère) : main regroupée (« Princesse ×2 · … ») et en image, points au prochain décompte, total et popularité, bilan personnel de la veille, échange prévu, marché (liste et image) et les deux menus (carte à prendre, carte à déposer).
 
 ### Images (Draft Royale)
 
-- `/api/draftroyale/marche?jour=N` : dépôts du jour N−1 posés en grille sur le tapis `draft-game.jpg` (badge `×N` pour une carte déposée plusieurs fois). ⚠️ Tapis en **JPEG** : resvg ne décode pas le WebP embarqué (même piège que Mario Clash) ; `draft-game.webp` reste pour archive.
-- `/api/draftroyale/main?c=k1|k2|…` : main ou deck, rendu sans état (grille de `backend/services/cardImage.js`, `getCollectionImage()`).
-- `/api/draftroyale/illustration` : `draft-launch.webp` (présentation, Jour 1).
+- `/api/draftroyale/marche` : marché courant (`draftroyale:partie`) sur le tapis `draft-game.jpg`, une carte par groupe avec un badge `×N`. ⚠️ Tapis en **JPEG** : resvg ne décode pas le WebP embarqué (même piège que Mario Clash) ; `draft-game.webp` reste pour archive.
+- `/api/draft/marche?c=k1|k2|…` : même rendu, sans état (éphémère, duel).
+- `/api/draftroyale/main?c=k1|k2|…` : main d'un joueur, rendu sans état (grille de `backend/services/cardImage.js`, `getCollectionImage()`).
+- `/api/draftroyale/illustration` : `draft-launch.webp` (présentation, fin).
 
 Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob` après modification.
 
@@ -1979,11 +1966,12 @@ Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob` après 
 | Clé Redis | Type | Contenu |
 | --------- | ---- | ------- |
 | `draftroyale:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine }` |
-| `draftroyale:joueurs` | HASH | `discordId → { username, main, contrat, depots: [{ key, jour, at }], popularite, arrivee }` |
-| `draftroyale:actions:<jour>` | HASH | `discordId → { pioche, depot, voeux, contrat }` |
-| `draftroyale:marche:<jour>` | STRING | Dépôts du jour, figés à la clôture : `[{ key, discordId, at }]` |
-| `draftroyale:historique` | HASH | `jour → { lignes, resolvedAt }` (vœux exaucés, retours, popularité) |
-| `draftroyale:resultat` | STRING | Classement final détaillé (decks, détail des points) |
+| `draftroyale:partie` | STRING | `{ familles: [cardKey], marche: [cardKey] }` : cartes en jeu et marché courant |
+| `draftroyale:joueurs` | HASH | `discordId → { username, main, popularite, points, carres, arrivee }` |
+| `draftroyale:actions:<jour>` | HASH | `discordId → { prise, depot }` |
+| `draftroyale:historique` | HASH | `jour → { lignes, carres, scores, redistribution, resolvedAt }` |
+| `draftroyale:resultat` | STRING | Classement final |
+| `draftroyale:lock` | STRING | Verrou des arrivées (10 s) |
 | `draftroyale:manches` / `draftroyale:manche_seq` | HASH / compteur | Archive des manches, jamais nettoyée sauf `--manches` |
 
 ### Scripts npm (Draft Royale)
@@ -1996,7 +1984,8 @@ Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob` après 
 | `npm run draftroyale:public:dry` | Équivalent dry-run. |
 | `npm run draftroyale:reset` | Remet le draft à zéro (préserve l'archive des manches). **Destructif**. |
 | `npm run draftroyale:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
-| `npm run draftroyale:status` | Vue organisateur sans Discord (mains et contrats visibles). |
+| `npm run draftroyale:status` | Vue organisateur sans Discord (mains et échanges prévus visibles). |
+| `npm run draftroyale:bots` | Bots de test (salon de test uniquement) : rejoignent et prévoient l'échange glouton. |
 
 ### Variables d'environnement requises (Draft Royale)
 
@@ -2024,22 +2013,20 @@ Réutilise par import direct les fonctions pures du jeu spécial (`rollDice`, `r
 
 Stockage Redis dédié `gobeletduel:*`. Scripts npm : `npm run gobeletduel:status`, `npm run gobeletduel:watchdog`, `npm run gobeletduel:reset` — mêmes garanties que Blackjack Duel (aucun workflow GitHub Actions ne les appelle).
 
-## Draft Duel (deck de 8 cartes, 1-3 joueurs)
+## Draft Duel (carré de cartes, 1-3 joueurs)
 
-Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEUX requis pour lancer). **Remplace le duel Élixir** (enchères avec budget d'élixir, supprimé le 04/10) : le duel reprend désormais les règles du jeu spécial [Draft Royale](#draft-royale--deck-de-8-cartes-en-7-jours) pour éviter les mécompréhensions entre les deux jeux. Mêmes principes structurels que Blackjack/Gobelet Duel (lobby fermé, avancement par les actions des joueurs, message public réédité en place, clôture paresseuse après `duel.stale_heures` (2h) d'inactivité, high score jamais effacé, nettoyage 100% manuel). Code : `backend/services/draftDuel.js`, `api/discord/_handlers/draftDuel.js`.
-
-**Règles communes avec le Draft Royale** (importées de `draftroyale.js`, barème dans `data/draftroyale/draftroyale.json`) : 2 cartes au départ, pioche sans doublon, dépôt facultatif (manches 1 à 6) puis vœux sur le marché la manche suivante, 2 joueurs max par carte déposée, service par popularité puis au hasard, carte rendue à défaut, même barème (thèmes, bonus de deck, suite d'élixir, archétypes, majorités avec ex aequo, popularité plafonnée à 5, détaillé sous le bouton `[🧩 Combinaisons]`), deck final de 8 choisi automatiquement, même départage.
+Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEUX requis pour lancer). **Remplace le duel Élixir** (supprimé le 04/10) et reprend les règles du jeu spécial [Draft Royale](#draft-royale--carré-de-cartes-en-7-jours) (refonte « Kilo de merde » du 05/10, règles pures communes dans `draftRules.js`). Mêmes principes structurels que Blackjack/Gobelet Duel (lobby fermé, avancement par les actions des joueurs, message public réédité en place, clôture paresseuse après `duel.stale_heures` (2h) d'inactivité, high score jamais effacé, nettoyage 100% manuel). Code : `backend/services/draftDuel.js`, `api/discord/_handlers/draftDuel.js`.
 
 **Différences avec le Draft Royale** :
-- **Pas de contrat** (04/10) : jugé trop lourd pour une partie courte.
-- **Un seul vœu** (`duel.nb_voeux` = 1, 04/10) au lieu de 3 classés : à 1-3 joueurs les conflits sur le marché sont rares, 3 menus alourdissaient la main pour rien. Vœu indisponible : la carte déposée revient (pas de repli au hasard). Config chargée via `loadDraftDuelConfig()`, qui remplace `nb_voeux` par `duel.nb_voeux`.
-- **7 manches** (`duel.manches`) au lieu de 7 jours : une manche se résout quand tous les joueurs ont cliqué **Fin de tour**, possible seulement après avoir pioché (pioche obligatoire, dépôt et vœux facultatifs). Verrou `HSETNX` par manche, comme les autres duels.
-- **Marchand** : le marché de chaque manche contient les dépôts de la manche précédente **plus (joueurs + `duel.marchand_en_plus`) cartes du Marchand**, le solo comptant pour 2 joueurs (soit 4 cartes en solo et à 2 joueurs, 5 à 3). À 1-3 joueurs, les dépôts seuls laisseraient un marché presque vide. Cartes du Marchand tirées au hasard (jamais une carte déjà déposée), **un seul exemplaire chacune** (`copies: 1`), sans déposant donc sans popularité. Le marché est vide en manche 1 (aucun dépôt possible avant).
-- **Solo** : adversaire bot (`BOT_ID = "bot"`) qui joue sa manche dès son ouverture, sans voir les choix du joueur : pioche, vœux sur les cartes qui améliorent le plus sa main (`valeurMain()` : score réel + crédit partiel des thèmes commencés + poids des raretés), dépôt de sa carte la moins utile. Le high score ne retient que les joueurs humains.
+- **7 manches** (`duel.manches`) au lieu de 7 jours : une manche se résout quand tous les joueurs ont cliqué **Fin de tour**, possible seulement avec un échange complet. Verrou `HSETNX` par manche, comme les autres duels.
+- **Toujours 3 joueurs au moins** (05/10, demande de Raphael) : des bots complètent la table, Kévina (bot) à 2 joueurs, Kévina et Josette (bot) en solo (`BOTS`, `botsDeLaPartie()`).
+- **Cartes en jeu fixées au lancement** : `duel.familles` = joueurs + 1, bots compris, soit toujours 4 cartes et un marché de 8 cartes. Simulation (05/10) : un minimum de 6 cartes donnait un marché de 22 cartes en solo ; à joueurs + 1, environ 3 carrés par partie. Chaque joueur tire sa main en s'inscrivant ; les échanges ne s'ouvrent qu'une fois tous les joueurs arrivés (le marché bouge à chaque arrivée).
+- **Bots** : chacun choisit son échange au moment de la résolution (`choixGlouton()` : l'échange qui grossit le plus son plus gros groupe), sans voir les choix des joueurs. Le high score ne retient que les joueurs humains.
+- Format versionné (`version: 2` dans l'état) : une partie de l'ancien Draft à combinaisons est ignorée par `readState()`.
 
-**Interface** : le message public affiche le bilan des échanges de la manche précédente (les mains restent secrètes, seules les cartes échangées sont révélées), les joueurs (tour fini ou non, nombre de cartes, score provisoire hors majorités) et le marché en image (`/api/draft/marche?c=<clés>`, rendu sans état sur le tapis du Draft Royale). Bouton **Jouer** : main éphémère avec l'image de la main, le score provisoire, les combinaisons réalisées et en cours (même fonction que le Journal du Draft Royale), le marché (liste et image, dès qu'il contient des cartes), les menus de vœu (« Ton choix ») et de dépôt, et les boutons Piocher / Fin de tour. À la résolution, la main de chaque joueur passe directement à la manche suivante via le webhook de sa fin de tour (jeton valable 15 min, au-delà Jouer reste le recours). Fin de partie : récapitulatif reposté dans un nouveau message (deck du vainqueur joint en image), bouton Détails.
+**Interface** : le message public affiche le bilan de la manche précédente (cartes prises par chacun, cartes disputées, carrés), le marché (liste et image `/api/draft/marche?c=<clés>`) et les joueurs (tour fini ou non, points, carrés). Bouton **Jouer** : main éphémère (main regroupée et en image, points au prochain décompte, total, popularité, échange prévu), marché, menus « Carte à prendre au marché » / « Carte de ta main à déposer » et bouton Fin de tour. À la résolution, la main de chaque joueur passe directement à la manche suivante via le webhook de sa fin de tour (jeton valable 15 min, au-delà Jouer reste le recours). Fin de partie : récapitulatif reposté dans un nouveau message, bouton Détails (carrés et popularité de chacun).
 
-Stockage Redis dédié `draftduel:*` (`state` dont le marché de la manche, `players` : main/dépôts/popularité par joueur, `action:<manche>` : pioche/dépôt/vœux/fin de tour, `hand:<manche>` : webhooks, `resolving`, `highscore`). Scripts npm : `npm run draftduel:status`, `npm run draftduel:watchdog`, `npm run draftduel:reset`. Test de bout en bout local (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/e2eDraftDuel.mjs [joueurs]`.
+Stockage Redis dédié `draftduel:*` (`state` dont les cartes en jeu et le marché, `players` : main/popularité/points/carrés par joueur, `action:<manche>` : prise/dépôt/fin de tour, `hand:<manche>` : webhooks, `resolving`, `highscore`). Scripts npm : `npm run draftduel:status`, `npm run draftduel:watchdog`, `npm run draftduel:reset`. Tests de bout en bout locaux (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/e2eDraftDuel.mjs [joueurs]` et `temp/e2eDraftRoyale.mjs [joueurs]`.
 
 ## Jeu Goblin Hunters (identité secrète, camps cachés)
 

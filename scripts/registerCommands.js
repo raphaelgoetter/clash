@@ -592,12 +592,12 @@ const commands = [
   },
   {
     name: "draft",
-    description: "Lance une partie de Draft (deck de 8 cartes en 7 manches, 1-3 joueurs), réservé au rôle MINI-JEUX.",
+    description: "Lance une partie de Draft (réunis 4 cartes identiques en 7 manches, 1-3 joueurs), rôle MINI-JEUX.",
     options: [
       {
         type: 4, // INTEGER
         name: "joueurs",
-        description: "Nombre de joueurs (1 à 3, en solo contre un bot).",
+        description: "Nombre de joueurs (1 à 3, des bots complètent jusqu'à 3).",
         required: true,
         choices: [
           { name: "1", value: 1 },

@@ -1,22 +1,23 @@
 #!/usr/bin/env node
 // draftDuelStatus.js
 // Affiche l'état de la partie de Draft (duel) en cours : manche, marché,
-// mains, actions de la manche, score provisoire et ancienneté
-// d'inactivité, pour décider à la main d'un `npm run draftduel:reset`.
+// mains, échanges de la manche, points et ancienneté d'inactivité, pour
+// décider à la main d'un `npm run draftduel:reset`.
 //
 // Usage : node scripts/draftDuelStatus.js
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { readState, readPlayers, readActions, scoreProvisoire, isStale, loadDraftDuelConfig } from "../backend/services/draftDuel.js";
+import { readState, readPlayers, readActions, isStale, loadDraftDuelConfig, BOTS, isBot } from "../backend/services/draftDuel.js";
 import { loadCatalog } from "../backend/services/draftroyale.js";
+import { compterCartes, pointsMain } from "../backend/services/draftRules.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {
   const state = await readState();
   if (!state) {
-    console.log("Aucune partie de Draft en cours.");
+    console.log("Aucune partie de Draft en cours (ou partie d'un ancien format, effacée au prochain lancement).");
     return;
   }
   if (state.termine) {
@@ -31,19 +32,19 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
   const [config, catalog, players, actions] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers(), readActions(state.manche)]);
   const nom = (k) => catalog.get(k)?.fr || k;
-  console.log(`Marché : ${state.marche?.length ? state.marche.map((m) => `${nom(m.key)}${m.discordId ? "" : " (Marchand)"}`).join(", ") : "(vide)"}\n`);
+  const groupes = (keys) => [...compterCartes(keys)].map(([k, n]) => `${nom(k)} ×${n}`).join(", ");
+  console.log(`Marché : ${groupes(state.marche) || "(vide)"}\n`);
 
   const rows = await Promise.all(
     Object.entries(players).map(async ([id, p]) => {
       const a = actions[id] || {};
       return {
-        Joueur: id === "bot" ? "Bot" : await resolveDisplayName(id, p.username),
-        Cartes: p.main.length,
-        Score: scoreProvisoire(p, config, catalog).total,
+        Joueur: isBot(id) ? BOTS.find((b) => b.id === id).name : await resolveDisplayName(id, p.username),
+        Main: groupes(p.main),
+        Points: `${p.points || 0} (+${pointsMain(p.main, config)})`,
+        Carrés: p.carres || 0,
         Popularité: p.popularite || 0,
-        Tour: [a.pioche ? `pioche ${nom(a.pioche)}` : null, a.depot ? `dépôt ${nom(a.depot)}` : null, a.voeux?.some(Boolean) ? `vœux ${a.voeux.map((k) => (k ? nom(k) : "-")).join(" > ")}` : null, a.fini ? "fini" : "en cours"]
-          .filter(Boolean)
-          .join(", "),
+        Tour: [a.prise ? `prend ${nom(a.prise)}` : null, a.depot ? `dépose ${nom(a.depot)}` : null, a.fini ? "fini" : "en cours"].filter(Boolean).join(", "),
       };
     }),
   );

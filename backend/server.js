@@ -388,13 +388,10 @@ app.get("/api/marioclash/illustration", async (req, res) => {
   res.send(image.buffer);
 });
 
-// Draft Royale : marché ouvert aux vœux le jour `jour` (dépôts de la veille,
-// posés sur le tapis). `jour` est une vraie clé de lookup ici (marché du
-// jour précédent), `v` sert seulement à invalider le cache Discord.
+// Draft Royale : marché courant posé sur le tapis. `v` sert seulement à
+// invalider le cache Discord.
 app.get("/api/draftroyale/marche", async (req, res) => {
-  const jour = Number(req.query.jour);
-  if (!Number.isInteger(jour) || jour < 1) return res.status(400).end();
-  const image = await getDraftRoyaleMarcheImage(jour).catch(() => null);
+  const image = await getDraftRoyaleMarcheImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");
@@ -413,11 +410,11 @@ app.get("/api/draftroyale/main", async (req, res) => {
   res.send(image.buffer);
 });
 
-// Duel Draft : marché de la manche posé sur le tapis, rendu sans état à
-// partir des clés de l'URL (c = cartes séparées par "|", une carte répétée
-// affiche un badge ×N).
+// Marché du Draft (duel, main éphémère du Draft Royale) posé sur le tapis,
+// rendu sans état à partir des clés de l'URL (c = cartes séparées par "|",
+// une carte répétée affiche un badge ×N).
 app.get("/api/draft/marche", async (req, res) => {
-  const keys = req.query.c ? String(req.query.c).split("|").filter(Boolean).slice(0, 30) : [];
+  const keys = req.query.c ? String(req.query.c).split("|").filter(Boolean).slice(0, 60) : [];
   const image = keys.length ? await getDraftMarcheImage(keys).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
