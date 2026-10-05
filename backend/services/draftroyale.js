@@ -1,7 +1,8 @@
 // ============================================================
 // draftroyale.js — Draft Royale, jeu spécial de 7 jours inspiré du « Kilo
-// de merde » : chaque carte en jeu existe en 5 exemplaires, chaque joueur
-// a 4 cartes en main, le reste est au marché (toujours visible). Chaque
+// de merde » : chaque carte en jeu existe en 4 exemplaires, chaque joueur
+// a 4 cartes en main, le marché contient une carte par joueur (toujours
+// visible). Chaque
 // jour, un joueur prend une carte du marché et y dépose une carte de sa
 // main. Le premier à réunir 4 exemplaires d'une même carte (un « carré »)
 // déclenche le décompte : 10 pts pour un carré, sinon 1 à 3 pts selon le
@@ -15,8 +16,8 @@
 // Stockage : Upstash Redis (mêmes conventions que marioclash.js) — espace
 // de clés `draftroyale:*`.
 //
-// Participation libre : un joueur reçoit sa main à son premier clic (une
-// carte de plus entre en jeu au-delà de `familles.min` joueurs). Les
+// Participation libre : un joueur reçoit sa main à son premier clic (de
+// nouvelles cartes entrent en jeu selon le nombre de joueurs). Les
 // échanges sont modifiables jusqu'à la clôture, où ils sont résolus tous
 // ensemble (computeCloture, fonction pure, `rng` injectable) : l'heure de
 // connexion ne doit donner aucun avantage.
@@ -33,14 +34,15 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { filterCardPool } from "./cards.js";
-import { choisirFamilles, nbFamilles, paquet, shuffle, ajouterJoueur, echangeValide, computeTour, classement } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, computeTour, classement } from "./draftRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "draftroyale", "draftroyale.json");
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.json");
 
 const STATE_KEY = "draftroyale:state";
-// { familles: [cardKey], marche: [cardKey] } — cartes en jeu et marché courant
+// { familles, marche, reserve } (cardKeys) — cartes en jeu, marché courant
+// et exemplaires à l'écart
 const PARTIE_KEY = "draftroyale:partie";
 const JOUEURS_KEY = "draftroyale:joueurs";
 const HISTORIQUE_KEY = "draftroyale:historique";
@@ -127,10 +129,10 @@ export async function loadCatalog() {
 // redistribution après un carré, classement final au dernier jour.
 export function computeCloture({ jour, joueursAvant, actionsRaw, partie, config, rng = Math.random }) {
   const dernier = jour >= config.duree_jours;
-  const tour = computeTour({ joueursAvant, actions: actionsRaw, marche: partie.marche, familles: partie.familles, config, dernier, rng });
+  const tour = computeTour({ joueursAvant, actions: actionsRaw, marche: partie.marche, reserve: partie.reserve, familles: partie.familles, config, dernier, rng });
   return {
     joueursApres: tour.joueurs,
-    partieApres: { ...partie, marche: tour.marche },
+    partieApres: { ...partie, marche: tour.marche, reserve: tour.reserve },
     lignes: tour.lignes,
     carres: tour.carres,
     scores: tour.scores,
@@ -150,19 +152,17 @@ export async function writeState(state) {
 }
 
 export async function readPartie() {
-  return fromJson(await getRedis().get(PARTIE_KEY)) || { familles: [], marche: [] };
+  return fromJson(await getRedis().get(PARTIE_KEY)) || { familles: [], marche: [], reserve: [] };
 }
 
 async function writePartie(partie) {
   await getRedis().set(PARTIE_KEY, toJson(partie));
 }
 
-// Début du draft (Jour 1) : `familles.min` cartes en jeu, tous leurs
-// exemplaires au marché en attendant les premiers joueurs.
-export async function initPartie(rng = Math.random) {
-  const [config, catalog] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog()]);
-  const familles = choisirFamilles(nbFamilles(0, config.familles), catalog, [], rng);
-  const partie = { familles, marche: shuffle(paquet(familles, config), rng) };
+// Début du draft (Jour 1) : aucune carte en jeu, elles arrivent avec les
+// joueurs (voir ajouterJoueur).
+export async function initPartie() {
+  const partie = { familles: [], marche: [], reserve: [] };
   await writePartie(partie);
   return partie;
 }
@@ -214,9 +214,9 @@ export async function ensureJoueur(discordId, username, rng = Math.random) {
     if (deja) return { joueur: deja, nouveau: false };
     const [config, catalog, joueurs, partie] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readJoueurs(), readPartie()]);
     const nbAvant = Object.keys(joueurs).length;
-    const arrivee = ajouterJoueur({ ...partie, nbJoueursAvant: nbAvant, reglesFamilles: config.familles, config, catalog, rng });
+    const arrivee = ajouterJoueur({ ...partie, nbJoueursAvant: nbAvant, config, catalog, rng });
     const joueur = { username: username || "?", main: arrivee.main, popularite: 0, points: 0, carres: 0, arrivee: nbAvant };
-    await writePartie({ familles: arrivee.familles, marche: arrivee.marche });
+    await writePartie({ familles: arrivee.familles, marche: arrivee.marche, reserve: arrivee.reserve });
     await writeJoueur(discordId, joueur);
     return { joueur, nouveau: true };
   });

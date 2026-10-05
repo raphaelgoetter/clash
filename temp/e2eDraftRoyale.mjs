@@ -31,13 +31,13 @@ for (let jour = 1; jour <= 7; jour++) {
   // Arrivées échelonnées : la moitié des joueurs au J1, un de plus chaque jour
   const actifs = ids.slice(0, Math.min(nb, Math.ceil(nb / 2) + jour - 1));
   for (const id of actifs) {
-    if (Math.random() < 0.2) continue; // absent ce jour
+    if (id !== "u1" && Math.random() < 0.2) continue; // absent ce jour
     await H.handleJouer(`wh-${id}`, String(jour), id, `Joueur ${id}`);
     const joueur = await S.readJoueur(id);
     const choix = choixGlouton(joueur.main, (await S.readPartie()).marche);
     await H.handleChoixSelect(`wh-${id}`, String(jour), "prise", id, `Joueur ${id}`, choix.prise);
     if (id !== "u2" || jour !== 2) await H.handleChoixSelect(`wh-${id}`, String(jour), "depot", id, `Joueur ${id}`, choix.depot);
-    if (id === "u1" && jour <= 2) {
+    if (id === "u1" && jour <= 4) {
       const e = lastEph(id);
       console.log(`--- éphémère u1, J${jour} (${e.components.length} menus) ---\n${e.embeds[0].description}\n[${e.embeds[1].title}] ${e.embeds[1].description}`);
     }
@@ -48,5 +48,6 @@ for (let jour = 1; jour <= 7; jour++) {
   const partie = await S.readPartie();
   console.log(`\n===== ${e.title} ===== (${partie.familles.length} cartes en jeu, marché ${partie.marche.length})\n${e.description}`);
 }
-const total = Object.values(await S.readJoueurs()).reduce((n, j) => n + j.main.length, 0) + (await S.readPartie()).marche.length;
-console.log(`\nCartes en circulation : ${total} (attendu ${(await S.readPartie()).familles.length * 5})`);
+const fin = await S.readPartie();
+const total = Object.values(await S.readJoueurs()).reduce((n, j) => n + j.main.length, 0) + fin.marche.length + fin.reserve.length;
+console.log(`\nCartes en circulation : ${total} (attendu ${fin.familles.length * 4}), cartes en jeu : ${fin.familles.join(", ")}`);

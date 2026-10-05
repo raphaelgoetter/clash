@@ -20,6 +20,7 @@ import {
   loadCatalog,
   readState,
   writeState,
+  readJoueurs,
   ensureJoueur,
   readAction,
   readPartie,
@@ -39,12 +40,6 @@ import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 const DRAFT_COLOR = 0x2f5bd3;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const TRADE_TEXT = "<:trade:1493849418611294279>";
-
-// Cache-buster dynamique (Discord met en cache l'échec d'un premier fetch,
-// voir marioclash.js).
-function marcheImageUrl() {
-  return `${TRUST_ROYALE_URL}/api/draftroyale/marche?v=${Date.now()}`;
-}
 
 // Marché figé au moment de l'affichage (éphémère) : rendu sans état.
 function marcheKeysImageUrl(keys) {
@@ -118,30 +113,15 @@ function classementLignes(joueurs, limit = 10) {
   return ["", "**🏆 Classement**", ...top.map((j, i) => `${MEDALS[i] || `${i + 1}.`} ${j.username} (${plural(j.points, "pt")}${j.carres ? `, ${plural(j.carres, "carré")}` : ""})`)];
 }
 
-// Annonce publique des carrés réalisés (la carte du carré est révélée).
-function carresLignes(closure, joueurs, config, catalog) {
-  if (!closure?.carres?.length) return [];
-  const noms = closure.carres.map((id) => {
-    const main = closure.scores.find((s) => s.discordId === id)?.main || [];
-    const [key] = [...compterCartes(main)].sort((a, b) => b[1] - a[1])[0] || [];
-    return `**${joueurs[id]?.username || "?"}** (${cardName(key, catalog)})`;
-  });
-  return [`🎉 **Carré !** ${noms.join(", ")} : +${config.points_carre} pts. Les autres marquent 1 à 3 pts selon leurs cartes identiques.`];
-}
-
-// Résumé public de la veille : carrés, chiffres agrégés des échanges.
-function buildResumeLignes(jour, config, closure, joueurs, catalog) {
-  const lignes = [];
-  if (jour === 1) {
-    lignes.push(`Le draft commence ! Clique sur **Jouer** pour recevoir tes ${config.taille_main} cartes.`);
-  } else {
-    lignes.push(...carresLignes(closure, joueurs, config, catalog));
-    if (closure?.redistribution) lignes.push("🔄 Toutes les cartes ont été redistribuées : nouvelle manche !");
-    const echanges = closure?.lignes?.length || 0;
-    const perdues = closure?.lignes?.filter((l) => l.type === "perdue").length || 0;
-    if (echanges) lignes.push(`Hier : ${plural(echanges, "échange")}${perdues ? `, dont ${perdues} carte${perdues > 1 ? "s" : ""} disputée${perdues > 1 ? "s" : ""} perdue${perdues > 1 ? "s" : ""}` : ""}.`);
-  }
-  lignes.push("", `${TRADE_TEXT} Prends une carte du marché et dépose une carte de ta main. Objectif : ${config.taille_main} cartes identiques.`);
+// Message du jour : infos générales uniquement (la journée en cours, le
+// marché et le bilan de la veille sont dans l'éphémère Jouer).
+function buildResumeLignes(jour, config, joueurs) {
+  const nb = Object.keys(joueurs).length;
+  const lignes = [
+    `${TRADE_TEXT} Réunis ${config.taille_main} cartes identiques ! Clique sur **Jouer** pour voir ta main, le marché et les échanges de la veille.`,
+  ];
+  if (jour === 1) lignes.push(`Tu reçois tes ${config.taille_main} cartes à ton premier clic.`);
+  if (nb) lignes.push(`👥 ${plural(nb, "joueur")} dans la partie.`);
   if (jour === config.duree_jours) lignes.push(`🏁 **Dernier jour** : à la clôture, chacun marque ses points (${config.points_carre} pour un carré, sinon 1 à 3).`);
   lignes.push(...classementLignes(joueurs));
   return lignes;
@@ -152,7 +132,7 @@ function buildJourEmbed(jour, config, resumeLignes) {
     title: `🃏 Draft Royale — Jour ${jour}/${config.duree_jours}`,
     description: resumeLignes.join("\n").slice(0, 4096),
     color: DRAFT_COLOR,
-    image: { url: marcheImageUrl() },
+    image: { url: illustrationUrl() },
     footer: { text: `Échange modifiable jusqu'à ${formatUtcTimeAsParis(8)} demain.` },
   };
 }
@@ -169,14 +149,13 @@ function buildManchesSection(manches, currentManche) {
   return ["", "**📊 Manches précédentes**", ...manches.map((m) => formatMancheLine(m, m.manche === currentManche, m.manche === best.manche))];
 }
 
-function buildFinEmbed(ranking, closure, config, catalog, manches, currentManche) {
+function buildFinEmbed(ranking, config, manches, currentManche) {
   // Classement déjà départagé (carrés, puis ordre d'arrivée) : un seul vainqueur
   const top = ranking[0];
   const titre = top ? `**${top.username}** l'emporte avec **${top.score} pts** !` : "Personne n'a participé.";
   return {
     title: "🏆 Draft Royale — Draft terminé !",
     description: [
-      ...carresLignes(closure, closure.joueursApres, config, catalog),
       `Après ${config.duree_jours} jours de draft, ${titre}`,
       "",
       "**Classement final**",
@@ -194,7 +173,7 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles — Draft Royale",
     description: [
-      `Réunis **${config.taille_main} exemplaires d'une même carte** (un carré) ! Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes à ton premier clic, le reste est au marché, visible par tous.`,
+      `Réunis **${config.taille_main} exemplaires d'une même carte** (un carré) ! Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes à ton premier clic. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
       "",
       `**Chaque jour** : ${TRADE_TEXT} choisis une carte à prendre au marché et une carte de ta main à y déposer. Tu peux changer d'avis jusqu'à la clôture.`,
       "",
@@ -250,7 +229,7 @@ export async function postDraftRoyale(channelId, { dryRun = false, noPing = fals
 
   // 2) Présentation → Jour 1 : les cartes entrent en jeu, rien à clôturer
   if (state.phase === "annonce") {
-    const embed = buildJourEmbed(1, config, buildResumeLignes(1, config, null, {}, catalog));
+    const embed = buildJourEmbed(1, config, buildResumeLignes(1, config, {}));
     const components = buildJourComponents(1);
     if (dryRun) return { dryRun: true, phase: "jour", jour: 1, embed, components };
     await initPartie();
@@ -272,14 +251,14 @@ export async function postDraftRoyale(channelId, { dryRun = false, noPing = fals
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = buildFinEmbed(ranking, closure, config, catalog, manches, currentManche);
+    const embed = buildFinEmbed(ranking, config, manches, currentManche);
     const components = [{ type: 1, components: [reglesButton()] }];
     if (dryRun) return { dryRun: true, final: true, embed, closure };
     const result = await publishAndWriteState(channelId, state, { phase: "jour", jour: state.jour, embed, components, noPing, estAnnonce: false, termine: true });
     return { ...result, final: true };
   }
 
-  const embed = buildJourEmbed(closure.jourSuivant, config, buildResumeLignes(closure.jourSuivant, config, closure, closure.joueursApres, catalog));
+  const embed = buildJourEmbed(closure.jourSuivant, config, buildResumeLignes(closure.jourSuivant, config, closure.joueursApres));
   const components = buildJourComponents(closure.jourSuivant);
   if (dryRun) return { dryRun: true, jour: closure.jourSuivant, embed, components, closure };
   return publishAndWriteState(channelId, state, { phase: "jour", jour: closure.jourSuivant, embed, components, noPing: true, estAnnonce: false });
@@ -342,17 +321,25 @@ async function guardActiveDay(webhookUrl, jour) {
   return state;
 }
 
-// Bilan personnel de la clôture de la veille.
-function bilanPersonnel(veille, discordId, catalog) {
+// Bilan de la clôture de la veille : échanges de chacun (prise et dépôt),
+// carrés, décompte et nouvelle donne.
+function bilanVeille(veille, joueurs, discordId, catalog) {
   if (!veille) return [];
+  const nom = (id) => (id === discordId ? "Toi" : joueurs[id]?.username || "?");
   const lignes = [];
-  for (const l of veille.lignes.filter((x) => x.discordId === discordId)) {
-    if (l.type === "prise") lignes.push(`✅ Tu as pris **${cardName(l.key, catalog)}**${l.disputee ? " face à d'autres joueurs (popularité remise à 0)" : ""}.`);
-    if (l.type === "perdue") lignes.push(`❌ ${cardName(l.voulue, catalog)} est allée à un joueur plus populaire : tu reçois **${cardName(l.key, catalog)}** (+1 popularité).`);
+  for (const l of veille.lignes) {
+    const depot = `dépôt ${cardName(l.depot, catalog)}`;
+    if (l.type === "prise") lignes.push(`• **${nom(l.discordId)}** : prise **${cardName(l.key, catalog)}**${l.disputee ? " (disputée)" : ""} · ${depot}`);
+    if (l.type === "perdue") lignes.push(`• **${nom(l.discordId)}** : ${cardName(l.voulue, catalog)} disputée perdue, reçu **${cardName(l.key, catalog)}** (+1 popularité) · ${depot}`);
   }
-  const score = veille.scores?.find((s) => s.discordId === discordId);
-  if (score) lignes.push(score.carre ? `🎉 **Carré !** +${score.points} pts.` : `Décompte : +${plural(score.points, "pt")}.`);
-  if (veille.redistribution) lignes.push("🔄 Toutes les cartes ont été redistribuées : voici ta nouvelle main.");
+  if (!lignes.length) lignes.push("Aucun échange.");
+  for (const sc of (veille.scores || []).filter((x) => x.carre)) {
+    const [key] = [...compterCartes(sc.main)].sort((a, b) => b[1] - a[1])[0] || [];
+    lignes.push(`🎉 Carré de **${nom(sc.discordId)}** (${cardName(key, catalog)}) : +${sc.points} pts`);
+  }
+  const mien = veille.scores?.find((x) => x.discordId === discordId && !x.carre);
+  if (mien) lignes.push(`Ton décompte : +${plural(mien.points, "pt")}`);
+  if (veille.redistribution) lignes.push("🔄 Nouvelle donne : toutes les cartes ont été redistribuées.");
   return lignes;
 }
 
@@ -372,16 +359,21 @@ function statutEchange(action, joueur, partie, catalog) {
 async function buildJeuView(jour, discordId, username, entete = null) {
   const [config, catalog, state] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readState()]);
   const { joueur, nouveau } = await ensureJoueur(discordId, username);
-  const [partie, action, veille] = await Promise.all([readPartie(), readAction(jour, discordId), jour > 1 ? getHistoriqueEntry(jour - 1) : null]);
+  const [partie, action, joueurs, veille] = await Promise.all([
+    readPartie(),
+    readAction(jour, discordId),
+    readJoueurs(),
+    jour > 1 ? getHistoriqueEntry(jour - 1) : null,
+  ]);
   const main = trierMain(joueur.main);
-  const bilan = nouveau ? [] : bilanPersonnel(veille, discordId, catalog);
+  const bilan = bilanVeille(veille, joueurs, discordId, catalog);
   const lignes = [
     ...(entete ? [entete, ""] : []),
     ...(nouveau ? [`Bienvenue ! Voici tes ${config.taille_main} cartes.`, ""] : []),
+    ...(bilan.length ? ["**Hier**", ...bilan, ""] : []),
     `**Ta main** : ${formatGroupes(main, catalog)}`,
     `Points au prochain décompte : ${plural(pointsMain(main, config), "pt")}`,
     `🏆 Total : ${plural(joueur.points || 0, "pt")} · ⭐ Popularité : ${joueur.popularite || 0}`,
-    ...(bilan.length ? ["", "**Hier**", ...bilan] : []),
     "",
     statutEchange(action, joueur, partie, catalog),
   ];

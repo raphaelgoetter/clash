@@ -1,8 +1,10 @@
 // ============================================================
 // draftRules.js — Règles PURES du Draft (jeu spécial Draft Royale et duel
 // /draft), inspirées du « Kilo de merde » : chaque carte en jeu existe en
-// `exemplaires` (5) exemplaires, chaque joueur a `taille_main` (4) cartes
-// en main et le reste est au marché, toujours visible. À chaque tour, un
+// `exemplaires` (4) exemplaires, chaque joueur a `taille_main` (4) cartes
+// en main et le marché contient une carte par joueur, toujours visible. Les
+// exemplaires en trop restent à l'écart (« réserve », face cachée) jusqu'à
+// la prochaine donne. À chaque tour, un
 // joueur prend une carte du marché et y dépose une carte de sa main. Le but
 // est de réunir 4 exemplaires d'une même carte (un « carré »).
 //
@@ -53,65 +55,74 @@ export function trierMain(main) {
 
 // ── Cartes en jeu ────────────────────────────────────────────────────
 
-// Nombre de cartes différentes en jeu : `joueurs + familles.en_plus`, au
-// moins `familles.min`. Avec N cartes × 5 exemplaires et 4 cartes par
-// main, le marché garde N cartes de plus que les mains (N joueurs = N
-// cartes au marché).
-export function nbFamilles(nbJoueurs, reglesFamilles) {
-  return Math.max(nbJoueurs + (reglesFamilles.en_plus || 0), reglesFamilles.min || 0);
+// Nombre de cartes différentes en jeu : assez d'exemplaires pour les mains
+// et un marché d'une carte par joueur (5 cartes par joueur avec des mains
+// de 4), soit ⌈5N / 4⌉ cartes à 4 exemplaires pour N joueurs.
+export function nbFamilles(nbJoueurs, config) {
+  return Math.ceil((nbJoueurs * (config.taille_main + 1)) / config.exemplaires);
 }
 
-export function choisirFamilles(nb, catalog, exclues = [], rng = Math.random) {
+// Prochaines cartes à entrer en jeu : la liste `config.cartes` dans
+// l'ordre, puis des cartes du catalogue au hasard si elle est épuisée.
+export function choisirFamilles(nb, config, catalog, exclues = [], rng = Math.random) {
   const interdites = new Set(exclues);
-  return shuffle(
-    [...catalog.keys()].filter((k) => !interdites.has(k)),
+  const prioritaires = (config.cartes || []).filter((k) => catalog.has(k) && !interdites.has(k));
+  const autres = shuffle(
+    [...catalog.keys()].filter((k) => !interdites.has(k) && !prioritaires.includes(k)),
     rng,
-  ).slice(0, nb);
+  );
+  return [...prioritaires, ...autres].slice(0, nb);
 }
 
 export function paquet(familles, config) {
   return familles.flatMap((k) => Array(config.exemplaires).fill(k));
 }
 
-// Tire une main de `taille_main` cartes au hasard dans le marché, jamais
-// un carré d'emblée. Renvoie la main et le marché restant.
-export function tirerMain(marche, config, rng = Math.random) {
+// Tire une main de `taille_main` cartes au hasard dans `tas`, jamais un
+// carré d'emblée (sauf impossibilité). Renvoie la main et le reste.
+export function tirerMain(tas, config, rng = Math.random) {
+  let tirage = null;
   for (let essai = 0; essai < 50; essai++) {
-    const tas = shuffle(marche, rng);
-    const main = tas.slice(0, config.taille_main);
-    if (!aUnCarre(main, config) || essai === 49) return { main, marche: tas.slice(config.taille_main) };
+    const melange = shuffle(tas, rng);
+    tirage = { main: melange.slice(0, config.taille_main), reste: melange.slice(config.taille_main) };
+    if (!aUnCarre(tirage.main, config)) break;
   }
-  return null;
+  return tirage;
 }
 
-// Distribution complète (début de partie ou nouvelle manche après un
-// carré) : toutes les cartes sont mélangées, `taille_main` par joueur, le
-// reste au marché. Aucune main ne commence par un carré.
+// Distribution complète (début de partie ou nouvelle donne après un
+// carré) : toutes les cartes sont mélangées, `taille_main` par joueur, une
+// carte par joueur au marché, le reste en réserve. Aucune main ne commence
+// par un carré.
 export function distribuer({ familles, joueurIds, config, rng = Math.random }) {
-  let marche = shuffle(paquet(familles, config), rng);
+  let tas = shuffle(paquet(familles, config), rng);
   const mains = {};
   for (const id of joueurIds) {
-    const tirage = tirerMain(marche, config, rng);
+    const tirage = tirerMain(tas, config, rng);
     mains[id] = tirage.main;
-    marche = tirage.marche;
+    tas = tirage.reste;
   }
-  return { mains, marche };
+  return { mains, marche: tas.slice(0, joueurIds.length), reserve: tas.slice(joueurIds.length) };
 }
 
-// Arrivée d'un joueur en cours de partie : une nouvelle carte entre en jeu
-// (ses 5 exemplaires vont au marché) si le nombre de joueurs dépasse le
-// minimum, puis le joueur tire sa main au hasard dans le marché.
-export function ajouterJoueur({ familles, marche, nbJoueursAvant, reglesFamilles, config, catalog, rng = Math.random }) {
-  let newFamilles = familles;
-  let newMarche = marche;
-  const manquantes = nbFamilles(nbJoueursAvant + 1, reglesFamilles) - familles.length;
-  if (manquantes > 0) {
-    const nouvelles = choisirFamilles(manquantes, catalog, familles, rng);
-    newFamilles = [...familles, ...nouvelles];
-    newMarche = [...marche, ...paquet(nouvelles, config)];
+// Arrivée d'un joueur : de nouvelles cartes entrent en jeu si besoin (leurs
+// exemplaires vont en réserve), le joueur tire sa main dans la réserve,
+// puis la réserve complète le marché d'une carte. Le marché existant n'est
+// jamais touché (les échanges déjà prévus restent valides).
+export function ajouterJoueur({ familles, marche, reserve, nbJoueursAvant, config, catalog, rng = Math.random }) {
+  const nbJoueurs = nbJoueursAvant + 1;
+  const nouvelles = choisirFamilles(Math.max(0, nbFamilles(nbJoueurs, config) - familles.length), config, catalog, familles, rng);
+  let tas = [...(reserve || []), ...paquet(nouvelles, config)];
+  let newMarche = [...marche];
+  // Réserve insuffisante (ne devrait pas arriver) : on puise dans le marché
+  if (tas.length < config.taille_main) {
+    tas = [...tas, ...newMarche];
+    newMarche = [];
   }
-  const tirage = tirerMain(newMarche, config, rng);
-  return { familles: newFamilles, marche: tirage.marche, main: tirage.main };
+  const tirage = tirerMain(tas, config, rng);
+  const reste = shuffle(tirage.reste, rng);
+  while (newMarche.length < nbJoueurs && reste.length) newMarche.push(reste.shift());
+  return { familles: [...familles, ...nouvelles], marche: newMarche, reserve: reste, main: tirage.main };
 }
 
 // ── Échanges ─────────────────────────────────────────────────────────
@@ -192,7 +203,7 @@ export function resoudreEchanges({ joueurs, actions, marche, rng = Math.random }
 // joueur a un carré ou si c'est le dernier tour. Après un carré (hors
 // dernier tour), toutes les cartes sont redistribuées. `joueursAvant` :
 // { id: { main, popularite, points, carres, ... } } (non muté).
-export function computeTour({ joueursAvant, actions, marche, familles, config, dernier, rng = Math.random }) {
+export function computeTour({ joueursAvant, actions, marche, reserve = [], familles, config, dernier, rng = Math.random }) {
   const joueurs = {};
   for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j, main: [...(j.main || [])] };
 
@@ -212,13 +223,15 @@ export function computeTour({ joueursAvant, actions, marche, familles, config, d
   }
 
   let newMarche = echanges.marche;
+  let newReserve = reserve;
   const redistribution = carres.length > 0 && !dernier;
   if (redistribution) {
     const donne = distribuer({ familles, joueurIds: Object.keys(joueurs), config, rng });
     for (const [id, main] of Object.entries(donne.mains)) joueurs[id].main = main;
     newMarche = donne.marche;
+    newReserve = donne.reserve;
   }
-  return { joueurs, marche: newMarche, lignes: echanges.lignes, carres, scores, redistribution };
+  return { joueurs, marche: newMarche, reserve: newReserve, lignes: echanges.lignes, carres, scores, redistribution };
 }
 
 // Classement : points, puis nombre de carrés, puis ordre d'arrivée.

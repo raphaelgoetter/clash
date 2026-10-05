@@ -6,6 +6,7 @@ import {
   aUnCarre,
   pointsMain,
   nbFamilles,
+  choisirFamilles,
   distribuer,
   ajouterJoueur,
   echangeValide,
@@ -28,28 +29,47 @@ function main() {
   assert.ok(aUnCarre(["a", "a", "a", "a"], CONFIG));
   assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG), CONFIG.points_carre);
 
-  // ── Cartes en jeu : joueurs + en_plus, au moins min ───────────────────
-  assert.strictEqual(nbFamilles(3, { min: 6, en_plus: 0 }), 6);
-  assert.strictEqual(nbFamilles(15, { min: 6, en_plus: 0 }), 15);
-  assert.strictEqual(nbFamilles(2, { min: 0, en_plus: 1 }), 3);
+  // ── Cartes en jeu : ⌈5N / 4⌉ cartes à 4 exemplaires ──────────────────
+  assert.strictEqual(nbFamilles(1, CONFIG), 2);
+  assert.strictEqual(nbFamilles(3, CONFIG), 4);
+  assert.strictEqual(nbFamilles(4, CONFIG), 5);
+  assert.strictEqual(nbFamilles(15, CONFIG), 19);
 
-  // ── Distribution : 5 exemplaires par carte, 4 par main, jamais de carré ──
-  for (let i = 0; i < 50; i++) {
-    const d = distribuer({ familles: ["a", "b", "c"], joueurIds: ["p1", "p2"], config: CONFIG });
-    assert.strictEqual(d.mains.p1.length, 4);
-    assert.strictEqual(d.marche.length, 15 - 8);
-    assert.ok(!aUnCarre(d.mains.p1, CONFIG) && !aUnCarre(d.mains.p2, CONFIG));
+  // ── Ordre d'entrée des cartes : la liste prioritaire, puis le hasard ──
+  {
+    const catalog = new Map(["Princess", "Prince", "Giant", "x", "y"].map((k) => [k, {}]));
+    assert.deepStrictEqual(choisirFamilles(2, CONFIG, catalog), ["Princess", "Prince"]);
+    assert.deepStrictEqual(choisirFamilles(1, CONFIG, catalog, ["Princess", "Prince"]), ["Giant"]);
+    assert.strictEqual(choisirFamilles(5, CONFIG, catalog).length, 5);
   }
 
-  // ── Arrivée : une carte de plus en jeu au-delà du minimum ─────────────
+  // ── Distribution : 4 par main, une carte par joueur au marché, le reste
+  // en réserve, jamais de carré ──────────────────────────────────────
+  for (let i = 0; i < 50; i++) {
+    const d = distribuer({ familles: ["a", "b", "c", "d"], joueurIds: ["p1", "p2", "p3"], config: CONFIG });
+    assert.strictEqual(d.mains.p1.length, 4);
+    assert.strictEqual(d.marche.length, 3);
+    assert.strictEqual(d.reserve.length, 1);
+    assert.ok(["p1", "p2", "p3"].every((id) => !aUnCarre(d.mains[id], CONFIG)));
+  }
+
+  // ── Arrivées : cartes ajoutées selon le nombre de joueurs, marché d'une
+  // carte par joueur, marché existant jamais retiré, aucune carte perdue ──
   {
-    const marche = Array(10).fill("a").concat(Array(5).fill("b"));
-    const sous = ajouterJoueur({ familles: ["a", "b", "c"], marche, nbJoueursAvant: 0, reglesFamilles: { min: 3, en_plus: 0 }, config: CONFIG, catalog: CATALOG });
-    assert.strictEqual(sous.familles.length, 3);
-    assert.strictEqual(sous.marche.length, 11);
-    const au = ajouterJoueur({ familles: ["a", "b", "c"], marche, nbJoueursAvant: 3, reglesFamilles: { min: 3, en_plus: 0 }, config: CONFIG, catalog: CATALOG });
-    assert.strictEqual(au.familles.length, 4);
-    assert.strictEqual(au.marche.length + au.main.length, 15 + 5);
+    let partie = { familles: [], marche: [], reserve: [] };
+    const mains = [];
+    for (let n = 0; n < 6; n++) {
+      const avant = [...partie.marche];
+      const a = ajouterJoueur({ ...partie, nbJoueursAvant: n, config: CONFIG, catalog: CATALOG });
+      assert.strictEqual(a.familles.length, nbFamilles(n + 1, CONFIG));
+      assert.strictEqual(a.marche.length, n + 1);
+      assert.deepStrictEqual(a.marche.slice(0, avant.length), avant);
+      assert.ok(!aUnCarre(a.main, CONFIG));
+      mains.push(a.main);
+      partie = a;
+      const total = mains.flat().length + partie.marche.length + partie.reserve.length;
+      assert.strictEqual(total, partie.familles.length * CONFIG.exemplaires);
+    }
   }
 
   // ── Échanges ─────────────────────────────────────────────────────────
@@ -115,7 +135,8 @@ function main() {
     const t = computeTour({
       joueursAvant,
       actions: { p1: { prise: "a", depot: "b" } },
-      marche: ["a", "a", "c", "d", "d", "d", "e", "e", "e", "e", "b", "b", "b", "c", "c"].slice(0, 7),
+      marche: ["a", "d"],
+      reserve: ["b", "b", "c", "d", "d", "d", "e", "e", "e", "e"],
       familles: ["a", "b", "c", "d", "e"],
       config: CONFIG,
       dernier: false,
@@ -125,7 +146,8 @@ function main() {
     assert.strictEqual(t.joueurs.p1.carres, 1);
     assert.strictEqual(t.joueurs.p2.points, 2);
     assert.ok(t.redistribution);
-    assert.strictEqual(t.marche.length, 25 - 8);
+    assert.strictEqual(t.marche.length, 2);
+    assert.strictEqual(t.reserve.length, 20 - 8 - 2);
     assert.strictEqual(joueursAvant.p1.main.length, 4); // non muté
   }
 

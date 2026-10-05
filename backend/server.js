@@ -35,7 +35,6 @@ import {
   getIllustrationImage as getMarioClashIllustrationImage,
 } from "./services/marioclashImage.js";
 import {
-  getMarcheImage as getDraftRoyaleMarcheImage,
   getMainImage as getDraftRoyaleMainImage,
   getIllustrationImage as getDraftRoyaleIllustrationImage,
   getMarcheImageFromKeys as getDraftMarcheImage,
@@ -382,16 +381,6 @@ app.get("/api/marioclash/image", async (req, res) => {
 // course), servie telle quelle — même principe que /api/goblinhunters/end-image.
 app.get("/api/marioclash/illustration", async (req, res) => {
   const image = await getMarioClashIllustrationImage().catch(() => null);
-  if (!image) return res.status(404).end();
-  res.setHeader("Content-Type", image.mimeType);
-  res.setHeader("Cache-Control", "no-store");
-  res.send(image.buffer);
-});
-
-// Draft Royale : marché courant posé sur le tapis. `v` sert seulement à
-// invalider le cache Discord.
-app.get("/api/draftroyale/marche", async (req, res) => {
-  const image = await getDraftRoyaleMarcheImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");

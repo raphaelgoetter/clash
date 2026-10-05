@@ -39,7 +39,8 @@ import { compterCartes, pointsMain, echangeValide } from "../backend/services/dr
 
   console.log(`Jour ${state.jour}/${config.duree_jours}`);
   console.log(`Cartes en jeu (${partie.familles.length}) : ${partie.familles.map(nom).join(", ")}`);
-  console.log(`Marché (${partie.marche.length}) : ${groupes(partie.marche) || "(vide)"}\n`);
+  console.log(`Marché (${partie.marche.length}) : ${groupes(partie.marche) || "(vide)"}`);
+  console.log(`À l'écart (${partie.reserve?.length || 0}) : ${groupes(partie.reserve || []) || "(aucune)"}\n`);
 
   const ranking = Object.entries(joueurs).sort(([, a], [, b]) => (b.points || 0) - (a.points || 0) || a.username.localeCompare(b.username));
   if (!ranking.length) {

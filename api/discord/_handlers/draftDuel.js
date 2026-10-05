@@ -101,6 +101,10 @@ function marcheImageUrl(marche) {
   return `${TRUST_ROYALE_URL}/api/draft/marche?${new URLSearchParams({ c: [...marche].sort().join("|") })}`;
 }
 
+function illustrationUrl() {
+  return `${TRUST_ROYALE_URL}/api/draftroyale/illustration`;
+}
+
 function mainImageUrl(keys) {
   if (!keys?.length) return null;
   return `${TRUST_ROYALE_URL}/api/draftroyale/main?${new URLSearchParams({ c: keys.join("|") })}`;
@@ -300,27 +304,6 @@ function buildEndComponents(state) {
   ];
 }
 
-// Bilan public de la manche résolue : cartes prises (les mains restent
-// secrètes, seules les cartes échangées et les carrés sont révélés).
-async function buildRecapLines(lastRecap, players, config, catalog) {
-  if (!lastRecap) return [];
-  const lines = [`${EMOJI.stats.text} **Échanges de la manche ${lastRecap.manche}**`];
-  for (const l of lastRecap.lignes) {
-    const name = await displayName(l.discordId, players[l.discordId]?.username);
-    if (l.type === "prise") lines.push(`${EMOJI.trade.text} **${name}** prend **${cardName(l.key, catalog)}**`);
-    if (l.type === "perdue") lines.push(`${EMOJI.trade.text} **${name}** voulait ${cardName(l.voulue, catalog)} et reçoit **${cardName(l.key, catalog)}**`);
-  }
-  if (lines.length === 1) lines.push("Aucun échange.");
-  for (const id of lastRecap.carres || []) {
-    const name = await displayName(id, players[id]?.username);
-    const main = lastRecap.scores?.find((x) => x.discordId === id)?.main || [];
-    const [key] = [...compterCartes(main)].sort((a, b) => b[1] - a[1])[0] || [];
-    lines.push(`🎉 **Carré !** **${name}** réunit 4 ${cardName(key, catalog)} (+${config.points_carre} pts).`);
-  }
-  if (lastRecap.redistribution) lines.push("🔄 Décompte des points, puis toutes les cartes sont redistribuées.");
-  return [...lines, ""];
-}
-
 async function buildPlayersLines(state, players, actions) {
   const ids = [...state.players, ...BOTS.map((b) => b.id).filter((id) => players[id])];
   const lines = [`${EMOJI.members.text} **Joueurs**`];
@@ -337,25 +320,19 @@ async function buildPlayersLines(state, players, actions) {
 }
 
 async function buildTableEmbed(state) {
-  const [config, catalog, players, actions] = await Promise.all([
-    loadDraftDuelConfig(),
-    loadCatalog(),
-    readPlayers(),
-    readActions(state.manche),
-  ]);
+  const [config, players, actions] = await Promise.all([loadDraftDuelConfig(), readPlayers(), readActions(state.manche)]);
+  // Infos générales uniquement : la manche en cours (main, marché, bilan
+  // de la manche précédente) est dans la main éphémère
   const lines = [
-    ...(await buildRecapLines(state.lastRecap, players, config, catalog)),
-    `${EMOJI.trade.text} **Marché** : ${formatGroupes(state.marche, catalog)}`,
+    `Réunis ${config.taille_main} cartes identiques ! Clique sur **Jouer** pour voir ta main, le marché et la manche précédente.`,
     "",
     ...(await buildPlayersLines(state, players, actions)),
   ];
-  if (state.players.length === 0) lines.push("", "Clique sur **Jouer** pour t'inscrire.");
-  const image = marcheImageUrl(state.marche);
   return {
     title: `Draft · Manche ${state.manche}/${state.totalManches}`,
     description: lines.join("\n").slice(0, 4096),
     color: DRAFTDUEL_COLOR,
-    image: image ? { url: image } : undefined,
+    image: { url: illustrationUrl() },
     footer: {
       text: state.rosterLocked
         ? "Inscriptions closes, la partie a commencé."
@@ -365,19 +342,14 @@ async function buildTableEmbed(state) {
 }
 
 async function buildFinalEmbed(state, { expired = false } = {}) {
-  const [config, catalog, players, highScore] = await Promise.all([
-    loadDraftDuelConfig(),
-    loadCatalog(),
-    readPlayers(),
-    readHighScore(),
-  ]);
+  const highScore = await readHighScore();
   const ranking = state.finalRanking || [];
   const lines = expired
     ? [
         `${EMOJI.late.text} Partie expirée après ${state.staleHours ?? 2}h d'inactivité (manche ${state.manche}/${state.totalManches}).`,
         "",
       ]
-    : await buildRecapLines(state.lastRecap, players, config, catalog);
+    : [];
   lines.push(`${EMOJI.topplayers.text} **Classement final**`);
   for (const [i, r] of ranking.entries()) {
     const name = await displayName(r.discordId, r.username);
@@ -519,18 +491,26 @@ export async function handleDraftRoleRejected(webhookUrl) {
 
 // ── Main éphémère du joueur ─────────────────────────────────────────
 
-// Bilan personnel de la manche qui vient de se résoudre.
-function buildMyRecap(lastRecap, discordId, config, catalog) {
+// Bilan de la manche qui vient de se résoudre : échanges de chacun (prise
+// et dépôt), carrés, décompte et nouvelle donne.
+async function buildRecapLines(lastRecap, players, discordId, catalog) {
   if (!lastRecap) return [];
-  const lines = [];
-  for (const l of lastRecap.lignes.filter((x) => x.discordId === discordId)) {
-    if (l.type === "prise") lines.push(`${EMOJI.check.text} Tu prends **${cardName(l.key, catalog)}**${l.disputee ? " face à un autre joueur (popularité remise à 0)" : ""}.`);
-    if (l.type === "perdue") lines.push(`${EMOJI.warning.text} ${cardName(l.voulue, catalog)} est allée à un joueur plus populaire : tu reçois **${cardName(l.key, catalog)}** (+1 popularité).`);
+  const nom = async (id) => (id === discordId ? "Toi" : displayName(id, players[id]?.username));
+  const lines = [`${EMOJI.stats.text} **Manche ${lastRecap.manche}**`];
+  for (const l of lastRecap.lignes) {
+    const depot = `dépôt ${cardName(l.depot, catalog)}`;
+    if (l.type === "prise") lines.push(`${EMOJI.trade.text} **${await nom(l.discordId)}** : prise **${cardName(l.key, catalog)}**${l.disputee ? " (disputée)" : ""} · ${depot}`);
+    if (l.type === "perdue") lines.push(`${EMOJI.trade.text} **${await nom(l.discordId)}** : ${cardName(l.voulue, catalog)} disputée perdue, reçu **${cardName(l.key, catalog)}** (+1 popularité) · ${depot}`);
   }
-  const score = lastRecap.scores?.find((x) => x.discordId === discordId);
-  if (score) lines.push(score.carre ? `🎉 **Carré !** +${score.points} pts.` : `Décompte : +${plural(score.points, "pt")}.`);
-  if (lastRecap.redistribution) lines.push("🔄 Toutes les cartes ont été redistribuées : voici ta nouvelle main.");
-  return lines.length ? [`${EMOJI.stats.text} **Manche ${lastRecap.manche}**`, ...lines, ""] : [];
+  if (lines.length === 1) lines.push("Aucun échange.");
+  for (const s of (lastRecap.scores || []).filter((x) => x.carre)) {
+    const [key] = [...compterCartes(s.main)].sort((a, b) => b[1] - a[1])[0] || [];
+    lines.push(`🎉 Carré de **${await nom(s.discordId)}** (${cardName(key, catalog)}) : +${s.points} pts`);
+  }
+  const mien = lastRecap.scores?.find((x) => x.discordId === discordId && !x.carre);
+  if (mien) lines.push(`Ton décompte : +${plural(mien.points, "pt")}`);
+  if (lastRecap.redistribution) lines.push("🔄 Nouvelle donne : toutes les cartes ont été redistribuées.");
+  return [...lines, ""];
 }
 
 function buildStatusLine(view) {
@@ -621,7 +601,8 @@ function buildMarcheEmbed(view) {
   };
 }
 
-function buildHandPayload(view, recap = []) {
+async function buildHandPayload(view) {
+  const recap = await buildRecapLines(view.state.lastRecap, view.players, view.discordId, view.catalog);
   const embeds = [buildHandEmbed(view, recap), buildMarcheEmbed(view)].filter(Boolean);
   return { content: "", embeds, components: buildHandComponents(view) };
 }
@@ -642,7 +623,7 @@ async function respondToAction(webhookUrl, result) {
     );
     return false;
   }
-  await patchOriginal(webhookUrl, buildHandPayload(result.view));
+  await patchOriginal(webhookUrl, await buildHandPayload(result.view));
   return !result.alreadyDone && !result.invalid;
 }
 
@@ -669,7 +650,7 @@ export async function handleJouer(webhookUrl, discordId, username) {
     // Arrivée d'un joueur : le marché change, le message public d'abord
     if (result.isNew) await refreshPublicMessage();
     const view = await readPlayerView(result.state, discordId);
-    await patchOriginal(webhookUrl, buildHandPayload(view, buildMyRecap(result.state.lastRecap, discordId, view.config, view.catalog)));
+    await patchOriginal(webhookUrl, await buildHandPayload(view));
   } catch (err) {
     console.error("[DraftDuel] Échec Jouer:", err.message);
   }
@@ -687,9 +668,9 @@ export async function handleChoix(webhookUrl, discordId, champ, key) {
 
 // Main d'un joueur juste après la résolution : bilan de la manche puis
 // tour suivant (ou renvoi au classement final).
-async function buildPostResolutionPayload(outcome, discordId, config, catalog) {
-  const recap = buildMyRecap(outcome.state.lastRecap, discordId, config, catalog);
+async function buildPostResolutionPayload(outcome, discordId, catalog) {
   if (outcome.final) {
+    const recap = await buildRecapLines(outcome.state.lastRecap, await readPlayers(), discordId, catalog);
     return {
       content: "",
       embeds: [
@@ -705,10 +686,7 @@ async function buildPostResolutionPayload(outcome, discordId, config, catalog) {
       components: [],
     };
   }
-  return buildHandPayload(
-    await readPlayerView(outcome.state, discordId),
-    recap,
-  );
+  return buildHandPayload(await readPlayerView(outcome.state, discordId));
 }
 
 // Après une fin de tour : résout la manche si tout le monde a fini. Si
@@ -718,8 +696,7 @@ async function buildPostResolutionPayload(outcome, discordId, config, catalog) {
 async function continueAfterTurn(webhookUrl, discordId) {
   const outcome = await refreshPublicMessage();
   if (!outcome?.resolved) return;
-  const [config, catalog, webhooks] = await Promise.all([
-    loadDraftDuelConfig(),
+  const [catalog, webhooks] = await Promise.all([
     loadCatalog(),
     readHandWebhooks(outcome.state.lastRecap.manche),
   ]);
@@ -728,7 +705,7 @@ async function continueAfterTurn(webhookUrl, discordId) {
     Object.entries(targets).map(async ([id, url]) =>
       patchOriginal(
         url,
-        await buildPostResolutionPayload(outcome, id, config, catalog),
+        await buildPostResolutionPayload(outcome, id, catalog),
       ),
     ),
   );
@@ -794,7 +771,7 @@ function buildReglesEmbed(config) {
     description: [
       `Réunis **${config.taille_main} exemplaires d'une même carte** (un carré) en ${config.duel.manches} manches, de 1 à 3 joueurs. Des bots complètent la table jusqu'à 3 joueurs.`,
       "",
-      `Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes, le reste est au marché, visible par tous.`,
+      `Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
       "",
       "**À chaque manche**",
       `${EMOJI.trade.text} **Échange** (obligatoire) : choisis une carte à prendre au marché et une carte de ta main à y déposer.`,

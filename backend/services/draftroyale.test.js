@@ -5,7 +5,7 @@ import { computeCloture, isTooSoonSinceLastClosure } from "./draftroyale.js";
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/draftroyale/draftroyale.json", import.meta.url), "utf8"));
 
 function main() {
-  const partie = { familles: ["a", "b", "c", "d", "e", "f"], marche: ["a", "b", "c", "d", "e", "f"] };
+  const partie = { familles: ["a", "b", "c", "d", "e"], marche: ["a", "c"], reserve: ["b", "b", "d", "d", "d", "e", "e", "e"] };
   const joueursAvant = {
     p1: { username: "p1", main: ["a", "a", "a", "b"], popularite: 0, points: 0, carres: 0, arrivee: 0 },
     p2: { username: "p2", main: ["c", "c", "d", "e"], popularite: 0, points: 0, carres: 0, arrivee: 1 },

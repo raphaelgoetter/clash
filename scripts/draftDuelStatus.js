@@ -33,7 +33,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   const [config, catalog, players, actions] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers(), readActions(state.manche)]);
   const nom = (k) => catalog.get(k)?.fr || k;
   const groupes = (keys) => [...compterCartes(keys)].map(([k, n]) => `${nom(k)} ×${n}`).join(", ");
-  console.log(`Marché : ${groupes(state.marche) || "(vide)"}\n`);
+  console.log(`Marché : ${groupes(state.marche) || "(vide)"} · à l'écart : ${groupes(state.reserve || []) || "(aucune)"}\n`);
 
   const rows = await Promise.all(
     Object.entries(players).map(async ([id, p]) => {

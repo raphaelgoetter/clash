@@ -1,12 +1,10 @@
 import assert from "assert";
 import fs from "fs";
-import { nbJoueursEffectifs, botsDeLaPartie, isMancheReady, applyJoin, computeMancheDuel, isNewHighScore, isStale } from "./draftDuel.js";
+import { botsDeLaPartie, isMancheReady, applyJoin, computeMancheDuel, isNewHighScore, isStale } from "./draftDuel.js";
 
 const BOT_ID = "bot";
-import { nbFamilles } from "./draftRules.js";
 
-const RAW = JSON.parse(fs.readFileSync(new URL("../../data/draftroyale/draftroyale.json", import.meta.url), "utf8"));
-const CONFIG = { ...RAW, familles: RAW.duel.familles };
+const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/draftroyale/draftroyale.json", import.meta.url), "utf8"));
 
 function main() {
   // ── Bots : la table est complétée jusqu'à 3 joueurs ───────────────────
@@ -14,8 +12,6 @@ function main() {
   assert.deepStrictEqual(botsDeLaPartie(2).map((b) => b.name), ["Kévina (bot)"]);
   assert.strictEqual(botsDeLaPartie(3).length, 0);
 
-  // ── Cartes en jeu : joueurs + 1, bots compris ─────────────────────────
-  for (const n of [1, 2, 3]) assert.strictEqual(nbFamilles(nbJoueursEffectifs(n), CONFIG.familles), 4);
 
   // ── Manche prête : sièges pleins et tous les humains ont fini ─────────
   {
@@ -35,7 +31,7 @@ function main() {
 
   // ── Manche : le bot choisit son échange à la résolution ───────────────
   {
-    const state = { manche: 1, totalManches: 7, familles: ["a", "b", "c"], marche: ["a", "b", "c", "c", "c", "b", "b"] };
+    const state = { manche: 1, totalManches: 7, familles: ["a", "b", "c"], marche: ["a", "c"], reserve: ["b", "b", "c", "c"] };
     const joueursAvant = {
       u1: { main: ["c", "c", "a", "b"], popularite: 0, points: 0 },
       [BOT_ID]: { main: ["a", "a", "a", "b"], popularite: 0, points: 0 },

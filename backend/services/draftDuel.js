@@ -5,8 +5,6 @@
 // 4 cartes identiques, échange obligatoire au marché, popularité), sauf :
 //   - une manche remplace un jour : elle se résout dès que tous les joueurs
 //     ont validé leur échange (« Fin de tour »), sans cron ;
-//   - les cartes en jeu sont fixées au lancement (`duel.familles` : joueurs
-//     + 1, bots compris) ;
 //   - toujours au moins 3 joueurs : des bots complètent la table (Kévina à
 //     2 joueurs, Kévina et Josette en solo).
 //
@@ -23,7 +21,7 @@
 
 import { Redis } from "@upstash/redis";
 import { loadDraftRoyaleConfig, loadCatalog } from "./draftroyale.js";
-import { choisirFamilles, nbFamilles, paquet, shuffle, ajouterJoueur, echangeValide, computeTour, classement, choixGlouton } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, computeTour, classement, choixGlouton } from "./draftRules.js";
 
 // Bots qui complètent la table jusqu'à `MIN_JOUEURS`, dans cet ordre.
 export const BOTS = [
@@ -42,10 +40,9 @@ export function botsDeLaPartie(maxPlayers) {
 // Format des parties : une partie d'un format antérieur est ignorée.
 const VERSION = 2;
 
-// Règles du Draft Royale, avec les réglages propres au duel.
+// Mêmes règles que le Draft Royale (réglages propres au duel sous `duel`).
 export async function loadDraftDuelConfig() {
-  const config = await loadDraftRoyaleConfig();
-  return { ...config, familles: config.duel.familles };
+  return loadDraftRoyaleConfig();
 }
 
 let _redis = null;
@@ -121,11 +118,6 @@ const HAND_TTL_SECONDS = 15 * 60;
 
 // ── Règles pures propres au duel ────────────────────────────────────
 
-// Joueurs comptés pour les cartes en jeu, bots compris.
-export function nbJoueursEffectifs(maxPlayers) {
-  return maxPlayers + botsDeLaPartie(maxPlayers).length;
-}
-
 // Pure : tous les sièges occupés et chaque joueur humain a validé son
 // échange (les bots choisissent le leur à la résolution).
 export function isMancheReady(state, actions) {
@@ -195,8 +187,6 @@ export async function startGame(channelId, { maxPlayers }, rng = Math.random) {
   }
   await resetDraftDuel();
   const [config, catalog] = await Promise.all([loadDraftDuelConfig(), loadCatalog()]);
-  // Cartes en jeu fixées dès le lancement (nombre de joueurs connu)
-  const familles = choisirFamilles(nbFamilles(nbJoueursEffectifs(maxPlayers), config.familles), catalog, [], rng);
   let state = {
     version: VERSION,
     channelId,
@@ -207,16 +197,19 @@ export async function startGame(channelId, { maxPlayers }, rng = Math.random) {
     manche: 1,
     players: [],
     rosterLocked: false,
-    familles,
-    marche: shuffle(paquet(familles, config), rng),
+    // Cartes en jeu, marché et exemplaires à l'écart : ils grandissent à
+    // chaque arrivée (bots compris)
+    familles: [],
+    marche: [],
+    reserve: [],
     lastRecap: null,
     lastActivityAt: new Date().toISOString(),
     termine: false,
   };
   for (const [i, bot] of botsDeLaPartie(maxPlayers).entries()) {
-    const arrivee = ajouterJoueur({ familles, marche: state.marche, nbJoueursAvant: i, reglesFamilles: config.familles, config, catalog, rng });
+    const arrivee = ajouterJoueur({ ...state, nbJoueursAvant: i, config, catalog, rng });
     await writePlayer(bot.id, nouveauJoueur(bot.name, 99 + i, arrivee.main));
-    state = { ...state, marche: arrivee.marche };
+    state = { ...state, familles: arrivee.familles, marche: arrivee.marche, reserve: arrivee.reserve };
   }
   await writeState(state);
   return { state };
@@ -240,17 +233,16 @@ export async function joinGame(discordId, username, rng = Math.random) {
   if (decision.isSeated) return { state, isNew: false };
 
   const [config, catalog, players] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
-  const arrivee = ajouterJoueur({
-    familles: state.familles,
-    marche: state.marche,
-    nbJoueursAvant: Object.keys(players).length,
-    reglesFamilles: config.familles,
-    config,
-    catalog,
-    rng,
-  });
+  const arrivee = ajouterJoueur({ ...state, nbJoueursAvant: Object.keys(players).length, config, catalog, rng });
   await writePlayer(discordId, nouveauJoueur(username, state.players.length, arrivee.main));
-  const newState = touch({ ...state, familles: arrivee.familles, marche: arrivee.marche, players: decision.players, rosterLocked: decision.rosterLocked });
+  const newState = touch({
+    ...state,
+    familles: arrivee.familles,
+    marche: arrivee.marche,
+    reserve: arrivee.reserve,
+    players: decision.players,
+    rosterLocked: decision.rosterLocked,
+  });
   await writeState(newState);
   return { state: newState, isNew: true };
 }
@@ -265,7 +257,7 @@ export async function readPlayerView(state, discordId) {
     readAction(state.manche, discordId),
   ]);
   const me = players[discordId] || null;
-  return { state, config, catalog, players, me, action, complet: !!me && echangeValide(action, me.main, state.marche) };
+  return { state, discordId, config, catalog, players, me, action, complet: !!me && echangeValide(action, me.main, state.marche) };
 }
 
 // Préconditions communes : partie active, joueur inscrit, tous les
@@ -336,7 +328,7 @@ export function computeMancheDuel({ state, joueursAvant, actions, config, rng = 
   const toutes = { ...actions };
   for (const id of Object.keys(joueursAvant).filter(isBot)) toutes[id] = choixGlouton(joueursAvant[id].main, state.marche, rng);
   const dernier = state.manche >= state.totalManches;
-  const tour = computeTour({ joueursAvant, actions: toutes, marche: state.marche, familles: state.familles, config, dernier, rng });
+  const tour = computeTour({ joueursAvant, actions: toutes, marche: state.marche, reserve: state.reserve, familles: state.familles, config, dernier, rng });
   return { ...tour, actions: toutes, final: dernier ? classement(tour.joueurs) : null };
 }
 
@@ -347,12 +339,12 @@ async function resolveManche(state, actions, rng) {
 
   const lastRecap = { manche: state.manche, lignes: tour.lignes, carres: tour.carres, scores: tour.scores, redistribution: tour.redistribution };
   if (tour.final) {
-    const newState = touch({ ...state, marche: tour.marche, termine: true, lastRecap, finalRanking: tour.final });
+    const newState = touch({ ...state, marche: tour.marche, reserve: tour.reserve, termine: true, lastRecap, finalRanking: tour.final });
     await writeState(newState);
     const highScore = await updateHighScore(tour.final);
     return { final: true, ranking: tour.final, highScore, state: newState };
   }
-  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, lastRecap });
+  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, reserve: tour.reserve, lastRecap });
   await writeState(newState);
   return { final: false, state: newState };
 }

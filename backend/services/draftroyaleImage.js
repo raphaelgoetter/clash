@@ -20,7 +20,7 @@
 import { readBlobAsset } from "./blobAssets.js";
 import { cardSvg, loadDataUrls, rasterize, getCollectionImage, RATIO_CARTE } from "./cardImage.js";
 import { resolveCard } from "./cards.js";
-import { readPartie, loadCatalog } from "./draftroyale.js";
+import { loadCatalog } from "./draftroyale.js";
 
 const MAT_IMAGE_PATH = "draftroyale/images/draft-game.jpg";
 const ILLUSTRATION_IMAGE_PATH = "draftroyale/images/draft-launch.webp";
@@ -108,14 +108,7 @@ export function groupMarche(keys) {
   return [...counts.entries()].map(([key, count]) => ({ key, count }));
 }
 
-// Marché courant du Draft Royale.
-export async function getMarcheImage() {
-  const [partie, catalog] = await Promise.all([readPartie(), loadCatalog()]);
-  const svg = await buildMarcheSvg(groupMarche(partie.marche), catalog);
-  return { buffer: await rasterize(svg, MAT_WIDTH), mimeType: "image/png" };
-}
-
-// Marché passé dans l'URL (duel, main éphémère), rendu sans état.
+// Marché passé dans l'URL (main éphémère, duel), rendu sans état.
 export async function getMarcheImageFromKeys(keys) {
   const catalog = await loadCatalog();
   const svg = await buildMarcheSvg(groupMarche(keys), catalog);
