@@ -147,28 +147,49 @@ const CULTURE_GAMES = {
 // getCurrentSeasonId() peut renvoyer null (API Clash Royale indisponible) :
 // on retombe alors sur le jeu "historique" de la paire plutôt que de planter
 // l'embed /mini-jeux.
-async function resolveActiveAveugleGame() {
-  const seasonId = await getAveugleSeasonId();
-  const key = seasonId == null ? "lajustecarte" : getActiveBlindGame(seasonId);
-  return { ...AVEUGLE_GAMES[key], seasonId };
+//
+// ⚠️ L'alternance saisonnière désigne le jeu de la saison EN COURS, pas
+// forcément celui dont une manche tourne : au changement de saison Clash
+// Royale, la dernière manche de l'ancien jeu court encore jusqu'à son
+// créneau hebdomadaire. Le jeu affiché est donc celui dont la manche la plus
+// récente a été postée sur le salon public ; le jeu désigné par la saison
+// n'est retenu que si aucune manche publique n'existe encore (et "next"
+// signale la relève quand les deux diffèrent).
+async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
+  const seasonId = await getSeasonId();
+  const seasonKey = seasonId == null ? fallbackKey : getActiveKey(seasonId);
+  const states = await Promise.all(
+    Object.entries(games).map(async ([key, game]) => ({
+      key,
+      state: await game.svc.readState(),
+    })),
+  );
+  const running = states
+    .filter(({ state }) => state?.channelId === PUBLIC_CHANNEL_ID)
+    .sort((a, b) => String(b.state.startedAt ?? "").localeCompare(String(a.state.startedAt ?? "")))[0];
+  const key = running?.key ?? seasonKey;
+  return {
+    ...games[key],
+    seasonId,
+    state: running?.state ?? null,
+    next: key !== seasonKey ? games[seasonKey] : null,
+  };
 }
 
-async function resolveActiveVisuelsGame() {
-  const seasonId = await getVisuelsSeasonId();
-  const key = seasonId == null ? "zoom" : getActiveVisualGame(seasonId);
-  return { ...VISUELS_GAMES[key], seasonId };
+function resolveActiveAveugleGame() {
+  return resolvePairGame(AVEUGLE_GAMES, getAveugleSeasonId, getActiveBlindGame, "lajustecarte");
 }
 
-async function resolveActiveLettresGame() {
-  const seasonId = await getLettresSeasonId();
-  const key = seasonId == null ? "anagram" : getActiveLetterGame(seasonId);
-  return { ...LETTRES_GAMES[key], seasonId };
+function resolveActiveVisuelsGame() {
+  return resolvePairGame(VISUELS_GAMES, getVisuelsSeasonId, getActiveVisualGame, "zoom");
 }
 
-async function resolveActiveCultureGame() {
-  const seasonId = await getCultureSeasonId();
-  const key = seasonId == null ? "frame" : getActiveCultureGame(seasonId);
-  return { ...CULTURE_GAMES[key], seasonId };
+function resolveActiveLettresGame() {
+  return resolvePairGame(LETTRES_GAMES, getLettresSeasonId, getActiveLetterGame, "anagram");
+}
+
+function resolveActiveCultureGame() {
+  return resolvePairGame(CULTURE_GAMES, getCultureSeasonId, getActiveCultureGame, "frame");
 }
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"
@@ -506,23 +527,18 @@ async function resolveRegularGames(now) {
 
 async function buildRegularGamesBlock(now) {
   const games = await resolveRegularGames(now);
-  const entries = await Promise.all(
-    games.map(async (game) => ({
-      ...game,
-      // null seulement si aucune manche n'a jamais été postée pour ce jeu
-      // (readState() ne renvoie rien tant que startNewGame() n'a jamais
-      // tourné) — pas un indicateur "en pause", juste "jamais lancé".
-      neverStarted: (await game.svc.readState()) == null,
-    })),
-  );
 
-  const lines = entries.map((entry, index) => {
-    if (entry.neverStarted) {
+  const lines = games.map((entry, index) => {
+    // state null seulement si aucune manche publique n'a jamais été postée
+    // pour aucun des deux jeux de la paire — pas un indicateur "en pause",
+    // juste "jamais lancé".
+    if (entry.state == null) {
       // Ni "fin dans Xj" ni barre de progression : rien n'est en cours pour
       // ce jeu, seul son premier lancement à venir a un sens.
       return `${index + 1}. **${entry.title}** — *jamais lancé, ${formatNextLaunchLabel(entry.daysUntil)}*`;
     }
-    const header = `${index + 1}. **${entry.title}** (${formatEndLabel(entry.daysUntil)})`;
+    const relay = entry.next ? `, puis ${entry.next.title}` : "";
+    const header = `${index + 1}. **${entry.title}** (${formatEndLabel(entry.daysUntil)}${relay})`;
     return `${header}\n${buildCountdownBar(entry.daysUntil)}`;
   });
 
@@ -642,20 +658,18 @@ async function hasPlayedRound(svc, gameId, discordId) {
 }
 
 async function buildRegularParticipationLine(game, discordId) {
-  const { svc, seasonId } = game;
-  const state = await svc.readState();
-  // Jeux en alternance : l'état peut dater d'une saison précédente tant que
-  // la première manche de la saison n'a pas été postée — ni manche en
-  // cours, ni score à afficher dans ce cas.
-  const currentSeasonId = seasonId ?? state?.seasonId ?? null;
-  const liveThisSeason = state != null && state.seasonId === currentSeasonId;
+  const { svc, seasonId, state } = game;
+  // Score de la saison de la manche en cours (peut être la saison
+  // précédente pendant la relève d'une paire en alternance, voir
+  // resolvePairGame()).
+  const rankingSeasonId = state?.seasonId ?? seasonId ?? null;
 
   const [played, ranking] = await Promise.all([
-    liveThisSeason ? hasPlayedRound(svc, state.gameId, discordId) : false,
-    currentSeasonId != null ? svc.computeSeasonRanking(currentSeasonId) : [],
+    state ? hasPlayedRound(svc, state.gameId, discordId) : false,
+    rankingSeasonId != null ? svc.computeSeasonRanking(rankingSeasonId) : [],
   ]);
 
-  const status = !liveThisSeason
+  const status = !state
     ? "Pas encore de manche cette saison"
     : played
       ? "✅ Déjà joué à la manche en cours"
