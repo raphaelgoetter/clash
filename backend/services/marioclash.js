@@ -542,7 +542,12 @@ export async function closeDayAndAdvance(jour, config) {
   const [actionsRaw, joueursAvant] = await Promise.all([readActions(jour), readJoueurs()]);
   const { joueursApres, lignes, immunises } = computeCloture({ actionsRaw, joueursAvant, config });
 
-  await writeHistoriqueEntry(jour, { lignes, immunises, resolvedAt: new Date().toISOString() });
+  // Instantané des positions/Or après clôture : permet de retracer le
+  // parcours exact de chaque joueur jour après jour (récit de fin de course).
+  const positions = Object.fromEntries(
+    Object.entries(joueursApres).map(([id, j]) => [id, { position: j.position, points: j.points }]),
+  );
+  await writeHistoriqueEntry(jour, { lignes, immunises, positions, resolvedAt: new Date().toISOString() });
   await clearActions(jour);
 
   for (const [id, j] of Object.entries(joueursApres)) {
