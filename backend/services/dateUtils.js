@@ -18,7 +18,7 @@ export const MS_PER_DAY = 1000 * 60 * 60 * 24;
 export const CLAN_RESET_TIMES = {
   Y8JUPC9C: { h: 9, m: 45 }, // La Resistance (Clan 1) — reset spécifique 09:45 UTC
   LRQP20V9: { h: 9, m: 36 }, // Les Resistants (Clan 2) — reset spécifique 09:36 UTC
-  QU9UQJRL: { h: 9, m: 45 }, // Les Revoltes (Clan 3) — reset spécifique 09:45 UTC
+  QU9UQJRL: { h: 9, m: 50 }, // Les Revoltes (Clan 3) — reset spécifique 09:50 UTC
 };
 
 /**
