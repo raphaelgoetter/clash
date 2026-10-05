@@ -41,10 +41,35 @@ export function aUnCarre(main, config) {
   return plusGrandGroupe(main) >= config.taille_main;
 }
 
-// Points d'une main en fin de manche : `points_carre` pour un carré, sinon
-// le nombre d'exemplaires identiques (1, 2 ou 3).
-export function pointsMain(main, config) {
-  return aUnCarre(main, config) ? config.points_carre : plusGrandGroupe(main);
+// Carte du quadruplé (ou null).
+export function carteDuCarre(main, config) {
+  for (const [k, n] of compterCartes(main)) if (n >= config.taille_main) return k;
+  return null;
+}
+
+// Points d'une main en fin de manche : `points_vedette` pour un quadruplé
+// d'une carte vedette, `points_carre` pour un autre quadruplé, sinon le
+// nombre d'exemplaires identiques (1, 2 ou 3).
+export function pointsMain(main, config, vedettes = []) {
+  const carte = carteDuCarre(main, config);
+  if (carte) return vedettes.includes(carte) ? config.points_vedette : config.points_carre;
+  return plusGrandGroupe(main);
+}
+
+// Une carte vedette pour `joueurs_par_vedette` joueurs (au moins une).
+export function nbVedettes(nbJoueurs, config) {
+  return Math.max(1, Math.ceil(nbJoueurs / config.joueurs_par_vedette));
+}
+
+// Cartes vedettes d'une donne : `nb` cartes en jeu tirées au hasard, en
+// évitant si possible celles de la donne précédente, et en gardant
+// `gardees` (vedettes déjà annoncées dans la donne en cours).
+export function choisirVedettes(familles, nb, { precedentes = [], gardees = [] } = {}, rng = Math.random) {
+  const vedettes = gardees.filter((k) => familles.includes(k)).slice(0, nb);
+  const libres = familles.filter((k) => !vedettes.includes(k));
+  const neuves = shuffle(libres.filter((k) => !precedentes.includes(k)), rng);
+  const anciennes = shuffle(libres.filter((k) => precedentes.includes(k)), rng);
+  return [...vedettes, ...neuves, ...anciennes].slice(0, Math.min(nb, familles.length));
 }
 
 // Main triée par groupes (les plus gros d'abord), pour l'affichage.
@@ -141,81 +166,62 @@ export function echangeValide(action, main, marche) {
 }
 
 // ── Joker ────────────────────────────────────────────────────────────
-// Un tour se joue par un échange au marché, une action Joker, ou les
-// deux. Points Joker : +`joker.gain_tour` par tour joué, plus
-// `joker.gain_perte` à chaque carte disputée perdue ; ils ne baissent que
-// par les achats au magasin (une action par tour, payée à la clôture). Ils
-// départagent les disputes (points restants après achat, avant les gains
-// du tour).
+// Un tour se joue par un échange au marché et/ou un bonus Joker. Points
+// Joker : +`joker.gain_tour` par tour joué, plus `joker.gain_perte` à
+// chaque carte disputée manquée ; ils ne baissent que par les achats et
+// les points restants s'ajoutent au score final. Ils départagent les
+// disputes (points restants après achat, avant les gains du tour).
+//   - Bonus du tour (un seul, payé et résolu à la clôture) : Priorité
+//     (servi en premier si la carte prise est disputée) ou Verrouiller une
+//     carte du marché (personne ne peut la prendre ce tour-ci).
+//   - Espionner (instantané, une fois par tour, en plus du bonus) : voir
+//     tout de suite la main d'un joueur.
 
-// Actions résolues à la clôture (une par tour). Voir main est à part :
-// instantanée, en plus de l'action du tour (voir voirMain).
-export const JOKER_ACTIONS = ["priorite", "proteger", "saboter", "echanger"];
-const AVEC_CIBLE = new Set(["saboter", "echanger"]);
+export const JOKER_ACTIONS = ["priorite", "verrouiller"];
 
 export function jokerCout(type, config) {
   return config.joker.couts[type] ?? null;
 }
 
-// Action Joker complète et payable (la cible doit être un autre joueur).
-// Priorité n'a de sens qu'avec un échange valide.
-// Choix d'une action Joker, champ par champ (pure) : `patch` = { type },
-// { cible }, { carte } ou { maCarte } ; `null` annule. Changer de type
-// efface les autres champs. Renvoie { joker } ou { erreur }.
-export function appliquerChoixJoker(actuel, patch, { id, joueurs, familles, config }) {
-  if (patch === null) return { joker: null };
-  const moi = joueurs[id];
-  if (patch.type !== undefined) {
-    if (!JOKER_ACTIONS.includes(patch.type)) return { erreur: "inconnue" };
-    if ((moi?.joker || 0) < jokerCout(patch.type, config)) return { erreur: "points" };
-    return { joker: patch.type === actuel?.type ? actuel : { type: patch.type } };
-  }
-  if (!actuel?.type) return { erreur: "inconnue" };
-  if (patch.cible !== undefined && (patch.cible === id || !joueurs[patch.cible])) return { erreur: "cible" };
-  if (patch.carte !== undefined && !familles.includes(patch.carte)) return { erreur: "carte" };
-  if (patch.maCarte !== undefined && !moi.main.includes(patch.maCarte)) return { erreur: "carte" };
-  return { joker: { ...actuel, ...patch } };
+// Valeur du menu « Bonus du tour » : "aucun", "priorite" ou
+// "verrouiller:<carte>". Renvoie { joker } (null = aucun) ou { erreur }.
+export function lireBonus(valeur, { id, joueurs, marche, config }) {
+  if (!valeur || valeur === "aucun") return { joker: null };
+  const [type, carte] = valeur.split(":");
+  if (!JOKER_ACTIONS.includes(type)) return { erreur: "inconnue" };
+  if ((joueurs[id]?.joker || 0) < jokerCout(type, config)) return { erreur: "points" };
+  if (type === "verrouiller" && !marche.includes(carte)) return { erreur: "carte" };
+  return { joker: type === "verrouiller" ? { type, carte } : { type } };
 }
 
-// Échange Joker qui donne la carte déjà déposée au marché alors que la main
-// n'en a qu'un exemplaire : impossible, il n'est ni joué ni payé.
-export function jokerEnConflit(action, main) {
-  const j = action?.joker;
-  if (j?.type !== "echanger" || !j.maCarte || j.maCarte !== action.depot) return false;
-  return (main || []).filter((k) => k === j.maCarte).length < 2;
+// Bonus complet et payable. Priorité n'a de sens qu'avec un échange valide,
+// Verrouiller qu'avec une carte encore au marché.
+export function jokerValide(joker, id, joueurs, config, { echangeOk = true, marche = null } = {}) {
+  if (!joker?.type || !JOKER_ACTIONS.includes(joker.type)) return false;
+  if ((joueurs[id]?.joker || 0) < jokerCout(joker.type, config)) return false;
+  if (joker.type === "priorite") return echangeOk;
+  return !!joker.carte && (!marche || marche.includes(joker.carte));
 }
 
-// Voir main (pure) : instantané, payé tout de suite, une fois par tour, en
-// plus de l'action du tour. Une cible qui a déjà choisi Protéger (et peut
-// le payer) reste cachée, le point est quand même dépensé. Renvoie
-// { erreur } ou { vu: { cible, main | null, protege } }.
+// Espionner (pure) : instantané, payé tout de suite, une fois par tour.
+// Renvoie { erreur } ou { vu: { cible, main } }.
 export function voirMain({ id, cible, joueurs, actions, config }) {
   const moi = joueurs[id];
   if (!moi) return { erreur: "inconnue" };
   if (actions[id]?.vu) return { erreur: "deja" };
-  if ((moi.joker || 0) < jokerCout("voir", config)) return { erreur: "points" };
+  if ((moi.joker || 0) < jokerCout("espionner", config)) return { erreur: "points" };
   if (!cible || cible === id || !joueurs[cible]) return { erreur: "cible" };
-  const protege = actions[cible]?.joker?.type === "proteger" && jokerValide(actions[cible].joker, cible, joueurs, config);
-  return { vu: { cible, main: protege ? null : [...joueurs[cible].main], protege } };
-}
-
-export function jokerValide(joker, id, joueurs, config, echangeOk = true) {
-  if (!joker?.type || !JOKER_ACTIONS.includes(joker.type)) return false;
-  if ((joueurs[id]?.joker || 0) < jokerCout(joker.type, config)) return false;
-  if (joker.type === "priorite") return echangeOk;
-  if (AVEC_CIBLE.has(joker.type) && (!joker.cible || joker.cible === id || !joueurs[joker.cible])) return false;
-  if (joker.type === "echanger") return !!joker.carte && !!joker.maCarte;
-  return true;
+  return { vu: { cible, main: [...joueurs[cible].main] } };
 }
 
 // Résolution simultanée des échanges. `joueurs` : copies mutables
-// { main, joker }. Une carte demandée par plus de joueurs qu'il n'y a
+// { main, joker }. Une carte verrouillée ne peut être prise par personne
+// (échange annulé). Une carte demandée par plus de joueurs qu'il n'y a
 // d'exemplaires au marché est disputée : les joueurs en Priorité sont
 // servis d'abord, puis les points Joker départagent (tirage au sort entre
-// ex aequo). Les perdants gagnent des points Joker et reçoivent au hasard
-// une autre carte restée au marché. Les cartes déposées rejoignent ensuite
-// le marché. `priorites` : Set des joueurs en Priorité.
-export function resoudreEchanges({ joueurs, actions, marche, config, priorites = new Set(), rng = Math.random }) {
+// ex aequo). Les perdants gardent leur carte (pas d'échange) et gagnent des
+// points Joker. Les cartes déposées par les gagnants rejoignent le marché.
+export function resoudreEchanges({ joueurs, actions, marche, config, priorites = new Set(), verrous = new Set(), rng = Math.random }) {
   const reste = [...marche];
   const lignes = [];
   const acteurs = Object.keys(joueurs).filter((id) => echangeValide(actions[id], joueurs[id].main, marche));
@@ -223,104 +229,46 @@ export function resoudreEchanges({ joueurs, actions, marche, config, priorites =
   const demandes = new Map();
   for (const id of shuffle(acteurs, rng)) {
     const key = actions[id].prise;
+    if (verrous.has(key)) {
+      lignes.push({ type: "verrouillee", discordId: id, voulue: key, depot: actions[id].depot });
+      continue;
+    }
     demandes.set(key, [...(demandes.get(key) || []), id]);
   }
 
-  const obtenu = {};
-  const perdants = [];
+  const depots = [];
+  const obtient = (id, key, disputee) => {
+    const j = joueurs[id];
+    const { depot } = actions[id];
+    retirerUne(j.main, depot);
+    retirerUne(reste, key);
+    j.main.push(key);
+    depots.push(depot);
+    lignes.push({ type: "prise", discordId: id, key, disputee, depot, priorite: priorites.has(id) });
+  };
   for (const [key, ids] of demandes) {
     const copies = marche.filter((k) => k === key).length;
     if (ids.length <= copies) {
-      for (const id of ids) obtenu[id] = { key, disputee: false };
+      for (const id of ids) obtient(id, key, false);
       continue;
     }
     // Tri stable : l'ordre déjà mélangé départage les ex aequo
     const ordre = [...ids].sort((a, b) => priorites.has(b) - priorites.has(a) || (joueurs[b].joker || 0) - (joueurs[a].joker || 0));
     ordre.forEach((id, i) => {
-      if (i < copies) obtenu[id] = { key, disputee: true };
-      else perdants.push({ id, voulue: key });
+      if (i < copies) return obtient(id, key, true);
+      joueurs[id].joker = (joueurs[id].joker || 0) + config.joker.gain_perte;
+      lignes.push({ type: "perdue", discordId: id, voulue: key, depot: actions[id].depot, gain: config.joker.gain_perte });
     });
   }
-  for (const { key } of Object.values(obtenu)) retirerUne(reste, key);
-
-  const restants = shuffle(reste, rng);
-  for (const p of perdants) obtenu[p.id] = { key: restants.shift(), disputee: true, perdue: p.voulue };
-
-  const depots = [];
-  for (const id of acteurs) {
-    const j = joueurs[id];
-    const { depot } = actions[id];
-    const o = obtenu[id];
-    // Marché épuisé (ne devrait pas arriver : il garde au moins autant de
-    // cartes que de joueurs) : l'échange est annulé
-    if (!o.key) continue;
-    retirerUne(j.main, depot);
-    j.main.push(o.key);
-    depots.push(depot);
-    const priorite = priorites.has(id);
-    if (o.perdue) {
-      j.joker = (j.joker || 0) + config.joker.gain_perte;
-      lignes.push({ type: "perdue", discordId: id, voulue: o.perdue, key: o.key, depot, priorite, gain: config.joker.gain_perte });
-    } else {
-      lignes.push({ type: "prise", discordId: id, key: o.key, disputee: o.disputee, depot, priorite });
-    }
-  }
-  return { marche: [...restants, ...depots], lignes };
+  return { marche: [...reste, ...depots], lignes };
 }
 
-// Actions Joker ciblées, après les échanges au marché : Échanger carte,
-// puis Saboter. Une cible protégée fait échouer l'action (point perdu).
-// Renvoie le marché (Saboter y puise) et les lignes du bilan.
-export function resoudreJokers({ joueurs, jokers, protegees, marche, rng = Math.random }) {
-  const lignes = [];
-  let newMarche = [...marche];
-  const ordre = (type) => shuffle(Object.keys(jokers).filter((id) => jokers[id].type === type), rng);
-  const bloquee = (id, j) => {
-    if (!protegees.has(j.cible)) return false;
-    lignes.push({ type: "joker", action: j.type, discordId: id, cible: j.cible, echec: "protege" });
-    return true;
-  };
-
-  for (const id of ordre("echanger")) {
-    const j = jokers[id];
-    if (bloquee(id, j)) continue;
-    const moi = joueurs[id].main;
-    const lui = joueurs[j.cible].main;
-    if (!lui.includes(j.carte) || !moi.includes(j.maCarte)) {
-      lignes.push({ type: "joker", action: "echanger", discordId: id, cible: j.cible, echec: "absente", carte: j.carte, maCarte: j.maCarte });
-      continue;
-    }
-    retirerUne(lui, j.carte);
-    retirerUne(moi, j.maCarte);
-    lui.push(j.maCarte);
-    moi.push(j.carte);
-    lignes.push({ type: "joker", action: "echanger", discordId: id, cible: j.cible, carte: j.carte, maCarte: j.maCarte });
-  }
-
-  for (const id of ordre("saboter")) {
-    const j = jokers[id];
-    if (bloquee(id, j)) continue;
-    const main = joueurs[j.cible].main;
-    if (!main.length || !newMarche.length) continue;
-    const retiree = main[Math.floor(rng() * main.length)];
-    const recue = newMarche[Math.floor(rng() * newMarche.length)];
-    retirerUne(main, retiree);
-    retirerUne(newMarche, recue);
-    main.push(recue);
-    newMarche.push(retiree);
-    lignes.push({ type: "joker", action: "saboter", discordId: id, cible: j.cible, retiree, recue });
-  }
-
-  for (const id of ordre("proteger")) lignes.push({ type: "joker", action: "proteger", discordId: id });
-  return { marche: newMarche, lignes };
-}
-
-// Fin de tour (jour ou manche) : paiement des Jokers, échanges, actions
-// Joker, puis décompte si au moins un joueur a un carré ou si c'est le
-// dernier tour. Après un carré (hors dernier tour), toutes les cartes sont
+// Fin de tour (jour ou manche) : paiement des bonus, échanges, puis
+// décompte si au moins un joueur a un quadruplé ou si c'est le dernier
+// tour. Après un quadruplé (hors dernier tour), toutes les cartes sont
 // redistribuées. `joueursAvant` : { id: { main, joker, points, carres, ... } }
-// (non muté). `actions[id].joker` : { type, cible?, carte?, maCarte? }.
-export function computeTour({ joueursAvant, actions, marche, reserve = [], familles, config, dernier, rng = Math.random }) {
+// (non muté). `actions[id]` : { prise, depot, joker?, vu? }.
+export function computeTour({ joueursAvant, actions, marche, reserve = [], familles, vedettes = [], config, dernier, rng = Math.random }) {
   const joueurs = {};
   for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j, main: [...(j.main || [])] };
 
@@ -328,24 +276,24 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   const jokers = {};
   for (const id of Object.keys(joueurs)) {
     const joker = actions[id]?.joker;
-    const echangeOk = echangeValide(actions[id], joueurs[id].main, marche);
-    if (!jokerValide(joker, id, joueurs, config, echangeOk)) continue;
-    if (echangeOk && jokerEnConflit(actions[id], joueurs[id].main)) continue;
+    if (!jokerValide(joker, id, joueurs, config, { echangeOk: echangeValide(actions[id], joueurs[id].main, marche), marche })) continue;
     joueurs[id].joker -= jokerCout(joker.type, config);
     jokers[id] = joker;
   }
-  // Tour joué (échange au marché ou Joker) : +gain_tour, après le départage
+  // Tour joué (échange au marché ou bonus) : +gain_tour, après le départage
   const joues = Object.keys(joueurs).filter((id) => jokers[id] || echangeValide(actions[id], joueurs[id].main, marche));
   const priorites = new Set(Object.keys(jokers).filter((id) => jokers[id].type === "priorite"));
-  const protegees = new Set(Object.keys(jokers).filter((id) => jokers[id].type === "proteger"));
+  const verrous = new Set(Object.values(jokers).filter((j) => j.type === "verrouiller").map((j) => j.carte));
 
-  const echanges = resoudreEchanges({ joueurs, actions, marche, config, priorites, rng });
+  const echanges = resoudreEchanges({ joueurs, actions, marche, config, priorites, verrous, rng });
   for (const id of joues) joueurs[id].joker = (joueurs[id].joker || 0) + config.joker.gain_tour;
-  const ciblees = Object.fromEntries(Object.entries(jokers).filter(([, j]) => AVEC_CIBLE.has(j.type) || j.type === "proteger"));
-  const effets = resoudreJokers({ joueurs, jokers: ciblees, protegees, marche: echanges.marche, rng });
-  // Voir main, déjà résolu dans la journée : mentionné au bilan
+  const lignes = [...echanges.lignes];
+  for (const [id, j] of Object.entries(jokers)) {
+    if (j.type === "verrouiller") lignes.push({ type: "joker", action: "verrouiller", discordId: id, carte: j.carte });
+  }
+  // Espionnages de la journée (déjà résolus) : mentionnés au bilan
   for (const [id, a] of Object.entries(actions)) {
-    if (a?.vu) effets.lignes.push({ type: "joker", action: "voir", discordId: id, cible: a.vu.cible, echec: a.vu.protege ? "protege" : undefined });
+    if (a?.vu) lignes.push({ type: "joker", action: "espionner", discordId: id, cible: a.vu.cible });
   }
 
   const carres = Object.keys(joueurs).filter((id) => aUnCarre(joueurs[id].main, config));
@@ -354,24 +302,26 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   let scores = null;
   if (decompte) {
     scores = Object.entries(joueurs).map(([id, j]) => {
-      const points = pointsMain(j.main, config);
+      const points = pointsMain(j.main, config, vedettes);
       const carre = aUnCarre(j.main, config);
       j.points = (j.points || 0) + points;
       if (carre) j.carres = (j.carres || 0) + 1;
-      return { discordId: id, points, carre, main: [...j.main] };
+      return { discordId: id, points, carre, vedette: carre && vedettes.includes(carteDuCarre(j.main, config)), main: [...j.main] };
     });
   }
 
-  let newMarche = effets.marche;
+  let newMarche = echanges.marche;
   let newReserve = reserve;
+  let newVedettes = vedettes;
   const redistribution = carres.length > 0 && !dernier;
   if (redistribution) {
     const donne = distribuer({ familles, joueurIds: Object.keys(joueurs), config, rng });
     for (const [id, main] of Object.entries(donne.mains)) joueurs[id].main = main;
     newMarche = donne.marche;
     newReserve = donne.reserve;
+    newVedettes = choisirVedettes(familles, nbVedettes(Object.keys(joueurs).length, config), { precedentes: vedettes }, rng);
   }
-  return { joueurs, marche: newMarche, reserve: newReserve, lignes: [...echanges.lignes, ...effets.lignes], carres, scores, redistribution };
+  return { joueurs, marche: newMarche, reserve: newReserve, vedettes: newVedettes, lignes, carres, scores, redistribution };
 }
 
 // Classement final : points des décomptes + points Joker restants, puis
@@ -392,15 +342,16 @@ export function classement(joueurs) {
 
 // ── Stratégie gloutonne (bot du duel, bots de test, simulations) ──────
 
-// Valeur d'une main : taille des groupes, les plus gros d'abord.
-function valeur(main) {
-  const groupes = [...compterCartes(main).values()].sort((a, b) => b - a);
-  return groupes[0] * 10 + (groupes[1] || 0);
+// Valeur d'une main : taille des groupes, les plus gros d'abord, un groupe
+// d'une carte vedette comptant un peu plus.
+function valeur(main, vedettes) {
+  const groupes = [...compterCartes(main)].map(([k, n]) => n * 10 + (vedettes.includes(k) ? 5 : 0)).sort((a, b) => b - a);
+  return groupes[0] + (groupes[1] || 0) / 10;
 }
 
 // Échange qui maximise la main obtenue (si la carte voulue est obtenue),
 // tirage au sort entre ex aequo.
-export function choixGlouton(main, marche, rng = Math.random) {
+export function choixGlouton(main, marche, rng = Math.random, vedettes = []) {
   let best = [];
   let bestValeur = -1;
   for (const prise of new Set(marche)) {
@@ -410,7 +361,7 @@ export function choixGlouton(main, marche, rng = Math.random) {
       const apres = [...main];
       retirerUne(apres, depot);
       apres.push(prise);
-      const v = valeur(apres);
+      const v = valeur(apres, vedettes);
       if (v > bestValeur) {
         bestValeur = v;
         best = [];
@@ -421,17 +372,10 @@ export function choixGlouton(main, marche, rng = Math.random) {
   return best.length ? best[Math.floor(rng() * best.length)] : null;
 }
 
-// Joker d'un bot (sans jamais regarder les autres mains) : se protéger
-// avec 3 cartes identiques, sinon saboter l'adversaire qui a le plus de
-// points (tirage au sort à égalité) à partir de 2 points Joker.
-export function jokerDuBot(id, joueurs, config, rng = Math.random) {
+// Bonus d'un bot (sans jamais regarder les autres mains) : Priorité quand
+// sa prise peut compléter un quadruplé.
+export function jokerDuBot(id, joueurs, prise, config) {
   const moi = joueurs[id];
-  const points = moi?.joker || 0;
-  if (points >= jokerCout("proteger", config) && plusGrandGroupe(moi.main) >= config.taille_main - 1) return { type: "proteger" };
-  if (points < jokerCout("saboter", config)) return null;
-  const [cible] = shuffle(
-    Object.keys(joueurs).filter((x) => x !== id),
-    rng,
-  ).sort((a, b) => (joueurs[b].points || 0) - (joueurs[a].points || 0));
-  return cible ? { type: "saboter", cible } : null;
+  if (!prise || (moi?.joker || 0) < jokerCout("priorite", config)) return null;
+  return compterCartes(moi.main).get(prise) === config.taille_main - 1 ? { type: "priorite" } : null;
 }

@@ -1,42 +1,17 @@
 // ============================================================
-// draftJoker.js — Magasin Joker du Draft, partagé par le jeu spécial
+// draftJoker.js — Bonus Joker du Draft, partagé par le jeu spécial
 // (_handlers/draftroyale.js) et le duel /draft (_handlers/draftDuel.js) :
-// libellés, vue du magasin (édition en place de la main éphémère) et
-// lignes du bilan. Règles dans backend/services/draftRules.js.
+// menus de la main éphémère (bonus du tour, espionnage), lignes d'état et
+// du bilan. Tout tient sur l'écran de la main, sans étape. Règles dans
+// backend/services/draftRules.js.
 //
-// custom_id : `<prefixe>_jk:<champ>:<tour>` avec champ = ouvrir, retour,
-// annuler, voirmenu (boutons) ou type, cible, carte, maCarte, voir (menus).
+// custom_id : `<prefixe>_jk:bonus:<tour>` (menu « Bonus du tour ») et
+// `<prefixe>_jk:espion:<tour>` (menu « Espionner »).
 // ============================================================
 
-import { JOKER_ACTIONS, jokerCout, compterCartes, echangeValide, jokerValide, jokerEnConflit } from "../../../backend/services/draftRules.js";
+import { jokerCout, compterCartes, echangeValide, jokerValide } from "../../../backend/services/draftRules.js";
 
 export const JOKER_EMOJI = "🃏";
-
-const ACTIONS = {
-  priorite: { label: "Priorité", description: "Servi en premier si la carte que tu prends est disputée" },
-  proteger: { label: "Protéger", description: "Aucune action Joker ne peut te cibler ce tour-ci" },
-  voir: { label: "Voir main", description: "Découvre tout de suite la main d'un joueur, en plus de ton action" },
-  saboter: { label: "Saboter", description: "Une carte au hasard de sa main part au marché contre une autre" },
-  echanger: { label: "Échanger carte", description: "Échange une de tes cartes contre une carte choisie de sa main" },
-};
-const AVEC_CIBLE = new Set(["saboter", "echanger"]);
-
-// Accord d'un participe avec le nom de la carte (« Géant reçu »,
-// « Archères reçues ») : `config.accords` donne genre et nombre ("m",
-// "f", "mp", "fp") ; féminin singulier par défaut (« carte »).
-export function accord(key, participe, config) {
-  const a = config.accords?.[key] || "f";
-  return `${participe}${a.startsWith("f") ? "e" : ""}${a.endsWith("p") ? "s" : ""}`;
-}
-
-// Ligne d'échange au marché du bilan (prise ou carte disputée manquée).
-export function echangeLigne(l, nom, cardName, config) {
-  const donne = `${cardName(l.depot)} ${accord(l.depot, "donné", config)}`;
-  if (l.type === "perdue") {
-    return `**${nom}** : ${cardName(l.voulue)} ${accord(l.voulue, "choisi", config)} ${accord(l.voulue, "manqué", config)}, **${cardName(l.key)}** ${accord(l.key, "reçu", config)} (+${l.gain} pts Joker) · ${donne}`;
-  }
-  return `**${nom}** : **${cardName(l.key)}** ${accord(l.key, "reçu", config)} · ${donne}`;
-}
 
 function plural(n, mot) {
   return `${n} ${mot}${n > 1 ? "s" : ""}`;
@@ -46,37 +21,55 @@ export function jokerPointsLabel(n) {
   return `${JOKER_EMOJI} ${plural(n, "point")} Joker`;
 }
 
-// Ligne d'état du Joker prévu (main éphémère et magasin).
-export function jokerStatutLigne(joker, noms, cardName) {
-  if (!joker?.type) return null;
-  const a = ACTIONS[joker.type];
-  if (AVEC_CIBLE.has(joker.type) && !joker.cible) return `${JOKER_EMOJI} Joker ${a.label} : choisis la cible.`;
-  if (joker.type === "echanger" && (!joker.carte || !joker.maCarte)) return `${JOKER_EMOJI} Joker ${a.label} : choisis les deux cartes.`;
-  if (joker.type === "echanger") return `${JOKER_EMOJI} Joker prévu : ${a.label} avec **${noms[joker.cible]}** (tu donnes ${cardName(joker.maCarte)}, tu prends ${cardName(joker.carte)}).`;
-  if (AVEC_CIBLE.has(joker.type)) return `${JOKER_EMOJI} Joker prévu : ${a.label} **${noms[joker.cible]}**.`;
-  if (joker.type === "priorite") return `${JOKER_EMOJI} Joker prévu : Priorité (sans échange complet, il ne sera pas utilisé).`;
-  return `${JOKER_EMOJI} Joker prévu : ${a.label}.`;
+// Accord d'un participe avec le nom de la carte (« Géant reçu »,
+// « Archères reçues ») : `config.accords` donne genre et nombre ("m",
+// "f", "mp", "fp") ; féminin singulier par défaut (« carte »).
+export function accord(key, participe, config) {
+  const a = config.accords?.[key] || "f";
+  return `${participe}${a.startsWith("f") ? "e" : ""}${a.endsWith("p") ? "s" : ""}`;
 }
 
-// Lignes d'état du tour : un tour se joue par un échange au marché, une
-// action Joker, ou les deux. `suite` : fin de la ligne d'un tour prêt.
+// Ligne d'échange au marché du bilan.
+export function echangeLigne(l, nom, cardName, config) {
+  const garde = `${cardName(l.depot)} ${accord(l.depot, "gardé", config)}`;
+  if (l.type === "perdue") {
+    return `**${nom}** : ${cardName(l.voulue)} ${accord(l.voulue, "choisi", config)} ${accord(l.voulue, "manqué", config)}, ${garde} (+${l.gain} pts Joker)`;
+  }
+  if (l.type === "verrouillee") return `**${nom}** : ${cardName(l.voulue)} ${accord(l.voulue, "verrouillé", config)}, ${garde}`;
+  return `**${nom}** : **${cardName(l.key)}** ${accord(l.key, "reçu", config)} · ${cardName(l.depot)} ${accord(l.depot, "donné", config)}`;
+}
+
+// Lignes d'état du tour : un tour se joue par un échange au marché, un
+// bonus Joker, ou les deux. `suite` : fin de la ligne d'un tour prêt.
 export function tourStatutLignes({ action, id, joueurs, marche, config, cardName, trade, suite }) {
   const main = joueurs[id]?.main || [];
   const echangeOk = echangeValide(action, main, marche);
-  const jokerOk = jokerValide(action.joker, id, joueurs, config, false);
   const lignes = [];
   if (echangeOk) lignes.push(`${trade} Échange prévu : tu prends **${cardName(action.prise)}**, tu déposes **${cardName(action.depot)}**. ${suite}`);
   else if (marche.includes(action.prise)) lignes.push(`⚠️ Tu prends **${cardName(action.prise)}** : choisis aussi la carte à déposer.`);
   else if (main.includes(action.depot)) lignes.push(`⚠️ Tu déposes **${cardName(action.depot)}** : choisis aussi la carte à prendre.`);
-  else if (jokerOk) lignes.push(`${trade} Pas d'échange au marché : ton tour se joue avec ton Joker. ${suite}`);
-  if (echangeOk && jokerEnConflit(action, main)) {
-    lignes.push(`⚠️ Tu déposes déjà ton seul ${cardName(action.depot)} au marché : l'Échange Joker ne sera pas joué. Annule l'échange au marché ou choisis une autre carte.`);
-  }
+  else if (jokerValide(action.joker, id, joueurs, config, { echangeOk: false, marche })) lignes.push(`${trade} Pas d'échange au marché : ton tour se joue avec ton bonus. ${suite}`);
+  const joker = action.joker;
+  if (joker?.type === "priorite") lignes.push(`${JOKER_EMOJI} Bonus : Priorité${echangeOk ? "" : " (sans échange complet, il ne sera pas utilisé)"}.`);
+  if (joker?.type === "verrouiller") lignes.push(`${JOKER_EMOJI} Bonus : ${cardName(joker.carte)} ${accord(joker.carte, "verrouillé", config)} (personne ne pourra la prendre ce tour-ci).`);
   return lignes;
 }
 
+// Cartes vedettes de la donne (leur quadruplé rapporte `points_vedette`).
+export function vedetteLigne(vedettes, cardName, config) {
+  if (!vedettes?.length) return null;
+  const noms = vedettes.map((k) => `**${cardName(k)}**`).join(", ");
+  return `⭐ ${vedettes.length > 1 ? "Cartes vedettes" : "Carte vedette"} : ${noms} (quadruplé à ${config.points_vedette} pts au lieu de ${config.points_carre})`;
+}
+
+// Main vue ce tour-ci (Espionner).
+export function voirLigne(vu, noms, formatGroupes) {
+  if (!vu) return null;
+  return `👁️ Main de **${noms[vu.cible]}** (espionnée ce tour) : ${formatGroupes(vu.main)}`;
+}
+
 // Bouton qui efface les deux choix du marché (le tour peut se jouer avec
-// le Joker seul).
+// le bonus seul).
 export function annulerEchangeButton(prefixe, tour, action) {
   return {
     type: 2,
@@ -87,146 +80,57 @@ export function annulerEchangeButton(prefixe, tour, action) {
   };
 }
 
-export function jokerButton(prefixe, tour, points, joker) {
-  return {
-    type: 2,
-    style: 2,
-    label: `Joker (${points})`,
-    emoji: { name: JOKER_EMOJI },
-    custom_id: `${prefixe}_jk:ouvrir:${tour}`,
-    disabled: points < 1 && !joker,
-  };
-}
-
-// Vue du magasin. `adversaires` : [{ id, nom }] ; `main` : main du joueur ;
-// `familles` : cartes en jeu.
-// Main vue ce tour-ci (Voir main), pour le magasin et la main éphémère.
-export function voirLigne(vu, noms, formatGroupes) {
-  if (!vu) return null;
-  return vu.protege
-    ? `👁️ ${noms[vu.cible]} est protégé ce tour-ci : sa main reste cachée.`
-    : `👁️ Main de **${noms[vu.cible]}** (vue ce tour) : ${formatGroupes(vu.main)}`;
-}
-
-export function buildMagasin({ prefixe, tour, points, joker, vu, adversaires, main, familles, config, cardName, formatGroupes, noms, color }) {
-  const coutVoir = jokerCout("voir", config);
-  const lignes = [
-    `Tu as **${plural(points, "point")} Joker**. Une action par tour, payée et résolue à la clôture.`,
-    "Les points restants départagent les cartes disputées.",
-    "",
-    ...JOKER_ACTIONS.map((t) => `• **${ACTIONS[t].label}** (${plural(jokerCout(t, config), "pt")}) : ${ACTIONS[t].description}.`),
-    `• **${ACTIONS.voir.label}** (${plural(coutVoir, "pt")}, immédiat, une fois par tour) : ${ACTIONS.voir.description}.`,
-  ];
-  const statut = jokerStatutLigne(joker, noms, cardName);
-  if (statut) lignes.push("", statut);
-  const vuLigne = voirLigne(vu, noms, formatGroupes);
-  if (vuLigne) lignes.push("", vuLigne);
-
-  const select = (champ, placeholder, options) => ({
-    type: 1,
-    components: [{ type: 3, custom_id: `${prefixe}_jk:${champ}:${tour}`, placeholder, options: options.slice(0, 25) }],
-  });
-  const rows = [
-    select(
-      "type",
-      "Action Joker",
-      JOKER_ACTIONS.map((t) => ({
-        label: `${ACTIONS[t].label} (${plural(jokerCout(t, config), "pt")})`,
-        description: ACTIONS[t].description.slice(0, 100),
-        value: t,
-        default: joker?.type === t || undefined,
+// Menus Joker de la main : « Bonus du tour » (Priorité ou Verrouiller une
+// carte du marché, résolu à la clôture) et « Espionner » (instantané).
+export function jokerRows({ prefixe, tour, points, action, marche, adversaires, config, cardName }) {
+  const cout = (t) => jokerCout(t, config);
+  const bonus = action.joker?.type === "verrouiller" ? `verrouiller:${action.joker.carte}` : action.joker?.type || "aucun";
+  const options = [
+    { label: "Aucun bonus", value: "aucun", default: bonus === "aucun" || undefined },
+    {
+      label: `Priorité (${plural(cout("priorite"), "pt")})`,
+      description: "Servi en premier si la carte que tu prends est disputée",
+      value: "priorite",
+      default: bonus === "priorite" || undefined,
+    },
+    ...[...compterCartes(marche).keys()]
+      .sort((a, b) => cardName(a).localeCompare(cardName(b)))
+      .map((k) => ({
+        label: `Verrouiller ${cardName(k)} (${plural(cout("verrouiller"), "pt")})`.slice(0, 100),
+        description: "Personne ne pourra la prendre ce tour-ci",
+        value: `verrouiller:${k}`,
+        default: bonus === `verrouiller:${k}` || undefined,
       })),
-    ),
+  ].slice(0, 25);
+  const vu = action.vu;
+  const espionPossible = !vu && points >= cout("espionner") && adversaires.length > 0;
+  return [
+    {
+      type: 1,
+      components: [{ type: 3, custom_id: `${prefixe}_jk:bonus:${tour}`, placeholder: `Bonus du tour (${jokerPointsLabel(points)})`, options }],
+    },
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: `${prefixe}_jk:espion:${tour}`,
+          placeholder: vu ? "Déjà espionné ce tour-ci" : `Espionner un joueur, tout de suite (${plural(cout("espionner"), "pt")})`,
+          disabled: !espionPossible,
+          options: (adversaires.length ? adversaires : [{ id: "-", nom: "-" }]).slice(0, 25).map((a) => ({ label: a.nom.slice(0, 100), value: a.id })),
+        },
+      ],
+    },
   ];
-  if (AVEC_CIBLE.has(joker?.type) && adversaires.length) {
-    rows.push(select("cible", "Joueur ciblé", adversaires.map((a) => ({ label: a.nom.slice(0, 100), value: a.id, default: joker.cible === a.id || undefined }))));
-  }
-  if (joker?.type === "echanger") {
-    rows.push(select("carte", "Carte à lui prendre", familles.map((k) => ({ label: cardName(k).slice(0, 100), value: k, default: joker.carte === k || undefined }))));
-    rows.push(
-      select(
-        "maCarte",
-        "Carte de ta main à lui donner",
-        [...compterCartes(main).keys()].map((k) => ({ label: cardName(k).slice(0, 100), value: k, default: joker.maCarte === k || undefined })),
-      ),
-    );
-  }
-  rows.push({
-    type: 1,
-    components: [
-      { type: 2, style: 2, label: "Retour à ma main", custom_id: `${prefixe}_jk:retour:${tour}` },
-      {
-        type: 2,
-        style: 1,
-        label: `Voir une main (${plural(coutVoir, "pt")})`,
-        emoji: { name: "👁️" },
-        custom_id: `${prefixe}_jk:voirmenu:${tour}`,
-        disabled: !!vu || points < coutVoir || !adversaires.length,
-      },
-      { type: 2, style: 4, label: "Annuler le Joker", custom_id: `${prefixe}_jk:annuler:${tour}`, disabled: !joker },
-    ],
-  });
-  return {
-    content: "",
-    embeds: [{ title: `${JOKER_EMOJI} Magasin Joker`, description: lignes.join("\n").slice(0, 4096), color }],
-    components: rows,
-  };
 }
 
-// Lignes du bilan pour les actions Joker de la clôture, vues par
-// `viewerId` : le détail des cartes n'est montré qu'à l'auteur et à la
-// cible, les autres voient seulement qui a visé qui.
-export function jokerBilanLignes(lignes, viewerId, noms, cardName, formatGroupes, config) {
+// Lignes du bilan pour les bonus de la clôture. L'espion a déjà vu la
+// main dans la journée : seuls les autres sont informés.
+export function jokerBilanLignes(lignes, viewerId, noms, cardName) {
   const out = [];
   for (const l of lignes.filter((x) => x.type === "joker")) {
-    const auteur = `**${noms[l.discordId]}**`;
-    const cible = `**${noms[l.cible]}**`;
-    const concerne = l.discordId === viewerId || l.cible === viewerId;
-    if (l.echec === "protege") out.push(`${JOKER_EMOJI} ${auteur} vise ${cible}, protégé : action perdue.`);
-    else if (l.action === "proteger") {
-      if (l.discordId === viewerId) out.push(`${JOKER_EMOJI} Tu étais protégé.`);
-    } else if (l.action === "voir") {
-      // L'auteur a déjà vu la main dans la journée
-      if (l.discordId !== viewerId) out.push(`${JOKER_EMOJI} ${auteur} a regardé la main de ${cible}.`);
-    } else if (l.action === "saboter") {
-      out.push(
-        concerne
-          ? `${JOKER_EMOJI} ${auteur} sabote ${cible} : ${cardName(l.retiree)} ${accord(l.retiree, "perdu", config)}, ${cardName(l.recue)} ${accord(l.recue, "reçu", config)}.`
-          : `${JOKER_EMOJI} ${auteur} sabote ${cible}.`,
-      );
-    } else if (l.action === "echanger" && l.echec) {
-      out.push(l.discordId === viewerId ? `${JOKER_EMOJI} Échange raté avec ${cible} : ${cardName(l.carte)} absente de sa main (ou ${cardName(l.maCarte)} de la tienne).` : `${JOKER_EMOJI} ${auteur} rate un échange avec ${cible}.`);
-    } else if (l.action === "echanger") {
-      out.push(concerne ? `${JOKER_EMOJI} ${auteur} échange avec ${cible} : ${cardName(l.maCarte)} contre ${cardName(l.carte)}.` : `${JOKER_EMOJI} ${auteur} échange une carte avec ${cible}.`);
-    }
+    if (l.action === "verrouiller") out.push(`🔒 **${noms[l.discordId]}** a verrouillé ${cardName(l.carte)}.`);
+    if (l.action === "espionner" && l.discordId !== viewerId) out.push(`👁️ **${noms[l.discordId]}** a espionné **${noms[l.cible]}**.`);
   }
   return out;
-}
-
-// Choix de la cible de Voir main (payé et résolu dès la sélection).
-export function buildVoirMenu({ prefixe, tour, points, adversaires, config, color }) {
-  return {
-    content: "",
-    embeds: [
-      {
-        title: "👁️ Voir une main",
-        description: `Choisis un joueur : sa main s'affiche tout de suite (${plural(jokerCout("voir", config), "point")} Joker, il t'en reste ${points}). Elle peut encore changer à la clôture.`,
-        color,
-      },
-    ],
-    components: [
-      {
-        type: 1,
-        components: [
-          {
-            type: 3,
-            custom_id: `${prefixe}_jk:voir:${tour}`,
-            placeholder: "Joueur à espionner",
-            options: adversaires.slice(0, 25).map((a) => ({ label: a.nom.slice(0, 100), value: a.id })),
-          },
-        ],
-      },
-      { type: 1, components: [{ type: 2, style: 2, label: "Retour au magasin", custom_id: `${prefixe}_jk:ouvrir:${tour}` }] },
-    ],
-  };
 }

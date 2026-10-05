@@ -37,7 +37,8 @@ const NB_BOTS = Number(process.argv[2]) || 3;
     const id = `bot-${i}`;
     const nom = `Bot ${i}`;
     const { joueur } = await ensureJoueur(id, nom);
-    const choix = choixGlouton(joueur.main, (await readPartie()).marche);
+    const partie = await readPartie();
+    const choix = choixGlouton(joueur.main, partie.marche, Math.random, partie.vedettes || []);
     if (!choix) {
       console.log(`${nom} : aucun échange possible`);
       continue;

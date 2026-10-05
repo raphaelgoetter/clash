@@ -21,7 +21,7 @@
 
 import { Redis } from "@upstash/redis";
 import { loadDraftRoyaleConfig, loadCatalog } from "./draftroyale.js";
-import { ajouterJoueur, echangeValide, jokerValide, computeTour, classement, choixGlouton, jokerDuBot, appliquerChoixJoker, voirMain as voirMainRegle, jokerCout } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, jokerValide, computeTour, classement, choixGlouton, jokerDuBot, lireBonus, voirMain as voirMainRegle, jokerCout, choisirVedettes, nbVedettes } from "./draftRules.js";
 
 // Bots qui complètent la table jusqu'à `MIN_JOUEURS`, dans cet ordre.
 export const BOTS = [
@@ -122,7 +122,7 @@ const HAND_TTL_SECONDS = 15 * 60;
 // échange (les bots choisissent le leur à la résolution).
 // Pure : le tour peut être validé (échange au marché ou Joker complet).
 export function tourJouable(action, id, players, state, config) {
-  return echangeValide(action, players[id]?.main, state.marche) || jokerValide(action?.joker, id, players, config, false);
+  return echangeValide(action, players[id]?.main, state.marche) || jokerValide(action?.joker, id, players, config, { echangeOk: false, marche: state.marche });
 }
 
 export function isMancheReady(state, actions) {
@@ -247,6 +247,9 @@ export async function joinGame(discordId, username, rng = Math.random) {
     reserve: arrivee.reserve,
     players: decision.players,
     rosterLocked: decision.rosterLocked,
+    // Cartes vedettes tirées une fois tous les joueurs arrivés (cartes en
+    // jeu définitives)
+    vedettes: decision.rosterLocked ? choisirVedettes(arrivee.familles, nbVedettes(Object.keys(players).length + 1, config), {}, rng) : [],
   });
   await writeState(newState);
   return { state: newState, isNew: true };
@@ -299,20 +302,19 @@ export async function choisir(discordId, champ, key) {
   return afterAction(state, discordId);
 }
 
-// Action Joker de la manche, champ par champ (voir draftRules.js) ;
-// `patch` null annule.
-export async function choisirJoker(discordId, patch) {
+// Bonus Joker de la manche (valeur du menu, voir lireBonus).
+export async function choisirJoker(discordId, valeur) {
   const guard = await guardTurn(discordId);
   if (!guard.action) return guard;
-  const { state, action } = guard;
+  const { state } = guard;
   const [config, players] = await Promise.all([loadDraftDuelConfig(), readPlayers()]);
-  const r = appliquerChoixJoker(action.joker, patch, { id: discordId, joueurs: players, familles: state.familles, config });
+  const r = lireBonus(valeur, { id: discordId, joueurs: players, marche: state.marche, config });
   if (r.erreur) return { ...(await afterAction(state, discordId)), invalid: true };
   await updateAction(state.manche, discordId, { joker: r.joker });
   return afterAction(state, discordId);
 }
 
-// Voir main : instantané, payé tout de suite (une fois par manche).
+// Espionner : instantané, payé tout de suite (une fois par manche).
 export async function voirMain(discordId, cible) {
   const guard = await guardTurn(discordId);
   if (!guard.action) return guard;
@@ -320,7 +322,7 @@ export async function voirMain(discordId, cible) {
   const [config, players, actions] = await Promise.all([loadDraftDuelConfig(), readPlayers(), readActions(state.manche)]);
   const r = voirMainRegle({ id: discordId, cible, joueurs: players, actions, config });
   if (r.erreur) return { ...(await afterAction(state, discordId)), invalid: true };
-  await writePlayer(discordId, { ...players[discordId], joker: players[discordId].joker - jokerCout("voir", config) });
+  await writePlayer(discordId, { ...players[discordId], joker: players[discordId].joker - jokerCout("espionner", config) });
   await updateAction(state.manche, discordId, { vu: r.vu });
   return afterAction(state, discordId);
 }
@@ -363,10 +365,21 @@ export async function checkAndResolveManche(rng = Math.random) {
 export function computeMancheDuel({ state, joueursAvant, actions, config, rng = Math.random }) {
   const toutes = { ...actions };
   for (const id of Object.keys(joueursAvant).filter(isBot)) {
-    toutes[id] = { ...choixGlouton(joueursAvant[id].main, state.marche, rng), joker: jokerDuBot(id, joueursAvant, config, rng) };
+    const choix = choixGlouton(joueursAvant[id].main, state.marche, rng, state.vedettes || []);
+    toutes[id] = { ...choix, joker: jokerDuBot(id, joueursAvant, choix?.prise, config) };
   }
   const dernier = state.manche >= state.totalManches;
-  const tour = computeTour({ joueursAvant, actions: toutes, marche: state.marche, reserve: state.reserve, familles: state.familles, config, dernier, rng });
+  const tour = computeTour({
+    joueursAvant,
+    actions: toutes,
+    marche: state.marche,
+    reserve: state.reserve,
+    familles: state.familles,
+    vedettes: state.vedettes || [],
+    config,
+    dernier,
+    rng,
+  });
   return { ...tour, actions: toutes, final: dernier ? classement(tour.joueurs) : null };
 }
 
@@ -377,12 +390,12 @@ async function resolveManche(state, actions, rng) {
 
   const lastRecap = { manche: state.manche, lignes: tour.lignes, carres: tour.carres, scores: tour.scores, redistribution: tour.redistribution };
   if (tour.final) {
-    const newState = touch({ ...state, marche: tour.marche, reserve: tour.reserve, termine: true, lastRecap, finalRanking: tour.final });
+    const newState = touch({ ...state, marche: tour.marche, reserve: tour.reserve, vedettes: tour.vedettes, termine: true, lastRecap, finalRanking: tour.final });
     await writeState(newState);
     const highScore = await updateHighScore(tour.final);
     return { final: true, ranking: tour.final, highScore, state: newState };
   }
-  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, reserve: tour.reserve, lastRecap });
+  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, reserve: tour.reserve, vedettes: tour.vedettes, lastRecap });
   await writeState(newState);
   return { final: false, state: newState };
 }

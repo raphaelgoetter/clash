@@ -34,15 +34,15 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { filterCardPool } from "./cards.js";
-import { ajouterJoueur, echangeValide, computeTour, classement, appliquerChoixJoker, voirMain, jokerCout } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, computeTour, classement, lireBonus, voirMain, jokerCout, choisirVedettes, nbVedettes } from "./draftRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "draftroyale", "draftroyale.json");
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.json");
 
 const STATE_KEY = "draftroyale:state";
-// { familles, marche, reserve } (cardKeys) — cartes en jeu, marché courant
-// et exemplaires à l'écart
+// { familles, marche, reserve, vedettes } (cardKeys) — cartes en jeu,
+// marché courant, exemplaires à l'écart et cartes vedettes de la donne
 const PARTIE_KEY = "draftroyale:partie";
 const JOUEURS_KEY = "draftroyale:joueurs";
 const HISTORIQUE_KEY = "draftroyale:historique";
@@ -129,10 +129,20 @@ export async function loadCatalog() {
 // redistribution après un carré, classement final au dernier jour.
 export function computeCloture({ jour, joueursAvant, actionsRaw, partie, config, rng = Math.random }) {
   const dernier = jour >= config.duree_jours;
-  const tour = computeTour({ joueursAvant, actions: actionsRaw, marche: partie.marche, reserve: partie.reserve, familles: partie.familles, config, dernier, rng });
+  const tour = computeTour({
+    joueursAvant,
+    actions: actionsRaw,
+    marche: partie.marche,
+    reserve: partie.reserve,
+    familles: partie.familles,
+    vedettes: partie.vedettes || [],
+    config,
+    dernier,
+    rng,
+  });
   return {
     joueursApres: tour.joueurs,
-    partieApres: { ...partie, marche: tour.marche, reserve: tour.reserve },
+    partieApres: { ...partie, marche: tour.marche, reserve: tour.reserve, vedettes: tour.vedettes },
     lignes: tour.lignes,
     carres: tour.carres,
     scores: tour.scores,
@@ -216,7 +226,10 @@ export async function ensureJoueur(discordId, username, rng = Math.random) {
     const nbAvant = Object.keys(joueurs).length;
     const arrivee = ajouterJoueur({ ...partie, nbJoueursAvant: nbAvant, config, catalog, rng });
     const joueur = { username: username || "?", main: arrivee.main, joker: 0, points: 0, carres: 0, arrivee: nbAvant };
-    await writePartie({ familles: arrivee.familles, marche: arrivee.marche, reserve: arrivee.reserve });
+    // Cartes vedettes : une pour `joueurs_par_vedette` joueurs, complétées
+    // au fil des arrivées (celles déjà annoncées sont gardées)
+    const vedettes = choisirVedettes(arrivee.familles, nbVedettes(nbAvant + 1, config), { gardees: partie.vedettes || [] }, rng);
+    await writePartie({ familles: arrivee.familles, marche: arrivee.marche, reserve: arrivee.reserve, vedettes });
     await writeJoueur(discordId, joueur);
     return { joueur, nouveau: true };
   });
@@ -250,18 +263,18 @@ export async function enregistrerChoix(jour, discordId, champ, key) {
   return { status: "ok", action, complet: echangeValide(action, joueur.main, partie.marche) };
 }
 
-// Action Joker du jour (voir draftRules.js), champ par champ ; `patch`
-// null annule.
-export async function enregistrerJoker(jour, discordId, patch) {
+// Bonus Joker du jour (valeur du menu, voir lireBonus), modifiable jusqu'à
+// la clôture.
+export async function enregistrerJoker(jour, discordId, valeur) {
   const [config, joueurs, partie, action] = await Promise.all([loadDraftRoyaleConfig(), readJoueurs(), readPartie(), readAction(jour, discordId)]);
   if (!joueurs[discordId]) return { status: "unknownPlayer" };
-  const r = appliquerChoixJoker(action.joker, patch, { id: discordId, joueurs, familles: partie.familles, config });
+  const r = lireBonus(valeur, { id: discordId, joueurs, marche: partie.marche, config });
   if (r.erreur) return { status: r.erreur };
   await getRedis().hset(actionsKey(jour), { [discordId]: toJson({ ...action, joker: r.joker }) });
   return { status: "ok", joker: r.joker };
 }
 
-// Voir main : instantané, payé tout de suite (une fois par jour). Sous le
+// Espionner : instantané, payé tout de suite (une fois par jour). Sous le
 // verrou des arrivées : les points Joker du joueur changent.
 export async function voirMainJoueur(jour, discordId, cible) {
   return withLock(async () => {
@@ -269,7 +282,7 @@ export async function voirMainJoueur(jour, discordId, cible) {
     const r = voirMain({ id: discordId, cible, joueurs, actions, config });
     if (r.erreur) return { status: r.erreur };
     const moi = joueurs[discordId];
-    await writeJoueur(discordId, { ...moi, joker: moi.joker - jokerCout("voir", config) });
+    await writeJoueur(discordId, { ...moi, joker: moi.joker - jokerCout("espionner", config) });
     await getRedis().hset(actionsKey(jour), { [discordId]: toJson({ ...(actions[discordId] || {}), vu: r.vu }) });
     return { status: "ok", vu: r.vu };
   });

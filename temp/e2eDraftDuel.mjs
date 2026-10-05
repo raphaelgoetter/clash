@@ -31,37 +31,18 @@ for (const id of ids) await H.handleJouer(`wh-${id}`, id, "Joueur " + id);
 for (let m = 1; m <= 7; m++) {
   for (const id of ids) {
     const view = await S.readPlayerView(await S.readState(), id);
-    const choix = choixGlouton(view.me.main, view.state.marche);
+    const choix = choixGlouton(view.me.main, view.state.marche, Math.random, view.state.vedettes || []);
     await H.handleChoix(`wh-${id}`, id, "prise", choix.prise);
     await H.handleChoix(`wh-${id}`, id, "depot", choix.depot);
     if ((view.me.joker || 0) >= 1) {
       const cible = Object.keys(view.players).find((x) => x !== id);
-      await H.handleJoker(`wh-${id}`, id, "ouvrir");
-      await H.handleJoker(`wh-${id}`, id, "voirmenu");
-      await H.handleJoker(`wh-${id}`, id, "voir", cible);
-      const apres = await S.readPlayerView(await S.readState(), id);
-      // Voir main puis Échanger carte avec une carte vue, si les points suffisent
-      if (apres.action.vu?.main && (apres.me.joker || 0) >= 2) {
-        const visee = apres.action.vu.main.find((k) => !apres.me.main.includes(k)) || apres.action.vu.main[0];
-        const donnee = apres.me.main.find((k) => k !== choix.depot) || apres.me.main[0];
-        await H.handleJoker(`wh-${id}`, id, "type", "echanger");
-        await H.handleJoker(`wh-${id}`, id, "cible", cible);
-        await H.handleJoker(`wh-${id}`, id, "carte", visee);
-        await H.handleJoker(`wh-${id}`, id, "maCarte", donnee);
-      }
-      const mag = lastEph(id).body;
-      console.log(`--- magasin ${id}, manche ${m} (${mag.components.length} rangées) ---\n${mag.embeds[0].description.split("\n").filter((l) => /👁️|Joker prévu/.test(l)).join("\n")}`);
-      await H.handleJoker(`wh-${id}`, id, "retour");
-      // Une manche jouée avec le Joker seul : échange au marché annulé
-      if (id === "u1" && m === 5) {
-        await H.handleChoix(`wh-${id}`, id, "annuler");
-        const e = lastEph(id).body;
-        console.log(`--- u1 Joker seul, manche ${m} : fin de tour ${e.components[2].components[0].disabled ? "désactivée" : "active"}, annuler ${e.components[2].components[2].disabled ? "désactivé" : "actif"} ---\n${e.embeds[0].description.split("\n").slice(-2).join("\n")}`);
-      }
-    }
-    if (id === "u1" && m >= 3 && m <= 4) {
+      await H.handleJoker(`wh-${id}`, id, "espion", cible);
+      if ((view.me.joker || 0) >= 3) await H.handleJoker(`wh-${id}`, id, "bonus", `verrouiller:${view.state.marche.find((k) => k !== choix.prise)}`);
+      else await H.handleJoker(`wh-${id}`, id, "bonus", "priorite");
+      // Une manche jouée avec le bonus seul : échange au marché annulé
+      if (id === "u1" && m === 5 && (view.me.joker || 0) >= 3) await H.handleChoix(`wh-${id}`, id, "annuler");
       const e = lastEph(id).body;
-      console.log(`--- main u1, manche ${m} (${e.components.length} rangées, fin de tour ${e.components[2]?.components[0].disabled ? "désactivée" : "active"}) ---\n${e.embeds[0].description}\n[${e.embeds[1]?.title}] ${e.embeds[1]?.description}`);
+      console.log(`--- ${id}, manche ${m} (${e.components.length} rangées, fin de tour ${e.components.at(-1).components[0].disabled ? "désactivée" : "active"}) ---\n${e.embeds[0].description.split("\n").filter((l) => /👁️|Bonus|Échange prévu|Pas d'échange|⭐/.test(l)).join("\n")}`);
     }
     await H.handleFinTour(`wh-${id}`, id);
   }

@@ -34,19 +34,13 @@ for (let jour = 1; jour <= 7; jour++) {
     if (id !== "u1" && Math.random() < 0.2) continue; // absent ce jour
     await H.handleJouer(`wh-${id}`, String(jour), id, `Joueur ${id}`);
     const joueur = await S.readJoueur(id);
-    const choix = choixGlouton(joueur.main, (await S.readPartie()).marche);
+    const partieJour = await S.readPartie();
+    const choix = choixGlouton(joueur.main, partieJour.marche, Math.random, partieJour.vedettes || []);
     await H.handleChoixSelect(`wh-${id}`, String(jour), "prise", id, `Joueur ${id}`, choix.prise);
     if (id !== "u2" || jour !== 2) await H.handleChoixSelect(`wh-${id}`, String(jour), "depot", id, `Joueur ${id}`, choix.depot);
     if (id === "u1" && (joueur.joker || 0) >= 1) {
-      const cible = ids.find((x) => x !== id);
-      await H.handleJoker(`wh-${id}`, String(jour), "ouvrir", id, `Joueur ${id}`);
-      await H.handleJoker(`wh-${id}`, String(jour), "type", id, `Joueur ${id}`, "echanger");
-      await H.handleJoker(`wh-${id}`, String(jour), "cible", id, `Joueur ${id}`, cible);
-      await H.handleJoker(`wh-${id}`, String(jour), "carte", id, `Joueur ${id}`, joueur.main[0]);
-      await H.handleJoker(`wh-${id}`, String(jour), "maCarte", id, `Joueur ${id}`, joueur.main[1]);
-      const mag = lastEph(id);
-      console.log(`--- magasin u1, J${jour} (${mag.components.length} rangées) ---\n${mag.embeds[0].description.split("\n").at(-1)}`);
-      await H.handleJoker(`wh-${id}`, String(jour), "retour", id, `Joueur ${id}`);
+      await H.handleJoker(`wh-${id}`, String(jour), "espion", id, `Joueur ${id}`, ids.find((x) => x !== id));
+      await H.handleJoker(`wh-${id}`, String(jour), "bonus", id, `Joueur ${id}`, "priorite");
     }
     if (id === "u1" && jour <= 4) {
       const e = lastEph(id);

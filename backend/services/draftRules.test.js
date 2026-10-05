@@ -15,8 +15,10 @@ import {
   classement,
   choixGlouton,
   jokerValide,
-  jokerEnConflit,
+  lireBonus,
   voirMain,
+  choisirVedettes,
+  nbVedettes,
   jokerDuBot,
 } from "./draftRules.js";
 
@@ -32,6 +34,18 @@ function main() {
   assert.strictEqual(pointsMain(["a", "a", "a", "d"], CONFIG), 3);
   assert.ok(aUnCarre(["a", "a", "a", "a"], CONFIG));
   assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG), CONFIG.points_carre);
+  // Carte vedette : son quadruplé vaut points_vedette
+  assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, ["b", "a"]), CONFIG.points_vedette);
+  assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, ["b"]), CONFIG.points_carre);
+  assert.strictEqual(pointsMain(["a", "a", "a", "c"], CONFIG, ["a"]), 3);
+  // Une vedette pour 5 joueurs, jamais les mêmes d'une donne à l'autre si
+  // possible, les vedettes déjà annoncées gardées
+  assert.strictEqual(nbVedettes(3, CONFIG), 1);
+  assert.strictEqual(nbVedettes(15, CONFIG), 3);
+  assert.strictEqual(nbVedettes(16, CONFIG), 4);
+  for (let i = 0; i < 20; i++) assert.deepStrictEqual(choisirVedettes(["a", "b", "c"], 2, { precedentes: ["a"] }).sort(), ["b", "c"]);
+  assert.deepStrictEqual(choisirVedettes(["a"], 2, { precedentes: ["a"] }), ["a"]);
+  assert.strictEqual(choisirVedettes(["a", "b", "c", "d"], 2, { gardees: ["c"] })[0], "c");
 
   // ── Cartes en jeu : ⌈5N / 4⌉ cartes à 4 exemplaires ──────────────────
   assert.strictEqual(nbFamilles(1, CONFIG), 2);
@@ -98,16 +112,25 @@ function main() {
   }
 
   // Dispute : le plus de points Joker gagne (points conservés), le perdant
-  // gagne gain_perte et reçoit une autre carte du marché
+  // garde sa carte (pas d'échange) et gagne gain_perte
   {
     const joueurs = { p1: { main: ["b"], joker: 3 }, p2: { main: ["c"], joker: 1 } };
     const r = resoudreEchanges({ joueurs, actions: { p1: { prise: "a", depot: "b" }, p2: { prise: "a", depot: "c" } }, marche: ["a", "e"], config: CONFIG });
     assert.deepStrictEqual(joueurs.p1.main, ["a"]);
     assert.strictEqual(joueurs.p1.joker, 3);
-    assert.deepStrictEqual(joueurs.p2.main, ["e"]);
+    assert.deepStrictEqual(joueurs.p2.main, ["c"]);
     assert.strictEqual(joueurs.p2.joker, 1 + CONFIG.joker.gain_perte);
-    assert.ok(r.lignes.some((l) => l.type === "perdue" && l.discordId === "p2" && l.voulue === "a" && l.key === "e"));
-    assert.deepStrictEqual([...r.marche].sort(), ["b", "c"]);
+    assert.ok(r.lignes.some((l) => l.type === "perdue" && l.discordId === "p2" && l.voulue === "a" && l.depot === "c"));
+    assert.deepStrictEqual([...r.marche].sort(), ["b", "e"]);
+  }
+
+  // Carte verrouillée : personne ne la prend, échange annulé
+  {
+    const joueurs = { p1: { main: ["b"], joker: 0 } };
+    const r = resoudreEchanges({ joueurs, actions: { p1: { prise: "a", depot: "b" } }, marche: ["a"], config: CONFIG, verrous: new Set(["a"]) });
+    assert.deepStrictEqual(joueurs.p1.main, ["b"]);
+    assert.deepStrictEqual(r.marche, ["a"]);
+    assert.ok(r.lignes.some((l) => l.type === "verrouillee" && l.voulue === "a"));
   }
 
   // Priorité : servie avant les points Joker
@@ -139,110 +162,47 @@ function main() {
 
   // ── Joker ────────────────────────────────────────────────────────────
   {
-    const COUT = CONFIG.joker.couts.saboter;
-    const base = (j1, j2 = {}) => ({
-      p1: { main: ["a", "a", "b", "c"], joker: COUT, points: 0, ...j1 },
-      p2: { main: ["d", "d", "a", "e"], joker: COUT, points: 0, ...j2 },
+    const joueurs = { p1: { main: ["a", "a", "b", "c"], joker: 2 }, p2: { main: ["d", "d", "a", "e"], joker: 0 } };
+    const ctx = { id: "p1", joueurs, marche: ["e", "a"], config: CONFIG };
+
+    // Menu « Bonus du tour »
+    assert.deepStrictEqual(lireBonus("aucun", ctx), { joker: null });
+    assert.deepStrictEqual(lireBonus("priorite", ctx), { joker: { type: "priorite" } });
+    assert.deepStrictEqual(lireBonus("verrouiller:e", ctx), { joker: { type: "verrouiller", carte: "e" } });
+    assert.strictEqual(lireBonus("verrouiller:z", ctx).erreur, "carte");
+    assert.strictEqual(lireBonus("verrouiller:e", { ...ctx, id: "p2" }).erreur, "points");
+    assert.strictEqual(lireBonus("saboter", ctx).erreur, "inconnue");
+
+    // Validité : Priorité seulement avec un échange, Verrouiller sur le marché
+    assert.ok(!jokerValide({ type: "priorite" }, "p1", joueurs, CONFIG, { echangeOk: false }));
+    assert.ok(jokerValide({ type: "verrouiller", carte: "e" }, "p1", joueurs, CONFIG, { echangeOk: false, marche: ["e"] }));
+    assert.ok(!jokerValide({ type: "verrouiller", carte: "e" }, "p1", joueurs, CONFIG, { marche: ["a"] }));
+
+    // Espionner : instantané, une fois par tour
+    const r = voirMain({ id: "p1", cible: "p2", joueurs, actions: {}, config: CONFIG });
+    assert.deepStrictEqual(r.vu, { cible: "p2", main: ["d", "d", "a", "e"] });
+    assert.strictEqual(voirMain({ id: "p1", cible: "p2", joueurs, actions: { p1: { vu: r.vu } }, config: CONFIG }).erreur, "deja");
+    assert.strictEqual(voirMain({ id: "p1", cible: "p1", joueurs, actions: {}, config: CONFIG }).erreur, "cible");
+    assert.strictEqual(voirMain({ id: "p2", cible: "p1", joueurs, actions: {}, config: CONFIG }).erreur, "points");
+
+    // Tour : Verrouiller (payé, joue le tour seul) bloque la prise adverse ;
+    // l'espionnage est mentionné au bilan sans jouer le tour
+    const t = computeTour({
+      joueursAvant: joueurs,
+      actions: { p1: { joker: { type: "verrouiller", carte: "a" }, vu: r.vu }, p2: { prise: "a", depot: "e" } },
+      marche: ["e", "a"],
+      familles: ["a", "b", "c", "d", "e"],
+      config: CONFIG,
+      dernier: false,
     });
-    const tour = (joueursAvant, actions) => computeTour({ joueursAvant, actions, marche: ["e"], familles: ["a", "b", "c", "d", "e"], config: CONFIG, dernier: false });
+    assert.strictEqual(t.joueurs.p1.joker, 2 - CONFIG.joker.couts.verrouiller + CONFIG.joker.gain_tour);
+    assert.deepStrictEqual([...t.joueurs.p2.main].sort(), ["a", "d", "d", "e"]);
+    assert.ok(t.lignes.some((l) => l.action === "verrouiller" && l.carte === "a"));
+    assert.ok(t.lignes.some((l) => l.action === "espionner" && l.cible === "p2"));
 
-    // Validité : points suffisants, cible autre que soi, champs complets
-    const j = base();
-    assert.ok(jokerValide({ type: "saboter", cible: "p2" }, "p1", j, CONFIG));
-    assert.ok(!jokerValide({ type: "saboter", cible: "p1" }, "p1", j, CONFIG));
-    assert.ok(!jokerValide({ type: "saboter", cible: "p2" }, "p1", base({ joker: 0 }), CONFIG));
-    assert.ok(!jokerValide({ type: "voir", cible: "p2" }, "p1", j, CONFIG));
-    assert.ok(!jokerValide({ type: "echanger", cible: "p2", carte: "a" }, "p1", j, CONFIG));
-    assert.ok(!jokerValide({ type: "priorite" }, "p1", j, CONFIG, false));
-
-    // Voir main : instantané, une fois par tour, protection respectée
-    {
-      const j2 = base();
-      const r = voirMain({ id: "p1", cible: "p2", joueurs: j2, actions: {}, config: CONFIG });
-      assert.deepStrictEqual(r.vu, { cible: "p2", main: ["d", "d", "a", "e"], protege: false });
-      assert.strictEqual(voirMain({ id: "p1", cible: "p2", joueurs: j2, actions: { p1: { vu: r.vu } }, config: CONFIG }).erreur, "deja");
-      assert.strictEqual(voirMain({ id: "p1", cible: "p1", joueurs: j2, actions: {}, config: CONFIG }).erreur, "cible");
-      assert.strictEqual(voirMain({ id: "p1", cible: "p2", joueurs: base({ joker: 0 }), actions: {}, config: CONFIG }).erreur, "points");
-      const cache = voirMain({ id: "p1", cible: "p2", joueurs: j2, actions: { p2: { joker: { type: "proteger" } } }, config: CONFIG });
-      assert.deepStrictEqual(cache.vu, { cible: "p2", main: null, protege: true });
-      // Le Voir main seul ne joue pas le tour (pas de +gain_tour), il est
-      // mentionné au bilan
-      const t = tour(base(), { p1: { vu: r.vu } });
-      assert.strictEqual(t.joueurs.p1.joker, COUT);
-      assert.ok(t.lignes.some((l) => l.action === "voir" && l.discordId === "p1" && l.cible === "p2"));
-    }
-
-    // Exemple de Raphael : 3 Géants + 1 Prince, Échange Joker seul (sans
-    // marché) Prince contre le Géant d'un adversaire → quadruplé
-    {
-      const joueursAvant = { p1: { main: ["g", "g", "g", "p"], joker: COUT, points: 0 }, p2: { main: ["g", "a", "a", "b"], joker: 0, points: 0 } };
-      const t = computeTour({
-        joueursAvant,
-        actions: { p1: { joker: { type: "echanger", cible: "p2", carte: "g", maCarte: "p" } } },
-        marche: ["a", "b"],
-        familles: ["g", "p", "a", "b"],
-        config: CONFIG,
-        dernier: false,
-      });
-      assert.deepStrictEqual(t.carres, ["p1"]);
-    }
-
-    // Même carte unique donnée au marché et à l'Échange Joker : le Joker
-    // n'est ni joué ni payé, le marché se fait
-    {
-      const joueursAvant = { p1: { main: ["g", "g", "g", "p"], joker: COUT, points: 0 }, p2: { main: ["g", "a", "a", "b"], joker: 0, points: 0 } };
-      const action = { prise: "a", depot: "p", joker: { type: "echanger", cible: "p2", carte: "g", maCarte: "p" } };
-      assert.ok(jokerEnConflit(action, joueursAvant.p1.main));
-      const t = computeTour({ joueursAvant, actions: { p1: action }, marche: ["a", "b"], familles: ["g", "p", "a", "b"], config: CONFIG, dernier: false });
-      assert.deepStrictEqual([...t.joueurs.p1.main].sort(), ["a", "g", "g", "g"]);
-      assert.strictEqual(t.joueurs.p1.joker, COUT + CONFIG.joker.gain_tour);
-      assert.ok(!jokerEnConflit({ ...action, depot: "g" }, joueursAvant.p1.main));
-    }
-
-    // Échanger carte : réussi, puis carte absente (point perdu)
-    {
-      const t = tour(base(), { p1: { joker: { type: "echanger", cible: "p2", carte: "a", maCarte: "b" } } });
-      assert.deepStrictEqual([...t.joueurs.p1.main].sort(), ["a", "a", "a", "c"]);
-      assert.deepStrictEqual([...t.joueurs.p2.main].sort(), ["b", "d", "d", "e"]);
-      const rate = tour(base(), { p1: { joker: { type: "echanger", cible: "p2", carte: "c", maCarte: "b" } } });
-      assert.ok(rate.lignes.some((l) => l.action === "echanger" && l.echec === "absente"));
-      assert.strictEqual(rate.joueurs.p1.joker, CONFIG.joker.gain_tour);
-    }
-
-    // Saboter : une carte de la cible part au marché contre une autre
-    {
-      const t = tour(base(), { p1: { joker: { type: "saboter", cible: "p2" } } });
-      const l = t.lignes.find((x) => x.action === "saboter");
-      assert.strictEqual(l.recue, "e");
-      assert.ok(t.joueurs.p2.main.includes("e") && t.marche.includes(l.retiree));
-    }
-
-    // Protéger : l'action ciblée échoue, les deux points sont dépensés
-    {
-      const t = tour(base(), { p1: { joker: { type: "saboter", cible: "p2" } }, p2: { joker: { type: "proteger" } } });
-      assert.ok(t.lignes.some((l) => l.action === "saboter" && l.echec === "protege"));
-      assert.deepStrictEqual([...t.joueurs.p2.main].sort(), ["a", "d", "d", "e"]);
-      assert.strictEqual(t.joueurs.p1.joker + t.joueurs.p2.joker, 2 * CONFIG.joker.gain_tour);
-    }
-
-    // Saboter peut empêcher un carré tout juste complété
-    {
-      const joueursAvant = base({}, { main: ["d", "d", "d", "a"], joker: 0 });
-      const t = computeTour({
-        joueursAvant,
-        actions: { p2: { prise: "d", depot: "a" }, p1: { joker: { type: "saboter", cible: "p2" } } },
-        marche: ["d", "e"],
-        familles: ["a", "b", "c", "d", "e"],
-        config: CONFIG,
-        dernier: false,
-      });
-      assert.deepStrictEqual(t.carres, []);
-    }
-
-    // Bot : protection avec 3 identiques, sabotage du leader avec 2 points
-    assert.deepStrictEqual(jokerDuBot("p1", base({ main: ["a", "a", "a", "b"] }), CONFIG), { type: "proteger" });
-    assert.deepStrictEqual(jokerDuBot("p1", base({}, { points: 9 }), CONFIG), { type: "saboter", cible: "p2" });
-    assert.strictEqual(jokerDuBot("p1", base({ joker: COUT - 1 }), CONFIG), null);
+    // Bot : Priorité quand sa prise complète un quadruplé
+    assert.deepStrictEqual(jokerDuBot("p1", { p1: { main: ["a", "a", "a", "b"], joker: 1 } }, "a", CONFIG), { type: "priorite" });
+    assert.strictEqual(jokerDuBot("p1", { p1: { main: ["a", "a", "b", "c"], joker: 1 } }, "a", CONFIG), null);
   }
 
   // ── Tour : carré → décompte pour tous puis redistribution ──────────────
@@ -257,14 +217,17 @@ function main() {
       marche: ["a", "d"],
       reserve: ["b", "b", "c", "d", "d", "d", "e", "e", "e", "e"],
       familles: ["a", "b", "c", "d", "e"],
+      vedettes: ["a"],
       config: CONFIG,
       dernier: false,
     });
     assert.deepStrictEqual(t.carres, ["p1"]);
-    assert.strictEqual(t.joueurs.p1.points, 5 + CONFIG.points_carre);
+    assert.strictEqual(t.joueurs.p1.points, 5 + CONFIG.points_vedette);
+    assert.ok(t.scores.find((x) => x.discordId === "p1").vedette);
     assert.strictEqual(t.joueurs.p1.carres, 1);
     assert.strictEqual(t.joueurs.p2.points, 2);
     assert.ok(t.redistribution);
+    assert.ok(t.vedettes.length === 1 && t.vedettes[0] !== "a");
     assert.strictEqual(t.marche.length, 2);
     assert.strictEqual(t.reserve.length, 20 - 8 - 2);
     assert.strictEqual(joueursAvant.p1.main.length, 4); // non muté

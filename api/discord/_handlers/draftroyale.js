@@ -36,7 +36,7 @@ import {
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/draftroyale.js";
 import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
-import { JOKER_EMOJI, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, buildVoirMenu, voirLigne, jokerBilanLignes } from "./draftJoker.js";
+import { JOKER_EMOJI, vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes } from "./draftJoker.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -71,12 +71,12 @@ function formatGroupes(keys, catalog) {
   return groupes.map(([k, n]) => `${cardName(k, catalog)} ×${n}`).join(" · ");
 }
 
-function groupOptions(keys, catalog, suffixe, selected) {
+function groupOptions(keys, catalog, suffixe, selected, vedettes = []) {
   return [...compterCartes(keys)]
     .sort((a, b) => cardName(a[0], catalog).localeCompare(cardName(b[0], catalog)))
     .slice(0, 25)
     .map(([k, n]) => ({
-      label: cardName(k, catalog).slice(0, 100),
+      label: `${vedettes.includes(k) ? "⭐ " : ""}${cardName(k, catalog)}`.slice(0, 100),
       description: `×${n} ${suffixe}`,
       value: k,
       default: k === selected || undefined,
@@ -178,15 +178,17 @@ function buildReglesEmbed(config) {
     description: [
       `Réunis **${config.taille_main} exemplaires d'une même carte** (un quadruplé) ! Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes à ton premier clic. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
       "",
-      `**Chaque jour** : ${TRADE_TEXT} échange une carte au marché (une à prendre, une de ta main à déposer), joue une action ${JOKER_EMOJI} Joker, ou les deux. Tu peux changer d'avis jusqu'à la clôture.`,
+      `**Chaque jour** : ${TRADE_TEXT} échange une carte au marché (une à prendre, une de ta main à déposer), choisis un bonus ${JOKER_EMOJI} Joker, ou les deux. Tu peux changer d'avis jusqu'à la clôture.`,
       "",
-      "**À la clôture**, tous les échanges ont lieu en même temps :",
-      "• Une carte voulue par plus de joueurs qu'il n'y a d'exemplaires va à celui qui a le plus de points Joker (tirage au sort à égalité).",
-      `• Les autres reçoivent une autre carte du marché au hasard et gagnent +${config.joker.gain_perte} points Joker.`,
+      "**À la clôture**, tous les échanges ont lieu en même temps. Une carte voulue par plus de joueurs qu'il n'y a d'exemplaires va à celui qui a le plus de points Joker (tirage au sort à égalité) ; les autres gardent leur carte.",
       "",
-      `**${JOKER_EMOJI} Joker** : +${config.joker.gain_tour} point Joker par tour joué, +${config.joker.gain_perte} de plus si ta carte t'échappe. Dépense-les au magasin (une action par tour, résolue à la clôture) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
+      `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par tour joué, +${config.joker.gain_perte} de plus si une carte disputée t'échappe. À dépenser :`,
+      `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée.`,
+      `• **Verrouiller** une carte du marché (${config.joker.couts.verrouiller} pts) : personne ne peut la prendre ce tour-ci.`,
+      `• **Espionner** un joueur (${config.joker.couts.espionner} pt) : sa main s'affiche tout de suite, en plus de ton bonus.`,
       "",
       `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts. Les autres marquent 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées.`,
+      `**⭐ Cartes vedettes** : à chaque donne, une carte en jeu par tranche de ${config.joueurs_par_vedette} joueurs est tirée au sort. Leur quadruplé rapporte ${config.points_vedette} pts au lieu de ${config.points_carre}.`,
       "",
       `**Dernier jour** (J${config.duree_jours}) : tout le monde marque ses points, même sans quadruplé. Les points Joker restants s'ajoutent au score final.`,
       "",
@@ -337,10 +339,10 @@ function bilanVeille(veille, joueurs, discordId, config, catalog) {
     lignes.push(`• ${echangeLigne(l, nom(l.discordId), (k) => cardName(k, catalog), config)}`);
   }
   if (!lignes.length) lignes.push("Aucun échange.");
-  lignes.push(...jokerBilanLignes(veille.lignes, discordId, noms, (k) => cardName(k, catalog), (keys) => formatGroupes(keys, catalog), config));
+  lignes.push(...jokerBilanLignes(veille.lignes, discordId, noms, (k) => cardName(k, catalog)));
   for (const sc of (veille.scores || []).filter((x) => x.carre)) {
     const [key] = [...compterCartes(sc.main)].sort((a, b) => b[1] - a[1])[0] || [];
-    lignes.push(`🎉 Quadruplé de **${nom(sc.discordId)}** (${cardName(key, catalog)}) : +${sc.points} pts`);
+    lignes.push(`🎉 Quadruplé de **${nom(sc.discordId)}** (${sc.vedette ? "⭐ " : ""}${cardName(key, catalog)}) : +${sc.points} pts`);
   }
   const mien = veille.scores?.find((x) => x.discordId === discordId && !x.carre);
   if (mien) lignes.push(`Ton décompte : +${plural(mien.points, "pt")}`);
@@ -371,6 +373,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
     ...(entete ? [entete, ""] : []),
     ...(nouveau ? [`Bienvenue ! Voici tes ${config.taille_main} cartes.`, ""] : []),
     ...(bilan.length ? ["**Hier**", ...bilan, ""] : []),
+    vedetteLigne(partie.vedettes, (k) => cardName(k, catalog), config),
     `**Ta main** : ${formatGroupes(main, catalog)}`,
     "",
     ...tourStatutLignes({
@@ -383,7 +386,6 @@ async function buildJeuView(jour, discordId, username, entete = null) {
       trade: TRADE_TEXT,
       suite: "Modifiable jusqu'à la clôture.",
     }),
-    jokerStatutLigne(action.joker, nomsJoueurs(joueurs, discordId), (k) => cardName(k, catalog)),
     voirLigne(action.vu, nomsJoueurs(joueurs, discordId), (keys) => formatGroupes(keys, catalog)),
   ].filter((l) => l !== null);
   const marcheTrie = [...partie.marche].sort();
@@ -410,7 +412,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
             type: 3,
             custom_id: `draftroyale_prise:${jour}`,
             placeholder: "Carte à prendre au marché",
-            options: groupOptions(partie.marche, catalog, "au marché", action.prise),
+            options: groupOptions(partie.marche, catalog, "au marché", action.prise, partie.vedettes || []),
           },
         ],
       },
@@ -425,44 +427,22 @@ async function buildJeuView(jour, discordId, username, entete = null) {
           },
         ],
       },
-      { type: 1, components: [jokerButton("draftroyale", jour, joueur.joker || 0, action.joker), annulerEchangeButton("draftroyale", jour, action)] },
+      ...jokerRows({
+        prefixe: "draftroyale",
+        tour: jour,
+        points: joueur.joker || 0,
+        action,
+        marche: partie.marche,
+        adversaires: Object.entries(nomsJoueurs(joueurs, discordId))
+          .filter(([id]) => id !== discordId)
+          .map(([id, nom]) => ({ id, nom }))
+          .sort((a, b) => a.nom.localeCompare(b.nom)),
+        config,
+        cardName: (k) => cardName(k, catalog),
+      }),
+      { type: 1, components: [annulerEchangeButton("draftroyale", jour, action)] },
     ],
   };
-}
-
-// Magasin Joker (édition en place de l'éphémère).
-async function buildMagasinView(jour, discordId, entete = null, { voirMenu = false } = {}) {
-  const [config, catalog, joueurs, partie, action] = await Promise.all([
-    loadDraftRoyaleConfig(),
-    loadCatalog(),
-    readJoueurs(),
-    readPartie(),
-    readAction(jour, discordId),
-  ]);
-  const joueur = joueurs[discordId];
-  const noms = nomsJoueurs(joueurs, discordId);
-  const adversaires = Object.keys(joueurs)
-    .filter((id) => id !== discordId)
-    .map((id) => ({ id, nom: noms[id] }))
-    .sort((a, b) => a.nom.localeCompare(b.nom));
-  if (voirMenu) return buildVoirMenu({ prefixe: "draftroyale", tour: jour, points: joueur?.joker || 0, adversaires, config, color: DRAFT_COLOR });
-  const vue = buildMagasin({
-    prefixe: "draftroyale",
-    tour: jour,
-    points: joueur?.joker || 0,
-    joker: action.joker,
-    vu: action.vu,
-    adversaires,
-    main: joueur?.main || [],
-    familles: partie.familles,
-    config,
-    cardName: (k) => cardName(k, catalog),
-    formatGroupes: (keys) => formatGroupes(keys, catalog),
-    noms,
-    color: DRAFT_COLOR,
-  });
-  if (entete) vue.embeds[0].description = `${entete}\n\n${vue.embeds[0].description}`;
-  return vue;
 }
 
 // ── Bouton [🃏 Jouer] ────────────────────────────────────────────────
@@ -496,35 +476,21 @@ export async function handleChoixSelect(webhookUrl, jour, champ, discordId, user
 
 const JOKER_ERREURS = {
   points: "Pas assez de points Joker.",
-  cible: "Cible impossible.",
-  carte: "Carte impossible.",
-  inconnue: "Choisis d'abord une action.",
-  deja: "Tu as déjà regardé une main ce tour-ci.",
+  cible: "Joueur impossible à espionner.",
+  carte: "Cette carte n'est plus au marché.",
+  inconnue: "Bonus inconnu.",
+  deja: "Tu as déjà espionné un joueur ce tour-ci.",
   unknownPlayer: "Clique d'abord sur Jouer.",
 };
 
-// Magasin Joker : `champ` = ouvrir, retour, annuler, type, cible, carte
-// ou maCarte (voir draftJoker.js).
+// Menus Joker de la main : `champ` = "bonus" (bonus du tour) ou
+// "espion" (Espionner, instantané).
 export async function handleJoker(webhookUrl, jour, champ, discordId, username, value) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
-    if (champ === "retour") {
-      await patchOriginal(webhookUrl, await buildJeuView(Number(jour), discordId, username));
-      return;
-    }
-    if (champ === "voirmenu") {
-      await patchOriginal(webhookUrl, await buildMagasinView(Number(jour), discordId, null, { voirMenu: true }));
-      return;
-    }
-    let entete = null;
-    if (champ !== "ouvrir") {
-      const result =
-        champ === "voir"
-          ? await voirMainJoueur(Number(jour), discordId, value)
-          : await enregistrerJoker(Number(jour), discordId, champ === "annuler" ? null : { [champ]: value });
-      if (result.status !== "ok") entete = `⚠️ ${JOKER_ERREURS[result.status] || "Choix impossible."}`;
-    }
-    await patchOriginal(webhookUrl, await buildMagasinView(Number(jour), discordId, entete));
+    const result = champ === "espion" ? await voirMainJoueur(Number(jour), discordId, value) : await enregistrerJoker(Number(jour), discordId, value);
+    const entete = result.status === "ok" ? null : `⚠️ ${JOKER_ERREURS[result.status] || "Choix impossible."}`;
+    await patchOriginal(webhookUrl, await buildJeuView(Number(jour), discordId, username, entete));
   } catch (err) {
     console.error("[DraftRoyale] Échec Joker:", err.message);
   }
