@@ -37,7 +37,7 @@ for (let m = 1; m <= 7; m++) {
     if ((view.me.joker || 0) >= 1) {
       const cible = Object.keys(view.players).find((x) => x !== id);
       await H.handleJoker(`wh-${id}`, id, "espion", cible);
-      if ((view.me.joker || 0) >= 3) await H.handleJoker(`wh-${id}`, id, "bonus", `verrouiller:${view.state.marche.find((k) => k !== choix.prise)}`);
+      if ((view.me.joker || 0) >= 3) await H.handleJoker(`wh-${id}`, id, "bonus", `geler:${view.state.marche.find((k) => k !== choix.prise)}`);
       else await H.handleJoker(`wh-${id}`, id, "bonus", "priorite");
       // Une manche jouée avec le bonus seul : échange au marché annulé
       if (id === "u1" && m === 5 && (view.me.joker || 0) >= 3) await H.handleChoix(`wh-${id}`, id, "annuler");

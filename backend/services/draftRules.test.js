@@ -124,13 +124,13 @@ function main() {
     assert.deepStrictEqual([...r.marche].sort(), ["b", "e"]);
   }
 
-  // Carte verrouillée : personne ne la prend, échange annulé
+  // Carte gelée : personne ne la prend, échange annulé
   {
     const joueurs = { p1: { main: ["b"], joker: 0 } };
-    const r = resoudreEchanges({ joueurs, actions: { p1: { prise: "a", depot: "b" } }, marche: ["a"], config: CONFIG, verrous: new Set(["a"]) });
+    const r = resoudreEchanges({ joueurs, actions: { p1: { prise: "a", depot: "b" } }, marche: ["a"], config: CONFIG, gelees: new Set(["a"]) });
     assert.deepStrictEqual(joueurs.p1.main, ["b"]);
     assert.deepStrictEqual(r.marche, ["a"]);
-    assert.ok(r.lignes.some((l) => l.type === "verrouillee" && l.voulue === "a"));
+    assert.ok(r.lignes.some((l) => l.type === "gelee" && l.voulue === "a"));
   }
 
   // Priorité : servie avant les points Joker
@@ -168,15 +168,15 @@ function main() {
     // Menu « Bonus du tour »
     assert.deepStrictEqual(lireBonus("aucun", ctx), { joker: null });
     assert.deepStrictEqual(lireBonus("priorite", ctx), { joker: { type: "priorite" } });
-    assert.deepStrictEqual(lireBonus("verrouiller:e", ctx), { joker: { type: "verrouiller", carte: "e" } });
-    assert.strictEqual(lireBonus("verrouiller:z", ctx).erreur, "carte");
-    assert.strictEqual(lireBonus("verrouiller:e", { ...ctx, id: "p2" }).erreur, "points");
+    assert.deepStrictEqual(lireBonus("geler:e", ctx), { joker: { type: "geler", carte: "e" } });
+    assert.strictEqual(lireBonus("geler:z", ctx).erreur, "carte");
+    assert.strictEqual(lireBonus("geler:e", { ...ctx, id: "p2" }).erreur, "points");
     assert.strictEqual(lireBonus("saboter", ctx).erreur, "inconnue");
 
-    // Validité : Priorité seulement avec un échange, Verrouiller sur le marché
+    // Validité : Priorité seulement avec un échange, Geler sur le marché
     assert.ok(!jokerValide({ type: "priorite" }, "p1", joueurs, CONFIG, { echangeOk: false }));
-    assert.ok(jokerValide({ type: "verrouiller", carte: "e" }, "p1", joueurs, CONFIG, { echangeOk: false, marche: ["e"] }));
-    assert.ok(!jokerValide({ type: "verrouiller", carte: "e" }, "p1", joueurs, CONFIG, { marche: ["a"] }));
+    assert.ok(jokerValide({ type: "geler", carte: "e" }, "p1", joueurs, CONFIG, { echangeOk: false, marche: ["e"] }));
+    assert.ok(!jokerValide({ type: "geler", carte: "e" }, "p1", joueurs, CONFIG, { marche: ["a"] }));
 
     // Espionner : instantané, une fois par tour
     const r = voirMain({ id: "p1", cible: "p2", joueurs, actions: {}, config: CONFIG });
@@ -185,19 +185,19 @@ function main() {
     assert.strictEqual(voirMain({ id: "p1", cible: "p1", joueurs, actions: {}, config: CONFIG }).erreur, "cible");
     assert.strictEqual(voirMain({ id: "p2", cible: "p1", joueurs, actions: {}, config: CONFIG }).erreur, "points");
 
-    // Tour : Verrouiller (payé, joue le tour seul) bloque la prise adverse ;
+    // Tour : Geler (payé, joue le tour seul) bloque la prise adverse ;
     // l'espionnage est mentionné au bilan sans jouer le tour
     const t = computeTour({
       joueursAvant: joueurs,
-      actions: { p1: { joker: { type: "verrouiller", carte: "a" }, vu: r.vu }, p2: { prise: "a", depot: "e" } },
+      actions: { p1: { joker: { type: "geler", carte: "a" }, vu: r.vu }, p2: { prise: "a", depot: "e" } },
       marche: ["e", "a"],
       familles: ["a", "b", "c", "d", "e"],
       config: CONFIG,
       dernier: false,
     });
-    assert.strictEqual(t.joueurs.p1.joker, 2 - CONFIG.joker.couts.verrouiller + CONFIG.joker.gain_tour);
+    assert.strictEqual(t.joueurs.p1.joker, 2 - CONFIG.joker.couts.geler + CONFIG.joker.gain_tour);
     assert.deepStrictEqual([...t.joueurs.p2.main].sort(), ["a", "d", "d", "e"]);
-    assert.ok(t.lignes.some((l) => l.action === "verrouiller" && l.carte === "a"));
+    assert.ok(t.lignes.some((l) => l.action === "geler" && l.carte === "a"));
     assert.ok(t.lignes.some((l) => l.action === "espionner" && l.cible === "p2"));
 
     // Bot : Priorité quand sa prise complète un quadruplé

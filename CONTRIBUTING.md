@@ -1935,7 +1935,7 @@ Résolus tous ensemble à la clôture (`resoudreEchanges()`, pure) : l'heure de 
 1. Une carte demandée par **au plus autant de joueurs qu'il y a d'exemplaires au marché** est obtenue par tous.
 2. Sinon elle est **disputée** : les joueurs en **Priorité** (Joker) sont servis d'abord, puis ceux qui ont le plus de **points Joker restants** (après les achats du tour), tirage au sort entre ex aequo (décision du 05/10 : sans tirage, personne ne l'emporterait au J1 où tout le monde est à 0).
 3. Les perdants **gardent leur carte** (pas d'échange, décision du 05/10 : la carte de remplacement tirée au hasard rendait le jeu trop aléatoire) et gagnent `joker.gain_perte` (2) points Joker.
-4. Une carte **verrouillée** (Joker) ne peut être prise par personne ce tour-ci.
+4. Une carte **gelée** (Joker) ne peut être prise par personne ce tour-ci, même par celui qui l'a gelée.
 5. Les cartes déposées par ceux qui ont obtenu leur carte rejoignent le marché (taille du marché inchangée).
 
 ### Joker (Draft Royale et duel)
@@ -1946,11 +1946,11 @@ Résolus tous ensemble à la clôture (`resoudreEchanges()`, pure) : l'heure de 
 
 - **Bonus du tour** (menu, un seul, modifiable jusqu'à la clôture, payé et résolu à la clôture, `lireBonus()`) :
   - **Priorité** (1 pt) : servi en premier si la carte prise est disputée (sans échange complet, ni utilisée ni payée). Plusieurs joueurs en Priorité sur la même carte : départagés par les points Joker.
-  - **Verrouiller** une carte du marché (2 pts) : personne ne peut la prendre ce tour-ci, son auteur compris (échange annulé, carte gardée, sans gain de dispute). Sert à bloquer un adversaire repéré en espionnant ou dans le bilan.
+  - **Geler** une carte du marché (2 pts, d'abord appelé « Verrouiller », renommé le 05/10 car incompris) : une carte gelée ne peut pas être prise ce tour-ci, même par celui qui l'a gelée (échange annulé, carte gardée, sans gain de dispute ; avertissement si on gèle la carte qu'on veut prendre). Sert à bloquer un adversaire repéré en espionnant ou dans le bilan.
 - **Espionner** (menu, 1 pt, `voirMain()`) : **instantané**, une fois par tour, en plus du bonus. La main actuelle de la cible s'affiche tout de suite (elle peut encore changer à la clôture). Ne suffit pas à jouer le tour (pas de +1). Les autres le voient au bilan (« X a espionné Y »).
-- **Un tour se joue** par un échange au marché, un bonus, ou les deux (exemple : verrouiller la carte qu'un adversaire attend sans rien échanger).
+- **Un tour se joue** par un échange au marché, un bonus, ou les deux (exemple : geler la carte qu'un adversaire attend sans rien échanger).
 
-**Ordre à la clôture** (`computeTour()`) : paiement des bonus, échanges au marché (cartes verrouillées exclues, Priorité servie d'abord), +1 par tour joué, puis quadruplés et décompte. Le bilan annonce les verrous (« 🔒 X a verrouillé Princesse »). **Bots du duel** (`jokerDuBot()`, sans regarder les autres mains) : Priorité quand leur prise peut compléter un quadruplé.
+**Ordre à la clôture** (`computeTour()`) : paiement des bonus, échanges au marché (cartes gelées exclues, Priorité servie d'abord), +1 par tour joué, puis quadruplés et décompte. Le bilan annonce les gels (« 🧊 X a gelé Princesse »). **Bots du duel** (`jokerDuBot()`, sans regarder les autres mains) : Priorité quand leur prise peut compléter un quadruplé.
 
 ### Score (Draft Royale)
 
@@ -1964,7 +1964,7 @@ Simulation (`temp/simulateDraft.mjs`, 05/10, joueurs gloutons, 7 tours) : à 15-
 
 ### Informations visibles (Draft Royale)
 
-Les mains restent secrètes. **Message du jour : infos générales uniquement** (décision du 05/10) : rappel du but, nombre de joueurs, classement (points, points Joker, quadruplés), dernier jour, illustration. **Éphémère Jouer : la journée en cours** : échanges de la veille de tous les joueurs (prise et dépôt, cartes disputées, quadruplés, ton décompte, nouvelle donne), main regroupée (« Princesse ×2 · … ») et en image, échange et Joker prévus (avertissements seulement si un choix est incomplet ou en conflit), marché (liste et image), les deux menus (carte à prendre, carte à déposer) et les menus Joker (bonus du tour, espionner).
+Les mains restent secrètes. **Message du jour : infos générales uniquement** (décision du 05/10) : rappel du but, nombre de joueurs, classement (points, points Joker, quadruplés), dernier jour, illustration. **Éphémère Jouer : la journée en cours** (les quadruplés de la veille et la nouvelle donne dans un encadré doré en tête, `quadruplesEmbed()`, puis cartes vedettes et points Joker au-dessus de la main) : échanges de la veille de tous les joueurs (prise et dépôt, cartes disputées, quadruplés, ton décompte, nouvelle donne), main regroupée (« Princesse ×2 · … ») et en image, échange et Joker prévus (avertissements seulement si un choix est incomplet ou en conflit), marché (liste et image), les deux menus (carte à prendre, carte à déposer) et les menus Joker (bonus du tour, espionner).
 
 ### Images (Draft Royale)
 

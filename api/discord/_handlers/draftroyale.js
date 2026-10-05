@@ -36,7 +36,7 @@ import {
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/draftroyale.js";
 import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
-import { JOKER_EMOJI, vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes } from "./draftJoker.js";
+import { JOKER_EMOJI, quadruplesEmbed, vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes } from "./draftJoker.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -176,23 +176,18 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles — Draft Royale",
     description: [
-      `Réunis **${config.taille_main} exemplaires d'une même carte** (un quadruplé) ! Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes à ton premier clic. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
+      `Réunis **${config.taille_main} cartes identiques** (un quadruplé) !`,
       "",
-      `**Chaque jour** : ${TRADE_TEXT} échange une carte au marché (une à prendre, une de ta main à déposer), choisis un bonus ${JOKER_EMOJI} Joker, ou les deux. Tu peux changer d'avis jusqu'à la clôture.`,
+      `**Chaque jour** : ${TRADE_TEXT} prends une carte au marché et dépose une carte de ta main, utilise une action ${JOKER_EMOJI} Joker, ou les deux.`,
+      `**Carte disputée** : elle va au joueur qui a le plus de points Joker. Les autres gardent leur carte (+${config.joker.gain_perte} pts Joker).`,
+      `**Quadruplé** : ${config.points_carre} pts (${config.points_vedette} pour une ⭐ carte vedette). Les autres marquent 1 à 3 pts, puis nouvelle donne.`,
       "",
-      "**À la clôture**, tous les échanges ont lieu en même temps. Une carte voulue par plus de joueurs qu'il n'y a d'exemplaires va à celui qui a le plus de points Joker (tirage au sort à égalité) ; les autres gardent leur carte.",
+      `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par jour joué.`,
+      `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée`,
+      `• **Geler** une carte (${config.joker.couts.geler} pts) : personne ne peut la prendre ce jour-là, même toi`,
+      `• **Espionner** (${config.joker.couts.espionner} pt) : vois tout de suite la main d'un joueur`,
       "",
-      `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par tour joué, +${config.joker.gain_perte} de plus si une carte disputée t'échappe. À dépenser :`,
-      `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée.`,
-      `• **Verrouiller** une carte du marché (${config.joker.couts.verrouiller} pts) : personne ne peut la prendre ce tour-ci.`,
-      `• **Espionner** un joueur (${config.joker.couts.espionner} pt) : sa main s'affiche tout de suite, en plus de ton bonus.`,
-      "",
-      `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts. Les autres marquent 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées.`,
-      `**⭐ Cartes vedettes** : à chaque donne, une carte en jeu par tranche de ${config.joueurs_par_vedette} joueurs est tirée au sort. Leur quadruplé rapporte ${config.points_vedette} pts au lieu de ${config.points_carre}.`,
-      "",
-      `**Dernier jour** (J${config.duree_jours}) : tout le monde marque ses points, même sans quadruplé. Les points Joker restants s'ajoutent au score final.`,
-      "",
-      "Égalité : le nombre de quadruplés départage, puis l'ordre d'arrivée dans le jeu.",
+      `**Fin** (J${config.duree_jours}) : chacun marque ses points, plus ses points Joker restants.`,
     ].join("\n"),
     color: DRAFT_COLOR,
   };
@@ -340,13 +335,9 @@ function bilanVeille(veille, joueurs, discordId, config, catalog) {
   }
   if (!lignes.length) lignes.push("Aucun échange.");
   lignes.push(...jokerBilanLignes(veille.lignes, discordId, noms, (k) => cardName(k, catalog)));
-  for (const sc of (veille.scores || []).filter((x) => x.carre)) {
-    const [key] = [...compterCartes(sc.main)].sort((a, b) => b[1] - a[1])[0] || [];
-    lignes.push(`🎉 Quadruplé de **${nom(sc.discordId)}** (${sc.vedette ? "⭐ " : ""}${cardName(key, catalog)}) : +${sc.points} pts`);
-  }
+  // Quadruplés et nouvelle donne : encadré à part (quadruplesEmbed)
   const mien = veille.scores?.find((x) => x.discordId === discordId && !x.carre);
   if (mien) lignes.push(`Ton décompte : +${plural(mien.points, "pt")}`);
-  if (veille.redistribution) lignes.push("🔄 Nouvelle donne : toutes les cartes ont été redistribuées.");
   return lignes;
 }
 
@@ -373,7 +364,8 @@ async function buildJeuView(jour, discordId, username, entete = null) {
     ...(entete ? [entete, ""] : []),
     ...(nouveau ? [`Bienvenue ! Voici tes ${config.taille_main} cartes.`, ""] : []),
     ...(bilan.length ? ["**Hier**", ...bilan, ""] : []),
-    vedetteLigne(partie.vedettes, (k) => cardName(k, catalog), config),
+    vedetteLigne(partie.vedettes, (k) => cardName(k, catalog)),
+    jokerPointsLabel(joueur.joker || 0),
     `**Ta main** : ${formatGroupes(main, catalog)}`,
     "",
     ...tourStatutLignes({
@@ -389,8 +381,10 @@ async function buildJeuView(jour, discordId, username, entete = null) {
     voirLigne(action.vu, nomsJoueurs(joueurs, discordId), (keys) => formatGroupes(keys, catalog)),
   ].filter((l) => l !== null);
   const marcheTrie = [...partie.marche].sort();
+  const quads = nouveau ? null : quadruplesEmbed(veille, nomsJoueurs(joueurs, discordId), (k) => cardName(k, catalog));
   return {
     embeds: [
+      ...(quads ? [quads] : []),
       {
         title: `🃏 Ta main — Jour ${state?.jour ?? jour}/${config.duree_jours}`,
         description: lignes.join("\n").slice(0, 4096),

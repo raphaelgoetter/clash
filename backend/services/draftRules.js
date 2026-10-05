@@ -172,30 +172,30 @@ export function echangeValide(action, main, marche) {
 // les points restants s'ajoutent au score final. Ils départagent les
 // disputes (points restants après achat, avant les gains du tour).
 //   - Bonus du tour (un seul, payé et résolu à la clôture) : Priorité
-//     (servi en premier si la carte prise est disputée) ou Verrouiller une
+//     (servi en premier si la carte prise est disputée) ou Geler une
 //     carte du marché (personne ne peut la prendre ce tour-ci).
 //   - Espionner (instantané, une fois par tour, en plus du bonus) : voir
 //     tout de suite la main d'un joueur.
 
-export const JOKER_ACTIONS = ["priorite", "verrouiller"];
+export const JOKER_ACTIONS = ["priorite", "geler"];
 
 export function jokerCout(type, config) {
   return config.joker.couts[type] ?? null;
 }
 
 // Valeur du menu « Bonus du tour » : "aucun", "priorite" ou
-// "verrouiller:<carte>". Renvoie { joker } (null = aucun) ou { erreur }.
+// "geler:<carte>". Renvoie { joker } (null = aucun) ou { erreur }.
 export function lireBonus(valeur, { id, joueurs, marche, config }) {
   if (!valeur || valeur === "aucun") return { joker: null };
   const [type, carte] = valeur.split(":");
   if (!JOKER_ACTIONS.includes(type)) return { erreur: "inconnue" };
   if ((joueurs[id]?.joker || 0) < jokerCout(type, config)) return { erreur: "points" };
-  if (type === "verrouiller" && !marche.includes(carte)) return { erreur: "carte" };
-  return { joker: type === "verrouiller" ? { type, carte } : { type } };
+  if (type === "geler" && !marche.includes(carte)) return { erreur: "carte" };
+  return { joker: type === "geler" ? { type, carte } : { type } };
 }
 
 // Bonus complet et payable. Priorité n'a de sens qu'avec un échange valide,
-// Verrouiller qu'avec une carte encore au marché.
+// Geler qu'avec une carte encore au marché.
 export function jokerValide(joker, id, joueurs, config, { echangeOk = true, marche = null } = {}) {
   if (!joker?.type || !JOKER_ACTIONS.includes(joker.type)) return false;
   if ((joueurs[id]?.joker || 0) < jokerCout(joker.type, config)) return false;
@@ -215,13 +215,13 @@ export function voirMain({ id, cible, joueurs, actions, config }) {
 }
 
 // Résolution simultanée des échanges. `joueurs` : copies mutables
-// { main, joker }. Une carte verrouillée ne peut être prise par personne
+// { main, joker }. Une carte gelée ne peut être prise par personne
 // (échange annulé). Une carte demandée par plus de joueurs qu'il n'y a
 // d'exemplaires au marché est disputée : les joueurs en Priorité sont
 // servis d'abord, puis les points Joker départagent (tirage au sort entre
 // ex aequo). Les perdants gardent leur carte (pas d'échange) et gagnent des
 // points Joker. Les cartes déposées par les gagnants rejoignent le marché.
-export function resoudreEchanges({ joueurs, actions, marche, config, priorites = new Set(), verrous = new Set(), rng = Math.random }) {
+export function resoudreEchanges({ joueurs, actions, marche, config, priorites = new Set(), gelees = new Set(), rng = Math.random }) {
   const reste = [...marche];
   const lignes = [];
   const acteurs = Object.keys(joueurs).filter((id) => echangeValide(actions[id], joueurs[id].main, marche));
@@ -229,8 +229,8 @@ export function resoudreEchanges({ joueurs, actions, marche, config, priorites =
   const demandes = new Map();
   for (const id of shuffle(acteurs, rng)) {
     const key = actions[id].prise;
-    if (verrous.has(key)) {
-      lignes.push({ type: "verrouillee", discordId: id, voulue: key, depot: actions[id].depot });
+    if (gelees.has(key)) {
+      lignes.push({ type: "gelee", discordId: id, voulue: key, depot: actions[id].depot });
       continue;
     }
     demandes.set(key, [...(demandes.get(key) || []), id]);
@@ -283,13 +283,13 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   // Tour joué (échange au marché ou bonus) : +gain_tour, après le départage
   const joues = Object.keys(joueurs).filter((id) => jokers[id] || echangeValide(actions[id], joueurs[id].main, marche));
   const priorites = new Set(Object.keys(jokers).filter((id) => jokers[id].type === "priorite"));
-  const verrous = new Set(Object.values(jokers).filter((j) => j.type === "verrouiller").map((j) => j.carte));
+  const gelees = new Set(Object.values(jokers).filter((j) => j.type === "geler").map((j) => j.carte));
 
-  const echanges = resoudreEchanges({ joueurs, actions, marche, config, priorites, verrous, rng });
+  const echanges = resoudreEchanges({ joueurs, actions, marche, config, priorites, gelees, rng });
   for (const id of joues) joueurs[id].joker = (joueurs[id].joker || 0) + config.joker.gain_tour;
   const lignes = [...echanges.lignes];
   for (const [id, j] of Object.entries(jokers)) {
-    if (j.type === "verrouiller") lignes.push({ type: "joker", action: "verrouiller", discordId: id, carte: j.carte });
+    if (j.type === "geler") lignes.push({ type: "joker", action: "geler", discordId: id, carte: j.carte });
   }
   // Espionnages de la journée (déjà résolus) : mentionnés au bilan
   for (const [id, a] of Object.entries(actions)) {

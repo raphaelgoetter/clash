@@ -33,7 +33,7 @@ import {
 } from "../../../backend/services/draftDuel.js";
 import { loadCatalog } from "../../../backend/services/draftroyale.js";
 import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
-import { vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
+import { quadruplesEmbed, vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -511,13 +511,9 @@ function buildRecapLines(lastRecap, noms, discordId, config, catalog) {
   }
   if (lines.length === 1) lines.push("Aucun échange.");
   lines.push(...jokerBilanLignes(lastRecap.lignes, discordId, noms, (k) => cardName(k, catalog)));
-  for (const s of (lastRecap.scores || []).filter((x) => x.carre)) {
-    const [key] = [...compterCartes(s.main)].sort((a, b) => b[1] - a[1])[0] || [];
-    lines.push(`🎉 Quadruplé de **${nom(s.discordId)}** (${s.vedette ? "⭐ " : ""}${cardName(key, catalog)}) : +${s.points} pts`);
-  }
+  // Quadruplés et nouvelle donne : encadré à part (quadruplesEmbed)
   const mien = lastRecap.scores?.find((x) => x.discordId === discordId && !x.carre);
   if (mien) lines.push(`Ton décompte : +${plural(mien.points, "pt")}`);
-  if (lastRecap.redistribution) lines.push("🔄 Nouvelle donne : toutes les cartes ont été redistribuées.");
   return [...lines, ""];
 }
 
@@ -542,7 +538,8 @@ function buildHandEmbed(view, recap, noms) {
   const main = trierMain(me.main);
   const lines = [
     ...recap,
-    vedetteLigne(state.vedettes, (k) => cardName(k, catalog), config),
+    vedetteLigne(state.vedettes, (k) => cardName(k, catalog)),
+    jokerPointsLabel(me.joker || 0),
     `**Ta main** : ${formatGroupes(main, catalog)}`,
     "",
     ...buildStatusLines(view),
@@ -629,7 +626,8 @@ function buildMarcheEmbed(view) {
 async function buildHandPayload(view) {
   const noms = await nomsJoueurs(view.players, view.discordId);
   const recap = buildRecapLines(view.state.lastRecap, noms, view.discordId, view.config, view.catalog);
-  const embeds = [buildHandEmbed(view, recap, noms), buildMarcheEmbed(view)].filter(Boolean);
+  const quads = quadruplesEmbed(view.state.lastRecap, noms, (k) => cardName(k, view.catalog));
+  const embeds = [quads, buildHandEmbed(view, recap, noms), buildMarcheEmbed(view)].filter(Boolean);
   return { content: "", embeds, components: buildHandComponents(view, noms) };
 }
 
@@ -708,10 +706,13 @@ export async function handleChoix(webhookUrl, discordId, champ, key) {
 async function buildPostResolutionPayload(outcome, discordId, catalog) {
   if (outcome.final) {
     const players = await readPlayers();
-    const recap = buildRecapLines(outcome.state.lastRecap, await nomsJoueurs(players, discordId), discordId, await loadDraftDuelConfig(), catalog);
+    const noms = await nomsJoueurs(players, discordId);
+    const recap = buildRecapLines(outcome.state.lastRecap, noms, discordId, await loadDraftDuelConfig(), catalog);
+    const quads = quadruplesEmbed(outcome.state.lastRecap, noms, (k) => cardName(k, catalog));
     return {
       content: "",
       embeds: [
+        ...(quads ? [quads] : []),
         {
           title: "Draft · Partie terminée",
           description: [
@@ -807,22 +808,18 @@ function buildReglesEmbed(config) {
   return {
     title: "Règles du jeu : Draft",
     description: [
-      `Réunis **${config.taille_main} exemplaires d'une même carte** (un quadruplé) en ${config.duel.manches} manches, de 1 à 3 joueurs. Des bots complètent la table jusqu'à 3 joueurs.`,
+      `Réunis **${config.taille_main} cartes identiques** (un quadruplé) en ${config.duel.manches} manches. Des bots complètent la table jusqu'à 3 joueurs.`,
       "",
-      `Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
+      `**Chaque manche** : ${EMOJI.trade.text} prends une carte au marché et dépose une carte de ta main, utilise une action ${JOKER_EMOJI} Joker, ou les deux, puis ${EMOJI.check.text} **Fin de tour**.`,
+      `**Carte disputée** : elle va au joueur qui a le plus de points Joker. Les autres gardent leur carte (+${config.joker.gain_perte} pts Joker).`,
+      `**Quadruplé** : ${config.points_carre} pts (${config.points_vedette} pour une ⭐ carte vedette). Les autres marquent 1 à 3 pts, puis nouvelle donne.`,
       "",
-      "**À chaque manche**",
-      `${EMOJI.trade.text} **Échange** : une carte à prendre au marché et une carte de ta main à y déposer. Tu peux aussi choisir un bonus ${JOKER_EMOJI} Joker, à la place ou en plus.`,
-      `${EMOJI.check.text} **Fin de tour** : la manche se résout quand tous les joueurs ont validé. Les échanges ont lieu en même temps.`,
+      `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par manche jouée.`,
+      `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée`,
+      `• **Geler** une carte (${config.joker.couts.geler} pts) : personne ne peut la prendre cette manche, même toi`,
+      `• **Espionner** (${config.joker.couts.espionner} pt) : vois tout de suite la main d'un joueur`,
       "",
-      `**Carte disputée** : si plusieurs joueurs veulent la même carte et qu'il n'y en a pas assez, celui qui a le plus de points Joker l'emporte (tirage au sort à égalité). Les autres gardent leur carte et gagnent +${config.joker.gain_perte} points Joker.`,
-      "",
-      `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par manche jouée, +${config.joker.gain_perte} de plus si une carte disputée t'échappe. À dépenser :`,
-      `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée.`,
-      `• **Verrouiller** une carte du marché (${config.joker.couts.verrouiller} pts) : personne ne peut la prendre cette manche.`,
-      `• **Espionner** un joueur (${config.joker.couts.espionner} pt) : sa main s'affiche tout de suite, en plus de ton bonus.`,
-      "",
-      `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts, les autres 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées. **⭐ Carte vedette** : à chaque donne, une des cartes en jeu est tirée au sort (une par tranche de ${config.joueurs_par_vedette} joueurs), son quadruplé rapporte ${config.points_vedette} pts. À la dernière manche, tout le monde marque ses points, et les points Joker restants s'ajoutent au score final.`,
+      `**Fin** (manche ${config.duel.manches}) : chacun marque ses points, plus ses points Joker restants.`,
     ].join("\n"),
     color: DRAFTDUEL_COLOR,
   };

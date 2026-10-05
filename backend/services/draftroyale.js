@@ -49,7 +49,7 @@ const HISTORIQUE_KEY = "draftroyale:historique";
 const RESULTAT_KEY = "draftroyale:resultat";
 const MANCHES_KEY = "draftroyale:manches";
 const MANCHE_SEQ_KEY = "draftroyale:manche_seq";
-// Verrou des arrivées (le marché change quand un joueur reçoit sa main)
+// Gel des arrivées (le marché change quand un joueur reçoit sa main)
 const LOCK_KEY = "draftroyale:lock";
 const actionsKey = (jour) => `draftroyale:actions:${jour}`;
 
@@ -204,7 +204,7 @@ async function withLock(fn) {
     }
     await new Promise((r) => setTimeout(r, 150));
   }
-  throw new Error("Verrou du Draft Royale indisponible");
+  throw new Error("Gel du Draft Royale indisponible");
 }
 
 // Premier clic : le joueur tire sa main dans le marché (sous verrou, le

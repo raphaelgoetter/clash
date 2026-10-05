@@ -346,7 +346,7 @@ export async function finirTour(discordId, webhookUrl) {
 }
 
 // ── Résolution de fin de manche ─────────────────────────────────────
-// Verrou HSETNX par manche, même idiome que les autres duels.
+// Gel HSETNX par manche, même idiome que les autres duels.
 
 async function claimResolution(manche) {
   return Number(await getRedis().hsetnx(RESOLVING_KEY, String(manche), "1")) === 1;
