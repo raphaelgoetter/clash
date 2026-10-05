@@ -205,11 +205,15 @@ function filterLignesForPlayer(lignes, discordId) {
   return lignes.filter((l) => l.discordId === discordId || l.cibleId === discordId || l.autreEchangeId === discordId);
 }
 
-function formatBilanLignes(lignes, joueurs, config) {
+// Bilan formulé du point de vue du joueur qui consulte (`moiId`) : "Tu
+// avances de 4", "X te fait reculer de 3"... plutôt que son propre pseudo.
+function formatBilanLignes(lignes, joueurs, config, moiId) {
   if (!lignes.length) return [];
   const nomDe = (id) => joueurs[id]?.username || "?";
   const texte = lignes
     .map((l) => {
+      const auteur = l.discordId === moiId;
+      const cible = l.cibleId === moiId;
       switch (l.type) {
         case "de": {
           const de = config.des[l.deId];
@@ -220,29 +224,46 @@ function formatBilanLignes(lignes, joueurs, config) {
         }
         case "objet":
           if (l.effet === "avance")
-            return `${config.objets[l.itemId]?.emoji || "🚀"} ${nomDe(l.discordId)} avance de ${l.valeur}`;
-          if (l.effet === "recul")
-            return `${config.objets[l.itemId]?.emoji || "💣"} ${nomDe(l.discordId)} fait reculer ${nomDe(l.cibleId)} de ${l.valeur}`;
-          if (l.effet === "echange")
+            return `${config.objets[l.itemId]?.emoji || "🚀"} ${auteur ? "Tu avances" : `${nomDe(l.discordId)} avance`} de ${l.valeur}`;
+          if (l.effet === "recul") {
+            const emoji = config.objets[l.itemId]?.emoji || "💣";
+            if (auteur) return `${emoji} Tu fais reculer ${nomDe(l.cibleId)} de ${l.valeur}`;
+            if (cible) return `${emoji} ${nomDe(l.discordId)} te fait reculer de ${l.valeur}`;
+            return `${emoji} ${nomDe(l.discordId)} fait reculer ${nomDe(l.cibleId)} de ${l.valeur}`;
+          }
+          if (l.effet === "echange") {
+            if (auteur) return `🍌 Tu échanges ta place avec ${nomDe(l.cibleId)}`;
+            if (cible) return `🍌 ${nomDe(l.discordId)} échange sa place avec toi`;
             return `🍌 ${nomDe(l.discordId)} échange sa place avec ${nomDe(l.cibleId)}`;
-          if (l.effet === "renvoi")
+          }
+          if (l.effet === "renvoi") {
+            if (auteur) return `⭐ L'Étoile de ${nomDe(l.cibleId)} renvoie ton objet, tu recules de ${l.valeur}`;
+            if (cible) return `⭐ Ton Étoile renvoie l'objet de ${nomDe(l.discordId)}, qui recule de ${l.valeur}`;
             return `⭐ L'Étoile de ${nomDe(l.cibleId)} renvoie l'objet de ${nomDe(l.discordId)}, qui recule de ${l.valeur}`;
+          }
           if (l.effet === "rembourse")
             return `${config.objets[l.itemId]?.emoji || "🎒"} ${config.objets[l.itemId]?.label || "Objet"} sans cible : ${l.valeur} Or remboursés`;
           return null;
         case "sort": {
-          if (l.effet === "bloque")
-            return `⭐ ${nomDe(l.cibleId)} est protégé(e) par son Étoile — le sort de ${nomDe(l.discordId)} n'a aucun effet`;
-          const tiers = l.autreEchangeId
-            ? ` — ${nomDe(l.cibleId)} et ${nomDe(l.autreEchangeId)} échangent leurs places au passage !`
-            : "";
+          if (l.effet === "bloque") {
+            if (cible) return `⭐ Ton Étoile te protège : le sort de ${nomDe(l.discordId)} n'a aucun effet`;
+            if (auteur) return `⭐ ${nomDe(l.cibleId)} est protégé(e) par son Étoile : ton sort n'a aucun effet`;
+            return `⭐ ${nomDe(l.cibleId)} est protégé(e) par son Étoile, le sort de ${nomDe(l.discordId)} n'a aucun effet`;
+          }
+          let tiers = "";
+          if (l.autreEchangeId) {
+            if (cible) tiers = ` (tu échanges ta place avec ${nomDe(l.autreEchangeId)} au passage !)`;
+            else if (l.autreEchangeId === moiId) tiers = ` (tu échanges ta place avec ${nomDe(l.cibleId)} au passage !)`;
+            else tiers = ` (${nomDe(l.cibleId)} et ${nomDe(l.autreEchangeId)} échangent leurs places au passage !)`;
+          }
           const clone =
             l.valeurClone == null
               ? ""
               : l.valeurClone > 0
-                ? ` (tu avances encore de ${l.valeurClone})`
+                ? ` (${auteur ? "tu avances" : `${nomDe(l.discordId)} avance`} encore de ${l.valeurClone})`
                 : " (sans effet, pas de dé lancé)";
-          return `✨ ${nomDe(l.discordId)} lance un sort sur ${nomDe(l.cibleId)} : *${l.sortLabel}*${clone}${tiers}`;
+          const lanceur = auteur ? "Tu lances" : `${nomDe(l.discordId)} lance`;
+          return `✨ ${lanceur} un sort sur ${cible ? "toi" : nomDe(l.cibleId)} : *${l.sortLabel}*${clone}${tiers}`;
         }
         default:
           return null;
@@ -296,7 +317,7 @@ function buildJournalEmbed(jour, config, joueurs, bilanLignes, discordId) {
   if (moi) lines.push("", ...etatPersonnelLignes(moi, config));
   const bilanPersonnel = filterLignesForPlayer(bilanLignes || [], discordId);
   if (bilanPersonnel.length)
-    lines.push(...formatBilanLignes(bilanPersonnel, joueurs, config));
+    lines.push(...formatBilanLignes(bilanPersonnel, joueurs, config, discordId));
   return {
     title: `📜 Journal — Jour ${jour}/${config.duree_jours}`,
     description: lines.join("\n"),
@@ -439,8 +460,20 @@ function concentrationLigne(joueur, config) {
   return `🔋 Concentration : ${niveau}/${config.concentration_max}${suffixe}`;
 }
 
+// Première case spéciale devant le joueur, avec la distance qui l'en sépare.
+function prochaineCaseLigne(joueur, config) {
+  const numero = Object.keys(config.cases_speciales || {})
+    .map(Number)
+    .filter((n) => n > joueur.position)
+    .sort((a, b) => a - b)[0];
+  if (numero == null) return null;
+  const c = config.cases_speciales[numero];
+  const distance = numero - joueur.position;
+  return `🎯 Prochaine case spéciale : ${c.emoji} ${c.label} (case ${numero}, dans ${distance} case${distance > 1 ? "s" : ""})`;
+}
+
 function etatPersonnelLignes(joueur, config) {
-  return [etatDeLigne(joueur), concentrationLigne(joueur, config)].filter(Boolean);
+  return [etatDeLigne(joueur), prochaineCaseLigne(joueur, config), concentrationLigne(joueur, config)].filter(Boolean);
 }
 
 function buildDiceSelect(jour, config) {
