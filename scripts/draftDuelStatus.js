@@ -43,8 +43,8 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
         Main: groupes(p.main),
         Points: `${p.points || 0} (+${pointsMain(p.main, config)})`,
         Carrés: p.carres || 0,
-        Popularité: p.popularite || 0,
-        Tour: [a.prise ? `prend ${nom(a.prise)}` : null, a.depot ? `dépose ${nom(a.depot)}` : null, a.fini ? "fini" : "en cours"].filter(Boolean).join(", "),
+        Joker: p.joker || 0,
+        Tour: [a.prise ? `prend ${nom(a.prise)}` : null, a.depot ? `dépose ${nom(a.depot)}` : null, a.joker?.type ? `Joker ${a.joker.type}` : null, a.fini ? "fini" : "en cours"].filter(Boolean).join(", "),
       };
     }),
   );

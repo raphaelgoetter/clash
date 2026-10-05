@@ -26,6 +26,7 @@ import {
   readPartie,
   initPartie,
   enregistrerChoix,
+  enregistrerJoker,
   previewCloture,
   closeDayAndAdvance,
   getHistoriqueEntry,
@@ -34,6 +35,7 @@ import {
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/draftroyale.js";
 import { compterCartes, pointsMain, trierMain, echangeValide } from "../../../backend/services/draftRules.js";
+import { JOKER_EMOJI, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes } from "./draftJoker.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -178,8 +180,10 @@ function buildReglesEmbed(config) {
       `**Chaque jour** : ${TRADE_TEXT} choisis une carte à prendre au marché et une carte de ta main à y déposer. Tu peux changer d'avis jusqu'à la clôture.`,
       "",
       "**À la clôture**, tous les échanges ont lieu en même temps :",
-      "• Une carte voulue par plus de joueurs qu'il n'y a d'exemplaires va au plus populaire (tirage au sort à égalité), dont la popularité retombe à 0.",
-      "• Les autres reçoivent une autre carte du marché au hasard et gagnent +1 popularité.",
+      "• Une carte voulue par plus de joueurs qu'il n'y a d'exemplaires va à celui qui a le plus de points Joker (tirage au sort à égalité).",
+      `• Les autres reçoivent une autre carte du marché au hasard et gagnent +${config.joker.gain_perte} points Joker.`,
+      "",
+      `**${JOKER_EMOJI} Joker** : dépense tes points au magasin (une action par tour, résolue à la clôture) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
       "",
       `**Carré** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts. Les autres marquent 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées.`,
       "",
@@ -325,14 +329,17 @@ async function guardActiveDay(webhookUrl, jour) {
 // carrés, décompte et nouvelle donne.
 function bilanVeille(veille, joueurs, discordId, catalog) {
   if (!veille) return [];
-  const nom = (id) => (id === discordId ? "Toi" : joueurs[id]?.username || "?");
+  const noms = nomsJoueurs(joueurs, discordId);
+  const nom = (id) => noms[id];
   const lignes = [];
   for (const l of veille.lignes) {
     const depot = `dépôt ${cardName(l.depot, catalog)}`;
-    if (l.type === "prise") lignes.push(`• **${nom(l.discordId)}** : prise **${cardName(l.key, catalog)}**${l.disputee ? " (disputée)" : ""} · ${depot}`);
-    if (l.type === "perdue") lignes.push(`• **${nom(l.discordId)}** : ${cardName(l.voulue, catalog)} disputée perdue, reçu **${cardName(l.key, catalog)}** (+1 popularité) · ${depot}`);
+    const priorite = l.priorite ? ", priorité" : "";
+    if (l.type === "prise") lignes.push(`• **${nom(l.discordId)}** : prise **${cardName(l.key, catalog)}**${l.disputee ? ` (disputée${priorite})` : ""} · ${depot}`);
+    if (l.type === "perdue") lignes.push(`• **${nom(l.discordId)}** : ${cardName(l.voulue, catalog)} disputée perdue, reçu **${cardName(l.key, catalog)}** (+${l.gain} pts Joker) · ${depot}`);
   }
   if (!lignes.length) lignes.push("Aucun échange.");
+  lignes.push(...jokerBilanLignes(veille.lignes, discordId, noms, (k) => cardName(k, catalog), (keys) => formatGroupes(keys, catalog)));
   for (const sc of (veille.scores || []).filter((x) => x.carre)) {
     const [key] = [...compterCartes(sc.main)].sort((a, b) => b[1] - a[1])[0] || [];
     lignes.push(`🎉 Carré de **${nom(sc.discordId)}** (${cardName(key, catalog)}) : +${sc.points} pts`);
@@ -341,6 +348,11 @@ function bilanVeille(veille, joueurs, discordId, catalog) {
   if (mien) lignes.push(`Ton décompte : +${plural(mien.points, "pt")}`);
   if (veille.redistribution) lignes.push("🔄 Nouvelle donne : toutes les cartes ont été redistribuées.");
   return lignes;
+}
+
+// Noms des joueurs, « Toi » pour le joueur qui regarde.
+function nomsJoueurs(joueurs, discordId) {
+  return Object.fromEntries(Object.entries(joueurs).map(([id, j]) => [id, id === discordId ? "Toi" : j.username || "?"]));
 }
 
 function statutEchange(action, joueur, partie, catalog) {
@@ -373,10 +385,11 @@ async function buildJeuView(jour, discordId, username, entete = null) {
     ...(bilan.length ? ["**Hier**", ...bilan, ""] : []),
     `**Ta main** : ${formatGroupes(main, catalog)}`,
     `Points au prochain décompte : ${plural(pointsMain(main, config), "pt")}`,
-    `🏆 Total : ${plural(joueur.points || 0, "pt")} · ⭐ Popularité : ${joueur.popularite || 0}`,
+    `🏆 Total : ${plural(joueur.points || 0, "pt")} · ${jokerPointsLabel(joueur.joker || 0)}`,
     "",
     statutEchange(action, joueur, partie, catalog),
-  ];
+    jokerStatutLigne(action.joker, nomsJoueurs(joueurs, discordId), (k) => cardName(k, catalog)),
+  ].filter((l) => l !== null);
   const marcheTrie = [...partie.marche].sort();
   return {
     embeds: [
@@ -416,8 +429,40 @@ async function buildJeuView(jour, discordId, username, entete = null) {
           },
         ],
       },
+      { type: 1, components: [jokerButton("draftroyale", jour, joueur.joker || 0, action.joker)] },
     ],
   };
+}
+
+// Magasin Joker (édition en place de l'éphémère).
+async function buildMagasinView(jour, discordId, entete = null) {
+  const [config, catalog, joueurs, partie, action] = await Promise.all([
+    loadDraftRoyaleConfig(),
+    loadCatalog(),
+    readJoueurs(),
+    readPartie(),
+    readAction(jour, discordId),
+  ]);
+  const joueur = joueurs[discordId];
+  const noms = nomsJoueurs(joueurs, discordId);
+  const vue = buildMagasin({
+    prefixe: "draftroyale",
+    tour: jour,
+    points: joueur?.joker || 0,
+    joker: action.joker,
+    adversaires: Object.keys(joueurs)
+      .filter((id) => id !== discordId)
+      .map((id) => ({ id, nom: noms[id] }))
+      .sort((a, b) => a.nom.localeCompare(b.nom)),
+    main: joueur?.main || [],
+    familles: partie.familles,
+    config,
+    cardName: (k) => cardName(k, catalog),
+    noms,
+    color: DRAFT_COLOR,
+  });
+  if (entete) vue.embeds[0].description = `${entete}\n\n${vue.embeds[0].description}`;
+  return vue;
 }
 
 // ── Bouton [🃏 Jouer] ────────────────────────────────────────────────
@@ -446,6 +491,34 @@ export async function handleChoixSelect(webhookUrl, jour, champ, discordId, user
     await patchOriginal(webhookUrl, await buildJeuView(Number(jour), discordId, username, entete));
   } catch (err) {
     console.error("[DraftRoyale] Échec choix:", err.message);
+  }
+}
+
+const JOKER_ERREURS = {
+  points: "Pas assez de points Joker.",
+  cible: "Cible impossible.",
+  carte: "Carte impossible.",
+  inconnue: "Choisis d'abord une action.",
+  unknownPlayer: "Clique d'abord sur Jouer.",
+};
+
+// Magasin Joker : `champ` = ouvrir, retour, annuler, type, cible, carte
+// ou maCarte (voir draftJoker.js).
+export async function handleJoker(webhookUrl, jour, champ, discordId, username, value) {
+  try {
+    if (!(await guardActiveDay(webhookUrl, jour))) return;
+    if (champ === "retour") {
+      await patchOriginal(webhookUrl, await buildJeuView(Number(jour), discordId, username));
+      return;
+    }
+    let entete = null;
+    if (champ !== "ouvrir") {
+      const result = await enregistrerJoker(Number(jour), discordId, champ === "annuler" ? null : { [champ]: value });
+      if (result.status !== "ok") entete = `⚠️ ${JOKER_ERREURS[result.status] || "Choix impossible."}`;
+    }
+    await patchOriginal(webhookUrl, await buildMagasinView(Number(jour), discordId, entete));
+  } catch (err) {
+    console.error("[DraftRoyale] Échec Joker:", err.message);
   }
 }
 

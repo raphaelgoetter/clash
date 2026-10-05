@@ -17,6 +17,7 @@ import {
   startGame,
   joinGame,
   choisir,
+  choisirJoker,
   finirTour,
   checkAndResolveManche,
   readPlayers,
@@ -31,6 +32,7 @@ import {
 } from "../../../backend/services/draftDuel.js";
 import { loadCatalog } from "../../../backend/services/draftroyale.js";
 import { compterCartes, pointsMain, trierMain } from "../../../backend/services/draftRules.js";
+import { jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -493,19 +495,27 @@ export async function handleDraftRoleRejected(webhookUrl) {
 
 // Bilan de la manche qui vient de se résoudre : échanges de chacun (prise
 // et dépôt), carrés, décompte et nouvelle donne.
-async function buildRecapLines(lastRecap, players, discordId, catalog) {
+// Noms des joueurs (bots compris), « Toi » pour le joueur qui regarde.
+async function nomsJoueurs(players, discordId) {
+  const entries = await Promise.all(Object.entries(players).map(async ([id, p]) => [id, id === discordId ? "Toi" : await displayName(id, p.username)]));
+  return Object.fromEntries(entries);
+}
+
+function buildRecapLines(lastRecap, noms, discordId, catalog) {
   if (!lastRecap) return [];
-  const nom = async (id) => (id === discordId ? "Toi" : displayName(id, players[id]?.username));
+  const nom = (id) => noms[id] || "?";
   const lines = [`${EMOJI.stats.text} **Manche ${lastRecap.manche}**`];
   for (const l of lastRecap.lignes) {
     const depot = `dépôt ${cardName(l.depot, catalog)}`;
-    if (l.type === "prise") lines.push(`${EMOJI.trade.text} **${await nom(l.discordId)}** : prise **${cardName(l.key, catalog)}**${l.disputee ? " (disputée)" : ""} · ${depot}`);
-    if (l.type === "perdue") lines.push(`${EMOJI.trade.text} **${await nom(l.discordId)}** : ${cardName(l.voulue, catalog)} disputée perdue, reçu **${cardName(l.key, catalog)}** (+1 popularité) · ${depot}`);
+    const priorite = l.priorite ? ", priorité" : "";
+    if (l.type === "prise") lines.push(`${EMOJI.trade.text} **${nom(l.discordId)}** : prise **${cardName(l.key, catalog)}**${l.disputee ? ` (disputée${priorite})` : ""} · ${depot}`);
+    if (l.type === "perdue") lines.push(`${EMOJI.trade.text} **${nom(l.discordId)}** : ${cardName(l.voulue, catalog)} disputée perdue, reçu **${cardName(l.key, catalog)}** (+${l.gain} pts Joker) · ${depot}`);
   }
   if (lines.length === 1) lines.push("Aucun échange.");
+  lines.push(...jokerBilanLignes(lastRecap.lignes, discordId, noms, (k) => cardName(k, catalog), (keys) => formatGroupes(keys, catalog)));
   for (const s of (lastRecap.scores || []).filter((x) => x.carre)) {
     const [key] = [...compterCartes(s.main)].sort((a, b) => b[1] - a[1])[0] || [];
-    lines.push(`🎉 Carré de **${await nom(s.discordId)}** (${cardName(key, catalog)}) : +${s.points} pts`);
+    lines.push(`🎉 Carré de **${nom(s.discordId)}** (${cardName(key, catalog)}) : +${s.points} pts`);
   }
   const mien = lastRecap.scores?.find((x) => x.discordId === discordId && !x.carre);
   if (mien) lines.push(`Ton décompte : +${plural(mien.points, "pt")}`);
@@ -525,17 +535,18 @@ function buildStatusLine(view) {
   return `${EMOJI.trade.text} Choisis une carte à prendre au marché et une carte de ta main à déposer.`;
 }
 
-function buildHandEmbed(view, recap = []) {
-  const { state, me, config, catalog } = view;
+function buildHandEmbed(view, recap, noms) {
+  const { state, me, config, catalog, action } = view;
   const main = trierMain(me.main);
   const lines = [
     ...recap,
     `**Ta main** : ${formatGroupes(main, catalog)}`,
     `Points au prochain décompte : ${plural(pointsMain(main, config), "pt")}`,
-    `${EMOJI.trophy.text} Total : ${plural(me.points || 0, "pt")} · ⭐ Popularité : ${me.popularite || 0}`,
+    `${EMOJI.trophy.text} Total : ${plural(me.points || 0, "pt")} · ${jokerPointsLabel(me.joker || 0)}`,
     "",
     buildStatusLine(view),
-  ];
+    jokerStatutLigne(action.joker, noms, (k) => cardName(k, catalog)),
+  ].filter((l) => l !== null);
   const image = mainImageUrl(main);
   return {
     title: `Ton tour · Manche ${state.manche}/${state.totalManches}`,
@@ -583,6 +594,7 @@ function buildHandComponents(view) {
           custom_id: `draftduel_fin:${manche}`,
           disabled: !complet,
         },
+        jokerButton("draftduel", manche, me.joker || 0, action.joker),
       ],
     },
   ];
@@ -602,8 +614,9 @@ function buildMarcheEmbed(view) {
 }
 
 async function buildHandPayload(view) {
-  const recap = await buildRecapLines(view.state.lastRecap, view.players, view.discordId, view.catalog);
-  const embeds = [buildHandEmbed(view, recap), buildMarcheEmbed(view)].filter(Boolean);
+  const noms = await nomsJoueurs(view.players, view.discordId);
+  const recap = buildRecapLines(view.state.lastRecap, noms, view.discordId, view.catalog);
+  const embeds = [buildHandEmbed(view, recap, noms), buildMarcheEmbed(view)].filter(Boolean);
   return { content: "", embeds, components: buildHandComponents(view) };
 }
 
@@ -656,6 +669,49 @@ export async function handleJouer(webhookUrl, discordId, username) {
   }
 }
 
+// Magasin Joker : `champ` = ouvrir, retour, annuler, type, cible, carte
+// ou maCarte (voir draftJoker.js). Hors tour (tour fini, joueurs en
+// attente), la main s'affiche à la place.
+export async function handleJoker(webhookUrl, discordId, champ, value) {
+  try {
+    if (await replyIfExpired(webhookUrl)) return;
+    let result;
+    if (champ === "retour" || champ === "ouvrir") {
+      const state = await readState();
+      if (!state || state.termine) result = { inactive: true };
+      else if (!state.players.includes(discordId)) result = { notSeated: true };
+      else result = { state, view: await readPlayerView(state, discordId) };
+    } else {
+      result = await choisirJoker(discordId, champ === "annuler" ? null : { [champ]: value });
+    }
+    const { view } = result;
+    if (!view || champ === "retour" || view.action.fini || !view.state.rosterLocked) {
+      await respondToAction(webhookUrl, result);
+      return;
+    }
+    const noms = await nomsJoueurs(view.players, discordId);
+    const vue = buildMagasin({
+      prefixe: "draftduel",
+      tour: view.state.manche,
+      points: view.me.joker || 0,
+      joker: view.action.joker,
+      adversaires: Object.keys(view.players)
+        .filter((id) => id !== discordId)
+        .map((id) => ({ id, nom: noms[id] })),
+      main: view.me.main,
+      familles: view.state.familles,
+      config: view.config,
+      cardName: (k) => cardName(k, view.catalog),
+      noms,
+      color: DRAFTDUEL_COLOR,
+    });
+    if (result.invalid) vue.embeds[0].description = `${EMOJI.warning.text} Choix impossible.\n\n${vue.embeds[0].description}`;
+    await patchOriginal(webhookUrl, vue);
+  } catch (err) {
+    console.error("[DraftDuel] Échec Joker:", err.message);
+  }
+}
+
 // Menus de l'échange : `champ` = "prise" ou "depot".
 export async function handleChoix(webhookUrl, discordId, champ, key) {
   try {
@@ -670,7 +726,8 @@ export async function handleChoix(webhookUrl, discordId, champ, key) {
 // tour suivant (ou renvoi au classement final).
 async function buildPostResolutionPayload(outcome, discordId, catalog) {
   if (outcome.final) {
-    const recap = await buildRecapLines(outcome.state.lastRecap, await readPlayers(), discordId, catalog);
+    const players = await readPlayers();
+    const recap = buildRecapLines(outcome.state.lastRecap, await nomsJoueurs(players, discordId), discordId, catalog);
     return {
       content: "",
       embeds: [
@@ -745,7 +802,7 @@ export async function handleDetails(webhookUrl, messageId) {
       lines.push(
         `${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.score, "pt")}`,
       );
-      lines.push(`• ${plural(r.carres || 0, "carré")} · popularité ${r.popularite || 0}`);
+      lines.push(`• ${plural(r.carres || 0, "carré")} · ${plural(r.joker || 0, "point")} Joker`);
       lines.push("");
     }
     await patchOriginal(webhookUrl, {
@@ -777,7 +834,9 @@ function buildReglesEmbed(config) {
       `${EMOJI.trade.text} **Échange** (obligatoire) : choisis une carte à prendre au marché et une carte de ta main à y déposer.`,
       `${EMOJI.check.text} **Fin de tour** : la manche se résout quand tous les joueurs ont validé. Les échanges ont lieu en même temps.`,
       "",
-      "**Carte disputée** : si plusieurs joueurs veulent la même carte et qu'il n'y en a pas assez, le plus populaire l'emporte (tirage au sort à égalité) et sa popularité retombe à 0. Les autres reçoivent une autre carte du marché au hasard et gagnent +1 popularité.",
+      `**Carte disputée** : si plusieurs joueurs veulent la même carte et qu'il n'y en a pas assez, celui qui a le plus de points Joker l'emporte (tirage au sort à égalité). Les autres reçoivent une autre carte du marché au hasard et gagnent +${config.joker.gain_perte} points Joker.`,
+      "",
+      `**${JOKER_EMOJI} Joker** : dépense tes points au magasin (une action par manche, résolue en fin de manche) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
       "",
       `**Carré** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts, les autres 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées. À la dernière manche, tout le monde marque ses points.`,
     ].join("\n"),

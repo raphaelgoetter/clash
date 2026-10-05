@@ -12,7 +12,7 @@ function partie(P, tours, participation) {
   const familles = choisirFamilles(nbFamilles(P, config), config, catalog);
   const ids = Array.from({ length: P }, (_, i) => `p${i}`);
   const d = distribuer({ familles, joueurIds: ids, config });
-  let joueurs = Object.fromEntries(ids.map((id, i) => [id, { main: d.mains[id], popularite: 0, points: 0, carres: 0, arrivee: i }]));
+  let joueurs = Object.fromEntries(ids.map((id, i) => [id, { main: d.mains[id], joker: 0, points: 0, carres: 0, arrivee: i }]));
   let { marche, reserve } = d;
   let decomptes = 0, multi = 0, perdues = 0, echanges = 0;
   for (let t = 1; t <= tours; t++) {

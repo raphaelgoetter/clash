@@ -1931,10 +1931,22 @@ Config dans `data/draftroyale/draftroyale.json`.
 
 Résolus tous ensemble à la clôture (`resoudreEchanges()`, pure) : l'heure de connexion ne doit donner aucun avantage.
 
-1. Une carte demandée par **au plus autant de joueurs qu'il y a d'exemplaires au marché** est obtenue par tous, popularité inchangée.
-2. Sinon elle est **disputée** : les plus populaires l'emportent (tirage au sort entre ex aequo, décision du 05/10 : sans tirage, personne ne l'emporterait au J1 où tout le monde est à 0) et leur popularité retombe à 0.
-3. Les perdants reçoivent au hasard une autre carte restée au marché et gagnent +1 popularité.
+1. Une carte demandée par **au plus autant de joueurs qu'il y a d'exemplaires au marché** est obtenue par tous.
+2. Sinon elle est **disputée** : les joueurs en **Priorité** (Joker) sont servis d'abord, puis ceux qui ont le plus de **points Joker restants** (après les achats du tour), tirage au sort entre ex aequo (décision du 05/10 : sans tirage, personne ne l'emporterait au J1 où tout le monde est à 0).
+3. Les perdants reçoivent au hasard une autre carte restée au marché et gagnent `joker.gain_perte` (2) points Joker.
 4. Les cartes déposées rejoignent le marché (taille du marché inchangée).
+
+### Joker (Draft Royale et duel)
+
+Décision du 05/10, pour casser la répétitivité et les carrés simultanés. Les **points Joker** (ex-« popularité ») se gagnent en perdant une carte disputée (+2) et ne baissent qu'en les dépensant au **magasin Joker** (bouton Joker de l'éphémère, `_handlers/draftJoker.js`, partagé par les deux jeux). Une action par tour, modifiable jusqu'à la clôture, payée et résolue à la clôture ; coûts dans `joker.couts` (1 pt chacune) :
+
+- **Priorité** : servi en premier si la carte prise est disputée (sans échange complet, l'action n'est ni utilisée ni payée). Plusieurs joueurs en Priorité sur la même carte : départagés entre eux par les points Joker restants.
+- **Protéger** : aucune action Joker ne peut cibler le joueur ce tour-ci ; une action contre lui échoue et son auteur perd le point.
+- **Voir main** : la main de la cible après la clôture, affichée le lendemain dans l'éphémère de l'auteur.
+- **Saboter** : une carte au hasard de la main ciblée part au marché contre une carte du marché au hasard.
+- **Échanger carte** : donne une de ses cartes contre une carte choisie (parmi les cartes en jeu) de la main ciblée ; si l'une des deux n'est plus là à la clôture, pas d'échange et le point est perdu.
+
+**Ordre à la clôture** (`computeTour()`) : paiement, Protéger, échanges au marché (avec Priorité), Échanger carte, Saboter, Voir main, puis carrés et décompte. Un Saboter peut donc empêcher un carré tout juste complété. **Bilan** : les cartes concernées ne sont montrées qu'à l'auteur et à la cible, les autres voient seulement qui a visé qui ; une protection n'est révélée que si elle a bloqué une action. **Bots du duel** (`jokerDuBot()`, sans regarder les autres mains) : Protéger avec 3 cartes identiques, sinon Saboter l'adversaire qui a le plus de points à partir de 2 points Joker. Simulation : 3,4 points Joker gagnés par joueur et par partie à 3 joueurs, 2,3 à 15 joueurs (70 % actifs).
 
 ### Score (Draft Royale)
 
@@ -1947,7 +1959,7 @@ Simulation (`temp/simulateDraft.mjs`, 05/10, joueurs gloutons, 7 tours) : à 15-
 
 ### Informations visibles (Draft Royale)
 
-Les mains restent secrètes. **Message du jour : infos générales uniquement** (décision du 05/10) : rappel du but, nombre de joueurs, classement (points, carrés), dernier jour, illustration. **Éphémère Jouer : la journée en cours** : échanges de la veille de tous les joueurs (prise et dépôt, cartes disputées, carrés, ton décompte, nouvelle donne), main regroupée (« Princesse ×2 · … ») et en image, points au prochain décompte, total et popularité, échange prévu, marché (liste et image) et les deux menus (carte à prendre, carte à déposer).
+Les mains restent secrètes. **Message du jour : infos générales uniquement** (décision du 05/10) : rappel du but, nombre de joueurs, classement (points, carrés), dernier jour, illustration. **Éphémère Jouer : la journée en cours** : échanges de la veille de tous les joueurs (prise et dépôt, cartes disputées, carrés, ton décompte, nouvelle donne), main regroupée (« Princesse ×2 · … ») et en image, points au prochain décompte, total et points Joker, échange et Joker prévus, marché (liste et image), les deux menus (carte à prendre, carte à déposer) et le bouton Joker (magasin, édition en place de l'éphémère).
 
 ### Images (Draft Royale)
 
@@ -1967,8 +1979,8 @@ Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob` après 
 | --------- | ---- | ------- |
 | `draftroyale:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine }` |
 | `draftroyale:partie` | STRING | `{ familles, marche, reserve }` (cardKeys) : cartes en jeu, marché courant, exemplaires à l'écart |
-| `draftroyale:joueurs` | HASH | `discordId → { username, main, popularite, points, carres, arrivee }` |
-| `draftroyale:actions:<jour>` | HASH | `discordId → { prise, depot }` |
+| `draftroyale:joueurs` | HASH | `discordId → { username, main, joker, points, carres, arrivee }` |
+| `draftroyale:actions:<jour>` | HASH | `discordId → { prise, depot, joker: { type, cible?, carte?, maCarte? } }` |
 | `draftroyale:historique` | HASH | `jour → { lignes, carres, scores, redistribution, resolvedAt }` |
 | `draftroyale:resultat` | STRING | Classement final |
 | `draftroyale:lock` | STRING | Verrou des arrivées (10 s) |
@@ -2021,12 +2033,12 @@ Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEU
 - **7 manches** (`duel.manches`) au lieu de 7 jours : une manche se résout quand tous les joueurs ont cliqué **Fin de tour**, possible seulement avec un échange complet. Verrou `HSETNX` par manche, comme les autres duels.
 - **Toujours 3 joueurs au moins** (05/10, demande de Raphael) : des bots complètent la table, Kévina (bot) à 2 joueurs, Kévina et Josette (bot) en solo (`BOTS`, `botsDeLaPartie()`).
 - **Cartes en jeu** : même calcul que le Draft Royale, bots compris (3 joueurs : Princesse, Prince, Géant, Archères, marché de 3 cartes, 1 exemplaire à l'écart). Chaque joueur (bots d'abord) tire sa main en s'inscrivant ; les échanges ne s'ouvrent qu'une fois tous les joueurs arrivés.
-- **Bots** : chacun choisit son échange au moment de la résolution (`choixGlouton()` : l'échange qui grossit le plus son plus gros groupe), sans voir les choix des joueurs. Le high score ne retient que les joueurs humains.
+- **Bots** : chacun choisit son échange et son Joker au moment de la résolution (`choixGlouton()` : l'échange qui grossit le plus son plus gros groupe ; `jokerDuBot()`), sans voir les choix des joueurs. Le high score ne retient que les joueurs humains.
 - Format versionné (`version: 2` dans l'état) : une partie de l'ancien Draft à combinaisons est ignorée par `readState()`.
 
-**Interface** : comme le Draft Royale, le message public ne contient que les infos générales (but, joueurs avec tour fini ou non, points, carrés, illustration). Bouton **Jouer** : main éphémère avec la manche en cours (échanges de la manche précédente de tous les joueurs, carrés, ton décompte, nouvelle donne, main regroupée et en image, points au prochain décompte, total, popularité, échange prévu), marché, menus « Carte à prendre au marché » / « Carte de ta main à déposer » et bouton Fin de tour. À la résolution, la main de chaque joueur passe directement à la manche suivante via le webhook de sa fin de tour (jeton valable 15 min, au-delà Jouer reste le recours). Fin de partie : classement final reposté dans un nouveau message, bouton Détails (carrés et popularité de chacun).
+**Interface** : comme le Draft Royale, le message public ne contient que les infos générales (but, joueurs avec tour fini ou non, points, carrés, illustration). Bouton **Jouer** : main éphémère avec la manche en cours (échanges de la manche précédente de tous les joueurs, carrés, ton décompte, nouvelle donne, main regroupée et en image, points au prochain décompte, total, points Joker, échange et Joker prévus), marché, menus « Carte à prendre au marché » / « Carte de ta main à déposer », boutons Fin de tour et Joker (magasin). À la résolution, la main de chaque joueur passe directement à la manche suivante via le webhook de sa fin de tour (jeton valable 15 min, au-delà Jouer reste le recours). Fin de partie : classement final reposté dans un nouveau message, bouton Détails (carrés et points Joker de chacun).
 
-Stockage Redis dédié `draftduel:*` (`state` dont les cartes en jeu et le marché, `players` : main/popularité/points/carrés par joueur, `action:<manche>` : prise/dépôt/fin de tour, `hand:<manche>` : webhooks, `resolving`, `highscore`). Scripts npm : `npm run draftduel:status`, `npm run draftduel:watchdog`, `npm run draftduel:reset`. Tests de bout en bout locaux (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/e2eDraftDuel.mjs [joueurs]` et `temp/e2eDraftRoyale.mjs [joueurs]`.
+Stockage Redis dédié `draftduel:*` (`state` dont les cartes en jeu et le marché, `players` : main/points Joker/points/carrés par joueur, `action:<manche>` : prise/dépôt/Joker/fin de tour, `hand:<manche>` : webhooks, `resolving`, `highscore`). Scripts npm : `npm run draftduel:status`, `npm run draftduel:watchdog`, `npm run draftduel:reset`. Tests de bout en bout locaux (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/e2eDraftDuel.mjs [joueurs]` et `temp/e2eDraftRoyale.mjs [joueurs]`.
 
 ## Jeu Goblin Hunters (identité secrète, camps cachés)
 

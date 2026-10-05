@@ -34,7 +34,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { filterCardPool } from "./cards.js";
-import { ajouterJoueur, echangeValide, computeTour, classement } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, computeTour, classement, appliquerChoixJoker } from "./draftRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "draftroyale", "draftroyale.json");
@@ -168,7 +168,7 @@ export async function initPartie() {
 }
 
 // ── Joueurs ─────────────────────────────────────────────────────────
-// HASH discordId → JSON { username, main: [cardKey], popularite, points,
+// HASH discordId → JSON { username, main: [cardKey], joker, points,
 // carres, arrivee }.
 
 export async function readJoueurs() {
@@ -215,7 +215,7 @@ export async function ensureJoueur(discordId, username, rng = Math.random) {
     const [config, catalog, joueurs, partie] = await Promise.all([loadDraftRoyaleConfig(), loadCatalog(), readJoueurs(), readPartie()]);
     const nbAvant = Object.keys(joueurs).length;
     const arrivee = ajouterJoueur({ ...partie, nbJoueursAvant: nbAvant, config, catalog, rng });
-    const joueur = { username: username || "?", main: arrivee.main, popularite: 0, points: 0, carres: 0, arrivee: nbAvant };
+    const joueur = { username: username || "?", main: arrivee.main, joker: 0, points: 0, carres: 0, arrivee: nbAvant };
     await writePartie({ familles: arrivee.familles, marche: arrivee.marche, reserve: arrivee.reserve });
     await writeJoueur(discordId, joueur);
     return { joueur, nouveau: true };
@@ -242,6 +242,17 @@ export async function enregistrerChoix(jour, discordId, champ, key) {
   const action = { ...(await readAction(jour, discordId)), [champ]: key };
   await getRedis().hset(actionsKey(jour), { [discordId]: toJson(action) });
   return { status: "ok", action, complet: echangeValide(action, joueur.main, partie.marche) };
+}
+
+// Action Joker du jour (voir draftRules.js), champ par champ ; `patch`
+// null annule.
+export async function enregistrerJoker(jour, discordId, patch) {
+  const [config, joueurs, partie, action] = await Promise.all([loadDraftRoyaleConfig(), readJoueurs(), readPartie(), readAction(jour, discordId)]);
+  if (!joueurs[discordId]) return { status: "unknownPlayer" };
+  const r = appliquerChoixJoker(action.joker, patch, { id: discordId, joueurs, familles: partie.familles, config });
+  if (r.erreur) return { status: r.erreur };
+  await getRedis().hset(actionsKey(jour), { [discordId]: toJson({ ...action, joker: r.joker }) });
+  return { status: "ok", joker: r.joker };
 }
 
 // ── Clôture ─────────────────────────────────────────────────────────

@@ -154,6 +154,7 @@ import {
 import {
   handleJouer as handleDraftRoyaleJouer,
   handleChoixSelect as handleDraftRoyaleChoix,
+  handleJoker as handleDraftRoyaleJoker,
   handleRegles as handleDraftRoyaleRegles,
 } from "./_handlers/draftroyale.js";
 import {
@@ -198,6 +199,7 @@ import {
   memberHasMiniJeuxRole as draftDuelMemberHasMiniJeuxRole,
   handleJouer as handleDraftDuelJouer,
   handleChoix as handleDraftDuelChoix,
+  handleJoker as handleDraftDuelJoker,
   handleFinTour as handleDraftDuelFinTour,
   handleRegles as handleDraftDuelRegles,
   handleDetails as handleDraftDuelDetails,
@@ -9241,6 +9243,18 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── Draft (duel) : magasin Joker, édition en place de la main éphémère ──
+  // custom_id : draftduel_jk:<champ>:<manche> (voir _handlers/draftJoker.js)
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("draftduel_jk:")) {
+    const [, champ] = body.data.custom_id.split(":");
+    const { discordId } = extractDraftDuelMember(body);
+    const value = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleDraftDuelJoker(webhookUrl, discordId, champ, value));
+    return;
+  }
+
   // ── Draft (duel) : bouton "Détails" (fin de partie, éphémère) ──
   if (
     body.type === 3 &&
@@ -10133,6 +10147,20 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleDraftRoyaleChoix(webhookUrl, jour, champ, discordId, username, value));
+    return;
+  }
+
+  // ── Draft Royale : magasin Joker, édition en place de l'éphémère ──
+  // custom_id : draftroyale_jk:<champ>:<jour> (voir _handlers/draftJoker.js)
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("draftroyale_jk:")) {
+    const [, champ, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    const value = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleDraftRoyaleJoker(webhookUrl, jour, champ, discordId, username, value));
     return;
   }
 

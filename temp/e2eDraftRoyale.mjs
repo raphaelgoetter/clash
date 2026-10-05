@@ -37,6 +37,17 @@ for (let jour = 1; jour <= 7; jour++) {
     const choix = choixGlouton(joueur.main, (await S.readPartie()).marche);
     await H.handleChoixSelect(`wh-${id}`, String(jour), "prise", id, `Joueur ${id}`, choix.prise);
     if (id !== "u2" || jour !== 2) await H.handleChoixSelect(`wh-${id}`, String(jour), "depot", id, `Joueur ${id}`, choix.depot);
+    if (id === "u1" && (joueur.joker || 0) >= 1) {
+      const cible = ids.find((x) => x !== id);
+      await H.handleJoker(`wh-${id}`, String(jour), "ouvrir", id, `Joueur ${id}`);
+      await H.handleJoker(`wh-${id}`, String(jour), "type", id, `Joueur ${id}`, "echanger");
+      await H.handleJoker(`wh-${id}`, String(jour), "cible", id, `Joueur ${id}`, cible);
+      await H.handleJoker(`wh-${id}`, String(jour), "carte", id, `Joueur ${id}`, joueur.main[0]);
+      await H.handleJoker(`wh-${id}`, String(jour), "maCarte", id, `Joueur ${id}`, joueur.main[1]);
+      const mag = lastEph(id);
+      console.log(`--- magasin u1, J${jour} (${mag.components.length} rangées) ---\n${mag.embeds[0].description.split("\n").at(-1)}`);
+      await H.handleJoker(`wh-${id}`, String(jour), "retour", id, `Joueur ${id}`);
+    }
     if (id === "u1" && jour <= 4) {
       const e = lastEph(id);
       console.log(`--- éphémère u1, J${jour} (${e.components.length} menus) ---\n${e.embeds[0].description}\n[${e.embeds[1].title}] ${e.embeds[1].description}`);

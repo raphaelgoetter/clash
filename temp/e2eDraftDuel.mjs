@@ -34,7 +34,16 @@ for (let m = 1; m <= 7; m++) {
     const choix = choixGlouton(view.me.main, view.state.marche);
     await H.handleChoix(`wh-${id}`, id, "prise", choix.prise);
     await H.handleChoix(`wh-${id}`, id, "depot", choix.depot);
-    if (id === "u1" && m <= 2) {
+    if ((view.me.joker || 0) >= 1) {
+      const cible = Object.keys(view.players).find((x) => x !== id);
+      await H.handleJoker(`wh-${id}`, id, "ouvrir");
+      await H.handleJoker(`wh-${id}`, id, "type", m % 2 ? "voir" : "saboter");
+      await H.handleJoker(`wh-${id}`, id, "cible", cible);
+      const mag = lastEph(id).body;
+      console.log(`--- magasin ${id}, manche ${m} (${mag.components.length} rangées) ---\n${mag.embeds[0].description.split("\n").at(-1)}`);
+      await H.handleJoker(`wh-${id}`, id, "retour");
+    }
+    if (id === "u1" && m >= 3 && m <= 4) {
       const e = lastEph(id).body;
       console.log(`--- main u1, manche ${m} (${e.components.length} rangées, fin de tour ${e.components[2]?.components[0].disabled ? "désactivée" : "active"}) ---\n${e.embeds[0].description}\n[${e.embeds[1]?.title}] ${e.embeds[1]?.description}`);
     }

@@ -2,7 +2,7 @@
 // draftDuel.js — Jeu Duel « Draft » (1 à 3 joueurs, 7 manches), lancé à la
 // demande via la commande /draft (rôle MINI-JEUX requis). Version duel du
 // jeu spécial Draft Royale, avec les MÊMES règles (draftRules.js : carré de
-// 4 cartes identiques, échange obligatoire au marché, popularité), sauf :
+// 4 cartes identiques, échange obligatoire au marché, Joker), sauf :
 //   - une manche remplace un jour : elle se résout dès que tous les joueurs
 //     ont validé leur échange (« Fin de tour »), sans cron ;
 //   - toujours au moins 3 joueurs : des bots complètent la table (Kévina à
@@ -21,7 +21,7 @@
 
 import { Redis } from "@upstash/redis";
 import { loadDraftRoyaleConfig, loadCatalog } from "./draftroyale.js";
-import { ajouterJoueur, echangeValide, computeTour, classement, choixGlouton } from "./draftRules.js";
+import { ajouterJoueur, echangeValide, computeTour, classement, choixGlouton, jokerDuBot, appliquerChoixJoker } from "./draftRules.js";
 
 // Bots qui complètent la table jusqu'à `MIN_JOUEURS`, dans cet ordre.
 export const BOTS = [
@@ -98,7 +98,7 @@ async function scanDelete(pattern) {
 }
 
 const STATE_KEY = "draftduel:state";
-// Hash discordId (ou id de bot) → { username, main, popularite, points, carres, arrivee }
+// Hash discordId (ou id de bot) → { username, main, joker, points, carres, arrivee }
 const PLAYERS_KEY = "draftduel:players";
 const RESOLVING_KEY = "draftduel:resolving";
 // Meilleur score final de tous les temps (joueurs humains). Jamais effacé.
@@ -177,7 +177,7 @@ export async function resetDraftDuel() {
 // ── Lancement et inscription ────────────────────────────────────────
 
 function nouveauJoueur(username, arrivee, main) {
-  return { username, main, popularite: 0, points: 0, carres: 0, arrivee };
+  return { username, main, joker: 0, points: 0, carres: 0, arrivee };
 }
 
 export async function startGame(channelId, { maxPlayers }, rng = Math.random) {
@@ -290,6 +290,19 @@ export async function choisir(discordId, champ, key) {
   return afterAction(state, discordId);
 }
 
+// Action Joker de la manche, champ par champ (voir draftRules.js) ;
+// `patch` null annule.
+export async function choisirJoker(discordId, patch) {
+  const guard = await guardTurn(discordId);
+  if (!guard.action) return guard;
+  const { state, action } = guard;
+  const [config, players] = await Promise.all([loadDraftDuelConfig(), readPlayers()]);
+  const r = appliquerChoixJoker(action.joker, patch, { id: discordId, joueurs: players, familles: state.familles, config });
+  if (r.erreur) return { ...(await afterAction(state, discordId)), invalid: true };
+  await updateAction(state.manche, discordId, { joker: r.joker });
+  return afterAction(state, discordId);
+}
+
 // Fin de tour : définitive, l'échange doit être complet. Le webhook est
 // enregistré AVANT le drapeau `fini` : le joueur qui complète la manche le
 // trouve forcément, même en cas de fins de tour simultanées.
@@ -326,7 +339,9 @@ export async function checkAndResolveManche(rng = Math.random) {
 // Pure : résolution d'une manche (échanges des bots compris).
 export function computeMancheDuel({ state, joueursAvant, actions, config, rng = Math.random }) {
   const toutes = { ...actions };
-  for (const id of Object.keys(joueursAvant).filter(isBot)) toutes[id] = choixGlouton(joueursAvant[id].main, state.marche, rng);
+  for (const id of Object.keys(joueursAvant).filter(isBot)) {
+    toutes[id] = { ...choixGlouton(joueursAvant[id].main, state.marche, rng), joker: jokerDuBot(id, joueursAvant, config, rng) };
+  }
   const dernier = state.manche >= state.totalManches;
   const tour = computeTour({ joueursAvant, actions: toutes, marche: state.marche, reserve: state.reserve, familles: state.familles, config, dernier, rng });
   return { ...tour, actions: toutes, final: dernier ? classement(tour.joueurs) : null };

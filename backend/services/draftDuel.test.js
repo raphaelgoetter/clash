@@ -33,11 +33,11 @@ function main() {
   {
     const state = { manche: 1, totalManches: 7, familles: ["a", "b", "c"], marche: ["a", "c"], reserve: ["b", "b", "c", "c"] };
     const joueursAvant = {
-      u1: { main: ["c", "c", "a", "b"], popularite: 0, points: 0 },
-      [BOT_ID]: { main: ["a", "a", "a", "b"], popularite: 0, points: 0 },
+      u1: { main: ["c", "c", "a", "b"], joker: 0, points: 0 },
+      [BOT_ID]: { main: ["a", "a", "a", "b"], joker: 0, points: 0 },
     };
     const r = computeMancheDuel({ state, joueursAvant, actions: { u1: { prise: "c", depot: "a", fini: true } }, config: CONFIG });
-    assert.deepStrictEqual(r.actions[BOT_ID], { prise: "a", depot: "b" });
+    assert.deepStrictEqual(r.actions[BOT_ID], { prise: "a", depot: "b", joker: null });
     assert.deepStrictEqual(r.carres, [BOT_ID]);
     assert.strictEqual(r.joueurs[BOT_ID].points, CONFIG.points_carre);
     assert.strictEqual(r.joueurs.u1.points, 3);
@@ -48,7 +48,7 @@ function main() {
   // ── Dernière manche : classement final ────────────────────────────────
   {
     const state = { manche: 7, totalManches: 7, familles: ["a", "b", "c"], marche: ["b", "c"] };
-    const joueursAvant = { u1: { username: "u1", main: ["a", "a", "b", "c"], popularite: 0, points: 4, arrivee: 0 } };
+    const joueursAvant = { u1: { username: "u1", main: ["a", "a", "b", "c"], joker: 0, points: 4, arrivee: 0 } };
     const r = computeMancheDuel({ state, joueursAvant, actions: {}, config: CONFIG });
     assert.deepStrictEqual(r.final.map((x) => [x.discordId, x.score]), [["u1", 6]]);
   }

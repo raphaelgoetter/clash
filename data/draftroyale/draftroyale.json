@@ -3,6 +3,10 @@
   "exemplaires": 4,
   "taille_main": 4,
   "points_carre": 10,
+  "joker": {
+    "gain_perte": 2,
+    "couts": { "priorite": 1, "proteger": 1, "voir": 1, "saboter": 1, "echanger": 1 }
+  },
   "cartes": [
     "Princess",
     "Prince",
