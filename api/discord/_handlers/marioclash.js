@@ -78,7 +78,7 @@ function sortedRanking(joueurs) {
 function formatRankingLines(
   joueurs,
   config,
-  { limit = 10, detailed = true, inclureId = null } = {},
+  { limit = 10, detailed = true, inclureId = null, deLances = null } = {},
 ) {
   const ranking = sortedRanking(joueurs);
   if (!ranking.length) return ["*Personne n'a encore rejoint la course.*"];
@@ -92,9 +92,10 @@ function formatRankingLines(
             ? "🥉"
             : `${index + 1}.`;
     const arrivee = j.position >= config.case_arrivee ? " 🏁" : "";
+    const coche = deLances?.has(j.discordId) ? " ✅" : "";
     if (!detailed)
       return `${medal} **${j.username}** — case ${j.position}${arrivee}`;
-    return `${medal} **${j.username}** — case ${j.position}${arrivee} · ${j.points} Or`;
+    return `${medal} **${j.username}** — case ${j.position}${arrivee} · ${j.points} Or${coche}`;
   };
   const lignes = ranking.slice(0, limit).map(formatLigne);
   // Joueur hors du top affiché : on ajoute quand même sa propre ligne.
@@ -302,7 +303,12 @@ function buildJourEmbed(jour, config, resumeLignes) {
     color: MARIOCLASH_COLOR,
     image: { url: boardImageUrl(jour) },
     footer: {
-      text: `Actions avant ${formatUtcTimeAsParis(8)} demain. Une seule fois chacune par jour.`,
+      text: [
+        `Actions avant ${formatUtcTimeAsParis(8)} demain. Une seule fois chacune par jour.`,
+        jour > 1 ? "Plateau à la clôture d'hier, positions en direct dans le Journal." : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
     },
   };
 }
@@ -311,8 +317,11 @@ function buildJourEmbed(jour, config, resumeLignes) {
 // pour tout le monde) + bilan PERSONNEL de la veille (seulement les
 // événements où le joueur qui consulte est impliqué, comme auteur, cible,
 // ou tiers entraîné par un échange aléatoire de sort).
-function buildJournalEmbed(jour, config, joueurs, bilanLignes, discordId) {
-  const lines = [...formatRankingLines(joueurs, config, { limit: 20, inclureId: discordId })];
+// `deLances` : Set des joueurs ayant déjà lancé le dé aujourd'hui (coche ✅),
+// pour expliquer l'écart avec le plateau du message public, figé à la clôture.
+function buildJournalEmbed(jour, config, joueurs, bilanLignes, discordId, deLances) {
+  const lines = [...formatRankingLines(joueurs, config, { limit: 20, inclureId: discordId, deLances })];
+  if (deLances?.size) lines.push("", "✅ a déjà lancé le dé aujourd'hui");
   const moi = joueurs[discordId];
   if (moi) lines.push("", ...etatPersonnelLignes(moi, config));
   const bilanPersonnel = filterLignesForPlayer(bilanLignes || [], discordId);
@@ -1254,12 +1263,19 @@ export async function handleJournal(webhookUrl, discordId) {
     const joueurs = await readJoueurs();
     const veille =
       state.jour > 1 ? await getHistoriqueEntry(state.jour - 1) : null;
+    const actions = await readActions(state.jour);
+    const deLances = new Set(
+      Object.entries(actions)
+        .filter(([, a]) => a?.dice)
+        .map(([id]) => id),
+    );
     const embed = buildJournalEmbed(
       state.jour,
       config,
       joueurs,
       veille?.lignes,
       discordId,
+      deLances,
     );
     await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
   } catch (err) {
