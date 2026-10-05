@@ -39,5 +39,12 @@
     "Ice Wizard",
     "Graveyard"
   ],
+  "accords": {
+    "Princess": "f", "Prince": "m", "Giant": "m", "Archers": "fp", "Knight": "m", "Musketeer": "f",
+    "Minions": "fp", "Goblins": "mp", "Wizard": "m", "Baby Dragon": "m", "Mini P.E.K.K.A": "m", "Valkyrie": "f",
+    "Skeleton Army": "f", "Hog Rider": "m", "Witch": "f", "Balloon": "m", "Bomber": "m", "Barbarians": "mp",
+    "Spear Goblins": "mp", "Royal Giant": "m", "Golem": "m", "P.E.K.K.A": "m", "Lumberjack": "m", "Miner": "m",
+    "Inferno Dragon": "m", "Skeletons": "mp", "Lava Hound": "m", "Electro Wizard": "m", "Ice Wizard": "m", "Graveyard": "m"
+  },
   "duel": { "manches": 7, "stale_heures": 2 }
 }

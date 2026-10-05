@@ -1912,18 +1912,18 @@ Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le cla
 
 Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `DISCORD_APP_ID`/`DISCORD_TOKEN` (upload emoji). Le `schedule` du cron (`16 8 * * *`) est actif dans `.github/workflows/gobelet.yml`, comme Blackjack.
 
-## Draft Royale — carré de cartes en 7 jours
+## Draft Royale — quadruplés en 7 jours
 
-Jeu spécial à avancée quotidienne, inspiré du [Kilo de merde](https://fr.wikipedia.org/wiki/Kilo_de_merde) : chaque joueur échange des cartes au marché pour réunir **4 exemplaires d'une même carte** (un « carré »). **Refonte du 05/10** : l'ancienne version (deck de 8 cartes, combinaisons, contrat, vœux) était trop complexe pour les testeurs. Participation libre (main reçue au premier clic). Code : `backend/services/draftRules.js` (règles pures, partagées avec le duel `/draft`), `backend/services/draftroyale.js` (Redis, jours), `backend/services/draftroyaleImage.js` (images), `api/discord/_handlers/draftroyale.js` (Discord), `scripts/postDraftRoyale.js`. Équilibrage simulé avec `temp/simulateDraft.mjs`.
+Jeu spécial à avancée quotidienne, inspiré du [Kilo de merde](https://fr.wikipedia.org/wiki/Kilo_de_merde) : chaque joueur échange des cartes au marché pour réunir **4 exemplaires d'une même carte** (un « quadruplé », d'abord appelé « quadruplé »). **Refonte du 05/10** : l'ancienne version (deck de 8 cartes, combinaisons, contrat, vœux) était trop complexe pour les testeurs. Participation libre (main reçue au premier clic). Code : `backend/services/draftRules.js` (règles pures, partagées avec le duel `/draft`), `backend/services/draftroyale.js` (Redis, jours), `backend/services/draftroyaleImage.js` (images), `api/discord/_handlers/draftroyale.js` (Discord), `scripts/postDraftRoyale.js`. Équilibrage simulé avec `temp/simulateDraft.mjs`.
 
 ### Déroulement (Draft Royale)
 
 Config dans `data/draftroyale/draftroyale.json`.
 
-- **Cartes en jeu** (décision du 05/10) : chaque carte existe en `exemplaires` (4) exemplaires, chaque main en a `taille_main` (4) et le **marché contient une carte par joueur**. Il faut donc 5 cartes par joueur : `nbFamilles()` = ⌈5N / 4⌉ cartes différentes pour N joueurs (4 à 3 joueurs, 19 à 15). Les 0 à 3 exemplaires en trop restent **à l'écart** (`reserve`, face cachée) jusqu'à la prochaine donne : une carte dont un exemplaire est à l'écart ne peut pas faire de carré pendant cette donne.
+- **Cartes en jeu** (décision du 05/10) : chaque carte existe en `exemplaires` (4) exemplaires, chaque main en a `taille_main` (4) et le **marché contient une carte par joueur**. Il faut donc 5 cartes par joueur : `nbFamilles()` = ⌈5N / 4⌉ cartes différentes pour N joueurs (4 à 3 joueurs, 19 à 15). Les 0 à 3 exemplaires en trop restent **à l'écart** (`reserve`, face cachée) jusqu'à la prochaine donne : une carte dont un exemplaire est à l'écart ne peut pas faire de quadruplé pendant cette donne.
 - **Ordre d'entrée des cartes** (`config.cartes`, `choisirFamilles()`) : Princesse, Prince, Géant, Archères, Chevalier, Mousquetaire, Gargouilles, Gobelins, Sorcier, Bébé dragon, puis Mini P.E.K.K.A, Valkyrie, Armée de squelettes, Chevaucheur de cochon, etc. (30 cartes) ; au-delà, cartes jouables du catalogue au hasard.
 - **Jour 1** (`initPartie()`) : aucune carte en jeu, elles arrivent avec les joueurs.
-- **Arrivée d'un joueur** (`ensureJoueur()` → `ajouterJoueur()`, sous verrou `draftroyale:lock`) : les cartes manquantes entrent en jeu (exemplaires à l'écart), le joueur tire ses 4 cartes à l'écart (jamais un carré d'emblée), puis une carte à l'écart complète le marché. Le marché existant n'est jamais retiré (les échanges prévus restent valides).
+- **Arrivée d'un joueur** (`ensureJoueur()` → `ajouterJoueur()`, sous verrou `draftroyale:lock`) : les cartes manquantes entrent en jeu (exemplaires à l'écart), le joueur tire ses 4 cartes à l'écart (jamais un quadruplé d'emblée), puis une carte à l'écart complète le marché. Le marché existant n'est jamais retiré (les échanges prévus restent valides).
 - **Chaque jour** : un échange, **obligatoire pour jouer** : une carte à prendre au marché et une carte de sa main à y déposer, modifiables jusqu'à la clôture. Un échange incomplet (une seule des deux cartes choisie) ne compte pas.
 - **Marché** : toujours visible dans l'éphémère (liste et image).
 
@@ -1938,7 +1938,7 @@ Résolus tous ensemble à la clôture (`resoudreEchanges()`, pure) : l'heure de 
 
 ### Joker (Draft Royale et duel)
 
-Décision du 05/10, pour casser la répétitivité et les carrés simultanés. Les **points Joker** (ex-« popularité ») se gagnent en perdant une carte disputée (+2) et ne baissent qu'en les dépensant au **magasin Joker** (bouton Joker de l'éphémère, `_handlers/draftJoker.js`, partagé par les deux jeux). Une action par tour, modifiable jusqu'à la clôture, payée et résolue à la clôture ; coûts dans `joker.couts` (1 pt chacune) :
+Décision du 05/10, pour casser la répétitivité et les quadruplés simultanés. Les **points Joker** (ex-« popularité ») se gagnent en perdant une carte disputée (+2) et ne baissent qu'en les dépensant au **magasin Joker** (bouton Joker de l'éphémère, `_handlers/draftJoker.js`, partagé par les deux jeux). Une action par tour, modifiable jusqu'à la clôture, payée et résolue à la clôture ; coûts dans `joker.couts` (1 pt chacune) :
 
 - **Priorité** : servi en premier si la carte prise est disputée (sans échange complet, l'action n'est ni utilisée ni payée). Plusieurs joueurs en Priorité sur la même carte : départagés entre eux par les points Joker restants.
 - **Protéger** : aucune action Joker ne peut cibler le joueur ce tour-ci ; une action contre lui échoue et son auteur perd le point.
@@ -1946,20 +1946,20 @@ Décision du 05/10, pour casser la répétitivité et les carrés simultanés. L
 - **Saboter** : une carte au hasard de la main ciblée part au marché contre une carte du marché au hasard.
 - **Échanger carte** : donne une de ses cartes contre une carte choisie (parmi les cartes en jeu) de la main ciblée ; si l'une des deux n'est plus là à la clôture, pas d'échange et le point est perdu.
 
-**Ordre à la clôture** (`computeTour()`) : paiement, Protéger, échanges au marché (avec Priorité), Échanger carte, Saboter, Voir main, puis carrés et décompte. Un Saboter peut donc empêcher un carré tout juste complété. **Bilan** : les cartes concernées ne sont montrées qu'à l'auteur et à la cible, les autres voient seulement qui a visé qui ; une protection n'est révélée que si elle a bloqué une action. **Bots du duel** (`jokerDuBot()`, sans regarder les autres mains) : Protéger avec 3 cartes identiques, sinon Saboter l'adversaire qui a le plus de points à partir de 2 points Joker. Simulation : 3,4 points Joker gagnés par joueur et par partie à 3 joueurs, 2,3 à 15 joueurs (70 % actifs).
+**Ordre à la clôture** (`computeTour()`) : paiement, Protéger, échanges au marché (avec Priorité), Échanger carte, Saboter, Voir main, puis quadruplés et décompte. Un Saboter peut donc empêcher un quadruplé tout juste complété. **Bilan** : les cartes concernées ne sont montrées qu'à l'auteur et à la cible, les autres voient seulement qui a visé qui ; une protection n'est révélée que si elle a bloqué une action. **Bots du duel** (`jokerDuBot()`, sans regarder les autres mains) : Protéger avec 3 cartes identiques, sinon Saboter l'adversaire qui a le plus de points à partir de 2 points Joker. Simulation : 3,4 points Joker gagnés par joueur et par partie à 3 joueurs, 2,3 à 15 joueurs (70 % actifs).
 
 ### Score (Draft Royale)
 
-- **Décompte** dès qu'au moins un joueur a un carré après les échanges : `points_carre` (10) pts par carré, sinon 1, 2 ou 3 pts selon le plus grand nombre de cartes identiques de la main (`pointsMain()`). Tous les joueurs inscrits marquent, même absents ce jour-là.
-- Après un décompte, **toutes les cartes sont redistribuées** (mêmes cartes en jeu, `distribuer()` : 4 par main, une par joueur au marché, le reste à l'écart, aucune main ne commence par un carré) : nouvelle donne.
-- **Dernier jour** : décompte pour tous, même sans carré, puis classement final.
-- **Départage** : nombre de carrés, puis ordre d'arrivée dans le jeu (`classement()`).
+- **Décompte** dès qu'au moins un joueur a un quadruplé après les échanges : `points_carre` (10) pts par quadruplé, sinon 1, 2 ou 3 pts selon le plus grand nombre de cartes identiques de la main (`pointsMain()`). Tous les joueurs inscrits marquent, même absents ce jour-là.
+- Après un décompte, **toutes les cartes sont redistribuées** (mêmes cartes en jeu, `distribuer()` : 4 par main, une par joueur au marché, le reste à l'écart, aucune main ne commence par un quadruplé) : nouvelle donne.
+- **Dernier jour** : décompte pour tous, même sans quadruplé, puis classement final.
+- **Départage** : nombre de quadruplés, puis ordre d'arrivée dans le jeu (`classement()`).
 
-Simulation (`temp/simulateDraft.mjs`, 05/10, joueurs gloutons, 7 tours) : à 15-20 joueurs (70 % actifs chaque jour), environ 1,5 tour à carré par partie, 35 % d'entre eux à plusieurs carrés, 23 % des échanges disputés perdus, vainqueur autour de 13 pts. À 3 joueurs (duel) : 2 tours à carré, 21 % à plusieurs carrés (41 % avec l'ancien marché de 8 cartes).
+Simulation (`temp/simulateDraft.mjs`, 05/10, joueurs gloutons, 7 tours) : à 15-20 joueurs (70 % actifs chaque jour), environ 1,5 tour à quadruplé par partie, 35 % d'entre eux à plusieurs quadruplés, 23 % des échanges disputés perdus, vainqueur autour de 13 pts. À 3 joueurs (duel) : 2 tours à quadruplé, 21 % à plusieurs quadruplés (41 % avec l'ancien marché de 8 cartes).
 
 ### Informations visibles (Draft Royale)
 
-Les mains restent secrètes. **Message du jour : infos générales uniquement** (décision du 05/10) : rappel du but, nombre de joueurs, classement (points, carrés), dernier jour, illustration. **Éphémère Jouer : la journée en cours** : échanges de la veille de tous les joueurs (prise et dépôt, cartes disputées, carrés, ton décompte, nouvelle donne), main regroupée (« Princesse ×2 · … ») et en image, points au prochain décompte, total et points Joker, échange et Joker prévus, marché (liste et image), les deux menus (carte à prendre, carte à déposer) et le bouton Joker (magasin, édition en place de l'éphémère).
+Les mains restent secrètes. **Message du jour : infos générales uniquement** (décision du 05/10) : rappel du but, nombre de joueurs, classement (points, quadruplés), dernier jour, illustration. **Éphémère Jouer : la journée en cours** : échanges de la veille de tous les joueurs (prise et dépôt, cartes disputées, quadruplés, ton décompte, nouvelle donne), main regroupée (« Princesse ×2 · … ») et en image, points au prochain décompte, total et points Joker, échange et Joker prévus, marché (liste et image), les deux menus (carte à prendre, carte à déposer) et le bouton Joker (magasin, édition en place de l'éphémère).
 
 ### Images (Draft Royale)
 
@@ -2025,9 +2025,9 @@ Réutilise par import direct les fonctions pures du jeu spécial (`rollDice`, `r
 
 Stockage Redis dédié `gobeletduel:*`. Scripts npm : `npm run gobeletduel:status`, `npm run gobeletduel:watchdog`, `npm run gobeletduel:reset` — mêmes garanties que Blackjack Duel (aucun workflow GitHub Actions ne les appelle).
 
-## Draft Duel (carré de cartes, 1-3 joueurs)
+## Draft Duel (quadruplés, 1-3 joueurs)
 
-Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEUX requis pour lancer). **Remplace le duel Élixir** (supprimé le 04/10) et reprend les règles du jeu spécial [Draft Royale](#draft-royale--carré-de-cartes-en-7-jours) (refonte « Kilo de merde » du 05/10, règles pures communes dans `draftRules.js`). Mêmes principes structurels que Blackjack/Gobelet Duel (lobby fermé, avancement par les actions des joueurs, message public réédité en place, clôture paresseuse après `duel.stale_heures` (2h) d'inactivité, high score jamais effacé, nettoyage 100% manuel). Code : `backend/services/draftDuel.js`, `api/discord/_handlers/draftDuel.js`.
+Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEUX requis pour lancer). **Remplace le duel Élixir** (supprimé le 04/10) et reprend les règles du jeu spécial [Draft Royale](#draft-royale--quadruplés-en-7-jours) (refonte « Kilo de merde » du 05/10, règles pures communes dans `draftRules.js`). Mêmes principes structurels que Blackjack/Gobelet Duel (lobby fermé, avancement par les actions des joueurs, message public réédité en place, clôture paresseuse après `duel.stale_heures` (2h) d'inactivité, high score jamais effacé, nettoyage 100% manuel). Code : `backend/services/draftDuel.js`, `api/discord/_handlers/draftDuel.js`.
 
 **Différences avec le Draft Royale** :
 - **7 manches** (`duel.manches`) au lieu de 7 jours : une manche se résout quand tous les joueurs ont cliqué **Fin de tour**, possible seulement avec un échange complet. Verrou `HSETNX` par manche, comme les autres duels.
@@ -2036,9 +2036,9 @@ Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEU
 - **Bots** : chacun choisit son échange et son Joker au moment de la résolution (`choixGlouton()` : l'échange qui grossit le plus son plus gros groupe ; `jokerDuBot()`), sans voir les choix des joueurs. Le high score ne retient que les joueurs humains.
 - Format versionné (`version: 2` dans l'état) : une partie de l'ancien Draft à combinaisons est ignorée par `readState()`.
 
-**Interface** : comme le Draft Royale, le message public ne contient que les infos générales (but, joueurs avec tour fini ou non, points, carrés, illustration). Bouton **Jouer** : main éphémère avec la manche en cours (échanges de la manche précédente de tous les joueurs, carrés, ton décompte, nouvelle donne, main regroupée et en image, points au prochain décompte, total, points Joker, échange et Joker prévus), marché, menus « Carte à prendre au marché » / « Carte de ta main à déposer », boutons Fin de tour et Joker (magasin). À la résolution, la main de chaque joueur passe directement à la manche suivante via le webhook de sa fin de tour (jeton valable 15 min, au-delà Jouer reste le recours). Fin de partie : classement final reposté dans un nouveau message, bouton Détails (carrés et points Joker de chacun).
+**Interface** : comme le Draft Royale, le message public ne contient que les infos générales (but, joueurs avec tour fini ou non, points, quadruplés, illustration). Bouton **Jouer** : main éphémère avec la manche en cours (échanges de la manche précédente de tous les joueurs, quadruplés, ton décompte, nouvelle donne, main regroupée et en image, points au prochain décompte, total, points Joker, échange et Joker prévus), marché, menus « Carte à prendre au marché » / « Carte de ta main à déposer », boutons Fin de tour et Joker (magasin). À la résolution, la main de chaque joueur passe directement à la manche suivante via le webhook de sa fin de tour (jeton valable 15 min, au-delà Jouer reste le recours). Fin de partie : classement final reposté dans un nouveau message, bouton Détails (quadruplés et points Joker de chacun).
 
-Stockage Redis dédié `draftduel:*` (`state` dont les cartes en jeu et le marché, `players` : main/points Joker/points/carrés par joueur, `action:<manche>` : prise/dépôt/Joker/fin de tour, `hand:<manche>` : webhooks, `resolving`, `highscore`). Scripts npm : `npm run draftduel:status`, `npm run draftduel:watchdog`, `npm run draftduel:reset`. Tests de bout en bout locaux (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/e2eDraftDuel.mjs [joueurs]` et `temp/e2eDraftRoyale.mjs [joueurs]`.
+Stockage Redis dédié `draftduel:*` (`state` dont les cartes en jeu et le marché, `players` : main/points Joker/points/quadruplés par joueur, `action:<manche>` : prise/dépôt/Joker/fin de tour, `hand:<manche>` : webhooks, `resolving`, `highscore`). Scripts npm : `npm run draftduel:status`, `npm run draftduel:watchdog`, `npm run draftduel:reset`. Tests de bout en bout locaux (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/e2eDraftDuel.mjs [joueurs]` et `temp/e2eDraftRoyale.mjs [joueurs]`.
 
 ## Jeu Goblin Hunters (identité secrète, camps cachés)
 

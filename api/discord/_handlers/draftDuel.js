@@ -32,7 +32,7 @@ import {
 } from "../../../backend/services/draftDuel.js";
 import { loadCatalog } from "../../../backend/services/draftroyale.js";
 import { compterCartes, pointsMain, trierMain } from "../../../backend/services/draftRules.js";
-import { jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
+import { echangeLigne, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -314,7 +314,7 @@ async function buildPlayersLines(state, players, actions) {
     if (!p) continue;
     const name = await displayName(id, p.username);
     const status = isBot(id) ? EMOJI.bot.text : actions[id]?.fini ? EMOJI.check.text : EMOJI.late.text;
-    lines.push(`${status} **${name}** · ${plural(p.points || 0, "pt")}${p.carres ? ` · ${plural(p.carres, "carré")}` : ""}`);
+    lines.push(`${status} **${name}** · ${plural(p.points || 0, "pt")}${p.carres ? ` · ${plural(p.carres, "quadruplé")}` : ""}`);
   }
   const missing = state.maxPlayers - state.players.length;
   if (missing > 0) lines.push(`${EMOJI.late.text} En attente de ${plural(missing, "joueur")}`);
@@ -355,7 +355,7 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
   lines.push(`${EMOJI.topplayers.text} **Classement final**`);
   for (const [i, r] of ranking.entries()) {
     const name = await displayName(r.discordId, r.username);
-    lines.push(`${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}${r.carres ? ` · ${plural(r.carres, "carré")}` : ""}`);
+    lines.push(`${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}${r.carres ? ` · ${plural(r.carres, "quadruplé")}` : ""}`);
   }
   if (highScore && !expired) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
@@ -501,21 +501,18 @@ async function nomsJoueurs(players, discordId) {
   return Object.fromEntries(entries);
 }
 
-function buildRecapLines(lastRecap, noms, discordId, catalog) {
+function buildRecapLines(lastRecap, noms, discordId, config, catalog) {
   if (!lastRecap) return [];
   const nom = (id) => noms[id] || "?";
   const lines = [`${EMOJI.stats.text} **Manche ${lastRecap.manche}**`];
-  for (const l of lastRecap.lignes) {
-    const depot = `dépôt ${cardName(l.depot, catalog)}`;
-    const priorite = l.priorite ? ", priorité" : "";
-    if (l.type === "prise") lines.push(`${EMOJI.trade.text} **${nom(l.discordId)}** : prise **${cardName(l.key, catalog)}**${l.disputee ? ` (disputée${priorite})` : ""} · ${depot}`);
-    if (l.type === "perdue") lines.push(`${EMOJI.trade.text} **${nom(l.discordId)}** : ${cardName(l.voulue, catalog)} disputée perdue, reçu **${cardName(l.key, catalog)}** (+${l.gain} pts Joker) · ${depot}`);
+  for (const l of lastRecap.lignes.filter((x) => x.type === "prise" || x.type === "perdue")) {
+    lines.push(`${EMOJI.trade.text} ${echangeLigne(l, nom(l.discordId), (k) => cardName(k, catalog), config)}`);
   }
   if (lines.length === 1) lines.push("Aucun échange.");
-  lines.push(...jokerBilanLignes(lastRecap.lignes, discordId, noms, (k) => cardName(k, catalog), (keys) => formatGroupes(keys, catalog)));
+  lines.push(...jokerBilanLignes(lastRecap.lignes, discordId, noms, (k) => cardName(k, catalog), (keys) => formatGroupes(keys, catalog), config));
   for (const s of (lastRecap.scores || []).filter((x) => x.carre)) {
     const [key] = [...compterCartes(s.main)].sort((a, b) => b[1] - a[1])[0] || [];
-    lines.push(`🎉 Carré de **${nom(s.discordId)}** (${cardName(key, catalog)}) : +${s.points} pts`);
+    lines.push(`🎉 Quadruplé de **${nom(s.discordId)}** (${cardName(key, catalog)}) : +${s.points} pts`);
   }
   const mien = lastRecap.scores?.find((x) => x.discordId === discordId && !x.carre);
   if (mien) lines.push(`Ton décompte : +${plural(mien.points, "pt")}`);
@@ -615,7 +612,7 @@ function buildMarcheEmbed(view) {
 
 async function buildHandPayload(view) {
   const noms = await nomsJoueurs(view.players, view.discordId);
-  const recap = buildRecapLines(view.state.lastRecap, noms, view.discordId, view.catalog);
+  const recap = buildRecapLines(view.state.lastRecap, noms, view.discordId, view.config, view.catalog);
   const embeds = [buildHandEmbed(view, recap, noms), buildMarcheEmbed(view)].filter(Boolean);
   return { content: "", embeds, components: buildHandComponents(view) };
 }
@@ -727,7 +724,7 @@ export async function handleChoix(webhookUrl, discordId, champ, key) {
 async function buildPostResolutionPayload(outcome, discordId, catalog) {
   if (outcome.final) {
     const players = await readPlayers();
-    const recap = buildRecapLines(outcome.state.lastRecap, await nomsJoueurs(players, discordId), discordId, catalog);
+    const recap = buildRecapLines(outcome.state.lastRecap, await nomsJoueurs(players, discordId), discordId, await loadDraftDuelConfig(), catalog);
     return {
       content: "",
       embeds: [
@@ -802,7 +799,7 @@ export async function handleDetails(webhookUrl, messageId) {
       lines.push(
         `${i === 0 ? EMOJI.trophy.text : `${i + 1}.`} **${name}** · ${plural(r.score, "pt")}`,
       );
-      lines.push(`• ${plural(r.carres || 0, "carré")} · ${plural(r.joker || 0, "point")} Joker`);
+      lines.push(`• ${plural(r.carres || 0, "quadruplé")} · ${plural(r.joker || 0, "point")} Joker`);
       lines.push("");
     }
     await patchOriginal(webhookUrl, {
@@ -826,7 +823,7 @@ function buildReglesEmbed(config) {
   return {
     title: "Règles du jeu : Draft",
     description: [
-      `Réunis **${config.taille_main} exemplaires d'une même carte** (un carré) en ${config.duel.manches} manches, de 1 à 3 joueurs. Des bots complètent la table jusqu'à 3 joueurs.`,
+      `Réunis **${config.taille_main} exemplaires d'une même carte** (un quadruplé) en ${config.duel.manches} manches, de 1 à 3 joueurs. Des bots complètent la table jusqu'à 3 joueurs.`,
       "",
       `Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
       "",
@@ -838,7 +835,7 @@ function buildReglesEmbed(config) {
       "",
       `**${JOKER_EMOJI} Joker** : dépense tes points au magasin (une action par manche, résolue en fin de manche) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
       "",
-      `**Carré** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts, les autres 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées. À la dernière manche, tout le monde marque ses points.`,
+      `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts, les autres 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées. À la dernière manche, tout le monde marque ses points.`,
     ].join("\n"),
     color: DRAFTDUEL_COLOR,
   };

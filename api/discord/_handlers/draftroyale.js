@@ -35,7 +35,7 @@ import {
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/draftroyale.js";
 import { compterCartes, pointsMain, trierMain, echangeValide } from "../../../backend/services/draftRules.js";
-import { JOKER_EMOJI, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes } from "./draftJoker.js";
+import { JOKER_EMOJI, echangeLigne, jokerButton, jokerPointsLabel, jokerStatutLigne, buildMagasin, jokerBilanLignes } from "./draftJoker.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -112,7 +112,7 @@ function classementLignes(joueurs, limit = 10) {
     .sort((a, b) => b.points - a.points || (b.carres || 0) - (a.carres || 0) || a.username.localeCompare(b.username))
     .slice(0, limit);
   if (!top.length) return [];
-  return ["", "**🏆 Classement**", ...top.map((j, i) => `${MEDALS[i] || `${i + 1}.`} ${j.username} (${plural(j.points, "pt")}${j.carres ? `, ${plural(j.carres, "carré")}` : ""})`)];
+  return ["", "**🏆 Classement**", ...top.map((j, i) => `${MEDALS[i] || `${i + 1}.`} ${j.username} (${plural(j.points, "pt")}${j.carres ? `, ${plural(j.carres, "quadruplé")}` : ""})`)];
 }
 
 // Message du jour : infos générales uniquement (la journée en cours, le
@@ -124,7 +124,7 @@ function buildResumeLignes(jour, config, joueurs) {
   ];
   if (jour === 1) lignes.push(`Tu reçois tes ${config.taille_main} cartes à ton premier clic.`);
   if (nb) lignes.push(`👥 ${plural(nb, "joueur")} dans la partie.`);
-  if (jour === config.duree_jours) lignes.push(`🏁 **Dernier jour** : à la clôture, chacun marque ses points (${config.points_carre} pour un carré, sinon 1 à 3).`);
+  if (jour === config.duree_jours) lignes.push(`🏁 **Dernier jour** : à la clôture, chacun marque ses points (${config.points_carre} pour un quadruplé, sinon 1 à 3).`);
   lignes.push(...classementLignes(joueurs));
   return lignes;
 }
@@ -161,7 +161,7 @@ function buildFinEmbed(ranking, config, manches, currentManche) {
       `Après ${config.duree_jours} jours de draft, ${titre}`,
       "",
       "**Classement final**",
-      ...ranking.slice(0, 10).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** (${plural(r.score, "pt")}${r.carres ? `, ${plural(r.carres, "carré")}` : ""})`),
+      ...ranking.slice(0, 10).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** (${plural(r.score, "pt")}${r.carres ? `, ${plural(r.carres, "quadruplé")}` : ""})`),
       ...buildManchesSection(manches, currentManche),
     ]
       .join("\n")
@@ -175,7 +175,7 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles — Draft Royale",
     description: [
-      `Réunis **${config.taille_main} exemplaires d'une même carte** (un carré) ! Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes à ton premier clic. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
+      `Réunis **${config.taille_main} exemplaires d'une même carte** (un quadruplé) ! Chaque carte en jeu existe en ${config.exemplaires} exemplaires. Tu reçois ${config.taille_main} cartes à ton premier clic. Le marché contient une carte par joueur, visible par tous (les autres exemplaires restent à l'écart jusqu'à la prochaine donne).`,
       "",
       `**Chaque jour** : ${TRADE_TEXT} choisis une carte à prendre au marché et une carte de ta main à y déposer. Tu peux changer d'avis jusqu'à la clôture.`,
       "",
@@ -185,11 +185,11 @@ function buildReglesEmbed(config) {
       "",
       `**${JOKER_EMOJI} Joker** : dépense tes points au magasin (une action par tour, résolue à la clôture) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
       "",
-      `**Carré** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts. Les autres marquent 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées.`,
+      `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts. Les autres marquent 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées.`,
       "",
-      `**Dernier jour** (J${config.duree_jours}) : tout le monde marque ses points, même sans carré.`,
+      `**Dernier jour** (J${config.duree_jours}) : tout le monde marque ses points, même sans quadruplé.`,
       "",
-      "Égalité : le nombre de carrés départage, puis l'ordre d'arrivée dans le jeu.",
+      "Égalité : le nombre de quadruplés départage, puis l'ordre d'arrivée dans le jeu.",
     ].join("\n"),
     color: DRAFT_COLOR,
   };
@@ -327,22 +327,19 @@ async function guardActiveDay(webhookUrl, jour) {
 
 // Bilan de la clôture de la veille : échanges de chacun (prise et dépôt),
 // carrés, décompte et nouvelle donne.
-function bilanVeille(veille, joueurs, discordId, catalog) {
+function bilanVeille(veille, joueurs, discordId, config, catalog) {
   if (!veille) return [];
   const noms = nomsJoueurs(joueurs, discordId);
   const nom = (id) => noms[id];
   const lignes = [];
-  for (const l of veille.lignes) {
-    const depot = `dépôt ${cardName(l.depot, catalog)}`;
-    const priorite = l.priorite ? ", priorité" : "";
-    if (l.type === "prise") lignes.push(`• **${nom(l.discordId)}** : prise **${cardName(l.key, catalog)}**${l.disputee ? ` (disputée${priorite})` : ""} · ${depot}`);
-    if (l.type === "perdue") lignes.push(`• **${nom(l.discordId)}** : ${cardName(l.voulue, catalog)} disputée perdue, reçu **${cardName(l.key, catalog)}** (+${l.gain} pts Joker) · ${depot}`);
+  for (const l of veille.lignes.filter((x) => x.type === "prise" || x.type === "perdue")) {
+    lignes.push(`• ${echangeLigne(l, nom(l.discordId), (k) => cardName(k, catalog), config)}`);
   }
   if (!lignes.length) lignes.push("Aucun échange.");
-  lignes.push(...jokerBilanLignes(veille.lignes, discordId, noms, (k) => cardName(k, catalog), (keys) => formatGroupes(keys, catalog)));
+  lignes.push(...jokerBilanLignes(veille.lignes, discordId, noms, (k) => cardName(k, catalog), (keys) => formatGroupes(keys, catalog), config));
   for (const sc of (veille.scores || []).filter((x) => x.carre)) {
     const [key] = [...compterCartes(sc.main)].sort((a, b) => b[1] - a[1])[0] || [];
-    lignes.push(`🎉 Carré de **${nom(sc.discordId)}** (${cardName(key, catalog)}) : +${sc.points} pts`);
+    lignes.push(`🎉 Quadruplé de **${nom(sc.discordId)}** (${cardName(key, catalog)}) : +${sc.points} pts`);
   }
   const mien = veille.scores?.find((x) => x.discordId === discordId && !x.carre);
   if (mien) lignes.push(`Ton décompte : +${plural(mien.points, "pt")}`);
@@ -378,7 +375,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
     jour > 1 ? getHistoriqueEntry(jour - 1) : null,
   ]);
   const main = trierMain(joueur.main);
-  const bilan = bilanVeille(veille, joueurs, discordId, catalog);
+  const bilan = bilanVeille(veille, joueurs, discordId, config, catalog);
   const lignes = [
     ...(entete ? [entete, ""] : []),
     ...(nouveau ? [`Bienvenue ! Voici tes ${config.taille_main} cartes.`, ""] : []),

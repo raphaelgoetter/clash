@@ -21,6 +21,23 @@ const ACTIONS = {
 };
 const AVEC_CIBLE = new Set(["voir", "saboter", "echanger"]);
 
+// Accord d'un participe avec le nom de la carte (« Géant reçu »,
+// « Archères reçues ») : `config.accords` donne genre et nombre ("m",
+// "f", "mp", "fp") ; féminin singulier par défaut (« carte »).
+export function accord(key, participe, config) {
+  const a = config.accords?.[key] || "f";
+  return `${participe}${a.startsWith("f") ? "e" : ""}${a.endsWith("p") ? "s" : ""}`;
+}
+
+// Ligne d'échange au marché du bilan (prise ou carte disputée manquée).
+export function echangeLigne(l, nom, cardName, config) {
+  const donne = `${cardName(l.depot)} ${accord(l.depot, "donné", config)}`;
+  if (l.type === "perdue") {
+    return `**${nom}** : ${cardName(l.voulue)} ${accord(l.voulue, "choisi", config)} ${accord(l.voulue, "manqué", config)}, **${cardName(l.key)}** ${accord(l.key, "reçu", config)} (+${l.gain} pts Joker) · ${donne}`;
+  }
+  return `**${nom}** : **${cardName(l.key)}** ${accord(l.key, "reçu", config)} · ${donne}`;
+}
+
 function plural(n, mot) {
   return `${n} ${mot}${n > 1 ? "s" : ""}`;
 }
@@ -110,7 +127,7 @@ export function buildMagasin({ prefixe, tour, points, joker, adversaires, main, 
 // Lignes du bilan pour les actions Joker de la clôture, vues par
 // `viewerId` : le détail des cartes n'est montré qu'à l'auteur et à la
 // cible, les autres voient seulement qui a visé qui.
-export function jokerBilanLignes(lignes, viewerId, noms, cardName, formatGroupes) {
+export function jokerBilanLignes(lignes, viewerId, noms, cardName, formatGroupes, config) {
   const out = [];
   for (const l of lignes.filter((x) => x.type === "joker")) {
     const auteur = `**${noms[l.discordId]}**`;
@@ -122,7 +139,11 @@ export function jokerBilanLignes(lignes, viewerId, noms, cardName, formatGroupes
     } else if (l.action === "voir") {
       out.push(l.discordId === viewerId ? `${JOKER_EMOJI} Main de ${cible} : ${formatGroupes(l.main)}` : `${JOKER_EMOJI} ${auteur} a regardé la main de ${cible}.`);
     } else if (l.action === "saboter") {
-      out.push(concerne ? `${JOKER_EMOJI} ${auteur} sabote ${cible} : ${cardName(l.retiree)} part au marché, ${cardName(l.recue)} arrive.` : `${JOKER_EMOJI} ${auteur} sabote ${cible}.`);
+      out.push(
+        concerne
+          ? `${JOKER_EMOJI} ${auteur} sabote ${cible} : ${cardName(l.retiree)} ${accord(l.retiree, "perdu", config)}, ${cardName(l.recue)} ${accord(l.recue, "reçu", config)}.`
+          : `${JOKER_EMOJI} ${auteur} sabote ${cible}.`,
+      );
     } else if (l.action === "echanger" && l.echec) {
       out.push(l.discordId === viewerId ? `${JOKER_EMOJI} Échange raté avec ${cible} : ${cardName(l.carte)} absente de sa main (ou ${cardName(l.maCarte)} de la tienne).` : `${JOKER_EMOJI} ${auteur} rate un échange avec ${cible}.`);
     } else if (l.action === "echanger") {
