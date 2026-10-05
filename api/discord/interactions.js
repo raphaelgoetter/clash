@@ -148,6 +148,7 @@ import {
   handleBoutiqueSelect as handleMarioClashBoutiqueSelect,
   handleItemTargetSelect as handleMarioClashItemTarget,
   handleSpellButton as handleMarioClashSpell,
+  handleSpellConfirm as handleMarioClashSpellConfirm,
   handleJournal as handleMarioClashJournal,
   handleRegles as handleMarioClashRegles,
 } from "./_handlers/marioclash.js";
@@ -10054,6 +10055,28 @@ export default async function handler(req, res) {
     if (action === "marioclash_dice") runBackground(() => handleMarioClashDice(webhookUrl, jour, discordId, username));
     else if (action === "marioclash_boutique") runBackground(() => handleMarioClashBoutique(webhookUrl, jour, discordId, username));
     else if (action === "marioclash_spell") runBackground(() => handleMarioClashSpell(webhookUrl, jour, discordId, username));
+    return;
+  }
+
+  // ── Mario Clash : confirmation du sort (custom_id: marioclash_spell_confirm:<jour>) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("marioclash_spell_confirm:")
+  ) {
+    const [, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashSpellConfirm(webhookUrl, jour, discordId, username));
+    return;
+  }
+
+  // ── Mario Clash : annulation du sort (remplace la confirmation éphémère) ──
+  if (body.type === 3 && body.data?.custom_id === "marioclash_spell_cancel") {
+    res.status(200).json({ type: 7, data: { content: "Sort annulé.", embeds: [], components: [] } });
     return;
   }
 

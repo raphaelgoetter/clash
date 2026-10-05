@@ -1154,7 +1154,59 @@ export async function handleItemTargetSelect(
 // (déplacement, blocage éventuel par l'Étoile) reste différée à la
 // clôture — voir castSpellForPlayer().
 
+// Le clic sur [✨ Lancer un sort] ne fait qu'afficher une confirmation
+// (évite les clics accidentels : le sort est définitif et consomme la
+// Concentration) ; le lancer réel passe par handleSpellConfirm().
 export async function handleSpellButton(webhookUrl, jour, discordId, username) {
+  try {
+    if (!(await guardActiveDay(webhookUrl, jour))) return;
+    const config = await loadMarioClashConfig();
+    const joueur = await ensureJoueur(discordId, username);
+    const actions = await readActions(Number(jour));
+    if (actions[discordId]?.spell) {
+      await patchOriginal(webhookUrl, {
+        content: "✨ Tu as déjà lancé un sort aujourd'hui.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const niveau = joueur?.concentration || 0;
+    await patchOriginal(webhookUrl, {
+      content: [
+        "✨ Lancer un sort maintenant ? Il est tiré au hasard et ne peut pas être annulé.",
+        niveau ? `🔋 Ta Concentration (${niveau}/${config.concentration_max}) sera consommée.` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      embeds: [],
+      components: [
+        {
+          type: 1,
+          components: [
+            {
+              type: 2,
+              style: 3,
+              label: "Confirmer",
+              emoji: { name: "✨" },
+              custom_id: `marioclash_spell_confirm:${jour}`,
+            },
+            {
+              type: 2,
+              style: 2,
+              label: "Annuler",
+              custom_id: "marioclash_spell_cancel",
+            },
+          ],
+        },
+      ],
+    });
+  } catch (err) {
+    console.error("[MarioClash] Échec bouton sort:", err.message);
+  }
+}
+
+export async function handleSpellConfirm(webhookUrl, jour, discordId, username) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
@@ -1181,7 +1233,7 @@ export async function handleSpellButton(webhookUrl, jour, discordId, username) {
       components: [],
     });
   } catch (err) {
-    console.error("[MarioClash] Échec bouton sort:", err.message);
+    console.error("[MarioClash] Échec confirmation sort:", err.message);
   }
 }
 
