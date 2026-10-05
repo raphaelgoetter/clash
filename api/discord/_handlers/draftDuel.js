@@ -833,7 +833,7 @@ function buildReglesEmbed(config) {
       "",
       `**Carte disputée** : si plusieurs joueurs veulent la même carte et qu'il n'y en a pas assez, celui qui a le plus de points Joker l'emporte (tirage au sort à égalité). Les autres reçoivent une autre carte du marché au hasard et gagnent +${config.joker.gain_perte} points Joker.`,
       "",
-      `**${JOKER_EMOJI} Joker** : dépense tes points au magasin (une action par manche, résolue en fin de manche) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
+      `**${JOKER_EMOJI} Joker** : +${config.joker.gain_tour} point Joker par échange réalisé, +${config.joker.gain_perte} de plus si ta carte t'échappe. Dépense-les au magasin (une action par manche, résolue en fin de manche) : Priorité, Protéger, Voir main, Saboter, Échanger carte.`,
       "",
       `**Quadruplé** : dès qu'un joueur a ${config.taille_main} cartes identiques, il marque ${config.points_carre} pts, les autres 1, 2 ou 3 pts selon leur plus grand nombre de cartes identiques. Puis toutes les cartes sont redistribuées. À la dernière manche, tout le monde marque ses points.`,
     ].join("\n"),

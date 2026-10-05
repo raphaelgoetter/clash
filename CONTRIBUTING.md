@@ -1933,12 +1933,12 @@ Résolus tous ensemble à la clôture (`resoudreEchanges()`, pure) : l'heure de 
 
 1. Une carte demandée par **au plus autant de joueurs qu'il y a d'exemplaires au marché** est obtenue par tous.
 2. Sinon elle est **disputée** : les joueurs en **Priorité** (Joker) sont servis d'abord, puis ceux qui ont le plus de **points Joker restants** (après les achats du tour), tirage au sort entre ex aequo (décision du 05/10 : sans tirage, personne ne l'emporterait au J1 où tout le monde est à 0).
-3. Les perdants reçoivent au hasard une autre carte restée au marché et gagnent `joker.gain_perte` (2) points Joker.
+3. Les perdants reçoivent au hasard une autre carte restée au marché et gagnent `joker.gain_perte` (2) points Joker, en plus du `joker.gain_tour` (1) que rapporte tout échange réalisé.
 4. Les cartes déposées rejoignent le marché (taille du marché inchangée).
 
 ### Joker (Draft Royale et duel)
 
-Décision du 05/10, pour casser la répétitivité et les quadruplés simultanés. Les **points Joker** (ex-« popularité ») se gagnent en perdant une carte disputée (+2) et ne baissent qu'en les dépensant au **magasin Joker** (bouton Joker de l'éphémère, `_handlers/draftJoker.js`, partagé par les deux jeux). Une action par tour, modifiable jusqu'à la clôture, payée et résolue à la clôture ; coûts dans `joker.couts` (1 pt chacune) :
+Décision du 05/10, pour casser la répétitivité et les quadruplés simultanés. Les **points Joker** (ex-« popularité ») se gagnent à chaque échange réalisé (`gain_tour`, +1) et en perdant une carte disputée (`gain_perte`, +2 de plus) ; ils ne baissent qu'en les dépensant au **magasin Joker** (bouton Joker de l'éphémère, `_handlers/draftJoker.js`, partagé par les deux jeux). Une action par tour, modifiable jusqu'à la clôture, payée et résolue à la clôture ; coûts dans `joker.couts` (2 pts chacune) :
 
 - **Priorité** : servi en premier si la carte prise est disputée (sans échange complet, l'action n'est ni utilisée ni payée). Plusieurs joueurs en Priorité sur la même carte : départagés entre eux par les points Joker restants.
 - **Protéger** : aucune action Joker ne peut cibler le joueur ce tour-ci ; une action contre lui échoue et son auteur perd le point.
@@ -1946,7 +1946,7 @@ Décision du 05/10, pour casser la répétitivité et les quadruplés simultané
 - **Saboter** : une carte au hasard de la main ciblée part au marché contre une carte du marché au hasard.
 - **Échanger carte** : donne une de ses cartes contre une carte choisie (parmi les cartes en jeu) de la main ciblée ; si l'une des deux n'est plus là à la clôture, pas d'échange et le point est perdu.
 
-**Ordre à la clôture** (`computeTour()`) : paiement, Protéger, échanges au marché (avec Priorité), Échanger carte, Saboter, Voir main, puis quadruplés et décompte. Un Saboter peut donc empêcher un quadruplé tout juste complété. **Bilan** : les cartes concernées ne sont montrées qu'à l'auteur et à la cible, les autres voient seulement qui a visé qui ; une protection n'est révélée que si elle a bloqué une action. **Bots du duel** (`jokerDuBot()`, sans regarder les autres mains) : Protéger avec 3 cartes identiques, sinon Saboter l'adversaire qui a le plus de points à partir de 2 points Joker. Simulation : 3,4 points Joker gagnés par joueur et par partie à 3 joueurs, 2,3 à 15 joueurs (70 % actifs).
+**Ordre à la clôture** (`computeTour()`) : paiement, Protéger, échanges au marché (avec Priorité), Échanger carte, Saboter, Voir main, puis quadruplés et décompte. Un Saboter peut donc empêcher un quadruplé tout juste complété. **Bilan** : les cartes concernées ne sont montrées qu'à l'auteur et à la cible, les autres voient seulement qui a visé qui ; une protection n'est révélée que si elle a bloqué une action. **Bots du duel** (`jokerDuBot()`, sans regarder les autres mains) : Protéger avec 3 cartes identiques, sinon Saboter l'adversaire qui a le plus de points à partir de 2 points Joker. Gain par tour ajouté le 05/10 après un test solo sans aucun point Joker en 7 manches (seules les pertes en rapportaient : 1,7 perte par joueur en moyenne à 3 joueurs, souvent 0) ; coûts passés de 1 à 2. Simulation (bots qui achètent dès qu'ils peuvent) : 4,1 actions par joueur et par partie à 3 joueurs, 2,5 à 15 joueurs (70 % actifs), 2 % de joueurs sans aucune action.
 
 ### Score (Draft Royale)
 

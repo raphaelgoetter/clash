@@ -141,9 +141,11 @@ export function echangeValide(action, main, marche) {
 }
 
 // ── Joker ────────────────────────────────────────────────────────────
-// Points Joker : +`joker.gain_perte` à chaque carte disputée perdue, ne
-// baissent que par les achats au magasin (une action par tour, payée à la
-// clôture). Ils départagent les disputes (points restants après achat).
+// Points Joker : +`joker.gain_tour` par échange réalisé, plus
+// `joker.gain_perte` à chaque carte disputée perdue ; ils ne baissent que
+// par les achats au magasin (une action par tour, payée à la clôture). Ils
+// départagent les disputes (points restants après achat, avant les gains
+// du tour).
 
 export const JOKER_ACTIONS = ["priorite", "proteger", "voir", "saboter", "echanger"];
 const AVEC_CIBLE = new Set(["voir", "saboter", "echanger"]);
@@ -231,8 +233,9 @@ export function resoudreEchanges({ joueurs, actions, marche, config, priorites =
     j.main.push(o.key);
     depots.push(depot);
     const priorite = priorites.has(id);
+    j.joker = (j.joker || 0) + config.joker.gain_tour;
     if (o.perdue) {
-      j.joker = (j.joker || 0) + config.joker.gain_perte;
+      j.joker += config.joker.gain_perte;
       lignes.push({ type: "perdue", discordId: id, voulue: o.perdue, key: o.key, depot, priorite, gain: config.joker.gain_perte });
     } else {
       lignes.push({ type: "prise", discordId: id, key: o.key, disputee: o.disputee, depot, priorite });
@@ -396,7 +399,7 @@ export function jokerDuBot(id, joueurs, config, rng = Math.random) {
   const moi = joueurs[id];
   const points = moi?.joker || 0;
   if (points >= jokerCout("proteger", config) && plusGrandGroupe(moi.main) >= config.taille_main - 1) return { type: "proteger" };
-  if (points < 2) return null;
+  if (points < jokerCout("saboter", config)) return null;
   const [cible] = shuffle(
     Object.keys(joueurs).filter((x) => x !== id),
     rng,
