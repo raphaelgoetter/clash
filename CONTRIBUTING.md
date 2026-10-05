@@ -161,12 +161,13 @@ Cette approche simplifiée remplace l'ancienne formule qui combinait historique 
 
 Le calcul de `maxReachableFame` (borne haute théorique) utilise un plafond **absolu** (`absoluteMaxDecksToday`), différent de `targetDecks` :
 
-- `absoluteMaxDecksToday = min(200, rosterSize × 4)` — capacité maximale du roster complet, indépendamment de l'engagement constaté.
+- `absoluteMaxDecksToday = 200` — plafond fixe du jeu par clan et par jour, **indépendant du roster**.
+- `remainingDecks = min(800 − decksSemaine, (200 − decksToday) + joursRestants × 200)`
 - `maxReachableFame = currentFame + remainingDecks × 200`
 
 Un clan est marqué `isClinchedWin` quand `currentFame > max(maxReachableFame de tous les rivaux)`, c'est-à-dire quand même le scénario le plus optimiste pour les adversaires ne permet pas de dépasser le clan.
 
-L'utilisation du **roster complet** (pas seulement `activeMembers`) garantit qu'on ne sous-estime pas la capacité de remontée des rivaux quand certains membres n'ont pas encore joué de la semaine.
+Ne **jamais** borner par `rosterSize × 4` : un clan peut recruter en cours de journée, et les decks des membres partis restent comptés dans `decksToday`. Un clan à 47 membres ayant joué 187 decks peut donc encore en jouer 13, pas 1 (faux « ✅ Victoire » constaté en Colisée le 05/10/2026).
 
 ### `decksToday` et `clanWarSummary` — pas de filtre ex-membres
 

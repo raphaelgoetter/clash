@@ -3186,14 +3186,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
                   ? Math.floor(_msUntilEnd / (3 * 60 * 1000)) * 2
                   : 0;
 
-              // Maximum théorique absolu pour maxReachableFame (clinch detection)
-              // Utilise rosterSize × 4 (pas activeMembers) pour ne pas sous-estimer
-              // la capacité de remontée des rivaux quand certains membres n'ont pas
-              // encore joué de la semaine
-              const absoluteMaxDecksToday = Math.min(
-                200,
-                participationGdcEstimee.rosterSize * 4,
-              );
+              // Maximum théorique absolu pour maxReachableFame (clinch detection) :
+              // plafond fixe de 200 decks/jour par clan, indépendant du roster
+              // actuel (un clan peut recruter en cours de journée, et les decks des
+              // membres partis restent comptés dans decksToday).
+              const absoluteMaxDecksToday = 200;
 
               const remainingDecksToday = Math.max(
                 0,
