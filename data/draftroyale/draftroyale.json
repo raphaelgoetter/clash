@@ -8,7 +8,7 @@
   "joker": {
     "gain_tour": 1,
     "gain_perte": 2,
-    "couts": { "priorite": 1, "geler": 2, "puiser": 3, "espionner": 1 }
+    "couts": { "priorite": 1, "geler": 2, "puiser": 2, "espionner": 1 }
   },
   "cartes": [
     "Princess",

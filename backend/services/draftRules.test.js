@@ -205,7 +205,8 @@ function main() {
     const riche = { ...ctx, joueurs: { p1: { ...joueurs.p1, joker: CONFIG.joker.couts.puiser } } };
     assert.deepStrictEqual(lireBonus("puiser:g", { ...riche, reserve: ["g"] }).joker, { type: "puiser", carte: "g" });
     assert.strictEqual(lireBonus("puiser:g", { ...riche, reserve: [] }).erreur, "carte");
-    assert.strictEqual(lireBonus("puiser:g", { ...ctx, reserve: ["g"] }).erreur, "points");
+    const pauvre = { ...ctx, joueurs: { p1: { ...joueurs.p1, joker: CONFIG.joker.couts.puiser - 1 } } };
+    assert.strictEqual(lireBonus("puiser:g", { ...pauvre, reserve: ["g"] }).erreur, "points");
     {
       const C = CONFIG.joker.couts.puiser;
       const joueursAvant = { p1: { main: ["g", "g", "g", "x"], joker: C + 1, points: 0 }, p2: { main: ["y", "y", "z", "z"], joker: C, points: 0 } };
