@@ -36,7 +36,7 @@ import {
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/draftroyale.js";
 import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
-import { JOKER_EMOJI, quadruplesEmbed, vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes } from "./draftJoker.js";
+import { JOKER_EMOJI, ecartLigne, quadruplesEmbed, vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes } from "./draftJoker.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -185,6 +185,7 @@ function buildReglesEmbed(config) {
       `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par jour joué.`,
       `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée`,
       `• **Geler** une carte (${config.joker.couts.geler} pts) : personne ne peut la prendre ce jour-là, même toi`,
+      `• **Puiser** une carte à l'écart (${config.joker.couts.puiser} pts) : ta carte déposée part à l'écart à sa place`,
       `• **Espionner** (${config.joker.couts.espionner} pt) : vois tout de suite la main d'un joueur`,
       "",
       `**Fin** (J${config.duree_jours}) : chacun marque ses points, plus ses points Joker restants.`,
@@ -373,6 +374,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
       id: discordId,
       joueurs,
       marche: partie.marche,
+      reserve: partie.reserve,
       config,
       cardName: (k) => cardName(k, catalog),
       trade: TRADE_TEXT,
@@ -393,7 +395,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
       },
       {
         title: "Marché",
-        description: formatGroupes(marcheTrie, catalog).slice(0, 4096) || "Le marché est vide.",
+        description: [formatGroupes(marcheTrie, catalog) || "Le marché est vide.", "", ecartLigne(partie.reserve, (keys) => formatGroupes(keys, catalog))].join("\n").slice(0, 4096),
         color: DRAFT_COLOR,
         image: marcheKeysImageUrl(marcheTrie) ? { url: marcheKeysImageUrl(marcheTrie) } : undefined,
       },
@@ -427,6 +429,7 @@ async function buildJeuView(jour, discordId, username, entete = null) {
         points: joueur.joker || 0,
         action,
         marche: partie.marche,
+        reserve: partie.reserve,
         adversaires: Object.entries(nomsJoueurs(joueurs, discordId))
           .filter(([id]) => id !== discordId)
           .map(([id, nom]) => ({ id, nom }))

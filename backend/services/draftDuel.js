@@ -122,7 +122,7 @@ const HAND_TTL_SECONDS = 15 * 60;
 // échange (les bots choisissent le leur à la résolution).
 // Pure : le tour peut être validé (échange au marché ou Joker complet).
 export function tourJouable(action, id, players, state, config) {
-  return echangeValide(action, players[id]?.main, state.marche) || jokerValide(action?.joker, id, players, config, { echangeOk: false, marche: state.marche });
+  return echangeValide(action, players[id]?.main, state.marche) || jokerValide(action?.joker, id, players, config, { echangeOk: false, marche: state.marche, reserve: state.reserve, depot: action?.depot });
 }
 
 export function isMancheReady(state, actions) {
@@ -308,7 +308,7 @@ export async function choisirJoker(discordId, valeur) {
   if (!guard.action) return guard;
   const { state } = guard;
   const [config, players] = await Promise.all([loadDraftDuelConfig(), readPlayers()]);
-  const r = lireBonus(valeur, { id: discordId, joueurs: players, marche: state.marche, config });
+  const r = lireBonus(valeur, { id: discordId, joueurs: players, marche: state.marche, reserve: state.reserve, config });
   if (r.erreur) return { ...(await afterAction(state, discordId)), invalid: true };
   await updateAction(state.manche, discordId, { joker: r.joker });
   return afterAction(state, discordId);

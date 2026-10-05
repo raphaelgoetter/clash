@@ -200,6 +200,35 @@ function main() {
     assert.ok(t.lignes.some((l) => l.action === "geler" && l.carte === "a"));
     assert.ok(t.lignes.some((l) => l.action === "espionner" && l.cible === "p2"));
 
+    // Puiser à l'écart : la carte déposée part à l'écart, la prise au
+    // marché est ignorée ; exemplaire disputé : le perdant est remboursé
+    const riche = { ...ctx, joueurs: { p1: { ...joueurs.p1, joker: CONFIG.joker.couts.puiser } } };
+    assert.deepStrictEqual(lireBonus("puiser:g", { ...riche, reserve: ["g"] }).joker, { type: "puiser", carte: "g" });
+    assert.strictEqual(lireBonus("puiser:g", { ...riche, reserve: [] }).erreur, "carte");
+    assert.strictEqual(lireBonus("puiser:g", { ...ctx, reserve: ["g"] }).erreur, "points");
+    {
+      const C = CONFIG.joker.couts.puiser;
+      const joueursAvant = { p1: { main: ["g", "g", "g", "x"], joker: C + 1, points: 0 }, p2: { main: ["y", "y", "z", "z"], joker: C, points: 0 } };
+      const t = computeTour({
+        joueursAvant,
+        actions: {
+          p1: { prise: "m", depot: "x", joker: { type: "puiser", carte: "g" } },
+          p2: { depot: "y", joker: { type: "puiser", carte: "g" } },
+        },
+        marche: ["m"],
+        reserve: ["g"],
+        familles: ["g", "x", "y", "z", "m"],
+        config: CONFIG,
+        dernier: true,
+      });
+      assert.deepStrictEqual(t.carres, ["p1"]);
+      assert.deepStrictEqual(t.marche, ["m"]);
+      assert.deepStrictEqual(t.reserve, ["x"]);
+      assert.deepStrictEqual([...t.joueurs.p2.main].sort(), ["y", "y", "z", "z"]);
+      assert.strictEqual(t.joueurs.p2.joker, C + CONFIG.joker.gain_perte + CONFIG.joker.gain_tour);
+      assert.strictEqual(t.joueurs.p1.joker, 1 + CONFIG.joker.gain_tour);
+    }
+
     // Bot : Priorité quand sa prise complète un quadruplé
     assert.deepStrictEqual(jokerDuBot("p1", { p1: { main: ["a", "a", "a", "b"], joker: 1 } }, "a", CONFIG), { type: "priorite" });
     assert.strictEqual(jokerDuBot("p1", { p1: { main: ["a", "a", "b", "c"], joker: 1 } }, "a", CONFIG), null);

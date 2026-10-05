@@ -33,7 +33,7 @@ import {
 } from "../../../backend/services/draftDuel.js";
 import { loadCatalog } from "../../../backend/services/draftroyale.js";
 import { compterCartes, trierMain } from "../../../backend/services/draftRules.js";
-import { quadruplesEmbed, vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
+import { ecartLigne, quadruplesEmbed, vedetteLigne, echangeLigne, tourStatutLignes, annulerEchangeButton, jokerRows, jokerPointsLabel, voirLigne, jokerBilanLignes, JOKER_EMOJI } from "./draftJoker.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -526,6 +526,7 @@ function buildStatusLines(view) {
     id: discordId,
     joueurs: players,
     marche: state.marche,
+    reserve: state.reserve,
     config,
     cardName: (k) => cardName(k, catalog),
     trade: EMOJI.trade.text,
@@ -587,6 +588,7 @@ function buildHandComponents(view, noms) {
       points: me.joker || 0,
       action,
       marche: state.marche,
+      reserve: state.reserve,
       adversaires: Object.entries(noms)
         .filter(([id]) => id !== discordId)
         .map(([id, nom]) => ({ id, nom })),
@@ -617,7 +619,7 @@ function buildMarcheEmbed(view) {
   const image = marcheImageUrl(state.marche);
   return {
     title: "Marché",
-    description: formatGroupes(state.marche, catalog),
+    description: [formatGroupes(state.marche, catalog), "", ecartLigne(state.reserve, (keys) => formatGroupes(keys, catalog))].join("\n"),
     color: DRAFTDUEL_COLOR,
     image: image ? { url: image } : undefined,
   };
@@ -817,6 +819,7 @@ function buildReglesEmbed(config) {
       `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par manche jouée.`,
       `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée`,
       `• **Geler** une carte (${config.joker.couts.geler} pts) : personne ne peut la prendre cette manche, même toi`,
+      `• **Puiser** une carte à l'écart (${config.joker.couts.puiser} pts) : ta carte déposée part à l'écart à sa place`,
       `• **Espionner** (${config.joker.couts.espionner} pt) : vois tout de suite la main d'un joueur`,
       "",
       `**Fin** (manche ${config.duel.manches}) : chacun marque ses points, plus ses points Joker restants.`,

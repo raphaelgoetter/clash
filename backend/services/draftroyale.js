@@ -268,7 +268,7 @@ export async function enregistrerChoix(jour, discordId, champ, key) {
 export async function enregistrerJoker(jour, discordId, valeur) {
   const [config, joueurs, partie, action] = await Promise.all([loadDraftRoyaleConfig(), readJoueurs(), readPartie(), readAction(jour, discordId)]);
   if (!joueurs[discordId]) return { status: "unknownPlayer" };
-  const r = lireBonus(valeur, { id: discordId, joueurs, marche: partie.marche, config });
+  const r = lireBonus(valeur, { id: discordId, joueurs, marche: partie.marche, reserve: partie.reserve, config });
   if (r.erreur) return { status: r.erreur };
   await getRedis().hset(actionsKey(jour), { [discordId]: toJson({ ...action, joker: r.joker }) });
   return { status: "ok", joker: r.joker };

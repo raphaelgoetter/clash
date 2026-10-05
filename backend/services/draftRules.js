@@ -172,35 +172,74 @@ export function echangeValide(action, main, marche) {
 // les points restants s'ajoutent au score final. Ils départagent les
 // disputes (points restants après achat, avant les gains du tour).
 //   - Bonus du tour (un seul, payé et résolu à la clôture) : Priorité
-//     (servi en premier si la carte prise est disputée) ou Geler une
+//     (servi en premier si la carte prise est disputée), Puiser (prendre
+//     une carte à l'écart et y mettre la carte déposée) ou Geler une
 //     carte du marché (personne ne peut la prendre ce tour-ci).
 //   - Espionner (instantané, une fois par tour, en plus du bonus) : voir
 //     tout de suite la main d'un joueur.
 
-export const JOKER_ACTIONS = ["priorite", "geler"];
+export const JOKER_ACTIONS = ["priorite", "geler", "puiser"];
+const AVEC_CARTE = new Set(["geler", "puiser"]);
 
 export function jokerCout(type, config) {
   return config.joker.couts[type] ?? null;
 }
 
-// Valeur du menu « Bonus du tour » : "aucun", "priorite" ou
-// "geler:<carte>". Renvoie { joker } (null = aucun) ou { erreur }.
-export function lireBonus(valeur, { id, joueurs, marche, config }) {
+// Valeur du menu « Actions » : "aucun", "priorite", "geler:<carte>" ou
+// "puiser:<carte>". Renvoie { joker } (null = aucun) ou { erreur }.
+export function lireBonus(valeur, { id, joueurs, marche, reserve = [], config }) {
   if (!valeur || valeur === "aucun") return { joker: null };
   const [type, carte] = valeur.split(":");
   if (!JOKER_ACTIONS.includes(type)) return { erreur: "inconnue" };
   if ((joueurs[id]?.joker || 0) < jokerCout(type, config)) return { erreur: "points" };
   if (type === "geler" && !marche.includes(carte)) return { erreur: "carte" };
-  return { joker: type === "geler" ? { type, carte } : { type } };
+  if (type === "puiser" && !reserve.includes(carte)) return { erreur: "carte" };
+  return { joker: AVEC_CARTE.has(type) ? { type, carte } : { type } };
 }
 
 // Bonus complet et payable. Priorité n'a de sens qu'avec un échange valide,
-// Geler qu'avec une carte encore au marché.
-export function jokerValide(joker, id, joueurs, config, { echangeOk = true, marche = null } = {}) {
+// Geler qu'avec une carte encore au marché, Puiser qu'avec une carte à
+// l'écart et une carte de la main à y mettre (`action.depot`).
+export function jokerValide(joker, id, joueurs, config, { echangeOk = true, marche = null, reserve = null, depot = null } = {}) {
   if (!joker?.type || !JOKER_ACTIONS.includes(joker.type)) return false;
   if ((joueurs[id]?.joker || 0) < jokerCout(joker.type, config)) return false;
   if (joker.type === "priorite") return echangeOk;
+  if (joker.type === "puiser") return !!joker.carte && (!reserve || reserve.includes(joker.carte)) && (joueurs[id]?.main || []).includes(depot);
   return !!joker.carte && (!marche || marche.includes(joker.carte));
+}
+
+// Puiser à l'écart : chaque joueur prend la carte choisie à l'écart et y
+// met sa carte déposée. Exemplaire disputé : les points Joker départagent
+// (tirage au sort entre ex aequo) ; les perdants gardent leur carte, sont
+// remboursés et gagnent gain_perte. Mute `joueurs`, renvoie l'écart et les
+// lignes du bilan.
+export function resoudrePuisages({ joueurs, actions, puiseurs, reserve, config, rng = Math.random }) {
+  const ecart = [...reserve];
+  const lignes = [];
+  const demandes = new Map();
+  for (const id of shuffle(puiseurs, rng)) {
+    const key = actions[id].joker.carte;
+    demandes.set(key, [...(demandes.get(key) || []), id]);
+  }
+  const depots = [];
+  for (const [key, ids] of demandes) {
+    const copies = reserve.filter((k) => k === key).length;
+    const ordre = [...ids].sort((a, b) => (joueurs[b].joker || 0) - (joueurs[a].joker || 0));
+    ordre.forEach((id, i) => {
+      const { depot } = actions[id];
+      if (i < copies) {
+        retirerUne(joueurs[id].main, depot);
+        retirerUne(ecart, key);
+        joueurs[id].main.push(key);
+        depots.push(depot);
+        lignes.push({ type: "puise", discordId: id, key, depot });
+      } else {
+        joueurs[id].joker += jokerCout("puiser", config) + config.joker.gain_perte;
+        lignes.push({ type: "puise_perdue", discordId: id, voulue: key, depot, gain: config.joker.gain_perte });
+      }
+    });
+  }
+  return { reserve: [...ecart, ...depots], lignes };
 }
 
 // Espionner (pure) : instantané, payé tout de suite, une fois par tour.
@@ -276,7 +315,8 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   const jokers = {};
   for (const id of Object.keys(joueurs)) {
     const joker = actions[id]?.joker;
-    if (!jokerValide(joker, id, joueurs, config, { echangeOk: echangeValide(actions[id], joueurs[id].main, marche), marche })) continue;
+    const ctx = { echangeOk: echangeValide(actions[id], joueurs[id].main, marche), marche, reserve, depot: actions[id]?.depot };
+    if (!jokerValide(joker, id, joueurs, config, ctx)) continue;
     joueurs[id].joker -= jokerCout(joker.type, config);
     jokers[id] = joker;
   }
@@ -285,9 +325,13 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   const priorites = new Set(Object.keys(jokers).filter((id) => jokers[id].type === "priorite"));
   const gelees = new Set(Object.values(jokers).filter((j) => j.type === "geler").map((j) => j.carte));
 
-  const echanges = resoudreEchanges({ joueurs, actions, marche, config, priorites, gelees, rng });
+  // Puiser d'abord (à l'écart) : ces joueurs ne font pas d'échange au marché
+  const puiseurs = Object.keys(jokers).filter((id) => jokers[id].type === "puiser");
+  const puisages = resoudrePuisages({ joueurs, actions, puiseurs, reserve, config, rng });
+  const actionsMarche = Object.fromEntries(Object.entries(actions).filter(([id]) => !puiseurs.includes(id)));
+  const echanges = resoudreEchanges({ joueurs, actions: actionsMarche, marche, config, priorites, gelees, rng });
   for (const id of joues) joueurs[id].joker = (joueurs[id].joker || 0) + config.joker.gain_tour;
-  const lignes = [...echanges.lignes];
+  const lignes = [...puisages.lignes, ...echanges.lignes];
   for (const [id, j] of Object.entries(jokers)) {
     if (j.type === "geler") lignes.push({ type: "joker", action: "geler", discordId: id, carte: j.carte });
   }
@@ -311,7 +355,7 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   }
 
   let newMarche = echanges.marche;
-  let newReserve = reserve;
+  let newReserve = puisages.reserve;
   let newVedettes = vedettes;
   const redistribution = carres.length > 0 && !dernier;
   if (redistribution) {

@@ -37,12 +37,15 @@ for (let m = 1; m <= 7; m++) {
     if ((view.me.joker || 0) >= 1) {
       const cible = Object.keys(view.players).find((x) => x !== id);
       await H.handleJoker(`wh-${id}`, id, "espion", cible);
-      if ((view.me.joker || 0) >= 3) await H.handleJoker(`wh-${id}`, id, "bonus", `geler:${view.state.marche.find((k) => k !== choix.prise)}`);
+      if ((view.me.joker || 0) >= 3 && view.state.reserve.length) await H.handleJoker(`wh-${id}`, id, "bonus", `puiser:${view.state.reserve[0]}`);
+      else if ((view.me.joker || 0) >= 3) await H.handleJoker(`wh-${id}`, id, "bonus", `geler:${view.state.marche.find((k) => k !== choix.prise)}`);
       else await H.handleJoker(`wh-${id}`, id, "bonus", "priorite");
       // Une manche jouée avec le bonus seul : échange au marché annulé
-      if (id === "u1" && m === 5 && (view.me.joker || 0) >= 3) await H.handleChoix(`wh-${id}`, id, "annuler");
+      // Manche jouée avec le seul bonus Geler : échange au marché annulé
+      const joker = (await S.readPlayerView(await S.readState(), id)).action.joker;
+      if (id === "u1" && m === 5 && joker?.type === "geler") await H.handleChoix(`wh-${id}`, id, "annuler");
       const e = lastEph(id).body;
-      console.log(`--- ${id}, manche ${m} (${e.components.length} rangées, fin de tour ${e.components.at(-1).components[0].disabled ? "désactivée" : "active"}) ---\n${e.embeds[0].description.split("\n").filter((l) => /👁️|Bonus|Échange prévu|Pas d'échange|⭐/.test(l)).join("\n")}`);
+      console.log(`--- ${id}, manche ${m} (${e.components.length} rangées, fin de tour ${e.components.at(-1).components[0].disabled ? "désactivée" : "active"}) ---\n${e.embeds[0].description.split("\n").filter((l) => /🕵️|Bonus|Échange prévu|Pas d'échange|⭐|puises/.test(l)).join("\n")}`);
     }
     await H.handleFinTour(`wh-${id}`, id);
   }
