@@ -4756,7 +4756,7 @@ export default async function handler(req, res) {
           : `⚡ Matchup GDC · ${analysis.overview.name}`;
         const matchupLinkField = {
           name: "Le ⚡% correspond à la difficulté de l'affrontement. Calcul :",
-          value: "https://trustroyale.vercel.app/bot/#matchup",
+          value: "https://trustroyale.vercel.app/bot/#matchup-gdc",
           inline: false,
         };
 
@@ -4955,7 +4955,7 @@ export default async function handler(req, res) {
           : `⚡ Derniers combats · ${analysis.overview.name}`;
         const matchupLinkField = {
           name: "Le ⚡% correspond à la difficulté de l'affrontement. Calcul :",
-          value: "https://trustroyale.vercel.app/bot/#matchup",
+          value: "https://trustroyale.vercel.app/bot/#matchup-gdc",
           inline: false,
         };
 
