@@ -820,7 +820,7 @@ function buildReglesEmbed(config) {
       "",
       `**Chaque manche** : ${EMOJI.trade.text} prends une carte au marché et dépose une carte de ta main, utilise une action ${JOKER_EMOJI} Joker, ou les deux, puis ${EMOJI.check.text} **Fin de tour**.`,
       `**Carte disputée** : elle va au joueur qui a le plus de points Joker. Les autres gardent leur carte (+${config.joker.gain_perte} pts Joker).`,
-      `**Quadruplé** : ${config.points_rarete.common} à ${config.points_rarete.legendary} pts selon la rareté (+${config.bonus_vedette} pour une ⭐ carte vedette). Tu reçois ensuite une nouvelle main.`,
+      `**Quadruplé** : ${config.points_rarete.common} à ${config.points_rarete.legendary} pts selon la rareté (${config.points_vedette} pour une ⭐ carte vedette). Tu reçois ensuite une nouvelle main.`,
       "",
       `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par manche jouée.`,
       `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée`,

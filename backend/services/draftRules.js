@@ -47,11 +47,12 @@ export function carteDuCarre(main, config) {
   return null;
 }
 
-// Points d'un quadruplé : selon la rareté de la carte (`points_rarete`,
-// `points_carre` à défaut), +`bonus_vedette` pour une carte vedette.
+// Points d'un quadruplé : `points_vedette` (fixe) pour une carte vedette,
+// sinon selon la rareté de la carte (`points_rarete`, `points_carre` à
+// défaut).
 export function pointsQuadruple(carte, config, vedettes = [], catalog = null) {
-  const base = config.points_rarete?.[catalog?.get(carte)?.rarity] ?? config.points_carre;
-  return base + (vedettes.includes(carte) ? config.bonus_vedette : 0);
+  if (vedettes.includes(carte)) return config.points_vedette;
+  return config.points_rarete?.[catalog?.get(carte)?.rarity] ?? config.points_carre;
 }
 
 // Points d'une main : un quadruplé (voir pointsQuadruple), sinon le nombre

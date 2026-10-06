@@ -38,8 +38,8 @@ function main() {
   // Rareté et carte vedette
   const CAT = new Map([["a", { rarity: "legendary" }], ["c", { rarity: "common" }]]);
   assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, [], CAT), CONFIG.points_rarete.legendary);
-  assert.strictEqual(pointsMain(["c", "c", "c", "c"], CONFIG, ["c"], CAT), CONFIG.points_rarete.common + CONFIG.bonus_vedette);
-  assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, ["b", "a"]), CONFIG.points_carre + CONFIG.bonus_vedette);
+  assert.strictEqual(pointsMain(["c", "c", "c", "c"], CONFIG, ["c"], CAT), CONFIG.points_vedette);
+  assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, ["a"], CAT), CONFIG.points_vedette);
   assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, ["b"]), CONFIG.points_carre);
   assert.strictEqual(pointsMain(["a", "a", "a", "c"], CONFIG, ["a"]), 3);
   // Une vedette pour 5 joueurs, jamais les mêmes d'une donne à l'autre si
@@ -259,7 +259,7 @@ function main() {
       dernier: false,
     });
     assert.deepStrictEqual(t.carres, ["p1"]);
-    assert.strictEqual(t.joueurs.p1.points, 5 + CONFIG.points_carre + CONFIG.bonus_vedette);
+    assert.strictEqual(t.joueurs.p1.points, 5 + CONFIG.points_vedette);
     assert.ok(t.scores.find((x) => x.discordId === "p1").vedette);
     assert.strictEqual(t.joueurs.p1.carres, 1);
     // Nouvelle main sans la carte du quadruplé ; p2 garde la sienne
@@ -313,7 +313,7 @@ function main() {
         config: CONFIG,
         dernier: false,
       });
-      assert.strictEqual(t.joueurs.p1.points, CONFIG.points_carre + CONFIG.bonus_vedette);
+      assert.strictEqual(t.joueurs.p1.points, CONFIG.points_vedette);
       assert.strictEqual(t.joueurs.p2.points, CONFIG.points_carre);
       assert.notDeepStrictEqual(t.vedettes, ["a"]);
     }
