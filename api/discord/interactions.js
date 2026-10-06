@@ -2689,7 +2689,12 @@ const BATTLE_CATEGORY_LABELS = {
 // Libellé de type utilisé sur /matchup (tous types) : sous-type GDC précis
 // (PvP/Bateau/Duel) si le combat est un combat de guerre, sinon la
 // catégorie générale (Ladder/Amical/Challenge/Autre).
-function getBattleTypeLabel(type) {
+function getBattleTypeLabel(type, gameMode = null) {
+  // Combat de Ladder joué sous un type d'événement (ex. "trail") : le mode
+  // de jeu fait foi, sinon il tomberait dans "Autre".
+  if (gameMode === "Ladder" && categorizeBattleType(type) === "other") {
+    return `(${BATTLE_CATEGORY_LABELS.ladder})`;
+  }
   const category = categorizeBattleType(type);
   if (category === "gdc") {
     const warLabel = getWarMatchTypeLabel(type);
@@ -2877,7 +2882,7 @@ function formatRecentBattlesField(recentBattles) {
       const typeLabel =
         categorizeBattleType(match.type) === "gdc"
           ? getWarMatchTypeLabel(match.type) || "(GDC)"
-          : getBattleTypeLabel(match.type);
+          : getBattleTypeLabel(match.type, match.gameMode);
       const opponentName = escapeText(match.opponentName || "?");
       const resultEmoji =
         match.result === "win"
@@ -3382,7 +3387,7 @@ function buildMatchupDetailSelectRow(tag, warDecks, kind = "gdc") {
           : getWarDayLabel(match.dayKey);
       const typeLabel =
         kind === "recent"
-          ? getBattleTypeLabel(match.type)
+          ? getBattleTypeLabel(match.type, match.gameMode)
           : getWarMatchTypeLabel(match.type);
       const deckLabel = [deck.label, typeLabel].filter(Boolean).join(" ");
       const matchupPct = Number.isFinite(match.matchup)
@@ -3455,7 +3460,7 @@ function buildMatchupDetailEmbed(warDecks, index, kind = "gdc") {
       : getWarDayLabel(match.dayKey);
   const typeLabel =
     kind === "recent"
-      ? getBattleTypeLabel(match.type)
+      ? getBattleTypeLabel(match.type, match.gameMode)
       : getWarMatchTypeLabel(match.type);
   const deckLabel = [deck.label, typeLabel].filter(Boolean).join(" ");
   const matchupPct = Number.isFinite(match.matchup)
@@ -4940,7 +4945,7 @@ export default async function handler(req, res) {
           fields.push({
             name: "Aucun combat :",
             value:
-              "⚠️ Aucun combat trouvé dans le battlelog (25 derniers combats).",
+              "⚠️ Aucun combat en mode standard (Ladder, Classé, GDC, Amical) dans le battlelog.",
             inline: false,
           });
         }

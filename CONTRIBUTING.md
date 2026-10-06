@@ -204,9 +204,9 @@ counters, structure, niveaux, évolutions) — pas les statistiques de compte de
 ancien algorithme abandonné).
 
 Ce moteur est partagé par deux commandes Discord : `/matchup-gdc` (combats de guerre uniquement, decks
-regroupés par jour de GDC — `summarizeWarDecksForMatchup()`) et `/matchup` (6 derniers combats bruts du
-joueur, tous types confondus — GDC, Ladder, Amical, Challenge —, une ligne par combat sans regroupement,
-via `summarizeRecentBattlesForMatchup()`). Le calcul de difficulté lui-même (`computeDeckMatchupDetail()`)
+regroupés par jour de GDC — `summarizeWarDecksForMatchup()`) et `/matchup` (6 derniers combats du joueur
+en modes standards, GDC, Ladder, Classé et Amical, les modes d'événement et le 2v2 étant exclus comme pour la
+calibration, une ligne par combat sans regroupement, via `summarizeRecentBattlesForMatchup()`). Le calcul de difficulté lui-même (`computeDeckMatchupDetail()`)
 est identique dans les deux cas : il ne dépend pas du type de combat.
 
 Généralités :

@@ -650,8 +650,8 @@ export async function summarizeWarDecksForMatchup(
 }
 
 /**
- * Synthèse des N derniers combats bruts d'un joueur, tous types confondus
- * (GDC, Ladder, Amical, Challenge...) — contrairement à
+ * Synthèse des N derniers combats d'un joueur en modes standards (GDC,
+ * Ladder, Classé, Amical ; modes d'événement et 2v2 exclus) — contrairement à
  * summarizeWarDecksForMatchup(), aucun filtre par type ni regroupement par
  * signature de deck : chaque combat produit sa propre entrée, dans l'ordre
  * chronologique le plus récent en premier. Utilisée par /matchup (à ne pas
@@ -668,7 +668,10 @@ export async function summarizeRecentBattlesForMatchup(
   const sorted = [...(battleLog ?? [])].sort(
     (a, b) => parseClashDate(b.battleTime) - parseClashDate(a.battleTime),
   );
-  const battles = expandDuelRounds(sorted);
+  // Modes standards uniquement (cf. isCalibratedGameMode) : sur un 2v2 ou un
+  // mode d'événement, le %matchup n'a pas de sens, et la ligne Performance
+  // (même filtre) porterait sinon sur d'autres combats que ceux affichés.
+  const battles = expandDuelRounds(sorted.filter(isCalibratedGameMode));
   const catalog = await getWinConditionsCatalog();
   const entries = [];
 
@@ -720,6 +723,7 @@ export async function summarizeRecentBattlesForMatchup(
           battleTime: battle.battleTime ?? null,
           dayKey: warDayKey(battle?.battleTime, clanTag),
           type: battle.type ?? null,
+          gameMode: battle.gameMode?.name ?? null,
         },
       ],
     });
