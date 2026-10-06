@@ -102,7 +102,12 @@
       "Inferno Dragon",
       "Zappies",
       "Night Witch",
-      "Fire Spirits",
+      "Fire Spirit",
+      "Witch",
+      "Mother Witch",
+      "Princess",
+      "Hunter",
+      "Little Prince",
       "Skeleton Dragons",
       "Electro Spirit",
       "Ice Spirit"
@@ -144,7 +149,7 @@
     ]
   },
 
-  "_crossRulesHelp": "Chaque règle se déclenche si `trigger` matche le deck évalué (self), puis compte les cartes du deck adverse (opponent) présentes dans `watch.cardSets`. Le premier `thresholds[]` dont la condition (op/value sur ce compte) est vraie s'applique. `{self}`/`{opponent}` = 'toi'/'lui' (ou l'inverse selon le camp évalué), `{count}` = nombre trouvé, `{triggerCard}` = nom de la carte qui a déclenché un trigger de type cardSet.",
+  "_crossRulesHelp": "Chaque règle se déclenche si `trigger` matche le deck évalué (self), puis compte les cartes du deck adverse (opponent) présentes dans `watch.cardSets`. Le premier `thresholds[]` dont la condition (op/value sur ce compte) est vraie s'applique. `{count}` = nombre trouvé, `{watchCards}` = noms des cartes adverses trouvées, `{triggerCard}` = nom de la carte qui a déclenché un trigger de type cardSet. Les règles partageant un même `exclusiveGroup` s'excluent : seule la première déclenchée (ordre du tableau) s'applique pour un camp donné. Le label est affiché sur une seule ligne, préfixé de la couronne du camp qui en bénéficie/souffre et suivi de son effet en % de difficulté.",
   "crossRules": [
     {
       "id": "bait",
@@ -156,13 +161,13 @@
           "op": "lt",
           "value": 1,
           "shift": 6,
-          "label": "{opponent} 0 petit sort\n- {self} Bait"
+          "label": "Bait face à 0 petit sort adverse"
         },
         {
           "op": "gte",
           "value": 2,
           "shift": -6,
-          "label": "{opponent} {count} petits sorts\n- {self} Bait"
+          "label": "Bait face à {count} petits sorts adverses"
         }
       ]
     },
@@ -176,7 +181,7 @@
           "op": "eq",
           "value": 0,
           "shift": 6,
-          "label": "{opponent} 0 gros sort\n- {self} {triggerCard} (push)"
+          "label": "{triggerCard} (push) face à 0 gros sort adverse"
         }
       ]
     },
@@ -190,12 +195,13 @@
           "op": "eq",
           "value": 0,
           "shift": 10,
-          "label": "{opponent} aucun tank killer/bâtiment\n- {self} Gros tank"
+          "label": "{triggerCard} face à 0 tank killer/bâtiment adverse"
         }
       ]
     },
     {
       "id": "heavyDpsHardCounter",
+      "exclusiveGroup": "heavyDps",
       "description": "toi: Ronin/P.E.K.K.A/Mini P.E.K.K.A dans le deck / lui: au moins 1 carte à gros DPS (P.E.K.K.A, Mini P.E.K.K.A, Prince, Mega Knight, Boss Bandit, Bandit, Golden Knight) -> +6% pour toi (hard-counter).",
       "trigger": { "type": "cardSet", "value": "heavyDpsHardCounters" },
       "watch": { "cardSets": ["heavyDpsThreats"] },
@@ -204,12 +210,13 @@
           "op": "gte",
           "value": 1,
           "shift": 6,
-          "label": "{opponent} {count} gros DPS\n- {self} {triggerCard} (hard-counter)"
+          "label": "{triggerCard} hard-counter {watchCards}"
         }
       ]
     },
     {
       "id": "heavyDpsSoftCounter",
+      "exclusiveGroup": "heavyDps",
       "description": "toi: Prince/Mega Knight/Boss Bandit/Bandit/Golden Knight/Knight/Valkyrie/Skeleton Army/Goblin Gang dans le deck / lui: au moins 1 carte à gros DPS -> +3% pour toi (soft-counter).",
       "trigger": { "type": "cardSet", "value": "heavyDpsSoftCounters" },
       "watch": { "cardSets": ["heavyDpsThreats"] },
@@ -218,7 +225,7 @@
           "op": "gte",
           "value": 1,
           "shift": 3,
-          "label": "{opponent} {count} gros DPS\n- {self} {triggerCard} (soft-counter)"
+          "label": "{triggerCard} soft-counter {watchCards}"
         }
       ]
     }
@@ -232,7 +239,7 @@
       "metric": "winConditionCount",
       "baseline": 2,
       "unitPoints": 4,
-      "label": "{self} {count} WC (dispersion)"
+      "label": "{count} win conditions (dispersion)"
     },
     {
       "id": "spells",
@@ -240,7 +247,7 @@
       "cardSets": ["smallSpells", "bigSpells"],
       "baseline": 3,
       "unitPoints": 4,
-      "label": "{self} {count} sorts (dispersion)"
+      "label": "{count} sorts (dispersion)"
     },
     {
       "id": "buildings",
@@ -248,7 +255,7 @@
       "cardSets": ["defensiveBuildings"],
       "baseline": 2,
       "unitPoints": 4,
-      "label": "{self} {count} bâtiments (dispersion)"
+      "label": "{count} bâtiments (dispersion)"
     }
   ],
 
@@ -263,13 +270,13 @@
           "op": "eq",
           "value": 0,
           "shift": -4,
-          "label": "{self} 0 carte anti-air"
+          "label": "0 carte anti-air"
         },
         {
           "op": "eq",
           "value": 1,
           "shift": -2,
-          "label": "{self} 1 carte anti-air"
+          "label": "1 seule carte anti-air"
         }
       ]
     },
@@ -278,7 +285,7 @@
       "description": "0 bâtiment dans le deck.",
       "watch": { "cardSets": ["allBuildings"] },
       "thresholds": [
-        { "op": "eq", "value": 0, "shift": -3, "label": "{self} 0 bâtiment" }
+        { "op": "eq", "value": 0, "shift": -3, "label": "0 bâtiment" }
       ]
     },
     {
@@ -286,7 +293,7 @@
       "description": "0 sort dans le deck.",
       "watch": { "cardSets": ["smallSpells", "bigSpells"] },
       "thresholds": [
-        { "op": "eq", "value": 0, "shift": -3, "label": "{self} 0 sort" }
+        { "op": "eq", "value": 0, "shift": -3, "label": "0 sort" }
       ]
     },
     {
@@ -298,13 +305,13 @@
           "op": "eq",
           "value": 0,
           "shift": -4,
-          "label": "{self} 0 carte <3 élixir"
+          "label": "0 carte à moins de 3 élixir"
         },
         {
           "op": "eq",
           "value": 1,
           "shift": -2,
-          "label": "{self} 1 carte <3 élixir"
+          "label": "1 seule carte à moins de 3 élixir"
         }
       ]
     },
@@ -317,7 +324,7 @@
           "op": "eq",
           "value": 0,
           "shift": -6,
-          "label": "{self} 0 win condition"
+          "label": "0 win condition"
         }
       ]
     }

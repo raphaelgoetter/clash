@@ -224,12 +224,13 @@ Généralités :
 
 1. **Archétype** (±5) — `computeArchetypeLayer()` : avantage macro entre les archétypes des win conditions
    des deux decks (Beatdown bat Siege/Control, Cycle bat Beatdown… cf. `ARCHETYPE_ADVANTAGE`).
-2. **Counters directs** (±25) — `computeCounterLayer()`/`counterShiftFor()` : pénalité en échelle
-   triangulaire selon les hard-counters (poids 14) et soft-counters (poids 5) trouvés chez l'adversaire
-   pour chaque win condition, depuis une baseline `+15` (aucun counter présent).
+2. **Counters directs** (±25) — `computeCounterLayer()`/`counterShiftFor()` : pénalité linéaire cumulée
+   selon les hard-counters (14 points chacun) et soft-counters (5 points chacun) trouvés chez l'adversaire
+   pour chaque win condition, depuis une baseline `+15` (aucun counter présent), bornée à ±15 par win condition.
 3. **Structure du deck** (±10) — `computeUtilityLayer()` : interpréteur générique de règles entièrement
    data-driven (`data/clash-royale-matchup-structure-rules.json`, hot-reload sans redéploiement) :
-   `crossRules` (Bait, Split-Push, Heavy Beatdown, Ronin/gros DPS hard+soft), `dispersionRules` (deck trop
+   `crossRules` (Bait, Split-Push, Heavy Beatdown, Ronin/gros DPS hard ou soft : règles d'un même
+   `exclusiveGroup`, seule la première déclenchée s'applique par camp), `dispersionRules` (deck trop
    dispersé : trop de win conditions/sorts/bâtiments), `selfRules` (carence du deck lui-même : anti-air,
    bâtiment, sort, cartes < 3 élixir, ou 0 win condition reconnue).
 4. **Écart de niveau** (±10, + "écart exceptionnel") — `computeLevelDifferentialLayer()` : 2 % par point

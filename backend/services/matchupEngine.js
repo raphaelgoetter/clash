@@ -170,23 +170,21 @@ export function computeArchetypeLayer(winConditionsA, winConditionsB) {
 
 // Pénalité en échelle triangulaire : chaque unité au-delà de `baseline`
 // coûte plus que la précédente (1, 2, 3, 4... points cumulés) — pas un
-// simple palier fixe. Utilisée par Layer 2 (counters, cf. counterShiftFor)
-// et Layer 3 (dispersion de deck, cf. utilityShiftFor).
+// simple palier fixe. Utilisée par le Layer 3 (dispersion de deck, cf.
+// utilityShiftFor).
 function escalatingExcessPenalty(count, baseline, unitPoints) {
   const excess = Math.max(0, count - baseline);
   return (-unitPoints * (excess * (excess + 1))) / 2;
 }
 
 // LAYER 2 — Win condition vs counters directs (±25%)
-// Échelle triangulaire (comme la dispersion du Layer 3) plutôt qu'un seuil
-// binaire : l'ancien design (hardHits>0 → shift fixe, quel que soit le
-// nombre, et soft-counters ignorés dès qu'un seul hard-counter existe)
-// notait pareil "1 hard-counter" et "1 hard + 4 soft-counters" — contre-
-// intuitif quand le deck adverse répond nettement plus largement. Un
-// hard-counter pèse plus lourd qu'un soft (poids 14 vs 5) mais aucun des
-// deux ne sature plus immédiatement à lui seul : l'accumulation continue
-// de compter. Baseline/clamp par WC (±15) et poids mis à l'échelle
-// proportionnellement au clamp final (±25 vs l'ancien ±15, ×5/3).
+// Pénalité linéaire cumulée plutôt qu'un seuil binaire : l'ancien design
+// (hardHits>0 → shift fixe, soft-counters ignorés dès qu'un hard existait)
+// notait pareil "1 hard-counter" et "1 hard + 4 soft-counters". Chaque
+// counter pèse un poids fixe (hard 14, soft 5) : l'échelle triangulaire
+// utilisée auparavant faisait coûter 10 points au 2e soft-counter (plus
+// qu'un demi hard-counter), un seul soft d'écart suffisait alors à faire
+// basculer le layer de ±10. Baseline/clamp par WC (±15).
 function counterShiftFor(winCondition, opponentDeckCards, catalog) {
   const hardHits = countMatchesAgainstNames(
     opponentDeckCards,
@@ -198,10 +196,8 @@ function counterShiftFor(winCondition, opponentDeckCards, catalog) {
     winCondition.softCounters,
     catalog,
   );
-  const penalty =
-    escalatingExcessPenalty(hardHits, 0, 14) +
-    escalatingExcessPenalty(softHits, 0, 5);
-  return clampValue(15 + penalty, -15, 15);
+  const penalty = 14 * hardHits + 5 * softHits;
+  return clampValue(15 - penalty, -15, 15);
 }
 
 export function computeCounterLayer(
@@ -229,13 +225,11 @@ export function computeCounterLayer(
 // comme pour le catalogue de counters.
 // Scanne les cartes brutes du deck : reste actif même si l'un des deux
 // decks n'a aucune win condition reconnue dans le catalogue.
-// Retourne { shift, tags } — tags = courtes étiquettes des règles
-// déclenchées, utilisées uniquement pour générer les mini-explications de
-// l'embed Discord (cf. describeUtilityLayer). Le shift seul alimente le score.
-// xLabel/yLabel ("toi"/"lui") résolvent {self}/{opponent} dans les templates
-// `label` des règles — une règle croisée (Bait, Split-Push, Heavy Beatdown)
-// implique toujours deux faits sur deux decks différents (ex. "toi: 0 gros
-// sort, lui: Split-push"), donc un seul préfixe global ne suffit pas.
+// Retourne { shift, tags } — tags = [{ label, shift }] des règles
+// déclenchées, utilisés uniquement pour générer les mini-explications de
+// l'embed Discord (cf. describeUtilityLayer) : une ligne par règle, attribuée
+// au seul camp X qui en bénéficie/souffre, avec son effet chiffré. Le shift
+// total seul alimente le score.
 function formatRuleLabel(template, vars) {
   return String(template ?? "").replace(/\{(\w+)\}/g, (match, key) =>
     key in vars ? String(vars[key]) : match,
@@ -252,6 +246,27 @@ function sumCardSets(deckCards, cardSetNames, structureRules, catalog) {
     );
   }
   return total;
+}
+
+// Noms (tels qu'écrits dans le deck) des cartes présentes dans au moins un
+// des cardSets — utilisé pour nommer les cartes adverses visées par une
+// règle croisée ({watchCards}).
+function findAllMatchesInCardSets(
+  deckCards,
+  cardSetNames,
+  structureRules,
+  catalog,
+) {
+  const found = [];
+  for (const card of toArray(deckCards)) {
+    const key = catalog.normalizeCardName(card?.name);
+    if (
+      cardSetNames.some((setName) => structureRules.cardSets[setName]?.has(key))
+    ) {
+      found.push(card.name);
+    }
+  }
+  return found;
 }
 
 function thresholdMatches(op, count, value) {
@@ -271,14 +286,7 @@ function thresholdMatches(op, count, value) {
   }
 }
 
-function utilityShiftFor(
-  winConditionsX,
-  deckXCards,
-  deckYCards,
-  catalog,
-  xLabel = "toi",
-  yLabel = "lui",
-) {
+function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
   const structureRules = catalog.structureRules ?? {
     cardSets: {},
     crossRules: [],
@@ -289,7 +297,15 @@ function utilityShiftFor(
   let shift = 0;
   const tags = [];
 
+  // `exclusiveGroup` : au sein d'un même groupe, seule la première règle
+  // déclenchée s'applique (ordre du JSON, la plus forte en premier) — évite
+  // qu'une même menace adverse (ex. un seul Boss Bandit) soit comptée à la
+  // fois par la règle hard-counter et la règle soft-counter du camp X.
+  const triggeredGroups = new Set();
   for (const rule of structureRules.crossRules) {
+    if (rule.exclusiveGroup && triggeredGroups.has(rule.exclusiveGroup)) {
+      continue;
+    }
     let triggerCard = true;
     if (rule.trigger?.type === "archetype") {
       if (!winConditionsX.some((wc) => wc.archetype === rule.trigger.value)) {
@@ -306,23 +322,30 @@ function utilityShiftFor(
       continue;
     }
 
+    const watchCardSets = rule.watch?.cardSets ?? [];
     const count = sumCardSets(
       deckYCards,
-      rule.watch?.cardSets ?? [],
+      watchCardSets,
       structureRules,
       catalog,
     );
     for (const threshold of rule.thresholds ?? []) {
       if (!thresholdMatches(threshold.op, count, threshold.value)) continue;
       shift += threshold.shift;
-      tags.push(
-        formatRuleLabel(threshold.label, {
-          self: xLabel,
-          opponent: yLabel,
+      tags.push({
+        label: formatRuleLabel(threshold.label, {
           count,
           triggerCard: typeof triggerCard === "string" ? triggerCard : "",
+          watchCards: findAllMatchesInCardSets(
+            deckYCards,
+            watchCardSets,
+            structureRules,
+            catalog,
+          ).join(", "),
         }),
-      );
+        shift: threshold.shift,
+      });
+      if (rule.exclusiveGroup) triggeredGroups.add(rule.exclusiveGroup);
       break; // un seul palier déclenché par règle, par construction
     }
   }
@@ -333,7 +356,7 @@ function utilityShiftFor(
   // op/value/shift/label que les crossRules, mais comptés directement sur
   // deckXCards (ou winConditionsX.length via `metric: "winConditionCount"`,
   // même convention que dispersionRules), sans trigger ni watch côté
-  // adverse. Fait unilatéral : pas de yLabel ici.
+  // adverse.
   for (const rule of structureRules.selfRules ?? []) {
     const count =
       rule.metric === "winConditionCount"
@@ -347,31 +370,33 @@ function utilityShiftFor(
     for (const threshold of rule.thresholds ?? []) {
       if (!thresholdMatches(threshold.op, count, threshold.value)) continue;
       shift += threshold.shift;
-      tags.push(
-        formatRuleLabel(threshold.label, { self: xLabel, count }),
-      );
+      tags.push({
+        label: formatRuleLabel(threshold.label, { count }),
+        shift: threshold.shift,
+      });
       break;
     }
   }
 
   // Auto-pénalités de dispersion (indépendantes de deckYCards) : trop de
   // win conditions, de sorts ou de bâtiments dénote un manque de focus —
-  // défavorable pour X, en échelle triangulaire. Fait unilatéral (ne
-  // concerne que X) : pas de yLabel ici.
+  // défavorable pour X, en échelle triangulaire.
   for (const rule of structureRules.dispersionRules) {
     const count =
       rule.metric === "winConditionCount"
         ? winConditionsX.length
-        : sumCardSets(
-            deckXCards,
-            rule.cardSets ?? [],
-            structureRules,
-            catalog,
-          );
-    const penalty = escalatingExcessPenalty(count, rule.baseline, rule.unitPoints);
+        : sumCardSets(deckXCards, rule.cardSets ?? [], structureRules, catalog);
+    const penalty = escalatingExcessPenalty(
+      count,
+      rule.baseline,
+      rule.unitPoints,
+    );
     if (penalty !== 0) {
       shift += penalty;
-      tags.push(formatRuleLabel(rule.label, { self: xLabel, count }));
+      tags.push({
+        label: formatRuleLabel(rule.label, { count }),
+        shift: penalty,
+      });
     }
   }
 
@@ -437,7 +462,10 @@ export function computeLevelDifferentialLayer(deckACards, deckBCards) {
 // ------------------------------------------------------------
 // Mini-explications (breakdown.reasons) — courtes étiquettes sans phrase,
 // affichées sous chaque layer dans l'embed Discord (une ligne par donnée,
-// préfixée de l'emoji couronne du camp concerné). Ne participent pas au
+// préfixée de l'emoji couronne du camp concerné). Chaque ligne qui pèse sur
+// le score affiche son effet DANS LE SENS DE LA DIFFICULTÉ (comme le titre du
+// layer dans l'embed) : positif = défavorable au joueur — la somme des lignes
+// redonne le total du layer (hors arrondi/plafond). Ne participent pas au
 // calcul du score, purement descriptif — seul consommateur : l'embed
 // buildMatchupDetailEmbed (api/discord/interactions.js), d'où le couplage
 // direct à des emoji Discord (pas de préoccupation de neutralité ici).
@@ -447,6 +475,18 @@ export const CROWN_SELF = "<:crown:1518889526460682280>"; // "toi"
 export const CROWN_OPPONENT = "<:crownred:1526218168320786514>"; // "lui"
 const REASON_INDENT = "- ";
 
+// shiftForA = effet en faveur du joueur (A) ; affiché inversé, en difficulté.
+function formatDifficultyEffect(shiftForA) {
+  const displayed = Math.round(-shiftForA);
+  return `${displayed > 0 ? "+" : ""}${displayed}%`;
+}
+
+function clampNote(rawTotal, clamp) {
+  return Math.abs(rawTotal) > clamp
+    ? `\n${REASON_INDENT}total plafonné à ±${clamp}%`
+    : "";
+}
+
 function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
   if (!bothKnown) return "win condition inconnue";
   const archsA = [...new Set(winConditionsA.map((wc) => wc.archetype))].join(
@@ -455,37 +495,39 @@ function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
   const archsB = [...new Set(winConditionsB.map((wc) => wc.archetype))].join(
     "+",
   );
-  return [
-    `${REASON_INDENT}${CROWN_SELF} ${archsA}`,
-    `${REASON_INDENT}${CROWN_OPPONENT} ${archsB}`,
-  ].join("\n");
+  return `${REASON_INDENT}${CROWN_SELF} ${archsA} vs ${CROWN_OPPONENT} ${archsB}`;
 }
 
 // Une ligne par win condition (et non un total agrégé par camp) : avec
 // plusieurs win conditions d'un même côté, le score moyenne un shift PAR WC
 // (cf. computeCounterLayer) — un total sommé masquerait qu'une WC totalement
 // non-répondue (shift max) peut tirer la moyenne vers le haut malgré un
-// total de counters identique côté adverse. Le hard prime sur le soft (même
-// logique que counterShiftFor : un hard-counter présent suffit à qualifier
-// la WC de "hard-countée", les soft ne sont alors même pas comptés).
-function describeCounterLayerLine(wc, opponentDeckCards, catalog, label) {
+// total de counters identique côté adverse. Hard ET soft sont listés : les
+// deux sont cumulés par counterShiftFor (échelle triangulaire), masquer les
+// soft dès qu'un hard existe rendait l'écart de score inexplicable.
+// shiftForA = contribution de cette WC au layer, du point de vue du joueur.
+function describeCounterLayerLine(
+  wc,
+  opponentDeckCards,
+  catalog,
+  label,
+  shiftForA,
+) {
   const hardMatches = findAllMatchesAgainstNames(
     opponentDeckCards,
     wc.hardCounters,
     catalog,
   );
-  if (hardMatches.length > 0) {
-    return `${REASON_INDENT}${label} ${wc.name} : hard-countée (${hardMatches.join(", ")})`;
-  }
   const softMatches = findAllMatchesAgainstNames(
     opponentDeckCards,
     wc.softCounters,
     catalog,
   );
-  if (softMatches.length > 0) {
-    return `${REASON_INDENT}${label} ${wc.name} : ${softMatches.length} soft-counter(s) (${softMatches.join(", ")})`;
-  }
-  return `${REASON_INDENT}${label} ${wc.name} : aucun counter`;
+  const parts = [];
+  if (hardMatches.length > 0) parts.push(`${hardMatches.join(", ")} (hard)`);
+  if (softMatches.length > 0) parts.push(`${softMatches.join(", ")} (soft)`);
+  const counters = parts.length > 0 ? parts.join(" + ") : "aucun counter";
+  return `${REASON_INDENT}${label} ${wc.name} (${formatDifficultyEffect(shiftForA)}) : ${counters}`;
 }
 
 function describeCounterLayer(
@@ -497,13 +539,33 @@ function describeCounterLayer(
   bothKnown,
 ) {
   if (!bothKnown) return "win condition inconnue";
-  const linesA = winConditionsA.map((wc) =>
-    describeCounterLayerLine(wc, deckBCards, catalog, CROWN_SELF),
-  );
-  const linesB = winConditionsB.map((wc) =>
-    describeCounterLayerLine(wc, deckACards, catalog, CROWN_OPPONENT),
-  );
-  return [...linesA, ...linesB].join("\n");
+  // Même décomposition que computeCounterLayer : moyenne(A) - moyenne(B).
+  let rawTotal = 0;
+  const linesA = winConditionsA.map((wc) => {
+    const shiftForA =
+      counterShiftFor(wc, deckBCards, catalog) / winConditionsA.length;
+    rawTotal += shiftForA;
+    return describeCounterLayerLine(
+      wc,
+      deckBCards,
+      catalog,
+      CROWN_SELF,
+      shiftForA,
+    );
+  });
+  const linesB = winConditionsB.map((wc) => {
+    const shiftForA =
+      -counterShiftFor(wc, deckACards, catalog) / winConditionsB.length;
+    rawTotal += shiftForA;
+    return describeCounterLayerLine(
+      wc,
+      deckACards,
+      catalog,
+      CROWN_OPPONENT,
+      shiftForA,
+    );
+  });
+  return [...linesA, ...linesB].join("\n") + clampNote(rawTotal, 25);
 }
 
 function describeUtilityLayer(
@@ -513,25 +575,33 @@ function describeUtilityLayer(
   deckBCards,
   catalog,
 ) {
-  const { tags: tagsA } = utilityShiftFor(
+  const clamp = catalog.structureRules?.clamp ?? 10;
+  const { shift: shiftA, tags: tagsA } = utilityShiftFor(
     winConditionsA,
     deckACards,
     deckBCards,
     catalog,
-    CROWN_SELF,
-    CROWN_OPPONENT,
   );
-  const { tags: tagsB } = utilityShiftFor(
+  const { shift: shiftB, tags: tagsB } = utilityShiftFor(
     winConditionsB,
     deckBCards,
     deckACards,
     catalog,
-    CROWN_OPPONENT,
-    CROWN_SELF,
   );
-  const all = [...tagsA, ...tagsB];
-  return all.length > 0
-    ? all.map((tag) => `${REASON_INDENT}${tag}`).join("\n")
+  // Une règle favorable à l'adversaire (B) est défavorable au joueur : son
+  // shift est inversé avant affichage, comme dans computeUtilityLayer.
+  const lines = [
+    ...tagsA.map(
+      (tag) =>
+        `${REASON_INDENT}${CROWN_SELF} ${tag.label} (${formatDifficultyEffect(tag.shift)})`,
+    ),
+    ...tagsB.map(
+      (tag) =>
+        `${REASON_INDENT}${CROWN_OPPONENT} ${tag.label} (${formatDifficultyEffect(-tag.shift)})`,
+    ),
+  ];
+  return lines.length > 0
+    ? lines.join("\n") + clampNote(shiftA - shiftB, clamp)
     : "aucune règle déclenchée";
 }
 
@@ -541,10 +611,7 @@ function describeLevelDifferentialLayer(deckACards, deckBCards) {
   const sumA = sum(deckACards);
   const sumB = sum(deckBCards);
   const diff = sumA - sumB;
-  return [
-    `${REASON_INDENT}${CROWN_SELF} ${sumA}`,
-    `${REASON_INDENT}${CROWN_OPPONENT} ${sumB} (${diff > 0 ? "+" : ""}${diff})`,
-  ].join("\n");
+  return `${REASON_INDENT}${CROWN_SELF} ${sumA} vs ${CROWN_OPPONENT} ${sumB} (niveaux cumulés, écart ${Math.abs(diff)})`;
 }
 
 // ------------------------------------------------------------
