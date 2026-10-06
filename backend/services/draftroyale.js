@@ -41,8 +41,9 @@ const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "draftroyal
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.json");
 
 const STATE_KEY = "draftroyale:state";
-// { familles, marche, reserve, vedettes } (cardKeys) — cartes en jeu,
-// marché courant, exemplaires à l'écart et cartes vedettes de la donne
+// { familles, sorties, marche, reserve, vedettes } (cardKeys) — cartes en
+// jeu, cartes sorties du jeu (quadruplés), marché courant, exemplaires à
+// l'écart et cartes vedettes
 const PARTIE_KEY = "draftroyale:partie";
 const JOUEURS_KEY = "draftroyale:joueurs";
 const HISTORIQUE_KEY = "draftroyale:historique";
@@ -128,7 +129,7 @@ export async function loadCatalog() {
 // Clôture du jour `jour` : échanges, décompte (carré ou dernier jour),
 // nouvelle main pour l'auteur d'un quadruplé, classement final au dernier
 // jour.
-export function computeCloture({ jour, joueursAvant, actionsRaw, partie, config, rng = Math.random }) {
+export function computeCloture({ jour, joueursAvant, actionsRaw, partie, config, catalog = null, rng = Math.random }) {
   const dernier = jour >= config.duree_jours;
   const tour = computeTour({
     joueursAvant,
@@ -136,14 +137,16 @@ export function computeCloture({ jour, joueursAvant, actionsRaw, partie, config,
     marche: partie.marche,
     reserve: partie.reserve,
     familles: partie.familles,
+    sorties: partie.sorties || [],
     vedettes: partie.vedettes || [],
+    catalog,
     config,
     dernier,
     rng,
   });
   return {
     joueursApres: tour.joueurs,
-    partieApres: { ...partie, marche: tour.marche, reserve: tour.reserve, vedettes: tour.vedettes },
+    partieApres: { ...partie, marche: tour.marche, reserve: tour.reserve, familles: tour.familles, sorties: tour.sorties, vedettes: tour.vedettes },
     lignes: tour.lignes,
     carres: tour.carres,
     scores: tour.scores,
@@ -230,7 +233,7 @@ export async function ensureJoueur(discordId, username, rng = Math.random) {
     // Cartes vedettes : une pour `joueurs_par_vedette` joueurs, complétées
     // au fil des arrivées (celles déjà annoncées sont gardées)
     const vedettes = choisirVedettes(arrivee.familles, nbVedettes(nbAvant + 1, config), { gardees: partie.vedettes || [] }, rng);
-    await writePartie({ familles: arrivee.familles, marche: arrivee.marche, reserve: arrivee.reserve, vedettes });
+    await writePartie({ ...partie, familles: arrivee.familles, marche: arrivee.marche, reserve: arrivee.reserve, vedettes });
     await writeJoueur(discordId, joueur);
     return { joueur, nouveau: true };
   });
@@ -292,8 +295,14 @@ export async function voirMainJoueur(jour, discordId, cible) {
 // ── Clôture ─────────────────────────────────────────────────────────
 
 async function loadClotureInputs(jour) {
-  const [config, joueursAvant, actionsRaw, partie] = await Promise.all([loadDraftRoyaleConfig(), readJoueurs(), readActions(jour), readPartie()]);
-  return { config, joueursAvant, actionsRaw, partie };
+  const [config, catalog, joueursAvant, actionsRaw, partie] = await Promise.all([
+    loadDraftRoyaleConfig(),
+    loadCatalog(),
+    readJoueurs(),
+    readActions(jour),
+    readPartie(),
+  ]);
+  return { config, catalog, joueursAvant, actionsRaw, partie };
 }
 
 // Lecture seule (aucune écriture Redis) — branche --dry-run du script.

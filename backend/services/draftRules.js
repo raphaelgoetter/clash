@@ -106,13 +106,15 @@ export function paquet(familles, config) {
 // Tire une main de `taille_main` cartes au hasard dans `tas`, jamais un
 // carré d'emblée (sauf impossibilité). Renvoie la main et le reste.
 export function tirerMain(tas, config, rng = Math.random) {
-  let tirage = null;
-  for (let essai = 0; essai < 50; essai++) {
-    const melange = shuffle(tas, rng);
-    tirage = { main: melange.slice(0, config.taille_main), reste: melange.slice(config.taille_main) };
-    if (!aUnCarre(tirage.main, config)) break;
-  }
-  return tirage;
+  const melange = shuffle(tas, rng);
+  const main = melange.slice(0, config.taille_main);
+  const reste = melange.slice(config.taille_main);
+  // Quadruplé tiré : une de ses cartes est échangée contre une autre carte
+  // du reste (impossible seulement si le tas ne contient qu'une carte)
+  const carte = carteDuCarre(main, config);
+  const autre = carte ? reste.findIndex((k) => k !== carte) : -1;
+  if (autre >= 0) [main[0], reste[autre]] = [reste[autre], main[0]];
+  return { main, reste };
 }
 
 // Distribution complète (début de partie ou nouvelle donne après un
@@ -134,9 +136,9 @@ export function distribuer({ familles, joueurIds, config, rng = Math.random }) {
 // exemplaires vont en réserve), le joueur tire sa main dans la réserve,
 // puis la réserve complète le marché d'une carte. Le marché existant n'est
 // jamais touché (les échanges déjà prévus restent valides).
-export function ajouterJoueur({ familles, marche, reserve, nbJoueursAvant, config, catalog, rng = Math.random }) {
+export function ajouterJoueur({ familles, sorties = [], marche, reserve, nbJoueursAvant, config, catalog, rng = Math.random }) {
   const nbJoueurs = nbJoueursAvant + 1;
-  const nouvelles = choisirFamilles(Math.max(0, nbFamilles(nbJoueurs, config) - familles.length), config, catalog, familles, rng);
+  const nouvelles = choisirFamilles(Math.max(0, nbFamilles(nbJoueurs, config) - familles.length), config, catalog, [...familles, ...sorties], rng);
   let tas = [...(reserve || []), ...paquet(nouvelles, config)];
   let newMarche = [...marche];
   // Réserve insuffisante (ne devrait pas arriver) : on puise dans le marché
@@ -306,7 +308,7 @@ export function resoudreEchanges({ joueurs, actions, marche, config, priorites =
 // puis quadruplés (points et nouvelle main pour leurs auteurs) ; au
 // dernier tour, chacun marque en plus 1 à 3 pts selon sa main.
 // `joueursAvant` : { id: { main, joker, points, carres, ... } } (non muté). `actions[id]` : { prise, depot, joker?, vu? }.
-export function computeTour({ joueursAvant, actions, marche, reserve = [], familles, vedettes = [], config, dernier, rng = Math.random }) {
+export function computeTour({ joueursAvant, actions, marche, reserve = [], familles, sorties = [], vedettes = [], catalog = null, config, dernier, rng = Math.random }) {
   const joueurs = {};
   for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j, main: [...(j.main || [])] };
 
@@ -347,6 +349,8 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   let newMarche = echanges.marche;
   let newReserve = puisages.reserve;
   const realisees = [];
+  let newFamilles = familles;
+  let newSorties = sorties;
   for (const id of carres) {
     const j = joueurs[id];
     const carte = carteDuCarre(j.main, config);
@@ -355,10 +359,16 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
     const points = pointsMain(j.main, config, vedettes);
     j.points = (j.points || 0) + points;
     j.carres = (j.carres || 0) + 1;
-    scores.push({ discordId: id, points, carre: true, vedette, carte, main: [...j.main] });
     if (vedette) realisees.push(carte);
+    // La carte du quadruplé quitte le jeu, la suivante de la liste la remplace
+    const [nouvelle] = !dernier && catalog ? choisirFamilles(1, config, catalog, [...newFamilles, ...newSorties], rng) : [];
+    scores.push({ discordId: id, points, carre: true, vedette, carte, nouvelle: nouvelle || null, main: [...j.main] });
     if (dernier) continue;
-    const r = renouvelerMain({ main: j.main, marche: newMarche, reserve: newReserve, config, rng });
+    if (nouvelle) {
+      newFamilles = [...newFamilles.filter((k) => k !== carte), nouvelle];
+      newSorties = [...newSorties, carte];
+    }
+    const r = renouvelerMain({ main: j.main, marche: newMarche, reserve: newReserve, nouvelle, config, rng });
     j.main = r.main;
     newMarche = r.marche;
     newReserve = r.reserve;
@@ -368,7 +378,7 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   // vedettes restantes, ni celles qui viennent d'être réalisées)
   let newVedettes = vedettes;
   if (realisees.length && !dernier) {
-    newVedettes = choisirVedettes(familles, vedettes.length, { gardees: vedettes.filter((k) => !realisees.includes(k)), precedentes: realisees }, rng);
+    newVedettes = choisirVedettes(newFamilles, vedettes.length, { gardees: vedettes.filter((k) => !realisees.includes(k)), precedentes: realisees }, rng);
   }
   const nouvellesVedettes = newVedettes.filter((k) => !vedettes.includes(k));
 
@@ -381,18 +391,21 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
       scores.push({ discordId: id, points, carre: false, main: [...j.main] });
     }
   }
-  return { joueurs, marche: newMarche, reserve: newReserve, vedettes: newVedettes, nouvellesVedettes, lignes, carres, scores };
+  return { joueurs, marche: newMarche, reserve: newReserve, familles: newFamilles, sorties: newSorties, vedettes: newVedettes, nouvellesVedettes, lignes, carres, scores };
 }
 
 // Nouvelle main après un quadruplé : tirée au hasard dans le marché et
 // l'écart, sans carte du quadruplé (jamais un quadruplé d'emblée) ; les 4
 // cartes du quadruplé et le reste sont remélangés entre le marché (même
 // taille) et l'écart.
-export function renouvelerMain({ main, marche, reserve, config, rng = Math.random }) {
+export function renouvelerMain({ main, marche, reserve, nouvelle = null, config, rng = Math.random }) {
   const carte = carteDuCarre(main, config);
-  const pot = [...marche, ...reserve].filter((k) => k !== carte);
+  // La carte du quadruplé quitte le jeu, remplacée par `nouvelle` (ses
+  // exemplaires rejoignent le pot) ; sans carte de remplacement, ses
+  // exemplaires retournent au pot.
+  const pot = [...marche, ...reserve, ...(nouvelle ? paquet([nouvelle], config) : [])].filter((k) => k !== carte);
   const tirage = tirerMain(pot, config, rng);
-  const reste = shuffle([...tirage.reste, ...[...marche, ...reserve].filter((k) => k === carte), ...main], rng);
+  const reste = shuffle([...tirage.reste, ...(nouvelle ? [] : main)], rng);
   return { main: tirage.main, marche: reste.slice(0, marche.length), reserve: reste.slice(marche.length) };
 }
 

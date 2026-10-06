@@ -77,6 +77,8 @@ export function quadruplesEmbed(recap, noms, cardName, { final = false, color = 
     const [key] = [...compterCartes(s.main)].sort((a, b) => b[1] - a[1])[0] || [];
     return `🎉 **${noms[s.discordId]}** : quadruplé de ${s.vedette ? "⭐ " : ""}**${cardName(key)}** · **+${s.points} pts**${final ? "" : " · nouvelle main"}`;
   });
+  const remplacees = quads.filter((s) => s.nouvelle && !final);
+  if (remplacees.length) lignes.push("", ...remplacees.map((s) => `🆕 **${cardName(s.nouvelle)}** remplace ${cardName(s.carte)}`));
   if (!final && recap.nouvellesVedettes?.length) {
     lignes.push("", `⭐ ${recap.nouvellesVedettes.length > 1 ? "Nouvelles cartes vedettes" : "Nouvelle carte vedette"} : ${recap.nouvellesVedettes.map((k) => `**${cardName(k)}**`).join(", ")}`);
   }

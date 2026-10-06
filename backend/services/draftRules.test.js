@@ -6,6 +6,7 @@ import {
   aUnCarre,
   pointsMain,
   nbFamilles,
+  tirerMain,
   choisirFamilles,
   distribuer,
   ajouterJoueur,
@@ -70,6 +71,9 @@ function main() {
     assert.strictEqual(d.reserve.length, 1);
     assert.ok(["p1", "p2", "p3"].every((id) => !aUnCarre(d.mains[id], CONFIG)));
   }
+
+  // Tirage : jamais de quadruplé dès qu'une autre carte est disponible
+  for (let i = 0; i < 50; i++) assert.ok(!aUnCarre(tirerMain(["a", "a", "a", "a", "b"], CONFIG).main, CONFIG));
 
   // ── Arrivées : cartes ajoutées selon le nombre de joueurs, marché d'une
   // carte par joueur, marché existant jamais retiré, aucune carte perdue ──
@@ -266,6 +270,30 @@ function main() {
     assert.strictEqual(t.marche.length, 2);
     assert.strictEqual(t.joueurs.p1.main.length + t.joueurs.p2.main.length + t.marche.length + t.reserve.length, 20);
     assert.strictEqual(joueursAvant.p1.main.length, 4); // non muté
+  }
+
+  // Avec le catalogue : la carte du quadruplé quitte le jeu, la suivante de
+  // la liste la remplace (ses 4 exemplaires dans le pot), aucune carte perdue
+  {
+    const catalog = new Map(["a", "b", "c", "d", "e", "Princess"].map((k) => [k, {}]));
+    const t = computeTour({
+      joueursAvant: { p1: { main: ["a", "a", "a", "a"], joker: 0, points: 0 }, p2: { main: ["b", "b", "c", "c"], joker: 0, points: 0 } },
+      actions: {},
+      marche: ["b", "c"],
+      reserve: ["b", "c", "d", "d", "d", "d"],
+      familles: ["a", "b", "c", "d"],
+      catalog,
+      config: CONFIG,
+      dernier: false,
+    });
+    assert.deepStrictEqual(t.sorties, ["a"]);
+    assert.ok(!t.familles.includes("a") && t.familles.includes("Princess"));
+    assert.strictEqual(t.scores[0].nouvelle, "Princess");
+    const toutes = [...t.joueurs.p1.main, ...t.joueurs.p2.main, ...t.marche, ...t.reserve];
+    assert.strictEqual(toutes.length, 16);
+    assert.ok(!toutes.includes("a"));
+    assert.strictEqual(toutes.filter((k) => k === "Princess").length, 4);
+    assert.strictEqual(t.marche.length, 2);
   }
 
   // Deux quadruplés le même tour : la vedette remplaçante ne compte pas

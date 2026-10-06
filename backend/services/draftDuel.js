@@ -362,7 +362,7 @@ export async function checkAndResolveManche(rng = Math.random) {
 }
 
 // Pure : résolution d'une manche (échanges des bots compris).
-export function computeMancheDuel({ state, joueursAvant, actions, config, rng = Math.random }) {
+export function computeMancheDuel({ state, joueursAvant, actions, config, catalog = null, rng = Math.random }) {
   const toutes = { ...actions };
   for (const id of Object.keys(joueursAvant).filter(isBot)) {
     const choix = choixGlouton(joueursAvant[id].main, state.marche, rng, state.vedettes || []);
@@ -375,7 +375,9 @@ export function computeMancheDuel({ state, joueursAvant, actions, config, rng = 
     marche: state.marche,
     reserve: state.reserve,
     familles: state.familles,
+    sorties: state.sorties || [],
     vedettes: state.vedettes || [],
+    catalog,
     config,
     dernier,
     rng,
@@ -384,18 +386,18 @@ export function computeMancheDuel({ state, joueursAvant, actions, config, rng = 
 }
 
 async function resolveManche(state, actions, rng) {
-  const [config, joueursAvant] = await Promise.all([loadDraftDuelConfig(), readPlayers()]);
-  const tour = computeMancheDuel({ state, joueursAvant, actions, config, rng });
+  const [config, catalog, joueursAvant] = await Promise.all([loadDraftDuelConfig(), loadCatalog(), readPlayers()]);
+  const tour = computeMancheDuel({ state, joueursAvant, actions, config, catalog, rng });
   for (const [id, j] of Object.entries(tour.joueurs)) await writePlayer(id, j);
 
   const lastRecap = { manche: state.manche, lignes: tour.lignes, carres: tour.carres, scores: tour.scores, nouvellesVedettes: tour.nouvellesVedettes };
   if (tour.final) {
-    const newState = touch({ ...state, marche: tour.marche, reserve: tour.reserve, vedettes: tour.vedettes, termine: true, lastRecap, finalRanking: tour.final });
+    const newState = touch({ ...state, marche: tour.marche, reserve: tour.reserve, familles: tour.familles, sorties: tour.sorties, vedettes: tour.vedettes, termine: true, lastRecap, finalRanking: tour.final });
     await writeState(newState);
     const highScore = await updateHighScore(tour.final);
     return { final: true, ranking: tour.final, highScore, state: newState };
   }
-  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, reserve: tour.reserve, vedettes: tour.vedettes, lastRecap });
+  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, reserve: tour.reserve, familles: tour.familles, sorties: tour.sorties, vedettes: tour.vedettes, lastRecap });
   await writeState(newState);
   return { final: false, state: newState };
 }
