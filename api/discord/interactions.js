@@ -19,6 +19,7 @@ import {
   setDiscordLinks,
 } from "../../backend/services/discordLinks.js";
 import { loadSnapshots } from "../../backend/services/snapshot.js";
+import { getWarMatchupPerformanceSamples } from "../../backend/services/matchupPerformance.js";
 import {
   toPublicSeasonId,
   toPublicWeekId,
@@ -210,6 +211,8 @@ import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
   summarizeRecentBattlesForMatchup,
+  computeMatchupPerformance,
+  aggregateMatchupPerformance,
   categorizeBattleType,
   getWarMatchPoints,
   computeCombatsByDay,
@@ -3232,37 +3235,29 @@ async function fetchWarDecksForTagUncached(tag) {
     );
   }
   const analysis = await apiResp.json();
-  let warDecks = [];
+  // Battle log brut de préférence (plus complet), sinon celui de l'analyse
+  let battleLog = analysis.battleLog ?? [];
   try {
     const battleLogResp = await fetch(
       `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
       { headers: { Accept: "application/json" } },
     );
-    if (battleLogResp.ok) {
-      const battleLog = await battleLogResp.json();
-      warDecks = await summarizeWarDecksForMatchup(
-        battleLog ?? [],
-        64,
-        null,
-        analysis.overview.clan?.tag,
-      );
-    } else {
-      warDecks = await summarizeWarDecksForMatchup(
-        analysis.battleLog ?? [],
-        64,
-        null,
-        analysis.overview.clan?.tag,
-      );
-    }
+    if (battleLogResp.ok) battleLog = (await battleLogResp.json()) ?? [];
   } catch {
-    warDecks = await summarizeWarDecksForMatchup(
-      analysis.battleLog ?? [],
-      64,
-      null,
-      analysis.overview.clan?.tag,
-    );
+    // repli silencieux sur analysis.battleLog
   }
-  return { analysis, warDecks };
+  const warDecks = await summarizeWarDecksForMatchup(
+    battleLog,
+    64,
+    null,
+    analysis.overview.clan?.tag,
+  );
+  // Victoires réelles vs attendues sur 3 semaines glissantes : cumul Redis
+  // (cron horaire) complété par le battle log courant, cf. matchupPerformance.js.
+  const performance = aggregateMatchupPerformance(
+    await getWarMatchupPerformanceSamples(tag, battleLog),
+  );
+  return { analysis, warDecks, performance };
 }
 
 // Récupère l'analyse + les decks de guerre (avec breakdown matchup) pour un tag joueur.
@@ -3296,34 +3291,28 @@ async function fetchRecentBattlesForTagUncached(tag) {
     );
   }
   const analysis = await apiResp.json();
-  let warDecks = [];
+  // Battle log brut de préférence (plus complet), sinon celui de l'analyse
+  let battleLog = analysis.battleLog ?? [];
   try {
     const battleLogResp = await fetch(
       `${TRUST_ROYALE_URL}/api/player/${encodeURIComponent(tag)}/battlelog`,
       { headers: { Accept: "application/json" } },
     );
-    if (battleLogResp.ok) {
-      const battleLog = await battleLogResp.json();
-      warDecks = await summarizeRecentBattlesForMatchup(
-        battleLog ?? [],
-        6,
-        analysis.overview.clan?.tag,
-      );
-    } else {
-      warDecks = await summarizeRecentBattlesForMatchup(
-        analysis.battleLog ?? [],
-        6,
-        analysis.overview.clan?.tag,
-      );
-    }
+    if (battleLogResp.ok) battleLog = (await battleLogResp.json()) ?? [];
   } catch {
-    warDecks = await summarizeRecentBattlesForMatchup(
-      analysis.battleLog ?? [],
-      6,
-      analysis.overview.clan?.tag,
-    );
+    // repli silencieux sur analysis.battleLog
   }
-  return { analysis, warDecks };
+  const warDecks = await summarizeRecentBattlesForMatchup(
+    battleLog,
+    6,
+    analysis.overview.clan?.tag,
+  );
+  // Victoires réelles vs attendues sur tout le battle log exploitable (pas
+  // seulement les combats affichés), cf. computeMatchupPerformance.
+  const performance = await computeMatchupPerformance(battleLog, {
+    warOnly: false,
+  });
+  return { analysis, warDecks, performance };
 }
 
 // Récupère l'analyse + les 6 derniers combats bruts (tous types) pour un tag
@@ -3414,6 +3403,26 @@ function buildMatchupDetailSelectRow(tag, warDecks, kind = "gdc") {
       ],
     },
   ];
+}
+
+// Ligne "🎯 Performance" de /matchup et /matchup-gdc : victoires réelles vs
+// attendues d'après le %matchup (cf. computeMatchupPerformance). L'écart
+// n'est mis en gras qu'au-delà de 2 écarts types : en deçà, il peut venir du
+// seul hasard. Trop peu de combats (< 5) : pas de ligne.
+function formatMatchupPerformanceField(
+  performance,
+  name = "🎯 Performance :",
+) {
+  if (!performance || performance.battles < 5) return null;
+  const fmt = (value) => value.toFixed(1).replace(".", ",");
+  const { battles, wins, expected, diff, sd } = performance;
+  const signed = `${diff >= 0 ? "+" : "-"}${fmt(Math.abs(diff))}`;
+  const gap = Math.abs(diff) >= 2 * sd ? `**${signed}**` : signed;
+  return {
+    name,
+    value: `${wins} win sur ${battles} combats (${fmt(expected)} attendues) : ${gap}`,
+    inline: false,
+  };
 }
 
 function buildMatchupDetailEmbed(warDecks, index, kind = "gdc") {
@@ -3946,6 +3955,26 @@ export default async function handler(req, res) {
           detailLines.push(
             `- **Points par deck :** ${pointsPerDeck} (3 dernières semaines terminées)`,
           );
+        }
+        // Performance GDC sur 3 semaines glissantes (cf. matchupPerformance.js),
+        // même format que la ligne 🎯 de /matchup-gdc. Facultative : un échec
+        // (Redis, catalogue) ne doit pas bloquer /stats.
+        try {
+          const performanceField = formatMatchupPerformanceField(
+            aggregateMatchupPerformance(
+              await getWarMatchupPerformanceSamples(
+                tag,
+                analysis.battleLog ?? [],
+              ),
+            ),
+          );
+          if (performanceField) {
+            detailLines.push(
+              `- **Performance (3 semaines) :** ${performanceField.value}`,
+            );
+          }
+        } catch (err) {
+          console.warn("[stats] performance indisponible:", err.message);
         }
 
         const clanLines = [
@@ -4652,8 +4681,9 @@ export default async function handler(req, res) {
       try {
         let analysis;
         let warDecks;
+        let performance;
         try {
-          ({ analysis, warDecks } = await fetchWarDecksForTag(tag));
+          ({ analysis, warDecks, performance } = await fetchWarDecksForTag(tag));
         } catch (err) {
           await fetch(webhookUrl, {
             method: "POST",
@@ -4717,7 +4747,14 @@ export default async function handler(req, res) {
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
           description: warDecksField || undefined,
-          fields: [...fields, matchupLinkField],
+          fields: [
+            ...fields,
+            formatMatchupPerformanceField(
+              performance,
+              "🎯 Performance (3 semaines) :",
+            ),
+            matchupLinkField,
+          ].filter(Boolean),
         };
 
         let imageResponse = null;
@@ -4853,8 +4890,9 @@ export default async function handler(req, res) {
       try {
         let analysis;
         let warDecks;
+        let performance;
         try {
-          ({ analysis, warDecks } = await fetchRecentBattlesForTag(tag));
+          ({ analysis, warDecks, performance } = await fetchRecentBattlesForTag(tag));
         } catch (err) {
           await fetch(webhookUrl, {
             method: "POST",
@@ -4908,7 +4946,11 @@ export default async function handler(req, res) {
           url: trustPlayerUrl(tag),
           color: 0xe67e22,
           description: recentBattlesField || undefined,
-          fields: [...fields, matchupLinkField],
+          fields: [
+            ...fields,
+            formatMatchupPerformanceField(performance),
+            matchupLinkField,
+          ].filter(Boolean),
         };
 
         let imageResponse = null;

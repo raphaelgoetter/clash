@@ -728,6 +728,90 @@ export async function summarizeRecentBattlesForMatchup(
   return entries;
 }
 
+// Modes 1v1 aux règles standard sur lesquels le %matchup a été calibré
+// (temp/matchup-calibration/) : voie des trophées ("Ladder"), mode Classé
+// ("Ranked1v1*"), GDC 1v1 et duel, amical. Les modes d'événement (élixir x3,
+// Touchdown, draft, 2v2, bateau...) sont exclus : la difficulté n'y prédit
+// pas le résultat de la même façon.
+const CALIBRATED_GAME_MODES = new Set([
+  "Ladder",
+  "CW_Battle_1v1",
+  "CW_Duel_1v1",
+  "Friendly",
+]);
+
+function isCalibratedGameMode(battle) {
+  const name = String(battle?.gameMode?.name ?? "");
+  return CALIBRATED_GAME_MODES.has(name) || name.startsWith("Ranked1v1");
+}
+
+/**
+ * Échantillons de performance d'un battle log : un par combat (ou manche de
+ * duel) exploitable, en mode calibré, égalités exclues.
+ * `key` identifie le combat de façon stable (dédoublonnage du cumul Redis,
+ * cf. matchupPerformance.js), `t` = horodatage ms, `p` = probabilité de
+ * victoire attendue (1 - difficulté), `w` = 1 si victoire.
+ * @param {object[]} battleLog
+ * @param {{ warOnly?: boolean }} [options] warOnly : GDC uniquement (/matchup-gdc)
+ * @returns {Promise<Array<{ key: string, t: number, p: number, w: number }>>}
+ */
+export async function listMatchupPerformanceSamples(
+  battleLog,
+  { warOnly = false } = {},
+) {
+  const source = warOnly ? filterWarBattles(battleLog ?? []) : battleLog ?? [];
+  const battles = expandDuelRounds(source.filter(isCalibratedGameMode));
+  const catalog = await getWinConditionsCatalog();
+  const samples = [];
+  for (const battle of battles) {
+    if (!getDeckChunksForBattle(battle)[0]?.length) continue;
+    if (!isWarWin(battle) && !isWarLoss(battle)) continue; // égalité
+    const { matchup } = await computeDeckMatchupDetail(battle, catalog);
+    samples.push({
+      key: `${battle.battleTime}:${battle._roundIndex ?? 0}`,
+      t: parseClashDate(battle.battleTime).getTime(),
+      p: Number((1 - matchup).toFixed(3)),
+      w: isWarWin(battle) ? 1 : 0,
+    });
+  }
+  return samples;
+}
+
+/**
+ * Performance agrégée : victoires réelles vs victoires attendues (somme des
+ * p). `sd` = écart type de l'écart dû au seul hasard (somme des variances
+ * binomiales p(1-p)) : un écart inférieur à 2 sd n'est pas significatif.
+ * @param {Array<{ p: number, w: number }>} samples
+ * @returns {{ battles: number, wins: number, expected: number, diff: number, sd: number }}
+ */
+export function aggregateMatchupPerformance(samples) {
+  let wins = 0;
+  let expected = 0;
+  let variance = 0;
+  for (const { p, w } of samples) {
+    wins += w;
+    expected += p;
+    variance += p * (1 - p);
+  }
+  return {
+    battles: samples.length,
+    wins,
+    expected,
+    diff: wins - expected,
+    sd: Math.sqrt(variance),
+  };
+}
+
+/**
+ * Performance d'un joueur sur tout son battle log (pas seulement les combats
+ * affichés), cf. listMatchupPerformanceSamples/aggregateMatchupPerformance.
+ */
+export async function computeMatchupPerformance(battleLog, options = {}) {
+  return aggregateMatchupPerformance(
+    await listMatchupPerformanceSamples(battleLog, options),
+  );
+}
+
 /**
  * Points GDC gagnés/perdus pour un combat, selon le barème "Barème des
  * médailles GDC" (CONTRIBUTING.md) : PvP 200/100, Bateau 125/75, Duel 250/100.

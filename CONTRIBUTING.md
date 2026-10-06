@@ -258,6 +258,30 @@ Si aucune vraie win condition (au sens du catalogue) n'est reconnue dans un deck
 moyennées si plusieurs trouvées). Si aucune win condition n'est identifiable d'un des deux côtés, les
 counters et l'écart de niveau des win conditions sont neutralisés pour ce combat.
 
+#### Performance (victoires réelles vs attendues)
+
+Ligne « 🎯 Performance » de `/matchup` et `/matchup-gdc`, et ligne « Performance (3 semaines) » de `/stats` :
+
+- victoires attendues = somme de `1 - matchup` sur les combats retenus ; écart = victoires réelles - attendues ;
+- combats retenus (`listMatchupPerformanceSamples()`, `backend/services/battleLogUtils.js`) : modes standards
+  sur lesquels le %matchup est calibré uniquement (`Ladder`, `Ranked1v1*`, `CW_Battle_1v1`, `CW_Duel_1v1`,
+  `Friendly`), manches de duel séparées, égalités exclues ;
+- affichage minimal (« 10 win sur 16 combats (6,9 attendues) : +3,1 ») ; l'écart n'est en gras que si
+  |écart| ≥ 2 écarts types (écart type = `√Σ p(1-p)`), sinon il peut venir du seul hasard ; pas de ligne
+  sous 5 combats.
+
+Fenêtres :
+
+- `/matchup` (tous modes) : battle log seul (25 à 40 combats), l'écart reste donc presque toujours dans la
+  marge du hasard ;
+- `/matchup-gdc` et `/stats` (GDC uniquement) : **3 semaines glissantes**. `backend/services/matchupPerformance.js`
+  cumule les combats GDC dans le hash Redis `matchupPerf:war` (champ = tag sans `#`, valeur = JSON
+  `[{ key, t, p, w }]`, `key` = `battleTime:manche` pour le dédoublonnage, difficulté figée au moment de
+  l'enregistrement). Alimenté par le cron horaire `collectSnapshots.js` (`recordWarMatchupSamples()`, mêmes
+  battle logs que le snapshot, aucun appel API en plus, ~2 commandes Redis par clan et par heure, purge des
+  combats de plus de 21 jours à chaque réécriture). À la lecture (`getWarMatchupPerformanceSamples()`), le
+  cumul est complété par le battle log courant (combats joués depuis le dernier passage du cron).
+
 #### Source de vérité
 
 - Moteur pur (synchrone, sans appel LLM) : `backend/services/matchupEngine.js` — `computeDeckMatchupScore()`

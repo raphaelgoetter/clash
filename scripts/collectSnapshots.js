@@ -12,6 +12,7 @@ import {
   fetchBattleLog,
 } from "../backend/services/clashApi.js";
 import { recordSnapshot } from "../backend/services/snapshot.js";
+import { recordWarMatchupSamples } from "../backend/services/matchupPerformance.js";
 import {
   computeCurrentWeekId,
   computePrevWeekId,
@@ -73,6 +74,16 @@ async function buildBattleLogsByTag(participants = []) {
       console.log(
         `Recorded snapshot for ${clanTag} week ${weekId} (${participants.length} players) [type=${snapshotType}, periodType=${race.periodType}]`,
       );
+
+      // Cumul de la performance GDC (victoires réelles vs attendues) sur 3
+      // semaines glissantes, à partir des mêmes battle logs (aucun appel API
+      // en plus). Isolé : un échec ne doit pas faire échouer le snapshot.
+      try {
+        const updated = await recordWarMatchupSamples(battleLogsByTag);
+        console.log(`Matchup performance: ${updated} player(s) updated for ${clanTag}`);
+      } catch (err) {
+        console.error("Matchup performance error for", clanTag, err.message || err);
+      }
     } catch (err) {
       console.error("Error processing", clanTag, err.message || err);
     }
