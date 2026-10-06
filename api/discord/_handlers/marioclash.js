@@ -387,7 +387,7 @@ const OBJET_EFFET_TEXTE = {
   accelerateur: "tu avances de 4 cases",
   bombe: "l'adversaire choisi recule de 3",
   etoile: "renvoie les objets adverses ce jour (l'attaquant recule de 3) et bloque les sorts",
-  banane: "échange ta place avec un adversaire choisi (10 cases devant toi au maximum, sinon le plus proche devant toi)",
+  banane: "échange ta place avec un adversaire choisi (10 cases devant toi au maximum)",
   carapace: "le joueur en tête à la clôture recule de 5 (si c'est toi, elle frappe le 2e)",
 };
 
