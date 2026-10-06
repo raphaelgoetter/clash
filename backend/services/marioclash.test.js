@@ -83,6 +83,18 @@ async function main() {
     assert.strictEqual(r.joueursApres.a.objet, null);
   }
 
+  // ── Ordre : le sort (Échange) s'applique AVANT l'objet (Accélérateur) ──
+  {
+    const joueursAvant = {
+      a: { username: "A", position: 10, points: 0, objet: "accelerateur" },
+      b: { username: "B", position: 2, points: 0, objet: null },
+    };
+    const actionsRaw = { a: { item: { target: null }, spell: { target: "a", sortId: 3 } } };
+    const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: () => 0 });
+    assert.strictEqual(r.joueursApres.b.position, 10, "B récupère la position de A avant l'Accélérateur");
+    assert.strictEqual(r.joueursApres.a.position, 6, "A échange (case 2) puis garde le bonus de l'Accélérateur");
+  }
+
   // ── Bombe : recul de la cible, sauf si la cible est immunisée (Étoile) ──
   {
     const joueursAvant = {

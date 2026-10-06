@@ -386,7 +386,52 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     if (config.objets[joueur.objet]?.invincible) immunises.add(id);
   }
 
-  // 2) Objets appliqués (hors Étoile, déjà traitée ci-dessus).
+  // 2) Sorts — AVANT les objets : l'objet (choix délibéré, payé) a le
+  // dernier mot sur le sort (aléatoire). Cible et effet déjà tirés au clic
+  // (castSpellForPlayer), on se contente ici de les APPLIQUER (ou de les
+  // bloquer si la cible est immunisée) : jamais un second tirage.
+  for (const [id, action] of Object.entries(actionsRaw)) {
+    const joueur = joueurs[id];
+    if (!joueur || !action.spell) continue;
+    const targetId = action.spell.target || id;
+    const cible = joueurs[targetId];
+    if (!cible) continue;
+    if (immunises.has(targetId)) {
+      lignes.push({ type: "sort", discordId: id, effet: "bloque", cibleId: targetId });
+      continue;
+    }
+    const sort = config.sorts.find((s) => s.id === action.spell.sortId) || rollSort(config.sorts, rng);
+    if (sort.avance) {
+      cible.position = clampPosition(cible.position + sort.avance, config.case_arrivee);
+    }
+    if (sort.perdOr) {
+      cible.points = Math.max(0, cible.points - sort.perdOr);
+    }
+    if (sort.pointsBoutique) {
+      cible.points += sort.pointsBoutique;
+    }
+    if (sort.gel) cible.gel = true;
+    if (sort.rage) cible.rage = sort.rage;
+    // Clone : rejoue le déplacement du dé du jour (bonus Rage/Gel compris),
+    // sans case spéciale (déclenchées par le dé seul). Sans dé : sans effet.
+    let valeurClone = null;
+    if (sort.clone) {
+      valeurClone = actionsRaw[targetId]?.diceAvance ?? actionsRaw[targetId]?.diceValue ?? 0;
+      cible.position = clampPosition(cible.position + valeurClone, config.case_arrivee);
+    }
+    let autreEchangeId = null;
+    if (sort.echangeAleatoire) {
+      const autres = Object.keys(joueurs).filter((otherId) => otherId !== targetId);
+      if (autres.length) {
+        autreEchangeId = autres[Math.floor(rng() * autres.length)];
+        const posCible = cible.position;
+        cible.position = joueurs[autreEchangeId].position;
+        joueurs[autreEchangeId].position = posCible;
+      }
+    }
+    lignes.push({ type: "sort", discordId: id, cibleId: targetId, sortId: sort.id, sortLabel: sort.label, autreEchangeId, valeurClone });
+  }
+  // 3) Objets appliqués (hors Étoile, déjà traitée ci-dessus), après les sorts.
   // Carapaces bleues (cible "leader") résolues APRÈS tous les autres objets,
   // sur le classement de ce moment-là (une Banane qui fait passer quelqu'un
   // en tête détourne donc la Carapace vers lui) — classement figé une seule
@@ -461,50 +506,6 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     joueur.objet = null;
   }
 
-  // 3) Sorts — cible et effet déjà tirés au clic (castSpellForPlayer), on
-  // se contente ici de les APPLIQUER (ou de les bloquer si la cible est
-  // devenue immunisée entre-temps) : jamais un second tirage.
-  for (const [id, action] of Object.entries(actionsRaw)) {
-    const joueur = joueurs[id];
-    if (!joueur || !action.spell) continue;
-    const targetId = action.spell.target || id;
-    const cible = joueurs[targetId];
-    if (!cible) continue;
-    if (immunises.has(targetId)) {
-      lignes.push({ type: "sort", discordId: id, effet: "bloque", cibleId: targetId });
-      continue;
-    }
-    const sort = config.sorts.find((s) => s.id === action.spell.sortId) || rollSort(config.sorts, rng);
-    if (sort.avance) {
-      cible.position = clampPosition(cible.position + sort.avance, config.case_arrivee);
-    }
-    if (sort.perdOr) {
-      cible.points = Math.max(0, cible.points - sort.perdOr);
-    }
-    if (sort.pointsBoutique) {
-      cible.points += sort.pointsBoutique;
-    }
-    if (sort.gel) cible.gel = true;
-    if (sort.rage) cible.rage = sort.rage;
-    // Clone : rejoue le déplacement du dé du jour (bonus Rage/Gel compris),
-    // sans case spéciale (déclenchées par le dé seul). Sans dé : sans effet.
-    let valeurClone = null;
-    if (sort.clone) {
-      valeurClone = actionsRaw[targetId]?.diceAvance ?? actionsRaw[targetId]?.diceValue ?? 0;
-      cible.position = clampPosition(cible.position + valeurClone, config.case_arrivee);
-    }
-    let autreEchangeId = null;
-    if (sort.echangeAleatoire) {
-      const autres = Object.keys(joueurs).filter((otherId) => otherId !== targetId);
-      if (autres.length) {
-        autreEchangeId = autres[Math.floor(rng() * autres.length)];
-        const posCible = cible.position;
-        cible.position = joueurs[autreEchangeId].position;
-        joueurs[autreEchangeId].position = posCible;
-      }
-    }
-    lignes.push({ type: "sort", discordId: id, cibleId: targetId, sortId: sort.id, sortLabel: sort.label, autreEchangeId, valeurClone });
-  }
   // Le dé n'est plus résolu ici : action individuelle sans interaction avec
   // les autres joueurs, elle est résolue EN DIRECT au clic (voir
   // rollDiceForPlayer()) — même principe que la boutique.
