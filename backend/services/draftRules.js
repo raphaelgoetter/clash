@@ -47,13 +47,18 @@ export function carteDuCarre(main, config) {
   return null;
 }
 
-// Points d'une main en fin de manche : `points_vedette` pour un quadruplé
-// d'une carte vedette, `points_carre` pour un autre quadruplé, sinon le
-// nombre d'exemplaires identiques (1, 2 ou 3).
-export function pointsMain(main, config, vedettes = []) {
+// Points d'un quadruplé : selon la rareté de la carte (`points_rarete`,
+// `points_carre` à défaut), +`bonus_vedette` pour une carte vedette.
+export function pointsQuadruple(carte, config, vedettes = [], catalog = null) {
+  const base = config.points_rarete?.[catalog?.get(carte)?.rarity] ?? config.points_carre;
+  return base + (vedettes.includes(carte) ? config.bonus_vedette : 0);
+}
+
+// Points d'une main : un quadruplé (voir pointsQuadruple), sinon le nombre
+// d'exemplaires identiques (1, 2 ou 3).
+export function pointsMain(main, config, vedettes = [], catalog = null) {
   const carte = carteDuCarre(main, config);
-  if (carte) return vedettes.includes(carte) ? config.points_vedette : config.points_carre;
-  return plusGrandGroupe(main);
+  return carte ? pointsQuadruple(carte, config, vedettes, catalog) : plusGrandGroupe(main);
 }
 
 // Une carte vedette pour `joueurs_par_vedette` joueurs (au moins une).
@@ -308,7 +313,7 @@ export function resoudreEchanges({ joueurs, actions, marche, config, priorites =
 // puis quadruplés (points et nouvelle main pour leurs auteurs) ; au
 // dernier tour, chacun marque en plus 1 à 3 pts selon sa main.
 // `joueursAvant` : { id: { main, joker, points, carres, ... } } (non muté). `actions[id]` : { prise, depot, joker?, vu? }.
-export function computeTour({ joueursAvant, actions, marche, reserve = [], familles, sorties = [], vedettes = [], catalog = null, config, dernier, rng = Math.random }) {
+export function computeTour({ joueursAvant, actions, marche, reserve = [], familles, sorties = [], vedettes = [], derniersQuadruples = [], catalog = null, config, dernier, rng = Math.random }) {
   const joueurs = {};
   for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j, main: [...(j.main || [])] };
 
@@ -356,7 +361,7 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
     const carte = carteDuCarre(j.main, config);
     // Vedettes du début du tour : une remplaçante ne compte qu'au tour suivant
     const vedette = vedettes.includes(carte);
-    const points = pointsMain(j.main, config, vedettes);
+    const points = pointsMain(j.main, config, vedettes, catalog);
     j.points = (j.points || 0) + points;
     j.carres = (j.carres || 0) + 1;
     if (vedette) realisees.push(carte);
@@ -386,12 +391,34 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
   if (dernier) {
     for (const [id, j] of Object.entries(joueurs)) {
       if (carres.includes(id)) continue;
-      const points = pointsMain(j.main, config, vedettes);
+      const points = pointsMain(j.main, config, vedettes, catalog);
       j.points = (j.points || 0) + points;
       scores.push({ discordId: id, points, carre: false, main: [...j.main] });
     }
   }
-  return { joueurs, marche: newMarche, reserve: newReserve, familles: newFamilles, sorties: newSorties, vedettes: newVedettes, nouvellesVedettes, lignes, carres, scores };
+
+  // Dernier quadruplé de la partie (ceux du dernier tour qui en a eu) :
+  // bonus attribué au tout dernier tour, quand on le connaît
+  const derniers = carres.length ? carres : derniersQuadruples;
+  if (dernier) {
+    for (const id of derniers.filter((x) => joueurs[x])) {
+      joueurs[id].points = (joueurs[id].points || 0) + config.bonus_dernier_quadruple;
+      scores.push({ discordId: id, points: config.bonus_dernier_quadruple, carre: false, dernierQuadruple: true });
+    }
+  }
+  return {
+    joueurs,
+    marche: newMarche,
+    reserve: newReserve,
+    familles: newFamilles,
+    sorties: newSorties,
+    vedettes: newVedettes,
+    nouvellesVedettes,
+    derniersQuadruples: derniers,
+    lignes,
+    carres,
+    scores,
+  };
 }
 
 // Nouvelle main après un quadruplé : tirée au hasard dans le marché et

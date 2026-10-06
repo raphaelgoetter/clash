@@ -85,7 +85,7 @@ export function quadruplesEmbed(recap, noms, cardName, { final = false, color = 
   return { title: quads.length > 1 ? "🎉 Quadruplés !" : "🎉 Quadruplé !", description: lignes.join("\n").slice(0, 4096), color };
 }
 
-// Cartes vedettes de la donne (leur quadruplé rapporte `points_vedette`).
+// Cartes vedettes (leur quadruplé rapporte `bonus_vedette` de plus).
 export function vedetteLigne(vedettes, cardName) {
   if (!vedettes?.length) return null;
   const noms = vedettes.map((k) => `**${cardName(k)}**`).join(", ");

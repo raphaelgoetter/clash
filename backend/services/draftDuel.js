@@ -377,6 +377,7 @@ export function computeMancheDuel({ state, joueursAvant, actions, config, catalo
     familles: state.familles,
     sorties: state.sorties || [],
     vedettes: state.vedettes || [],
+    derniersQuadruples: state.derniersQuadruples || [],
     catalog,
     config,
     dernier,
@@ -392,12 +393,12 @@ async function resolveManche(state, actions, rng) {
 
   const lastRecap = { manche: state.manche, lignes: tour.lignes, carres: tour.carres, scores: tour.scores, nouvellesVedettes: tour.nouvellesVedettes };
   if (tour.final) {
-    const newState = touch({ ...state, marche: tour.marche, reserve: tour.reserve, familles: tour.familles, sorties: tour.sorties, vedettes: tour.vedettes, termine: true, lastRecap, finalRanking: tour.final });
+    const newState = touch({ ...state, marche: tour.marche, reserve: tour.reserve, familles: tour.familles, sorties: tour.sorties, vedettes: tour.vedettes, derniersQuadruples: tour.derniersQuadruples, termine: true, lastRecap, finalRanking: tour.final });
     await writeState(newState);
     const highScore = await updateHighScore(tour.final);
     return { final: true, ranking: tour.final, highScore, state: newState };
   }
-  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, reserve: tour.reserve, familles: tour.familles, sorties: tour.sorties, vedettes: tour.vedettes, lastRecap });
+  const newState = touch({ ...state, manche: state.manche + 1, marche: tour.marche, reserve: tour.reserve, familles: tour.familles, sorties: tour.sorties, vedettes: tour.vedettes, derniersQuadruples: tour.derniersQuadruples, lastRecap });
   await writeState(newState);
   return { final: false, state: newState };
 }

@@ -358,6 +358,12 @@ async function buildFinalEmbed(state, { expired = false } = {}) {
     const name = await displayName(r.discordId, r.username);
     lines.push(`${i === 0 ? `${EMOJI.trophy.text} ` : `${i + 1}. `}**${name}** · ${plural(r.score, "pt")}${r.joker ? ` dont ${r.joker} Joker` : ""}${r.carres ? ` · ${plural(r.carres, "quadruplé")}` : ""}`);
   }
+  const derniers = expired ? [] : (state.lastRecap?.scores || []).filter((s) => s.dernierQuadruple);
+  if (derniers.length) {
+    const config = await loadDraftDuelConfig();
+    const noms = await Promise.all(derniers.map((s) => displayName(s.discordId, ranking.find((r) => r.discordId === s.discordId)?.username)));
+    lines.push("", `🏁 Dernier quadruplé : ${noms.map((n) => `**${n}**`).join(", ")} (+${config.bonus_dernier_quadruple} pts)`);
+  }
   if (highScore && !expired) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
     lines.push("", `${EMOJI.topplayers.text} High score : ${name} (${plural(highScore.points, "pt")})`);
@@ -512,7 +518,7 @@ function buildRecapLines(lastRecap, noms, discordId, config, catalog) {
   if (lines.length === 1) lines.push("Aucun échange.");
   lines.push(...jokerBilanLignes(lastRecap.lignes, discordId, noms, (k) => cardName(k, catalog)));
   // Quadruplés et nouvelles vedettes : encadré à part (quadruplesEmbed)
-  const mien = lastRecap.scores?.find((x) => x.discordId === discordId && !x.carre);
+  const mien = lastRecap.scores?.find((x) => x.discordId === discordId && !x.carre && !x.dernierQuadruple);
   if (mien) lines.push(`Ton décompte : +${plural(mien.points, "pt")}`);
   return [...lines, ""];
 }
@@ -814,7 +820,7 @@ function buildReglesEmbed(config) {
       "",
       `**Chaque manche** : ${EMOJI.trade.text} prends une carte au marché et dépose une carte de ta main, utilise une action ${JOKER_EMOJI} Joker, ou les deux, puis ${EMOJI.check.text} **Fin de tour**.`,
       `**Carte disputée** : elle va au joueur qui a le plus de points Joker. Les autres gardent leur carte (+${config.joker.gain_perte} pts Joker).`,
-      `**Quadruplé** : ${config.points_carre} pts (${config.points_vedette} pour une ⭐ carte vedette). Tu reçois ensuite une nouvelle main.`,
+      `**Quadruplé** : ${config.points_rarete.common} à ${config.points_rarete.legendary} pts selon la rareté (+${config.bonus_vedette} pour une ⭐ carte vedette). Tu reçois ensuite une nouvelle main.`,
       "",
       `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par manche jouée.`,
       `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée`,
@@ -822,7 +828,7 @@ function buildReglesEmbed(config) {
       `• **Puiser** une carte à l'écart (${config.joker.couts.puiser} pts) : ta carte déposée part à l'écart à sa place`,
       `• **Espionner** (${config.joker.couts.espionner} pt) : vois tout de suite la main d'un joueur`,
       "",
-      `**Fin** (manche ${config.duel.manches}) : chacun marque 1 à 3 pts selon ses cartes identiques, plus ses points Joker restants.`,
+      `**Fin** (manche ${config.duel.manches}) : chacun marque 1 à 3 pts selon ses cartes identiques, plus ses points Joker restants. Le dernier quadruplé de la partie rapporte +${config.bonus_dernier_quadruple} pts.`,
     ].join("\n"),
     color: DRAFTDUEL_COLOR,
   };

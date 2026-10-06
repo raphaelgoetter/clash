@@ -52,7 +52,7 @@ import { compterCartes, pointsMain, echangeValide } from "../backend/services/dr
       const echange = echangeValide(a, j.main, partie.marche) ? `prend ${nom(a.prise)}, dépose ${nom(a.depot)}` : a.prise || a.depot ? "échange incomplet" : "pas d'échange";
       console.log(`  - ${j.username} — ${j.points || 0} pts, ${j.carres || 0} quadruplé(s), ${j.joker || 0} pt(s) Joker`);
       const joker = a.joker?.type ? ` · Joker ${a.joker.type}${a.joker.cible ? ` → ${joueurs[a.joker.cible]?.username || a.joker.cible}` : ""}` : "";
-      console.log(`      main : ${groupes(j.main)} (${pointsMain(j.main, config)} pt(s) au décompte) · ${echange}${joker}`);
+      console.log(`      main : ${groupes(j.main)} (${pointsMain(j.main, config, partie.vedettes || [], catalog)} pt(s) au décompte) · ${echange}${joker}`);
     }
   }
 })();

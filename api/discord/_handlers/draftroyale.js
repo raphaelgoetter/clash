@@ -125,7 +125,7 @@ function buildResumeLignes(jour, config, joueurs) {
   ];
   if (jour === 1) lignes.push(`Tu reçois tes ${config.taille_main} cartes à ton premier clic.`);
   if (nb) lignes.push(`👥 ${plural(nb, "joueur")} dans la partie.`);
-  if (jour === config.duree_jours) lignes.push(`🏁 **Dernier jour** : à la clôture, chacun marque ses points (${config.points_carre} pour un quadruplé, sinon 1 à 3).`);
+  if (jour === config.duree_jours) lignes.push("🏁 **Dernier jour** : à la clôture, chacun marque 1 à 3 pts selon ses cartes identiques.");
   lignes.push(...classementLignes(joueurs));
   return lignes;
 }
@@ -152,7 +152,7 @@ function buildManchesSection(manches, currentManche) {
   return ["", "**📊 Manches précédentes**", ...manches.map((m) => formatMancheLine(m, m.manche === currentManche, m.manche === best.manche))];
 }
 
-function buildFinEmbed(ranking, config, manches, currentManche) {
+function buildFinEmbed(ranking, config, manches, currentManche, derniers = []) {
   // Classement déjà départagé (carrés, puis ordre d'arrivée) : un seul vainqueur
   const top = ranking[0];
   const titre = top ? `**${top.username}** l'emporte avec **${top.score} pts** !` : "Personne n'a participé.";
@@ -163,6 +163,7 @@ function buildFinEmbed(ranking, config, manches, currentManche) {
       "",
       "**Classement final**",
       ...ranking.slice(0, 10).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** (${plural(r.score, "pt")}${r.joker ? ` dont ${r.joker} Joker` : ""}${r.carres ? `, ${plural(r.carres, "quadruplé")}` : ""})`),
+      ...(derniers.length ? ["", `🏁 Dernier quadruplé : ${derniers.map((n) => `**${n}**`).join(", ")} (+${config.bonus_dernier_quadruple} pts)`] : []),
       ...buildManchesSection(manches, currentManche),
     ]
       .join("\n")
@@ -180,7 +181,7 @@ function buildReglesEmbed(config) {
       "",
       `**Chaque jour** : ${TRADE_TEXT} prends une carte au marché et dépose une carte de ta main, utilise une action ${JOKER_EMOJI} Joker, ou les deux.`,
       `**Carte disputée** : elle va au joueur qui a le plus de points Joker. Les autres gardent leur carte (+${config.joker.gain_perte} pts Joker).`,
-      `**Quadruplé** : ${config.points_carre} pts (${config.points_vedette} pour une ⭐ carte vedette). Tu reçois ensuite une nouvelle main.`,
+      `**Quadruplé** : ${config.points_rarete.common} à ${config.points_rarete.legendary} pts selon la rareté (+${config.bonus_vedette} pour une ⭐ carte vedette). Tu reçois ensuite une nouvelle main.`,
       "",
       `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par jour joué.`,
       `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée`,
@@ -188,7 +189,7 @@ function buildReglesEmbed(config) {
       `• **Puiser** une carte à l'écart (${config.joker.couts.puiser} pts) : ta carte déposée part à l'écart à sa place`,
       `• **Espionner** (${config.joker.couts.espionner} pt) : vois tout de suite la main d'un joueur`,
       "",
-      `**Fin** (J${config.duree_jours}) : chacun marque 1 à 3 pts selon ses cartes identiques, plus ses points Joker restants.`,
+      `**Fin** (J${config.duree_jours}) : chacun marque 1 à 3 pts selon ses cartes identiques, plus ses points Joker restants. Le dernier quadruplé de la partie rapporte +${config.bonus_dernier_quadruple} pts.`,
     ].join("\n"),
     color: DRAFT_COLOR,
   };
@@ -254,7 +255,8 @@ export async function postDraftRoyale(channelId, { dryRun = false, noPing = fals
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = buildFinEmbed(ranking, config, manches, currentManche);
+    const derniers = closure.scores.filter((s) => s.dernierQuadruple).map((s) => closure.joueursApres[s.discordId]?.username || "?");
+    const embed = buildFinEmbed(ranking, config, manches, currentManche, derniers);
     const components = [{ type: 1, components: [reglesButton()] }];
     if (dryRun) return { dryRun: true, final: true, embed, closure };
     const result = await publishAndWriteState(channelId, state, { phase: "jour", jour: state.jour, embed, components, noPing, estAnnonce: false, termine: true });
@@ -337,7 +339,7 @@ function bilanVeille(veille, joueurs, discordId, config, catalog) {
   if (!lignes.length) lignes.push("Aucun échange.");
   lignes.push(...jokerBilanLignes(veille.lignes, discordId, noms, (k) => cardName(k, catalog)));
   // Quadruplés et nouvelles vedettes : encadré à part (quadruplesEmbed)
-  const mien = veille.scores?.find((x) => x.discordId === discordId && !x.carre);
+  const mien = veille.scores?.find((x) => x.discordId === discordId && !x.carre && !x.dernierQuadruple);
   if (mien) lignes.push(`Ton décompte : +${plural(mien.points, "pt")}`);
   return lignes;
 }

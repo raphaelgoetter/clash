@@ -35,8 +35,11 @@ function main() {
   assert.strictEqual(pointsMain(["a", "a", "a", "d"], CONFIG), 3);
   assert.ok(aUnCarre(["a", "a", "a", "a"], CONFIG));
   assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG), CONFIG.points_carre);
-  // Carte vedette : son quadruplé vaut points_vedette
-  assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, ["b", "a"]), CONFIG.points_vedette);
+  // Rareté et carte vedette
+  const CAT = new Map([["a", { rarity: "legendary" }], ["c", { rarity: "common" }]]);
+  assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, [], CAT), CONFIG.points_rarete.legendary);
+  assert.strictEqual(pointsMain(["c", "c", "c", "c"], CONFIG, ["c"], CAT), CONFIG.points_rarete.common + CONFIG.bonus_vedette);
+  assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, ["b", "a"]), CONFIG.points_carre + CONFIG.bonus_vedette);
   assert.strictEqual(pointsMain(["a", "a", "a", "a"], CONFIG, ["b"]), CONFIG.points_carre);
   assert.strictEqual(pointsMain(["a", "a", "a", "c"], CONFIG, ["a"]), 3);
   // Une vedette pour 5 joueurs, jamais les mêmes d'une donne à l'autre si
@@ -256,7 +259,7 @@ function main() {
       dernier: false,
     });
     assert.deepStrictEqual(t.carres, ["p1"]);
-    assert.strictEqual(t.joueurs.p1.points, 5 + CONFIG.points_vedette);
+    assert.strictEqual(t.joueurs.p1.points, 5 + CONFIG.points_carre + CONFIG.bonus_vedette);
     assert.ok(t.scores.find((x) => x.discordId === "p1").vedette);
     assert.strictEqual(t.joueurs.p1.carres, 1);
     // Nouvelle main sans la carte du quadruplé ; p2 garde la sienne
@@ -310,10 +313,22 @@ function main() {
         config: CONFIG,
         dernier: false,
       });
-      assert.strictEqual(t.joueurs.p1.points, CONFIG.points_vedette);
+      assert.strictEqual(t.joueurs.p1.points, CONFIG.points_carre + CONFIG.bonus_vedette);
       assert.strictEqual(t.joueurs.p2.points, CONFIG.points_carre);
       assert.notDeepStrictEqual(t.vedettes, ["a"]);
     }
+  }
+
+  // Dernier quadruplé : bonus au dernier tour, pour les auteurs du dernier
+  // tour à quadruplé (mémorisé d'un tour à l'autre)
+  {
+    const joueursAvant = { p1: { main: ["a", "a", "b", "c"], joker: 0, points: 10 }, p2: { main: ["b", "b", "c", "d"], joker: 0, points: 0 } };
+    const base = { joueursAvant, actions: {}, marche: ["d"], familles: ["a", "b", "c", "d"], config: CONFIG };
+    const milieu = computeTour({ ...base, derniersQuadruples: ["p1"], dernier: false });
+    assert.deepStrictEqual(milieu.derniersQuadruples, ["p1"]);
+    const fin = computeTour({ ...base, derniersQuadruples: ["p1"], dernier: true });
+    assert.strictEqual(fin.joueurs.p1.points, 10 + 2 + CONFIG.bonus_dernier_quadruple);
+    assert.ok(fin.scores.some((x) => x.discordId === "p1" && x.dernierQuadruple));
   }
 
   // Dernier tour : chacun marque 1 à 3 pts selon sa main
