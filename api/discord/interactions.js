@@ -2773,11 +2773,17 @@ function formatWarDecksField(warDecks) {
           const matchup = Number.isFinite(match.matchup)
             ? `${Math.round(match.matchup * 100)}%`
             : "?";
-          // Ligne épurée : résultat en tête, puis adversaire, score et
-          // difficulté séparés par "·" (le type PvP/Duel et le numéro de
-          // deck restent visibles dans le menu "ℹ️ Détails").
+          // Ligne épurée : résultat en tête, puis type (PvP/Duel/Bateau),
+          // adversaire, score et difficulté séparés par "·" (même ordre que
+          // /matchup ; le numéro de deck reste dans le menu "ℹ️ Détails").
+          const typeLabel = getWarMatchTypeLabel(match.type).replace(
+            /^\(|\)$/g,
+            "",
+          );
           deckLines.push(
-            `• ${resultEmoji} ${opponentName} · ${score} · ⚡${matchup}`,
+            `• ${resultEmoji} ${[typeLabel, opponentName, score, `⚡${matchup}`]
+              .filter(Boolean)
+              .join(" · ")}`,
           );
           displayedMatches.push(match);
         });
