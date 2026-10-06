@@ -235,20 +235,42 @@ export function sortsDisponibles(sorts, niveau = 0) {
   return sorts.filter((s) => !s.retire_concentration || s.retire_concentration > niveau);
 }
 
+// Parmi `candidats` ([id, ecart] avec ecart ≠ 0), ceux à `portee` cases
+// d'écart au plus ; si personne n'est à portée, le périmètre s'élargit au(x)
+// plus proche(s) hors portée (ex aequo inclus).
+function dansPorteeOuPlusProches(candidats, portee) {
+  const dansPortee = candidats.filter(([, ecart]) => Math.abs(ecart) <= portee);
+  if (dansPortee.length || !candidats.length) return dansPortee;
+  const min = Math.min(...candidats.map(([, ecart]) => Math.abs(ecart)));
+  return candidats.filter(([, ecart]) => Math.abs(ecart) === min);
+}
+
 // Adversaires ciblables par un objet "adversaire". Avec `portee` (Banane),
 // seuls les joueurs situés devant soi, à `portee` cases au plus, sont
-// éligibles — évaluée sur les positions au moment du choix (celles de la
-// dernière clôture), pas sur celles d'après les dés du jour.
+// éligibles (élargi au prochain joueur devant si personne n'est à portée)
+// — évaluée sur les positions au moment du choix, pas à la clôture.
 export function ciblesObjet(joueurs, discordId, item) {
   const posJoueur = joueurs[discordId]?.position ?? 0;
-  return Object.entries(joueurs)
-    .filter(([id, j]) => {
-      if (id === discordId) return false;
-      if (item.portee == null) return true;
-      const ecart = (j.position ?? 0) - posJoueur;
-      return ecart > 0 && ecart <= item.portee;
-    })
-    .map(([id, j]) => ({ discordId: id, username: j.username }));
+  const autres = Object.entries(joueurs).filter(([id]) => id !== discordId);
+  const nom = (id) => joueurs[id].username;
+  if (item.portee == null) return autres.map(([id]) => ({ discordId: id, username: nom(id) }));
+  const devant = autres
+    .map(([id, j]) => [id, (j.position ?? 0) - posJoueur])
+    .filter(([, ecart]) => ecart > 0);
+  return dansPorteeOuPlusProches(devant, item.portee).map(([id]) => ({ discordId: id, username: nom(id) }));
+}
+
+// Partenaires possibles du sort d'échange aléatoire : avec `portee`, joueurs
+// à `portee` cases d'écart au plus, devant OU derrière (même case exclue,
+// l'échange n'y changerait rien), élargi au(x) plus proche(s) sinon.
+export function partenairesEchange(joueurs, targetId, portee) {
+  const autres = Object.keys(joueurs).filter((id) => id !== targetId);
+  if (portee == null) return autres;
+  const posCible = joueurs[targetId]?.position ?? 0;
+  const candidats = autres
+    .map((id) => [id, (joueurs[id].position ?? 0) - posCible])
+    .filter(([, ecart]) => ecart !== 0);
+  return dansPorteeOuPlusProches(candidats, portee).map(([id]) => id);
 }
 
 export function clampPosition(position, caseArrivee) {
@@ -421,7 +443,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     }
     let autreEchangeId = null;
     if (sort.echangeAleatoire) {
-      const autres = Object.keys(joueurs).filter((otherId) => otherId !== targetId);
+      const autres = partenairesEchange(joueurs, targetId, sort.portee);
       if (autres.length) {
         autreEchangeId = autres[Math.floor(rng() * autres.length)];
         const posCible = cible.position;

@@ -1,5 +1,5 @@
 import assert from "assert";
-import { computeCloture, rollDice, rollSort, sortsDisponibles, clampPosition, isTooSoonSinceLastClosure, rollDieOfType, applyCaseSpeciale, ciblesObjet } from "./marioclash.js";
+import { computeCloture, rollDice, rollSort, sortsDisponibles, clampPosition, isTooSoonSinceLastClosure, rollDieOfType, applyCaseSpeciale, ciblesObjet, partenairesEchange } from "./marioclash.js";
 
 const CONFIG = {
   duree_jours: 7,
@@ -343,6 +343,34 @@ async function main() {
     const ids = (item) => ciblesObjet(joueurs, "a", item).map((c) => c.discordId).sort();
     assert.deepStrictEqual(ids({ cible: "adversaire", echange: true, portee: 10 }), ["b"]);
     assert.deepStrictEqual(ids({ cible: "adversaire", recul: 3 }), ["b", "c", "d", "e"]);
+    // Personne à portée : élargi au(x) plus proche(s) devant, ex aequo inclus.
+    const loin = {
+      a: { username: "A", position: 10 },
+      b: { username: "B", position: 25 },
+      c: { username: "C", position: 25 },
+      d: { username: "D", position: 30 },
+    };
+    assert.deepStrictEqual(ciblesObjet(loin, "a", { portee: 10 }).map((c) => c.discordId).sort(), ["b", "c"]);
+    // Personne devant : aucune cible.
+    assert.deepStrictEqual(ciblesObjet(loin, "d", { portee: 10 }), []);
+  }
+
+  // ── partenairesEchange : 10 cases d'écart dans les deux sens ─────────
+  {
+    const joueurs = {
+      a: { position: 20 },
+      b: { position: 30 }, // +10 : ok
+      c: { position: 10 }, // -10 : ok
+      d: { position: 31 }, // hors portée
+      e: { position: 20 }, // même case : exclu
+    };
+    assert.deepStrictEqual(partenairesEchange(joueurs, "a", 10).sort(), ["b", "c"]);
+    assert.deepStrictEqual(partenairesEchange(joueurs, "a", null).sort(), ["b", "c", "d", "e"]);
+    // Personne à portée : le(s) plus proche(s), quel que soit le sens.
+    const loin = { a: { position: 20 }, b: { position: 35 }, c: { position: 2 } };
+    assert.deepStrictEqual(partenairesEchange(loin, "a", 10), ["b"]);
+    // Tous sur la même case : aucun échange.
+    assert.deepStrictEqual(partenairesEchange({ a: { position: 5 }, b: { position: 5 } }, "a", 10), []);
   }
 
   // ── isTooSoonSinceLastClosure ────────────────────────────────────────
