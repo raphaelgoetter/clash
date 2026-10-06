@@ -267,8 +267,8 @@ Ligne « 🎯 Performance » de `/matchup` et `/matchup-gdc`, et ligne « Perfor
   sur lesquels le %matchup est calibré uniquement (`Ladder`, `Ranked1v1*`, `CW_Battle_1v1`, `CW_Duel_1v1`,
   `Friendly`), manches de duel séparées, égalités exclues ;
 - affichage minimal (« 10 win sur 16 combats (6,9 attendues) : +3,1 ») ; l'écart n'est en gras que si
-  |écart| ≥ 2 écarts types (écart type = `√Σ p(1-p)`), sinon il peut venir du seul hasard ; pas de ligne
-  sous 5 combats.
+  |écart| ≥ 2 écarts types (écart type = `√Σ p(1-p)`), sinon il peut venir du seul hasard ; emoji `success`/`error` selon le
+  signe de l'écart ; pas de ligne sous 4 combats (une journée de GDC).
 
 Fenêtres :
 

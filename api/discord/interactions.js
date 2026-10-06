@@ -3405,22 +3405,30 @@ function buildMatchupDetailSelectRow(tag, warDecks, kind = "gdc") {
   ];
 }
 
-// Ligne "🎯 Performance" de /matchup et /matchup-gdc : victoires réelles vs
-// attendues d'après le %matchup (cf. computeMatchupPerformance). L'écart
-// n'est mis en gras qu'au-delà de 2 écarts types : en deçà, il peut venir du
-// seul hasard. Trop peu de combats (< 5) : pas de ligne.
+// Ligne "🎯 Performance" de /matchup, /matchup-gdc et /stats : victoires
+// réelles vs attendues d'après le %matchup (cf. computeMatchupPerformance).
+// L'écart n'est en gras qu'au-delà de 2 écarts types : en deçà, il peut venir
+// du seul hasard. Emoji succès/erreur selon le signe de l'écart arrondi.
+// Moins de 4 combats (une journée de GDC) : pas de ligne.
 function formatMatchupPerformanceField(
   performance,
   name = "🎯 Performance :",
 ) {
-  if (!performance || performance.battles < 5) return null;
+  if (!performance || performance.battles < 4) return null;
   const fmt = (value) => value.toFixed(1).replace(".", ",");
   const { battles, wins, expected, diff, sd } = performance;
-  const signed = `${diff >= 0 ? "+" : "-"}${fmt(Math.abs(diff))}`;
+  const rounded = Math.round(diff * 10) / 10;
+  const signed = `${rounded >= 0 ? "+" : "-"}${fmt(Math.abs(rounded))}`;
   const gap = Math.abs(diff) >= 2 * sd ? `**${signed}**` : signed;
+  const emoji =
+    rounded > 0
+      ? " <:success:1499002702208958577>"
+      : rounded < 0
+        ? " <:error:1499002755841265826>"
+        : "";
   return {
     name,
-    value: `${wins} win sur ${battles} combats (${fmt(expected)} attendues) : ${gap}`,
+    value: `${wins} win sur ${battles} combats (${fmt(expected)} attendues) : ${gap}${emoji}`,
     inline: false,
   };
 }
