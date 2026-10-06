@@ -11,4 +11,4 @@ console.log(b.team[0].cards.map((c) => `${c.name} ${c.level}/${c.maxLevel} ${c.r
 console.log(b.opponent[0].cards.map((c) => `${c.name} ${c.level}/${c.maxLevel} ${c.rarity}`).join(" | "));
 const d = await computeDeckMatchupDetail(b);
 console.log(d.matchup, d.breakdown);
-for (const k of ["layer1", "layer2", "layer3", "layer4"]) console.log(`--${k}\n${d.reasons[k]}`);
+for (const k of ["level", "evolutions", "counters", "structure"]) console.log(`--${k}\n${d.reasons[k]}`);

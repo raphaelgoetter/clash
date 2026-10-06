@@ -200,7 +200,7 @@ Ces valeurs sont issues du barème de Clan Wars de Clash Royale.
 
 Le matchup GDC mesure la difficulté moyenne des combats d'un joueur sur ses récents combats de guerre.
 Le calcul est purement tactique : il compare les 8 cartes des deux decks réellement joués (win conditions,
-counters, structure, niveaux) — pas les statistiques de compte des joueurs (trophées, winrate, collection…,
+counters, structure, niveaux, évolutions) — pas les statistiques de compte des joueurs (trophées, winrate, collection…,
 ancien algorithme abandonné).
 
 Ce moteur est partagé par deux commandes Discord : `/matchup-gdc` (combats de guerre uniquement, decks
@@ -212,9 +212,10 @@ est identique dans les deux cas : il ne dépend pas du type de combat.
 Généralités :
 
 - Le matchup d'un combat est calculé à partir d'une base `scoreA = 50` (avantage du deck A) et de 4 layers
-  pondérés, calibrés pour que leur somme de maxima vaille `50` — 0 %/100 % ne sont atteints que si les 4
-  s'alignent simultanément à l'extrême (sauf "écart exceptionnel" du Layer 4, cf. ci-dessous, qui peut à lui
-  seul dominer le score).
+  additifs, pondérés par régression logistique sur ~20 000 combats réels (Ladder/Ligue/GDC, octobre 2026) :
+  1 point de layer ≈ 1 % de probabilité de défaite. Scripts de calibration (à relancer après toute
+  modification de pondération) : `temp/matchup-calibration/collect.mjs` puis `analyze.mjs`.
+- `scoreA` est borné à `[5, 95]` : un deck seul ne garantit jamais l'issue d'un combat.
 - `matchup` (difficulté affichée, 0-1) = `(100 - scoreA) / 100`.
 - `analysis.matchup.average` est la moyenne des matchups de combat sur les batailles GDC récentes.
 - Si le `battleLog` ne contient aucune bataille de guerre, la moyenne est calculée sur les derniers combats
@@ -222,28 +223,40 @@ Généralités :
 
 #### Layers et pondération
 
-1. **Archétype** (±5) — `computeArchetypeLayer()` : avantage macro entre les archétypes des win conditions
-   des deux decks (Beatdown bat Siege/Control, Cycle bat Beatdown… cf. `ARCHETYPE_ADVANTAGE`).
-2. **Counters directs** (±25) — `computeCounterLayer()`/`counterShiftFor()` : pénalité linéaire cumulée
-   selon les hard-counters (14 points chacun) et soft-counters (5 points chacun) trouvés chez l'adversaire
-   pour chaque win condition, depuis une baseline `+15` (aucun counter présent), bornée à ±15 par win condition.
-3. **Structure du deck** (±10) — `computeUtilityLayer()` : interpréteur générique de règles entièrement
+Clés `breakdown`/`reasons` : `level`, `evolutions`, `counters`, `structure` (affichées dans cet ordre dans le
+détail des deux commandes).
+
+1. **Écart de niveau** (±40 + ±8) — `computeLevelDifferentialLayer()` : 2 % par point d'écart de la somme des
+   niveaux normalisés (`normLevel()`) des 8 cartes, plafonné à ±40 (effet mesuré régulier jusqu'à ±20 points),
+   plus 4 % par niveau d'écart du niveau normalisé moyen des win conditions (±8). Facteur de loin le plus
+   prédictif.
+2. **Évolutions et héros** (±9) — `computeEvolutionLayer()` : 3 % par carte d'écart ayant `evolutionLevel > 0`
+   dans le battle log (1 = évolution, 2 = héros, comptés pareil).
+3. **Counters directs** (±6) — `computeCounterLayer()`/`counterShiftFor()` : par win condition, baseline `+3`
+   (aucun counter) moins 3 par hard-counter et 1 par soft-counter trouvés chez l'adversaire, bornée à ±3 ;
+   layer = moyenne(A) - moyenne(B).
+4. **Structure du deck** (±10) — `computeUtilityLayer()` : interpréteur générique de règles entièrement
    data-driven (`data/clash-royale-matchup-structure-rules.json`, hot-reload sans redéploiement) :
-   `crossRules` (Bait, Split-Push, Heavy Beatdown, Ronin/gros DPS hard ou soft : règles d'un même
-   `exclusiveGroup`, seule la première déclenchée s'applique par camp), `dispersionRules` (deck trop
-   dispersé : trop de win conditions/sorts/bâtiments), `selfRules` (carence du deck lui-même : anti-air,
-   bâtiment, sort, cartes < 3 élixir, ou 0 win condition reconnue).
-4. **Écart de niveau** (±10, + "écart exceptionnel") — `computeLevelDifferentialLayer()` : 2 % par point
-   d'écart de niveau normalisé (`normLevel()`), plafond normal atteint dès 5 points cumulés. Au-delà de
-   15 points cumulés, un bonus fixe s'ajoute PAR-DESSUS ce plafond, par palier de 5 points (15→±25,
-   20→±30, 25→±35, 30→±40 au total) — un écart de niveau vraiment extrême doit pouvoir dominer le score à
-   lui seul, au-delà de la répartition ±50 normale ; seul le clamp final `[0, 100]` reste garde-fou.
+   `crossRules` (Bait face à 0 petit sort adverse, Ronin/P.E.K.K.A/Mini P.E.K.K.A face à un gros DPS),
+   `dispersionRules` (deck trop dispersé : trop de win conditions/sorts/bâtiments), `selfRules` (carence du
+   deck lui-même : 0 carte anti-air, 0 sort, 0 carte < 3 élixir). Règles et poids validés par l'audit du
+   06/10/2026 (`temp/matchup-calibration/audit.mjs`) : les règles sans effet mesurable ou à effet inverse
+   (split-push, gros tank, soft-counter gros DPS, 0 bâtiment, 1 seule carte anti-air/< 3 élixir, Bait face
+   à 2+ petits sorts, 0 win condition) ont été retirées. Le moteur gère aussi `exclusiveGroup` (règles
+   croisées mutuellement exclusives par camp), inutilisé à ce jour.
+
+Le catalogue de counters a été audité le même jour : en moyenne, un hard-counter listé retire ~2,6 % de
+victoires à la win condition, un soft ~0,6 %, une carte non listée ~0 % (cohérent avec les poids 3/1). Les
+paires individuelles sont trop bruitées pour retirer un counter ; seuls quelques ajouts nets (z ≥ 3 et
+logiques en jeu) ont été faits.
+
+L'ancien layer **Archétype** (Beatdown bat Siege…) a été supprimé : aucun pouvoir prédictif mesuré. Le champ
+`archetype` du catalogue reste utilisé par la règle Bait et la page `/matchup/`.
 
 Si aucune vraie win condition (au sens du catalogue) n'est reconnue dans un deck, le calcul se rabat sur des
 "pseudo win conditions" (cartes à forts dégâts type P.E.K.K.A/Mini P.E.K.K.A/Mega Knight/Boss Bandit,
-moyennées si plusieurs trouvées) pour éviter de neutraliser les Layers 1/2. Si vraiment aucune win condition
-n'est identifiable des deux côtés, ces deux layers sont neutralisés pour ce combat (seuls Structure et
-Écart de niveau s'appliquent encore).
+moyennées si plusieurs trouvées). Si aucune win condition n'est identifiable d'un des deux côtés, les
+counters et l'écart de niveau des win conditions sont neutralisés pour ce combat.
 
 #### Source de vérité
 
@@ -251,7 +264,7 @@ n'est identifiable des deux côtés, ces deux layers sont neutralisés pour ce c
 - Catalogue win conditions/counters (+ variantes type LavaLoon) : `data/clash-royale-matchup-catalog.json`,
   chargé via `backend/services/matchupCatalog.js` (GitHub Contents API + cache 5 min, fallback fichier
   local en dev)
-- Règles du Layer 3 : `data/clash-royale-matchup-structure-rules.json`
+- Règles du layer Structure du deck : `data/clash-royale-matchup-structure-rules.json`
 - Intégration battle log : `backend/services/battleLogUtils.js` — `computeBattleMatchup()`,
   `computeMatchupFromBattleLog()`, `summarizeWarDecksForMatchup()` (GDC), `summarizeRecentBattlesForMatchup()`
   (tous types)

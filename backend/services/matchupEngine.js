@@ -1,9 +1,9 @@
 // ============================================================
 // services/matchupEngine.js — Moteur pur de calcul du %matchup deck-vs-deck.
 //
-// Traduction déterministe (sans appel LLM) du system prompt fourni
-// (temp/matchup-v2/gemini-code-1784305026864.md, v2.0) : 4 layers appliqués
-// à une baseline 50/50, calculant scoreA = avantage du Deck A (0-100).
+// Calcul déterministe (sans appel LLM) : 4 layers additifs appliqués à une
+// baseline 50/50, calculant scoreA = avantage du Deck A (0-100). Poids
+// calibrés sur ~20 000 combats réels (cf. temp/matchup-calibration/).
 //
 // Fonctions pures et synchrones : le catalogue de win conditions/counters
 // (chargé de façon async et potentiellement mutable, voir matchupCatalog.js)
@@ -11,7 +11,6 @@
 // ============================================================
 
 import { normLevel } from "./collectionConstants.js";
-import { ARCHETYPE_ADVANTAGE } from "./matchupCatalog.js";
 
 export function clampValue(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -134,57 +133,42 @@ export function identifyWinConditions(deckCards, catalog) {
 }
 
 // ------------------------------------------------------------
-// Calibrage des 4 layers : la somme de leurs maxima doit valoir exactement
-// 50 (la moitié de l'amplitude totale scoreA ∈ [0,100] depuis la baseline
-// 50), pour que 0% et 100% ne soient atteints QUE si les 4 layers sont
-// simultanément à leur maximum dans le même sens. Avec des maxima non
-// calibrés, le score sature (clamp) dès que 2-3 layers s'alignent, bien
-// avant que tous soient réellement extrêmes — deux combinaisons très
-// différentes peuvent alors afficher exactement le même 0%/100%, perdant
-// toute granularité.
-// Répartition (ajustée manuellement, somme = 50) :
-//   L1 Archétype        : ±5   (effectif, cf. construction ci-dessous)
-//   L2 Counters directs : ±25
-//   L3 Structure du deck: ±10
-//   L4 Écart de niveau  : ±10
+// Calibrage des 4 layers : poids ajustés par régression logistique sur
+// ~20 000 combats réels (Ladder/Ligue/GDC, octobre 2026, scripts dans
+// temp/matchup-calibration/). Chaque point de layer vaut ~1 % de
+// probabilité de défaite, d'où une lecture directe en % de difficulté.
+// Constats qui ont guidé la répartition :
+//   - l'écart de niveau est de loin le meilleur prédicteur (~2 %/point,
+//     effet régulier jusqu'à ±20 points) ;
+//   - le niveau des win conditions et les évolutions comptent en plus ;
+//   - counters et structure ont un effet réel mais faible ;
+//   - l'archétype (ancien Layer 1) n'avait aucun pouvoir prédictif : retiré.
+// Répartition :
+//   Counters directs   : ±6
+//   Structure du deck  : ±10 (data/clash-royale-matchup-structure-rules.json)
+//   Écart de niveau    : ±40 (cartes) + ±8 (win conditions)
+//   Évolutions         : ±9
+// Score final borné à [5, 95] : un deck seul ne garantit jamais l'issue.
 // ------------------------------------------------------------
-
-// LAYER 1 — Archétype macro-matchup (±5% effectif par construction)
-function archetypeAdvantageShift(archetypeX, archetypeY) {
-  if (!archetypeX || !archetypeY) return 0;
-  if (ARCHETYPE_ADVANTAGE[archetypeX]?.includes(archetypeY)) return 5;
-  if (ARCHETYPE_ADVANTAGE[archetypeY]?.includes(archetypeX)) return -5;
-  return 0;
-}
-
-export function computeArchetypeLayer(winConditionsA, winConditionsB) {
-  if (winConditionsA.length === 0 || winConditionsB.length === 0) return 0;
-  const shifts = [];
-  for (const wcA of winConditionsA) {
-    for (const wcB of winConditionsB) {
-      shifts.push(archetypeAdvantageShift(wcA.archetype, wcB.archetype));
-    }
-  }
-  return clampValue(average(shifts), -7.5, 7.5);
-}
 
 // Pénalité en échelle triangulaire : chaque unité au-delà de `baseline`
 // coûte plus que la précédente (1, 2, 3, 4... points cumulés) — pas un
-// simple palier fixe. Utilisée par le Layer 3 (dispersion de deck, cf.
+// simple palier fixe. Utilisée par le layer Structure (dispersion de deck, cf.
 // utilityShiftFor).
 function escalatingExcessPenalty(count, baseline, unitPoints) {
   const excess = Math.max(0, count - baseline);
   return (-unitPoints * (excess * (excess + 1))) / 2;
 }
 
-// LAYER 2 — Win condition vs counters directs (±25%)
-// Pénalité linéaire cumulée plutôt qu'un seuil binaire : l'ancien design
-// (hardHits>0 → shift fixe, soft-counters ignorés dès qu'un hard existait)
-// notait pareil "1 hard-counter" et "1 hard + 4 soft-counters". Chaque
-// counter pèse un poids fixe (hard 14, soft 5) : l'échelle triangulaire
-// utilisée auparavant faisait coûter 10 points au 2e soft-counter (plus
-// qu'un demi hard-counter), un seul soft d'écart suffisait alors à faire
-// basculer le layer de ±10. Baseline/clamp par WC (±15).
+// LAYER — Win condition vs counters directs (±6%)
+// Pénalité linéaire cumulée : chaque counter adverse pèse un poids fixe
+// (hard 3, soft 1) depuis une baseline +3 (aucun counter), bornée à ±3 par
+// win condition. Le layer vaut moyenne(A) - moyenne(B), soit ±6 au total.
+const COUNTER_WC_BASELINE = 3;
+const COUNTER_HARD_WEIGHT = 3;
+const COUNTER_SOFT_WEIGHT = 1;
+const COUNTER_LAYER_CLAMP = 6;
+
 function counterShiftFor(winCondition, opponentDeckCards, catalog) {
   const hardHits = countMatchesAgainstNames(
     opponentDeckCards,
@@ -196,8 +180,13 @@ function counterShiftFor(winCondition, opponentDeckCards, catalog) {
     winCondition.softCounters,
     catalog,
   );
-  const penalty = 14 * hardHits + 5 * softHits;
-  return clampValue(15 - penalty, -15, 15);
+  const penalty =
+    COUNTER_HARD_WEIGHT * hardHits + COUNTER_SOFT_WEIGHT * softHits;
+  return clampValue(
+    COUNTER_WC_BASELINE - penalty,
+    -COUNTER_WC_BASELINE,
+    COUNTER_WC_BASELINE,
+  );
 }
 
 export function computeCounterLayer(
@@ -214,18 +203,22 @@ export function computeCounterLayer(
   const shiftsB = winConditionsB.map((wc) =>
     counterShiftFor(wc, deckACards, catalog),
   );
-  return clampValue(average(shiftsA) - average(shiftsB), -25, 25);
+  return clampValue(
+    average(shiftsA) - average(shiftsB),
+    -COUNTER_LAYER_CLAMP,
+    COUNTER_LAYER_CLAMP,
+  );
 }
 
-// LAYER 3 — Intégrité structurelle / utilité (±clamp, ±10 par défaut)
+// LAYER — Intégrité structurelle / utilité (±clamp, ±10 par défaut)
 // Interpréteur générique des règles de catalog.structureRules (compilées
 // depuis data/clash-royale-matchup-structure-rules.json, cf. matchupCatalog.js
 // buildStructureRules) — aucune règle métier n'est plus codée en dur ici,
-// ce qui permet d'ajouter/ajuster une règle Layer 3 sans redéploiement,
+// ce qui permet d'ajouter/ajuster une règle de structure sans redéploiement,
 // comme pour le catalogue de counters.
 // Scanne les cartes brutes du deck : reste actif même si l'un des deux
 // decks n'a aucune win condition reconnue dans le catalogue.
-// Retourne { shift, tags } — tags = [{ label, shift }] des règles
+// Retourne { shift, tags } — tags = [{ ruleId, label, shift }] des règles
 // déclenchées, utilisés uniquement pour générer les mini-explications de
 // l'embed Discord (cf. describeUtilityLayer) : une ligne par règle, attribuée
 // au seul camp X qui en bénéficie/souffre, avec son effet chiffré. Le shift
@@ -286,7 +279,12 @@ function thresholdMatches(op, count, value) {
   }
 }
 
-function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
+export function utilityShiftFor(
+  winConditionsX,
+  deckXCards,
+  deckYCards,
+  catalog,
+) {
   const structureRules = catalog.structureRules ?? {
     cardSets: {},
     crossRules: [],
@@ -333,6 +331,7 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
       if (!thresholdMatches(threshold.op, count, threshold.value)) continue;
       shift += threshold.shift;
       tags.push({
+        ruleId: `${rule.id}:${threshold.op}${threshold.value}`,
         label: formatRuleLabel(threshold.label, {
           count,
           triggerCard: typeof triggerCard === "string" ? triggerCard : "",
@@ -371,6 +370,7 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
       if (!thresholdMatches(threshold.op, count, threshold.value)) continue;
       shift += threshold.shift;
       tags.push({
+        ruleId: `${rule.id}:${threshold.op}${threshold.value}`,
         label: formatRuleLabel(threshold.label, { count }),
         shift: threshold.shift,
       });
@@ -394,6 +394,7 @@ function utilityShiftFor(winConditionsX, deckXCards, deckYCards, catalog) {
     if (penalty !== 0) {
       shift += penalty;
       tags.push({
+        ruleId: rule.id,
         label: formatRuleLabel(rule.label, { count }),
         shift: penalty,
       });
@@ -426,37 +427,101 @@ export function computeUtilityLayer(
   return clampValue(shiftA - shiftB, -clamp, clamp);
 }
 
-// LAYER 4 — Différentiel de niveau de cartes (±10%, 2%/point)
-// Utilise normLevel() (offset de rareté, cf. collectionConstants.js) plutôt
-// que le niveau brut 1-16 du texte source, pour rester cohérent avec le
-// reste du codebase où toute comparaison de force de deck passe déjà par
-// normLevel() — le niveau brut pénaliserait injustement les decks riches
-// en légendaires/champions. Écart assumé par rapport au texte source.
-// Plafond "normal" atteint dès un écart cumulé de 5 points normalisés (10/2).
-//
-// "Écart exceptionnel" : au-delà de 15 points cumulés, un bonus fixe
-// s'ajoute PAR-DESSUS le plafond normal de ±10 (paliers de 5 points, bonus =
-// le seuil lui-même : 15→+15, 20→+20, 25→+25, 30→+30, soit ±25/±30/±35/±40
-// au total) — un écart de niveau vraiment extrême doit pouvoir dominer le
-// score à lui seul, quitte à dépasser la répartition ±50 normale des 4
-// layers. Seul le clamp final [0,100] de computeDeckMatchupScore fait
-// encore office de garde-fou dans ce cas.
-const EXCEPTIONAL_GAP_TIERS = [
-  { threshold: 30, extra: 30 },
-  { threshold: 25, extra: 25 },
-  { threshold: 20, extra: 20 },
-  { threshold: 15, extra: 15 },
-];
+// LAYER — Différentiel de niveau (±40% cartes + ±8% win conditions)
+// Utilise normLevel() (offset de rareté, cf. collectionConstants.js) : le
+// niveau brut pénaliserait injustement les decks riches en légendaires/
+// champions. Deux composantes :
+//   - somme des 8 cartes : 2 % par point d'écart, effet mesuré régulier
+//     jusqu'à ±20 points (d'où le plafond ±40) ;
+//   - niveau moyen des win conditions : 4 % par niveau d'écart (±8), qui
+//     pèse en plus du global — une WC sous-niveau perd ses interactions clés.
+const LEVEL_POINT_WEIGHT = 2;
+const LEVEL_CLAMP = 40;
+const WC_LEVEL_WEIGHT = 4;
+const WC_LEVEL_CLAMP = 8;
 
-export function computeLevelDifferentialLayer(deckACards, deckBCards) {
-  const sum = (cards) =>
-    toArray(cards).reduce((total, card) => total + normLevel(card), 0);
-  const diff = sum(deckACards) - sum(deckBCards);
-  const absDiff = Math.abs(diff);
-  const base = clampValue(absDiff * 2, 0, 10);
-  const tier = EXCEPTIONAL_GAP_TIERS.find((t) => absDiff >= t.threshold);
-  const magnitude = base + (tier ? tier.extra : 0);
-  return diff < 0 ? -magnitude : magnitude;
+function sumNormLevels(cards) {
+  return toArray(cards).reduce((total, card) => total + normLevel(card), 0);
+}
+
+// Niveau normalisé moyen des cartes du deck correspondant aux win
+// conditions identifiées (vraies ou pseudo). null si aucune.
+function winConditionLevel(deckCards, winConditions, catalog) {
+  const names = new Set(
+    winConditions.map((wc) => catalog.normalizeCardName(wc.name)),
+  );
+  const levels = toArray(deckCards)
+    .filter((card) => names.has(catalog.normalizeCardName(card?.name)))
+    .map(normLevel);
+  return levels.length > 0 ? average(levels) : null;
+}
+
+function levelComponents(
+  deckACards,
+  deckBCards,
+  winConditionsA,
+  winConditionsB,
+  catalog,
+) {
+  const sumA = sumNormLevels(deckACards);
+  const sumB = sumNormLevels(deckBCards);
+  const cards = clampValue(
+    (sumA - sumB) * LEVEL_POINT_WEIGHT,
+    -LEVEL_CLAMP,
+    LEVEL_CLAMP,
+  );
+  const wcA = winConditionLevel(deckACards, winConditionsA, catalog);
+  const wcB = winConditionLevel(deckBCards, winConditionsB, catalog);
+  const wc =
+    wcA !== null && wcB !== null
+      ? clampValue(
+          (wcA - wcB) * WC_LEVEL_WEIGHT,
+          -WC_LEVEL_CLAMP,
+          WC_LEVEL_CLAMP,
+        )
+      : 0;
+  return { sumA, sumB, cards, wcA, wcB, wc };
+}
+
+export function computeLevelDifferentialLayer(
+  deckACards,
+  deckBCards,
+  winConditionsA = [],
+  winConditionsB = [],
+  catalog = null,
+) {
+  if (!catalog) {
+    return clampValue(
+      (sumNormLevels(deckACards) - sumNormLevels(deckBCards)) *
+        LEVEL_POINT_WEIGHT,
+      -LEVEL_CLAMP,
+      LEVEL_CLAMP,
+    );
+  }
+  const { cards, wc } = levelComponents(
+    deckACards,
+    deckBCards,
+    winConditionsA,
+    winConditionsB,
+    catalog,
+  );
+  return cards + wc;
+}
+
+// LAYER — Évolutions et héros (±9%, 3% par carte d'écart)
+// `evolutionLevel` > 0 sur une carte du battle log = carte jouée évoluée (1)
+// ou en héros (2) ; les deux sont comptés pareil, comme lors du calibrage.
+const EVOLUTION_WEIGHT = 3;
+const EVOLUTION_CLAMP = 9;
+
+function evolvedCards(deckCards) {
+  return toArray(deckCards).filter((card) => (card?.evolutionLevel ?? 0) > 0);
+}
+
+export function computeEvolutionLayer(deckACards, deckBCards) {
+  const diff =
+    evolvedCards(deckACards).length - evolvedCards(deckBCards).length;
+  return clampValue(diff * EVOLUTION_WEIGHT, -EVOLUTION_CLAMP, EVOLUTION_CLAMP);
 }
 
 // ------------------------------------------------------------
@@ -485,17 +550,6 @@ function clampNote(rawTotal, clamp) {
   return Math.abs(rawTotal) > clamp
     ? `\n${REASON_INDENT}total plafonné à ±${clamp}%`
     : "";
-}
-
-function describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown) {
-  if (!bothKnown) return "win condition inconnue";
-  const archsA = [...new Set(winConditionsA.map((wc) => wc.archetype))].join(
-    "+",
-  );
-  const archsB = [...new Set(winConditionsB.map((wc) => wc.archetype))].join(
-    "+",
-  );
-  return `${REASON_INDENT}${CROWN_SELF} ${archsA} vs ${CROWN_OPPONENT} ${archsB}`;
 }
 
 // Une ligne par win condition (et non un total agrégé par camp) : avec
@@ -565,7 +619,9 @@ function describeCounterLayer(
       shiftForA,
     );
   });
-  return [...linesA, ...linesB].join("\n") + clampNote(rawTotal, 25);
+  return (
+    [...linesA, ...linesB].join("\n") + clampNote(rawTotal, COUNTER_LAYER_CLAMP)
+  );
 }
 
 function describeUtilityLayer(
@@ -605,13 +661,45 @@ function describeUtilityLayer(
     : "aucune règle déclenchée";
 }
 
-function describeLevelDifferentialLayer(deckACards, deckBCards) {
-  const sum = (cards) =>
-    toArray(cards).reduce((total, card) => total + normLevel(card), 0);
-  const sumA = sum(deckACards);
-  const sumB = sum(deckBCards);
-  const diff = sumA - sumB;
-  return `${REASON_INDENT}${CROWN_SELF} ${sumA} vs ${CROWN_OPPONENT} ${sumB} (niveaux cumulés, écart ${Math.abs(diff)})`;
+// Niveau moyen arrondi à 0,1 (les win conditions peuvent être plusieurs)
+function formatLevel(value) {
+  return String(Math.round(value * 10) / 10).replace(".", ",");
+}
+
+function describeLevelDifferentialLayer(
+  deckACards,
+  deckBCards,
+  winConditionsA,
+  winConditionsB,
+  catalog,
+) {
+  const { sumA, sumB, cards, wcA, wcB, wc } = levelComponents(
+    deckACards,
+    deckBCards,
+    winConditionsA,
+    winConditionsB,
+    catalog,
+  );
+  const lines = [
+    `${REASON_INDENT}Cartes : ${CROWN_SELF} ${sumA} vs ${CROWN_OPPONENT} ${sumB} (${formatDifficultyEffect(cards)})`,
+  ];
+  if (wcA !== null && wcB !== null) {
+    lines.push(
+      `${REASON_INDENT}Win conditions : ${CROWN_SELF} ${formatLevel(wcA)} vs ${CROWN_OPPONENT} ${formatLevel(wcB)} (${formatDifficultyEffect(wc)})`,
+    );
+  }
+  return lines.join("\n");
+}
+
+function describeEvolutionLayer(deckACards, deckBCards) {
+  const names = (cards) => {
+    const evolved = evolvedCards(cards).map((card) => card.name);
+    return evolved.length > 0 ? evolved.join(", ") : "aucune";
+  };
+  return [
+    `${REASON_INDENT}${CROWN_SELF} ${names(deckACards)}`,
+    `${REASON_INDENT}${CROWN_OPPONENT} ${names(deckBCards)}`,
+  ].join("\n");
 }
 
 // ------------------------------------------------------------
@@ -626,15 +714,12 @@ function describeLevelDifferentialLayer(deckACards, deckBCards) {
 export function computeDeckMatchupScore(deckACards, deckBCards, catalog) {
   const winConditionsA = identifyWinConditions(deckACards, catalog);
   const winConditionsB = identifyWinConditions(deckBCards, catalog);
-  // Win condition inconnue d'un des deux côtés : Layers 1 et 2 neutralisés
-  // pour toute la bataille (pas seulement côté inconnu), pour éviter une
-  // évaluation asymétrique — voir plan de refonte.
+  // Win condition inconnue d'un des deux côtés : counters neutralisés pour
+  // toute la bataille (pas seulement côté inconnu), pour éviter une
+  // évaluation asymétrique.
   const bothKnown = winConditionsA.length > 0 && winConditionsB.length > 0;
 
-  const layer1 = bothKnown
-    ? computeArchetypeLayer(winConditionsA, winConditionsB)
-    : 0;
-  const layer2 = bothKnown
+  const counters = bothKnown
     ? computeCounterLayer(
         winConditionsA,
         deckACards,
@@ -643,24 +728,34 @@ export function computeDeckMatchupScore(deckACards, deckBCards, catalog) {
         catalog,
       )
     : 0;
-  const layer3 = computeUtilityLayer(
+  const structure = computeUtilityLayer(
     winConditionsA,
     deckACards,
     winConditionsB,
     deckBCards,
     catalog,
   );
-  const layer4 = computeLevelDifferentialLayer(deckACards, deckBCards);
+  const level = computeLevelDifferentialLayer(
+    deckACards,
+    deckBCards,
+    winConditionsA,
+    winConditionsB,
+    catalog,
+  );
+  const evolutions = computeEvolutionLayer(deckACards, deckBCards);
 
-  const scoreA = clampValue(50 + layer1 + layer2 + layer3 + layer4, 0, 100);
+  const scoreA = clampValue(
+    50 + counters + structure + level + evolutions,
+    5,
+    95,
+  );
 
   return {
     scoreA,
     scoreB: 100 - scoreA,
-    breakdown: { layer1, layer2, layer3, layer4 },
+    breakdown: { counters, structure, level, evolutions },
     reasons: {
-      layer1: describeArchetypeLayer(winConditionsA, winConditionsB, bothKnown),
-      layer2: describeCounterLayer(
+      counters: describeCounterLayer(
         winConditionsA,
         deckACards,
         winConditionsB,
@@ -668,14 +763,21 @@ export function computeDeckMatchupScore(deckACards, deckBCards, catalog) {
         catalog,
         bothKnown,
       ),
-      layer3: describeUtilityLayer(
+      structure: describeUtilityLayer(
         winConditionsA,
         deckACards,
         winConditionsB,
         deckBCards,
         catalog,
       ),
-      layer4: describeLevelDifferentialLayer(deckACards, deckBCards),
+      level: describeLevelDifferentialLayer(
+        deckACards,
+        deckBCards,
+        winConditionsA,
+        winConditionsB,
+        catalog,
+      ),
+      evolutions: describeEvolutionLayer(deckACards, deckBCards),
     },
     winConditionsA: winConditionsA.map((wc) =>
       wc.pseudo ? `${wc.name} (pseudo)` : wc.name,

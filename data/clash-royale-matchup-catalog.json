@@ -267,7 +267,8 @@
         "Prince",
         "Bowler",
         "Ram Rider",
-        "Mega Knight"
+        "Mega Knight",
+        "Skeletons"
       ]
     },
     {
@@ -294,7 +295,8 @@
         "Skeleton Army",
         "Goblin Gang",
         "Guards",
-        "Minion Horde"
+        "Minion Horde",
+        "Mega Knight"
       ]
     },
     {
@@ -307,10 +309,11 @@
         "Cannon",
         "Tesla",
         "Tombstone",
-        "Goblins"
+        "Goblins",
+        "Skeletons",
+        "Ice Spirit"
       ],
       "softCounters": [
-        "Skeletons",
         "Electro Wizard",
         "Ice Wizard",
         "Dart Goblin",
@@ -511,7 +514,9 @@
         "Witch",
         "Bats",
         "Minions",
-        "Dart Goblin"
+        "Dart Goblin",
+        "Skeletons",
+        "Ice Spirit"
       ]
     },
     {

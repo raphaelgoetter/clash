@@ -1,6 +1,6 @@
 {
-  "_comment": "Règles du Layer 3 (Structure du deck) du calcul de %matchup. Source de vérité unique, éditable à la main, prise en compte par /matchup au prochain lancement (cache 5 min, même mécanisme que clash-royale-matchup-catalog.json). Toute la somme des shifts de ce layer est ensuite bornée à ±layerClamp.",
-
+  "_comment": "Règles du layer Structure du deck du calcul de %matchup. Source de vérité unique, éditable à la main, prise en compte par /matchup au prochain lancement (cache 5 min, même mécanisme que clash-royale-matchup-catalog.json). Toute la somme des shifts de ce layer est ensuite bornée à ±layerClamp.",
+  "_auditComment": "Règles et poids issus de l'audit du 06/10/2026 sur ~20 000 combats réels (temp/matchup-calibration/audit.mjs) : seules les règles à effet mesurable sont conservées (split-push, gros tank, soft-counter gros DPS, 0 bâtiment, 1 seule carte anti-air ou <3 élixir, Bait face à 2+ petits sorts et 0 win condition retirées : effet nul ou inverse).",
   "cardSets": {
     "smallSpells": [
       "The Log",
@@ -32,39 +32,11 @@
       "Goblin Cage",
       "Earthquake"
     ],
-    "tankKillers": [
-      "Mini P.E.K.K.A",
-      "P.E.K.K.A",
-      "Hunter",
-      "Mighty Miner",
-      "Inferno Dragon",
-      "Elite Barbarians"
-    ],
-    "heavyBeatdownWinConditions": [
-      "Golem",
-      "Giant",
-      "Electro Giant",
-      "Lava Hound"
-    ],
-    "splitPushTriggerCards": ["Three Musketeers", "Royal Hogs"],
     "heavyDpsHardCounters": [
       "Ronin",
       "P.E.K.K.A",
       "Mini P.E.K.K.A",
       "Minion Horde"
-    ],
-    "heavyDpsSoftCounters": [
-      "Prince",
-      "Mega Knight",
-      "Boss Bandit",
-      "Bandit",
-      "Golden Knight",
-      "Knight",
-      "Valkyrie",
-      "Skeleton Army",
-      "Goblin Gang",
-      "Elite Barbarians",
-      "Minions"
     ],
     "heavyDpsThreats": [
       "P.E.K.K.A",
@@ -132,105 +104,49 @@
       "Suspicious Bush",
       "Rage",
       "Goblin Curse"
-    ],
-    "allBuildings": [
-      "Tombstone",
-      "Cannon",
-      "Goblin Hut",
-      "Goblin Cage",
-      "Bomb Tower",
-      "Mortar",
-      "Goblin Drill",
-      "Tesla",
-      "Inferno Tower",
-      "X-Bow",
-      "Barbarian Hut",
-      "Elixir Collector"
     ]
   },
-
   "_crossRulesHelp": "Chaque règle se déclenche si `trigger` matche le deck évalué (self), puis compte les cartes du deck adverse (opponent) présentes dans `watch.cardSets`. Le premier `thresholds[]` dont la condition (op/value sur ce compte) est vraie s'applique. `{count}` = nombre trouvé, `{watchCards}` = noms des cartes adverses trouvées, `{triggerCard}` = nom de la carte qui a déclenché un trigger de type cardSet. Les règles partageant un même `exclusiveGroup` s'excluent : seule la première déclenchée (ordre du tableau) s'applique pour un camp donné. Le label est affiché sur une seule ligne, préfixé de la couronne du camp qui en bénéficie/souffre et suivi de son effet en % de difficulté.",
   "crossRules": [
     {
       "id": "bait",
-      "description": "toi: Bait / lui: 0 petit sort -> +6% pour toi. toi: Bait / lui: 2+ petits sorts -> -6% pour toi.",
-      "trigger": { "type": "archetype", "value": "Bait" },
-      "watch": { "cardSets": ["smallSpells"] },
+      "description": "toi: Bait / lui: 0 petit sort -> +8% pour toi.",
+      "trigger": {
+        "type": "archetype",
+        "value": "Bait"
+      },
+      "watch": {
+        "cardSets": ["smallSpells"]
+      },
       "thresholds": [
         {
           "op": "lt",
           "value": 1,
-          "shift": 6,
+          "shift": 8,
           "label": "Bait face à 0 petit sort adverse"
-        },
-        {
-          "op": "gte",
-          "value": 2,
-          "shift": -6,
-          "label": "Bait face à {count} petits sorts adverses"
-        }
-      ]
-    },
-    {
-      "id": "splitPush",
-      "description": "toi: carte de push agressif (Three Musketeers, Royal Hogs) / lui: 0 gros sort -> +6% pour toi.",
-      "trigger": { "type": "cardSet", "value": "splitPushTriggerCards" },
-      "watch": { "cardSets": ["bigSpells"] },
-      "thresholds": [
-        {
-          "op": "eq",
-          "value": 0,
-          "shift": 6,
-          "label": "{triggerCard} (push) face à 0 gros sort adverse"
-        }
-      ]
-    },
-    {
-      "id": "heavyBeatdown",
-      "description": "toi: win condition Heavy Beatdown (Golem, Giant, Electro Giant, Lava Hound) / lui: 0 tank killer et 0 bâtiment défensif -> +10% pour toi.",
-      "trigger": { "type": "cardSet", "value": "heavyBeatdownWinConditions" },
-      "watch": { "cardSets": ["tankKillers", "defensiveBuildings"] },
-      "thresholds": [
-        {
-          "op": "eq",
-          "value": 0,
-          "shift": 10,
-          "label": "{triggerCard} face à 0 tank killer/bâtiment adverse"
         }
       ]
     },
     {
       "id": "heavyDpsHardCounter",
-      "exclusiveGroup": "heavyDps",
-      "description": "toi: Ronin/P.E.K.K.A/Mini P.E.K.K.A dans le deck / lui: au moins 1 carte à gros DPS (P.E.K.K.A, Mini P.E.K.K.A, Prince, Mega Knight, Boss Bandit, Bandit, Golden Knight) -> +6% pour toi (hard-counter).",
-      "trigger": { "type": "cardSet", "value": "heavyDpsHardCounters" },
-      "watch": { "cardSets": ["heavyDpsThreats"] },
+      "description": "toi: Ronin/P.E.K.K.A/Mini P.E.K.K.A dans le deck / lui: au moins 1 carte à gros DPS (P.E.K.K.A, Mini P.E.K.K.A, Prince, Mega Knight, Boss Bandit, Bandit, Golden Knight) -> +2% pour toi (hard-counter).",
+      "trigger": {
+        "type": "cardSet",
+        "value": "heavyDpsHardCounters"
+      },
+      "watch": {
+        "cardSets": ["heavyDpsThreats"]
+      },
       "thresholds": [
         {
           "op": "gte",
           "value": 1,
-          "shift": 6,
+          "shift": 2,
           "label": "{triggerCard} hard-counter {watchCards}"
-        }
-      ]
-    },
-    {
-      "id": "heavyDpsSoftCounter",
-      "exclusiveGroup": "heavyDps",
-      "description": "toi: Prince/Mega Knight/Boss Bandit/Bandit/Golden Knight/Knight/Valkyrie/Skeleton Army/Goblin Gang dans le deck / lui: au moins 1 carte à gros DPS -> +3% pour toi (soft-counter).",
-      "trigger": { "type": "cardSet", "value": "heavyDpsSoftCounters" },
-      "watch": { "cardSets": ["heavyDpsThreats"] },
-      "thresholds": [
-        {
-          "op": "gte",
-          "value": 1,
-          "shift": 3,
-          "label": "{triggerCard} soft-counter {watchCards}"
         }
       ]
     }
   ],
-
   "_dispersionRulesHelp": "Auto-pénalité en échelle triangulaire (indépendante du deck adverse) : au-delà de `baseline` occurrences, chaque unité supplémentaire coûte `unitPoints` de plus que la précédente (1, 2, 3, 4... points cumulés). `metric` = 'winConditionCount' (nombre de win conditions reconnues), ou `cardSets` = somme des cartes du deck dans ces catégories.",
   "dispersionRules": [
     {
@@ -246,7 +162,7 @@
       "description": "Plus de 3 sorts (petits + gros) dans le deck.",
       "cardSets": ["smallSpells", "bigSpells"],
       "baseline": 3,
-      "unitPoints": 4,
+      "unitPoints": 2,
       "label": "{count} sorts (dispersion)"
     },
     {
@@ -254,81 +170,57 @@
       "description": "Plus de 2 bâtiments défensifs dans le deck.",
       "cardSets": ["defensiveBuildings"],
       "baseline": 2,
-      "unitPoints": 4,
+      "unitPoints": 2,
       "label": "{count} bâtiments (dispersion)"
     }
   ],
-
   "_selfRulesHelp": "Carences du deck évalué lui-même (indépendant de l'adversaire) : compte les cartes de `watch.cardSets` dans le deck, applique le premier `thresholds[]` dont la condition est vraie. Toujours des pénalités (shift négatif).",
   "selfRules": [
     {
       "id": "antiAirScarcity",
-      "description": "0 (ou 1 seule) carte anti-aérienne dans le deck.",
-      "watch": { "cardSets": ["antiAirCards"] },
+      "description": "0 carte anti-aérienne dans le deck.",
+      "watch": {
+        "cardSets": ["antiAirCards"]
+      },
       "thresholds": [
         {
           "op": "eq",
           "value": 0,
-          "shift": -4,
-          "label": "0 carte anti-air"
-        },
-        {
-          "op": "eq",
-          "value": 1,
           "shift": -2,
-          "label": "1 seule carte anti-air"
+          "label": "0 carte anti-air"
         }
-      ]
-    },
-    {
-      "id": "noBuilding",
-      "description": "0 bâtiment dans le deck.",
-      "watch": { "cardSets": ["allBuildings"] },
-      "thresholds": [
-        { "op": "eq", "value": 0, "shift": -3, "label": "0 bâtiment" }
       ]
     },
     {
       "id": "noSpell",
       "description": "0 sort dans le deck.",
-      "watch": { "cardSets": ["smallSpells", "bigSpells"] },
+      "watch": {
+        "cardSets": ["smallSpells", "bigSpells"]
+      },
       "thresholds": [
-        { "op": "eq", "value": 0, "shift": -3, "label": "0 sort" }
+        {
+          "op": "eq",
+          "value": 0,
+          "shift": -2,
+          "label": "0 sort"
+        }
       ]
     },
     {
       "id": "lowElixirScarcity",
-      "description": "0 (ou 1 seule) carte à moins de 3 élixir dans le deck.",
-      "watch": { "cardSets": ["lowElixirCards"] },
+      "description": "0 carte à moins de 3 élixir dans le deck.",
+      "watch": {
+        "cardSets": ["lowElixirCards"]
+      },
       "thresholds": [
         {
           "op": "eq",
           "value": 0,
           "shift": -4,
           "label": "0 carte à moins de 3 élixir"
-        },
-        {
-          "op": "eq",
-          "value": 1,
-          "shift": -2,
-          "label": "1 seule carte à moins de 3 élixir"
-        }
-      ]
-    },
-    {
-      "id": "noWinCondition",
-      "description": "0 win condition (même pseudo) reconnue dans le deck.",
-      "metric": "winConditionCount",
-      "thresholds": [
-        {
-          "op": "eq",
-          "value": 0,
-          "shift": -6,
-          "label": "0 win condition"
         }
       ]
     }
   ],
-
   "layerClamp": 10
 }

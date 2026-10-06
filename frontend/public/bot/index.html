@@ -167,43 +167,38 @@
                 statistiques de compte des joueurs.
               </p>
               <p>
-                Barème détaillé (4 étapes appliquées à une base de 50 %,
-                calibrées pour que 0 % et 100 % ne soient atteints que si les 4
-                s’alignent simultanément à l’extrême) :
+                Barème détaillé (4 étapes additionnées à une base de 50 %,
+                pondérées d’après les résultats de 20 000 combats réels ; le
+                résultat reste toujours entre 5 % et 95 %, car le deck ne décide
+                jamais seul de l’issue) :
               </p>
               <ol>
                 <li>
-                  <strong>Archétype</strong> (±5) : avantage macro entre les
-                  styles de jeu des deux decks (ex. Beatdown bat Siege/Control,
-                  Cycle bat Beatdown…), déterminé par leurs win conditions.
+                  <strong>Écart de niveau</strong> (±48) : 2 % par point d’écart
+                  de niveaux normalisés (rareté incluse) entre les 8 cartes des
+                  deux decks (jusqu’à ±40), plus 4 % par niveau d’écart entre
+                  les win conditions (jusqu’à ±8). C’est de loin le facteur le
+                  plus déterminant.
                 </li>
                 <li>
-                  <strong>Counters directs</strong> (±25) : pénalité selon le
+                  <strong>Évolutions et héros</strong> (±9) : 3 % par carte
+                  évoluée ou en héros d’écart entre les deux decks.
+                </li>
+                <li>
+                  <strong>Counters directs</strong> (±6) : pénalité selon le
                   nombre de hard-counters et de soft-counters à la win condition
                   du deck évalué présents chez l’adversaire (chaque hard-counter
-                  pèse 14 points, chaque soft-counter 5 points) — l’absence
-                  totale de counter donne le maximum.
+                  pèse 3 points, chaque soft-counter 1 point), l’absence totale
+                  de counter donnant le maximum.
                 </li>
                 <li>
                   <strong>Structure du deck</strong> (±10) : quelques règles
-                  d’intégrité (ex. deck Bait face à peu de petits sorts
-                  adverses, gros tank face à l’absence de tank killer ou de
-                  bâtiment défensif chez l’adversaire, Ronin qui contre les
-                  cartes à gros dégâts comme P.E.K.K.A/Mega Knight/Boss Bandit),
-                  plus une pénalité en échelle pour un deck trop dispersé (plus
-                  de 2 win conditions, plus de 3 sorts ou plus de 2 bâtiments) —
-                  chaque carte supplémentaire pèse plus que la précédente.
-                </li>
-                <li>
-                  <strong>Écart de niveau de cartes</strong> (±10) : différence
-                  de niveaux normalisés (rareté incluse) entre les deux decks, 2
-                  % par point d’écart (plafond atteint dès 5 points d’écart
-                  cumulé). Au-delà de 15 points d’écart cumulé, un bonus « écart
-                  exceptionnel » s’ajoute par-dessus ce plafond, par palier de 5
-                  points (15→±25, 20→±30, 25→±35, 30→±40 au total) : un écart de
-                  niveau vraiment extrême peut alors dominer le score à lui
-                  seul, au-delà de la répartition ±50 normale des 4 étapes — le
-                  résultat final reste toujours borné entre 0 % et 100 %.
+                  d’intégrité dont l’effet a été vérifié sur des combats réels
+                  (deck Bait face à un adversaire sans petit sort, P.E.K.K.A ou
+                  Mini P.E.K.K.A face à une carte à gros dégâts, deck sans sort,
+                  sans anti-air ou sans carte à moins de 3 élixir), plus une
+                  pénalité en échelle pour un deck trop dispersé (plus de 2 win
+                  conditions, plus de 3 sorts ou plus de 2 bâtiments).
                 </li>
               </ol>
               <p>
@@ -216,10 +211,9 @@
                 catalogue de counters, le calcul se rabat sur une liste de
                 cartes à forts dégâts (P.E.K.K.A, Mini P.E.K.K.A, Mega Knight,
                 Boss Bandit) pour éviter de neutraliser le calcul ; si vraiment
-                aucune win condition n’est identifiable des deux côtés, les
-                étapes Archétype et Counters directs sont neutralisées pour ce
-                combat (seules Structure et Écart de niveau s’appliquent
-                encore).
+                aucune win condition n’est identifiable d’un des deux côtés,
+                l’étape Counters directs et l’écart de niveau des win
+                conditions sont neutralisés pour ce combat.
               </p>
               <p>
                 Certaines win conditions (ex. Balloon) changent d’archetype et

@@ -105,12 +105,8 @@ function buildEntriesByName(entries) {
     byName.set(key, {
       name: entry.name,
       archetype: entry.archetype,
-      hardCounters: Array.isArray(entry.hardCounters)
-        ? entry.hardCounters
-        : [],
-      softCounters: Array.isArray(entry.softCounters)
-        ? entry.softCounters
-        : [],
+      hardCounters: Array.isArray(entry.hardCounters) ? entry.hardCounters : [],
+      softCounters: Array.isArray(entry.softCounters) ? entry.softCounters : [],
       variants: buildVariants(entry.variants),
     });
   }
@@ -123,25 +119,12 @@ function toNormalizedSet(names) {
   );
 }
 
-// Layer 1 — avantage d'archétype directionnel : ARCHETYPE_ADVANTAGE[X]
-// contient les archétypes contre lesquels X a l'avantage (+5%). Donnée
-// figée en JS (contrairement au Layer 3, ne bénéficie pas du hot-reload) :
-// périmètre volontairement restreint, cf. demande utilisateur qui ne visait
-// que le Layer 3 ("Structure du deck").
-export const ARCHETYPE_ADVANTAGE = {
-  Beatdown: ["Siege", "Control"],
-  Cycle: ["Beatdown"],
-  Control: ["Bridge Spam", "Cycle"],
-  Bait: ["Control"],
-  Siege: ["Bait", "Bridge Spam"],
-};
-
 /**
- * Compile data/clash-royale-matchup-structure-rules.json (Layer 3) en une
+ * Compile data/clash-royale-matchup-structure-rules.json (layer Structure) en une
  * forme directement exploitable par matchupEngine.js : cardSets → Set de
  * noms normalisés, règles conservées telles quelles (interprétées par le
  * moteur). En cas d'échec de chargement, retourne des règles vides — le
- * Layer 3 se neutralise alors partout (même logique de repli que pour le
+ * layer Structure se neutralise alors partout (même logique de repli que pour le
  * catalogue de counters).
  */
 function buildStructureRules(raw) {
@@ -169,7 +152,7 @@ function buildStructureRules(raw) {
  * un "win condition inconnue" (Layers 1/2 neutralisés) quand un deck n'a AUCUNE vraie win
  * condition reconnue — cf. matchupEngine.js identifyWinConditions (repli uniquement).
  * structureRules : cardSets/crossRules/dispersionRules/clamp compilés depuis
- * data/clash-royale-matchup-structure-rules.json (Layer 3).
+ * data/clash-royale-matchup-structure-rules.json (layer Structure).
  * Les deux fichiers sont lus via GitHub Contents API en production (fichier
  * local en dev), avec le même cache 5 min — éditer l'un ou l'autre sur
  * GitHub est pris en compte par /matchup sans redéploiement.

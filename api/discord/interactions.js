@@ -3464,13 +3464,15 @@ function buildMatchupDetailEmbed(warDecks, index, kind = "gdc") {
     return "🟦".repeat(total - redFilled) + "🟥".repeat(redFilled);
   })();
 
-  // Chaque layer séparé par une ligne vide. Les bornes (±5/±25/±10/±10) ne
-  // sont plus rappelées ici : elles sont documentées dans la doc de la commande.
+  // Chaque layer séparé par une ligne vide, du plus au moins déterminant
+  // (cf. calibrage dans matchupEngine.js). Les bornes ne sont pas rappelées
+  // ici : elles sont documentées dans la doc de la commande. Partagé par
+  // /matchup et /matchup-gdc (même moteur, seul `kind` change le titre).
   const calcDetail = [
-    `**🎯 Archétype** : **${fmtLayer(detail.breakdown?.layer1)}%**\n${detail.reasons?.layer1 ?? "?"}`,
-    `**⚔️ Counters directs** : **${fmtLayer(detail.breakdown?.layer2)}%**\n${detail.reasons?.layer2 ?? "?"}`,
-    `**🏗️ Structure du deck** : **${fmtLayer(detail.breakdown?.layer3)}%**\n${detail.reasons?.layer3 ?? "?"}`,
-    `**📊 Écart de niveau** : **${fmtLayer(detail.breakdown?.layer4)}%**\n${detail.reasons?.layer4 ?? "?"}`,
+    `**📊 Écart de niveau** : **${fmtLayer(detail.breakdown?.level)}%**\n${detail.reasons?.level ?? "?"}`,
+    `**✨ Évolutions et héros** : **${fmtLayer(detail.breakdown?.evolutions)}%**\n${detail.reasons?.evolutions ?? "?"}`,
+    `**⚔️ Counters directs** : **${fmtLayer(detail.breakdown?.counters)}%**\n${detail.reasons?.counters ?? "?"}`,
+    `**🏗️ Structure du deck** : **${fmtLayer(detail.breakdown?.structure)}%**\n${detail.reasons?.structure ?? "?"}`,
   ].join("\n\n");
 
   return {
