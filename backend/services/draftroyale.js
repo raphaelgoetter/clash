@@ -126,7 +126,8 @@ export async function loadCatalog() {
 // ── Clôture (fonction pure) ─────────────────────────────────────────
 
 // Clôture du jour `jour` : échanges, décompte (carré ou dernier jour),
-// redistribution après un carré, classement final au dernier jour.
+// nouvelle main pour l'auteur d'un quadruplé, classement final au dernier
+// jour.
 export function computeCloture({ jour, joueursAvant, actionsRaw, partie, config, rng = Math.random }) {
   const dernier = jour >= config.duree_jours;
   const tour = computeTour({
@@ -146,7 +147,7 @@ export function computeCloture({ jour, joueursAvant, actionsRaw, partie, config,
     lignes: tour.lignes,
     carres: tour.carres,
     scores: tour.scores,
-    redistribution: tour.redistribution,
+    nouvellesVedettes: tour.nouvellesVedettes,
     final: dernier ? classement(tour.joueurs) : null,
   };
 }
@@ -310,7 +311,7 @@ export async function closeDayAndAdvance(jour) {
     lignes: closure.lignes,
     carres: closure.carres,
     scores: closure.scores,
-    redistribution: closure.redistribution,
+    nouvellesVedettes: closure.nouvellesVedettes,
     resolvedAt: new Date().toISOString(),
   });
   await writePartie(closure.partieApres);

@@ -302,11 +302,10 @@ export function resoudreEchanges({ joueurs, actions, marche, config, priorites =
   return { marche: [...reste, ...depots], lignes };
 }
 
-// Fin de tour (jour ou manche) : paiement des bonus, échanges, puis
-// décompte si au moins un joueur a un quadruplé ou si c'est le dernier
-// tour. Après un quadruplé (hors dernier tour), toutes les cartes sont
-// redistribuées. `joueursAvant` : { id: { main, joker, points, carres, ... } }
-// (non muté). `actions[id]` : { prise, depot, joker?, vu? }.
+// Fin de tour (jour ou manche) : paiement des bonus, puisages, échanges,
+// puis quadruplés (points et nouvelle main pour leurs auteurs) ; au
+// dernier tour, chacun marque en plus 1 à 3 pts selon sa main.
+// `joueursAvant` : { id: { main, joker, points, carres, ... } } (non muté). `actions[id]` : { prise, depot, joker?, vu? }.
 export function computeTour({ joueursAvant, actions, marche, reserve = [], familles, vedettes = [], config, dernier, rng = Math.random }) {
   const joueurs = {};
   for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j, main: [...(j.main || [])] };
@@ -340,32 +339,61 @@ export function computeTour({ joueursAvant, actions, marche, reserve = [], famil
     if (a?.vu) lignes.push({ type: "joker", action: "espionner", discordId: id, cible: a.vu.cible });
   }
 
-  const carres = Object.keys(joueurs).filter((id) => aUnCarre(joueurs[id].main, config));
-  const decompte = carres.length > 0 || dernier;
-
-  let scores = null;
-  if (decompte) {
-    scores = Object.entries(joueurs).map(([id, j]) => {
-      const points = pointsMain(j.main, config, vedettes);
-      const carre = aUnCarre(j.main, config);
-      j.points = (j.points || 0) + points;
-      if (carre) j.carres = (j.carres || 0) + 1;
-      return { discordId: id, points, carre, vedette: carre && vedettes.includes(carteDuCarre(j.main, config)), main: [...j.main] };
-    });
-  }
-
+  // Quadruplés : chacun marque ses points puis reçoit une nouvelle main
+  // (voir renouvelerMain) ; les autres gardent la leur. Une carte vedette
+  // réalisée est remplacée.
+  const carres = shuffle(Object.keys(joueurs).filter((id) => aUnCarre(joueurs[id].main, config)), rng);
+  const scores = [];
   let newMarche = echanges.marche;
   let newReserve = puisages.reserve;
-  let newVedettes = vedettes;
-  const redistribution = carres.length > 0 && !dernier;
-  if (redistribution) {
-    const donne = distribuer({ familles, joueurIds: Object.keys(joueurs), config, rng });
-    for (const [id, main] of Object.entries(donne.mains)) joueurs[id].main = main;
-    newMarche = donne.marche;
-    newReserve = donne.reserve;
-    newVedettes = choisirVedettes(familles, nbVedettes(Object.keys(joueurs).length, config), { precedentes: vedettes }, rng);
+  const realisees = [];
+  for (const id of carres) {
+    const j = joueurs[id];
+    const carte = carteDuCarre(j.main, config);
+    // Vedettes du début du tour : une remplaçante ne compte qu'au tour suivant
+    const vedette = vedettes.includes(carte);
+    const points = pointsMain(j.main, config, vedettes);
+    j.points = (j.points || 0) + points;
+    j.carres = (j.carres || 0) + 1;
+    scores.push({ discordId: id, points, carre: true, vedette, carte, main: [...j.main] });
+    if (vedette) realisees.push(carte);
+    if (dernier) continue;
+    const r = renouvelerMain({ main: j.main, marche: newMarche, reserve: newReserve, config, rng });
+    j.main = r.main;
+    newMarche = r.marche;
+    newReserve = r.reserve;
   }
-  return { joueurs, marche: newMarche, reserve: newReserve, vedettes: newVedettes, lignes, carres, scores, redistribution };
+
+  // Vedettes réalisées : remplacées par d'autres cartes en jeu (ni les
+  // vedettes restantes, ni celles qui viennent d'être réalisées)
+  let newVedettes = vedettes;
+  if (realisees.length && !dernier) {
+    newVedettes = choisirVedettes(familles, vedettes.length, { gardees: vedettes.filter((k) => !realisees.includes(k)), precedentes: realisees }, rng);
+  }
+  const nouvellesVedettes = newVedettes.filter((k) => !vedettes.includes(k));
+
+  // Dernier tour : les autres marquent 1 à 3 pts selon leur main
+  if (dernier) {
+    for (const [id, j] of Object.entries(joueurs)) {
+      if (carres.includes(id)) continue;
+      const points = pointsMain(j.main, config, vedettes);
+      j.points = (j.points || 0) + points;
+      scores.push({ discordId: id, points, carre: false, main: [...j.main] });
+    }
+  }
+  return { joueurs, marche: newMarche, reserve: newReserve, vedettes: newVedettes, nouvellesVedettes, lignes, carres, scores };
+}
+
+// Nouvelle main après un quadruplé : tirée au hasard dans le marché et
+// l'écart, sans carte du quadruplé (jamais un quadruplé d'emblée) ; les 4
+// cartes du quadruplé et le reste sont remélangés entre le marché (même
+// taille) et l'écart.
+export function renouvelerMain({ main, marche, reserve, config, rng = Math.random }) {
+  const carte = carteDuCarre(main, config);
+  const pot = [...marche, ...reserve].filter((k) => k !== carte);
+  const tirage = tirerMain(pot, config, rng);
+  const reste = shuffle([...tirage.reste, ...[...marche, ...reserve].filter((k) => k === carte), ...main], rng);
+  return { main: tirage.main, marche: reste.slice(0, marche.length), reserve: reste.slice(marche.length) };
 }
 
 // Classement final : points des décomptes + points Joker restants, puis

@@ -40,8 +40,8 @@ function main() {
     assert.deepStrictEqual(r.actions[BOT_ID], { prise: "a", depot: "b", joker: null });
     assert.deepStrictEqual(r.carres, [BOT_ID]);
     assert.strictEqual(r.joueurs[BOT_ID].points, CONFIG.points_carre);
-    assert.strictEqual(r.joueurs.u1.points, 3);
-    assert.ok(r.redistribution);
+    assert.strictEqual(r.joueurs.u1.points, 0);
+    assert.deepStrictEqual(r.joueurs.u1.main.sort(), ["b", "c", "c", "c"]);
     assert.strictEqual(r.final, null);
   }
 

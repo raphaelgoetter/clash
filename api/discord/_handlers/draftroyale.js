@@ -180,7 +180,7 @@ function buildReglesEmbed(config) {
       "",
       `**Chaque jour** : ${TRADE_TEXT} prends une carte au marché et dépose une carte de ta main, utilise une action ${JOKER_EMOJI} Joker, ou les deux.`,
       `**Carte disputée** : elle va au joueur qui a le plus de points Joker. Les autres gardent leur carte (+${config.joker.gain_perte} pts Joker).`,
-      `**Quadruplé** : ${config.points_carre} pts (${config.points_vedette} pour une ⭐ carte vedette). Les autres marquent 1 à 3 pts, puis nouvelle donne.`,
+      `**Quadruplé** : ${config.points_carre} pts (${config.points_vedette} pour une ⭐ carte vedette). Tu reçois ensuite une nouvelle main.`,
       "",
       `**${JOKER_EMOJI} Points Joker** : +${config.joker.gain_tour} par jour joué.`,
       `• **Priorité** (${config.joker.couts.priorite} pt) : servi en premier si ta carte est disputée`,
@@ -188,7 +188,7 @@ function buildReglesEmbed(config) {
       `• **Puiser** une carte à l'écart (${config.joker.couts.puiser} pts) : ta carte déposée part à l'écart à sa place`,
       `• **Espionner** (${config.joker.couts.espionner} pt) : vois tout de suite la main d'un joueur`,
       "",
-      `**Fin** (J${config.duree_jours}) : chacun marque ses points, plus ses points Joker restants.`,
+      `**Fin** (J${config.duree_jours}) : chacun marque 1 à 3 pts selon ses cartes identiques, plus ses points Joker restants.`,
     ].join("\n"),
     color: DRAFT_COLOR,
   };
@@ -325,7 +325,7 @@ async function guardActiveDay(webhookUrl, jour) {
 }
 
 // Bilan de la clôture de la veille : échanges de chacun (prise et dépôt),
-// carrés, décompte et nouvelle donne.
+// carrés et décompte.
 function bilanVeille(veille, joueurs, discordId, config, catalog) {
   if (!veille) return [];
   const noms = nomsJoueurs(joueurs, discordId);
@@ -336,7 +336,7 @@ function bilanVeille(veille, joueurs, discordId, config, catalog) {
   }
   if (!lignes.length) lignes.push("Aucun échange.");
   lignes.push(...jokerBilanLignes(veille.lignes, discordId, noms, (k) => cardName(k, catalog)));
-  // Quadruplés et nouvelle donne : encadré à part (quadruplesEmbed)
+  // Quadruplés et nouvelles vedettes : encadré à part (quadruplesEmbed)
   const mien = veille.scores?.find((x) => x.discordId === discordId && !x.carre);
   if (mien) lignes.push(`Ton décompte : +${plural(mien.points, "pt")}`);
   return lignes;

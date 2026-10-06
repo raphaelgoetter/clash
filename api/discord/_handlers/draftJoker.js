@@ -67,17 +67,19 @@ export function tourStatutLignes({ action, id, joueurs, marche, reserve = [], co
   return lignes;
 }
 
-// Encadré des quadruplés de la manche précédente (et de la nouvelle
-// donne), mis en avant en tête de la main éphémère. `scores` : décompte du
-// tour ; null s'il n'y en a pas eu.
-export function quadruplesEmbed(recap, noms, cardName, color = 0xf1c40f) {
+// Encadré des quadruplés du tour précédent (et des nouvelles cartes
+// vedettes), mis en avant en tête de la main éphémère. `final` : dernier
+// tour, sans nouvelle main.
+export function quadruplesEmbed(recap, noms, cardName, { final = false, color = 0xf1c40f } = {}) {
   const quads = (recap?.scores || []).filter((s) => s.carre);
-  if (!quads.length && !recap?.redistribution) return null;
+  if (!quads.length) return null;
   const lignes = quads.map((s) => {
     const [key] = [...compterCartes(s.main)].sort((a, b) => b[1] - a[1])[0] || [];
-    return `🎉 **${noms[s.discordId]}** : quadruplé de ${s.vedette ? "⭐ " : ""}**${cardName(key)}** · **+${s.points} pts**`;
+    return `🎉 **${noms[s.discordId]}** : quadruplé de ${s.vedette ? "⭐ " : ""}**${cardName(key)}** · **+${s.points} pts**${final ? "" : " · nouvelle main"}`;
   });
-  if (recap.redistribution) lignes.push("", "🔄 **Nouvelle donne** : toutes les cartes ont été redistribuées.");
+  if (!final && recap.nouvellesVedettes?.length) {
+    lignes.push("", `⭐ ${recap.nouvellesVedettes.length > 1 ? "Nouvelles cartes vedettes" : "Nouvelle carte vedette"} : ${recap.nouvellesVedettes.map((k) => `**${cardName(k)}**`).join(", ")}`);
+  }
   return { title: quads.length > 1 ? "🎉 Quadruplés !" : "🎉 Quadruplé !", description: lignes.join("\n").slice(0, 4096), color };
 }
 

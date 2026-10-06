@@ -388,7 +388,7 @@ async function resolveManche(state, actions, rng) {
   const tour = computeMancheDuel({ state, joueursAvant, actions, config, rng });
   for (const [id, j] of Object.entries(tour.joueurs)) await writePlayer(id, j);
 
-  const lastRecap = { manche: state.manche, lignes: tour.lignes, carres: tour.carres, scores: tour.scores, redistribution: tour.redistribution };
+  const lastRecap = { manche: state.manche, lignes: tour.lignes, carres: tour.carres, scores: tour.scores, nouvellesVedettes: tour.nouvellesVedettes };
   if (tour.final) {
     const newState = touch({ ...state, marche: tour.marche, reserve: tour.reserve, vedettes: tour.vedettes, termine: true, lastRecap, finalRanking: tour.final });
     await writeState(newState);

@@ -235,7 +235,7 @@ function main() {
     assert.strictEqual(jokerDuBot("p1", { p1: { main: ["a", "a", "b", "c"], joker: 1 } }, "a", CONFIG), null);
   }
 
-  // ── Tour : carré → décompte pour tous puis redistribution ──────────────
+  // ── Tour : quadruplé → points et nouvelle main pour son auteur seul ────
   {
     const joueursAvant = {
       p1: { main: ["a", "a", "a", "b"], joker: 0, points: 5 },
@@ -255,22 +255,46 @@ function main() {
     assert.strictEqual(t.joueurs.p1.points, 5 + CONFIG.points_vedette);
     assert.ok(t.scores.find((x) => x.discordId === "p1").vedette);
     assert.strictEqual(t.joueurs.p1.carres, 1);
-    assert.strictEqual(t.joueurs.p2.points, 2);
-    assert.ok(t.redistribution);
+    // Nouvelle main sans la carte du quadruplé ; p2 garde la sienne
+    assert.ok(!t.joueurs.p1.main.includes("a") && t.joueurs.p1.main.length === 4);
+    assert.deepStrictEqual(t.joueurs.p2.main, ["c", "c", "d", "e"]);
+    assert.strictEqual(t.joueurs.p2.points, 0);
+    // Vedette réalisée remplacée
     assert.ok(t.vedettes.length === 1 && t.vedettes[0] !== "a");
+    assert.deepStrictEqual(t.nouvellesVedettes, t.vedettes);
+    // Aucune carte perdue, marché de même taille
     assert.strictEqual(t.marche.length, 2);
-    assert.strictEqual(t.reserve.length, 20 - 8 - 2);
+    assert.strictEqual(t.joueurs.p1.main.length + t.joueurs.p2.main.length + t.marche.length + t.reserve.length, 20);
     assert.strictEqual(joueursAvant.p1.main.length, 4); // non muté
   }
 
-  // Sans carré : pas de décompte, sauf au dernier tour
+  // Deux quadruplés le même tour : la vedette remplaçante ne compte pas
+  // encore (seul le quadruplé de la vedette du début du tour vaut 15)
+  {
+    for (let i = 0; i < 20; i++) {
+      const t = computeTour({
+        joueursAvant: { p1: { main: ["a", "a", "a", "a"], joker: 0, points: 0 }, p2: { main: ["b", "b", "b", "b"], joker: 0, points: 0 } },
+        actions: {},
+        marche: ["c", "c"],
+        reserve: ["c", "c"],
+        familles: ["a", "b", "c"],
+        vedettes: ["a"],
+        config: CONFIG,
+        dernier: false,
+      });
+      assert.strictEqual(t.joueurs.p1.points, CONFIG.points_vedette);
+      assert.strictEqual(t.joueurs.p2.points, CONFIG.points_carre);
+      assert.notDeepStrictEqual(t.vedettes, ["a"]);
+    }
+  }
+
+  // Dernier tour : chacun marque 1 à 3 pts selon sa main
   {
     const joueursAvant = { p1: { main: ["a", "a", "b", "c"], joker: 0, points: 0 } };
     const base = { joueursAvant, actions: {}, marche: ["d"], familles: ["a", "b", "c", "d"], config: CONFIG };
-    assert.strictEqual(computeTour({ ...base, dernier: false }).scores, null);
+    assert.deepStrictEqual(computeTour({ ...base, dernier: false }).scores, []);
     const fin = computeTour({ ...base, dernier: true });
     assert.strictEqual(fin.joueurs.p1.points, 2);
-    assert.ok(!fin.redistribution);
   }
 
   // ── Classement : points + Joker restants, puis quadruplés, puis arrivée ──

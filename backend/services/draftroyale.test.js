@@ -14,19 +14,20 @@ function main() {
   // ── Jour ordinaire sans carré : échange, pas de décompte ni classement ──
   {
     const r = computeCloture({ jour: 2, joueursAvant, actionsRaw: { p2: { prise: "c", depot: "e" } }, partie, config: CONFIG });
-    assert.strictEqual(r.scores, null);
+    assert.deepStrictEqual(r.scores, []);
     assert.strictEqual(r.final, null);
     assert.deepStrictEqual([...r.joueursApres.p2.main].sort(), ["c", "c", "c", "d"]);
     assert.ok(r.partieApres.marche.includes("e") && !r.partieApres.marche.includes("c"));
     assert.deepStrictEqual(r.partieApres.familles, partie.familles);
   }
 
-  // ── Carré : décompte et redistribution, la partie continue ─────────────
+  // ── Quadruplé : points et nouvelle main pour son auteur, la partie continue
   {
     const r = computeCloture({ jour: 3, joueursAvant, actionsRaw: { p1: { prise: "a", depot: "b" } }, partie, config: CONFIG });
     assert.deepStrictEqual(r.carres, ["p1"]);
-    assert.ok(r.redistribution);
+    assert.ok(!r.joueursApres.p1.main.includes("a"));
     assert.strictEqual(r.joueursApres.p1.points, CONFIG.points_carre);
+    assert.strictEqual(r.joueursApres.p2.points, 0);
     assert.strictEqual(r.final, null);
   }
 
@@ -34,7 +35,6 @@ function main() {
   {
     const r = computeCloture({ jour: CONFIG.duree_jours, joueursAvant, actionsRaw: {}, partie, config: CONFIG });
     assert.deepStrictEqual(r.final.map((x) => [x.discordId, x.score]), [["p1", 3], ["p2", 2]]);
-    assert.ok(!r.redistribution);
   }
 
   assert.strictEqual(isTooSoonSinceLastClosure(null), false);
