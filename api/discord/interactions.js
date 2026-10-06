@@ -2755,12 +2755,11 @@ function formatWarDecksField(warDecks) {
     const groupLines = groupIndex > 0 ? [""] : [];
 
     let deckCount = 0;
-    for (const [deckIndex, deckLabel] of deckLabels.entries()) {
+    for (const deckLabel of deckLabels) {
       const deckGroup = group.decks.get(deckLabel);
       if (!deckGroup) continue;
       deckCount += 1;
       if (deckCount > maxDecks) break;
-      const displayDeckLabel = deckGroup.label || `Deck ${deckIndex + 1}`;
 
       deckGroup.matches
         .slice(0, maxMatchesPerDeck)
@@ -2774,12 +2773,11 @@ function formatWarDecksField(warDecks) {
           const matchup = Number.isFinite(match.matchup)
             ? `${Math.round(match.matchup * 100)}%`
             : "?";
-          const typeLabel = getWarMatchTypeLabel(match.type);
-          const displayLabelWithType = [displayDeckLabel, typeLabel]
-            .filter(Boolean)
-            .join(" ");
+          // Ligne épurée : résultat en tête, puis adversaire, score et
+          // difficulté séparés par "·" (le type PvP/Duel et le numéro de
+          // deck restent visibles dans le menu "ℹ️ Détails").
           deckLines.push(
-            `• ${displayLabelWithType} : <:members:1506175789731811399> ${opponentName} ${resultEmoji} ${score} ⚡ ${matchup}`,
+            `• ${resultEmoji} ${opponentName} · ${score} · ⚡${matchup}`,
           );
           displayedMatches.push(match);
         });
@@ -2797,7 +2795,7 @@ function formatWarDecksField(warDecks) {
           opponentTourLevel: null,
           score: "0-0",
         });
-        deckLines.push(`• Manquant <:error:1499002755841265826> ⚡ ?`);
+        deckLines.push(`• <:error:1499002755841265826> Manquant · ⚡?`);
       }
     }
 
@@ -2810,9 +2808,9 @@ function formatWarDecksField(warDecks) {
     const total = displayedMatches.length;
     const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
     const showStats = isOldestDay ? displayedMatches.length >= 4 : true;
-    const daySuffix = showStats ? `(${points}pts · winrate ${winRate}%)` : "";
+    const daySuffix = showStats ? ` · ${points} pts · ${winRate}% WR` : "";
 
-    groupLines.push(`**${group.dayLabel}${daySuffix ? ` ${daySuffix}` : ""}**`);
+    groupLines.push(`**${group.dayLabel}${daySuffix}**`);
     groupLines.push(...deckLines);
     return groupLines.join("\n");
   });
@@ -2867,8 +2865,13 @@ function formatRecentBattlesField(recentBattles) {
   });
 
   const blocks = [...dateGroups.entries()].map(([dateLabel, entries], groupIndex) => {
-    const lines = entries.map(({ deck, deckIndex, match }) => {
-      const typeLabel = getBattleTypeLabel(match.type);
+    const lines = entries.map(({ match }) => {
+      // GDC : "PvP"/"Duel" suffit (seuls les combats de GDC portent ces
+      // types), sans le préfixe "GDC" de getBattleTypeLabel().
+      const typeLabel =
+        categorizeBattleType(match.type) === "gdc"
+          ? getWarMatchTypeLabel(match.type) || "(GDC)"
+          : getBattleTypeLabel(match.type);
       const opponentName = escapeText(match.opponentName || "?");
       const resultEmoji =
         match.result === "win"
@@ -2878,8 +2881,9 @@ function formatRecentBattlesField(recentBattles) {
       const matchup = Number.isFinite(match.matchup)
         ? `${Math.round(match.matchup * 100)}%`
         : "?";
-      const deckLabel = deck.label || `Deck ${deckIndex + 1}`;
-      return `• ${deckLabel} ${typeLabel} : <:members:1506175789731811399> ${opponentName} ${resultEmoji} ${score} ⚡ ${matchup}`;
+      // Même format épuré que /matchup-gdc, avec le type de combat juste
+      // après le résultat (modes mélangés ici : GDC, Ladder, Amical...).
+      return `• ${resultEmoji} ${typeLabel.replace(/^\(|\)$/g, "")} · ${opponentName} · ${score} · ⚡${matchup}`;
     });
     const groupLines = groupIndex > 0 ? [""] : [];
     groupLines.push(`**${dateLabel}**`, ...lines);
