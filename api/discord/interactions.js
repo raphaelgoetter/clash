@@ -514,8 +514,9 @@ const RELIABILITY_ICON = {
   red: "<:red:1506174836102139944>",
 };
 
-// Une ligne par membre : données d'abord (largeurs proches d'une ligne à
-// l'autre) et pseudo en fin de ligne ; la donnée du tri actif est en gras.
+// Deux lignes par membre (lisible sur mobile) : rang et pseudo, puis les
+// données en alinéa (espaces cadratins, conservés par Discord contrairement
+// aux espaces simples) ; la donnée du tri actif est en gras.
 function buildStatsClanRows(data, scenarioKey, sortMode) {
   const members = Array.isArray(data?.members) ? data.members : [];
   const performanceByTag = data?.performanceByTag ?? {};
@@ -552,9 +553,8 @@ function buildStatsClanRows(data, scenarioKey, sortMode) {
       `R: ${bold("pointsPerDeck", fmt(m.pointsPerDeck))}`,
       `D: ${bold("decksUsed", fmt(Number.isFinite(decksUsed) ? Math.round(decksUsed) : null))}`,
       `P: ${bold("performance", fmtDiff(getStatsClanPerformanceDiff(m)))}`,
-      `${m.isNew ? "🆕 " : ""}${m.name}`,
     ];
-    return `${idx + 1}. ${columns.join(" · ")}`;
+    return `${idx + 1}. ${m.isNew ? "🆕 " : ""}${m.name}\n\u2003\u2003${columns.join(" · ")}`;
   });
 }
 
