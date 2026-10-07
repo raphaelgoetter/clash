@@ -13,6 +13,6 @@ const { embeds, components } = mod.buildStatsClanPayload({ data, clanName: "La R
 const r = await fetch(`https://discord.com/api/v10/channels/${process.env.DISCORD_CHANNEL_FRAME_TEST}/messages`, {
   method: "POST",
   headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}`, "Content-Type": "application/json" },
-  body: JSON.stringify({ content: "Test /stats-clan : version finale (2 embeds + boutons)", allowed_mentions: { parse: [] }, embeds, components }),
+  body: JSON.stringify({ content: "Test /stats-clan : séparateur avant le pseudo (boutons = version prod)", allowed_mentions: { parse: [] }, embeds, components }),
 });
 console.log(embeds.length, embeds.map((e) => e.description.split("\n").length), r.status);

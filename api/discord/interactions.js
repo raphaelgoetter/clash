@@ -536,9 +536,9 @@ function buildStatsClanRows(data, scenarioKey, sortMode) {
       `📈 ${bold("pointsPerDeck", fmt(m.pointsPerDeck))}`,
       `🃏 ${bold("decksUsed", fmt(Number.isFinite(decksUsed) ? Math.round(decksUsed) : null))}`,
       `🎯 ${bold("performance", fmtDiff(getStatsClanPerformanceDiff(m)))}`,
-      `${m.isNew ? "🆕 " : ""}${m.name}`,
     ];
-    return `${idx + 1}. ${columns.join(" ")}`;
+    const name = `${m.isNew ? "🆕 " : ""}${m.name}`;
+    return `${idx + 1}. ${columns.join(" ")} · ${name}`;
   });
 }
 
