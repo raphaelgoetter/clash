@@ -482,6 +482,16 @@ function daysUntilWeekday(now, weekday) {
   return (weekday - todayWeekday + 7) % 7;
 }
 
+// Le jour du créneau, la manche affichée peut être soit l'ancienne (pas
+// encore remplacée, elle finit bien aujourd'hui), soit la nouvelle déjà
+// postée ce jour-là : celle-ci court alors jusqu'au créneau suivant (7j).
+function daysUntilEnd(now, game) {
+  const daysUntil = daysUntilWeekday(now, game.weekday);
+  const startedToday =
+    String(game.state?.startedAt ?? "").slice(0, 10) === now.toISOString().slice(0, 10);
+  return daysUntil === 0 && startedToday ? 7 : daysUntil;
+}
+
 function formatEndLabel(daysUntil) {
   if (daysUntil === 0) return "⚠️ fin aujourd'hui";
   if (daysUntil === 1) return "fin demain";
@@ -500,7 +510,8 @@ function formatNextLaunchLabel(daysUntil) {
 // Indicateur neutre (pas de sémantique bonne/mauvaise, donc pas de rouge/vert) :
 // une case se remplit par jour écoulé avant la fin. daysUntil va de 0 (fin
 // aujourd'hui, 6 jours viennent de s'écouler → barre pleine) à 6 (fin dans
-// 6 jours, la semaine vient de démarrer → 1 seule case remplie). Bleu plutôt
+// 6 jours → 1 seule case remplie), voire 7 (manche postée aujourd'hui →
+// barre vide, voir daysUntilEnd). Bleu plutôt
 // que noir : le noir se fond dans le thème sombre de Discord (peu visible).
 function buildCountdownBar(daysUntil) {
   const filled = Math.max(0, Math.min(BAR_SEGMENTS, BAR_SEGMENTS - daysUntil));
@@ -521,7 +532,7 @@ async function resolveRegularGames(now) {
     { key: "visuels", weekday: 5, ...visuelsGame },
     { key: "lettres", weekday: 6, ...lettresGame },
     { key: "culture", weekday: 3, ...cultureGame },
-  ].map((game) => ({ ...game, daysUntil: daysUntilWeekday(now, game.weekday) }));
+  ].map((game) => ({ ...game, daysUntil: daysUntilEnd(now, game) }));
   return games.sort((a, b) => a.daysUntil - b.daysUntil);
 }
 
