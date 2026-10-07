@@ -32,6 +32,9 @@ import {
   getPlayerSeasonResults,
   getGameParticipants,
   findTiedRank,
+  grantErratumPoint,
+  claimErratumAnnouncement,
+  releaseErratumAnnouncement,
   LETTERS,
 } from "../../../backend/services/trivia.js";
 import { toPublicSeasonId } from "../../../backend/services/dateUtils.js";
@@ -276,6 +279,14 @@ export async function postTrivia(
 
   const previousState = await readState();
   const { state: newState, entry, order } = await startNewGame(channelId);
+  // La manche précédente est désormais close (état réécrit) : si sa question
+  // porte un erratum, le point est offert et l'erratum annoncé AVANT la
+  // nouvelle question. Un échec n'empêche jamais la publication de la manche.
+  if (previousState?.gameId) {
+    await postErratumIfNeeded(channelId, previousState.gameId).catch((err) =>
+      console.error("[Trivia] Échec de l'erratum:", err.message),
+    );
+  }
   const embed = buildTriviaEmbed({
     gameId: newState.gameId,
     entryQuestion: entry.question,
@@ -313,6 +324,54 @@ export async function postTrivia(
   await deletePreviousRoundMessage(previousState, "Trivia");
 
   return { state: newState, entry, message };
+}
+
+// ── Erratum automatique ───────────────────────────────────────────
+// Déclenché par postTrivia() à la clôture d'une manche dont la question
+// porte un champ `erratum` (trivia-clash.json) : point offert à tous les
+// participants (grantErratumPoint, idempotent) puis message public, sans
+// ping, posté une seule fois (claimErratumAnnouncement).
+
+function buildErratumEmbed(erratum, participantCount) {
+  return {
+    title: "📢 Trivia : erratum",
+    description: [
+      ...erratum.announcement,
+      "",
+      `🎁 Le point de cette manche est offert à tous les participants (**${participantCount}** joueur${participantCount > 1 ? "s" : ""}).`,
+      "",
+      "Merci au joueur qui l'a signalé, et toutes nos excuses !",
+    ].join("\n"),
+    color: TRIVIA_COLOR,
+  };
+}
+
+async function postErratumIfNeeded(channelId, gameId) {
+  const catalog = await loadTriviaCatalog();
+  const entry = resolveTriviaEntry(catalog, gameId);
+  if (!entry?.erratum) return;
+
+  const participantCount = await grantErratumPoint(gameId, entry.erratum.correctedAnswer);
+  if (participantCount === 0) return;
+  if (!(await claimErratumAnnouncement(gameId))) return;
+
+  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      embeds: [buildErratumEmbed(entry.erratum, participantCount)],
+      allowed_mentions: { parse: [] },
+    }),
+  });
+  if (!res.ok) {
+    await releaseErratumAnnouncement(gameId);
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Erreur envoi erratum (${res.status}): ${errText}`);
+  }
+  console.log(`[Trivia] Erratum ${gameId} posté (${participantCount} participant(s)).`);
 }
 
 async function postEphemeral(webhookUrl, content) {
@@ -419,6 +478,9 @@ export async function handleAnswerButton(
       : [];
 
     const descriptionLines = [resultLine, "", "**Les 4 propositions :**", ...breakdown];
+    if (entry?.erratum) {
+      descriptionLines.push("", `⚠️ **Erratum :** ${entry.erratum.notice}`);
+    }
     if (entry?.source) {
       // Toujours affichée (pas de garde-fou "si dispo") : la crédibilité
       // d'une anecdote de trivia dépend de sa source vérifiable, jamais

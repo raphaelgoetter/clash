@@ -133,6 +133,9 @@ function seasonPseudosKey(seasonId) {
 function archivedKey(seasonId) {
   return `trivia:archived:${seasonId}`;
 }
+function erratumPostedKey(gameId) {
+  return `trivia:erratum_posted:${gameId}`;
+}
 
 // ── Lecture du catalogue (statique, jamais muté) ──────────────────
 
@@ -141,7 +144,13 @@ function parseTriviaEntry(raw, index) {
   const correctIdx = raw.choices.findIndex((c) => /√\s*$/.test(c));
   const clean = raw.choices.map((c) => c.replace(/\s*√\s*$/, "").trim());
   const options = [clean[correctIdx], ...clean.filter((_, i) => i !== correctIdx)];
-  return { id, question: raw.question, options, source: raw.source ?? null };
+  return {
+    id,
+    question: raw.question,
+    options,
+    source: raw.source ?? null,
+    erratum: raw.erratum ?? null,
+  };
 }
 
 let triviaCatalogCache = null;
@@ -176,6 +185,7 @@ export async function resetGame() {
   await scanDelete("trivia:participants:*");
   await scanDelete("trivia:season:*");
   await scanDelete("trivia:archived:*");
+  await scanDelete("trivia:erratum_posted:*");
 }
 
 // ── Saison Clash Royale en cours ────────────────────────────────
@@ -452,6 +462,50 @@ export async function getAllArchivedResults() {
   if (keys.length === 0) return [];
   const hashes = await Promise.all(keys.map((key) => hgetallJson(key)));
   return hashes.flatMap((hash) => Object.values(hash));
+}
+
+// ── Erratum : point offert à tous les participants d'une manche ─────
+// Pour une question dont la « bonne » réponse s'avère fausse après coup
+// (champ `erratum` dans trivia-clash.json, ex. q000 « Project Laser » =
+// Brawl Stars) : chaque participant archivé de la manche passe à 1 pt, y
+// compris ceux qui avaient la réponse marquée fausse. Les archives sont
+// retrouvées par scan (seasonId stocké dans chaque résultat), la manche
+// étant déjà close. Idempotent : un résultat déjà marqué `erratum` n'est
+// plus touché. Renvoie le nombre total de participants de la manche.
+export async function grantErratumPoint(gameId, correctedAnswer) {
+  const keys = await scanKeys("trivia:archived:*");
+  let participantCount = 0;
+
+  for (const key of keys) {
+    const archived = await hgetallJson(key);
+    for (const [field, result] of Object.entries(archived)) {
+      if (!result || result.gameId !== gameId) continue;
+      participantCount++;
+      if (result.erratum) continue;
+
+      const updated = { ...result, score: 1, answer: correctedAnswer, erratum: true };
+      await getRedis().hset(key, { [field]: toJson(updated) });
+      if (!(result.score > 0)) await getRedis().zincrby(seasonKey(result.seasonId), 1, result.discordId);
+
+      const participant = await readParticipant(gameId, result.discordId);
+      if (participant) {
+        await getRedis().hset(participantsKey(gameId), {
+          [result.discordId]: toJson({ ...participant, score: 1, erratum: true }),
+        });
+      }
+    }
+  }
+  return participantCount;
+}
+
+// Verrou anti-double-post du message d'erratum (SET NX, permanent) —
+// libéré si l'envoi Discord échoue, pour retenter au passage suivant.
+export async function claimErratumAnnouncement(gameId) {
+  return (await getRedis().set(erratumPostedKey(gameId), "1", { nx: true })) === "OK";
+}
+
+export async function releaseErratumAnnouncement(gameId) {
+  await getRedis().del(erratumPostedKey(gameId));
 }
 
 export function findRank(sortedList, discordId) {

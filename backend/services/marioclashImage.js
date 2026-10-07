@@ -59,15 +59,20 @@ const BACKGROUND = "#0f172a";
 const ROW_Y = [126.8, 231.7, 330.7, 431, 530, 626.7, 724.3];
 
 // X mesuré par rangée, dans l'ordre PHYSIQUE gauche→droite (7 valeurs par
-// rangée) — chaque rangée a sa propre étendue piste, distincte des autres.
+// rangée) — centre de chaque dalle détecté par pixels (segments de piste
+// tan sur plusieurs lignes autour de ROW_Y), pas d'espacement constant
+// (~89 px entre dalles droites, une première calibration à ~100 px
+// décalait les pions de plus en plus vers la droite). Dalles spéciales
+// (glace, feu, coffre, chevrons) interpolées entre leurs voisines ; dalles
+// de virage : centre de leur partie droite.
 const ROW_X = [
-  [174, 263, 351, 440, 529, 617, 706], // rangée 1 (cases 0-6)
-  [127, 227, 327, 427, 527, 627, 727], // rangée 2 (cases 7-13, sens inverse)
-  [126, 227, 328, 429, 530, 631, 732], // rangée 3 (cases 14-20)
-  [106, 207, 308, 410, 511, 612, 713], // rangée 4 (cases 21-27, sens inverse)
-  [126, 221, 316, 411, 506, 601, 696], // rangée 5 (cases 28-34)
-  [136, 232, 328, 424, 520, 616, 712], // rangée 6 (cases 35-41, sens inverse)
-  [138, 234, 330, 426, 521, 617, 713], // rangée 7 (cases 42-48)
+  [175, 253, 340, 418, 502, 586, 675], // rangée 1 (cases 0-6)
+  [136, 229, 322, 412, 500, 588, 685], // rangée 2 (cases 7-13, sens inverse)
+  [138, 233, 321, 411, 501, 590, 693], // rangée 3 (cases 14-20)
+  [142, 235, 324, 412, 501, 588, 689], // rangée 4 (cases 21-27, sens inverse)
+  [144, 236, 324, 412, 501, 589, 681], // rangée 5 (cases 28-34)
+  [150, 241, 328, 413, 501, 593, 692], // rangée 6 (cases 35-41, sens inverse)
+  [148, 228, 316, 410, 501, 584, 705], // rangée 7 (cases 42-48)
 ];
 
 // Grille serpentin : rangée paire (0-indexée) = sens gauche→droite, rangée
@@ -208,16 +213,12 @@ function buildCasesSpecialesSvg(casesSpeciales) {
 // est occupée, ce sont les pions qui remontent (REPERE_TOKEN_SHIFT, voir
 // buildTokensSvg) pour laisser le numéro visible.
 const CASES_REPERES = [10, 20, 30, 40];
-// Correction horizontale du numéro par rapport à CASE_ANCHORS (calibré pour
-// les pions, pas exactement au centre visuel de ces cases) — mesurée sur
-// mario-clash-board.jpg ; la case 20, dans le virage, est la plus décalée.
-const REPERE_DX = { 10: -15, 20: -32, 30: 14, 40: 6 };
 const REPERE_TOKEN_SHIFT = 24;
 
 function buildCasesReperesSvg() {
   return CASES_REPERES.map((numero) => {
     const anchor = anchorForCase(numero);
-    return `<text x="${anchor.x + (REPERE_DX[numero] || 0)}" y="${anchor.y + 9}" font-family="${FONT_FAMILY}" font-size="26" text-anchor="middle" fill="#5b3a1a" fill-opacity="0.75">${numero}</text>`;
+    return `<text x="${anchor.x}" y="${anchor.y + 9}" font-family="${FONT_FAMILY}" font-size="26" text-anchor="middle" fill="#5b3a1a" fill-opacity="0.75">${numero}</text>`;
   }).join("\n");
 }
 
