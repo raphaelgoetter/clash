@@ -382,6 +382,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
       discordId: id,
       deId: action.deId || null,
       valeur: action.diceValue,
+      avance: action.diceAvance ?? action.diceValue,
       positionDe: action.positionDe ?? null,
       caseSpeciale: action.caseSpeciale ?? null,
     });

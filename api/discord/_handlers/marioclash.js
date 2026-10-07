@@ -114,6 +114,79 @@ function pickFlavor(pool, seed) {
   return pool[((seed % pool.length) + pool.length) % pool.length];
 }
 
+// Faits exceptionnels du jour, joueur par joueur : cumul des gains (dé,
+// case, Clone, sort, Accélérateur) et des reculs (case, sort, Bombe,
+// Carapace, renvoi d'Étoile), échanges exclus (narratif dédié). Valeurs
+// nominales, sans tenir compte du plafonnement à l'arrivée ou à la case 0.
+const EXPLOIT_MIN_CASES = 10;
+const MALCHANCE_MIN_CASES = 5;
+
+function joinDetail(parts) {
+  if (parts.length <= 1) return parts.join("");
+  return `${parts.slice(0, -1).join(", ")} **et** ${parts.at(-1)}`;
+}
+
+function buildEvenementsExceptionnels(jour, joueursApres, joueursAvant, closureLignes, config, narratifs) {
+  const nomDe = (id) => joueursApres[id]?.username || joueursAvant?.[id]?.username || "?";
+  const bilan = {};
+  const entree = (id) => (bilan[id] ??= { gains: [], pertes: [], gain: 0, perte: 0, cloneRate: false });
+  const gagne = (id, texte, n) => { if (n > 0) { entree(id).gains.push(texte); entree(id).gain += n; } };
+  const perd = (id, texte, n) => { if (n > 0) { entree(id).pertes.push(texte); entree(id).perte += n; } };
+
+  for (const l of closureLignes || []) {
+    if (l.type === "de") {
+      const avance = l.avance ?? l.valeur;
+      const bonusRage = avance - l.valeur;
+      gagne(l.discordId, bonusRage > 0 ? `${l.valeur} au dé + ${bonusRage} de Rage` : `${l.valeur} au dé`, avance);
+      const c = l.caseSpeciale != null ? config.cases_speciales?.[l.caseSpeciale] : null;
+      if (c?.avance > 0) gagne(l.discordId, `case ${c.label}`, c.avance);
+      if (c?.avance < 0) perd(l.discordId, `case ${c.label}`, -c.avance);
+    } else if (l.type === "sort" && l.effet !== "bloque") {
+      const sort = config.sorts?.find((s) => s.id === l.sortId);
+      if (sort?.clone) {
+        if (l.valeurClone > 0) gagne(l.cibleId, "Clone du jet", l.valeurClone);
+        else entree(l.cibleId).cloneRate = true;
+      }
+      if (sort?.avance > 0) gagne(l.cibleId, `sort ${sort.nom || "Avance"}`, sort.avance);
+      if (sort?.avance < 0) perd(l.cibleId, `sort ${sort.nom || "Recul"}`, -sort.avance);
+    } else if (l.type === "objet") {
+      const label = config.objets?.[l.itemId]?.label || "Objet";
+      if (l.effet === "avance") gagne(l.discordId, label, l.valeur);
+      else if (l.effet === "recul") perd(l.cibleId, `${label} de ${nomDe(l.discordId)}`, l.valeur);
+      else if (l.effet === "renvoi") perd(l.discordId, `${label} renvoyée par l'Étoile de ${nomDe(l.cibleId)}`, l.valeur);
+    }
+  }
+
+  // Le plus spectaculaire d'abord ; seed décalée par joueur pour varier les
+  // formulations quand plusieurs exploits tombent le même jour.
+  const evenements = [];
+  for (const [id, b] of Object.entries(bilan)) {
+    const seed = jour + evenements.length;
+    if (b.gains.length >= 2 && b.gain >= EXPLOIT_MIN_CASES) {
+      evenements.push({
+        poids: b.gain,
+        texte: pickFlavor(narratifs.exploit, seed)
+          .replaceAll("{joueur}", nomDe(id))
+          .replaceAll("{detail}", joinDetail(b.gains))
+          .replaceAll("{total}", b.gain),
+      });
+    }
+    if (b.pertes.length >= 2 && b.perte >= MALCHANCE_MIN_CASES) {
+      evenements.push({
+        poids: b.perte,
+        texte: pickFlavor(narratifs.malchance, seed)
+          .replaceAll("{joueur}", nomDe(id))
+          .replaceAll("{detail}", joinDetail(b.pertes))
+          .replaceAll("{total}", b.perte),
+      });
+    }
+    if (b.cloneRate) {
+      evenements.push({ poids: 0, texte: pickFlavor(narratifs.clone_rate, seed).replaceAll("{joueur}", nomDe(id)) });
+    }
+  }
+  return evenements.sort((a, b) => b.poids - a.poids).map((e) => e.texte);
+}
+
 // Compare le classement avant/après clôture pour repérer les faits
 // marquants (nouveau leader, avance confortable, course serrée, traîne,
 // échanges de position) — au maximum 3 lignes, retombe sur un narratif
@@ -124,6 +197,7 @@ function buildResumeLignes(
   joueursApres,
   closureLignes,
   narratifs,
+  config,
 ) {
   const nomDe = (id) =>
     joueursApres[id]?.username || joueursAvant?.[id]?.username || "?";
@@ -159,6 +233,34 @@ function buildResumeLignes(
     }
   }
 
+  // Exploits / coups durs : prioritaires sur la traîne, au plus 2 lignes.
+  if (config) {
+    lines.push(
+      ...buildEvenementsExceptionnels(jour, joueursApres, joueursAvant, closureLignes, config, narratifs).slice(0, 2),
+    );
+  }
+
+  // Échanges (Banane ou sort) regroupés en une seule ligne, pour ne pas
+  // évincer les autres faits du jour : "a et b échangent… Idem pour c et d,
+  // ainsi que e et f."
+  const paires = [];
+  for (const l of closureLignes || []) {
+    if (l.type === "objet" && l.effet === "echange") paires.push([l.discordId, l.cibleId]);
+    else if (l.type === "sort" && l.autreEchangeId) paires.push([l.cibleId, l.autreEchangeId]);
+  }
+  if (paires.length) {
+    const [[a, b], ...autres] = paires;
+    let ligne = pickFlavor(narratifs.echange, jour + 2)
+      .replaceAll("{a}", nomDe(a))
+      .replaceAll("{b}", nomDe(b));
+    if (autres.length) {
+      const noms = autres.map(([x, y]) => `${nomDe(x)} et ${nomDe(y)}`);
+      const liste = noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(", ")}, ainsi que ${noms.at(-1)}`;
+      ligne += ` Idem pour ${liste}.`;
+    }
+    lines.push(ligne);
+  }
+
   if (rankingApres.length >= 3) {
     const dernier = rankingApres[rankingApres.length - 1];
     if (rankingApres[0].position - dernier.position >= 10) {
@@ -172,23 +274,11 @@ function buildResumeLignes(
   }
 
   for (const l of closureLignes || []) {
-    if (l.type === "objet" && l.effet === "echange") {
-      lines.push(
-        pickFlavor(narratifs.echange, jour + 2)
-          .replaceAll("{a}", nomDe(l.discordId))
-          .replaceAll("{b}", nomDe(l.cibleId)),
-      );
-    } else if (l.type === "objet" && l.effet === "renvoi") {
+    if (l.type === "objet" && l.effet === "renvoi") {
       lines.push(
         pickFlavor(narratifs.renvoi, jour + 3)
           .replaceAll("{a}", nomDe(l.discordId))
           .replaceAll("{b}", nomDe(l.cibleId)),
-      );
-    } else if (l.type === "sort" && l.autreEchangeId) {
-      lines.push(
-        pickFlavor(narratifs.echange, jour + 5)
-          .replaceAll("{a}", nomDe(l.cibleId))
-          .replaceAll("{b}", nomDe(l.autreEchangeId)),
       );
     }
   }
@@ -774,6 +864,7 @@ export async function postMarioClash(
     closure.joueurs,
     closure.lignes,
     narratifs,
+    config,
   );
   const embed = buildJourEmbed(closure.jourSuivant, config, resumeLignes);
   const components = buildJourComponents(closure.jourSuivant);

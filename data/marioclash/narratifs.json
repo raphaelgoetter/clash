@@ -36,6 +36,20 @@
     "🐢 Une journée bien sage, presque suspecte — qui prépare un coup fourré pour demain ?",
     "🎈 Rien à signaler hier, si ce n'est le bruit du vent dans les drapeaux de l'Arène."
   ],
+  "exploit": [
+    "🌟 Exploit de {joueur} : {detail}, soit {total} cases d'un coup !",
+    "🤯 Journée de rêve pour {joueur} : {detail}. {total} cases avalées !",
+    "🚀 {joueur} met le turbo : {detail}, {total} cases en une journée !"
+  ],
+  "malchance": [
+    "💥 Journée noire pour {joueur} : {detail}, soit {total} cases de recul !",
+    "😵 Rien ne va plus pour {joueur} : {detail}. {total} cases perdues !",
+    "🌧️ {joueur} encaisse tout : {detail}, {total} cases en arrière !"
+  ],
+  "clone_rate": [
+    "🤦 {joueur} lance Clone… sans avoir lancé le dé. Rien à rejouer !",
+    "🪞 {joueur} a cloné un dé qui n'existait pas. Sort perdu !"
+  ],
   "renvoi": [
     "⭐ L'Étoile de {b} brille fort : l'objet de {a} lui revient en pleine figure !",
     "🔁 {a} a visé {b}... mais son Étoile a tout renvoyé à l'envoyeur !",

@@ -268,7 +268,7 @@ async function main() {
     const actionsRaw = { a: { dice: true, diceValue: 3, deId: "prudent", positionDe: 12, caseSpeciale: 12 } };
     const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: Math.random });
     assert.strictEqual(r.joueursApres.a.position, 12, "le dé n'est pas réappliqué à la clôture");
-    assert.deepStrictEqual(r.lignes[0], { type: "de", discordId: "a", deId: "prudent", valeur: 3, positionDe: 12, caseSpeciale: 12 });
+    assert.deepStrictEqual(r.lignes[0], { type: "de", discordId: "a", deId: "prudent", valeur: 3, avance: 3, positionDe: 12, caseSpeciale: 12 });
   }
 
   // ── Nouveaux sorts (Gel / Rage / Clone) et Concentration ─────────────
