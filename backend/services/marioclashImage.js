@@ -162,7 +162,7 @@ function buildTokensSvg(joueurs) {
     occupants.forEach((j, index) => {
       const dx = occupants.length > 1 ? (index - (occupants.length - 1) / 2) * TOKEN_SPREAD : 0;
       const cx = anchor.x + dx;
-      const cy = anchor.y;
+      const cy = CASES_REPERES.includes(Number(position)) ? anchor.y - REPERE_TOKEN_SHIFT : anchor.y;
       circles.push(
         `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${colorForPlayer(j.colorIndex)}" stroke="#1e293b" stroke-width="2.5"/>`,
         `<text x="${cx}" y="${cy + 5}" font-family="${FONT_FAMILY}" font-size="15" text-anchor="middle" fill="#1e293b">${initialOf(j.username)}</text>`,
@@ -200,6 +200,27 @@ function buildCasesSpecialesSvg(casesSpeciales) {
   return badges.join("\n");
 }
 
+// Numéros de quelques cases-repères (10, 20, 30, 40) pour se situer sur le
+// parcours : texte brun semi-transparent, comme gravé dans la piste, sans
+// fond ni bordure, centré dans la case (y + 9 ≈ 0,35 × font-size pour
+// centrer verticalement les chiffres). Dessiné sous les pions (par-dessus,
+// il rendait illisibles à la fois l'initiale et le numéro) : quand la case
+// est occupée, ce sont les pions qui remontent (REPERE_TOKEN_SHIFT, voir
+// buildTokensSvg) pour laisser le numéro visible.
+const CASES_REPERES = [10, 20, 30, 40];
+// Correction horizontale du numéro par rapport à CASE_ANCHORS (calibré pour
+// les pions, pas exactement au centre visuel de ces cases) — mesurée sur
+// mario-clash-board.jpg ; la case 20, dans le virage, est la plus décalée.
+const REPERE_DX = { 10: -15, 20: -32, 30: 14, 40: 6 };
+const REPERE_TOKEN_SHIFT = 24;
+
+function buildCasesReperesSvg() {
+  return CASES_REPERES.map((numero) => {
+    const anchor = anchorForCase(numero);
+    return `<text x="${anchor.x + (REPERE_DX[numero] || 0)}" y="${anchor.y + 9}" font-family="${FONT_FAMILY}" font-size="26" text-anchor="middle" fill="#5b3a1a" fill-opacity="0.75">${numero}</text>`;
+  }).join("\n");
+}
+
 async function buildBoardSvg(joueurs) {
   const dataUrl = await loadBoardDataUrl();
   const config = await loadMarioClashConfig();
@@ -207,6 +228,7 @@ async function buildBoardSvg(joueurs) {
 <svg width="${BOARD_WIDTH}" height="${BOARD_HEIGHT}" viewBox="0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
   <rect width="100%" height="100%" fill="${BACKGROUND}"/>
   <image x="0" y="0" width="${BOARD_WIDTH}" height="${BOARD_HEIGHT}" href="${dataUrl}"/>
+  ${buildCasesReperesSvg()}
   ${buildCasesSpecialesSvg(config.cases_speciales)}
   ${buildTokensSvg(joueurs)}
 </svg>`;
