@@ -40,7 +40,7 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
-import { readJoueurs, loadMarioClashConfig } from "./marioclash.js";
+import { readJoueurs, loadMarioClashConfig, getHistoriqueEntry } from "./marioclash.js";
 import { readBlobAsset, readBlobFontPath } from "./blobAssets.js";
 
 const BOARD_IMAGE_PATH = "marioclash/images/mario-clash-board.jpg";
@@ -260,25 +260,31 @@ export async function renderBoardImage(joueurs) {
   return rasterize(svg);
 }
 
-// Rendu du plateau reflétant l'état COURANT de la partie — pas un
-// instantané par jour : l'ancien message est supprimé avant chaque repost
-// (voir publishAndWriteState du handler), donc aucune image passée ne
-// reste jamais référencée ailleurs. Même principe que
-// goblinhuntersImage.js/getBoardImage().
+// Rendu du plateau du message public (l'ancien message est supprimé avant
+// chaque repost, voir publishAndWriteState du handler).
 // `jour` : le Jour 1 affiche systématiquement le plateau VIDE (aucun pion),
 // quel que soit qui a déjà cliqué un bouton ce jour-là — personne n'a encore
 // de position significative avant la toute première clôture (tout le monde
 // est à la case 0), afficher des pions bunchés à la case 1 avant même de
 // connaître l'effectif final de la course serait trompeur.
+// Jour N > 1 : positions FIGÉES à la clôture de la veille (instantané de
+// l'historique), pas l'état courant — Discord re-télécharge l'image à des
+// moments différents (miniature, vue agrandie, mobile), qui montraient sinon
+// les dés déjà lancés aujourd'hui. Les inscrits du jour, absents de
+// l'instantané, n'apparaissent qu'au plateau suivant. Sans instantané
+// (manche antérieure à ce mécanisme), retombe sur l'état courant.
 export async function getBoardImage(jour) {
   if (Number(jour) === 1) return renderBoardImage([]);
-  const joueurs = await readJoueurs();
-  const liste = Object.entries(joueurs).map(([discordId, j]) => ({
-    discordId,
-    username: j.username,
-    position: j.position,
-    colorIndex: j.colorIndex,
-  }));
+  const [joueurs, veille] = await Promise.all([readJoueurs(), getHistoriqueEntry(Number(jour) - 1)]);
+  const figees = veille?.positions;
+  const liste = Object.entries(joueurs)
+    .filter(([discordId]) => !figees || figees[discordId])
+    .map(([discordId, j]) => ({
+      discordId,
+      username: j.username,
+      position: figees ? figees[discordId].position : j.position,
+      colorIndex: j.colorIndex,
+    }));
   return renderBoardImage(liste);
 }
 
