@@ -151,20 +151,34 @@
         "Spear Goblins",
         "Flying Machine",
         "Phoenix",
-        "Ram Rider"
+        "Electro Dragon",
+        "Baby Dragon",
+        "Skeleton Dragons",
+        "Witch",
+        "Tesla"
       ]
     },
     {
       "name": "Balloon",
       "archetype": "Cycle",
-      "hardCounters": ["Lava Hound", "Minion Horde", "Mega Minion", "Bats"],
+      "hardCounters": [
+        "Inferno Tower",
+        "Inferno Dragon",
+        "Minion Horde",
+        "Mega Minion",
+        "Bats"
+      ],
       "softCounters": [
         "Ice Wizard",
         "Three Musketeers",
         "Minions",
         "Hunter",
         "Musketeer",
-        "Firecracker"
+        "Firecracker",
+        "Archers",
+        "Electro Wizard",
+        "Tesla",
+        "Archer Queen"
       ],
       "variants": [
         {
@@ -631,12 +645,12 @@
         "Inferno Dragon",
         "Skeleton Army",
         "Goblin Gang",
-        "Witch",
         "Tombstone",
         "Guards",
         "Ronin"
       ],
       "softCounters": [
+        "Witch",
         "Goblins",
         "Skeletons",
         "Ice Golem",
@@ -674,7 +688,8 @@
       "hardCounters": [
         "P.E.K.K.A",
         "Inferno Tower",
-        "Knight",
+        "Inferno Dragon",
+        "Minion Horde",
         "Mini P.E.K.K.A",
         "Elite Barbarians",
         "Mighty Miner",
@@ -682,12 +697,12 @@
         "Ronin"
       ],
       "softCounters": [
+        "Knight",
         "Valkyrie",
         "Goblin Cage",
         "Ice Golem",
         "Guards",
         "Dark Prince",
-        "Inferno Dragon",
         "Bandit",
         "Cannon Cart",
         "Ice Wizard"
