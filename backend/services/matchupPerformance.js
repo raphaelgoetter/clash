@@ -45,6 +45,14 @@ function parseSamples(raw) {
   }
 }
 
+// HMGET sans désérialisation automatique : Upstash renvoie alors un tableau
+// de valeurs dans l'ordre des champs (pas un objet champ → valeur).
+async function hmgetByField(fields) {
+  const values = (await getRedis().hmget(KEY, ...fields)) ?? [];
+  if (!Array.isArray(values)) return values;
+  return Object.fromEntries(fields.map((field, i) => [field, values[i]]));
+}
+
 // Fusionne les échantillons (dédoublonnés par `key`, le stocké prime : sa
 // difficulté est figée au moment du combat) et purge ceux hors fenêtre.
 function mergeSamples(stored, fresh, now = Date.now()) {
@@ -66,7 +74,7 @@ export async function recordWarMatchupSamples(battleLogsByTag) {
   const tags = Object.keys(battleLogsByTag ?? {});
   if (tags.length === 0) return 0;
   const fields = tags.map(normalizeTag);
-  const stored = (await getRedis().hmget(KEY, ...fields)) ?? {};
+  const stored = await hmgetByField(fields);
 
   const updates = {};
   const removals = [];
@@ -111,4 +119,23 @@ export async function getWarMatchupPerformanceSamples(tag, battleLog = []) {
     console.warn("[matchupPerformance] lecture Redis impossible:", err.message);
   }
   return mergeSamples(stored, fresh);
+}
+
+/**
+ * Performance GDC de plusieurs joueurs d'un coup (/stats-clan) : cumul Redis
+ * seul, en une commande, sans battle log (au plus une heure de retard sur
+ * le cron).
+ * @param {string[]} tags
+ * @returns {Promise<Record<string, object[]>>} échantillons par tag sans `#`
+ */
+export async function getStoredWarMatchupPerformanceSamples(tags) {
+  const fields = [...new Set((tags ?? []).map(normalizeTag).filter(Boolean))];
+  if (fields.length === 0) return {};
+  const stored = await hmgetByField(fields);
+  return Object.fromEntries(
+    fields.map((field) => [
+      field,
+      mergeSamples(parseSamples(stored[field]), []),
+    ]),
+  );
 }

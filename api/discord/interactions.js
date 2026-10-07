@@ -19,7 +19,10 @@ import {
   setDiscordLinks,
 } from "../../backend/services/discordLinks.js";
 import { loadSnapshots } from "../../backend/services/snapshot.js";
-import { getWarMatchupPerformanceSamples } from "../../backend/services/matchupPerformance.js";
+import {
+  getStoredWarMatchupPerformanceSamples,
+  getWarMatchupPerformanceSamples,
+} from "../../backend/services/matchupPerformance.js";
 import {
   toPublicSeasonId,
   toPublicWeekId,
@@ -401,14 +404,22 @@ function buildStatsClanFooter({
   pageCount,
 }) {
   const sortLabel = getStatsClanSortLabel(sortMode);
-  const base = `Tri : ${sortLabel} · 🏆 moyenne · ⚡ pts/deck · Scénario : ${scenarioLabel}`;
+  const base = `Tri : ${sortLabel} · T: pts/semaine · R: pts/deck · D: decks joués · P: performance (3 semaines) · Scénario : ${scenarioLabel}`;
   return pageCount > 1 ? `${base} · Page ${pageIndex + 1}/${pageCount}` : base;
 }
 
 function getStatsClanSortLabel(sortMode) {
   if (sortMode === "pointsPerDeck") return "Points par deck";
   if (sortMode === "decksUsed") return "Decks joués";
+  if (sortMode === "performance") return "Performance";
   return "Points par semaine";
+}
+
+// Écart victoires réelles - attendues (cf. formatMatchupPerformanceField),
+// null sous 4 combats GDC.
+function getStatsClanPerformanceDiff(member) {
+  const performance = member.performance;
+  return performance && performance.battles >= 4 ? performance.diff : null;
 }
 
 function sortStatsClanMembers(members, sortMode) {
@@ -426,6 +437,12 @@ function sortStatsClanMembers(members, sortMode) {
       const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
       return fb - fa;
     }
+    if (sortMode === "performance") {
+      const pa = getStatsClanPerformanceDiff(a) ?? -Infinity;
+      const pb = getStatsClanPerformanceDiff(b) ?? -Infinity;
+      if (pa === pb) return 0;
+      return pb > pa ? 1 : -1;
+    }
     const fa = Number.isFinite(a.avgFame) ? a.avgFame : -1;
     const fb = Number.isFinite(b.avgFame) ? b.avgFame : -1;
     return fb - fa;
@@ -433,35 +450,22 @@ function sortStatsClanMembers(members, sortMode) {
 }
 
 function buildStatsClanComponents(clanVal, sortMode) {
-  const avgFameActive = sortMode === "avgFame";
-  const ppdActive = sortMode === "pointsPerDeck";
-  const decksActive = sortMode === "decksUsed";
+  const sortButton = (mode, label) => ({
+    type: 2,
+    style: sortMode === mode ? 3 : 1,
+    label,
+    custom_id: `stats_clan_sort:${clanVal}:${mode}`,
+    disabled: sortMode === mode,
+  });
 
   return [
     {
       type: 1,
       components: [
-        {
-          type: 2,
-          style: avgFameActive ? 3 : 1,
-          label: "🏆 Points/semaine",
-          custom_id: `stats_clan_sort:${clanVal}:avgFame`,
-          disabled: avgFameActive,
-        },
-        {
-          type: 2,
-          style: ppdActive ? 3 : 1,
-          label: "⚡ Points/deck",
-          custom_id: `stats_clan_sort:${clanVal}:pointsPerDeck`,
-          disabled: ppdActive,
-        },
-        {
-          type: 2,
-          style: decksActive ? 3 : 1,
-          label: "🎮 Decks joués",
-          custom_id: `stats_clan_sort:${clanVal}:decksUsed`,
-          disabled: decksActive,
-        },
+        sortButton("avgFame", "🏆 Pts/semaine"),
+        sortButton("pointsPerDeck", "⚡ Pts/deck"),
+        sortButton("decksUsed", "🎮 Decks joués"),
+        sortButton("performance", "🎯 Performance"),
         {
           type: 2,
           style: 2,
@@ -472,6 +476,28 @@ function buildStatsClanComponents(clanVal, sortMode) {
       ],
     },
   ];
+}
+
+// Performance GDC (3 semaines) de tous les membres, lue en une commande Redis
+// et stockée dans `data` avant sa mise en cache : les clics de tri suivants
+// répondent ainsi sans nouvel appel. Facultative : un échec n'empêche pas
+// l'affichage (colonne P à « — »).
+async function attachStatsClanPerformance(data) {
+  const members = Array.isArray(data?.members) ? data.members : [];
+  try {
+    const samplesByTag = await getStoredWarMatchupPerformanceSamples(
+      members.map((member) => member.tag),
+    );
+    data.performanceByTag = Object.fromEntries(
+      Object.entries(samplesByTag).map(([tag, samples]) => [
+        tag,
+        aggregateMatchupPerformance(samples),
+      ]),
+    );
+  } catch (err) {
+    console.warn("[stats-clan] performance indisponible:", err.message);
+    data.performanceByTag = {};
+  }
 }
 
 const COLOR_MAP = {
@@ -488,6 +514,50 @@ const RELIABILITY_ICON = {
   red: "<:red:1506174836102139944>",
 };
 
+// Une ligne par membre : données d'abord (largeurs proches d'une ligne à
+// l'autre) et pseudo en fin de ligne ; la donnée du tri actif est en gras.
+function buildStatsClanRows(data, scenarioKey, sortMode) {
+  const members = Array.isArray(data?.members) ? data.members : [];
+  const performanceByTag = data?.performanceByTag ?? {};
+
+  const normalizedMembers = members.map((member) => {
+    const metrics = getStatsClanMetrics(member, scenarioKey);
+    const tagKey = String(member.tag || "")
+      .replace(/^#/, "")
+      .toUpperCase();
+    return {
+      ...member,
+      period: metrics.period,
+      avgFame: metrics.avgFame,
+      pointsPerDeck: metrics.pointsPerDeck,
+      performance: performanceByTag[tagKey] ?? null,
+    };
+  });
+
+  const sorted = sortStatsClanMembers(normalizedMembers, sortMode);
+  const fmt = (n) => (Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—");
+  const fmtDiff = (diff) => {
+    if (diff === null) return "—";
+    const rounded = Math.round(diff * 10) / 10;
+    const abs = Math.abs(rounded).toFixed(1).replace(".", ",");
+    return `${rounded >= 0 ? "+" : "-"}${abs}`;
+  };
+  const bold = (mode, str) =>
+    sortMode === mode && str !== "—" ? `**${str}**` : str;
+
+  return sorted.map((m, idx) => {
+    const decksUsed = Number(m.period?.decksUsed);
+    const columns = [
+      `T: ${bold("avgFame", fmt(m.avgFame))}`,
+      `R: ${bold("pointsPerDeck", fmt(m.pointsPerDeck))}`,
+      `D: ${bold("decksUsed", fmt(Number.isFinite(decksUsed) ? Math.round(decksUsed) : null))}`,
+      `P: ${bold("performance", fmtDiff(getStatsClanPerformanceDiff(m)))}`,
+      `${m.isNew ? "🆕 " : ""}${m.name}`,
+    ];
+    return `${idx + 1}. ${columns.join(" · ")}`;
+  });
+}
+
 function buildStatsClanPayload({
   data,
   clanName,
@@ -496,44 +566,8 @@ function buildStatsClanPayload({
   sortMode,
   isWarPeriod,
 }) {
-  const members = Array.isArray(data?.members) ? data.members : [];
   const scenario = getStatsClanScenario(isWarPeriod);
-
-  const normalizedMembers = members.map((member) => {
-    const metrics = getStatsClanMetrics(member, scenario.key);
-    return {
-      ...member,
-      period: metrics.period,
-      avgFame: metrics.avgFame,
-      pointsPerDeck: metrics.pointsPerDeck,
-    };
-  });
-
-  const sorted = sortStatsClanMembers(normalizedMembers, sortMode);
-  const fmt = (n) => (Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—");
-
-  const rows = sorted.map((m, idx) => {
-    const rank = idx + 1;
-    const newIcon = m.isNew ? "🆕" : "";
-
-    let reliabilityStr = "";
-    if (Number.isFinite(m.reliability)) {
-      const icon = RELIABILITY_ICON[m.color] ?? "⚪";
-      reliabilityStr = icon + Math.round(m.reliability) + "%";
-    }
-
-    const avgStr = fmt(m.avgFame);
-    const ppdStr = fmt(m.pointsPerDeck);
-    const decksUsed = Number(m.period?.decksUsed);
-    const decksStr = Number.isFinite(decksUsed)
-      ? ` (${Math.round(decksUsed)})`
-      : "";
-
-    const parts = [newIcon, reliabilityStr].filter(Boolean);
-    const prefix = parts.length ? " " + parts.join(" ") : "";
-    const body = ` 🏆${avgStr} ⚡${ppdStr}${decksStr}`;
-    return rank + ". " + m.name + prefix + body;
-  });
+  const rows = buildStatsClanRows(data, scenario.key, sortMode);
 
   const DESC_MAX = 4096;
   let currentLen = 0;
@@ -7850,13 +7884,14 @@ export default async function handler(req, res) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `⚠️ Données partielles pour ${resolved.name} : l'API Clash Royale n'a pas répondu pour l'historique de guerre du clan, les scores de fiabilité affichés seraient incorrects. Réessaie la commande dans quelques instants.`,
+              content: `⚠️ Données partielles pour ${resolved.name} : l'API Clash Royale n'a pas répondu pour l'historique de guerre du clan, les stats affichées seraient incorrectes. Réessaie la commande dans quelques instants.`,
               flags: 64,
             }),
           });
           return;
         }
 
+        await attachStatsClanPerformance(data);
         setCachedStatsClanAnalysis(resolved.tag, data);
         const members = Array.isArray(data.members) ? data.members : [];
         const clanInfo = data.clan || {};
@@ -7866,16 +7901,6 @@ export default async function handler(req, res) {
           data,
         );
         const scenario = getStatsClanScenario(isWarPeriod);
-
-        const normalizedMembers = members.map((member) => {
-          const metrics = getStatsClanMetrics(member, scenario.key);
-          return {
-            ...member,
-            period: metrics.period,
-            avgFame: metrics.avgFame,
-            pointsPerDeck: metrics.pointsPerDeck,
-          };
-        });
 
         if (members.length === 0) {
           await fetch(webhookUrl, {
@@ -7889,35 +7914,7 @@ export default async function handler(req, res) {
           return;
         }
 
-        // Tri des membres selon le mode choisi (décroissant)
-        const sorted = sortStatsClanMembers(normalizedMembers, sortMode);
-
-        const fmt = (n) =>
-          Number.isFinite(n) ? n.toLocaleString("fr-FR") : "—";
-
-        // Construit les lignes d'affichage (format compact une ligne par membre)
-        const rows = sorted.map((m, idx) => {
-          const rank = idx + 1;
-          const newIcon = m.isNew ? "🆕" : "";
-
-          let reliabilityStr = "";
-          if (Number.isFinite(m.reliability)) {
-            const icon = RELIABILITY_ICON[m.color] ?? "⚪";
-            reliabilityStr = icon + Math.round(m.reliability) + "%";
-          }
-
-          const avgStr = fmt(m.avgFame);
-          const ppdStr = fmt(m.pointsPerDeck);
-          const decksUsed = Number(m.period?.decksUsed);
-          const decksStr = Number.isFinite(decksUsed)
-            ? ` (${Math.round(decksUsed)})`
-            : "";
-
-          const parts = [newIcon, reliabilityStr].filter(Boolean);
-          const prefix = parts.length ? " " + parts.join(" ") : "";
-          const body = ` 🏆${avgStr} ⚡${ppdStr}${decksStr}`;
-          return rank + ". " + m.name + prefix + body;
-        });
+        const rows = buildStatsClanRows(data, scenario.key, sortMode);
 
         // Pagination au cas où (sécurité, normalement tout tient sur une page)
         const DESC_MAX = 4096;
@@ -8190,6 +8187,7 @@ export default async function handler(req, res) {
           return;
         }
 
+        await attachStatsClanPerformance(data);
         setCachedStatsClanAnalysis(clanTag, data);
       } catch (err) {
         const message =

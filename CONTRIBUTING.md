@@ -260,7 +260,8 @@ counters et l'écart de niveau des win conditions sont neutralisés pour ce comb
 
 #### Performance (victoires réelles vs attendues)
 
-Ligne « 🎯 Performance » de `/matchup` et `/matchup-gdc`, et ligne « Performance (3 semaines) » de `/stats` :
+Ligne « 🎯 Performance » de `/matchup` et `/matchup-gdc`, ligne « Performance (3 semaines) » de `/stats`, et colonne
+« P: » de `/stats-clan` (écart seul, cumul Redis sans battle log, « — » sous 4 combats, tri par bouton) :
 
 - victoires attendues = somme de `1 - matchup` sur les combats retenus ; écart = victoires réelles - attendues ;
 - combats retenus (`listMatchupPerformanceSamples()`, `backend/services/battleLogUtils.js`) : modes standards
