@@ -4,7 +4,8 @@
   "des": {
     "classique": { "label": "Dé classique", "emoji": "🎲", "min": 1, "max": 6, "or": 1 },
     "prudent": { "label": "Dé prudent", "emoji": "🐢", "min": 3, "max": 3, "or": 1 },
-    "epargne": { "label": "Dé d'épargne", "emoji": "💰", "min": 1, "max": 2, "or": 2 }
+    "epargne": { "label": "Dé d'épargne", "emoji": "💰", "min": 1, "max": 2, "or": 2 },
+    "farceur": { "label": "Dé Farceur", "emoji": "🃏", "faces": [0, 7], "or": 1, "reserve_sort": true }
   },
   "cases_speciales": {
     "4": { "label": "Turbo", "emoji": "⏩", "avance": 3 },
@@ -64,7 +65,7 @@
     { "id": 1, "label": "Recule de 2 cases", "nom": "Recul", "type": "negatif", "avance": -2, "retire_concentration": 2 },
     { "id": 2, "label": "Gel : ton dé de demain ne fera avancer que d'1 case", "nom": "Gel", "type": "negatif", "gel": true, "retire_concentration": 1 },
     { "id": 3, "label": "Échange sa place avec un adversaire aléatoire", "type": "neutre", "echangeAleatoire": true, "portee": 10, "retire": true },
-    { "id": 7, "label": "Dé Farceur : ton dé de demain fera 0 ou 7", "nom": "Dé Farceur", "type": "neutre", "farceur": [0, 7] },
+    { "id": 7, "label": "Dé Farceur : demain, ton dé est remplacé par le Dé Farceur (0 ou 7 cases)", "nom": "Dé Farceur", "type": "neutre", "de_impose": "farceur" },
     { "id": 4, "label": "Clone : ton dé du jour est rejoué", "type": "positif", "clone": true },
     { "id": 5, "label": "Rage : +2 cases sur ton dé de demain", "type": "positif", "rage": 2 },
     { "id": 6, "label": "Avance de 3 cases", "type": "positif", "avance": 3 }

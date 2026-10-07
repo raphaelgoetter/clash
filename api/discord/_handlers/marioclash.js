@@ -137,9 +137,10 @@ function buildEvenementsExceptionnels(jour, joueursApres, joueursAvant, closureL
     if (l.type === "de") {
       const avance = l.avance ?? l.valeur;
       const bonusRage = avance - l.valeur;
-      const nomDeLance = l.farceur ? "au Dé Farceur" : "au dé";
+      const deSort = config.des?.[l.deId]?.reserve_sort ? config.des[l.deId] : null;
+      const nomDeLance = deSort ? `au ${deSort.label}` : "au dé";
       gagne(l.discordId, bonusRage > 0 ? `${l.valeur} ${nomDeLance} + ${bonusRage} de Rage` : `${l.valeur} ${nomDeLance}`, avance);
-      if (l.farceur) entree(l.discordId).farceur = l.valeur;
+      if (deSort) entree(l.discordId).farceur = l.valeur;
       const c = l.caseSpeciale != null ? config.cases_speciales?.[l.caseSpeciale] : null;
       if (c?.avance > 0) gagne(l.discordId, `case ${c.label}`, c.avance);
       if (c?.avance < 0) perd(l.discordId, `case ${c.label}`, -c.avance);
@@ -323,8 +324,7 @@ function formatBilanLignes(lignes, joueurs, config, moiId) {
           const arrivee = l.positionDe != null ? ` (case ${l.positionDe})` : "";
           const c = l.caseSpeciale != null ? config.cases_speciales?.[l.caseSpeciale] : null;
           const effet = c ? ` · ${c.emoji} ${c.label} : ${effetCaseTexte(c)}` : "";
-          const emoji = l.farceur ? "🃏" : de?.emoji || "🎲";
-          return `${emoji} Tu as fait ${l.valeur}${l.farceur ? " au Dé Farceur" : ""}${arrivee}${effet}`;
+          return `${de?.emoji || "🎲"} Tu as fait ${l.valeur}${de?.reserve_sort ? ` au ${de.label}` : ""}${arrivee}${effet}`;
         }
         case "objet":
           if (l.effet === "avance")
@@ -495,8 +495,9 @@ const OBJET_EFFET_TEXTE = {
 };
 
 function describeDe(de) {
-  const cases =
-    de.min === de.max
+  const cases = Array.isArray(de.faces)
+    ? `${de.faces.join(" ou ")} cases`
+    : de.min === de.max
       ? `toujours ${de.min} cases`
       : `${de.min} ${de.max - de.min === 1 ? "ou" : "à"} ${de.max} cases`;
   return `${cases}, +${de.or} Or`;
@@ -538,9 +539,10 @@ function buildCasesSpecialesLines(config) {
 // — même calcul que rollDiceForPlayer().
 function avancesPossibles(joueur, config) {
   if (joueur.gel) return [1];
-  if (Array.isArray(joueur.farceur)) return joueur.farceur.filter((v) => v > 0);
+  const impose = config.des[joueur.deImpose];
+  if (impose) return (impose.faces || []).filter((v) => v > 0);
   const avances = new Set();
-  for (const de of Object.values(config.des)) {
+  for (const de of desAuChoix(config)) {
     for (let v = de.min; v <= de.max; v++) avances.add(v + (joueur.rage || 0));
   }
   return [...avances].sort((a, b) => a - b);
@@ -558,11 +560,17 @@ function casesSpecialesDevant(joueur, config) {
   return lignes;
 }
 
-function etatDeLigne(joueur) {
+// Dés proposés au choix (le Dé Farceur, `reserve_sort`, n'est imposé que par
+// son sort).
+function desAuChoix(config) {
+  return Object.values(config.des).filter((d) => !d.reserve_sort);
+}
+
+function etatDeLigne(joueur, config) {
   if (joueur.gel) return "🧊 Gelé : ton dé ne fera avancer que d'1 case aujourd'hui.";
   if (joueur.rage) return `😡 Rage : +${joueur.rage} cases sur ton dé aujourd'hui.`;
-  if (Array.isArray(joueur.farceur))
-    return `🃏 Dé Farceur : ton dé fera ${joueur.farceur.join(" ou ")} aujourd'hui (le dé choisi ne compte que pour l'Or).`;
+  const impose = config.des[joueur.deImpose];
+  if (impose) return `${impose.emoji} ${impose.label} : il remplace ton dé aujourd'hui (${describeDe(impose)}).`;
   return null;
 }
 
@@ -588,10 +596,11 @@ function prochaineCaseLigne(joueur, config) {
 }
 
 function etatPersonnelLignes(joueur, config) {
-  return [etatDeLigne(joueur), prochaineCaseLigne(joueur, config), concentrationLigne(joueur, config)].filter(Boolean);
+  return [etatDeLigne(joueur, config), prochaineCaseLigne(joueur, config), concentrationLigne(joueur, config)].filter(Boolean);
 }
 
-function buildDiceSelect(jour, config) {
+// `deImpose` : seul ce dé est proposé (Dé Farceur), sinon les dés au choix.
+function buildDiceSelect(jour, config, deImpose) {
   return [
     {
       type: 1,
@@ -599,13 +608,15 @@ function buildDiceSelect(jour, config) {
         {
           type: 3,
           custom_id: `marioclash_dice_select:${jour}`,
-          placeholder: "Choisis ton dé",
-          options: Object.entries(config.des).map(([id, d]) => ({
-            label: d.label,
-            description: describeDe(d),
-            value: id,
-            emoji: { name: d.emoji },
-          })),
+          placeholder: config.des[deImpose] ? `Lancer le ${config.des[deImpose].label}` : "Choisis ton dé",
+          options: Object.entries(config.des)
+            .filter(([id, d]) => (config.des[deImpose] ? id === deImpose : !d.reserve_sort))
+            .map(([id, d]) => ({
+              label: d.label,
+              description: describeDe(d),
+              value: id,
+              emoji: { name: d.emoji },
+            })),
         },
       ],
     },
@@ -623,7 +634,7 @@ function buildReglesEmbed(config) {
     (s) =>
       `${SORT_TYPE_EMOJI[s.type] || "•"} ${s.label}${s.retire_concentration ? ` *(retiré dès Concentration ${s.retire_concentration})*` : ""}`,
   );
-  const desLines = Object.values(config.des).map(
+  const desLines = desAuChoix(config).map(
     (d) => `${d.emoji} **${d.label}** : ${describeDe(d)}`,
   );
   return {
@@ -1019,15 +1030,22 @@ export async function handleDiceButton(webhookUrl, jour, discordId, username) {
       });
       return;
     }
+    // Dé imposé par le sort d'hier (Dé Farceur) : seule option proposée, avec
+    // un rappel explicite pour qui aurait oublié son sort.
+    const impose = config.des[joueur.deImpose];
     const devant = casesSpecialesDevant(joueur, config);
-    const lignes = [`🎲 Tu es case **${joueur.position}**. Choisis ton dé :`];
-    const etat = etatDeLigne(joueur);
+    const lignes = [
+      impose
+        ? `🎲 Tu es case **${joueur.position}**. Ton sort d'hier t'impose le **${impose.label}** aujourd'hui :`
+        : `🎲 Tu es case **${joueur.position}**. Choisis ton dé :`,
+    ];
+    const etat = etatDeLigne(joueur, config);
     if (etat) lignes.push(etat);
     if (devant.length) lignes.push(`Devant toi : ${devant.join(", ")}`);
     await patchOriginal(webhookUrl, {
       content: lignes.join("\n"),
       embeds: [],
-      components: buildDiceSelect(jour, config),
+      components: buildDiceSelect(jour, config, joueur.deImpose),
     });
   } catch (err) {
     console.error("[MarioClash] Échec bouton dé:", err.message);
@@ -1039,45 +1057,49 @@ export async function handleDiceSelect(webhookUrl, jour, discordId, username, de
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
     await ensureJoueur(discordId, username);
-    const result = await rollDiceForPlayer(Number(jour), discordId, deId, config);
-    if (result.status === "alreadyRolled") {
-      await patchOriginal(webhookUrl, {
-        content: "🎲 Tu as déjà lancé le dé aujourd'hui.",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    if (result.status !== "ok") {
-      await patchOriginal(webhookUrl, {
-        content: "🎲 Lancer impossible.",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    const arrivee = result.position >= config.case_arrivee ? " 🏁" : "";
-    const lignes = [
-      result.avance > 0
-        ? `${result.farceur ? "🃏" : result.de.emoji} Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.positionDe}**. +${result.pointsGagnes} Or.`
-        : `🃏 Le Dé Farceur fait **0** ! Tu restes sur la case ${result.positionAvant}. +${result.pointsGagnes} Or.`,
-    ];
-    if (result.farceur && result.avance > 0) lignes.push("🃏 Dé Farceur : pile sur la bonne face !");
-    if (result.gel) lignes.push("🧊 Gelé : tu n'avances que d'1 case.");
-    else if (result.rage) lignes.push(`😡 Rage : +${result.rage} cases incluses.`);
-    if (result.caseSpeciale) {
-      const c = result.caseSpeciale;
-      lignes.push(`${c.emoji} Case **${c.label}** : ${effetCaseTexte(c)} !`);
-    }
-    lignes.push(`📍 Case **${result.position}**${arrivee} · ${result.points} Or au total.`);
-    await patchOriginal(webhookUrl, {
-      content: lignes.join("\n"),
-      embeds: [],
-      components: [],
-    });
+    await rollAndReport(webhookUrl, jour, discordId, deId, config);
   } catch (err) {
     console.error("[MarioClash] Échec select dé:", err.message);
   }
+}
+
+// Lance le dé et affiche le résultat (choix au select, ou dé imposé).
+async function rollAndReport(webhookUrl, jour, discordId, deId, config) {
+  const result = await rollDiceForPlayer(Number(jour), discordId, deId, config);
+  if (result.status === "alreadyRolled") {
+    await patchOriginal(webhookUrl, {
+      content: "🎲 Tu as déjà lancé le dé aujourd'hui.",
+      embeds: [],
+      components: [],
+    });
+    return;
+  }
+  if (result.status !== "ok") {
+    await patchOriginal(webhookUrl, {
+      content: "🎲 Lancer impossible.",
+      embeds: [],
+      components: [],
+    });
+    return;
+  }
+  const arrivee = result.position >= config.case_arrivee ? " 🏁" : "";
+  const lignes = [
+    result.avance > 0
+      ? `${result.de.emoji} Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.positionDe}**. +${result.pointsGagnes} Or.`
+      : `${result.de.emoji} Le ${result.de.label} fait **0** ! Tu restes sur la case ${result.positionAvant}. +${result.pointsGagnes} Or.`,
+  ];
+  if (result.gel) lignes.push("🧊 Gelé : tu n'avances que d'1 case.");
+  else if (result.rage) lignes.push(`😡 Rage : +${result.rage} cases incluses.`);
+  if (result.caseSpeciale) {
+    const c = result.caseSpeciale;
+    lignes.push(`${c.emoji} Case **${c.label}** : ${effetCaseTexte(c)} !`);
+  }
+  lignes.push(`📍 Case **${result.position}**${arrivee} · ${result.points} Or au total.`);
+  await patchOriginal(webhookUrl, {
+    content: lignes.join("\n"),
+    embeds: [],
+    components: [],
+  });
 }
 
 // ── Bouton [🛍️ Boutique] + select d'achat ───────────────────────────

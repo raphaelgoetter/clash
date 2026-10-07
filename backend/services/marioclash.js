@@ -293,7 +293,9 @@ export function clampPosition(position, caseArrivee) {
 // Le joueur CHOISIT son dé (config.des : classique / prudent / épargne) :
 // arbitrage avancer vs Or, et précision pour viser ou éviter une case
 // spéciale.
+// `faces` : dé à faces explicites (Dé Farceur : 0 ou 7), sinon min..max.
 export function rollDieOfType(de, rng = Math.random) {
+  if (Array.isArray(de.faces)) return de.faces[Math.floor(rng() * de.faces.length)];
   return de.min + Math.floor(rng() * (de.max - de.min + 1));
 }
 
@@ -313,19 +315,21 @@ export function applyCaseSpeciale(position, points, config) {
 }
 
 export async function rollDiceForPlayer(jour, discordId, deId, config, rng = Math.random) {
-  const de = config.des[deId];
-  if (!de) return { status: "unknownDie" };
   const actions = await readActions(jour);
   if (actions[discordId]?.dice) return { status: "alreadyRolled" };
   const joueur = await readJoueur(discordId);
   if (!joueur) return { status: "unknownPlayer" };
-  // Gel/Rage/Dé Farceur : posés par le sort de la veille (voir
+  // Dé imposé par le sort de la veille (Dé Farceur) : remplace le dé choisi.
+  // Un dé `reserve_sort` ne peut jamais être choisi librement.
+  if (joueur.deImpose && config.des[joueur.deImpose]) deId = joueur.deImpose;
+  else if (config.des[deId]?.reserve_sort) return { status: "unknownDie" };
+  const de = config.des[deId];
+  if (!de) return { status: "unknownDie" };
+  // Gel/Rage/dé imposé : posés par le sort de la veille (voir
   // computeCloture), valables pour le dé de ce jour uniquement. Gel : 1 case
   // quel que soit le dé (l'Or du dé reste acquis). Rage : bonus ajouté au
-  // résultat. Dé Farceur : une face tirée parmi `farceur`, le dé choisi ne
-  // compte plus que pour l'Or. Un seul sort par jour : jamais cumulés.
-  const farceur = Array.isArray(joueur.farceur) ? joueur.farceur : null;
-  const valeur = farceur ? farceur[Math.floor(rng() * farceur.length)] : rollDieOfType(de, rng);
+  // résultat. Un seul sort par jour : jamais cumulés.
+  const valeur = rollDieOfType(de, rng);
   const avance = joueur.gel ? 1 : valeur + (joueur.rage || 0);
   const positionDe = clampPosition(joueur.position + avance, config.case_arrivee);
   // Sur place (0 au Dé Farceur) : la case où l'on se trouve déjà ne se
@@ -334,7 +338,7 @@ export async function rollDiceForPlayer(jour, discordId, deId, config, rng = Mat
     avance > 0
       ? applyCaseSpeciale(positionDe, joueur.points + de.or, config)
       : { position: positionDe, points: joueur.points + de.or, caseSpeciale: null };
-  await writeJoueur(discordId, { ...joueur, position, points, gel: false, rage: 0, farceur: null });
+  await writeJoueur(discordId, { ...joueur, position, points, gel: false, rage: 0, deImpose: null });
   // Détail du lancer conservé pour le bilan du Journal (voir computeCloture) :
   // le dé est résolu ici, mais n'apparaîtrait sinon nulle part après coup.
   await updateAction(jour, discordId, {
@@ -344,10 +348,9 @@ export async function rollDiceForPlayer(jour, discordId, deId, config, rng = Mat
     deId,
     positionDe,
     caseSpeciale: caseSpeciale ? positionDe : null,
-    farceur: !!farceur,
   });
   return {
-    status: "ok", de, valeur, avance, gel: !!joueur.gel, rage: joueur.rage || 0, farceur: !!farceur,
+    status: "ok", de, valeur, avance, gel: !!joueur.gel, rage: joueur.rage || 0,
     positionAvant: joueur.position, positionDe, position, pointsGagnes: de.or, points, caseSpeciale,
   };
 }
@@ -394,7 +397,6 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
       deId: action.deId || null,
       valeur: action.diceValue,
       avance: action.diceAvance ?? action.diceValue,
-      farceur: !!action.farceur,
       positionDe: action.positionDe ?? null,
       caseSpeciale: action.caseSpeciale ?? null,
     });
@@ -408,7 +410,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
   for (const [id, joueur] of Object.entries(joueurs)) {
     joueur.gel = false;
     joueur.rage = 0;
-    joueur.farceur = null;
+    joueur.deImpose = null;
     if (!actionsRaw[id]?.spell) {
       joueur.concentration = Math.min(config.concentration_max ?? 0, (joueur.concentration || 0) + 1);
     }
@@ -448,7 +450,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     }
     if (sort.gel) cible.gel = true;
     if (sort.rage) cible.rage = sort.rage;
-    if (sort.farceur) cible.farceur = sort.farceur;
+    if (sort.de_impose) cible.deImpose = sort.de_impose;
     // Clone : rejoue le déplacement du dé du jour (bonus Rage/Gel compris),
     // sans case spéciale (déclenchées par le dé seul). Sans dé : sans effet.
     let valeurClone = null;
