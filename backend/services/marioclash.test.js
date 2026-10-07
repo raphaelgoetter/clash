@@ -268,7 +268,7 @@ async function main() {
     const actionsRaw = { a: { dice: true, diceValue: 3, deId: "prudent", positionDe: 12, caseSpeciale: 12 } };
     const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, rng: Math.random });
     assert.strictEqual(r.joueursApres.a.position, 12, "le dé n'est pas réappliqué à la clôture");
-    assert.deepStrictEqual(r.lignes[0], { type: "de", discordId: "a", deId: "prudent", valeur: 3, avance: 3, positionDe: 12, caseSpeciale: 12 });
+    assert.deepStrictEqual(r.lignes[0], { type: "de", discordId: "a", deId: "prudent", valeur: 3, avance: 3, farceur: false, positionDe: 12, caseSpeciale: 12 });
   }
 
   // ── Nouveaux sorts (Gel / Rage / Clone) et Concentration ─────────────
@@ -316,6 +316,25 @@ async function main() {
     assert.strictEqual(r2.joueursApres.a.position, 11);
     assert.strictEqual(r2.joueursApres.c.position, 5);
     assert.strictEqual(r2.lignes.find((l) => l.type === "sort" && l.discordId === "c").valeurClone, 0);
+    // Dé Farceur : posé pour demain, purgé le lendemain ; sort retiré jamais
+    // tiré mais encore appliqué s'il a été lancé avant son retrait.
+    const C2 = { ...C, sorts: [{ ...SORTS[2], retire: true }, { id: 7, label: "Dé Farceur", farceur: [0, 7] }] };
+    assert.deepStrictEqual(sortsDisponibles(C2.sorts, 0).map((x) => x.id), [7]);
+    const r3 = computeCloture({
+      actionsRaw: { a: { spell: { target: "a", sortId: 7 } } },
+      joueursAvant: { ...joueursAvant, b: { ...joueursAvant.b, farceur: [0, 7] } },
+      config: C2,
+      rng: Math.random,
+    });
+    assert.deepStrictEqual(r3.joueursApres.a.farceur, [0, 7]);
+    assert.strictEqual(r3.joueursApres.b.farceur, null, "le Dé Farceur d'hier est périmé");
+    const r4 = computeCloture({
+      actionsRaw: { a: { spell: { target: "a", sortId: 3 } } },
+      joueursAvant: { a: { username: "A", position: 5, points: 0 }, b: { username: "B", position: 9, points: 0 } },
+      config: C2,
+      rng: () => 0,
+    });
+    assert.strictEqual(r4.joueursApres.a.position, 9, "échange lancé avant le retrait toujours appliqué");
   }
 
   // ── Objet acheté sans cible choisie : remboursé et retiré ────────────

@@ -29,7 +29,7 @@
     "bombe": {
       "label": "Bombe",
       "emoji": "💣",
-      "cout": 3,
+      "cout": 2,
       "cible": "adversaire",
       "recul": 3,
       "recul_renvoi": 3
@@ -63,7 +63,8 @@
   "sorts": [
     { "id": 1, "label": "Recule de 2 cases", "nom": "Recul", "type": "negatif", "avance": -2, "retire_concentration": 2 },
     { "id": 2, "label": "Gel : ton dé de demain ne fera avancer que d'1 case", "nom": "Gel", "type": "negatif", "gel": true, "retire_concentration": 1 },
-    { "id": 3, "label": "Échange sa place avec un adversaire aléatoire", "type": "neutre", "echangeAleatoire": true, "portee": 10 },
+    { "id": 3, "label": "Échange sa place avec un adversaire aléatoire", "type": "neutre", "echangeAleatoire": true, "portee": 10, "retire": true },
+    { "id": 7, "label": "Dé Farceur : ton dé de demain fera 0 ou 7", "nom": "Dé Farceur", "type": "neutre", "farceur": [0, 7] },
     { "id": 4, "label": "Clone : ton dé du jour est rejoué", "type": "positif", "clone": true },
     { "id": 5, "label": "Rage : +2 cases sur ton dé de demain", "type": "positif", "rage": 2 },
     { "id": 6, "label": "Avance de 3 cases", "type": "positif", "avance": 3 }

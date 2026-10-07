@@ -46,6 +46,14 @@
     "😵 Rien ne va plus pour {joueur} : {detail}. {total} cases perdues !",
     "🌧️ {joueur} encaisse tout : {detail}, {total} cases en arrière !"
   ],
+  "farceur_gagne": [
+    "🃏 Le Dé Farceur sourit à {joueur} : {valeur} cases d'un coup !",
+    "🃏 {joueur} tente le Dé Farceur… et décroche le {valeur} !"
+  ],
+  "farceur_rate": [
+    "🃏 Le Dé Farceur a joué un tour à {joueur} : 0, pas un pas en avant !",
+    "🃏 {joueur} lance le Dé Farceur… 0. Le dé rigole encore."
+  ],
   "clone_rate": [
     "🤦 {joueur} lance Clone… sans avoir lancé le dé. Rien à rejouer !",
     "🪞 {joueur} a cloné un dé qui n'existait pas. Sort perdu !"

@@ -137,7 +137,9 @@ function buildEvenementsExceptionnels(jour, joueursApres, joueursAvant, closureL
     if (l.type === "de") {
       const avance = l.avance ?? l.valeur;
       const bonusRage = avance - l.valeur;
-      gagne(l.discordId, bonusRage > 0 ? `${l.valeur} au dé + ${bonusRage} de Rage` : `${l.valeur} au dé`, avance);
+      const nomDeLance = l.farceur ? "au Dé Farceur" : "au dé";
+      gagne(l.discordId, bonusRage > 0 ? `${l.valeur} ${nomDeLance} + ${bonusRage} de Rage` : `${l.valeur} ${nomDeLance}`, avance);
+      if (l.farceur) entree(l.discordId).farceur = l.valeur;
       const c = l.caseSpeciale != null ? config.cases_speciales?.[l.caseSpeciale] : null;
       if (c?.avance > 0) gagne(l.discordId, `case ${c.label}`, c.avance);
       if (c?.avance < 0) perd(l.discordId, `case ${c.label}`, -c.avance);
@@ -178,6 +180,16 @@ function buildEvenementsExceptionnels(jour, joueursApres, joueursAvant, closureL
           .replaceAll("{joueur}", nomDe(id))
           .replaceAll("{detail}", joinDetail(b.pertes))
           .replaceAll("{total}", b.perte),
+      });
+    }
+    // Dé Farceur : toujours raconté (tout ou rien), sauf s'il fait déjà
+    // partie d'un exploit.
+    const dejaExploit = b.gains.length >= 2 && b.gain >= EXPLOIT_MIN_CASES;
+    if (b.farceur != null && !dejaExploit) {
+      const pool = b.farceur > 0 ? narratifs.farceur_gagne : narratifs.farceur_rate;
+      evenements.push({
+        poids: 1,
+        texte: pickFlavor(pool, seed).replaceAll("{joueur}", nomDe(id)).replaceAll("{valeur}", b.farceur),
       });
     }
     if (b.cloneRate) {
@@ -311,7 +323,8 @@ function formatBilanLignes(lignes, joueurs, config, moiId) {
           const arrivee = l.positionDe != null ? ` (case ${l.positionDe})` : "";
           const c = l.caseSpeciale != null ? config.cases_speciales?.[l.caseSpeciale] : null;
           const effet = c ? ` · ${c.emoji} ${c.label} : ${effetCaseTexte(c)}` : "";
-          return `${de?.emoji || "🎲"} Tu as fait ${l.valeur}${arrivee}${effet}`;
+          const emoji = l.farceur ? "🃏" : de?.emoji || "🎲";
+          return `${emoji} Tu as fait ${l.valeur}${l.farceur ? " au Dé Farceur" : ""}${arrivee}${effet}`;
         }
         case "objet":
           if (l.effet === "avance")
@@ -525,6 +538,7 @@ function buildCasesSpecialesLines(config) {
 // — même calcul que rollDiceForPlayer().
 function avancesPossibles(joueur, config) {
   if (joueur.gel) return [1];
+  if (Array.isArray(joueur.farceur)) return joueur.farceur.filter((v) => v > 0);
   const avances = new Set();
   for (const de of Object.values(config.des)) {
     for (let v = de.min; v <= de.max; v++) avances.add(v + (joueur.rage || 0));
@@ -547,6 +561,8 @@ function casesSpecialesDevant(joueur, config) {
 function etatDeLigne(joueur) {
   if (joueur.gel) return "🧊 Gelé : ton dé ne fera avancer que d'1 case aujourd'hui.";
   if (joueur.rage) return `😡 Rage : +${joueur.rage} cases sur ton dé aujourd'hui.`;
+  if (Array.isArray(joueur.farceur))
+    return `🃏 Dé Farceur : ton dé fera ${joueur.farceur.join(" ou ")} aujourd'hui (le dé choisi ne compte que pour l'Or).`;
   return null;
 }
 
@@ -596,14 +612,14 @@ function buildDiceSelect(jour, config) {
   ];
 }
 
-const SORT_TYPE_EMOJI = { negatif: "🔻", positif: "✅", neutre: "🔄" };
+const SORT_TYPE_EMOJI = { negatif: "🔻", positif: "✅", neutre: "⚖️" };
 
 function buildReglesEmbed(config) {
   const objetsLines = Object.entries(config.objets).map(
     ([id, o]) =>
       `${o.emoji} **${o.label}** (${o.cout} Or) : ${OBJET_EFFET_TEXTE[id] || ""}`,
   );
-  const sortsLines = config.sorts.map(
+  const sortsLines = config.sorts.filter((s) => !s.retire).map(
     (s) =>
       `${SORT_TYPE_EMOJI[s.type] || "•"} ${s.label}${s.retire_concentration ? ` *(retiré dès Concentration ${s.retire_concentration})*` : ""}`,
   );
@@ -1042,8 +1058,11 @@ export async function handleDiceSelect(webhookUrl, jour, discordId, username, de
     }
     const arrivee = result.position >= config.case_arrivee ? " 🏁" : "";
     const lignes = [
-      `${result.de.emoji} Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.positionDe}**. +${result.pointsGagnes} Or.`,
+      result.avance > 0
+        ? `${result.farceur ? "🃏" : result.de.emoji} Tu as fait **${result.valeur}** ! Tu avances de la case ${result.positionAvant} à la case **${result.positionDe}**. +${result.pointsGagnes} Or.`
+        : `🃏 Le Dé Farceur fait **0** ! Tu restes sur la case ${result.positionAvant}. +${result.pointsGagnes} Or.`,
     ];
+    if (result.farceur && result.avance > 0) lignes.push("🃏 Dé Farceur : pile sur la bonne face !");
     if (result.gel) lignes.push("🧊 Gelé : tu n'avances que d'1 case.");
     else if (result.rage) lignes.push(`😡 Rage : +${result.rage} cases incluses.`);
     if (result.caseSpeciale) {
