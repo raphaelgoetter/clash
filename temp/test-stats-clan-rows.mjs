@@ -10,9 +10,6 @@ const mod = new Function("getStoredWarMatchupPerformanceSamples", "aggregateMatc
   code + "; return { attachStatsClanPerformance, buildStatsClanPayload };")(getStoredWarMatchupPerformanceSamples, aggregateMatchupPerformance, trustClanUrl);
 const data = await (await fetch("https://trustroyale.vercel.app/api/clan/Y8JUPC9C/analysis?fast=true")).json();
 await mod.attachStatsClanPerformance(data);
-for (const sortMode of ["performance", "decksUsed"]) {
-  const p = mod.buildStatsClanPayload({ data, clanName: "La Resistance", clanTag: "Y8JUPC9C", clanVal: "1", sortMode, isWarPeriod: false });
-  console.log(p.embeds[0].description.split("\n").slice(0, 6).join("\n"), "\n…\n", p.embeds[0].description.split("\n").slice(-2).join("\n"));
-  console.log(p.embeds[0].footer.text, p.embeds[0].description.length);
-  console.log(p.components[0].components.map((c) => c.label + (c.disabled ? "*" : "")).join(" | "));
-}
+const p = mod.buildStatsClanPayload({ data, clanName: "La Resistance", clanTag: "Y8JUPC9C", clanVal: "1", sortMode: "avgFame", isWarPeriod: false });
+for (const e of p.embeds) console.log(e.title ?? "(sans titre)", e.footer ?? "", e.description.length, "\n" + e.description.split("\n").slice(0, 2).join("\n"));
+console.log(p.components[0].components.map((c) => c.label).join(" | "));

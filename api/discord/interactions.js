@@ -363,8 +363,8 @@ function buildDiscordWebhookUrl(body) {
 
 function getStatsClanScenario(isWarPeriod) {
   return isWarPeriod
-    ? { key: "current", label: "GDC en cours — semaine actuelle" }
-    : { key: "training", label: "Entraînement — semaine passée" };
+    ? { key: "current" } // GDC en cours : semaine actuelle
+    : { key: "training" }; // entraînement : semaine passée
 }
 
 function getStatsClanPeriodForMember(member, scenarioKey) {
@@ -395,24 +395,6 @@ function getStatsClanMetrics(member, scenarioKey) {
         ? Math.round(fame / decksUsed)
         : null,
   };
-}
-
-function buildStatsClanFooter({
-  sortMode,
-  scenarioLabel,
-  pageIndex,
-  pageCount,
-}) {
-  const sortLabel = getStatsClanSortLabel(sortMode);
-  const base = `Tri : ${sortLabel} · 🏆 pts/semaine · 📈 pts/deck · 🃏 decks joués · 🎯 performance (3 semaines) · Scénario : ${scenarioLabel}`;
-  return pageCount > 1 ? `${base} · Page ${pageIndex + 1}/${pageCount}` : base;
-}
-
-function getStatsClanSortLabel(sortMode) {
-  if (sortMode === "pointsPerDeck") return "Points par deck";
-  if (sortMode === "decksUsed") return "Decks joués";
-  if (sortMode === "performance") return "Performance";
-  return "Points par semaine";
 }
 
 // Écart victoires réelles - attendues (cf. formatMatchupPerformanceField),
@@ -556,9 +538,11 @@ function buildStatsClanRows(data, scenarioKey, sortMode) {
       `🎯 ${bold("performance", fmtDiff(getStatsClanPerformanceDiff(m)))}`,
       `${m.isNew ? "🆕 " : ""}${m.name}`,
     ];
-    return `${idx + 1}. ${columns.join(" · ")}`;
+    return `${idx + 1}. ${columns.join(" ")}`;
   });
 }
+
+const STATS_CLAN_ROWS_PER_EMBED = 25;
 
 function buildStatsClanPayload({
   data,
@@ -571,34 +555,24 @@ function buildStatsClanPayload({
   const scenario = getStatsClanScenario(isWarPeriod);
   const rows = buildStatsClanRows(data, scenario.key, sortMode);
 
-  const DESC_MAX = 4096;
-  let currentLen = 0;
-  const firstPage = [];
-  for (const row of rows) {
-    const rowLen = row.length + 1;
-    if (currentLen + rowLen > DESC_MAX && firstPage.length > 0) break;
-    firstPage.push(row);
-    currentLen += rowLen;
+  // Plusieurs embeds dans un même message : au-delà d'une quarantaine de
+  // lignes à 4 emojis, Discord affiche les numéros de liste mais plus leur
+  // contenu (constaté sur 50 membres, ~2700 caractères pourtant).
+  const embeds = [];
+  for (let i = 0; i < rows.length; i += STATS_CLAN_ROWS_PER_EMBED) {
+    embeds.push({
+      color: 0x5865f2,
+      description: rows
+        .slice(i, i + STATS_CLAN_ROWS_PER_EMBED)
+        .join(String.fromCharCode(10)),
+    });
   }
-  const pageCount = Math.ceil(rows.length / firstPage.length);
+  if (embeds.length === 0) embeds.push({ color: 0x5865f2 });
+  embeds[0].title = `<:stats:1499284927894650950> Stats GDC : ${clanName}`;
+  embeds[0].url = trustClanUrl(clanTag);
 
   return {
-    embeds: [
-      {
-        title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
-        url: trustClanUrl(clanTag),
-        color: 0x5865f2,
-        description: firstPage.join(String.fromCharCode(10)),
-        footer: {
-          text: buildStatsClanFooter({
-            sortMode,
-            scenarioLabel: scenario.label,
-            pageIndex: 0,
-            pageCount,
-          }),
-        },
-      },
-    ],
+    embeds,
     components: buildStatsClanComponents(clanVal, sortMode),
   };
 }
@@ -7902,7 +7876,6 @@ export default async function handler(req, res) {
           resolved.tag,
           data,
         );
-        const scenario = getStatsClanScenario(isWarPeriod);
 
         if (members.length === 0) {
           await fetch(webhookUrl, {
@@ -7916,65 +7889,25 @@ export default async function handler(req, res) {
           return;
         }
 
-        const rows = buildStatsClanRows(data, scenario.key, sortMode);
-
-        // Pagination au cas où (sécurité, normalement tout tient sur une page)
-        const DESC_MAX = 4096;
-        const pages = [];
-        let currentPage = [];
-        let currentLen = 0;
-        for (const row of rows) {
-          const rowLen = row.length + 1;
-          if (currentLen + rowLen > DESC_MAX && currentPage.length > 0) {
-            pages.push(currentPage);
-            currentPage = [row];
-            currentLen = rowLen;
-          } else {
-            currentPage.push(row);
-            currentLen += rowLen;
-          }
-        }
-        if (currentPage.length > 0) pages.push(currentPage);
-        const pageCount = pages.length;
-
-        const sendPage = (pageRows, pageIndex) => {
-          let description = "";
-          for (let ri = 0; ri < pageRows.length; ri++) {
-            if (ri > 0) description += String.fromCharCode(10);
-            description += pageRows[ri];
-          }
-          const embed = {
-            title: `<:stats:1499284927894650950> Stats GDC : ${clanName}`,
-            url: trustClanUrl(resolved.tag),
-            color: 0x5865f2,
-            description,
-            footer: {
-              text: buildStatsClanFooter({
-                sortMode,
-                scenarioLabel: scenario.label,
-                pageIndex,
-                pageCount,
-              }),
-            },
-          };
-          return { embeds: [embed] };
-        };
-
-        const firstPayload = sendPage(pages[0], 0);
-
-        // Ajoute les boutons de tri (uniquement sur la première page)
-        firstPayload.components = buildStatsClanComponents(clanVal, sortMode);
+        const payload = buildStatsClanPayload({
+          data,
+          clanName,
+          clanTag: resolved.tag,
+          clanVal,
+          sortMode,
+          isWarPeriod,
+        });
 
         const firstResp = await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(firstPayload),
+          body: JSON.stringify(payload),
         });
 
         if (!firstResp.ok) {
           const text = await firstResp.text().catch(() => "");
           console.error(
-            "stats-clan first page webhook failed:",
+            "stats-clan webhook failed:",
             firstResp.status,
             text,
           );
@@ -7987,16 +7920,6 @@ export default async function handler(req, res) {
             }),
           });
           return;
-        }
-
-        // Pages suivantes (sans boutons)
-        for (let p = 1; p < pageCount; p++) {
-          const payload = sendPage(pages[p], p);
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
         }
       } catch (err) {
         await fetch(webhookUrl, {
