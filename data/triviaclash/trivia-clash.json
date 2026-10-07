@@ -18,12 +18,7 @@
   },
   {
     "question": "En février 2026, juste avant le Super Bowl LX, Clash Royale a diffusé en jeu un « halftime show » virtuel. Quel rappeur en était la vedette ?",
-    "choices": [
-      "Lil Wayne √",
-      "Snoop Dogg",
-      "Travis Scott",
-      "Kendrick Lamar"
-    ],
+    "choices": ["Lil Wayne √", "Snoop Dogg", "Travis Scott", "Kendrick Lamar"],
     "source": "Pocket Gamer et Pollstar (février 2026)"
   },
   {
@@ -48,22 +43,12 @@
   },
   {
     "question": "En quelle année les Évolutions de cartes sont-elles arrivées dans le jeu ?",
-    "choices": [
-      "2023 √",
-      "2019",
-      "2021",
-      "2017"
-    ],
+    "choices": ["2023 √", "2019", "2021", "2022"],
     "source": "Mise à jour de juin 2023 (Card Evolution)"
   },
   {
     "question": "Qui a remporté la toute première finale mondiale officielle de Clash Royale, à Londres en décembre 2017 ?",
-    "choices": [
-      "SergioRamos √",
-      "Morten",
-      "Surgical Goblin",
-      "Mugi"
-    ],
+    "choices": ["SergioRamos √", "Morten", "Surgical Goblin", "Mugi"],
     "source": "Crown Championship 2017 (finale mondiale de Londres)"
   },
   {
@@ -78,73 +63,23 @@
   },
   {
     "question": "À sa sortie, combien de squelettes au maximum le Roi squelette pouvait-il invoquer avec sa capacité ?",
-    "choices": [
-      "20 √",
-      "15",
-      "18",
-      "25"
-    ],
+    "choices": ["20 √", "15", "18", "25"],
     "source": "Blog Supercell (équilibrage de juin 2022)"
   },
   {
     "question": "Qui a remporté le tout premier tournoi officiel organisé par Supercell sur Clash Royale, à Helsinki en avril 2016 ?",
-    "choices": [
-      "Jason √",
-      "Steroidi69",
-      "Surgical Goblin",
-      "SergioRamos"
-    ],
+    "choices": ["Jason √", "Steroidi69", "Surgical Goblin", "SergioRamos"],
     "source": "Pocket Gamer (avril 2016)"
   },
   {
     "question": "Au soft launch, combien d'élixir coûtait le Canon avant sa refonte de février 2016 ?",
-    "choices": [
-      "6 √",
-      "2",
-      "4",
-      "5"
-    ],
+    "choices": ["6 √", "2", "4", "5"],
     "source": "Notes d'équilibrage officielles (février 2016)"
   },
   {
     "question": "Dans quelle ville s'est tenue la finale mondiale CRL 2025, où Mohamed Light a décroché un 3e titre mondial inédit ?",
-    "choices": [
-      "Atlanta √",
-      "Helsinki",
-      "Los Angeles",
-      "Tokyo"
-    ],
+    "choices": ["Atlanta √", "Helsinki", "Los Angeles", "Tokyo"],
     "source": "Liquipedia et Sportskeeda (CRL 2025 World Finals)"
-  },
-  {
-    "question": "Quel joueur a remporté les finales mondiales de Clash Royale en 2021 ET en 2023 ?",
-    "choices": [
-      "Mugi √",
-      "Mohamed Light",
-      "Morten",
-      "Surgical Goblin"
-    ],
-    "source": "Liquipedia (World Finals 2021 et 2023)"
-  },
-  {
-    "question": "À l'ESWC 2017 (Paris Games Week), quel joueur français de Millenium s'est incliné 3-1 en finale face à Surgical Goblin ?",
-    "choices": [
-      "Azilys √",
-      "Doberman",
-      "Inttox",
-      "Nèmsensei"
-    ],
-    "source": "iPhoneSoft (« ESWC Clash Royale : retour sur la compétition », 2017)"
-  },
-  {
-    "question": "Quelle équipe a remporté la finale mondiale CRL 2020, organisée à Shanghai en pleine pandémie ?",
-    "choices": [
-      "Team Queso √",
-      "SK Gaming",
-      "PONOS",
-      "Nova Esports"
-    ],
-    "source": "Liquipedia (CRL 2020 World Finals)"
   },
   {
     "question": "Dans le prototype de 2015 (avant même l'arrivée du Roi), comment les troupes traversaient-elles la rivière ?",
@@ -198,12 +133,7 @@
   },
   {
     "question": "Quel géant du jeu vidéo a racheté la majorité de Supercell en 2016 ?",
-    "choices": [
-      "Tencent √",
-      "Microsoft",
-      "Activision Blizzard",
-      "Sony"
-    ],
+    "choices": ["Tencent √", "Microsoft", "Activision Blizzard", "Sony"],
     "source": "Annonce officielle Supercell / Tencent (juin 2016)"
   },
   {
@@ -218,32 +148,22 @@
   },
   {
     "question": "Quand le Pass Royale a-t-il été introduit dans le jeu ?",
-    "choices": [
-      "Juillet 2019 √",
-      "Mars 2016",
-      "Janvier 2018",
-      "Octobre 2021"
-    ],
+    "choices": ["Juillet 2019 √", "Mars 2016", "Janvier 2018", "Octobre 2021"],
     "source": "Mise à jour de juillet 2019 (Saison 1)"
   },
   {
+    "question": "À l'ESWC 2017 (Paris Games Week), quel joueur français de Millenium s'est incliné 3-1 en finale face à Surgical Goblin ?",
+    "choices": ["Azilys √", "Doberman", "Inttox", "Nèmsensei"],
+    "source": "iPhoneSoft (« ESWC Clash Royale : retour sur la compétition », 2017)"
+  },
+  {
     "question": "En quelle année Supercell a-t-il été fondé ?",
-    "choices": [
-      "2010 √",
-      "2005",
-      "2012",
-      "2014"
-    ],
+    "choices": ["2010 √", "2005", "2012", "2014"],
     "source": "Supercell (site officiel)"
   },
   {
     "question": "Selon Sensor Tower, Clash Royale a dépassé le milliard de dollars en moins d'un an. Combien de fois plus que Clash of Clans sur ses 11 premiers mois ?",
-    "choices": [
-      "5 fois plus √",
-      "2 fois plus",
-      "3 fois plus",
-      "10 fois plus"
-    ],
+    "choices": ["5 fois plus √", "2 fois plus", "3 fois plus", "10 fois plus"],
     "source": "Sensor Tower (février 2017)"
   },
   {
@@ -258,32 +178,17 @@
   },
   {
     "question": "Dans quel pays Clash Royale a-t-il été lancé en avant-première (soft launch) en janvier 2016 ?",
-    "choices": [
-      "Au Canada √",
-      "Aux États-Unis",
-      "En France",
-      "Au Japon"
-    ],
+    "choices": ["Au Canada √", "Aux États-Unis", "En France", "Au Japon"],
     "source": "MobileSyrup (4 janvier 2016)"
   },
   {
     "question": "Entre février et mai 2019, combien d'élixir coûtaient les Trois mousquetaires ?",
-    "choices": [
-      "10 √",
-      "11",
-      "8",
-      "9"
-    ],
+    "choices": ["10 √", "11", "8", "9"],
     "source": "Blog Supercell (équilibrages du 4 février et du 6 mai 2019)"
   },
   {
     "question": "Quelle équipe a remporté la toute première finale mondiale de la Clash Royale League (CRL), en décembre 2018 au Japon ?",
-    "choices": [
-      "Nova Esports √",
-      "Vivo Keyd",
-      "PONOS Sports",
-      "Team Queso"
-    ],
+    "choices": ["Nova Esports √", "Vivo Keyd", "PONOS Sports", "Team Queso"],
     "source": "Supercell (« Nova Esports wins CRL Championship », 2018)"
   },
   {
@@ -307,6 +212,11 @@
     "source": "Pocket Gamer (mars 2017) et wiki Clash Royale (Arenas)"
   },
   {
+    "question": "Quel joueur a remporté les finales mondiales de Clash Royale en 2021 ET en 2023 ?",
+    "choices": ["Mugi √", "Mohamed Light", "Morten", "Surgical Goblin"],
+    "source": "Liquipedia (World Finals 2021 et 2023)"
+  },
+  {
     "question": "Pour présenter le héros Prince ténébreux, Supercell a produit le court-métrage « Rhino Life » autour d'un sport fictif. De quelle discipline finlandaise réelle s'inspire-t-il ?",
     "choices": [
       "Le hobby horsing (cheval-bâton) √",
@@ -328,12 +238,7 @@
   },
   {
     "question": "Avant février 2016, une erreur d'arrondi empêchait l'Extracteur d'élixir de produire les 7 élixirs prévus. Combien produisait-il réellement sur toute sa durée de vie ?",
-    "choices": [
-      "6 élixirs √",
-      "5 élixirs",
-      "8 élixirs",
-      "10 élixirs"
-    ],
+    "choices": ["6 élixirs √", "5 élixirs", "8 élixirs", "10 élixirs"],
     "source": "Notes d'équilibrage officielles (février 2016)"
   },
   {
@@ -347,16 +252,6 @@
     "source": "Blog Supercell (mise à jour du 13 décembre 2023)"
   },
   {
-    "question": "En décembre 2018, quelle règle des jetons d'échange a changé ?",
-    "choices": [
-      "Il faut désormais un jeton des deux côtés de l'échange √",
-      "Les cartes légendaires deviennent échangeables",
-      "On peut échanger hors de son clan",
-      "Le jeton n'est plus rendu en cas d'annulation"
-    ],
-    "source": "Blog Supercell (septembre et décembre 2018)"
-  },
-  {
     "question": "Clash Royale reprend l'idée d'un prototype interne de Supercell abandonné avant même la sortie de Clash of Clans, car « le PvP en temps réel ne marcherait jamais ». Comment s'appelait-il ?",
     "choices": [
       "The Summoners √",
@@ -368,33 +263,23 @@
   },
   {
     "question": "Avant l'équilibrage du 20 octobre 2016, combien d'élixir coûtait l'Extracteur d'élixir ?",
-    "choices": [
-      "5 √",
-      "4",
-      "6",
-      "7"
-    ],
+    "choices": ["5 √", "4", "6", "7"],
     "source": "Équilibrage du 20 octobre 2016 (wiki Clash Royale, iTechPost)"
   },
   {
     "question": "Quand Clash Royale a dépassé 3 milliards de dollars de revenus (2020), quel pays en était le 2e contributeur derrière les États-Unis ?",
-    "choices": [
-      "L'Allemagne √",
-      "La Chine",
-      "Le Japon",
-      "La Corée du Sud"
-    ],
+    "choices": ["L'Allemagne √", "La Chine", "Le Japon", "La Corée du Sud"],
     "source": "Sensor Tower (2020)"
   },
   {
     "question": "La série animée Clash-A-Rama! (décembre 2016) a été animée par Rough Draft Studios, le studio derrière quelle série culte ?",
-    "choices": [
-      "Futurama √",
-      "South Park",
-      "Rick et Morty",
-      "Archer"
-    ],
+    "choices": ["Futurama √", "South Park", "Rick et Morty", "Archer"],
     "source": "PocketGamer.biz et WN Hub (2016)"
+  },
+  {
+    "question": "Quelle équipe a remporté la finale mondiale CRL 2020, organisée à Shanghai en pleine pandémie ?",
+    "choices": ["Team Queso √", "SK Gaming", "PONOS", "Nova Esports"],
+    "source": "Liquipedia (CRL 2020 World Finals)"
   },
   {
     "question": "Quand le 2c2 apparaît en mars 2017 (sous le nom de « Clan Battle »), avec qui pouvait-on faire équipe ?",
@@ -408,22 +293,12 @@
   },
   {
     "question": "Lors de la refonte de la progression de novembre 2025, en quoi ont été convertis les écus magiques ?",
-    "choices": [
-      "En or √",
-      "En gemmes",
-      "En jokers",
-      "En livres"
-    ],
+    "choices": ["En or √", "En gemmes", "En jokers", "En livres"],
     "source": "Blog Supercell (« Dans la prochaine mise à jour », novembre 2025)"
   },
   {
     "question": "À leur arrivée en octobre 2021, à partir de quel niveau de roi pouvait-on débloquer les champions ?",
-    "choices": [
-      "14 √",
-      "12",
-      "13",
-      "15"
-    ],
+    "choices": ["14 √", "12", "13", "15"],
     "source": "Blog Supercell (mise à jour Champions, octobre 2021)"
   },
   {
@@ -458,12 +333,7 @@
   },
   {
     "question": "Dans quelle ville est basé Supercell, le studio qui développe Clash Royale ?",
-    "choices": [
-      "Helsinki √",
-      "Stockholm",
-      "Copenhague",
-      "Oslo"
-    ],
+    "choices": ["Helsinki √", "Stockholm", "Copenhague", "Oslo"],
     "source": "Supercell (site officiel)"
   },
   {
