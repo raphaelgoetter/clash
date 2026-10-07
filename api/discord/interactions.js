@@ -404,7 +404,7 @@ function buildStatsClanFooter({
   pageCount,
 }) {
   const sortLabel = getStatsClanSortLabel(sortMode);
-  const base = `Tri : ${sortLabel} · T: pts/semaine · R: pts/deck · D: decks joués · P: performance (3 semaines) · Scénario : ${scenarioLabel}`;
+  const base = `Tri : ${sortLabel} · 🏆 pts/semaine · 📈 pts/deck · 🃏 decks joués · 🎯 performance (3 semaines) · Scénario : ${scenarioLabel}`;
   return pageCount > 1 ? `${base} · Page ${pageIndex + 1}/${pageCount}` : base;
 }
 
@@ -463,8 +463,8 @@ function buildStatsClanComponents(clanVal, sortMode) {
       type: 1,
       components: [
         sortButton("avgFame", "🏆 Pts/semaine"),
-        sortButton("pointsPerDeck", "⚡ Pts/deck"),
-        sortButton("decksUsed", "🎮 Decks joués"),
+        sortButton("pointsPerDeck", "📈 Pts/deck"),
+        sortButton("decksUsed", "🃏 Decks joués"),
         sortButton("performance", "🎯 Performance"),
         {
           type: 2,
@@ -516,6 +516,8 @@ const RELIABILITY_ICON = {
 
 // Une ligne par membre : données d'abord (largeurs proches d'une ligne à
 // l'autre) et pseudo en fin de ligne ; la donnée du tri actif est en gras.
+// Emojis Unicode (1-2 caractères) : des emojis personnalisés (~28 caractères
+// chacun) dépasseraient la limite de 4096 caractères de l'embed.
 function buildStatsClanRows(data, scenarioKey, sortMode) {
   const members = Array.isArray(data?.members) ? data.members : [];
   const performanceByTag = data?.performanceByTag ?? {};
@@ -548,10 +550,10 @@ function buildStatsClanRows(data, scenarioKey, sortMode) {
   return sorted.map((m, idx) => {
     const decksUsed = Number(m.period?.decksUsed);
     const columns = [
-      `T: ${bold("avgFame", fmt(m.avgFame))}`,
-      `R: ${bold("pointsPerDeck", fmt(m.pointsPerDeck))}`,
-      `D: ${bold("decksUsed", fmt(Number.isFinite(decksUsed) ? Math.round(decksUsed) : null))}`,
-      `P: ${bold("performance", fmtDiff(getStatsClanPerformanceDiff(m)))}`,
+      `🏆 ${bold("avgFame", fmt(m.avgFame))}`,
+      `📈 ${bold("pointsPerDeck", fmt(m.pointsPerDeck))}`,
+      `🃏 ${bold("decksUsed", fmt(Number.isFinite(decksUsed) ? Math.round(decksUsed) : null))}`,
+      `🎯 ${bold("performance", fmtDiff(getStatsClanPerformanceDiff(m)))}`,
       `${m.isNew ? "🆕 " : ""}${m.name}`,
     ];
     return `${idx + 1}. ${columns.join(" · ")}`;
