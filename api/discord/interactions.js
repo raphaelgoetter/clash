@@ -158,11 +158,13 @@ import {
   handleRegles as handleMarioClashRegles,
 } from "./_handlers/marioclash.js";
 import {
-  handleJouer as handleDraftRoyaleJouer,
-  handleChoixSelect as handleDraftRoyaleChoix,
-  handleJoker as handleDraftRoyaleJoker,
-  handleRegles as handleDraftRoyaleRegles,
-} from "./_handlers/draftroyale.js";
+  handleDeck as handleBangDeck,
+  handlePiocher as handleBangPiocher,
+  handleCarte as handleBangCarte,
+  handleCible as handleBangCible,
+  handlePlacer as handleBangPlacer,
+  handleRegles as handleBangRegles,
+} from "./_handlers/bang.js";
 import {
   handleJouer as handleBlackjackJouer,
   handlePiocher as handleBlackjackPiocher,
@@ -199,18 +201,6 @@ import {
   handleRegles as handleGobeletDuelRegles,
   extractMember as extractGobeletDuelMember,
 } from "./_handlers/gobeletDuel.js";
-import {
-  handleDraftCommand as handleDraftDuelCommand,
-  handleDraftRoleRejected as handleDraftDuelRoleRejected,
-  memberHasMiniJeuxRole as draftDuelMemberHasMiniJeuxRole,
-  handleJouer as handleDraftDuelJouer,
-  handleChoix as handleDraftDuelChoix,
-  handleJoker as handleDraftDuelJoker,
-  handleFinTour as handleDraftDuelFinTour,
-  handleRegles as handleDraftDuelRegles,
-  handleDetails as handleDraftDuelDetails,
-  extractMember as extractDraftDuelMember,
-} from "./_handlers/draftDuel.js";
 import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
@@ -9221,85 +9211,6 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── /draft — jeu Duel « Draft » (version duel du Draft Royale, 1 à 3
-  // joueurs, 7 manches). Réservé au rôle MINI-JEUX, même principe que /gobelet.
-  if (body.type === 2 && body.data?.name === "draft") {
-    const joueursOpt = body.data.options?.find((o) => o.name === "joueurs");
-    const maxPlayers = Number(joueursOpt?.value) || 1;
-
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(async () => {
-      const allowed = await draftDuelMemberHasMiniJeuxRole(body);
-      if (!allowed) {
-        await handleDraftDuelRoleRejected(webhookUrl);
-        return;
-      }
-      await handleDraftDuelCommand(webhookUrl, body, { maxPlayers });
-    });
-    return;
-  }
-
-  // ── Draft (duel) : bouton "Jouer" (inscription + main éphémère) ──
-  if (body.type === 3 && body.data?.custom_id === "draftduel_jouer") {
-    const { discordId, username } = extractDraftDuelMember(body);
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleDraftDuelJouer(webhookUrl, discordId, username));
-    return;
-  }
-
-  // ── Draft (duel) : Fin de tour / menus de l'échange
-  // (type 6 : édition en place de la main éphémère) ──
-  // custom_id : draftduel_fin:<m>, draftduel_prise:<m>, draftduel_depot:<m>, draftduel_annuler:<m>
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    /^draftduel_(fin|prise|depot|annuler):/.test(body.data.custom_id)
-  ) {
-    const [action] = body.data.custom_id.split(":");
-    const { discordId } = extractDraftDuelMember(body);
-    const value = body.data.values?.[0];
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "draftduel_fin") runBackground(() => handleDraftDuelFinTour(webhookUrl, discordId));
-    else runBackground(() => handleDraftDuelChoix(webhookUrl, discordId, action.replace("draftduel_", ""), value));
-    return;
-  }
-
-  // ── Draft (duel) : magasin Joker, édition en place de la main éphémère ──
-  // custom_id : draftduel_jk:<champ>:<manche> (voir _handlers/draftJoker.js)
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("draftduel_jk:")) {
-    const [, champ] = body.data.custom_id.split(":");
-    const { discordId } = extractDraftDuelMember(body);
-    const value = body.data.values?.[0];
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleDraftDuelJoker(webhookUrl, discordId, champ, value));
-    return;
-  }
-
-  // ── Draft (duel) : bouton "Détails" (fin de partie, éphémère) ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("draftduel_details:")
-  ) {
-    const messageId = body.data.custom_id.split(":")[1];
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleDraftDuelDetails(webhookUrl, messageId));
-    return;
-  }
-
-  // ── Draft (duel) : bouton "Règles" (éphémère, statique) ──
-  if (body.type === 3 && body.data?.custom_id === "draftduel_regles") {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleDraftDuelRegles(webhookUrl));
-    return;
-  }
-
   // ── Jeu La Juste Carte : bouton "Cartes non incluses" sur /justecarte ──
   // Nouvelle réponse éphémère séparée (pas une mise à jour du message de
   // stats en place, contrairement au bouton "Rafraîchir" ci-dessus) — type 5
@@ -10169,52 +10080,37 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── Draft Royale : bouton "Jouer" (main éphémère + échange du jour) ──
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("draftroyale_jouer:")) {
-    const [, jour] = body.data.custom_id.split(":");
+  // ── Bang! : boutons du message officiel (nouveau deck éphémère) ──
+  // custom_id : bang_piocher, bang_deck, bang_jouer, bang_regles
+  if (body.type === 3 && ["bang_piocher", "bang_deck", "bang_jouer", "bang_regles"].includes(body.data?.custom_id)) {
+    const action = body.data.custom_id;
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleDraftRoyaleJouer(webhookUrl, jour, discordId, username));
+    if (action === "bang_regles") runBackground(() => handleBangRegles(webhookUrl));
+    else if (action === "bang_piocher") runBackground(() => handleBangPiocher(webhookUrl, discordId, username));
+    else runBackground(() => handleBangDeck(webhookUrl, discordId, username));
     return;
   }
 
-  // ── Draft Royale : menus de l'échange, édition en place de l'éphémère ──
-  // custom_id : draftroyale_prise:<jour>, draftroyale_depot:<jour>, draftroyale_annuler:<jour> (bouton)
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^draftroyale_(prise|depot|annuler):/.test(body.data.custom_id)) {
-    const [action, jour] = body.data.custom_id.split(":");
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
-    const value = body.data.values?.[0];
-    const champ = action.replace("draftroyale_", "");
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleDraftRoyaleChoix(webhookUrl, jour, champ, discordId, username, value));
-    return;
-  }
-
-  // ── Draft Royale : magasin Joker, édition en place de l'éphémère ──
-  // custom_id : draftroyale_jk:<champ>:<jour> (voir _handlers/draftJoker.js)
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("draftroyale_jk:")) {
-    const [, champ, jour] = body.data.custom_id.split(":");
+  // ── Bang! : composants du deck éphémère, édition en place ──
+  // custom_id : bang_e_piocher, bang_annuler (boutons), bang_carte,
+  // bang_cible:<carte>, bang_placer (menus)
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^bang_(e_piocher|annuler|carte|cible:|placer)/.test(body.data.custom_id)) {
+    const [action, carte] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
     const value = body.data.values?.[0];
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleDraftRoyaleJoker(webhookUrl, jour, champ, discordId, username, value));
-    return;
-  }
-
-  // ── Draft Royale : bouton "Règles" (éphémère, statique) ──
-  if (body.type === 3 && body.data?.custom_id === "draftroyale_regles") {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleDraftRoyaleRegles(webhookUrl));
+    if (action === "bang_e_piocher") runBackground(() => handleBangPiocher(webhookUrl, discordId, username));
+    else if (action === "bang_carte") runBackground(() => handleBangCarte(webhookUrl, discordId, username, value));
+    else if (action === "bang_cible") runBackground(() => handleBangCible(webhookUrl, discordId, username, carte, value));
+    else if (action === "bang_placer") runBackground(() => handleBangPlacer(webhookUrl, discordId, username, value));
+    else runBackground(() => handleBangDeck(webhookUrl, discordId, username));
     return;
   }
 

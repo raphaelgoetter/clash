@@ -1,32 +1,30 @@
 // ============================================================
-// draftroyaleImage.js — Images du Draft Royale :
-//   - le marché : cartes posées en grille sur le tapis de jeu
-//     (data/draftroyale/images/draft-game.jpg), regroupées avec un badge
-//     « ×N » pour les exemplaires d'une même carte ;
-//   - la main d'un joueur : grille de cartes réutilisée du jeu Élixir ;
-//   - l'illustration statique (présentation / fin de partie).
+// bangImage.js — Images de Bang! :
+//   - la main d'un joueur : cartes posées en grille sur le tapis de jeu
+//     (data/bang/images/bang-table.jpg), regroupées avec un badge « ×N »
+//     pour les exemplaires d'une même carte ;
+//   - l'illustration statique (message officiel).
 // Même technique que marioclashImage.js : SVG avec un `<image href="data:...">`
-// de fond, rastérisé en PNG via @resvg/resvg-js. Dessin des cartes (illustration
-// officielle + goutte d'élixir) partagé via cardImage.js.
+// de fond, rastérisé en PNG via @resvg/resvg-js. Dessin des cartes
+// (illustration officielle) partagé via cardImage.js, sans goutte d'élixir
+// (l'Élixir de Bang! est une ressource du jeu, pas le coût de la carte).
 //
 // ⚠️ Tapis en JPEG, jamais en WebP : resvg ne décode pas le WebP embarqué et
 // échoue SILENCIEUSEMENT (fond absent) — voir marioclashImage.js.
-// `draft-game.webp` (asset original) reste dans data/ pour archive.
+// `bang-table.webp` (asset original) reste dans data/ pour archive.
 //
 // Assets servis depuis Vercel Blob (voir blobAssets.js), data/ n'est pas lu
-// au runtime : relancer `npm run assets:upload-blob` après modification.
+// au runtime : relancer `npm run assets:upload-blob -- bang` après modification.
 // ============================================================
 
 import { readBlobAsset } from "./blobAssets.js";
-import { cardSvg, loadDataUrls, rasterize, getCollectionImage, RATIO_CARTE } from "./cardImage.js";
-import { resolveCard } from "./cards.js";
-import { loadCatalog } from "./draftroyale.js";
+import { cardSvg, loadDataUrls, rasterize, RATIO_CARTE } from "./cardImage.js";
+import { CARTES } from "./bangRules.js";
 
-const MAT_IMAGE_PATH = "draftroyale/images/draft-game.jpg";
-const ILLUSTRATION_IMAGE_PATH = "draftroyale/images/draft-launch.webp";
-const FONT_FAMILY = "Inter";
+const MAT_IMAGE_PATH = "bang/images/bang-table.jpg";
+const ILLUSTRATION_IMAGE_PATH = "bang/images/bang-launch.webp";
 
-// Dimensions natives de draft-game.jpg et zone intérieure du tapis (bleu,
+// Dimensions natives de bang-table.jpg et zone intérieure du tapis (bleu,
 // hors cadre doré) — à recalibrer si l'asset change.
 const MAT_WIDTH = 1200;
 const MAT_HEIGHT = 658;
@@ -34,6 +32,7 @@ const ZONE = { x: 120, y: 85, w: 960, h: 470 };
 const RATIO = RATIO_CARTE;
 const GAP = 18;
 const MAX_CARD_WIDTH = 150;
+const FONT_FAMILY = "Inter";
 
 function escapeXml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -50,7 +49,7 @@ async function loadMatDataUrl() {
 }
 
 // Grille qui maximise la largeur des cartes dans la zone du tapis.
-export function layoutGrid(count) {
+function layoutGrid(count) {
   let best = null;
   for (let rows = 1; rows <= Math.max(1, count); rows++) {
     const cols = Math.ceil(count / rows);
@@ -66,26 +65,31 @@ function badgeSvg(x, y, texte) {
   <text x="${x}" y="${y + 6}" font-family="${FONT_FAMILY}" font-size="17" text-anchor="middle" fill="#2b1a00">${escapeXml(texte)}</text>`;
 }
 
-// `entrees` : [{ key, count }] dans l'ordre d'affichage. `mat` : data URL
-// du tapis (lue depuis Blob par défaut, injectable pour un rendu local).
-export async function buildMarcheSvg(entrees, catalog, mat = null) {
-  mat ??= await loadMatDataUrl();
-  const cards = entrees.map((e) => ({ ...e, card: resolveCard(e.key, catalog) })).filter((e) => e.card);
+// Regroupe les exemplaires (ordre de CARTES, stable d'une vue à l'autre).
+function grouper(ids) {
+  return Object.keys(CARTES)
+    .map((id) => ({ id, count: ids.filter((x) => x === id).length }))
+    .filter((e) => e.count > 0);
+}
+
+async function buildMainSvg(ids) {
+  const mat = await loadMatDataUrl();
+  const entrees = grouper(ids).map((e) => ({ ...e, card: { key: CARTES[e.id].cardKey } }));
   const parts = [];
-  if (!cards.length) {
+  if (!entrees.length) {
     parts.push(
-      `<text x="${MAT_WIDTH / 2}" y="${MAT_HEIGHT / 2 + 12}" font-family="${FONT_FAMILY}" font-size="34" text-anchor="middle" fill="#ffffff" opacity="0.85">Aucune carte au marché</text>`,
+      `<text x="${MAT_WIDTH / 2}" y="${MAT_HEIGHT / 2 + 12}" font-family="${FONT_FAMILY}" font-size="34" text-anchor="middle" fill="#ffffff" opacity="0.85">Aucune carte en main</text>`,
     );
   } else {
-    const { rows, cols, w } = layoutGrid(cards.length);
-    const size = { w, gap: GAP, drop: Math.round(w * 0.3) };
+    const { rows, cols, w } = layoutGrid(entrees.length);
+    const size = { w, gap: GAP, drop: 0 };
     const h = w * RATIO;
-    const dataUrls = await loadDataUrls(cards.map((e) => e.card));
+    const dataUrls = await loadDataUrls(entrees.map((e) => e.card));
     const gridH = rows * h + (rows - 1) * GAP;
     const y0 = ZONE.y + (ZONE.h - gridH) / 2;
-    cards.forEach((e, i) => {
+    entrees.forEach((e, i) => {
       const row = Math.floor(i / cols);
-      const inRow = Math.min(cols, cards.length - row * cols);
+      const inRow = Math.min(cols, entrees.length - row * cols);
       const rowW = inRow * w + (inRow - 1) * GAP;
       const x = ZONE.x + (ZONE.w - rowW) / 2 + (i % cols) * (w + GAP);
       const y = y0 + row * (h + GAP);
@@ -100,24 +104,11 @@ export async function buildMarcheSvg(entrees, catalog, mat = null) {
 </svg>`;
 }
 
-// Regroupe les exemplaires par carte (ordre alphabétique des clés, pour
-// une image stable d'un jour à l'autre).
-export function groupMarche(keys) {
-  const counts = new Map();
-  for (const k of [...keys].sort()) counts.set(k, (counts.get(k) || 0) + 1);
-  return [...counts.entries()].map(([key, count]) => ({ key, count }));
-}
-
-// Marché passé dans l'URL (main éphémère, duel), rendu sans état.
-export async function getMarcheImageFromKeys(keys) {
-  const catalog = await loadCatalog();
-  const svg = await buildMarcheSvg(groupMarche(keys), catalog);
-  return { buffer: await rasterize(svg, MAT_WIDTH), mimeType: "image/png" };
-}
-
-// Main d'un joueur (ou deck final) : clés passées dans l'URL, rendu sans état.
-export async function getMainImage(keys) {
-  return getCollectionImage(keys, await loadCatalog());
+// Main d'un joueur : identifiants de cartes Bang! passés dans l'URL (les
+// inconnus sont ignorés), rendu sans état.
+export async function getMainImage(ids) {
+  const valides = ids.filter((id) => CARTES[id]).slice(0, 60);
+  return { buffer: await rasterize(await buildMainSvg(valides), MAT_WIDTH), mimeType: "image/png" };
 }
 
 let illustrationCache = null;

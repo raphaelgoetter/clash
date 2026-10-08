@@ -21,7 +21,7 @@ import { getAllArchivedResults as getLaJusteCarteResults } from "./lajustecarte.
 import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
-import { listManches as listDraftRoyaleManches } from "./draftroyale.js";
+import { listManches as listBangManches } from "./bang.js";
 
 // Ordre d'affichage canonique — indépendant de l'ordre de découverte des
 // données (les trois groupes ci-dessous tournent en parallèle).
@@ -33,7 +33,7 @@ const GAME_ORDER = [
   "quiz",
   "blackjack",
   "marioclash",
-  "draftroyale",
+  "bang",
 ];
 
 // Tague chaque résultat avec le nom du jeu précis qui l'a produit — permet à
@@ -119,9 +119,9 @@ const MANCHE_SCORE_GAMES = [
     scoreField: "points",
   },
   {
-    key: "draftroyale",
-    label: "🃏 Draft Royale",
-    fetch: () => listDraftRoyaleManches({ limit: Infinity }),
+    key: "bang",
+    label: "🔫 Bang!",
+    fetch: () => listBangManches({ limit: Infinity }),
     scoreField: "score",
   },
 ];

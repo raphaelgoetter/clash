@@ -1,10 +1,8 @@
 // ============================================================
-// cardImage.js — Rendu des cartes Clash Royale (illustration officielle +
-// goutte d'élixir avec le coût) pour les jeux de draft : grille de cartes
-// (main ou deck d'un joueur) et briques réutilisées par le marché
-// (draftroyaleImage.js). Même technique que pelemeleImage.js /
-// zoomImage.js : SVG généré à la volée, rastérisé en PNG via
-// @resvg/resvg-js.
+// cardImage.js — Rendu des cartes Clash Royale (illustration officielle,
+// goutte d'élixir facultative) pour les jeux de cartes (Bang!, voir
+// bangImage.js). Même technique que pelemeleImage.js / zoomImage.js : SVG
+// généré à la volée, rastérisé en PNG via @resvg/resvg-js.
 //
 // Illustrations : `iconUrls.medium` de l'API Clash Royale (fetchCards, même
 // cache partagé "clashCardDefinitions" que lajustecarte.js), téléchargées
@@ -18,7 +16,6 @@ import { Resvg } from "@resvg/resvg-js";
 import { fetchCards } from "./clashApi.js";
 import { getOrSet } from "./cache.js";
 import { readBlobFontPath } from "./blobAssets.js";
-import { resolveCard } from "./cards.js";
 
 const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
@@ -31,14 +28,7 @@ const ICON_H = 420;
 const CROP_Y = 67;
 const CROP_H = 320;
 const RATIO = CROP_H / ICON_W;
-// Main ou deck d'un joueur : grille de 5 cartes par ligne, sans nom (les
-// cartes sont déjà listées dans le texte de l'embed)
 export const RATIO_CARTE = RATIO;
-const MEDIUM = { w: 120, gap: 16, drop: 38 };
-const COLLECTION_COLS = 5;
-const PADDING = 24;
-
-const BACKGROUND = "#1e1f22";
 
 function escapeXml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -97,16 +87,9 @@ export function cardSvg(card, dataUrl, x, y, size) {
   const art = dataUrl
       ? `<svg x="${x}" y="${y}" width="${size.w}" height="${h}" viewBox="0 ${CROP_Y} ${ICON_W} ${CROP_H}"><image width="${ICON_W}" height="${ICON_H}" href="${dataUrl}"/></svg>`
       : `<rect x="${x}" y="${y}" width="${size.w}" height="${h}" rx="10" fill="#2b2d31"/>`;
+  if (!size.drop) return art;
   return `${art}
   ${elixirDropSvg(x - size.drop * 0.25, y - size.drop * 0.2, size.drop, card.minBid)}`;
-}
-
-function rowWidth(count, size) {
-  return count * size.w + (count - 1) * size.gap;
-}
-
-function rowHeight(size) {
-  return Math.round(size.w * RATIO);
 }
 
 export async function loadDataUrls(cards) {
@@ -116,35 +99,6 @@ export async function loadDataUrls(cards) {
   );
 }
 
-function wrapSvg(width, height, parts) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-<rect width="100%" height="100%" rx="16" fill="${BACKGROUND}"/>
-${parts.join("\n")}
-</svg>`;
-}
-
-// Grille de cartes, COLLECTION_COLS par ligne
-async function buildCollectionSvg(cards) {
-  const dataUrls = await loadDataUrls(cards);
-  const left = PADDING + MEDIUM.drop * 0.25;
-  const top = PADDING + MEDIUM.drop * 0.2;
-  const rowStep = rowHeight(MEDIUM) + MEDIUM.drop * 0.2 + MEDIUM.gap;
-  const parts = cards.map((c, i) =>
-    cardSvg(
-      c,
-      dataUrls.get(c.key),
-      left + (i % COLLECTION_COLS) * (MEDIUM.w + MEDIUM.gap),
-      top + Math.floor(i / COLLECTION_COLS) * rowStep,
-      MEDIUM,
-    ),
-  );
-  const rows = Math.ceil(cards.length / COLLECTION_COLS);
-  const width = Math.round(left + rowWidth(Math.min(cards.length, COLLECTION_COLS), MEDIUM) + PADDING);
-  const height = Math.round(top + rows * rowStep - MEDIUM.gap + PADDING);
-  return { width, svg: wrapSvg(width, height, parts) };
-}
-
 export async function rasterize(svg, width) {
   const fontPath = await readBlobFontPath(FONT_PATH);
   const resvg = new Resvg(Buffer.from(svg, "utf8"), {
@@ -152,13 +106,4 @@ export async function rasterize(svg, width) {
     font: { fontFiles: [fontPath], loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
   });
   return Buffer.from(resvg.render().asPng());
-}
-
-// Grille des cartes d'un joueur (au plus 10). Les clés inconnues du
-// catalogue sont ignorées (URL forgée). null si rien à afficher.
-export async function getCollectionImage(keys, catalog) {
-  const cards = keys.map((k) => resolveCard(k, catalog)).filter(Boolean).slice(0, 10);
-  if (!cards.length) return null;
-  const { svg, width } = await buildCollectionSvg(cards);
-  return { buffer: await rasterize(svg, width), mimeType: "image/png" };
 }

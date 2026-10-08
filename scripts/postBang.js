@@ -1,23 +1,23 @@
 #!/usr/bin/env node
-// postDraftRoyale.js
-// Poste manuellement (ou via cron) le jour du Draft Royale. Clôture d'abord
-// le jour actif (s'il y en a un) : résout les vœux du marché, fige le marché
-// du jour, calcule le classement au dernier jour, puis publie le jour
-// suivant (ou le message de fin de draft).
+// postBang.js
+// Poste manuellement (ou via cron) le jour de Bang!. Clôture d'abord le
+// jour actif (s'il y en a un) : pioches automatiques, Élixir du jour,
+// classement final au dernier jour ou s'il ne reste qu'un Roi, puis
+// publie le message officiel du jour suivant (ou le message de fin).
 //
 // Usage :
-//   node scripts/postDraftRoyale.js                — poste sur le salon de test
-//   node scripts/postDraftRoyale.js --public        — poste sur le salon public
-//   node scripts/postDraftRoyale.js --dry-run       — simulation, sans écrire ni poster
-//   node scripts/postDraftRoyale.js --public --dry-run
-//   node scripts/postDraftRoyale.js --no-ping       — poste sans pinger @MINI JEUX (jour de présentation uniquement)
-//   node scripts/postDraftRoyale.js --require-active — ne fait rien si aucun draft n'est déjà lancé (cron)
-//   node scripts/postDraftRoyale.js --force          — ignore le garde-fou anti-double-avancée
+//   node scripts/postBang.js                — poste sur le salon de test
+//   node scripts/postBang.js --public        — poste sur le salon public
+//   node scripts/postBang.js --dry-run       — simulation, sans écrire ni poster
+//   node scripts/postBang.js --public --dry-run
+//   node scripts/postBang.js --no-ping       — poste sans pinger @MINI JEUX (présentation et fin)
+//   node scripts/postBang.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
+//   node scripts/postBang.js --force          — ignore le garde-fou anti-double-avancée
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postDraftRoyale } from "../api/discord/_handlers/draftroyale.js";
+import { postBang } from "../api/discord/_handlers/bang.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
@@ -36,25 +36,25 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postDraftRoyale(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE });
+    const result = await postBang(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE });
 
     if (result.skipped) {
       if (result.reason === "tooSoonSinceLastClosure") {
         console.log(`Jour ouvert trop récemment (${result.publishedAt}) pour être re-clôturé. Rien n'est posté. Utilise --force si ce rattrapage est volontaire.`);
       } else {
-        console.log("Aucun draft actif, rien à poster (cron sans lancement manuel préalable).");
+        console.log("Aucune partie active, rien à poster (cron sans lancement manuel préalable).");
       }
       return;
     }
     if (result.wrongChannel) {
       console.error(
-        `Un draft est déjà actif sur un AUTRE salon (${result.activeChannelId}) — rien n'est posté ici. ` +
-          `Si c'était un draft de test oublié, lance "npm run draftroyale:reset" puis relance sur le bon salon.`,
+        `Une partie est déjà active sur un AUTRE salon (${result.activeChannelId}) — rien n'est posté ici. ` +
+          `Si c'était une partie de test oubliée, lance "npm run bang:reset" puis relance sur le bon salon.`,
       );
       process.exit(1);
     }
     if (result.termine) {
-      console.log("Draft déjà terminé, rien à poster.");
+      console.log("Partie déjà terminée, rien à poster.");
       return;
     }
     if (DRY_RUN) {
@@ -63,7 +63,7 @@ if (!channelId) {
       return;
     }
     if (result.final) {
-      console.log(`Fin du draft postée dans ${channelId} (message ${result.message.id}).`);
+      console.log(`Fin de partie postée dans ${channelId} (message ${result.message.id}).`);
       return;
     }
     console.log(`Jour ${result.jour ?? "de présentation"} posté dans ${channelId} (message ${result.message.id}).`);

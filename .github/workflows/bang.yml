@@ -1,4 +1,4 @@
-name: Draft Royale — carré de cartes en 7 jours
+name: Bang! — dernier Roi en vie en 7 jours
 
 permissions:
   contents: read
@@ -7,7 +7,7 @@ on:
   # Créneau réservé : minute 18 (prochaine libre après marioclash=14,
   # gobelet=16 — jamais la même minute que les autres crons de 8h UTC, voir
   # CONTRIBUTING.md, incident du 27/08). Le cron passe --require-active : il
-  # n'avance qu'un draft déjà lancé à la main (workflow_dispatch).
+  # n'avance qu'une partie déjà lancée à la main (workflow_dispatch).
   schedule:
     - cron: "18 8 * * *"
   workflow_dispatch: {}
@@ -33,5 +33,5 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Poste le jour du Draft Royale (salon public)
-        run: npm run draftroyale:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}
+      - name: Poste le jour de Bang! (salon public)
+        run: npm run bang:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}

@@ -24,7 +24,7 @@
 // (nouvelle carte Palette/Zoom, changement de police, etc.).
 //
 // Usage : npm run assets:upload-blob
-//        npm run assets:upload-blob -- draftroyale   — seulement les chemins
+//        npm run assets:upload-blob -- bang   — seulement les chemins
 //        commençant par l'un des préfixes donnés (ex. nouvel asset d'un jeu)
 // ============================================================
 
@@ -57,8 +57,8 @@ const TARGETS = [
   { file: "goblinhunters/images/start.webp" },
   { file: "marioclash/images/mario-clash-board.jpg" },
   { file: "marioclash/images/mario-clash.webp" },
-  { file: "draftroyale/images/draft-game.jpg" },
-  { file: "draftroyale/images/draft-launch.webp" },
+  { file: "bang/images/bang-table.jpg" },
+  { file: "bang/images/bang-launch.webp" },
   { dir: "jeux-visuels/palette/images" },
   { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },

@@ -35,10 +35,9 @@ import {
   getIllustrationImage as getMarioClashIllustrationImage,
 } from "./services/marioclashImage.js";
 import {
-  getMainImage as getDraftRoyaleMainImage,
-  getIllustrationImage as getDraftRoyaleIllustrationImage,
-  getMarcheImageFromKeys as getDraftMarcheImage,
-} from "./services/draftroyaleImage.js";
+  getMainImage as getBangMainImage,
+  getIllustrationImage as getBangIllustrationImage,
+} from "./services/bangImage.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -387,33 +386,21 @@ app.get("/api/marioclash/illustration", async (req, res) => {
   res.send(image.buffer);
 });
 
-// Draft Royale : main ou deck d'un joueur, rendu sans état à partir des clés
-// passées dans l'URL (c = cartes séparées par "|"), même principe que
-// celle du duel Draft.
-app.get("/api/draftroyale/main", async (req, res) => {
-  const keys = req.query.c ? String(req.query.c).split("|").filter(Boolean) : [];
-  const image = keys.length ? await getDraftRoyaleMainImage(keys).catch(() => null) : null;
+// Bang! : main d'un joueur, rendu sans état à partir des cartes passées
+// dans l'URL (c = identifiants de cartes séparés par "|", une carte
+// répétée affiche un badge ×N).
+app.get("/api/bang/main", async (req, res) => {
+  const ids = req.query.c ? String(req.query.c).split("|").filter(Boolean) : [];
+  const image = await getBangMainImage(ids).catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400");
   res.send(image.buffer);
 });
 
-// Marché du Draft (duel, main éphémère du Draft Royale) posé sur le tapis,
-// rendu sans état à partir des clés de l'URL (c = cartes séparées par "|",
-// une carte répétée affiche un badge ×N).
-app.get("/api/draft/marche", async (req, res) => {
-  const keys = req.query.c ? String(req.query.c).split("|").filter(Boolean).slice(0, 60) : [];
-  const image = keys.length ? await getDraftMarcheImage(keys).catch(() => null) : null;
-  if (!image) return res.status(404).end();
-  res.setHeader("Content-Type", image.mimeType);
-  res.setHeader("Cache-Control", "public, max-age=86400");
-  res.send(image.buffer);
-});
-
-// Draft Royale : illustration statique (présentation / jour 1).
-app.get("/api/draftroyale/illustration", async (req, res) => {
-  const image = await getDraftRoyaleIllustrationImage().catch(() => null);
+// Bang! : illustration statique (message officiel).
+app.get("/api/bang/illustration", async (req, res) => {
+  const image = await getBangIllustrationImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");

@@ -3,7 +3,7 @@
 // les mini-jeux réguliers (Frame, Jeux de lettres [Anagram/Pêle-mêle en
 // alternance], Jeux visuels [Zoom carte/Palette en alternance], La Juste
 // Carte) et du jeu spécial actuellement actif (Quiz, Robinson, Boss Raid,
-// Goblin Hunters, Blackjack, Mario Clash, Gobelet ou Draft Royale ;
+// Goblin Hunters, Blackjack, Mario Clash, Gobelet ou Bang! ;
 // Tamagotchi archivé).
 // Lecture seule, aucune écriture Redis.
 //
@@ -89,11 +89,10 @@ import {
   readPoints as readGobeletPoints,
 } from "../../../backend/services/gobelet.js";
 import {
-  readState as readDraftRoyaleState,
-  loadDraftRoyaleConfig,
-  readActions as readDraftRoyaleActions,
-  readJoueur as readDraftRoyaleJoueur,
-} from "../../../backend/services/draftroyale.js";
+  readState as readBangState,
+  loadBangConfig,
+  readPartie as readBangPartie,
+} from "../../../backend/services/bang.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -422,19 +421,17 @@ const SPECIAL_GAMES = [
     },
   },
   {
-    key: "draftroyale",
-    title: "Draft Royale",
-    style: "Draft",
-    readState: readDraftRoyaleState,
+    key: "bang",
+    title: "Bang!",
+    style: "Survie",
+    readState: readBangState,
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
-      const [actions, joueur] = await Promise.all([
-        readDraftRoyaleActions(state.jour),
-        readDraftRoyaleJoueur(discordId),
-      ]);
+      const joueur = (await readBangPartie()).joueurs[discordId];
+      if (!joueur) return { played: false, scoreLabel: null };
       return {
-        played: actions[discordId] != null,
-        scoreLabel: joueur ? `Score : **${joueur.points || 0} pt${(joueur.points || 0) > 1 ? "s" : ""}**` : null,
+        played: joueur.tourFait || !joueur.vivant,
+        scoreLabel: joueur.vivant ? `👑 Roi en vie (**${joueur.elixir} Élixir**)` : "💀 Roi explosé",
       };
     },
     async detail(state) {
@@ -446,12 +443,13 @@ const SPECIAL_GAMES = [
           phaseLabel: "Phase de présentation du jeu",
         };
       }
-      const config = await loadDraftRoyaleConfig();
-      const actions = await readDraftRoyaleActions(state.jour);
+      const [config, partie] = await Promise.all([loadBangConfig(), readBangPartie()]);
+      const joueurs = Object.values(partie.joueurs);
+      const vivants = joueurs.filter((j) => j.vivant).length;
       return {
         jour: state.jour,
         dureeJours: config.duree_jours,
-        participantsLabel: formatParticipantsToday(Object.keys(actions).length),
+        participantsLabel: `${vivants} Roi${vivants > 1 ? "s" : ""} en vie sur ${joueurs.length}`,
       };
     },
   },

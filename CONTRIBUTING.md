@@ -617,7 +617,7 @@ Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 | Blackjack      | `12 8 * * *` |
 | Jeu du Gobelet | `16 8 * * *` |
 | Mario Clash    | `14 8 * * *` |
-| Draft Royale   | `18 8 * * *` |
+| Bang!          | `18 8 * * *` |
 
 ⚠️ **Incident du 27/08** : les 5 crons alors existants étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont _best-effort_ et que le délai augmente aux heures rondes, justement à cause de la charge — caler plusieurs workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Blackjack a suivi le même principe à son activation, décalé sur la minute suivante (`12 8 * * *`).
 
@@ -638,7 +638,7 @@ Ordre chronologique de lancement **public** des jeux collaboratifs à avancée q
 - (2026-08-24) Robinson (10 jours)
 - (2026-08-31) Quiz (7 jours)
 
-**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours), Goblin Hunters (7 jours), Blackjack (7 jours), Draft Royale (7 jours).
+**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours), Goblin Hunters (7 jours), Blackjack (7 jours), Bang! (7 jours).
 
 ---
 
@@ -1952,101 +1952,77 @@ Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le cla
 
 Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `DISCORD_APP_ID`/`DISCORD_TOKEN` (upload emoji). Le `schedule` du cron (`16 8 * * *`) est actif dans `.github/workflows/gobelet.yml`, comme Blackjack.
 
-## Draft Royale — quadruplés en 7 jours
+## Bang! — dernier Roi en vie en 7 jours
 
-Jeu spécial à avancée quotidienne, inspiré du [Kilo de merde](https://fr.wikipedia.org/wiki/Kilo_de_merde) : chaque joueur échange des cartes au marché pour réunir **4 exemplaires d'une même carte** (un « quadruplé », d'abord appelé « quadruplé »). **Refonte du 05/10** : l'ancienne version (deck de 8 cartes, combinaisons, contrat, vœux) était trop complexe pour les testeurs. Participation libre (main reçue au premier clic). Code : `backend/services/draftRules.js` (règles pures, partagées avec le duel `/draft`), `backend/services/draftroyale.js` (Redis, jours), `backend/services/draftroyaleImage.js` (images), `api/discord/_handlers/draftroyale.js` (Discord), `scripts/postDraftRoyale.js`. Équilibrage simulé avec `temp/simulateDraft.mjs`.
+Jeu spécial **100 % asynchrone** inspiré d'[Exploding Kittens](https://fr.wikipedia.org/wiki/Exploding_Kittens) : une pioche commune truffée de **Gobelins explosifs**, des cartes d'action pour piéger les autres, et un objectif, être le dernier Roi en vie. Pas d'ordre de passage : chacun joue quand il veut, chaque action est résolue tout de suite. **Remplace le Draft Royale et le duel `/draft`** (supprimés le 08/10 : complexes et peu intéressants d'après les tests). Code : `backend/services/bangRules.js` (règles pures, testées par `bangRules.test.js`), `backend/services/bang.js` (Redis), `backend/services/bangImage.js` (images), `api/discord/_handlers/bang.js` (Discord), `scripts/postBang.js`. Config : `data/bang/bang.json`.
 
-### Déroulement (Draft Royale)
+### Cartes (Bang!)
 
-Config dans `data/draftroyale/draftroyale.json`.
+Chaque carte est illustrée par une vraie carte Clash Royale (`CARTES` dans `bangRules.js`).
 
-- **Cartes en jeu** (décision du 05/10) : chaque carte existe en `exemplaires` (4) exemplaires, chaque main en a `taille_main` (4) et le **marché contient une carte par joueur**. Il faut donc 5 cartes par joueur : `nbFamilles()` = ⌈5N / 4⌉ cartes différentes pour N joueurs (4 à 3 joueurs, 19 à 15). Les 0 à 3 exemplaires en trop restent **à l'écart** (`reserve`) : une carte dont un exemplaire est à l'écart ne peut pas faire de quadruplé tant qu'il y reste (sauf à le Puiser). L'écart change quand un joueur puise ou renouvelle sa main après un quadruplé.
-- **Ordre d'entrée des cartes** (`config.cartes`, `choisirFamilles()`) : les 10 premières imposées par Raphael (Princesse, Prince, Géant, Archères, Chevalier, Mousquetaire, Gargouilles, Gobelins, Sorcier, Bébé dragon), puis 20 cartes alternant les raretés (légendaire, épique, rare, commune : Bûcheron, Armée de squelettes, Mini P.E.K.K.A, Bombardier, Mineur…, réordonnées le 06/10 pour que les cartes qui entrent en jeu aient des raretés variées) ; au-delà, cartes jouables du catalogue au hasard.
-- **Jour 1** (`initPartie()`) : aucune carte en jeu, elles arrivent avec les joueurs.
-- **Arrivée d'un joueur** (`ensureJoueur()` → `ajouterJoueur()`, sous verrou `draftroyale:lock`) : les cartes manquantes entrent en jeu (exemplaires à l'écart), le joueur tire ses 4 cartes à l'écart (jamais un quadruplé d'emblée), puis une carte à l'écart complète le marché. Le marché existant n'est jamais retiré (les échanges prévus restent valides).
-- **Chaque jour, un tour se joue par un échange au marché, un bonus Joker, ou les deux** (décision du 05/10). Échange au marché : une carte à prendre et une carte de sa main à y déposer, modifiables jusqu'à la clôture (bouton « Annuler l'échange » pour les effacer). Un échange incomplet (une seule des deux cartes choisie) ne compte pas.
-- **Marché** : toujours visible dans l'éphémère (liste et image).
+| Carte | Carte CR | Effet |
+| ----- | -------- | ----- |
+| 💥 Gobelin explosif | Goblin Demolisher | Piochée : l'Esprit de guérison du joueur est sacrifié, sinon son Roi explose (éliminé, sa main est défaussée, ce Gobelin explosif quitte le jeu). |
+| 💚 Esprit de guérison | Heal Spirit | Sauve du Gobelin explosif, puis le joueur le cache dans la pioche (tout en haut, 2e, 3e, milieu, fond ou au hasard). Chacun en reçoit un au départ. |
+| 🙏 Moine | Monk | Joué à l'avance, **secret** (absent du journal). La prochaine attaque ciblée contre le joueur (Gang, Malédiction, Voleuse, Fût sur un joueur) est bloquée et son effet s'applique à l'attaquant. Actif **jusqu'à la clôture du jour** seulement (décision du 08/10), un seul à la fois, un renvoi ne se renvoie pas. |
+| 🛢️ Fût à gobelins | Goblin Barrel | Esquive : annule une pioche due (Gang), sinon compte comme la pioche du jour. Vole en plus 1 Élixir à la banque ou à un joueur (plafonné à 4). |
+| 🧿 Malédiction | Goblin Curse | La prochaine carte piochée par la cible (hors Gobelin explosif) devient un simple Gobelin. Cumulable. |
+| 👊 Gang de gobelins | Goblin Gang | La cible doit piocher `gang_pioches` (2) fois, même sans Élixir (gratuit dans ce cas). Cumulable. |
+| 🎯 Gobelin à sarbacane | Dart Goblin | Montre au joueur les 3 premières cartes de la pioche (dans son éphémère). |
+| 🦹 Voleuse | Bandit | Vole une carte au hasard dans la main de la cible. |
+| 👺 Gobelin | Goblins | Sans pouvoir (dilue la main face à la Voleuse). |
 
-### Résolution des échanges (Draft Royale)
+### Déroulement (Bang!)
 
-Résolus tous ensemble à la clôture (`resoudreEchanges()`, pure) : l'heure de connexion ne doit donner aucun avantage.
+- **Présentation** (1er post, ping MINI-JEUX), puis **Jour 1** : pioche vide, elle se remplit avec les joueurs.
+- **Inscription** au premier clic sur un bouton, jusqu'au jour `inscription_jours` (2). Le joueur reçoit `elixir.depart` (2) Élixirs, un Esprit de guérison et `main_depart` (2) cartes de son paquet ; le reste de son paquet est mélangé dans la pioche (`paquet_par_joueur`, taux fractionnaires : 0,5 = un exemplaire tous les deux joueurs), avec `bombes_par_joueur` (1,5) Gobelins explosifs par joueur **à partir du deuxième** (`ajouterJoueur()`).
+- **Piocher** coûte 1 Élixir. Jouer une carte est gratuit. Le joueur n'est jamais obligé de jouer la carte piochée.
+- **Clôture quotidienne** (`cloturer()`, cron) dans un ordre aléatoire : un Gobelin explosif pas encore caché l'est au hasard, les Moines non utilisés disparaissent ; chaque survivant qui n'a ni pioché ni joué de Fût ce jour-là **pioche automatiquement** (décision du 08/10 : sans contrainte, ne jamais piocher garantirait la survie), ainsi que ses pioches dues (Gang). Les pioches automatiques coûtent 1 Élixir s'il en reste. Puis +`elixir.par_jour` (2) Élixirs, plafonnés à `elixir.max` (4), **sauf au dernier jour**.
+- **Fin** : dès qu'il ne reste qu'un Roi (en cours de journée : message final posté par l'action qui élimine l'avant-dernier, résultat figé une seule fois par `figerResultat()`), sinon à la clôture du jour `duree_jours` (7).
+- **Classement** (`classement()`) : survivants d'abord, par **Élixir restant** (décision du 08/10 : inutile d'éliminer tout le monde), puis Esprits de guérison en main, nombre de cartes, ordre d'arrivée ; puis éliminés du dernier au premier. **Score = nombre de joueurs classés derrière** (cumulé dans l'historique de saison des mini-jeux).
 
-1. Une carte demandée par **au plus autant de joueurs qu'il y a d'exemplaires au marché** est obtenue par tous.
-2. Sinon elle est **disputée** : les joueurs en **Priorité** (Joker) sont servis d'abord, puis ceux qui ont le plus de **points Joker restants** (après les achats du tour), tirage au sort entre ex aequo (décision du 05/10 : sans tirage, personne ne l'emporterait au J1 où tout le monde est à 0).
-3. Les perdants **gardent leur carte** (pas d'échange, décision du 05/10 : la carte de remplacement tirée au hasard rendait le jeu trop aléatoire) et gagnent `joker.gain_perte` (2) points Joker.
-4. Une carte **gelée** (Joker) ne peut être prise par personne ce tour-ci, même par celui qui l'a gelée.
-5. Les cartes déposées par ceux qui ont obtenu leur carte rejoignent le marché (taille du marché inchangée).
+**Équilibrage** (`temp/bang/simulateBang.mjs`, 08/10, bots heuristiques, 75 % de joueurs actifs par jour, 2/3 inscrits au J1) : avec 1,5 Gobelin explosif, 2 Gobelins et 0,5 Esprit de guérison par joueur, 12 joueurs → environ 4 survivants au J7 (2 % de parties finies avant) ; 18 joueurs → environ 5 survivants. À 4 joueurs, la partie se termine souvent avant le J7.
 
-### Joker (Draft Royale et duel)
+### Interface (Bang!)
 
-**Simplifié le 05/10** : la première version (magasin à étapes avec Saboter, Échanger carte, Protéger, Voir main) rendait le jeu lourd et trop aléatoire. Tout tient désormais sur l'écran de la main (`_handlers/draftJoker.js`, partagé par les deux jeux), avec deux menus en plus de l'échange.
+- **Message officiel** (un par jour, réédité en direct après chaque action, `rafraichirTable()`) : inscriptions ouvertes ou non, taille de la pioche et nombre de Gobelins explosifs, survivants (nombre de cartes en main), Rois explosés, 10 derniers événements du journal (attaques, Moines qui renvoient, explosions, pioches automatiques). Boutons **Piocher (1 Élixir)**, **Mon deck**, **Jouer**, **Règles**.
+- **Deck éphémère** (les trois premiers boutons l'ouvrent, Piocher pioche d'abord) : résultat de la dernière action, alertes (Gang, Malédiction, Moine actif, pas encore pioché), Élixir, main (texte et image), bouton Piocher, menu « Jouer une carte » puis menu des cibles (Fût : « La banque » ou un joueur). Après un Gobelin explosif désamorcé, seul le menu « Où cacher le Gobelin explosif ? » est proposé.
+- Les mains restent secrètes ; seul le Moine joué n'apparaît pas dans le journal.
 
-**Points Joker** (ex-« popularité ») : +`gain_tour` (1) par tour joué (échange au marché ou bonus), +`gain_perte` (2) de plus pour une carte disputée manquée ; ils ne baissent qu'en les dépensant, et **les points restants s'ajoutent au score final**. Ils départagent les disputes (points restants après achat, avant les gains du tour).
+### Images (Bang!)
 
-- **Bonus du tour** (menu, un seul, modifiable jusqu'à la clôture, payé et résolu à la clôture, `lireBonus()`) :
-  - **Priorité** (1 pt) : servi en premier si la carte prise est disputée (sans échange complet, ni utilisée ni payée). Plusieurs joueurs en Priorité sur la même carte : départagés par les points Joker.
-  - **Puiser** une carte à l'écart (2 pts, passé de 3 à 2 le 05/10 : utile quand rien n'intéresse au marché) : on prend la carte choisie à l'écart et la carte déposée (menu « Carte de ta main à déposer ») part à l'écart à sa place ; la prise au marché est ignorée. Résolu avant le marché (`resoudrePuisages()`) ; exemplaire disputé : points Joker, les perdants gardent leur carte, sont remboursés et gagnent +2. Choix de la carte jugé fort, coût d'abord fixé à 3 pts puis ramené à 2. Sert aussi à envoyer à l'écart une carte qu'un adversaire attend.
-  - **Geler** une carte du marché (2 pts, d'abord appelé « Verrouiller », renommé le 05/10 car incompris) : une carte gelée ne peut pas être prise ce tour-ci, même par celui qui l'a gelée (échange annulé, carte gardée, sans gain de dispute ; avertissement si on gèle la carte qu'on veut prendre). Sert à bloquer un adversaire repéré en espionnant ou dans le bilan.
-- **Espionner** (menu, 1 pt, `voirMain()`) : **instantané**, une fois par tour, en plus du bonus. La main actuelle de la cible s'affiche tout de suite (elle peut encore changer à la clôture). Ne suffit pas à jouer le tour (pas de +1). Les autres le voient au bilan (« X a espionné Y »).
-- **Un tour se joue** par un échange au marché, un bonus, ou les deux (exemple : geler la carte qu'un adversaire attend sans rien échanger).
+- `/api/bang/main?c=id1|id2|…` : main d'un joueur sur le tapis `bang-table.jpg`, une carte par groupe avec badge `×N`, sans goutte d'élixir (rendu sans état, `cardImage.js` pour le dessin des cartes). ⚠️ Tapis en **JPEG** : resvg ne décode pas le WebP embarqué.
+- `/api/bang/illustration` : `bang-launch.webp` (reprise de l'illustration du Draft Royale en attendant une illustration dédiée).
 
-**Ordre à la clôture** (`computeTour()`) : paiement des bonus, échanges au marché (cartes gelées exclues, Priorité servie d'abord), +1 par tour joué, puis quadruplés (points et nouvelle main). Le bilan annonce les gels (« 🧊 X a gelé Princesse »). **Bots du duel** (`jokerDuBot()`, sans regarder les autres mains) : Priorité quand leur prise peut compléter un quadruplé.
+Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob -- bang` après modification.
 
-### Score (Draft Royale)
-
-- **Quadruplé** : son auteur marque selon la **rareté** de la carte (`points_rarete` : commune 10, rare 11, épique 12, légendaire 13 ; `points_carre` (10) pour une carte sans rareté connue ; `pointsQuadruple()`, décision du 06/10). **La carte du quadruplé quitte le jeu** (`sorties`, ne revient jamais) et **la suivante de la liste `cartes` entre en jeu** (06/10 : remises en jeu, les 4 cartes identiques remplissaient le marché d'une carte dont personne ne voulait). L'auteur **reçoit seul une nouvelle main** (`renouvelerMain()`) : 4 cartes tirées au hasard dans le marché, l'écart et les 4 exemplaires de la nouvelle carte ; le reste est remélangé entre le marché (même taille) et l'écart. Les autres gardent leur main. Bilan : « 🆕 **Chevalier** remplace Archères ». **Aucune main reçue n'est un quadruplé** (`tirerMain()` échange une carte si besoin) : avant ce correctif, à 3 joueurs la nouvelle main était tirée dans 4 cartes seulement et pouvait donner un 2e quadruplé consécutif (vérifié depuis par simulation : 0 main sur 210 000). Les autres gardent leur main. **Décision du 06/10** : auparavant, tout quadruplé déclenchait un décompte pour tous (1 à 3 pts) et une redistribution générale, jugée perturbante (tout recommencer à chaque fois). Simulation : environ 4 quadruplés par partie au lieu de 2, à 3 comme à 15 joueurs.
-- **⭐ Cartes vedettes** (05/10, pour donner un choix stratégique sans action en plus) : une carte en jeu par tranche de `joueurs_par_vedette` (5) joueurs est tirée au sort (`nbVedettes()`, `choisirVedettes()` : 1 vedette en duel, 3 à 15 joueurs). Une vedette réalisée est remplacée par une autre carte en jeu, valable à partir du tour suivant (deux quadruplés le même tour : seule la vedette du début du tour compte). Draft Royale : complétées au fil des arrivées (`partie.vedettes`, celles déjà annoncées sont gardées) ; duel : tirées quand tous les joueurs sont arrivés (`state.vedettes`). Leur quadruplé rapporte `points_vedette` (15, fixe quelle que soit la rareté : écart de 10 à 15 points entre quadruplés, jugé suffisant ; `pointsQuadruple()`). Affichées dans l'éphémère et marquées ⭐ dans le menu du marché ; les bots les visent un peu plus (`choixGlouton()`). Avec une seule vedette, la simulation donnait 21 % des quadruplés sur la vedette à 3 joueurs mais 2 % à 15 joueurs (4 exemplaires disputés par trop de joueurs) ; avec une vedette pour 5 joueurs (30 % des joueurs la visent) : 21 % à 3 joueurs, 12 % à 8, 7 à 8 % à 15-20.
-- **Dernier jour** : chacun marque en plus 1, 2 ou 3 pts selon le plus grand nombre de cartes identiques de sa main (les quadruplés du dernier jour marquent normalement, sans nouvelle main), puis classement final.
-- **Dernier quadruplé de la partie** (06/10) : `bonus_dernier_quadruple` (+3) pour les auteurs du dernier tour qui a vu un quadruplé (mémorisé dans `derniersQuadruples`, attribué au dernier tour). Pousse à jouer jusqu'au bout ; annoncé dans le classement final (« 🏁 Dernier quadruplé »). Le premier quadruplé n'est pas récompensé : souvent un coup de chance.
-- **Score final** (05/10) : points des quadruplés et du dernier jour **+ points Joker restants** (dépenser au magasin coûte donc des points au classement). **Départage** : nombre de quadruplés, puis ordre d'arrivée dans le jeu (`classement()`).
-
-Simulation (`temp/simulateDraft.mjs`, 05/10, joueurs gloutons, 7 tours) : à 15-20 joueurs (70 % actifs chaque jour), environ 1,5 tour à quadruplé par partie, 35 % d'entre eux à plusieurs quadruplés, 23 % des échanges disputés perdus, vainqueur autour de 13 pts. À 3 joueurs (duel) : 2 tours à quadruplé, 21 % à plusieurs quadruplés (41 % avec l'ancien marché de 8 cartes).
-
-### Informations visibles (Draft Royale)
-
-Les mains restent secrètes. **Message du jour : infos générales uniquement** (décision du 05/10) : rappel du but, nombre de joueurs, classement (points, points Joker, quadruplés), dernier jour, illustration. **Éphémère Jouer : la journée en cours** (sous le marché, les exemplaires **à l'écart** de la donne, visibles gratuitement par tous depuis le 05/10 : une carte à l'écart ne peut pas faire de quadruplé avant la prochaine donne, sauf à la Puiser, `ecartLigne()` ; les quadruplés de la veille (avec « nouvelle main ») et les nouvelles cartes vedettes dans un encadré doré en tête, `quadruplesEmbed()`, puis cartes vedettes et points Joker au-dessus de la main) : échanges de la veille de tous les joueurs (prise et dépôt, cartes disputées, gels, espionnages), main regroupée (« Princesse ×2 · … ») et en image, échange et Joker prévus (avertissements seulement si un choix est incomplet ou en conflit), marché (liste et image), les deux menus (carte à prendre, carte à déposer) et les menus Joker (bonus du tour, espionner).
-
-### Images (Draft Royale)
-
-- `/api/draft/marche?c=k1|k2|…` : marché sur le tapis `draft-game.jpg`, une carte par groupe avec un badge `×N`, rendu sans état (éphémère du Draft Royale et du duel). ⚠️ Tapis en **JPEG** : resvg ne décode pas le WebP embarqué (même piège que Mario Clash) ; `draft-game.webp` reste pour archive.
-- `/api/draftroyale/main?c=k1|k2|…` : main d'un joueur, rendu sans état (grille de `backend/services/cardImage.js`, `getCollectionImage()`).
-- `/api/draftroyale/illustration` : `draft-launch.webp` (messages publics du Draft Royale et du duel).
-
-Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob` après modification.
-
-### Manches (comparaison entre parties) — Draft Royale
-
-`draftroyale:manches` archive `{ manche, vainqueur, scoreGagnant, ranking: [{ discordId, username, score }], resolvedAt }` à chaque fin de partie publique. Comptabilisé dans l'historique de saison des mini-jeux comme jeu à score cumulé (`MANCHE_SCORE_GAMES`, champ `score`).
-
-### Stockage — Upstash Redis (`draftroyale:*`)
+### Stockage — Upstash Redis (`bang:*`)
 
 | Clé Redis | Type | Contenu |
 | --------- | ---- | ------- |
-| `draftroyale:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine }` |
-| `draftroyale:partie` | STRING | `{ familles, sorties, marche, reserve, vedettes }` (cardKeys) : cartes en jeu, cartes sorties (quadruplés), marché, écart, vedettes |
-| `draftroyale:joueurs` | HASH | `discordId → { username, main, joker, points, carres, arrivee }` |
-| `draftroyale:actions:<jour>` | HASH | `discordId → { prise, depot, joker: { type, cible?, carte?, maCarte? } }` |
-| `draftroyale:historique` | HASH | `jour → { lignes, carres, scores, nouvellesVedettes, resolvedAt }` |
-| `draftroyale:resultat` | STRING | Classement final |
-| `draftroyale:lock` | STRING | Verrou des arrivées (10 s) |
-| `draftroyale:manches` / `draftroyale:manche_seq` | HASH / compteur | Archive des manches, jamais nettoyée sauf `--manches` |
+| `bang:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing }` |
+| `bang:partie` | STRING | `{ pioche, joueurs, journal, elimines, termine }` ; joueur : `{ username, main, elixir, vivant, moine, maudit, dette, tourFait, enAttente, arrivee, rangElimination }`. Lue et réécrite sous verrou à chaque action. |
+| `bang:resultat` | STRING | Classement final (écrit une seule fois) |
+| `bang:lock` | STRING | Verrou des actions (10 s) |
+| `bang:manches` / `bang:manche_seq` | HASH / compteur | Archive `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }` des parties publiques, jamais nettoyée sauf `--manches` |
 
-### Scripts npm (Draft Royale)
+### Scripts npm (Bang!)
 
 | Commande | Effet |
 | -------- | ----- |
-| `npm run draftroyale:test` | Poste manuellement le jour sur le salon de test. |
-| `npm run draftroyale:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
-| `npm run draftroyale:public` | Poste sur le salon public (cron `draftroyale.yml`). |
-| `npm run draftroyale:public:dry` | Équivalent dry-run. |
-| `npm run draftroyale:reset` | Remet le draft à zéro (préserve l'archive des manches). **Destructif**. |
-| `npm run draftroyale:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
-| `npm run draftroyale:status` | Vue organisateur sans Discord (mains et échanges prévus visibles). |
-| `npm run draftroyale:bots` | Bots de test (salon de test uniquement) : rejoignent et prévoient l'échange glouton. |
+| `npm run bang:test` | Poste manuellement le jour sur le salon de test. |
+| `npm run bang:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
+| `npm run bang:public` | Poste sur le salon public (cron `bang.yml`). |
+| `npm run bang:public:dry` | Équivalent dry-run. |
+| `npm run bang:reset` | Remet la partie à zéro (préserve l'archive des manches). **Destructif**. |
+| `npm run bang:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
+| `npm run bang:status` | Vue organisateur sans Discord (pioche, mains, effets en cours). |
 
-### Variables d'environnement requises (Draft Royale)
+Test de bout en bout local (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/bang/e2eBang.mjs [joueurs]`.
 
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (images). Le `schedule` du cron (`18 8 * * *`) est actif dans `.github/workflows/draftroyale.yml` : avec `--require-active`, il n'avance qu'un draft déjà lancé à la main (`workflow_dispatch`).
+### Variables d'environnement requises (Bang!)
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (images). Le `schedule` du cron (`18 8 * * *`) est actif dans `.github/workflows/bang.yml` : avec `--require-active`, il n'avance qu'une partie déjà lancée à la main (`workflow_dispatch`).
 
 ## Blackjack Duel (duel à la demande, 1-3 joueurs)
 
@@ -2069,21 +2045,6 @@ Réutilise par import direct les fonctions pures du jeu spécial (`rollDice`, `r
 **Combinaisons des adversaires (duel uniquement, 26/09)** : la main éphémère de chaque joueur liste aussi les combinaisons déjà réalisées par ses adversaires (« 👀 Pseudo : … », `readOpponentsUsed()`, pseudo stocké dans `gobeletduel:usernames`), pour ajouter un aspect tactique. Volontairement absent du jeu spécial, où les joueurs sont trop nombreux.
 
 Stockage Redis dédié `gobeletduel:*`. Scripts npm : `npm run gobeletduel:status`, `npm run gobeletduel:watchdog`, `npm run gobeletduel:reset` — mêmes garanties que Blackjack Duel (aucun workflow GitHub Actions ne les appelle).
-
-## Draft Duel (quadruplés, 1-3 joueurs)
-
-Troisième duel à la demande, lancé via `/draft joueurs:<1-3>` (rôle MINI-JEUX requis pour lancer). **Remplace le duel Élixir** (supprimé le 04/10) et reprend les règles du jeu spécial [Draft Royale](#draft-royale--quadruplés-en-7-jours) (refonte « Kilo de merde » du 05/10, règles pures communes dans `draftRules.js`). Mêmes principes structurels que Blackjack/Gobelet Duel (lobby fermé, avancement par les actions des joueurs, message public réédité en place, clôture paresseuse après `duel.stale_heures` (2h) d'inactivité, high score jamais effacé, nettoyage 100% manuel). Code : `backend/services/draftDuel.js`, `api/discord/_handlers/draftDuel.js`.
-
-**Différences avec le Draft Royale** :
-- **7 manches** (`duel.manches`) au lieu de 7 jours : une manche se résout quand tous les joueurs ont cliqué **Fin de tour**, possible avec un échange au marché complet ou une action Joker complète (`tourJouable()`). Verrou `HSETNX` par manche, comme les autres duels.
-- **Toujours 3 joueurs au moins** (05/10, demande de Raphael) : des bots complètent la table, Kévina (bot) à 2 joueurs, Kévina et Josette (bot) en solo (`BOTS`, `botsDeLaPartie()`).
-- **Cartes en jeu** : même calcul que le Draft Royale, bots compris (3 joueurs : Princesse, Prince, Géant, Archères, marché de 3 cartes, 1 exemplaire à l'écart). Chaque joueur (bots d'abord) tire sa main en s'inscrivant ; les échanges ne s'ouvrent qu'une fois tous les joueurs arrivés.
-- **Bots** : chacun choisit son échange et son Joker au moment de la résolution (`choixGlouton()` : l'échange qui grossit le plus son plus gros groupe ; `jokerDuBot()`), sans voir les choix des joueurs. Le high score ne retient que les joueurs humains.
-- Format versionné (`version: 2` dans l'état) : une partie de l'ancien Draft à combinaisons est ignorée par `readState()`.
-
-**Interface** : comme le Draft Royale, le message public ne contient que les infos générales (but, joueurs avec tour fini ou non, points, points Joker, quadruplés, illustration). Bouton **Jouer** : main éphémère avec la manche en cours (échanges de la manche précédente de tous les joueurs, quadruplés en encadré doré, main regroupée et en image, échange et Joker prévus), marché, menus « Carte à prendre au marché » / « Carte de ta main à déposer » / « Bonus du tour » / « Espionner », boutons Fin de tour et Annuler l'échange. À la résolution, la main de chaque joueur passe directement à la manche suivante via le webhook de sa fin de tour (jeton valable 15 min, au-delà Jouer reste le recours). Fin de partie : classement final reposté dans un nouveau message, bouton Détails (quadruplés et points Joker de chacun).
-
-Stockage Redis dédié `draftduel:*` (`state` dont les cartes en jeu et le marché, `players` : main/points Joker/points/quadruplés par joueur, `action:<manche>` : prise/dépôt/Joker/fin de tour, `hand:<manche>` : webhooks, `resolving`, `highscore`). Scripts npm : `npm run draftduel:status`, `npm run draftduel:watchdog`, `npm run draftduel:reset`. Tests de bout en bout locaux (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/e2eDraftDuel.mjs [joueurs]` et `temp/e2eDraftRoyale.mjs [joueurs]`.
 
 ## Jeu Goblin Hunters (identité secrète, camps cachés)
 
