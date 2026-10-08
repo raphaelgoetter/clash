@@ -292,7 +292,15 @@ async function terminerPartie(state, partie, final, { dryRun = false } = {}) {
 
 // ── Publication quotidienne (appelée uniquement par scripts/postBang.js) ──
 
-export async function postBang(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false } = {}) {
+// Joueurs fictifs du salon de test (6 ou 7 tirés au sort), voir initPartie.
+const PNJ = ["Kévina", "Josette", "Gérard", "Ginette", "Jean-Mi", "Bernadette", "Régis", "Huguette"];
+
+function tirerPnj() {
+  const noms = [...PNJ].sort(() => Math.random() - 0.5);
+  return noms.slice(0, 6 + Math.floor(Math.random() * 2));
+}
+
+export async function postBang(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false, pnj = !isPublic } = {}) {
   const config = await loadBangConfig();
   const state = await readState();
 
@@ -313,7 +321,7 @@ export async function postBang(channelId, { dryRun = false, noPing = false, isPu
 
   // 2) Présentation → Jour 1 : pioche vide, elle se remplit avec les joueurs
   if (state.phase === "annonce") {
-    const partie = dryRun ? await readPartie() : await initPartie();
+    const partie = dryRun ? await readPartie() : await initPartie({ pnj: pnj && !isPublic ? tirerPnj() : [] });
     const embed = buildTableEmbed(1, config, partie);
     const components = buildTableComponents();
     if (dryRun) return { dryRun: true, phase: "jour", jour: 1, embed, components };

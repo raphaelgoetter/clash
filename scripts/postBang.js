@@ -13,6 +13,7 @@
 //   node scripts/postBang.js --no-ping       — poste sans pinger @MINI JEUX (présentation et fin)
 //   node scripts/postBang.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node scripts/postBang.js --force          — ignore le garde-fou anti-double-avancée
+//   node scripts/postBang.js --sans-pnj       — salon de test sans les 6-7 joueurs fictifs (PNJ) inscrits au J1
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -24,6 +25,8 @@ const PUBLIC = process.argv.includes("--public");
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 const FORCE = process.argv.includes("--force") || !PUBLIC;
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
+// Salon de test : 6-7 joueurs fictifs inscrits au J1 (jamais en public)
+const PNJ = !PUBLIC && !process.argv.includes("--sans-pnj");
 
 // Réutilise les salons du jeu Frame (même principe que les autres jeux
 // spéciaux, voir CONTRIBUTING.md) plutôt que de provisionner un salon dédié.
@@ -36,7 +39,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postBang(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE });
+    const result = await postBang(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE, pnj: PNJ });
 
     if (result.skipped) {
       if (result.reason === "tooSoonSinceLastClosure") {

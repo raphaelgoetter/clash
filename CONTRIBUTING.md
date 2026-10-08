@@ -2011,7 +2011,7 @@ Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob -- bang`
 
 | Commande | Effet |
 | -------- | ----- |
-| `npm run bang:test` | Poste manuellement le jour sur le salon de test. |
+| `npm run bang:test` | Poste manuellement le jour sur le salon de test. Au passage au J1, inscrit 6 ou 7 **PNJ** (joueurs fictifs `pnj-N`, pseudos Kévina, Josette…) pour voir le jeu avec du monde : ils ne jouent pas, mais la clôture pioche pour eux (ils peuvent exploser) et ils servent de cibles. `-- --sans-pnj` pour s'en passer. Jamais sur le salon public. |
 | `npm run bang:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
 | `npm run bang:public` | Poste sur le salon public (cron `bang.yml`). |
 | `npm run bang:public:dry` | Équivalent dry-run. |

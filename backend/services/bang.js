@@ -106,8 +106,13 @@ async function writePartie(partie) {
   await getRedis().set(PARTIE_KEY, toJson(partie));
 }
 
-export async function initPartie() {
+// Jour 1. `pnj` : pseudos de joueurs fictifs inscrits d'office (salon de
+// test, pour voir le jeu avec du monde) ; ils ne jouent jamais, seule la
+// clôture pioche pour eux.
+export async function initPartie({ pnj = [] } = {}) {
+  const config = await loadBangConfig();
   const partie = creerPartie();
+  pnj.forEach((nom, i) => ajouterJoueur(partie, `pnj-${i + 1}`, nom, { config }));
   await writePartie(partie);
   return partie;
 }
