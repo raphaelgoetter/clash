@@ -125,11 +125,11 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 function buildAnnonceEmbed(config) {
   return {
-    title: "💣 Bang! Dans l'Arène, personne ne vous entendra exploser.",
+    title: "💣 Bang! Dans l'arène, personne ne vous entendra exploser.",
     description: [
-      "Une pioche commune, des **💥 Gobelins explosifs** cachés dedans, et un seul objectif : **être le dernier joueur en vie** !",
+      "Une pioche commune, des **💥 Gobelins explosifs** cachés dedans, et un objectif simple: **être le dernier joueur en vie** !",
       "",
-      `📅 **${config.duree_jours} jours de jeu**, à partir de demain. Chaque jour, tu reçois **${config.elixir.par_jour} Élixirs** pour piocher, quand tu veux. Pioche, piège tes adversaires et reste en vie.`,
+      `📅 **${config.duree_jours} jours de jeu**, à partir de demain. Pioche, piège tes adversaires et, surtout, reste en vie.`,
       "",
       "Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
