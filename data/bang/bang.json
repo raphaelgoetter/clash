@@ -4,6 +4,10 @@
   "elixir": { "depart": 2, "par_jour": 2, "max": 4 },
   "main_depart": 2,
   "gang_pioches": 2,
+  "secousses": [
+    { "jour": 6, "proportion": 0.33 },
+    { "jour": 7, "proportion": 0.5 }
+  ],
   "bombes_par_joueur": 1.5,
   "paquet_par_joueur": {
     "gobelin": 2,

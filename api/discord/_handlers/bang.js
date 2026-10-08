@@ -119,7 +119,8 @@ function bilanVeilleLignes(veille) {
   if (veille.attaques) {
     lignes.push(`⚔️ ${plural(veille.attaques, "attaque")}${veille.renvois ? `, dont ${veille.renvois} renvoyée${veille.renvois > 1 ? "s" : ""} par un Moine` : ""}.`);
   }
-  if (veille.automatiques.length) lignes.push(`⏰ ${plural(veille.automatiques.length, "pioche automatique")} (détail dans le Journal).`);
+  const nbAuto = veille.automatiques.length;
+  if (nbAuto) lignes.push(`⏰ ${nbAuto} pioche${nbAuto > 1 ? "s automatiques" : " automatique"} (détail dans le Journal).`);
   return lignes;
 }
 
@@ -130,6 +131,8 @@ function buildTableEmbed(jour, config, partie) {
   const survivants = tous.filter((j) => j.vivant).sort((a, b) => a.username.localeCompare(b.username));
   const elimines = tous.filter((j) => !j.vivant).sort((a, b) => a.rangElimination - b.rangElimination);
   const lignes = jour === 1 || !partie.veille ? [INTRO_J1] : ["**📰 Hier dans l'Arène**", ...bilanVeilleLignes(partie.veille)];
+  // Annonce de la secousse du lendemain (voir config.secousses)
+  if ((config.secousses || []).some((x) => x.jour === jour + 1)) lignes.push("", "⚠️ Demain, **l'Arène tremble** : des cartes vont disparaître de la pioche…");
   lignes.push("", piocheLigne(partie));
   if (survivants.length) {
     lignes.push("", `**👑 Survivants (${survivants.length})**`, survivants.map((j) => `${j.username} (${j.main.length} 🃏)`).join(" · "));
@@ -202,6 +205,7 @@ function buildReglesEmbed(config) {
       `${carteLabel("voleuse")} : vole une carte au hasard à un joueur.`,
       `${carteLabel("gobelin")} : carte sans pouvoir.`,
       "",
+      `**🌋 Fin de partie** : aux jours ${(config.secousses || []).map((x) => x.jour).join(" et ")}, l'Arène tremble et des cartes disparaissent de la pioche (les Gobelins explosifs, eux, restent).`,
       `**🏁 Fin** : dès qu'il ne reste qu'un joueur, sinon au jour ${config.duree_jours}. Les survivants sont alors classés par Élixir restant.`,
     ].join("\n"),
     color: BANG_COLOR,
@@ -715,7 +719,7 @@ export async function handleJournal(webhookUrl, discordId) {
     }
     const jours = new Map();
     for (const e of partie.journal) {
-      if (e.p !== discordId && !e.ids?.includes(discordId)) continue;
+      if (e.p !== discordId && !e.ids?.includes(discordId) && e.k !== "secousse") continue;
       if (!jours.has(e.j)) jours.set(e.j, []);
       jours.get(e.j).push(texteJournal(partie, e, discordId));
     }

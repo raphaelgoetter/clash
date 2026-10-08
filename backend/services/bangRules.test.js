@@ -207,6 +207,26 @@ function main() {
     assert.ok(!p.joueurs.a.enAttente);
   }
 
+  // ── Secousse : à l'ouverture du J6, cartes ordinaires retirées jusqu'à 1/3 de bombes ──
+  {
+    const p = partieTest({ a: [] }, [...Array(20).fill("gobelin"), "bombe", "bombe"]);
+    p.joueurs.a.tourFait = true;
+    p.numeroJour = 5;
+    const config = { ...CONFIG, secousses: [{ jour: 6, proportion: 0.5 }] };
+    cloturer(p, { config, rng });
+    assert.strictEqual(p.pioche.length, 4);
+    assert.strictEqual(nbBombes(p), 2, "les Gobelins explosifs restent");
+    const e = p.journal.find((x) => x.k === "secousse");
+    assert.ok(e.c && e.j === 6 && e.retirees === 18);
+    assert.match(texteJournal(p, e), /^🌋 \*\*L'Arène tremble !\*\* 18 cartes disparaissent/);
+    // Proportion déjà atteinte : rien ne bouge
+    p.numeroJour = 5;
+    p.joueurs.a.tourFait = true;
+    const avant = p.pioche.length;
+    cloturer(p, { config, rng });
+    assert.ok(p.pioche.length <= avant);
+  }
+
   // ── Classement : survivants (Élixir, Esprits, cartes), puis éliminés du dernier au premier ──
   {
     const p = partieTest({ a: ["gobelin", "gobelin"], b: ["esprit"], c: [], d: [], e: [] });

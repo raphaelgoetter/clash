@@ -130,6 +130,8 @@ export function texteJournal(partie, e, moi = null) {
       if (surMoi) return `🙏 Le Moine de ${S} renvoie ton attaque (${carte}) contre toi !`;
       return `🙏 Le Moine de ${S} renvoie l'attaque (${carte}) de ${V} à l'envoyeur !`;
     }
+    case "secousse":
+      return `🌋 **L'Arène tremble !** ${e.retirees} cartes disparaissent de la pioche : il reste ${e.bombes} Gobelins explosifs sur ${e.cartes} cartes.`;
     case "auto":
       if (moi != null && e.ids.includes(moi)) return "⏰ Tu n'avais pas pioché : pioche automatique à la clôture.";
       return `⏰ Pioche automatique à la clôture : ${e.ids.map(n).join(", ")}.`;
@@ -410,6 +412,7 @@ export function cloturer(partie, { config, rng = Math.random, dernier = false })
   partie.veille = { ...bilan(partie), automatiques };
   partie.jour = bilanVide();
   partie.numeroJour = (partie.numeroJour ?? 1) + 1;
+  if (!partie.termine && !dernier) secousse(partie, config, rng);
   for (const [, j] of vivants(partie)) {
     j.tourFait = false;
     j.dette = 0;
@@ -417,6 +420,27 @@ export function cloturer(partie, { config, rng = Math.random, dernier = false })
     if (!dernier) j.elixir = Math.min(config.elixir.max, j.elixir + config.elixir.par_jour);
   }
   return { automatiques };
+}
+
+// Secousse de fin de partie (config.secousses, ex. J6 et J7) : à
+// l'ouverture du jour, des cartes ordinaires disparaissent au hasard de la
+// pioche (jamais un Gobelin explosif) jusqu'à ce que les Gobelins
+// explosifs y atteignent la proportion voulue. Rien si elle l'est déjà.
+// Annoncée au journal (entrée cruciale, affichée sur le message du jour).
+function secousse(partie, config, rng) {
+  const regle = (config.secousses || []).find((x) => x.jour === partie.numeroJour);
+  const bombes = nbBombes(partie);
+  if (!regle || !bombes) return;
+  const cible = Math.ceil(bombes / regle.proportion);
+  const retrait = partie.pioche.length - cible;
+  if (retrait <= 0) return;
+  const ordinaires = shuffle(
+    partie.pioche.map((c, i) => (c === "bombe" ? -1 : i)).filter((i) => i >= 0),
+    rng,
+  ).slice(0, retrait);
+  const retires = new Set(ordinaires);
+  partie.pioche = partie.pioche.filter((_, i) => !retires.has(i));
+  noter(partie, "secousse", { retirees: retires.size, cartes: partie.pioche.length, bombes, crucial: true });
 }
 
 // Classement : survivants d'abord (Élixir restant, puis Esprits de

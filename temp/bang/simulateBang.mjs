@@ -12,7 +12,7 @@ for (const kv of process.argv.slice(5)) {
   const path = k.split(".");
   let o = config;
   while (path.length > 1) o = o[path.shift()];
-  o[path[0]] = Number(v);
+  o[path[0]] = v.startsWith("[") ? JSON.parse(v) : Number(v);
 }
 const rng = Math.random;
 
