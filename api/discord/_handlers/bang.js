@@ -125,7 +125,7 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 function buildAnnonceEmbed(config) {
   return {
-    title: "💣 Bang! Dans l'arène, personne ne vous entendra exploser.",
+    title: "💣 Bang! Et paf le gobelin…",
     description: [
       "Une pioche commune, des **💥 Gobelins explosifs** cachés dedans, et un objectif simple: **être le dernier joueur en vie** !",
       "",
