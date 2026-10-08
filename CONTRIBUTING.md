@@ -1968,7 +1968,7 @@ Chaque carte est illustrée par une vraie carte Clash Royale (`CARTES` dans `ban
 | 🙏 Moine | Monk | Joué à l'avance, **secret** (absent du journal). La prochaine attaque ciblée contre le joueur (Gang, Malédiction, Voleuse, Fût sur un joueur) est bloquée et son effet s'applique à l'attaquant. Actif **jusqu'à la clôture du jour** seulement (décision du 08/10), un seul à la fois, un renvoi ne se renvoie pas. |
 | 🛢️ Fût à gobelins | Goblin Barrel | Esquive : annule une pioche due (Gang), sinon compte comme la pioche du jour. Vole en plus 1 Élixir à la banque ou à un joueur (plafonné à 4). |
 | 🧿 Malédiction | Goblin Curse | La prochaine carte piochée par la cible (hors Gobelin explosif) devient un simple Gobelin. Cumulable. |
-| 👊 Gang de gobelins | Goblin Gang | La cible doit piocher `gang_pioches` (2) fois, même sans Élixir (gratuit dans ce cas). Cumulable. |
+| 👊 Gang de gobelins | Goblin Gang | La cible doit piocher `gang_pioches` (2) cartes, même sans Élixir (gratuit dans ce cas). **Un seul clic sur Piocher** fait toutes les pioches dues d'un coup (`piocherClic()`, décision du 08/10), en s'arrêtant sur un Gobelin explosif (les pioches restantes se font au clic suivant). Cumulable. |
 | 🎯 Gobelin à sarbacane | Dart Goblin | Montre au joueur les 3 premières cartes de la pioche (dans son éphémère). |
 | 🦹 Voleuse | Bandit | Vole une carte au hasard dans la main de la cible. |
 | 👺 Gobelin | Goblins | Sans pouvoir (dilue la main face à la Voleuse). |

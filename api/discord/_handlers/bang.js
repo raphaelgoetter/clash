@@ -29,7 +29,7 @@ import {
   listManches,
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/bang.js";
-import { CARTES, JOUABLES, CIBLEES, POSITIONS, piocher, placer, jouer, vivants, nbBombes, texteJournal } from "../../../backend/services/bangRules.js";
+import { CARTES, JOUABLES, CIBLEES, POSITIONS, piocherClic, placer, jouer, vivants, nbBombes, texteJournal } from "../../../backend/services/bangRules.js";
 import { encodeTable, NB_AVATARS } from "../../../backend/services/bangImage.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
@@ -197,7 +197,7 @@ function buildReglesEmbed(config) {
       `${carteLabel("moine")} : joue-le à l'avance. Jusqu'à la clôture du jour, la prochaine attaque contre toi est renvoyée à l'envoyeur. Personne ne sait que tu es sous sa protection.`,
       `${carteLabel("fut")} : esquive une pioche (celle du jour, ou une pioche due), et vole 1 Élixir à la banque ou à un joueur.`,
       `${carteLabel("malediction")} : la prochaine carte que ta cible piochera sera un simple Gobelin.`,
-      `${carteLabel("gang")} : ta cible devra piocher ${config.gang_pioches} fois d'affilée.`,
+      `${carteLabel("gang")} : ta cible devra piocher ${config.gang_pioches} cartes d'un coup, même sans Élixir.`,
       `${carteLabel("sarbacane")} : regarde les 3 premières cartes de la pioche.`,
       `${carteLabel("voleuse")} : vole une carte au hasard à un joueur.`,
       `${carteLabel("gobelin")} : carte sans pouvoir.`,
@@ -428,7 +428,7 @@ function jouerTexte(r, cible, partie) {
 
 function alertes(j) {
   const lignes = [];
-  if (j.dette > 0) lignes.push(`👊 Gang de gobelins : encore **${plural(j.dette, "pioche")}** à faire (même sans Élixir).`);
+  if (j.dette > 0) lignes.push(`👊 Gang de gobelins : **${plural(j.dette, "pioche")}** à faire, d'un seul clic sur Piocher (même sans Élixir).`);
   if (j.maudit > 0) lignes.push(`🧿 Malédiction : ta prochaine carte piochée sera un simple Gobelin${j.maudit > 1 ? ` (×${j.maudit})` : ""}.`);
   if (j.moine) lignes.push("🙏 Ton Moine te protège jusqu'à la clôture : la prochaine attaque sera renvoyée.");
   return lignes;
@@ -442,7 +442,7 @@ const EFFETS = {
   sarbacane: "Regarde les 3 premières cartes de la pioche.",
   moine: "Renvoie la prochaine attaque contre toi (jusqu'à la clôture).",
   fut: "Esquive une pioche et vole 1 Élixir (banque ou joueur).",
-  gang: "Ta cible devra piocher 2 fois d'affilée.",
+  gang: "Ta cible devra piocher 2 cartes d'un coup.",
   malediction: "La prochaine carte piochée par ta cible devient un Gobelin.",
   voleuse: "Vole une carte au hasard à un joueur.",
   gobelin: "Carte sans pouvoir.",
@@ -483,11 +483,16 @@ function placementRow() {
   };
 }
 
-// [🃏 Piocher] : la carte piochée seule (image et effet), ou l'explosion.
+// [🃏 Piocher] : la ou les cartes piochées (image et effet ; plusieurs
+// d'un coup pour les pioches dues d'un Gang de gobelins), ou l'explosion.
 // Après un Gobelin explosif désamorcé, le menu pour le cacher.
-function buildPiocheView(config, partie, discordId, { r = null, erreur = null, nouveau = false, entete = null } = {}) {
+function buildPiocheView(config, partie, discordId, { tirages = [], erreur = null, nouveau = false, entete = null } = {}) {
   const j = partie.joueurs[discordId];
+  const cartes = tirages.filter((t) => !t.bang);
+  const bang = tirages.find((t) => t.bang)?.bang ?? null;
   const intro = [...(nouveau ? [NOUVEAU(config), ""] : []), ...(entete ? [entete, ""] : [])];
+  // Cartes piochées avant un Gobelin explosif (pioches dues)
+  if (cartes.length && bang) intro.push(`Tu pioches d'abord : ${cartes.map((t) => carteLabel(t.carte)).join(", ")}.`, "");
   if (j.enAttente) {
     return {
       embeds: [
@@ -502,8 +507,8 @@ function buildPiocheView(config, partie, discordId, { r = null, erreur = null, n
       components: [placementRow()],
     };
   }
-  if (!j.vivant || (partie.termine && !r)) {
-    if (r?.bang === "elimine") {
+  if (!j.vivant || (partie.termine && !tirages.length)) {
+    if (bang === "elimine") {
       return {
         embeds: [{ title: "💥 BANG !", description: [...intro, "Tu as pioché un Gobelin explosif sans Esprit de guérison : tu exploses ! Fin de partie pour toi."].join("\n"), color: BANG_COLOR, thumbnail: { url: mainImageUrl(["bombe"]) } }],
         components: [],
@@ -511,20 +516,22 @@ function buildPiocheView(config, partie, discordId, { r = null, erreur = null, n
     }
     return finVue(j);
   }
-  if (erreur || !r) {
+  if (erreur || !cartes.length) {
     return { embeds: [{ description: [...intro, avertissement(erreur), ...alertes(j)].join("\n"), color: BANG_COLOR }], components: [repiocherRow(j, partie)] };
   }
   const lignes = [...intro];
-  if (r.transformee) lignes.push(`🧿 Malédiction ! Ta carte (${CARTES[r.transformee].nom}) devient un simple Gobelin.`, "");
-  lignes.push(EFFETS[r.carte]);
+  for (const t of cartes) {
+    if (t.transformee) lignes.push(`🧿 Malédiction ! Ta carte (${CARTES[t.transformee].nom}) devient un simple Gobelin.`);
+    lignes.push(cartes.length > 1 ? `${carteLabel(t.carte)} : ${EFFETS[t.carte]}` : EFFETS[t.carte]);
+  }
   if (j.dette > 0) lignes.push("", `👊 Encore **${plural(j.dette, "pioche")}** à faire (Gang de gobelins).`);
   return {
     embeds: [
       {
-        title: `Tu pioches : ${carteLabel(r.carte)}`,
+        title: cartes.length > 1 ? `Tu pioches ${cartes.length} cartes (Gang de gobelins)` : `Tu pioches : ${carteLabel(cartes[0].carte)}`,
         description: lignes.join("\n"),
         color: BANG_COLOR,
-        image: { url: mainImageUrl([r.carte]) },
+        image: { url: mainImageUrl(cartes.map((t) => t.carte)) },
       },
     ],
     components: [repiocherRow(j, partie)],
@@ -630,8 +637,8 @@ export async function handleJouer(webhookUrl, discordId, username) {
 export async function handlePiocher(webhookUrl, discordId, username) {
   try {
     await executer(webhookUrl, discordId, username, (partie) => {
-      const r = piocher(partie, discordId);
-      return r.erreur ? { erreur: r.erreur } : { r };
+      const r = piocherClic(partie, discordId);
+      return r.erreur ? { erreur: r.erreur } : { tirages: r.tirages };
     }, buildPiocheView);
   } catch (err) {
     console.error("[Bang] Échec pioche:", err.message);

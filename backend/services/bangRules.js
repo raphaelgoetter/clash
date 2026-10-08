@@ -97,9 +97,9 @@ export function texteJournal(partie, e, moi = null) {
         ? "💥 Tu as pioché un Gobelin explosif… sauvé par ton Esprit de guérison !"
         : `💥 ${S} a pioché un Gobelin explosif… sauvé par son Esprit de guérison !`;
     case "gang":
-      if (parMoi) return `👊 Ton Gang de gobelins tend une embuscade à ${V} ! (${e.n} pioches d'affilée)`;
-      if (surMoi) return `👊 Le Gang de gobelins de ${S} te tend une embuscade ! (${e.n} pioches d'affilée)`;
-      return `👊 ${S} envoie son Gang de gobelins tendre une embuscade à ${V} ! (${e.n} pioches d'affilée)`;
+      if (parMoi) return `👊 Ton Gang de gobelins tend une embuscade à ${V} ! (${e.n} cartes à piocher d'un coup)`;
+      if (surMoi) return `👊 Le Gang de gobelins de ${S} te tend une embuscade ! (${e.n} cartes à piocher d'un coup)`;
+      return `👊 ${S} envoie son Gang de gobelins tendre une embuscade à ${V} ! (${e.n} cartes à piocher d'un coup)`;
     case "malediction":
       if (parMoi) return `🧿 Tu jettes une Malédiction sur ${V} : sa prochaine carte piochée sera un simple Gobelin !`;
       if (surMoi) return `🧿 ${S} te jette une Malédiction : ta prochaine carte piochée sera un simple Gobelin !`;
@@ -257,6 +257,25 @@ export function piocher(partie, id, { auto = false } = {}) {
     `${auto ? "⏰ Pioche automatique" : "🃏 Tu as pioché"} : ${transformee ? `${CARTES[transformee].nom}, changée en Gobelin par une Malédiction` : CARTES[carte].nom}.`,
   );
   return { carte, transformee, bang: null };
+}
+
+// Clic sur Piocher : une carte, ou toutes les pioches dues d'un coup
+// (Gang de gobelins), en s'arrêtant sur un Gobelin explosif.
+// Renvoie { erreur } ou { tirages: [résultats de piocher()] }.
+export function piocherClic(partie, id) {
+  const j = partie.joueurs[id];
+  const nb = Math.max(1, j?.dette ?? 0);
+  const tirages = [];
+  for (let k = 0; k < nb; k++) {
+    const r = piocher(partie, id);
+    if (r.erreur) {
+      if (!tirages.length) return { erreur: r.erreur };
+      break;
+    }
+    tirages.push(r);
+    if (r.bang) break;
+  }
+  return { tirages };
 }
 
 // Cache le Gobelin explosif désamorcé dans la pioche.

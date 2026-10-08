@@ -1,6 +1,6 @@
 import assert from "assert";
 import fs from "fs";
-import { creerPartie, ajouterJoueur, piocher, placer, jouer, cloturer, classement, nbBombes, vivants, texteJournal } from "./bangRules.js";
+import { creerPartie, ajouterJoueur, piocher, piocherClic, placer, jouer, cloturer, classement, nbBombes, vivants, texteJournal } from "./bangRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/bang/bang.json", import.meta.url), "utf8"));
 
@@ -107,6 +107,20 @@ function main() {
     jouer(p, "b", "fut", "pioche", { config: CONFIG, rng });
     assert.strictEqual(p.joueurs.b.dette, CONFIG.gang_pioches - 1);
     assert.strictEqual(p.joueurs.b.elixir, 3);
+  }
+
+  // ── Gang : un seul clic pioche les cartes dues, arrêt sur un Gobelin explosif ──
+  {
+    const p = partieTest({ a: ["esprit"] }, ["gobelin", "fut", "voleuse", "bombe", "moine"]);
+    p.joueurs.a.dette = 2;
+    p.joueurs.a.elixir = 1;
+    assert.deepStrictEqual(piocherClic(p, "a").tirages.map((r) => r.carte), ["gobelin", "fut"]);
+    assert.strictEqual(p.joueurs.a.elixir, 0, "1 Élixir payé, la 2e pioche due est gratuite");
+    assert.strictEqual(piocherClic(p, "a").erreur, "elixir", "plus de dette : un clic normal coûte 1 Élixir");
+    p.joueurs.a.dette = 3;
+    const r = piocherClic(p, "a");
+    assert.deepStrictEqual(r.tirages.map((t) => t.carte), ["voleuse", "bombe"]);
+    assert.ok(p.joueurs.a.enAttente && p.joueurs.a.dette === 1, "arrêt sur la bombe, une pioche encore due");
   }
 
   // ── Moine : renvoie l'attaque à l'envoyeur, une seule fois, en secret ──
