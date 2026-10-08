@@ -236,6 +236,16 @@ function formatMancheLine(record, isCurrent) {
   return `Manche ${record.manche} : vainqueur **${record.vainqueur}** (${plural(record.nbJoueurs, "joueur")})${suffix}`;
 }
 
+// Critère qui a départagé le vainqueur du 2e survivant, dans l'ordre de
+// classement() (Élixir, Esprits de guérison, cartes en main, arrivée).
+function critereVictoire(a, b) {
+  const esprits = (j) => j.main.filter((c) => c === "esprit").length;
+  if (a.elixir !== b.elixir) return "avec le plus d'Élixir";
+  if (esprits(a) !== esprits(b)) return "à Élixir égal, avec le plus d'Esprits de guérison";
+  if (a.main.length !== b.main.length) return "à Élixir égal, avec le plus de cartes en main";
+  return "à égalité parfaite, grâce à son inscription plus précoce";
+}
+
 function buildFinEmbed(jour, ranking, partie, config, manches, currentManche) {
   const top = ranking[0];
   const seul = top && vivants(partie).length === 1;
@@ -243,7 +253,7 @@ function buildFinEmbed(jour, ranking, partie, config, manches, currentManche) {
     ? "Personne n'a participé."
     : seul
       ? `👑 **${top.username}** est le dernier joueur en vie !`
-      : `👑 **${top.username}** l'emporte parmi les ${vivants(partie).length} survivants, avec le plus d'Élixir !`;
+      : `👑 **${top.username}** l'emporte parmi les ${vivants(partie).length} survivants, ${critereVictoire(partie.joueurs[top.discordId], partie.joueurs[ranking[1].discordId])} !`;
   const statut = (r) => {
     const j = partie.joueurs[r.discordId];
     return j.vivant ? `👑 ${j.elixir} Élixir` : "💀";
