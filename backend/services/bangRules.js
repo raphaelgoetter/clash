@@ -41,7 +41,7 @@ export const POSITIONS = {
   hasard: "Au hasard",
 };
 
-const JOURNAL_MAX = 40;
+const JOURNAL_MAX = 1000;
 
 function shuffle(arr, rng) {
   const a = [...arr];
@@ -56,15 +56,39 @@ function insererAuHasard(pioche, carte, rng) {
   pioche.splice(Math.floor(rng() * (pioche.length + 1)), 0, carte);
 }
 
-function noter(partie, texte) {
-  partie.journal.push(texte);
+// Journal de la partie : { j: jour, t: texte, c: crucial, ids: joueurs
+// concernés } pour les événements publics, { j, t, p: joueur } pour les
+// notes privées (pioches, Sarbacane, Moine…). Les entrées cruciales
+// (explosions, fin de partie) sont les seules affichées sur le message
+// officiel ; le bouton Journal montre à chacun ce qui le concerne.
+function noter(partie, texte, { crucial = false, ids = [] } = {}) {
+  journaliser(partie, { j: partie.numeroJour ?? 1, t: texte, c: crucial, ids });
+}
+
+function prive(partie, id, texte) {
+  journaliser(partie, { j: partie.numeroJour ?? 1, t: texte, p: id });
+}
+
+function journaliser(partie, entree) {
+  partie.journal.push(entree);
   if (partie.journal.length > JOURNAL_MAX) partie.journal.splice(0, partie.journal.length - JOURNAL_MAX);
 }
 
 const nom = (j) => `**${j.username}**`;
 
+// Bilan du jour en cours (`jour`), archivé dans `veille` à la clôture pour
+// le message du lendemain.
+function bilanVide() {
+  return { explosions: [], sauves: [], attaques: 0, renvois: 0, automatiques: [] };
+}
+
+function bilan(partie) {
+  partie.jour ??= bilanVide();
+  return partie.jour;
+}
+
 export function creerPartie() {
-  return { pioche: [], joueurs: {}, journal: [], elimines: 0, termine: false };
+  return { pioche: [], joueurs: {}, journal: [], numeroJour: 1, elimines: 0, termine: false, jour: bilanVide(), veille: null };
 }
 
 export function vivants(partie) {
@@ -122,11 +146,12 @@ function eliminer(partie, id) {
   j.enAttente = false;
   partie.elimines += 1;
   j.rangElimination = partie.elimines;
-  noter(partie, `🚀 **BANG !** ${nom(j)} a explosé et quitte l'Arène !`);
+  noter(partie, `🚀 **BANG !** ${nom(j)} a explosé et quitte l'Arène !`, { crucial: true, ids: [id] });
+  bilan(partie).explosions.push(j.username);
   const restants = vivants(partie);
   if (restants.length <= 1) {
     partie.termine = true;
-    if (restants.length) noter(partie, `👑 ${nom(restants[0][1])} est le dernier joueur en vie !`);
+    if (restants.length) noter(partie, `👑 ${nom(restants[0][1])} est le dernier joueur en vie !`, { crucial: true, ids: [restants[0][0]] });
   }
 }
 
@@ -152,7 +177,8 @@ export function piocher(partie, id, { auto = false } = {}) {
     }
     j.main.splice(esprit, 1);
     j.enAttente = true;
-    noter(partie, `💥 ${nom(j)} a pioché un Gobelin explosif… sauvé par son Esprit de guérison !`);
+    noter(partie, `💥 ${nom(j)} a pioché un Gobelin explosif… sauvé par son Esprit de guérison !`, { ids: [id] });
+    bilan(partie).sauves.push(j.username);
     return { carte, transformee: false, bang: "sauve" };
   }
   // Malédiction : la carte piochée devient un simple Gobelin
@@ -163,6 +189,11 @@ export function piocher(partie, id, { auto = false } = {}) {
     carte = "gobelin";
   }
   j.main.push(carte);
+  prive(
+    partie,
+    id,
+    `${auto ? "⏰ Pioche automatique" : "🃏 Tu as pioché"} : ${transformee ? `${CARTES[transformee].nom}, changée en Gobelin par une Malédiction` : CARTES[carte].nom}.`,
+  );
   return { carte, transformee, bang: null };
 }
 
@@ -179,6 +210,7 @@ export function placer(partie, id, position, { rng = Math.random } = {}) {
           : Math.min(Number(position) - 1, len);
   partie.pioche.splice(index, 0, "bombe");
   j.enAttente = false;
+  prive(partie, id, `🤫 Tu as caché le Gobelin explosif : ${POSITIONS[position].toLowerCase()}${position === "hasard" ? "" : ` (position ${index + 1})`}.`);
   return { index };
 }
 
@@ -189,26 +221,28 @@ function appliquer(partie, carte, sourceId, victimeId, { config, rng }) {
   const v = partie.joueurs[victimeId];
   if (carte === "gang") {
     v.dette += config.gang_pioches;
-    noter(partie, `👊 ${nom(s)} envoie son Gang de gobelins tendre une embuscade à ${nom(v)} ! (${config.gang_pioches} pioches d'affilée)`);
+    noter(partie, `👊 ${nom(s)} envoie son Gang de gobelins tendre une embuscade à ${nom(v)} ! (${config.gang_pioches} pioches d'affilée)`, { ids: [sourceId, victimeId] });
   } else if (carte === "malediction") {
     v.maudit += 1;
-    noter(partie, `🧿 ${nom(s)} jette une Malédiction sur ${nom(v)} : sa prochaine carte piochée sera un simple Gobelin !`);
+    noter(partie, `🧿 ${nom(s)} jette une Malédiction sur ${nom(v)} : sa prochaine carte piochée sera un simple Gobelin !`, { ids: [sourceId, victimeId] });
   } else if (carte === "voleuse") {
     if (!v.main.length) {
-      noter(partie, `🦹 La Voleuse de ${nom(s)} fouille ${nom(v)}… qui n'a plus rien !`);
+      noter(partie, `🦹 La Voleuse de ${nom(s)} fouille ${nom(v)}… qui n'a plus rien !`, { ids: [sourceId, victimeId] });
       return;
     }
     const [vole] = v.main.splice(Math.floor(rng() * v.main.length), 1);
     s.main.push(vole);
-    noter(partie, `🦹 La Voleuse de ${nom(s)} dérobe une carte à ${nom(v)} !`);
+    noter(partie, `🦹 La Voleuse de ${nom(s)} dérobe une carte à ${nom(v)} !`, { ids: [sourceId, victimeId] });
+    prive(partie, sourceId, `🦹 Carte dérobée à ${nom(v)} : ${CARTES[vole].nom}.`);
+    prive(partie, victimeId, `🦹 ${nom(s)} t'a volé : ${CARTES[vole].nom}.`);
     return { vole };
   } else if (carte === "fut") {
     if (v.elixir > 0) {
       v.elixir -= 1;
       s.elixir = Math.min(config.elixir.max, s.elixir + 1);
-      noter(partie, `🛢️ ${nom(s)} surgit d'un Fût à gobelins et chipe 1 Élixir à ${nom(v)} !`);
+      noter(partie, `🛢️ ${nom(s)} surgit d'un Fût à gobelins et chipe 1 Élixir à ${nom(v)} !`, { ids: [sourceId, victimeId] });
     } else {
-      noter(partie, `🛢️ ${nom(s)} surgit d'un Fût à gobelins chez ${nom(v)}… qui n'a plus d'Élixir !`);
+      noter(partie, `🛢️ ${nom(s)} surgit d'un Fût à gobelins chez ${nom(v)}… qui n'a plus d'Élixir !`, { ids: [sourceId, victimeId] });
     }
   }
 }
@@ -231,12 +265,15 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
   j.main.splice(index, 1);
 
   if (carte === "sarbacane") {
-    noter(partie, `🎯 ${nom(j)} scrute la pioche avec son Gobelin à sarbacane…`);
-    return { carte, revelation: partie.pioche.slice(0, 3) };
+    noter(partie, `🎯 ${nom(j)} scrute la pioche avec son Gobelin à sarbacane…`, { ids: [id] });
+    const revelation = partie.pioche.slice(0, 3);
+    prive(partie, id, `🎯 Sommet de la pioche : ${revelation.map((c, i) => `${i + 1}. ${CARTES[c].nom}`).join(", ") || "pioche vide"}.`);
+    return { carte, revelation };
   }
   if (carte === "moine") {
     // Secret : personne ne sait qui est protégé
     j.moine = true;
+    prive(partie, id, "🙏 Tu as joué ton Moine (protection jusqu'à la clôture).");
     return { carte };
   }
   if (carte === "fut") {
@@ -245,16 +282,18 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
     else j.tourFait = true;
     if (versPioche) {
       j.elixir = Math.min(config.elixir.max, j.elixir + 1);
-      noter(partie, `🛢️ ${nom(j)} se cache dans un Fût à gobelins et récupère 1 Élixir.`);
+      noter(partie, `🛢️ ${nom(j)} se cache dans un Fût à gobelins et récupère 1 Élixir.`, { ids: [id] });
       return { carte };
     }
   }
 
   // Attaque : le Moine de la cible la renvoie à l'envoyeur (une fois)
   const victime = partie.joueurs[cible];
+  bilan(partie).attaques += 1;
   if (victime.moine) {
     victime.moine = false;
-    noter(partie, `🙏 Le Moine de ${nom(victime)} renvoie l'attaque (${CARTES[carte].nom}) de ${nom(j)} à l'envoyeur !`);
+    bilan(partie).renvois += 1;
+    noter(partie, `🙏 Le Moine de ${nom(victime)} renvoie l'attaque (${CARTES[carte].nom}) de ${nom(j)} à l'envoyeur !`, { ids: [cible, id] });
     const effet = appliquer(partie, carte, cible, id, { config, rng });
     return { carte, renvoi: true, vole: effet?.vole ?? null };
   }
@@ -269,11 +308,15 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
 // sont classés sur l'Élixir qu'il leur reste).
 export function cloturer(partie, { config, rng = Math.random, dernier = false }) {
   const automatiques = [];
+  const idsAuto = [];
   for (const [id] of shuffle(vivants(partie), rng)) {
     const j = partie.joueurs[id];
     if (j.enAttente) placer(partie, id, "hasard", { rng });
     const nb = Math.max(j.dette, j.tourFait ? 0 : 1);
-    if (nb > 0 && !partie.termine) automatiques.push(j.username);
+    if (nb > 0 && !partie.termine) {
+      automatiques.push(j.username);
+      idsAuto.push(id);
+    }
     for (let k = 0; k < nb && j.vivant && !partie.termine; k++) {
       const r = piocher(partie, id, { auto: true });
       if (r.erreur) break;
@@ -281,8 +324,11 @@ export function cloturer(partie, { config, rng = Math.random, dernier = false })
     }
   }
   if (automatiques.length) {
-    noter(partie, `⏰ Pioche automatique à la clôture : ${automatiques.map((n) => `**${n}**`).join(", ")}.`);
+    noter(partie, `⏰ Pioche automatique à la clôture : ${automatiques.map((n) => `**${n}**`).join(", ")}.`, { ids: idsAuto });
   }
+  partie.veille = { ...bilan(partie), automatiques };
+  partie.jour = bilanVide();
+  partie.numeroJour = (partie.numeroJour ?? 1) + 1;
   for (const [, j] of vivants(partie)) {
     j.tourFait = false;
     j.dette = 0;

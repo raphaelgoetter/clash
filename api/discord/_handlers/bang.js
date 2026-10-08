@@ -2,9 +2,9 @@
 // bang.js — Handlers Discord de Bang! (jeu spécial de 7 jours inspiré
 // d'Exploding Kittens). Un seul message officiel par jour (survivants,
 // pioche, derniers événements), réédité en direct après chaque action,
-// avec quatre boutons : Piocher, Mon deck, Jouer, Règles. Chaque bouton
-// ouvre le deck éphémère du joueur, d'où il enchaîne pioches, cartes et
-// cibles (édition en place de l'éphémère).
+// avec quatre boutons, chacun en éphémère : Piocher (la carte piochée),
+// Jouer une carte (le deck et le menu des cartes, puis des cibles, édités
+// en place), Journal (ce qui concerne le joueur) et Règles.
 //
 // La publication/clôture quotidienne passe uniquement par
 // scripts/postBang.js (postBang) ; la fin de partie peut aussi survenir
@@ -102,15 +102,32 @@ function buildAnnonceEmbed(config) {
   };
 }
 
-// Message officiel du jour : survivants, pioche et derniers événements.
+const INTRO_J1 = "Les Gobelins ont envahi l'Arène et caché leurs **💥 Gobelins explosifs** dans la pioche… Chaque nouveau joueur y ajoute ses cartes. À toi de piocher le premier !";
+
+// Événements marquants de la veille (bilan archivé à la clôture).
+function bilanVeilleLignes(veille) {
+  const noms = (liste) => liste.map((n) => `**${n}**`).join(", ");
+  const lignes = [];
+  if (veille.explosions.length) {
+    lignes.push(`🚀 ${veille.explosions.length > 1 ? `${veille.explosions.length} joueurs ont explosé` : "1 joueur a explosé"} : ${noms(veille.explosions)}.`);
+  } else {
+    lignes.push("🚀 Personne n'a explosé.");
+  }
+  if (veille.sauves.length) lignes.push(`💚 Sauvé${veille.sauves.length > 1 ? "s" : ""} par un Esprit de guérison : ${noms(veille.sauves)}.`);
+  if (veille.attaques) {
+    lignes.push(`⚔️ ${plural(veille.attaques, "attaque")}${veille.renvois ? `, dont ${veille.renvois} renvoyée${veille.renvois > 1 ? "s" : ""} par un Moine` : ""}.`);
+  }
+  if (veille.automatiques.length) lignes.push(`⏰ ${plural(veille.automatiques.length, "pioche automatique")} (détail dans le Journal).`);
+  return lignes;
+}
+
+// Message officiel du jour : intro (J1) ou bilan de la veille, pioche,
+// survivants et derniers événements.
 function buildTableEmbed(jour, config, partie) {
   const tous = Object.values(partie.joueurs);
   const survivants = tous.filter((j) => j.vivant).sort((a, b) => a.username.localeCompare(b.username));
   const elimines = tous.filter((j) => !j.vivant).sort((a, b) => a.rangElimination - b.rangElimination);
-  const lignes = ["Pioche avec ton Élixir, piège tes adversaires et sois **le dernier joueur en vie** !"];
-  if (jour <= config.inscription_jours) {
-    lignes.push(`🆕 Inscriptions ouvertes jusqu'au jour ${config.inscription_jours} : clique sur un bouton pour rejoindre l'Arène.`);
-  }
+  const lignes = jour === 1 || !partie.veille ? [INTRO_J1] : ["**📰 Hier dans l'Arène**", ...bilanVeilleLignes(partie.veille)];
   lignes.push("", piocheLigne(partie));
   if (survivants.length) {
     lignes.push("", `**👑 Survivants (${survivants.length})**`, survivants.map((j) => `${j.username} (${j.main.length} 🃏)`).join(" · "));
@@ -118,8 +135,10 @@ function buildTableEmbed(jour, config, partie) {
   if (elimines.length) {
     lignes.push("", `**💀 Joueurs éliminés (${elimines.length})**`, elimines.map((j) => j.username).join(" · "));
   }
-  const journal = partie.journal.slice(-JOURNAL_AFFICHE);
-  if (journal.length) lignes.push("", "**📜 Derniers événements**", ...journal);
+  // Seuls les faits cruciaux du jour (explosions) : le détail est dans le
+  // bouton Journal
+  const cruciaux = partie.journal.filter((e) => e.c && e.j === (partie.numeroJour ?? jour)).slice(-JOURNAL_AFFICHE);
+  if (cruciaux.length) lignes.push("", "**💥 Aujourd'hui**", ...cruciaux.map((e) => e.t));
   return {
     title: `🔫 Bang! — Jour ${jour}/${config.duree_jours}`,
     description: lignes.join("\n").slice(-4096),
@@ -181,7 +200,6 @@ function buildReglesEmbed(config) {
       `${carteLabel("voleuse")} : vole une carte au hasard à un joueur.`,
       `${carteLabel("gobelin")} : carte sans pouvoir.`,
       "",
-      `**🆕 Inscriptions** : jusqu'au jour ${config.inscription_jours}, en cliquant sur un bouton.`,
       `**🏁 Fin** : dès qu'il ne reste qu'un joueur, sinon au jour ${config.duree_jours}. Les survivants sont alors classés par Élixir restant.`,
     ].join("\n"),
     color: BANG_COLOR,
@@ -200,8 +218,8 @@ function buildTableComponents() {
       type: 1,
       components: [
         { type: 2, style: 1, label: "Piocher (1 Élixir)", emoji: { name: "🃏" }, custom_id: "bang_piocher" },
-        { type: 2, style: 2, label: "Mon deck", emoji: { name: "🎒" }, custom_id: "bang_deck" },
-        { type: 2, style: 3, label: "Jouer", emoji: { name: "⚡" }, custom_id: "bang_jouer" },
+        { type: 2, style: 3, label: "Jouer une carte", emoji: { name: "⚡" }, custom_id: "bang_jouer" },
+        { type: 2, style: 2, label: "Journal", emoji: { name: "📜" }, custom_id: "bang_journal" },
         reglesButton(),
       ],
     },
@@ -219,6 +237,20 @@ async function discordFetch(url, init) {
   });
 }
 
+// Génère l'image du plateau avant de la confier à Discord : à froid, son
+// rendu (police, tapis, illustrations) dépasse le délai de Discord, qui
+// affiche alors le message sans image. La réponse est ensuite servie depuis
+// le cache CDN (s-maxage, voir backend/server.js).
+async function prechaufferImage(embed) {
+  const url = embed?.image?.url;
+  if (!url?.includes("/api/bang/table")) return;
+  try {
+    await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  } catch (err) {
+    console.warn("[Bang] Préchauffage de l'image du plateau échoué:", err.message);
+  }
+}
+
 async function supprimerMessage(state) {
   if (!state?.messageId || !state?.channelId) return;
   try {
@@ -230,6 +262,7 @@ async function supprimerMessage(state) {
 }
 
 async function publishAndWriteState(channelId, previousState, { phase, jour, embed, components, ping, termine = false, isPublic, noPing }) {
+  await prechaufferImage(embed);
   await supprimerMessage(previousState);
   const roleId = ping && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
   const res = await discordFetch(`/channels/${channelId}/messages`, {
@@ -250,9 +283,11 @@ async function rafraichirTable(state, partie) {
   if (!state?.messageId || state.termine) return;
   try {
     const config = await loadBangConfig();
+    const embed = buildTableEmbed(state.jour, config, partie);
+    await prechaufferImage(embed);
     await discordFetch(`/channels/${state.channelId}/messages/${state.messageId}`, {
       method: "PATCH",
-      body: JSON.stringify({ embeds: [buildTableEmbed(state.jour, config, partie)], components: buildTableComponents() }),
+      body: JSON.stringify({ embeds: [embed], components: buildTableComponents() }),
     });
   } catch (err) {
     console.error("[Bang] Échec rafraîchissement du message officiel:", err.message);
@@ -373,14 +408,6 @@ function avertissement(code) {
   return `⚠️ ${ERREURS[code] || "Action impossible."}`;
 }
 
-// Texte du résultat d'une pioche.
-function piocheTexte(r) {
-  if (r.bang === "elimine") return "💥 **BANG !** Tu as pioché un Gobelin explosif sans Esprit de guérison : tu exploses ! Fin de partie pour toi.";
-  if (r.bang === "sauve") return "💥 **BANG !** Tu as pioché un Gobelin explosif… ton Esprit de guérison te sauve ! Choisis où cacher le Gobelin dans la pioche.";
-  if (r.transformee) return `🧿 Malédiction ! Ta carte (${carteLabel(r.transformee)}) se transforme en simple **${carteLabel("gobelin")}**.`;
-  return `🃏 Tu pioches : **${carteLabel(r.carte)}**.`;
-}
-
 // Texte du résultat d'une carte jouée.
 function jouerTexte(r, cible, partie) {
   const nomCible = partie.joueurs[cible]?.username;
@@ -397,49 +424,118 @@ function jouerTexte(r, cible, partie) {
   return `✅ Tu joues ${carteLabel(r.carte)} contre **${nomCible}**.${extra}`;
 }
 
-function alertes(j, config) {
+function alertes(j) {
   const lignes = [];
   if (j.dette > 0) lignes.push(`👊 Gang de gobelins : encore **${plural(j.dette, "pioche")}** à faire (même sans Élixir).`);
   if (j.maudit > 0) lignes.push(`🧿 Malédiction : ta prochaine carte piochée sera un simple Gobelin${j.maudit > 1 ? ` (×${j.maudit})` : ""}.`);
   if (j.moine) lignes.push("🙏 Ton Moine te protège jusqu'à la clôture : la prochaine attaque sera renvoyée.");
-  if (!j.tourFait && !j.dette) lignes.push(`⏰ Tu n'as pas encore pioché aujourd'hui : sinon, la clôture de ${formatUtcTimeAsParis(8)} piochera pour toi.`);
   return lignes;
 }
 
-// Deck éphémère : alertes, Élixir, main, et les actions possibles.
-// `carteCiblee` : carte choisie dans le menu Jouer, en attente de sa cible.
-function buildDeckView(jour, config, partie, discordId, { entete = null, nouveau = false, carteCiblee = null } = {}) {
+// Effet de chaque carte : sous la carte piochée, et dans le menu « Jouer
+// une carte » (100 caractères au plus, limite Discord).
+const EFFETS = {
+  bombe: "Sans Esprit de guérison, tu exploses.",
+  esprit: "Te sauve si tu pioches un Gobelin explosif.",
+  sarbacane: "Regarde les 3 premières cartes de la pioche.",
+  moine: "Renvoie la prochaine attaque contre toi (jusqu'à la clôture).",
+  fut: "Esquive une pioche et vole 1 Élixir (banque ou joueur).",
+  gang: "Ta cible devra piocher 2 fois d'affilée.",
+  malediction: "La prochaine carte piochée par ta cible devient un Gobelin.",
+  voleuse: "Vole une carte au hasard à un joueur.",
+  gobelin: "Carte sans pouvoir.",
+};
+
+const NOUVEAU = (config) => `Bienvenue dans l'Arène ! Tu reçois un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}.`;
+
+function elixirFooter(j, config) {
+  return { text: `Élixir : ${j.elixir}/${config.elixir.max}` };
+}
+
+function finVue(j) {
+  const texte = !j.vivant ? "💀 Tu as explosé, ta partie est terminée. Suis la suite sur le message officiel !" : "🏁 La partie est terminée.";
+  return { embeds: [{ description: texte, color: BANG_COLOR }], components: [] };
+}
+
+function placementRow() {
+  return {
+    type: 1,
+    components: [
+      {
+        type: 3,
+        custom_id: "bang_placer",
+        placeholder: "Où cacher le Gobelin explosif ?",
+        options: Object.entries(POSITIONS).map(([value, label]) => ({ label, value })),
+      },
+    ],
+  };
+}
+
+// [🃏 Piocher] : la carte piochée seule (image et effet), ou l'explosion.
+// Après un Gobelin explosif désamorcé, le menu pour le cacher.
+function buildPiocheView(config, partie, discordId, { r = null, erreur = null, nouveau = false, entete = null } = {}) {
   const j = partie.joueurs[discordId];
-  const lignes = [
-    ...(entete ? [entete, ""] : []),
-    ...(nouveau ? [`Bienvenue dans l'Arène ! Tu reçois un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}.`, ""] : []),
-  ];
-  const embed = { title: `🎒 Ton deck — Jour ${jour}/${config.duree_jours}`, color: BANG_COLOR };
-
-  if (!j.vivant || partie.termine) {
-    lignes.push(!j.vivant ? "💀 Tu as explosé, ta partie est terminée. Suis la suite sur le message officiel !" : "🏁 La partie est terminée.");
-    return { embeds: [{ ...embed, description: lignes.join("\n").slice(0, 4096) }], components: [] };
-  }
-
-  if (j.enAttente) lignes.push("💥 **Gobelin explosif désamorcé !** Choisis où le cacher dans la pioche.", "");
-  lignes.push(...alertes(j, config));
-  lignes.push(`🧪 Élixir : **${j.elixir}/${config.elixir.max}**`, `**Ta main** : ${formatMain(j.main)}`, "", piocheLigne(partie));
-  const image = mainImageUrl(j.main);
-
-  const components = [];
+  const intro = [...(nouveau ? [NOUVEAU(config), ""] : []), ...(entete ? [entete, ""] : [])];
   if (j.enAttente) {
-    components.push({
-      type: 1,
-      components: [
+    return {
+      embeds: [
         {
-          type: 3,
-          custom_id: "bang_placer",
-          placeholder: "Où cacher le Gobelin explosif ?",
-          options: Object.entries(POSITIONS).map(([value, label]) => ({ label, value })),
+          title: `${carteLabel("bombe")} désamorcé !`,
+          description: [...intro, "Ton Esprit de guérison te sauve. Choisis où cacher le Gobelin explosif dans la pioche."].join("\n"),
+          color: BANG_COLOR,
+          thumbnail: { url: mainImageUrl(["bombe"]) },
+          footer: elixirFooter(j, config),
         },
       ],
-    });
-  } else if (carteCiblee) {
+      components: [placementRow()],
+    };
+  }
+  if (!j.vivant || (partie.termine && !r)) {
+    if (r?.bang === "elimine") {
+      return {
+        embeds: [{ title: "💥 BANG !", description: [...intro, "Tu as pioché un Gobelin explosif sans Esprit de guérison : tu exploses ! Fin de partie pour toi."].join("\n"), color: BANG_COLOR, thumbnail: { url: mainImageUrl(["bombe"]) } }],
+        components: [],
+      };
+    }
+    return finVue(j);
+  }
+  if (erreur || !r) {
+    return { embeds: [{ description: [...intro, avertissement(erreur), ...alertes(j)].join("\n"), color: BANG_COLOR, footer: elixirFooter(j, config) }], components: [] };
+  }
+  const lignes = [...intro];
+  if (r.transformee) lignes.push(`🧿 Malédiction ! Ta carte (${CARTES[r.transformee].nom}) devient un simple Gobelin.`, "");
+  lignes.push(EFFETS[r.carte]);
+  if (j.dette > 0) lignes.push("", `👊 Encore **${plural(j.dette, "pioche")}** à faire (Gang de gobelins).`);
+  return {
+    embeds: [
+      {
+        title: `Tu pioches : ${carteLabel(r.carte)}`,
+        description: lignes.join("\n"),
+        color: BANG_COLOR,
+        image: { url: mainImageUrl([r.carte]) },
+        footer: elixirFooter(j, config),
+      },
+    ],
+    components: [],
+  };
+}
+
+// [⚡ Jouer une carte] : résultat de l'action, alertes, Élixir, deck (texte
+// et image), menu des cartes jouables avec leur effet ; `carteCiblee` :
+// carte choisie, en attente de sa cible.
+function buildJouerView(config, partie, discordId, { entete = null, nouveau = false, carteCiblee = null } = {}) {
+  const j = partie.joueurs[discordId];
+  if (!j.vivant || partie.termine) return finVue(j);
+  if (j.enAttente) return buildPiocheView(config, partie, discordId, { entete });
+  const lignes = [
+    ...(nouveau ? [NOUVEAU(config), ""] : []),
+    ...(entete ? [entete, ""] : []),
+    ...alertes(j),
+    `🧪 Élixir : **${j.elixir}/${config.elixir.max}**`,
+    `**Ton deck** : ${formatMain(j.main)}`,
+  ];
+  const components = [];
+  if (carteCiblee) {
     const adversaires = vivants(partie)
       .filter(([id]) => id !== discordId)
       .sort(([, a], [, b]) => a.username.localeCompare(b.username))
@@ -450,33 +546,29 @@ function buildDeckView(jour, config, partie, discordId, { entete = null, nouveau
       { type: 1, components: [{ type: 2, style: 2, label: "Annuler", custom_id: "bang_annuler" }] },
     );
   } else {
-    const peutPiocher = partie.pioche.length > 0 && (j.elixir >= 1 || j.dette > 0);
-    components.push({
-      type: 1,
-      components: [{ type: 2, style: 1, label: j.dette > 0 ? "Piocher (pioche due)" : "Piocher (1 Élixir)", emoji: { name: "🃏" }, custom_id: "bang_e_piocher", disabled: !peutPiocher }],
-    });
     const jouables = JOUABLES.filter((c) => j.main.includes(c) && !(c === "moine" && j.moine));
-    if (jouables.length) {
+    if (!jouables.length) {
+      lignes.push("", "Tu n'as aucune carte à jouer pour l'instant.");
+    } else {
       components.push({
         type: 1,
         components: [
           {
             type: 3,
             custom_id: "bang_carte",
-            placeholder: "⚡ Jouer une carte",
-            options: jouables.map((c) => ({
-              label: CARTES[c].nom,
-              value: c,
-              emoji: { name: CARTES[c].emoji },
-              description: `×${j.main.filter((x) => x === c).length} dans ta main`,
-            })),
+            placeholder: "⚡ Choisis la carte à jouer",
+            options: jouables.map((c) => {
+              const n = j.main.filter((x) => x === c).length;
+              return { label: `${CARTES[c].nom}${n > 1 ? ` (×${n})` : ""}`, value: c, emoji: { name: CARTES[c].emoji }, description: EFFETS[c] };
+            }),
           },
         ],
       });
     }
   }
+  const image = mainImageUrl(j.main);
   return {
-    embeds: [{ ...embed, description: lignes.join("\n").slice(0, 4096), image: image ? { url: image } : undefined }],
+    embeds: [{ title: "⚡ Jouer une carte", description: lignes.join("\n").slice(0, 4096), color: BANG_COLOR, image: image ? { url: image } : undefined }],
     components,
   };
 }
@@ -491,19 +583,19 @@ async function guardActive(webhookUrl) {
   return state;
 }
 
-// Action commune : sous verrou (bang.js), puis deck éphémère, message
-// officiel réédité et fin de partie éventuelle.
-// `action(partie, config)` renvoie { entete?, carteCiblee? }.
-async function executer(webhookUrl, discordId, username, action, { rafraichir = true } = {}) {
+// Action commune : sous verrou (bang.js), puis vue éphémère (`vue`),
+// message officiel réédité et fin de partie éventuelle.
+// `action(partie, config)` renvoie les options de la vue.
+async function executer(webhookUrl, discordId, username, action, vue, { rafraichir = true } = {}) {
   const state = await guardActive(webhookUrl);
   if (!state) return;
   const config = await loadBangConfig();
   const r = await agir(state.jour, discordId, username, action);
   if (r.erreur === "inscriptions") {
-    await patchOriginal(webhookUrl, { content: `🔒 Les inscriptions sont closes depuis le jour ${config.inscription_jours}. Rendez-vous à la prochaine partie !` });
+    await patchOriginal(webhookUrl, { content: `🔒 Trop tard : on ne peut plus rejoindre l'Arène après le jour ${config.inscription_jours}. Rendez-vous à la prochaine partie !` });
     return;
   }
-  await patchOriginal(webhookUrl, buildDeckView(state.jour, config, r.partie, discordId, { ...(r.resultat || {}), nouveau: r.nouveau }));
+  await patchOriginal(webhookUrl, vue(config, r.partie, discordId, { ...(r.resultat || {}), nouveau: r.nouveau }));
   if (r.partie.termine) {
     const final = await figerResultat(r.partie);
     if (final) await terminerPartie(state, r.partie, final);
@@ -514,30 +606,30 @@ async function executer(webhookUrl, discordId, username, action, { rafraichir = 
 
 // ── Boutons du message officiel (nouvel éphémère) ────────────────────
 
-// [🎒 Mon deck] et [⚡ Jouer] : le deck, avec le menu des cartes.
-export async function handleDeck(webhookUrl, discordId, username) {
+// [⚡ Jouer une carte] (et « Annuler » au choix de la cible).
+export async function handleJouer(webhookUrl, discordId, username) {
   try {
-    await executer(webhookUrl, discordId, username, () => null, { rafraichir: false });
+    await executer(webhookUrl, discordId, username, () => ({}), buildJouerView, { rafraichir: false });
   } catch (err) {
-    console.error("[Bang] Échec deck:", err.message);
+    console.error("[Bang] Échec jouer:", err.message);
   }
 }
 
-// [🃏 Piocher] (message officiel ou deck éphémère).
+// [🃏 Piocher].
 export async function handlePiocher(webhookUrl, discordId, username) {
   try {
     await executer(webhookUrl, discordId, username, (partie) => {
       const r = piocher(partie, discordId);
-      return { entete: r.erreur ? avertissement(r.erreur) : piocheTexte(r) };
-    });
+      return r.erreur ? { erreur: r.erreur } : { r };
+    }, buildPiocheView);
   } catch (err) {
     console.error("[Bang] Échec pioche:", err.message);
   }
 }
 
-// ── Composants du deck éphémère (édition en place) ───────────────────
+// ── Composants de l'éphémère (édition en place) ──────────────────────
 
-// Menu « Jouer une carte » : jouée tout de suite, ou menu des cibles.
+// Menu « Choisis la carte à jouer » : jouée tout de suite, ou menu des cibles.
 export async function handleCarte(webhookUrl, discordId, username, carte) {
   try {
     if (CIBLEES.includes(carte)) {
@@ -547,13 +639,13 @@ export async function handleCarte(webhookUrl, discordId, username, carte) {
         // Menu des cibles vide (seul joueur de la partie) : refusé par Discord
         if (carte !== "fut" && vivants(partie).length < 2) return { entete: "⚠️ Aucun adversaire à viser pour l'instant." };
         return { carteCiblee: carte };
-      }, { rafraichir: false });
+      }, buildJouerView, { rafraichir: false });
       return;
     }
     await executer(webhookUrl, discordId, username, (partie, config) => {
       const r = jouer(partie, discordId, carte, null, { config });
       return { entete: r.erreur ? avertissement(r.erreur) : jouerTexte(r, null, partie) };
-    });
+    }, buildJouerView);
   } catch (err) {
     console.error("[Bang] Échec carte:", err.message);
   }
@@ -565,7 +657,7 @@ export async function handleCible(webhookUrl, discordId, username, carte, cible)
     await executer(webhookUrl, discordId, username, (partie, config) => {
       const r = jouer(partie, discordId, carte, cible, { config });
       return { entete: r.erreur ? avertissement(r.erreur) : jouerTexte(r, cible, partie) };
-    });
+    }, buildJouerView);
   } catch (err) {
     console.error("[Bang] Échec cible:", err.message);
   }
@@ -576,10 +668,53 @@ export async function handlePlacer(webhookUrl, discordId, username, position) {
   try {
     await executer(webhookUrl, discordId, username, (partie) => {
       const r = placer(partie, discordId, position);
-      return { entete: r.erreur ? avertissement(r.erreur) : `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.` };
+      return { texte: r.erreur ? avertissement(r.erreur) : `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.` };
+    }, (config, partie, id, { texte }) => {
+      const j = partie.joueurs[id];
+      if (j.enAttente) return buildPiocheView(config, partie, id, { entete: texte });
+      return { embeds: [{ description: texte, color: BANG_COLOR, footer: elixirFooter(j, config) }], components: [] };
     });
   } catch (err) {
     console.error("[Bang] Échec placement:", err.message);
+  }
+}
+
+// ── Bouton [📜 Journal] (éphémère) ───────────────────────────────────
+
+// Ce qui concerne le joueur (ses actions, celles qui le visent, ses notes
+// privées : pioches, Sarbacane, Moine…), regroupé par jour, du plus récent
+// au plus ancien (jours anciens coupés au-delà de 4096 caractères).
+export async function handleJournal(webhookUrl, discordId) {
+  try {
+    const [state, partie] = await Promise.all([readState(), readPartie()]);
+    if (!state || state.phase !== "jour") {
+      await patchOriginal(webhookUrl, { content: "Aucune partie de Bang! en cours." });
+      return;
+    }
+    if (!partie.joueurs[discordId]) {
+      await patchOriginal(webhookUrl, { content: "Tu ne participes pas à cette partie." });
+      return;
+    }
+    const jours = new Map();
+    for (const e of partie.journal) {
+      if (e.p !== discordId && !e.ids?.includes(discordId)) continue;
+      if (!jours.has(e.j)) jours.set(e.j, []);
+      jours.get(e.j).push(e.t);
+    }
+    let description = "";
+    for (const [j, lignes] of [...jours.entries()].sort((a, b) => b[0] - a[0])) {
+      const bloc = [`**Jour ${j}**`, ...lignes, ""].join("\n");
+      if (description.length + bloc.length > 4000) {
+        description += "*(jours précédents non affichés)*";
+        break;
+      }
+      description += `${bloc}\n`;
+    }
+    await patchOriginal(webhookUrl, {
+      embeds: [{ title: "📜 Ton journal", description: description.trim() || "Rien à signaler pour l'instant.", color: BANG_COLOR }],
+    });
+  } catch (err) {
+    console.error("[Bang] Échec Journal:", err.message);
   }
 }
 

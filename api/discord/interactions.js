@@ -47,7 +47,7 @@ import {
   computeTourLevel,
 } from "../../backend/services/collectionConstants.js";
 import { getOrSet } from "../../backend/services/cache.js";
-import { readBlobAsset } from "../../backend/services/blobAssets.js";
+import { CARD_ART_OVERRIDES, readCardArt } from "../../backend/services/cardArt.js";
 import {
   handleHistory as handleChampionHistory,
   handleHistoryPage as handleChampionHistoryPage,
@@ -158,12 +158,13 @@ import {
   handleRegles as handleMarioClashRegles,
 } from "./_handlers/marioclash.js";
 import {
-  handleDeck as handleBangDeck,
+  handleJouer as handleBangJouer,
   handlePiocher as handleBangPiocher,
   handleCarte as handleBangCarte,
   handleCible as handleBangCible,
   handlePlacer as handleBangPlacer,
   handleRegles as handleBangRegles,
+  handleJournal as handleBangJournal,
 } from "./_handlers/bang.js";
 import {
   handleJouer as handleBlackjackJouer,
@@ -2243,16 +2244,9 @@ async function loadCardDefinitions() {
   return Array.isArray(value) ? value : [];
 }
 
-// Illustrations de base que l'API Clash Royale sert encore avec un ancien
-// design (vérifié en jeu et sur RoyaleAPI, cf. temp/compare_card_art.mjs) :
-// remplacées par la version à jour de data/card-art/ (copie servie par Blob,
-// cf. scripts/uploadImageAssetsToBlob.js). Les icônes évolution/héros ne
-// sont pas concernées.
-const CARD_ART_OVERRIDES = new Map([
-  ["Bandit", "card-art/bandit.png"],
-  ["Musketeer", "card-art/musketeer.png"],
-  ["Mega Minion", "card-art/mega-minion.png"],
-]);
+// Illustrations de base à l'ancien design côté API : lues directement sur
+// Blob (voir backend/services/cardArt.js), y compris pour les icônes de
+// battle log mémorisées avant la correction (URL d'origine de l'API).
 const BLOB_ICON_PREFIX = "blob:";
 
 async function fetchImageDataUrl(url, signal) {
@@ -2261,7 +2255,7 @@ async function fetchImageDataUrl(url, signal) {
 
   if (url.startsWith(BLOB_ICON_PREFIX)) {
     try {
-      const buffer = await readBlobAsset(url.slice(BLOB_ICON_PREFIX.length));
+      const buffer = await readCardArt(url.slice(BLOB_ICON_PREFIX.length));
       const dataUrl = `data:image/png;base64,${buffer.toString("base64")}`;
       CARD_ICON_CACHE.set(url, dataUrl);
       return dataUrl;
@@ -2336,13 +2330,13 @@ async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) 
 
   // Icône de la forme jouée (évolution/héros) mémorisée depuis le battle log
   // (cardIcons, cf. battleCardIconUrl), sinon version normale du catalogue.
-  // Version de base à l'illustration périmée côté API : CARD_ART_OVERRIDES.
+  // Version de base à l'illustration périmée côté API : cardArt.js.
   const cardIconUrl = (deck, id, index) => {
     const card = cardById.get(String(id));
     const iconUrl = deck.cardIcons?.[index] ?? card?.iconUrls?.medium ?? null;
-    const override = CARD_ART_OVERRIDES.get(card?.name);
-    return override && iconUrl === card?.iconUrls?.medium
-      ? `${BLOB_ICON_PREFIX}${override}`
+    const base = [card?.iconUrls?.medium, card?.iconUrls?.apiMedium];
+    return CARD_ART_OVERRIDES.has(card?.name) && base.includes(iconUrl)
+      ? `${BLOB_ICON_PREFIX}${card.name}`
       : iconUrl;
   };
 
@@ -10081,8 +10075,8 @@ export default async function handler(req, res) {
   }
 
   // ── Bang! : boutons du message officiel (nouveau deck éphémère) ──
-  // custom_id : bang_piocher, bang_deck, bang_jouer, bang_regles
-  if (body.type === 3 && ["bang_piocher", "bang_deck", "bang_jouer", "bang_regles"].includes(body.data?.custom_id)) {
+  // custom_id : bang_piocher, bang_jouer, bang_journal, bang_regles
+  if (body.type === 3 && ["bang_piocher", "bang_jouer", "bang_journal", "bang_regles"].includes(body.data?.custom_id)) {
     const action = body.data.custom_id;
     const discordId = body.member?.user?.id;
     const username =
@@ -10090,15 +10084,16 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (action === "bang_regles") runBackground(() => handleBangRegles(webhookUrl));
+    else if (action === "bang_journal") runBackground(() => handleBangJournal(webhookUrl, discordId));
     else if (action === "bang_piocher") runBackground(() => handleBangPiocher(webhookUrl, discordId, username));
-    else runBackground(() => handleBangDeck(webhookUrl, discordId, username));
+    else runBackground(() => handleBangJouer(webhookUrl, discordId, username));
     return;
   }
 
   // ── Bang! : composants du deck éphémère, édition en place ──
-  // custom_id : bang_e_piocher, bang_annuler (boutons), bang_carte,
-  // bang_cible:<carte>, bang_placer (menus)
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^bang_(e_piocher|annuler|carte|cible:|placer)/.test(body.data.custom_id)) {
+  // custom_id : bang_annuler (bouton), bang_carte, bang_cible:<carte>,
+  // bang_placer (menus)
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^bang_(annuler|carte|cible:|placer)/.test(body.data.custom_id)) {
     const [action, carte] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username =
@@ -10106,11 +10101,10 @@ export default async function handler(req, res) {
     const value = body.data.values?.[0];
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "bang_e_piocher") runBackground(() => handleBangPiocher(webhookUrl, discordId, username));
-    else if (action === "bang_carte") runBackground(() => handleBangCarte(webhookUrl, discordId, username, value));
+    if (action === "bang_carte") runBackground(() => handleBangCarte(webhookUrl, discordId, username, value));
     else if (action === "bang_cible") runBackground(() => handleBangCible(webhookUrl, discordId, username, carte, value));
     else if (action === "bang_placer") runBackground(() => handleBangPlacer(webhookUrl, discordId, username, value));
-    else runBackground(() => handleBangDeck(webhookUrl, discordId, username));
+    else runBackground(() => handleBangJouer(webhookUrl, discordId, username));
     return;
   }
 

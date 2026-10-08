@@ -35,7 +35,7 @@ for (let jour = 1; jour <= 7; jour++) {
   for (const id of arrives) {
     if ((await S.readState()).termine) break;
     if (id !== "u1" && Math.random() < 0.25) continue;
-    await H.handleDeck(`wh-${id}`, id, `Joueur ${id}`);
+    await H.handleJouer(`wh-${id}`, id, `Joueur ${id}`);
     let e = lastEph(id);
     if (e.content) {
       if (jour === 3) console.log(`--- ${id} au J3 : ${e.content}`);
@@ -58,10 +58,16 @@ for (let jour = 1; jour <= 7; jour++) {
       if (e.components.some((r) => r.components[0].custom_id === "bang_placer")) {
         await H.handlePlacer(`wh-${id}`, id, `Joueur ${id}`, Math.random() < 0.5 ? "1" : "hasard");
         if (id === "u1") console.log(`--- u1 cache une bombe ---\n${lastEph(id).embeds[0].description}`);
+      } else if (id === "u1" && jour === 1) {
+        console.log(`--- u1 pioche ---\n${JSON.stringify(lastEph(id).embeds[0], null, 1)}`);
       }
     }
   }
   if (jour === 1) console.log(`\n===== Table J1 en direct =====\n${lastPatchTable()?.embeds[0].description}`);
+  if (jour === 3) {
+    await H.handleJournal("wh-u1", "u1");
+    console.log(`\n===== Journal de u1 (J3) =====\n${lastEph("u1").embeds[0].description.slice(0, 1500)}`);
+  }
   if ((await S.readState()).termine) break;
   await H.postBang("chan", { force: true, noPing: true, isPublic: true });
   const e = lastPost().embeds[0];

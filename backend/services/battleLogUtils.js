@@ -11,6 +11,7 @@ import {
 } from "./collectionConstants.js";
 import { computeDeckMatchupScore } from "./matchupEngine.js";
 import { getWinConditionsCatalog } from "./matchupCatalog.js";
+import { cardArtUrl } from "./cardArt.js";
 
 /**
  * Clan War battle types in the Clash Royale API.
@@ -438,13 +439,14 @@ function getRoundScores(myRound, oppRound) {
 
 // Icône de la forme réellement jouée d'une carte du battle log :
 // `evolutionLevel` 1 = évolution, 2 ou plus = héros (cf. computeEvolutionLayer
-// dans matchupEngine.js), sinon version normale.
+// dans matchupEngine.js), sinon version normale (illustration à jour si
+// l'API sert encore l'ancien design, voir cardArt.js).
 export function battleCardIconUrl(card) {
   const icons = card?.iconUrls ?? {};
   const level = card?.evolutionLevel ?? 0;
   if (level >= 2 && icons.heroMedium) return icons.heroMedium;
   if (level >= 1 && icons.evolutionMedium) return icons.evolutionMedium;
-  return icons.medium ?? null;
+  return icons.medium ? (cardArtUrl(card?.name) ?? icons.medium) : null;
 }
 
 export function normalizeWarDeckCardId(card) {

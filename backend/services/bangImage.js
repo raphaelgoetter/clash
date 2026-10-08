@@ -1,8 +1,7 @@
 // ============================================================
 // bangImage.js — Images de Bang! :
-//   - la main d'un joueur : cartes posées en grille sur le tapis de jeu
-//     (data/bang/images/bang-table.jpg), regroupées avec un badge « ×N »
-//     pour les exemplaires d'une même carte ;
+//   - la main d'un joueur : les cartes seules, en grand, regroupées avec un
+//     badge « ×N » pour les exemplaires d'une même carte ;
 //   - le plateau d'avancement (message officiel) : jour, pioche, Rois ;
 //   - l'illustration statique (présentation).
 // Même technique que marioclashImage.js : SVG avec un `<image href="data:...">`
@@ -31,8 +30,6 @@ const MAT_WIDTH = 1200;
 const MAT_HEIGHT = 658;
 const ZONE = { x: 120, y: 85, w: 960, h: 470 };
 const RATIO = RATIO_CARTE;
-const GAP = 18;
-const MAX_CARD_WIDTH = 150;
 const FONT_FAMILY = "Inter";
 
 function escapeXml(value) {
@@ -49,17 +46,6 @@ async function loadMatDataUrl() {
   return matDataUrl;
 }
 
-// Grille qui maximise la largeur des cartes dans la zone du tapis.
-function layoutGrid(count) {
-  let best = null;
-  for (let rows = 1; rows <= Math.max(1, count); rows++) {
-    const cols = Math.ceil(count / rows);
-    const w = Math.min(MAX_CARD_WIDTH, (ZONE.w - (cols - 1) * GAP) / cols, (ZONE.h - (rows - 1) * GAP) / rows / RATIO);
-    if (!best || w > best.w) best = { rows, cols, w };
-  }
-  return best;
-}
-
 function badgeSvg(x, y, texte, r = 17) {
   return `
   <circle cx="${x}" cy="${y}" r="${r}" fill="#f0c040" stroke="#4a2c00" stroke-width="3"/>
@@ -73,43 +59,46 @@ function grouper(ids) {
     .filter((e) => e.count > 0);
 }
 
+// Main d'un joueur : les cartes seules, en grand, sur fond transparent
+// (un exemplaire par carte, badge ×N), au plus MAIN_COLS par ligne.
+const MAIN_CARTE = 200;
+const MAIN_GAP = 18;
+const MAIN_COLS = 5;
+const MAIN_PADDING = 10;
+
 async function buildMainSvg(ids) {
-  const mat = await loadMatDataUrl();
   const entrees = grouper(ids).map((e) => ({ ...e, card: { key: CARTES[e.id].cardKey } }));
-  const parts = [];
-  if (!entrees.length) {
-    parts.push(
-      `<text x="${MAT_WIDTH / 2}" y="${MAT_HEIGHT / 2 + 12}" font-family="${FONT_FAMILY}" font-size="34" text-anchor="middle" fill="#ffffff" opacity="0.85">Aucune carte en main</text>`,
-    );
-  } else {
-    const { rows, cols, w } = layoutGrid(entrees.length);
-    const size = { w, gap: GAP, drop: 0 };
-    const h = w * RATIO;
-    const dataUrls = await loadDataUrls(entrees.map((e) => e.card));
-    const gridH = rows * h + (rows - 1) * GAP;
-    const y0 = ZONE.y + (ZONE.h - gridH) / 2;
-    entrees.forEach((e, i) => {
-      const row = Math.floor(i / cols);
-      const inRow = Math.min(cols, entrees.length - row * cols);
-      const rowW = inRow * w + (inRow - 1) * GAP;
-      const x = ZONE.x + (ZONE.w - rowW) / 2 + (i % cols) * (w + GAP);
-      const y = y0 + row * (h + GAP);
-      parts.push(cardSvg(e.card, dataUrls.get(e.card.key), x, y, size));
-      if (e.count > 1) parts.push(badgeSvg(x + w - 6, y + h - 6, `×${e.count}`));
-    });
-  }
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${MAT_WIDTH}" height="${MAT_HEIGHT}" viewBox="0 0 ${MAT_WIDTH} ${MAT_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-  <image x="0" y="0" width="${MAT_WIDTH}" height="${MAT_HEIGHT}" href="${mat}"/>
+  const cols = Math.max(1, Math.min(MAIN_COLS, entrees.length));
+  const rows = Math.max(1, Math.ceil(entrees.length / cols));
+  const h = Math.round(MAIN_CARTE * RATIO);
+  const width = MAIN_PADDING * 2 + cols * MAIN_CARTE + (cols - 1) * MAIN_GAP;
+  const height = MAIN_PADDING * 2 + rows * h + (rows - 1) * MAIN_GAP;
+  const dataUrls = await loadDataUrls(entrees.map((e) => e.card));
+  const parts = entrees.map((e, i) => {
+    const row = Math.floor(i / cols);
+    const inRow = Math.min(cols, entrees.length - row * cols);
+    const x0 = (width - (inRow * MAIN_CARTE + (inRow - 1) * MAIN_GAP)) / 2;
+    const x = x0 + (i % cols) * (MAIN_CARTE + MAIN_GAP);
+    const y = MAIN_PADDING + row * (h + MAIN_GAP);
+    const badge = e.count > 1 ? badgeSvg(x + MAIN_CARTE - 14, y + h - 14, `×${e.count}`, 22) : "";
+    return cardSvg(e.card, dataUrls.get(e.card.key), x, y, { w: MAIN_CARTE, drop: 0 }) + badge;
+  });
+  return {
+    width,
+    svg: `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
   ${parts.join("\n")}
-</svg>`;
+</svg>`,
+  };
 }
 
 // Main d'un joueur : identifiants de cartes Bang! passés dans l'URL (les
-// inconnus sont ignorés), rendu sans état.
+// inconnus sont ignorés), rendu sans état. null si la main est vide.
 export async function getMainImage(ids) {
   const valides = ids.filter((id) => CARTES[id]).slice(0, 60);
-  return { buffer: await rasterize(await buildMainSvg(valides), MAT_WIDTH), mimeType: "image/png" };
+  if (!valides.length) return null;
+  const { svg, width } = await buildMainSvg(valides);
+  return { buffer: await rasterize(svg, width), mimeType: "image/png" };
 }
 
 // ── Plateau d'avancement ─────────────────────────────────────────────

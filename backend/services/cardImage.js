@@ -16,6 +16,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { fetchCards } from "./clashApi.js";
 import { getOrSet } from "./cache.js";
 import { readBlobFontPath } from "./blobAssets.js";
+import { CARD_ART_OVERRIDES, readCardArt } from "./cardArt.js";
 
 const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
@@ -92,10 +93,18 @@ export function cardSvg(card, dataUrl, x, y, size) {
   ${elixirDropSvg(x - size.drop * 0.25, y - size.drop * 0.2, size.drop, card.minBid)}`;
 }
 
+// Illustrations à jour lues directement sur Blob (voir cardArt.js).
+async function cardArtDataUrl(name) {
+  const buffer = await readCardArt(name).catch(() => null);
+  return buffer ? `data:image/png;base64,${buffer.toString("base64")}` : null;
+}
+
 export async function loadDataUrls(cards) {
   const iconUrls = await loadIconUrls();
   return new Map(
-    await Promise.all(cards.map(async (c) => [c.key, await fetchDataUrl(iconUrls.get(c.key))])),
+    await Promise.all(
+      cards.map(async (c) => [c.key, CARD_ART_OVERRIDES.has(c.key) ? await cardArtDataUrl(c.key) : await fetchDataUrl(iconUrls.get(c.key))]),
+    ),
   );
 }
 

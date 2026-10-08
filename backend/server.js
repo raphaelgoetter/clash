@@ -40,6 +40,7 @@ import {
   getTableImage as getBangTableImage,
   decodeTable as decodeBangTable,
 } from "./services/bangImage.js";
+import { readCardArtFile } from "./services/cardArt.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -388,6 +389,16 @@ app.get("/api/marioclash/illustration", async (req, res) => {
   res.send(image.buffer);
 });
 
+// Illustrations à jour des cartes que l'API sert encore avec un ancien
+// design (voir services/cardArt.js) : fichiers de data/card-art/ lus sur Blob.
+app.get("/api/card-art/:fichier", async (req, res) => {
+  const image = await readCardArtFile(req.params.fichier).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image);
+});
+
 // Bang! : main d'un joueur, rendu sans état à partir des cartes passées
 // dans l'URL (c = identifiants de cartes séparés par "|", une carte
 // répétée affiche un badge ×N).
@@ -396,7 +407,7 @@ app.get("/api/bang/main", async (req, res) => {
   const image = await getBangMainImage(ids).catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
-  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
   res.send(image.buffer);
 });
 
@@ -408,7 +419,7 @@ app.get("/api/bang/table", async (req, res) => {
   const image = etat ? await getBangTableImage(etat).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
-  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
   res.send(image.buffer);
 });
 

@@ -5,6 +5,7 @@
 // ============================================================
 
 import fetch from "node-fetch";
+import { withCardArtOverrides } from "./cardArt.js";
 
 // Using the official RoyaleAPI proxy which does not enforce IP whitelisting.
 // Same API key, same endpoints — no need to whitelist Vercel's dynamic IPs.
@@ -91,10 +92,11 @@ export async function fetchBattleLog(tag) {
 }
 
 /** Fetch all Clash Royale cards definitions. */
+// Illustrations de base périmées côté API remplacées (voir cardArt.js).
 export async function fetchCards() {
   const data = await get(`/cards`);
-  if (Array.isArray(data)) return data;
-  return Array.isArray(data.items) ? data.items : [];
+  const items = Array.isArray(data) ? data : Array.isArray(data.items) ? data.items : [];
+  return withCardArtOverrides(items);
 }
 
 /** Fetch all Clash Royale locations (regions and countries). */

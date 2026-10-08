@@ -67,6 +67,8 @@ function main() {
     assert.strictEqual(piocher(p, "b").bang, "elimine");
     assert.ok(!p.joueurs.b.vivant && p.joueurs.b.rangElimination === 1);
     assert.strictEqual(nbBombes(p), 1, "la bombe de l'éliminé quitte le jeu");
+    assert.ok(p.journal.at(-1).c && p.journal.at(-1).j === 1, "explosion : entrée cruciale du jour 1");
+    assert.ok(!p.journal[0].c, "Gobelin désamorcé : entrée non cruciale");
     assert.ok(!p.termine);
     p.joueurs.c.elixir = 4;
     piocher(p, "c");
@@ -111,13 +113,19 @@ function main() {
   {
     const p = partieTest({ thomas: ["voleuse", "voleuse", "esprit"], pierre: ["moine", "gobelin"] });
     jouer(p, "pierre", "moine", null, { config: CONFIG, rng });
-    assert.ok(p.joueurs.pierre.moine && p.journal.length === 0);
+    assert.ok(p.joueurs.pierre.moine);
+    assert.ok(p.journal.every((e) => e.p === "pierre"), "Moine : seulement une note privée pour son joueur");
     const r = jouer(p, "thomas", "voleuse", "pierre", { config: CONFIG, rng });
     assert.ok(r.renvoi);
     assert.strictEqual(p.joueurs.thomas.main.length, 1, "Pierre a volé une carte à Thomas");
     assert.strictEqual(p.joueurs.pierre.main.length, 2);
     assert.ok(!p.joueurs.pierre.moine);
     assert.ok(!jouer(p, "thomas", "voleuse", "pierre", { config: CONFIG, rng }).renvoi);
+    assert.strictEqual(p.jour.attaques, 2);
+    const vol = p.journal.filter((e) => e.p === "thomas" && e.t.includes("t'a volé"));
+    assert.strictEqual(vol.length, 1, "la victime du renvoi apprend quelle carte lui a été volée");
+    assert.ok(p.journal.some((e) => e.ids?.includes("pierre") && e.ids.includes("thomas")), "événement public lié aux deux joueurs");
+    assert.strictEqual(p.jour.renvois, 1);
     assert.strictEqual(p.joueurs.thomas.main.length, 1);
   }
 
@@ -154,6 +162,9 @@ function main() {
     assert.strictEqual(p.joueurs.c.main.length, 2, "pioche auto même sans Élixir");
     assert.strictEqual(p.joueurs.c.elixir, CONFIG.elixir.par_jour);
     assert.ok(vivants(p).every(([, j]) => !j.tourFait && j.dette === 0));
+    assert.strictEqual(p.veille.automatiques.length, 2, "bilan de la veille : b et c ont pioché automatiquement");
+    assert.deepStrictEqual(p.jour.explosions, []);
+    assert.strictEqual(p.numeroJour, 2);
   }
 
   // ── Clôture du dernier jour : pas d'Élixir distribué ──

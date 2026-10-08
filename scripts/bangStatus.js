@@ -42,5 +42,5 @@ import { CARTES, nbBombes } from "../backend/services/bangRules.js";
     console.log(`  - ${j.username} — ${j.elixir} Élixir · ${j.main.map(nom).join(", ") || "main vide"}${effets.length ? ` · ${effets.join(", ")}` : ""}`);
   }
   console.log("\nDerniers événements :");
-  for (const l of partie.journal.slice(-10)) console.log(`  ${l.replace(/\*\*/g, "")}`);
+  for (const e of partie.journal.slice(-10)) console.log(`  J${e.j} ${e.t.replace(/\*\*/g, "")}`);
 })();

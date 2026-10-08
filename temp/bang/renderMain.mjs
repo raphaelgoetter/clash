@@ -12,6 +12,6 @@ globalThis.fetch = async (url, opts) => {
   return realFetch(url, opts);
 };
 const { getMainImage } = await import("../../backend/services/bangImage.js");
-const img = await getMainImage(["esprit", "gang", "gang", "moine", "fut", "malediction", "sarbacane", "voleuse", "gobelin", "bombe"]);
+const img = await getMainImage(process.argv.slice(3).length ? process.argv.slice(3) : ["esprit", "gang", "gang", "moine", "voleuse", "gobelin"]);
 fs.writeFileSync(process.argv[2], img.buffer);
 console.log("ok");
