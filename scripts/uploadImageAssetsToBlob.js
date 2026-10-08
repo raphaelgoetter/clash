@@ -62,6 +62,7 @@ const TARGETS = [
   { dir: "jeux-visuels/palette/images" },
   { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },
+  { dir: "card-art" },
 ];
 
 async function collectFiles() {

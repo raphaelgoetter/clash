@@ -15,7 +15,7 @@ import { readBlobAsset } from "../backend/services/blobAssets.js";
 const CARD_ICON_CACHE = new Map();
 const CARD_DEF_CACHE_TTL = 3600000;
 ${grab(/async function loadCardDefinitions\(\)[\s\S]*?\n}\n/)}
-${grab(/const STALE_CARD_ICON_OVERRIDES[\s\S]*?\n\]\);\n/)}
+${grab(/const CARD_ART_OVERRIDES[\s\S]*?\nconst BLOB_ICON_PREFIX = "blob:";\n/)}
 ${grab(/async function fetchImageDataUrl\([\s\S]*?\n}\n/)}
 export ${grab(/async function buildWarDecksImage\([\s\S]*?\n}\n/)}
 `;
@@ -30,17 +30,21 @@ for (const ct of FAMILY_CLAN_TAGS) {
   for (const m of clan.memberList ?? []) {
     const log = await fetchBattleLog(m.tag);
     const cards = (log ?? []).flatMap((b) => b.team?.[0]?.cards ?? []);
-    const score = (cards.some((c) => c.name === "Bandit") ? 4 : 0) +
-      (cards.some((c) => c.evolutionLevel === 1) ? 1 : 0) +
-      (cards.some((c) => c.evolutionLevel >= 2) ? 2 : 0);
+    const base = (n) => cards.some((c) => c.name === n && !c.evolutionLevel);
+    const score = (base("Mega Minion") ? 4 : 0) + (base("Musketeer") ? 2 : 0) + (base("Bandit") ? 1 : 0);
     if (!best || score > best.score) best = { score, tag: m.tag, name: m.name, log };
     if (score === 7) break;
   }
   if (best?.score === 7) break;
 }
 console.log("Joueur :", best.name, best.tag, "score", best.score);
-const decks = await summarizeRecentBattlesForMatchup(best.log, 6, null);
-for (const d of decks) console.log(d.cardNames.join(", "), "\n  ", d.cardIcons.map((u) => u?.split("/").pop().slice(0, 8)).join(" "));
+const decks = (await summarizeRecentBattlesForMatchup(best.log, 6, null)).slice(0, 2);
+// Deck fabriqué : les 3 cartes à l'illustration remplacée, en version normale
+const { fetchCards } = await import("../backend/services/clashApi.js");
+const all = await fetchCards();
+const ids = ["Mega Minion", "Musketeer", "Bandit", "Valkyrie", "Knight", "Zap", "Hog Rider", "Cannon"]
+  .map((n) => String(all.find((c) => c.name === n).id));
+decks.unshift({ cardIds: ids, cardNames: [], matches: [] });
 const img = await buildWarDecksImage(decks, { maxRows: 6, kind: "recent" });
 fs.writeFileSync(process.argv[2], img.buffer);
 fs.unlinkSync("temp/_deckIconsExtract.mjs");

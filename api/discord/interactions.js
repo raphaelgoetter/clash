@@ -2253,32 +2253,31 @@ async function loadCardDefinitions() {
   return Array.isArray(value) ? value : [];
 }
 
-// Icônes de l'API Clash Royale encore servies avec un ancien design :
-// remplacées par l'illustration à jour déjà stockée sur Blob (images du jeu
-// Palette). Clé = URL périmée, pour que le remplacement cesse de lui-même si
-// Supercell change l'URL.
-const STALE_CARD_ICON_OVERRIDES = new Map([
-  // Bandit (Voleuse) : capuche verte depuis la refonte
-  [
-    "https://api-assets.clashroyale.com/cards/300/QWDdXMKJNpv0go-HYaWQWP6p8uIOHjqn-zX7G0p3DyM.png",
-    "jeux-visuels/palette/images/bandit.png",
-  ],
+// Illustrations de base que l'API Clash Royale sert encore avec un ancien
+// design (vérifié en jeu et sur RoyaleAPI, cf. temp/compare_card_art.mjs) :
+// remplacées par la version à jour de data/card-art/ (copie servie par Blob,
+// cf. scripts/uploadImageAssetsToBlob.js). Les icônes évolution/héros ne
+// sont pas concernées.
+const CARD_ART_OVERRIDES = new Map([
+  ["Bandit", "card-art/bandit.png"],
+  ["Musketeer", "card-art/musketeer.png"],
+  ["Mega Minion", "card-art/mega-minion.png"],
 ]);
+const BLOB_ICON_PREFIX = "blob:";
 
 async function fetchImageDataUrl(url, signal) {
   if (!url) return null;
   if (CARD_ICON_CACHE.has(url)) return CARD_ICON_CACHE.get(url);
 
-  const overridePath = STALE_CARD_ICON_OVERRIDES.get(url);
-  if (overridePath) {
+  if (url.startsWith(BLOB_ICON_PREFIX)) {
     try {
-      const buffer = await readBlobAsset(overridePath);
+      const buffer = await readBlobAsset(url.slice(BLOB_ICON_PREFIX.length));
       const dataUrl = `data:image/png;base64,${buffer.toString("base64")}`;
       CARD_ICON_CACHE.set(url, dataUrl);
       return dataUrl;
     } catch (err) {
-      // repli sur l'icône de l'API
-      console.error("Icône de remplacement indisponible :", err?.message || err);
+      console.error("Illustration à jour indisponible :", err?.message || err);
+      return null;
     }
   }
 
@@ -2347,8 +2346,15 @@ async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) 
 
   // Icône de la forme jouée (évolution/héros) mémorisée depuis le battle log
   // (cardIcons, cf. battleCardIconUrl), sinon version normale du catalogue.
-  const cardIconUrl = (deck, id, index) =>
-    deck.cardIcons?.[index] ?? cardById.get(String(id))?.iconUrls?.medium ?? null;
+  // Version de base à l'illustration périmée côté API : CARD_ART_OVERRIDES.
+  const cardIconUrl = (deck, id, index) => {
+    const card = cardById.get(String(id));
+    const iconUrl = deck.cardIcons?.[index] ?? card?.iconUrls?.medium ?? null;
+    const override = CARD_ART_OVERRIDES.get(card?.name);
+    return override && iconUrl === card?.iconUrls?.medium
+      ? `${BLOB_ICON_PREFIX}${override}`
+      : iconUrl;
+  };
 
   const uniqueUrls = new Map();
   for (const deck of rows) {
