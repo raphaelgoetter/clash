@@ -197,7 +197,7 @@ function pileSvg(cx, bas, nbCartes) {
   return { svg: parts.join("\n") };
 }
 
-// `etat` : { jour, duree, pioche, bombes, rois: [{ nom, cartes, vivant }] }
+// `etat` : { jour, duree, pioche, bombes, esprits, rois: [{ nom, cartes, vivant }] }
 async function buildTableSvg(etat) {
   const mat = await loadMatDataUrl();
   const parts = [];
@@ -212,11 +212,18 @@ async function buildTableSvg(etat) {
   const pile = pileSvg(piocheX, ZONE.y + 300, etat.pioche);
   parts.push(pile.svg);
   parts.push(texte(piocheX, ZONE.y + 330, `${etat.pioche} carte${etat.pioche > 1 ? "s" : ""}`, { size: 20 }));
-  const bombe = { key: CARTES.bombe.cardKey };
-  const [bombeUrl] = [...(await loadDataUrls([bombe])).values()];
+  // Gobelins explosifs puis Esprits de guérison restant dans la pioche
+  const compteurs = [
+    { carte: { key: CARTES.bombe.cardKey }, n: etat.bombes, fill: "#ff8a6a" },
+    { carte: { key: CARTES.esprit.cardKey }, n: etat.esprits, fill: "#7be08a" },
+  ];
+  const urls = await loadDataUrls(compteurs.map((c) => c.carte));
   const bw = 38;
-  parts.push(cardSvg(bombe, bombeUrl, piocheX - bw - 4, ZONE.y + 344, { w: bw, drop: 0 }));
-  parts.push(texte(piocheX + 2, ZONE.y + 344 + (bw * RATIO) / 2 + 8, `× ${etat.bombes}`, { size: 22, fill: "#ff8a6a", anchor: "start" }));
+  compteurs.forEach(({ carte, n, fill }, i) => {
+    const y = ZONE.y + 344 + i * (bw * RATIO + 8);
+    parts.push(cardSvg(carte, urls.get(carte.key), piocheX - bw - 4, y, { w: bw, drop: 0 }));
+    parts.push(texte(piocheX + 2, y + (bw * RATIO) / 2 + 8, `× ${n}`, { size: 22, fill, anchor: "start" }));
+  });
 
   // Rois
   const zone = { x: ZONE.x + 200, y: ZONE.y + 110, w: ZONE.w - 210, h: ZONE.h - 125 };
@@ -270,6 +277,7 @@ export function decodeTable(param) {
       duree: nombre(d.d),
       pioche: nombre(d.p),
       bombes: nombre(d.b),
+      esprits: nombre(d.e),
       rois: (Array.isArray(d.r) ? d.r : []).slice(0, 40).map(([nom, cartes, vivant, avatar]) => ({ nom: String(nom).slice(0, 40), cartes: nombre(cartes), vivant: !!vivant, avatar: nombre(avatar) })),
     };
   } catch {
@@ -277,8 +285,8 @@ export function decodeTable(param) {
   }
 }
 
-export function encodeTable({ jour, duree, pioche, bombes, rois }) {
-  const d = { j: jour, d: duree, p: pioche, b: bombes, r: rois.map((r) => [r.nom, r.cartes, r.vivant ? 1 : 0, r.avatar ?? 0]) };
+export function encodeTable({ jour, duree, pioche, bombes, esprits, rois }) {
+  const d = { j: jour, d: duree, p: pioche, b: bombes, e: esprits, r: rois.map((r) => [r.nom, r.cartes, r.vivant ? 1 : 0, r.avatar ?? 0]) };
   return Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
 }
 

@@ -163,6 +163,10 @@ export function nbBombes(partie) {
   return partie.pioche.filter((c) => c === "bombe").length;
 }
 
+export function nbEsprits(partie) {
+  return partie.pioche.filter((c) => c === "esprit").length;
+}
+
 // Nombre d'exemplaires qu'apporte le n-ième joueur (1-based) pour un taux
 // par joueur éventuellement fractionnaire (0,5 = un exemplaire tous les
 // deux joueurs).

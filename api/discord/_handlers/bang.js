@@ -39,6 +39,7 @@ import {
   jouer,
   vivants,
   nbBombes,
+  nbEsprits,
   texteJournal,
 } from "../../../backend/services/bangRules.js";
 import {
@@ -84,6 +85,7 @@ function tableImageUrl(jour, config, partie) {
     duree: config.duree_jours,
     pioche: partie.pioche.length,
     bombes: nbBombes(partie),
+    esprits: nbEsprits(partie),
     rois,
   });
   return `${TRUST_ROYALE_URL}/api/bang/table?d=${d}`;
@@ -116,7 +118,9 @@ function formatMain(main) {
 }
 
 function piocheLigne(partie) {
-  return `🃏 Pioche : **${plural(partie.pioche.length, "carte")}**, dont **${nbBombes(partie)}** 💥 Gobelin${nbBombes(partie) > 1 ? "s explosifs" : " explosif"}`;
+  const bombes = nbBombes(partie);
+  const esprits = nbEsprits(partie);
+  return `🃏 Pioche : **${plural(partie.pioche.length, "carte")}**, dont **${bombes}** 💥 Gobelin${bombes > 1 ? "s explosifs" : " explosif"} et **${esprits}** 💚 Esprit${esprits > 1 ? "s" : ""} de guérison`;
 }
 
 const MEDALS = ["🥇", "🥈", "🥉"];
