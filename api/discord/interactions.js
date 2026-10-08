@@ -10091,9 +10091,9 @@ export default async function handler(req, res) {
   }
 
   // ── Bang! : composants du deck éphémère, édition en place ──
-  // custom_id : bang_annuler (bouton), bang_carte, bang_cible:<carte>,
-  // bang_placer (menus)
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^bang_(annuler|carte|cible:|placer)/.test(body.data.custom_id)) {
+  // custom_id : bang_e_piocher, bang_annuler (boutons), bang_carte,
+  // bang_cible:<carte>, bang_placer (menus)
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^bang_(e_piocher|annuler|carte|cible:|placer)/.test(body.data.custom_id)) {
     const [action, carte] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username =
@@ -10101,7 +10101,8 @@ export default async function handler(req, res) {
     const value = body.data.values?.[0];
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "bang_carte") runBackground(() => handleBangCarte(webhookUrl, discordId, username, value));
+    if (action === "bang_e_piocher") runBackground(() => handleBangPiocher(webhookUrl, discordId, username));
+    else if (action === "bang_carte") runBackground(() => handleBangCarte(webhookUrl, discordId, username, value));
     else if (action === "bang_cible") runBackground(() => handleBangCible(webhookUrl, discordId, username, carte, value));
     else if (action === "bang_placer") runBackground(() => handleBangPlacer(webhookUrl, discordId, username, value));
     else runBackground(() => handleBangJouer(webhookUrl, discordId, username));

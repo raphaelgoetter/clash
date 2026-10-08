@@ -29,7 +29,7 @@ import {
   listManches,
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/bang.js";
-import { CARTES, JOUABLES, CIBLEES, POSITIONS, piocher, placer, jouer, vivants, nbBombes } from "../../../backend/services/bangRules.js";
+import { CARTES, JOUABLES, CIBLEES, POSITIONS, piocher, placer, jouer, vivants, nbBombes, texteJournal } from "../../../backend/services/bangRules.js";
 import { encodeTable, NB_AVATARS } from "../../../backend/services/bangImage.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
@@ -140,7 +140,7 @@ function buildTableEmbed(jour, config, partie) {
   // Seuls les faits cruciaux du jour (explosions) : le détail est dans le
   // bouton Journal
   const cruciaux = partie.journal.filter((e) => e.c && e.j === (partie.numeroJour ?? jour)).slice(-JOURNAL_AFFICHE);
-  if (cruciaux.length) lignes.push("", "**💥 Aujourd'hui**", ...cruciaux.map((e) => e.t));
+  if (cruciaux.length) lignes.push("", "**💥 Aujourd'hui**", ...cruciaux.map((e) => texteJournal(partie, e)));
   return {
     title: `🔫 Bang! — Jour ${jour}/${config.duree_jours}`,
     description: lignes.join("\n").slice(-4096),
@@ -219,7 +219,7 @@ function buildTableComponents() {
     {
       type: 1,
       components: [
-        { type: 2, style: 1, label: "Piocher (1 Élixir)", emoji: { name: "🃏" }, custom_id: "bang_piocher" },
+        { type: 2, style: 1, label: "Piocher", emoji: { name: "🃏" }, custom_id: "bang_piocher" },
         { type: 2, style: 3, label: "Jouer une carte", emoji: { name: "⚡" }, custom_id: "bang_jouer" },
         { type: 2, style: 2, label: "Journal", emoji: { name: "📜" }, custom_id: "bang_journal" },
         reglesButton(),
@@ -459,6 +459,16 @@ function finVue(j) {
   return { embeds: [{ description: texte, color: BANG_COLOR }], components: [] };
 }
 
+// Bouton personnel « Piocher (N) » de l'éphémère, N = Élixir restant
+// (le bouton du message officiel, commun à tous, ne peut pas l'afficher).
+function repiocherRow(j, partie) {
+  const possible = partie.pioche.length > 0 && (j.elixir >= 1 || j.dette > 0);
+  return {
+    type: 1,
+    components: [{ type: 2, style: 1, label: `Piocher (${j.elixir})`, emoji: { name: "🃏" }, custom_id: "bang_e_piocher", disabled: !possible }],
+  };
+}
+
 function placementRow() {
   return {
     type: 1,
@@ -502,7 +512,7 @@ function buildPiocheView(config, partie, discordId, { r = null, erreur = null, n
     return finVue(j);
   }
   if (erreur || !r) {
-    return { embeds: [{ description: [...intro, avertissement(erreur), ...alertes(j)].join("\n"), color: BANG_COLOR, footer: elixirFooter(j, config) }], components: [] };
+    return { embeds: [{ description: [...intro, avertissement(erreur), ...alertes(j)].join("\n"), color: BANG_COLOR }], components: [repiocherRow(j, partie)] };
   }
   const lignes = [...intro];
   if (r.transformee) lignes.push(`🧿 Malédiction ! Ta carte (${CARTES[r.transformee].nom}) devient un simple Gobelin.`, "");
@@ -515,10 +525,9 @@ function buildPiocheView(config, partie, discordId, { r = null, erreur = null, n
         description: lignes.join("\n"),
         color: BANG_COLOR,
         image: { url: mainImageUrl([r.carte]) },
-        footer: elixirFooter(j, config),
       },
     ],
-    components: [],
+    components: [repiocherRow(j, partie)],
   };
 }
 
@@ -674,7 +683,7 @@ export async function handlePlacer(webhookUrl, discordId, username, position) {
     }, (config, partie, id, { texte }) => {
       const j = partie.joueurs[id];
       if (j.enAttente) return buildPiocheView(config, partie, id, { entete: texte });
-      return { embeds: [{ description: texte, color: BANG_COLOR, footer: elixirFooter(j, config) }], components: [] };
+      return { embeds: [{ description: texte, color: BANG_COLOR }], components: [repiocherRow(j, partie)] };
     });
   } catch (err) {
     console.error("[Bang] Échec placement:", err.message);
@@ -701,7 +710,7 @@ export async function handleJournal(webhookUrl, discordId) {
     for (const e of partie.journal) {
       if (e.p !== discordId && !e.ids?.includes(discordId)) continue;
       if (!jours.has(e.j)) jours.set(e.j, []);
-      jours.get(e.j).push(e.t);
+      jours.get(e.j).push(texteJournal(partie, e, discordId));
     }
     let description = "";
     for (const [j, lignes] of [...jours.entries()].sort((a, b) => b[0] - a[0])) {

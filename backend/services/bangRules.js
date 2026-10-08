@@ -56,13 +56,14 @@ function insererAuHasard(pioche, carte, rng) {
   pioche.splice(Math.floor(rng() * (pioche.length + 1)), 0, carte);
 }
 
-// Journal de la partie : { j: jour, t: texte, c: crucial, ids: joueurs
-// concernés } pour les événements publics, { j, t, p: joueur } pour les
+// Journal de la partie : { j: jour, k: type, s: auteur, v: cible, c:
+// crucial, ids: joueurs concernés, … } pour les événements publics, rédigés
+// à l'affichage par texteJournal() ; { j, t: texte, p: joueur } pour les
 // notes privées (pioches, Sarbacane, Moine…). Les entrées cruciales
 // (explosions, fin de partie) sont les seules affichées sur le message
 // officiel ; le bouton Journal montre à chacun ce qui le concerne.
-function noter(partie, texte, { crucial = false, ids = [] } = {}) {
-  journaliser(partie, { j: partie.numeroJour ?? 1, t: texte, c: crucial, ids });
+function noter(partie, k, { s = null, v = null, ids = null, crucial = false, ...donnees } = {}) {
+  journaliser(partie, { j: partie.numeroJour ?? 1, k, s, v, ...donnees, c: crucial, ids: ids ?? [s, v].filter(Boolean) });
 }
 
 function prive(partie, id, texte) {
@@ -75,6 +76,67 @@ function journaliser(partie, entree) {
 }
 
 const nom = (j) => `**${j.username}**`;
+
+// Texte d'une entrée du journal pour le joueur `moi` (deuxième personne
+// quand l'action le concerne), ou pour tous (`moi` = null, message officiel).
+// Les notes privées ({ t }) sont déjà rédigées.
+export function texteJournal(partie, e, moi = null) {
+  if (e.t) return e.t;
+  const n = (id) => `**${partie.joueurs[id]?.username ?? "?"}**`;
+  const S = n(e.s);
+  const V = n(e.v);
+  const parMoi = moi != null && e.s === moi;
+  const surMoi = moi != null && e.v === moi;
+  switch (e.k) {
+    case "explose":
+      return parMoi ? "🚀 **BANG !** Tu as explosé et quittes l'Arène !" : `🚀 **BANG !** ${S} a explosé et quitte l'Arène !`;
+    case "dernier":
+      return parMoi ? "👑 Tu es le dernier joueur en vie !" : `👑 ${S} est le dernier joueur en vie !`;
+    case "sauve":
+      return parMoi
+        ? "💥 Tu as pioché un Gobelin explosif… sauvé par ton Esprit de guérison !"
+        : `💥 ${S} a pioché un Gobelin explosif… sauvé par son Esprit de guérison !`;
+    case "gang":
+      if (parMoi) return `👊 Ton Gang de gobelins tend une embuscade à ${V} ! (${e.n} pioches d'affilée)`;
+      if (surMoi) return `👊 Le Gang de gobelins de ${S} te tend une embuscade ! (${e.n} pioches d'affilée)`;
+      return `👊 ${S} envoie son Gang de gobelins tendre une embuscade à ${V} ! (${e.n} pioches d'affilée)`;
+    case "malediction":
+      if (parMoi) return `🧿 Tu jettes une Malédiction sur ${V} : sa prochaine carte piochée sera un simple Gobelin !`;
+      if (surMoi) return `🧿 ${S} te jette une Malédiction : ta prochaine carte piochée sera un simple Gobelin !`;
+      return `🧿 ${S} jette une Malédiction sur ${V} : sa prochaine carte piochée sera un simple Gobelin !`;
+    case "voleuseVide":
+      if (parMoi) return `🦹 Ta Voleuse fouille ${V}… qui n'a plus rien !`;
+      if (surMoi) return `🦹 La Voleuse de ${S} te fouille… mais tu n'as plus rien !`;
+      return `🦹 La Voleuse de ${S} fouille ${V}… qui n'a plus rien !`;
+    case "voleuse":
+      if (parMoi) return `🦹 Ta Voleuse dérobe une carte à ${V} !`;
+      if (surMoi) return `🦹 La Voleuse de ${S} te dérobe une carte !`;
+      return `🦹 La Voleuse de ${S} dérobe une carte à ${V} !`;
+    case "futVol":
+      if (parMoi) return `🛢️ Tu surgis d'un Fût à gobelins et chipes 1 Élixir à ${V} !`;
+      if (surMoi) return `🛢️ ${S} surgit d'un Fût à gobelins et te chipe 1 Élixir !`;
+      return `🛢️ ${S} surgit d'un Fût à gobelins et chipe 1 Élixir à ${V} !`;
+    case "futVide":
+      if (parMoi) return `🛢️ Tu surgis d'un Fût à gobelins chez ${V}… qui n'a plus d'Élixir !`;
+      if (surMoi) return `🛢️ ${S} surgit d'un Fût à gobelins chez toi… mais tu n'as plus d'Élixir !`;
+      return `🛢️ ${S} surgit d'un Fût à gobelins chez ${V}… qui n'a plus d'Élixir !`;
+    case "futBanque":
+      return parMoi ? "🛢️ Tu te caches dans un Fût à gobelins et récupères 1 Élixir." : `🛢️ ${S} se cache dans un Fût à gobelins et récupère 1 Élixir.`;
+    case "sarbacane":
+      return parMoi ? "🎯 Tu scrutes la pioche avec ton Gobelin à sarbacane…" : `🎯 ${S} scrute la pioche avec son Gobelin à sarbacane…`;
+    case "renvoi": {
+      const carte = CARTES[e.carte]?.nom ?? "?";
+      if (parMoi) return `🙏 Ton Moine renvoie l'attaque (${carte}) de ${V} à l'envoyeur !`;
+      if (surMoi) return `🙏 Le Moine de ${S} renvoie ton attaque (${carte}) contre toi !`;
+      return `🙏 Le Moine de ${S} renvoie l'attaque (${carte}) de ${V} à l'envoyeur !`;
+    }
+    case "auto":
+      if (moi != null && e.ids.includes(moi)) return "⏰ Tu n'avais pas pioché : pioche automatique à la clôture.";
+      return `⏰ Pioche automatique à la clôture : ${e.ids.map(n).join(", ")}.`;
+    default:
+      return "";
+  }
+}
 
 // Bilan du jour en cours (`jour`), archivé dans `veille` à la clôture pour
 // le message du lendemain.
@@ -146,12 +208,12 @@ function eliminer(partie, id) {
   j.enAttente = false;
   partie.elimines += 1;
   j.rangElimination = partie.elimines;
-  noter(partie, `🚀 **BANG !** ${nom(j)} a explosé et quitte l'Arène !`, { crucial: true, ids: [id] });
+  noter(partie, "explose", { s: id, crucial: true });
   bilan(partie).explosions.push(j.username);
   const restants = vivants(partie);
   if (restants.length <= 1) {
     partie.termine = true;
-    if (restants.length) noter(partie, `👑 ${nom(restants[0][1])} est le dernier joueur en vie !`, { crucial: true, ids: [restants[0][0]] });
+    if (restants.length) noter(partie, "dernier", { s: restants[0][0], crucial: true });
   }
 }
 
@@ -177,7 +239,7 @@ export function piocher(partie, id, { auto = false } = {}) {
     }
     j.main.splice(esprit, 1);
     j.enAttente = true;
-    noter(partie, `💥 ${nom(j)} a pioché un Gobelin explosif… sauvé par son Esprit de guérison !`, { ids: [id] });
+    noter(partie, "sauve", { s: id });
     bilan(partie).sauves.push(j.username);
     return { carte, transformee: false, bang: "sauve" };
   }
@@ -221,18 +283,18 @@ function appliquer(partie, carte, sourceId, victimeId, { config, rng }) {
   const v = partie.joueurs[victimeId];
   if (carte === "gang") {
     v.dette += config.gang_pioches;
-    noter(partie, `👊 ${nom(s)} envoie son Gang de gobelins tendre une embuscade à ${nom(v)} ! (${config.gang_pioches} pioches d'affilée)`, { ids: [sourceId, victimeId] });
+    noter(partie, "gang", { s: sourceId, v: victimeId, n: config.gang_pioches });
   } else if (carte === "malediction") {
     v.maudit += 1;
-    noter(partie, `🧿 ${nom(s)} jette une Malédiction sur ${nom(v)} : sa prochaine carte piochée sera un simple Gobelin !`, { ids: [sourceId, victimeId] });
+    noter(partie, "malediction", { s: sourceId, v: victimeId });
   } else if (carte === "voleuse") {
     if (!v.main.length) {
-      noter(partie, `🦹 La Voleuse de ${nom(s)} fouille ${nom(v)}… qui n'a plus rien !`, { ids: [sourceId, victimeId] });
+      noter(partie, "voleuseVide", { s: sourceId, v: victimeId });
       return;
     }
     const [vole] = v.main.splice(Math.floor(rng() * v.main.length), 1);
     s.main.push(vole);
-    noter(partie, `🦹 La Voleuse de ${nom(s)} dérobe une carte à ${nom(v)} !`, { ids: [sourceId, victimeId] });
+    noter(partie, "voleuse", { s: sourceId, v: victimeId });
     prive(partie, sourceId, `🦹 Carte dérobée à ${nom(v)} : ${CARTES[vole].nom}.`);
     prive(partie, victimeId, `🦹 ${nom(s)} t'a volé : ${CARTES[vole].nom}.`);
     return { vole };
@@ -240,9 +302,9 @@ function appliquer(partie, carte, sourceId, victimeId, { config, rng }) {
     if (v.elixir > 0) {
       v.elixir -= 1;
       s.elixir = Math.min(config.elixir.max, s.elixir + 1);
-      noter(partie, `🛢️ ${nom(s)} surgit d'un Fût à gobelins et chipe 1 Élixir à ${nom(v)} !`, { ids: [sourceId, victimeId] });
+      noter(partie, "futVol", { s: sourceId, v: victimeId });
     } else {
-      noter(partie, `🛢️ ${nom(s)} surgit d'un Fût à gobelins chez ${nom(v)}… qui n'a plus d'Élixir !`, { ids: [sourceId, victimeId] });
+      noter(partie, "futVide", { s: sourceId, v: victimeId });
     }
   }
 }
@@ -265,7 +327,7 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
   j.main.splice(index, 1);
 
   if (carte === "sarbacane") {
-    noter(partie, `🎯 ${nom(j)} scrute la pioche avec son Gobelin à sarbacane…`, { ids: [id] });
+    noter(partie, "sarbacane", { s: id });
     const revelation = partie.pioche.slice(0, 3);
     prive(partie, id, `🎯 Sommet de la pioche : ${revelation.map((c, i) => `${i + 1}. ${CARTES[c].nom}`).join(", ") || "pioche vide"}.`);
     return { carte, revelation };
@@ -282,7 +344,7 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
     else j.tourFait = true;
     if (versPioche) {
       j.elixir = Math.min(config.elixir.max, j.elixir + 1);
-      noter(partie, `🛢️ ${nom(j)} se cache dans un Fût à gobelins et récupère 1 Élixir.`, { ids: [id] });
+      noter(partie, "futBanque", { s: id });
       return { carte };
     }
   }
@@ -293,7 +355,7 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
   if (victime.moine) {
     victime.moine = false;
     bilan(partie).renvois += 1;
-    noter(partie, `🙏 Le Moine de ${nom(victime)} renvoie l'attaque (${CARTES[carte].nom}) de ${nom(j)} à l'envoyeur !`, { ids: [cible, id] });
+    noter(partie, "renvoi", { s: cible, v: id, carte });
     const effet = appliquer(partie, carte, cible, id, { config, rng });
     return { carte, renvoi: true, vole: effet?.vole ?? null };
   }
@@ -324,7 +386,7 @@ export function cloturer(partie, { config, rng = Math.random, dernier = false })
     }
   }
   if (automatiques.length) {
-    noter(partie, `⏰ Pioche automatique à la clôture : ${automatiques.map((n) => `**${n}**`).join(", ")}.`, { ids: idsAuto });
+    noter(partie, "auto", { ids: idsAuto });
   }
   partie.veille = { ...bilan(partie), automatiques };
   partie.jour = bilanVide();

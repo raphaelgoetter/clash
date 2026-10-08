@@ -1,6 +1,6 @@
 import assert from "assert";
 import fs from "fs";
-import { creerPartie, ajouterJoueur, piocher, placer, jouer, cloturer, classement, nbBombes, vivants } from "./bangRules.js";
+import { creerPartie, ajouterJoueur, piocher, placer, jouer, cloturer, classement, nbBombes, vivants, texteJournal } from "./bangRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/bang/bang.json", import.meta.url), "utf8"));
 
@@ -122,6 +122,14 @@ function main() {
     assert.ok(!p.joueurs.pierre.moine);
     assert.ok(!jouer(p, "thomas", "voleuse", "pierre", { config: CONFIG, rng }).renvoi);
     assert.strictEqual(p.jour.attaques, 2);
+    // Journal rédigé selon le lecteur : « tu » quand l'action le concerne
+    const renvoi = p.journal.find((e) => e.k === "renvoi");
+    assert.match(texteJournal(p, renvoi, "pierre"), /^🙏 Ton Moine renvoie l'attaque \(Voleuse\) de \*\*thomas\*\*/);
+    assert.match(texteJournal(p, renvoi, "thomas"), /renvoie ton attaque \(Voleuse\) contre toi/);
+    assert.match(texteJournal(p, renvoi), /^🙏 Le Moine de \*\*pierre\*\* renvoie l'attaque \(Voleuse\) de \*\*thomas\*\*/);
+    const vole = p.journal.find((e) => e.k === "voleuse");
+    assert.strictEqual(texteJournal(p, vole, vole.s), `🦹 Ta Voleuse dérobe une carte à **${vole.v}** !`);
+    assert.strictEqual(texteJournal(p, vole, vole.v), `🦹 La Voleuse de **${vole.s}** te dérobe une carte !`);
     const vol = p.journal.filter((e) => e.p === "thomas" && e.t.includes("t'a volé"));
     assert.strictEqual(vol.length, 1, "la victime du renvoi apprend quelle carte lui a été volée");
     assert.ok(p.journal.some((e) => e.ids?.includes("pierre") && e.ids.includes("thomas")), "événement public lié aux deux joueurs");
