@@ -3,7 +3,8 @@
 //   - la main d'un joueur : cartes posées en grille sur le tapis de jeu
 //     (data/bang/images/bang-table.jpg), regroupées avec un badge « ×N »
 //     pour les exemplaires d'une même carte ;
-//   - l'illustration statique (message officiel).
+//   - le plateau d'avancement (message officiel) : jour, pioche, Rois ;
+//   - l'illustration statique (présentation).
 // Même technique que marioclashImage.js : SVG avec un `<image href="data:...">`
 // de fond, rastérisé en PNG via @resvg/resvg-js. Dessin des cartes
 // (illustration officielle) partagé via cardImage.js, sans goutte d'élixir
@@ -59,10 +60,10 @@ function layoutGrid(count) {
   return best;
 }
 
-function badgeSvg(x, y, texte) {
+function badgeSvg(x, y, texte, r = 17) {
   return `
-  <circle cx="${x}" cy="${y}" r="17" fill="#f0c040" stroke="#4a2c00" stroke-width="3"/>
-  <text x="${x}" y="${y + 6}" font-family="${FONT_FAMILY}" font-size="17" text-anchor="middle" fill="#2b1a00">${escapeXml(texte)}</text>`;
+  <circle cx="${x}" cy="${y}" r="${r}" fill="#f0c040" stroke="#4a2c00" stroke-width="3"/>
+  <text x="${x}" y="${y + r * 0.35}" font-family="${FONT_FAMILY}" font-size="${r}" text-anchor="middle" fill="#2b1a00">${escapeXml(texte)}</text>`;
 }
 
 // Regroupe les exemplaires (ordre de CARTES, stable d'une vue à l'autre).
@@ -109,6 +110,155 @@ async function buildMainSvg(ids) {
 export async function getMainImage(ids) {
   const valides = ids.filter((id) => CARTES[id]).slice(0, 60);
   return { buffer: await rasterize(await buildMainSvg(valides), MAT_WIDTH), mimeType: "image/png" };
+}
+
+// ── Plateau d'avancement ─────────────────────────────────────────────
+// Sur le tapis : le jour en bandeau, la pioche à gauche (pile dont la
+// hauteur suit le nombre de cartes, Gobelins explosifs restants), les Rois
+// à droite (couronne dorée pour les survivants avec leur nombre de cartes en main,
+// couronne grise barrée pour les Rois explosés).
+
+const GOLD = "#f0c040";
+
+function couronneSvg(cx, cy, size, vivant) {
+  const s = size / 100;
+  const fill = vivant ? "url(#or)" : "#6b7080";
+  const stroke = vivant ? "#7a4a00" : "#3a3d48";
+  const croix = vivant
+    ? ""
+    : `<path d="M8 8 L92 72 M92 8 L8 72" stroke="#d63c3c" stroke-width="11" stroke-linecap="round"/>`;
+  return `
+  <g transform="translate(${cx - size / 2} ${cy - size * 0.4}) scale(${s})" opacity="${vivant ? 1 : 0.75}">
+    <path d="M6 70 L10 18 L32 42 L50 6 L68 42 L90 18 L94 70 Z" fill="${fill}" stroke="${stroke}" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="6" y="64" width="88" height="14" rx="4" fill="${fill}" stroke="${stroke}" stroke-width="5"/>
+    <circle cx="50" cy="40" r="7" fill="${vivant ? "#d63c3c" : "#4a4d58"}"/>
+    ${croix}
+  </g>`;
+}
+
+function texte(x, y, contenu, { size = 18, fill = "#ffffff", anchor = "middle", opacity = 1 } = {}) {
+  return `<text x="${x}" y="${y}" font-family="${FONT_FAMILY}" font-size="${size}" text-anchor="${anchor}" fill="${fill}" opacity="${opacity}" stroke="#0b1a3a" stroke-width="${Math.max(2, size / 7)}" paint-order="stroke">${escapeXml(contenu)}</text>`;
+}
+
+function tronquer(nom, max) {
+  return nom.length > max ? `${nom.slice(0, Math.max(1, max - 1))}…` : nom;
+}
+
+// Pseudo sur une ou deux lignes de `max` caractères : coupe à un espace,
+// « _ » ou « - » (sinon au milieu du mot), seconde ligne tronquée si besoin.
+function lignesPseudo(nom, max) {
+  if (nom.length <= max) return [nom];
+  const separateur = Math.max(...[" ", "_", "-"].map((c) => nom.lastIndexOf(c, max - 1)));
+  const coupe = separateur > max / 3 ? separateur + (nom[separateur] === " " ? 0 : 1) : max;
+  return [nom.slice(0, coupe).trim(), tronquer(nom.slice(coupe).trim(), max)];
+}
+
+// Pile de dos de cartes, centrée en (cx, bas).
+function pileSvg(cx, bas, nbCartes) {
+  const w = 76;
+  const h = Math.round(w * 1.3);
+  const couches = nbCartes ? Math.min(10, Math.max(1, Math.ceil(nbCartes / 5))) : 0;
+  const parts = [];
+  for (let i = 0; i < couches; i++) {
+    const x = cx - w / 2 + i * 2;
+    const y = bas - h - i * 4;
+    parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="9" fill="#8e1f1f" stroke="${GOLD}" stroke-width="3"/>`);
+    parts.push(`<rect x="${x + 8}" y="${y + 8}" width="${w - 16}" height="${h - 16}" rx="6" fill="none" stroke="${GOLD}" stroke-width="2" opacity="0.6"/>`);
+  }
+  if (!couches) {
+    parts.push(`<rect x="${cx - w / 2}" y="${bas - h}" width="${w}" height="${h}" rx="12" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="10 8" opacity="0.5"/>`);
+  } else {
+    const top = bas - h - (couches - 1) * 4;
+    parts.push(couronneSvg(cx + (couches - 1) * 2, top + h / 2, 34, true));
+  }
+  return { svg: parts.join("\n") };
+}
+
+// `etat` : { jour, duree, pioche, bombes, rois: [{ nom, cartes, vivant }] }
+async function buildTableSvg(etat) {
+  const mat = await loadMatDataUrl();
+  const parts = [];
+  const vivants = etat.rois.filter((r) => r.vivant).length;
+
+  // Bandeau
+  parts.push(texte(MAT_WIDTH / 2, ZONE.y + 52, `JOUR ${etat.jour}/${etat.duree}`, { size: 38, fill: GOLD }));
+  parts.push(texte(MAT_WIDTH / 2, ZONE.y + 84, `${vivants} joueur${vivants > 1 ? "s" : ""} en vie sur ${etat.rois.length}`, { size: 20 }));
+
+  // Pioche
+  const piocheX = ZONE.x + 95;
+  const pile = pileSvg(piocheX, ZONE.y + 300, etat.pioche);
+  parts.push(pile.svg);
+  parts.push(texte(piocheX, ZONE.y + 330, `${etat.pioche} carte${etat.pioche > 1 ? "s" : ""}`, { size: 20 }));
+  const bombe = { key: CARTES.bombe.cardKey };
+  const [bombeUrl] = [...(await loadDataUrls([bombe])).values()];
+  const bw = 38;
+  parts.push(cardSvg(bombe, bombeUrl, piocheX - bw - 4, ZONE.y + 344, { w: bw, drop: 0 }));
+  parts.push(texte(piocheX + 2, ZONE.y + 344 + (bw * RATIO) / 2 + 8, `× ${etat.bombes}`, { size: 22, fill: "#ff8a6a", anchor: "start" }));
+
+  // Rois
+  const zone = { x: ZONE.x + 200, y: ZONE.y + 110, w: ZONE.w - 210, h: ZONE.h - 125 };
+  const n = etat.rois.length;
+  if (!n) {
+    parts.push(texte(zone.x + zone.w / 2, zone.y + zone.h / 2, "En attente des premiers joueurs…", { size: 26, opacity: 0.85 }));
+  } else {
+    const cols = Math.min(6, Math.max(2, Math.ceil(Math.sqrt(n * 1.6))));
+    const rows = Math.ceil(n / cols);
+    const cw = zone.w / cols;
+    const ch = Math.min(120, zone.h / rows);
+    const taille = Math.min(64, ch * 0.45);
+    const police = Math.max(12, Math.min(18, ch * 0.16));
+    const y0 = zone.y + (zone.h - rows * ch) / 2;
+    etat.rois.forEach((r, i) => {
+      const row = Math.floor(i / cols);
+      const inRow = Math.min(cols, n - row * cols);
+      const cx = zone.x + (zone.w - inRow * cw) / 2 + (i % cols) * cw + cw / 2;
+      const cy = y0 + row * ch + taille * 0.55;
+      parts.push(couronneSvg(cx, cy, taille, r.vivant));
+      if (r.vivant && r.cartes) parts.push(badgeSvg(cx + taille * 0.45, cy + taille * 0.35, String(r.cartes), Math.max(11, taille * 0.26)));
+      lignesPseudo(r.nom, Math.floor((cw - 8) / (police * 0.6))).forEach((ligne, k) => {
+        parts.push(texte(cx, cy + taille * 0.6 + police + 4 + k * (police + 2), ligne, { size: police, opacity: r.vivant ? 1 : 0.6 }));
+      });
+    });
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${MAT_WIDTH}" height="${MAT_HEIGHT}" viewBox="0 0 ${MAT_WIDTH} ${MAT_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="or" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe27a"/>
+      <stop offset="1" stop-color="#e09a1a"/>
+    </linearGradient>
+  </defs>
+  <image x="0" y="0" width="${MAT_WIDTH}" height="${MAT_HEIGHT}" href="${mat}"/>
+  ${parts.join("\n")}
+</svg>`;
+}
+
+// Plateau passé dans l'URL (base64url d'un JSON compact, voir
+// encodeTable), rendu sans état. null si le paramètre est illisible.
+export function decodeTable(param) {
+  try {
+    const d = JSON.parse(Buffer.from(String(param), "base64url").toString("utf8"));
+    const nombre = (x) => Math.max(0, Math.min(999, Number(x) || 0));
+    return {
+      jour: nombre(d.j),
+      duree: nombre(d.d),
+      pioche: nombre(d.p),
+      bombes: nombre(d.b),
+      rois: (Array.isArray(d.r) ? d.r : []).slice(0, 40).map(([nom, cartes, vivant]) => ({ nom: String(nom).slice(0, 40), cartes: nombre(cartes), vivant: !!vivant })),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function encodeTable({ jour, duree, pioche, bombes, rois }) {
+  const d = { j: jour, d: duree, p: pioche, b: bombes, r: rois.map((r) => [r.nom, r.cartes, r.vivant ? 1 : 0]) };
+  return Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
+}
+
+export async function getTableImage(etat) {
+  return { buffer: await rasterize(await buildTableSvg(etat), MAT_WIDTH), mimeType: "image/png" };
 }
 
 let illustrationCache = null;

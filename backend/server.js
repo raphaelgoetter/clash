@@ -37,6 +37,8 @@ import {
 import {
   getMainImage as getBangMainImage,
   getIllustrationImage as getBangIllustrationImage,
+  getTableImage as getBangTableImage,
+  decodeTable as decodeBangTable,
 } from "./services/bangImage.js";
 
 const app = express();
@@ -398,7 +400,19 @@ app.get("/api/bang/main", async (req, res) => {
   res.send(image.buffer);
 });
 
-// Bang! : illustration statique (message officiel).
+// Bang! : plateau d'avancement (jour, pioche, Rois), rendu sans état à
+// partir de l'état encodé dans l'URL (d = base64url, voir encodeTable) :
+// l'URL change avec l'état, ce qui contourne le cache d'images de Discord.
+app.get("/api/bang/table", async (req, res) => {
+  const etat = decodeBangTable(req.query.d);
+  const image = etat ? await getBangTableImage(etat).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(image.buffer);
+});
+
+// Bang! : illustration statique (présentation).
 app.get("/api/bang/illustration", async (req, res) => {
   const image = await getBangIllustrationImage().catch(() => null);
   if (!image) return res.status(404).end();

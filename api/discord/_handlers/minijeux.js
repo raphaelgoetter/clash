@@ -431,7 +431,7 @@ const SPECIAL_GAMES = [
       if (!joueur) return { played: false, scoreLabel: null };
       return {
         played: joueur.tourFait || !joueur.vivant,
-        scoreLabel: joueur.vivant ? `👑 Roi en vie (**${joueur.elixir} Élixir**)` : "💀 Roi explosé",
+        scoreLabel: joueur.vivant ? `👑 En vie (**${joueur.elixir} Élixir**)` : "💀 Éliminé de l'Arène",
       };
     },
     async detail(state) {
@@ -449,7 +449,7 @@ const SPECIAL_GAMES = [
       return {
         jour: state.jour,
         dureeJours: config.duree_jours,
-        participantsLabel: `${vivants} Roi${vivants > 1 ? "s" : ""} en vie sur ${joueurs.length}`,
+        participantsLabel: `${vivants} joueur${vivants > 1 ? "s" : ""} en vie sur ${joueurs.length}`,
       };
     },
   },

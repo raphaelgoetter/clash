@@ -30,6 +30,7 @@ import {
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/bang.js";
 import { CARTES, JOUABLES, CIBLEES, POSITIONS, piocher, placer, jouer, vivants, nbBombes } from "../../../backend/services/bangRules.js";
+import { encodeTable } from "../../../backend/services/bangImage.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -39,6 +40,18 @@ const JOURNAL_AFFICHE = 10;
 
 function illustrationUrl() {
   return `${TRUST_ROYALE_URL}/api/bang/illustration?v=${Date.now()}`;
+}
+
+// Plateau d'avancement : survivants (ordre alphabétique) puis Rois
+// explosés (ordre d'élimination), comme dans le texte du message.
+function tableImageUrl(jour, config, partie) {
+  const tous = Object.values(partie.joueurs);
+  const rois = [
+    ...tous.filter((j) => j.vivant).sort((a, b) => a.username.localeCompare(b.username)),
+    ...tous.filter((j) => !j.vivant).sort((a, b) => a.rangElimination - b.rangElimination),
+  ].map((j) => ({ nom: j.username, cartes: j.main.length, vivant: j.vivant }));
+  const d = encodeTable({ jour, duree: config.duree_jours, pioche: partie.pioche.length, bombes: nbBombes(partie), rois });
+  return `${TRUST_ROYALE_URL}/api/bang/table?d=${d}`;
 }
 
 function mainImageUrl(main) {
@@ -77,9 +90,9 @@ function buildAnnonceEmbed(config) {
   return {
     title: "🔫 Bang! — Les Gobelins envahissent l'Arène…",
     description: [
-      "Une pioche commune, des **💥 Gobelins explosifs** cachés dedans, et un seul objectif : **être le dernier Roi en vie** !",
+      "Une pioche commune, des **💥 Gobelins explosifs** cachés dedans, et un seul objectif : **être le dernier joueur en vie** !",
       "",
-      `📅 **${config.duree_jours} jours de jeu**, à partir de demain. Chaque jour, tu reçois **${config.elixir.par_jour} Élixirs** pour piocher, quand tu veux. Pioche, piège tes adversaires et protège ton Roi.`,
+      `📅 **${config.duree_jours} jours de jeu**, à partir de demain. Chaque jour, tu reçois **${config.elixir.par_jour} Élixirs** pour piocher, quand tu veux. Pioche, piège tes adversaires et reste en vie.`,
       "",
       "Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
@@ -94,7 +107,7 @@ function buildTableEmbed(jour, config, partie) {
   const tous = Object.values(partie.joueurs);
   const survivants = tous.filter((j) => j.vivant).sort((a, b) => a.username.localeCompare(b.username));
   const elimines = tous.filter((j) => !j.vivant).sort((a, b) => a.rangElimination - b.rangElimination);
-  const lignes = ["Pioche avec ton Élixir, piège tes adversaires et sois **le dernier Roi en vie** !"];
+  const lignes = ["Pioche avec ton Élixir, piège tes adversaires et sois **le dernier joueur en vie** !"];
   if (jour <= config.inscription_jours) {
     lignes.push(`🆕 Inscriptions ouvertes jusqu'au jour ${config.inscription_jours} : clique sur un bouton pour rejoindre l'Arène.`);
   }
@@ -103,7 +116,7 @@ function buildTableEmbed(jour, config, partie) {
     lignes.push("", `**👑 Survivants (${survivants.length})**`, survivants.map((j) => `${j.username} (${j.main.length} 🃏)`).join(" · "));
   }
   if (elimines.length) {
-    lignes.push("", `**💀 Rois explosés (${elimines.length})**`, elimines.map((j) => j.username).join(" · "));
+    lignes.push("", `**💀 Joueurs éliminés (${elimines.length})**`, elimines.map((j) => j.username).join(" · "));
   }
   const journal = partie.journal.slice(-JOURNAL_AFFICHE);
   if (journal.length) lignes.push("", "**📜 Derniers événements**", ...journal);
@@ -111,7 +124,7 @@ function buildTableEmbed(jour, config, partie) {
     title: `🔫 Bang! — Jour ${jour}/${config.duree_jours}`,
     description: lignes.join("\n").slice(-4096),
     color: BANG_COLOR,
-    image: { url: illustrationUrl() },
+    image: { url: tableImageUrl(jour, config, partie) },
     footer: { text: `+${config.elixir.par_jour} Élixirs (${config.elixir.max} max) et pioche automatique pour ceux qui n'ont pas pioché à ${formatUtcTimeAsParis(8)}.` },
   };
 }
@@ -121,13 +134,13 @@ function formatMancheLine(record, isCurrent) {
   return `Manche ${record.manche} : vainqueur **${record.vainqueur}** (${plural(record.nbJoueurs, "joueur")})${suffix}`;
 }
 
-function buildFinEmbed(ranking, partie, config, manches, currentManche) {
+function buildFinEmbed(jour, ranking, partie, config, manches, currentManche) {
   const top = ranking[0];
   const seul = top && vivants(partie).length === 1;
   const titre = !top
     ? "Personne n'a participé."
     : seul
-      ? `👑 **${top.username}** est le dernier Roi debout !`
+      ? `👑 **${top.username}** est le dernier joueur en vie !`
       : `👑 **${top.username}** l'emporte parmi les ${vivants(partie).length} survivants, avec le plus d'Élixir !`;
   const statut = (r) => {
     const j = partie.joueurs[r.discordId];
@@ -145,7 +158,7 @@ function buildFinEmbed(ranking, partie, config, manches, currentManche) {
       .join("\n")
       .slice(0, 4096),
     color: 0xf1c40f,
-    image: { url: illustrationUrl() },
+    image: { url: tableImageUrl(jour, config, partie) },
   };
 }
 
@@ -153,14 +166,14 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles — Bang!",
     description: [
-      "Sois **le dernier Roi en vie** ! Pas de tour de jeu : connecte-toi quand tu veux.",
+      "Sois **le dernier joueur en vie** ! Pas de tour de jeu : connecte-toi quand tu veux.",
       "",
       `**🧪 Élixir** : +${config.elixir.par_jour} par jour (${config.elixir.max} max). **Piocher** coûte 1 Élixir. Tu n'es jamais obligé de jouer la carte piochée.`,
       `**⏰ Chaque jour**, pioche au moins une fois (ou joue un Fût à gobelins) : sinon, la clôture pioche pour toi.`,
       "",
-      `${carteLabel("bombe")} : si tu le pioches, ton Esprit de guérison est sacrifié. Sans Esprit, ton Roi explose et quitte l'Arène.`,
-      `${carteLabel("esprit")} : sauve ton Roi, puis tu caches le Gobelin explosif où tu veux dans la pioche. Chacun en reçoit un au départ.`,
-      `${carteLabel("moine")} : joue-le à l'avance. Jusqu'à la clôture du jour, la prochaine attaque contre toi est renvoyée à l'envoyeur. Personne ne sait que ton Roi est protégé.`,
+      `${carteLabel("bombe")} : si tu le pioches, ton Esprit de guérison est sacrifié. Sans Esprit, tu exploses et quittes l'Arène.`,
+      `${carteLabel("esprit")} : te sauve, puis tu caches le Gobelin explosif où tu veux dans la pioche. Chacun en reçoit un au départ.`,
+      `${carteLabel("moine")} : joue-le à l'avance. Jusqu'à la clôture du jour, la prochaine attaque contre toi est renvoyée à l'envoyeur. Personne ne sait que tu es sous sa protection.`,
       `${carteLabel("fut")} : esquive une pioche (celle du jour, ou une pioche due), et vole 1 Élixir à la banque ou à un joueur.`,
       `${carteLabel("malediction")} : la prochaine carte que ta cible piochera sera un simple Gobelin.`,
       `${carteLabel("gang")} : ta cible devra piocher ${config.gang_pioches} fois d'affilée.`,
@@ -169,7 +182,7 @@ function buildReglesEmbed(config) {
       `${carteLabel("gobelin")} : carte sans pouvoir.`,
       "",
       `**🆕 Inscriptions** : jusqu'au jour ${config.inscription_jours}, en cliquant sur un bouton.`,
-      `**🏁 Fin** : dès qu'il ne reste qu'un Roi, sinon au jour ${config.duree_jours}. Les survivants sont alors classés par Élixir restant.`,
+      `**🏁 Fin** : dès qu'il ne reste qu'un joueur, sinon au jour ${config.duree_jours}. Les survivants sont alors classés par Élixir restant.`,
     ].join("\n"),
     color: BANG_COLOR,
   };
@@ -261,7 +274,7 @@ async function terminerPartie(state, partie, final, { dryRun = false } = {}) {
     });
   }
   const manches = await listManches({ limit: 10 });
-  const embed = buildFinEmbed(final, partie, config, manches, currentManche);
+  const embed = buildFinEmbed(state.jour, final, partie, config, manches, currentManche);
   const components = [{ type: 1, components: [reglesButton()] }];
   if (dryRun) return { dryRun: true, final: true, embed };
   const result = await publishAndWriteState(state.channelId, state, {
@@ -336,7 +349,7 @@ async function patchOriginal(webhookUrl, payload) {
 
 const ERREURS = {
   termine: "La partie est terminée.",
-  elimine: "Ton Roi a explosé, tu ne peux plus jouer.",
+  elimine: "Tu as explosé, tu ne peux plus jouer.",
   enAttente: "Cache d'abord le Gobelin explosif dans la pioche.",
   pioche: "La pioche est vide.",
   elixir: "Pas assez d'Élixir pour piocher.",
@@ -354,7 +367,7 @@ function avertissement(code) {
 
 // Texte du résultat d'une pioche.
 function piocheTexte(r) {
-  if (r.bang === "elimine") return "💥 **BANG !** Tu as pioché un Gobelin explosif sans Esprit de guérison : ton Roi explose ! Fin de partie pour toi.";
+  if (r.bang === "elimine") return "💥 **BANG !** Tu as pioché un Gobelin explosif sans Esprit de guérison : tu exploses ! Fin de partie pour toi.";
   if (r.bang === "sauve") return "💥 **BANG !** Tu as pioché un Gobelin explosif… ton Esprit de guérison te sauve ! Choisis où cacher le Gobelin dans la pioche.";
   if (r.transformee) return `🧿 Malédiction ! Ta carte (${carteLabel(r.transformee)}) se transforme en simple **${carteLabel("gobelin")}**.`;
   return `🃏 Tu pioches : **${carteLabel(r.carte)}**.`;
@@ -396,7 +409,7 @@ function buildDeckView(jour, config, partie, discordId, { entete = null, nouveau
   const embed = { title: `🎒 Ton deck — Jour ${jour}/${config.duree_jours}`, color: BANG_COLOR };
 
   if (!j.vivant || partie.termine) {
-    lignes.push(!j.vivant ? "💀 Ton Roi a explosé, ta partie est terminée. Suis la suite sur le message officiel !" : "🏁 La partie est terminée.");
+    lignes.push(!j.vivant ? "💀 Tu as explosé, ta partie est terminée. Suis la suite sur le message officiel !" : "🏁 La partie est terminée.");
     return { embeds: [{ ...embed, description: lignes.join("\n").slice(0, 4096) }], components: [] };
   }
 
@@ -522,7 +535,10 @@ export async function handleCarte(webhookUrl, discordId, username, carte) {
     if (CIBLEES.includes(carte)) {
       await executer(webhookUrl, discordId, username, (partie) => {
         const j = partie.joueurs[discordId];
-        return j?.main.includes(carte) ? { carteCiblee: carte } : { entete: avertissement("pasEnMain") };
+        if (!j?.main.includes(carte)) return { entete: avertissement("pasEnMain") };
+        // Menu des cibles vide (seul joueur de la partie) : refusé par Discord
+        if (carte !== "fut" && vivants(partie).length < 2) return { entete: "⚠️ Aucun adversaire à viser pour l'instant." };
+        return { carteCiblee: carte };
       }, { rafraichir: false });
       return;
     }

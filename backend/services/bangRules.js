@@ -122,11 +122,11 @@ function eliminer(partie, id) {
   j.enAttente = false;
   partie.elimines += 1;
   j.rangElimination = partie.elimines;
-  noter(partie, `🚀 **BANG !** Le Roi de ${nom(j)} a explosé ! ${j.username} quitte l'Arène.`);
+  noter(partie, `🚀 **BANG !** ${nom(j)} a explosé et quitte l'Arène !`);
   const restants = vivants(partie);
   if (restants.length <= 1) {
     partie.termine = true;
-    if (restants.length) noter(partie, `👑 ${nom(restants[0][1])} est le dernier Roi debout !`);
+    if (restants.length) noter(partie, `👑 ${nom(restants[0][1])} est le dernier joueur en vie !`);
   }
 }
 

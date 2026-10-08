@@ -48,6 +48,7 @@ for (let jour = 1; jour <= 7; jour++) {
       await H.handleCarte(`wh-${id}`, id, `Joueur ${id}`, carte);
       e = lastEph(id);
       const cibles = e.components.find((r) => r.components[0].custom_id?.startsWith("bang_cible"))?.components[0];
+      if (cibles && !cibles.options.length) { console.log("CIBLES VIDES", carte, JSON.stringify(cibles)); process.exit(1); }
       if (cibles) await H.handleCible(`wh-${id}`, id, `Joueur ${id}`, carte, cibles.options[Math.floor(Math.random() * cibles.options.length)].value);
       if (id === "u1") console.log(`--- u1 joue ${carte} ---\n${lastEph(id).embeds[0].description.split("\n\n")[0]}`);
     }

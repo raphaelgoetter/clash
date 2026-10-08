@@ -1952,9 +1952,9 @@ Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le cla
 
 Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `DISCORD_APP_ID`/`DISCORD_TOKEN` (upload emoji). Le `schedule` du cron (`16 8 * * *`) est actif dans `.github/workflows/gobelet.yml`, comme Blackjack.
 
-## Bang! — dernier Roi en vie en 7 jours
+## Bang! — dernier joueur en vie en 7 jours
 
-Jeu spécial **100 % asynchrone** inspiré d'[Exploding Kittens](https://fr.wikipedia.org/wiki/Exploding_Kittens) : une pioche commune truffée de **Gobelins explosifs**, des cartes d'action pour piéger les autres, et un objectif, être le dernier Roi en vie. Pas d'ordre de passage : chacun joue quand il veut, chaque action est résolue tout de suite. **Remplace le Draft Royale et le duel `/draft`** (supprimés le 08/10 : complexes et peu intéressants d'après les tests). Code : `backend/services/bangRules.js` (règles pures, testées par `bangRules.test.js`), `backend/services/bang.js` (Redis), `backend/services/bangImage.js` (images), `api/discord/_handlers/bang.js` (Discord), `scripts/postBang.js`. Config : `data/bang/bang.json`.
+Jeu spécial **100 % asynchrone** inspiré d'[Exploding Kittens](https://fr.wikipedia.org/wiki/Exploding_Kittens) : une pioche commune truffée de **Gobelins explosifs**, des cartes d'action pour piéger les autres, et un objectif, être le dernier joueur en vie. Pas d'ordre de passage : chacun joue quand il veut, chaque action est résolue tout de suite. **Remplace le Draft Royale et le duel `/draft`** (supprimés le 08/10 : complexes et peu intéressants d'après les tests). Code : `backend/services/bangRules.js` (règles pures, testées par `bangRules.test.js`), `backend/services/bang.js` (Redis), `backend/services/bangImage.js` (images), `api/discord/_handlers/bang.js` (Discord), `scripts/postBang.js`. Config : `data/bang/bang.json`.
 
 ### Cartes (Bang!)
 
@@ -1962,7 +1962,7 @@ Chaque carte est illustrée par une vraie carte Clash Royale (`CARTES` dans `ban
 
 | Carte | Carte CR | Effet |
 | ----- | -------- | ----- |
-| 💥 Gobelin explosif | Goblin Demolisher | Piochée : l'Esprit de guérison du joueur est sacrifié, sinon son Roi explose (éliminé, sa main est défaussée, ce Gobelin explosif quitte le jeu). |
+| 💥 Gobelin explosif | Goblin Demolisher | Piochée : l'Esprit de guérison du joueur est sacrifié, sinon il explose (éliminé, sa main est défaussée, ce Gobelin explosif quitte le jeu). |
 | 💚 Esprit de guérison | Heal Spirit | Sauve du Gobelin explosif, puis le joueur le cache dans la pioche (tout en haut, 2e, 3e, milieu, fond ou au hasard). Chacun en reçoit un au départ. |
 | 🙏 Moine | Monk | Joué à l'avance, **secret** (absent du journal). La prochaine attaque ciblée contre le joueur (Gang, Malédiction, Voleuse, Fût sur un joueur) est bloquée et son effet s'applique à l'attaquant. Actif **jusqu'à la clôture du jour** seulement (décision du 08/10), un seul à la fois, un renvoi ne se renvoie pas. |
 | 🛢️ Fût à gobelins | Goblin Barrel | Esquive : annule une pioche due (Gang), sinon compte comme la pioche du jour. Vole en plus 1 Élixir à la banque ou à un joueur (plafonné à 4). |
@@ -1978,21 +1978,22 @@ Chaque carte est illustrée par une vraie carte Clash Royale (`CARTES` dans `ban
 - **Inscription** au premier clic sur un bouton, jusqu'au jour `inscription_jours` (2). Le joueur reçoit `elixir.depart` (2) Élixirs, un Esprit de guérison et `main_depart` (2) cartes de son paquet ; le reste de son paquet est mélangé dans la pioche (`paquet_par_joueur`, taux fractionnaires : 0,5 = un exemplaire tous les deux joueurs), avec `bombes_par_joueur` (1,5) Gobelins explosifs par joueur **à partir du deuxième** (`ajouterJoueur()`).
 - **Piocher** coûte 1 Élixir. Jouer une carte est gratuit. Le joueur n'est jamais obligé de jouer la carte piochée.
 - **Clôture quotidienne** (`cloturer()`, cron) dans un ordre aléatoire : un Gobelin explosif pas encore caché l'est au hasard, les Moines non utilisés disparaissent ; chaque survivant qui n'a ni pioché ni joué de Fût ce jour-là **pioche automatiquement** (décision du 08/10 : sans contrainte, ne jamais piocher garantirait la survie), ainsi que ses pioches dues (Gang). Les pioches automatiques coûtent 1 Élixir s'il en reste. Puis +`elixir.par_jour` (2) Élixirs, plafonnés à `elixir.max` (4), **sauf au dernier jour**.
-- **Fin** : dès qu'il ne reste qu'un Roi (en cours de journée : message final posté par l'action qui élimine l'avant-dernier, résultat figé une seule fois par `figerResultat()`), sinon à la clôture du jour `duree_jours` (7).
+- **Fin** : dès qu'il ne reste qu'un joueur (en cours de journée : message final posté par l'action qui élimine l'avant-dernier, résultat figé une seule fois par `figerResultat()`), sinon à la clôture du jour `duree_jours` (7).
 - **Classement** (`classement()`) : survivants d'abord, par **Élixir restant** (décision du 08/10 : inutile d'éliminer tout le monde), puis Esprits de guérison en main, nombre de cartes, ordre d'arrivée ; puis éliminés du dernier au premier. **Score = nombre de joueurs classés derrière** (cumulé dans l'historique de saison des mini-jeux).
 
 **Équilibrage** (`temp/bang/simulateBang.mjs`, 08/10, bots heuristiques, 75 % de joueurs actifs par jour, 2/3 inscrits au J1) : avec 1,5 Gobelin explosif, 2 Gobelins et 0,5 Esprit de guérison par joueur, 12 joueurs → environ 4 survivants au J7 (2 % de parties finies avant) ; 18 joueurs → environ 5 survivants. À 4 joueurs, la partie se termine souvent avant le J7.
 
 ### Interface (Bang!)
 
-- **Message officiel** (un par jour, réédité en direct après chaque action, `rafraichirTable()`) : inscriptions ouvertes ou non, taille de la pioche et nombre de Gobelins explosifs, survivants (nombre de cartes en main), Rois explosés, 10 derniers événements du journal (attaques, Moines qui renvoient, explosions, pioches automatiques). Boutons **Piocher (1 Élixir)**, **Mon deck**, **Jouer**, **Règles**.
+- **Message officiel** (un par jour, réédité en direct après chaque action, `rafraichirTable()`, image : plateau d'avancement) : inscriptions ouvertes ou non, taille de la pioche et nombre de Gobelins explosifs, survivants (nombre de cartes en main), joueurs éliminés, 10 derniers événements du journal (attaques, Moines qui renvoient, explosions, pioches automatiques). Boutons **Piocher (1 Élixir)**, **Mon deck**, **Jouer**, **Règles**.
 - **Deck éphémère** (les trois premiers boutons l'ouvrent, Piocher pioche d'abord) : résultat de la dernière action, alertes (Gang, Malédiction, Moine actif, pas encore pioché), Élixir, main (texte et image), bouton Piocher, menu « Jouer une carte » puis menu des cibles (Fût : « La banque » ou un joueur). Après un Gobelin explosif désamorcé, seul le menu « Où cacher le Gobelin explosif ? » est proposé.
 - Les mains restent secrètes ; seul le Moine joué n'apparaît pas dans le journal.
 
 ### Images (Bang!)
 
 - `/api/bang/main?c=id1|id2|…` : main d'un joueur sur le tapis `bang-table.jpg`, une carte par groupe avec badge `×N`, sans goutte d'élixir (rendu sans état, `cardImage.js` pour le dessin des cartes). ⚠️ Tapis en **JPEG** : resvg ne décode pas le WebP embarqué.
-- `/api/bang/illustration` : `bang-launch.webp` (reprise de l'illustration du Draft Royale en attendant une illustration dédiée).
+- `/api/bang/table?d=…` : **plateau d'avancement** du message officiel (jour et fin de partie), sur le même tapis : jour et nombre de joueurs en vie en bandeau, pioche à gauche (pile dont la hauteur suit le nombre de cartes, Gobelins explosifs restants), joueurs à droite (pseudos longs sur deux lignes, coupés à un espace, « _ » ou « - », puis tronqués ; couronne dorée avec le nombre de cartes en main, couronne grise barrée pour les joueurs éliminés). État encodé dans l'URL (`encodeTable()`, base64url d'un JSON compact, ~450 caractères à 20 joueurs) : l'URL change à chaque action, ce qui contourne le cache d'images de Discord. Rendu local : `node temp/bang/renderTable.mjs <sortie.png> [joueurs] [éliminés]`.
+- `/api/bang/illustration` : `bang-launch.webp` (illustration dédiée, 1200×675), message de présentation seulement.
 
 Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob -- bang` après modification.
 
