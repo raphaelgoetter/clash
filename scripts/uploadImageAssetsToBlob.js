@@ -59,6 +59,7 @@ const TARGETS = [
   { file: "marioclash/images/mario-clash.webp" },
   { file: "bang/images/bang-table.jpg" },
   { file: "bang/images/bang-launch.webp" },
+  { dir: "bang/avatars" },
   { dir: "jeux-visuels/palette/images" },
   { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },

@@ -111,7 +111,9 @@ async function writePartie(partie) {
 // clôture pioche pour eux.
 export async function initPartie({ pnj = [] } = {}) {
   const config = await loadBangConfig();
-  const partie = creerPartie();
+  // Décalage des avatars du plateau (voir tableImageUrl), pour varier d'une
+  // partie à l'autre
+  const partie = { ...creerPartie(), decalageAvatars: Math.floor(Math.random() * 12) };
   pnj.forEach((nom, i) => ajouterJoueur(partie, `pnj-${i + 1}`, nom, { config }));
   await writePartie(partie);
   return partie;

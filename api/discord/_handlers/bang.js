@@ -30,7 +30,7 @@ import {
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/bang.js";
 import { CARTES, JOUABLES, CIBLEES, POSITIONS, piocher, placer, jouer, vivants, nbBombes } from "../../../backend/services/bangRules.js";
-import { encodeTable } from "../../../backend/services/bangImage.js";
+import { encodeTable, NB_AVATARS } from "../../../backend/services/bangImage.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
@@ -42,14 +42,16 @@ function illustrationUrl() {
   return `${TRUST_ROYALE_URL}/api/bang/illustration?v=${Date.now()}`;
 }
 
-// Plateau d'avancement : survivants (ordre alphabétique) puis Rois
-// explosés (ordre d'élimination), comme dans le texte du message.
+// Plateau d'avancement : survivants (ordre alphabétique) puis éliminés
+// (ordre d'élimination), comme dans le texte du message. Avatar selon
+// l'ordre d'arrivée, décalé au hasard à chaque partie : tous différents
+// jusqu'à NB_AVATARS joueurs.
 function tableImageUrl(jour, config, partie) {
   const tous = Object.values(partie.joueurs);
   const rois = [
     ...tous.filter((j) => j.vivant).sort((a, b) => a.username.localeCompare(b.username)),
     ...tous.filter((j) => !j.vivant).sort((a, b) => a.rangElimination - b.rangElimination),
-  ].map((j) => ({ nom: j.username, cartes: j.main.length, vivant: j.vivant }));
+  ].map((j) => ({ nom: j.username, cartes: j.main.length, vivant: j.vivant, avatar: (j.arrivee + (partie.decalageAvatars ?? 0)) % NB_AVATARS }));
   const d = encodeTable({ jour, duree: config.duree_jours, pioche: partie.pioche.length, bombes: nbBombes(partie), rois });
   return `${TRUST_ROYALE_URL}/api/bang/table?d=${d}`;
 }

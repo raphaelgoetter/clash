@@ -103,12 +103,46 @@ export async function getMainImage(ids) {
 
 // ── Plateau d'avancement ─────────────────────────────────────────────
 // Sur le tapis : le jour en bandeau, la pioche à gauche (pile dont la
-// hauteur suit le nombre de cartes, Gobelins explosifs restants), les Rois
-// à droite (couronne dorée pour les survivants avec leur nombre de cartes en main,
-// couronne grise barrée pour les Rois explosés).
+// hauteur suit le nombre de cartes, Gobelins explosifs restants), les
+// joueurs à droite (avatar sur anneau doré et nombre de cartes en main pour
+// les survivants, avatar gris barré pour les éliminés).
 
 const GOLD = "#f0c040";
 
+// Avatars des joueurs : 12 créatures « Clay » de DiceBear (CC0, domaine
+// public : https://www.dicebear.com/styles/clay/), data/bang/avatars/.
+export const NB_AVATARS = 12;
+const avatarCache = new Map();
+
+async function avatarDataUrl(index) {
+  const i = ((index % NB_AVATARS) + NB_AVATARS) % NB_AVATARS;
+  if (!avatarCache.has(i)) {
+    const buffer = await readBlobAsset(`bang/avatars/clay-${String(i + 1).padStart(2, "0")}.png`);
+    avatarCache.set(i, `data:image/png;base64,${buffer.toString("base64")}`);
+  }
+  return avatarCache.get(i);
+}
+
+let clipSeq = 0;
+
+// Médaillon rond : avatar sur anneau doré ; joueur éliminé : avatar en
+// gris, anneau gris et croix rouge.
+function avatarSvg(cx, cy, size, dataUrl, vivant) {
+  const r = size / 2;
+  const id = `av${clipSeq++}`;
+  const croix = vivant
+    ? ""
+    : `<path d="M${cx - r * 0.62} ${cy - r * 0.62} L${cx + r * 0.62} ${cy + r * 0.62} M${cx + r * 0.62} ${cy - r * 0.62} L${cx - r * 0.62} ${cy + r * 0.62}" stroke="#d63c3c" stroke-width="${Math.max(4, size * 0.09)}" stroke-linecap="round"/>`;
+  return `
+  <clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>
+  <g opacity="${vivant ? 1 : 0.7}">
+    <image x="${cx - r * 1.2}" y="${cy - r * 1.15}" width="${size * 1.2}" height="${size * 1.2}" href="${dataUrl}" clip-path="url(#${id})"${vivant ? "" : ' filter="url(#gris)"'}/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${vivant ? GOLD : "#6b7080"}" stroke-width="${Math.max(3, size * 0.06)}"/>
+  </g>
+  ${croix}`;
+}
+
+// Couronne (emblème du dos des cartes de la pioche).
 function couronneSvg(cx, cy, size, vivant) {
   const s = size / 100;
   const fill = vivant ? "url(#or)" : "#6b7080";
@@ -194,18 +228,19 @@ async function buildTableSvg(etat) {
     const rows = Math.ceil(n / cols);
     const cw = zone.w / cols;
     const ch = Math.min(120, zone.h / rows);
-    const taille = Math.min(64, ch * 0.45);
+    const taille = Math.min(68, ch * 0.5);
+    const avatars = await Promise.all(Array.from({ length: NB_AVATARS }, (_, i) => avatarDataUrl(i)));
     const police = Math.max(12, Math.min(18, ch * 0.16));
     const y0 = zone.y + (zone.h - rows * ch) / 2;
     etat.rois.forEach((r, i) => {
       const row = Math.floor(i / cols);
       const inRow = Math.min(cols, n - row * cols);
       const cx = zone.x + (zone.w - inRow * cw) / 2 + (i % cols) * cw + cw / 2;
-      const cy = y0 + row * ch + taille * 0.55;
-      parts.push(couronneSvg(cx, cy, taille, r.vivant));
-      if (r.vivant && r.cartes) parts.push(badgeSvg(cx + taille * 0.45, cy + taille * 0.35, String(r.cartes), Math.max(11, taille * 0.26)));
+      const cy = y0 + row * ch + taille * 0.5;
+      parts.push(avatarSvg(cx, cy, taille, avatars[r.avatar % NB_AVATARS], r.vivant));
+      if (r.vivant && r.cartes) parts.push(badgeSvg(cx + taille * 0.42, cy + taille * 0.36, String(r.cartes), Math.max(11, taille * 0.24)));
       lignesPseudo(r.nom, Math.floor((cw - 8) / (police * 0.6))).forEach((ligne, k) => {
-        parts.push(texte(cx, cy + taille * 0.6 + police + 4 + k * (police + 2), ligne, { size: police, opacity: r.vivant ? 1 : 0.6 }));
+        parts.push(texte(cx, cy + taille * 0.5 + police + 6 + k * (police + 2), ligne, { size: police, opacity: r.vivant ? 1 : 0.6 }));
       });
     });
   }
@@ -213,6 +248,7 @@ async function buildTableSvg(etat) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${MAT_WIDTH}" height="${MAT_HEIGHT}" viewBox="0 0 ${MAT_WIDTH} ${MAT_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <filter id="gris"><feColorMatrix type="saturate" values="0"/></filter>
     <linearGradient id="or" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffe27a"/>
       <stop offset="1" stop-color="#e09a1a"/>
@@ -234,7 +270,7 @@ export function decodeTable(param) {
       duree: nombre(d.d),
       pioche: nombre(d.p),
       bombes: nombre(d.b),
-      rois: (Array.isArray(d.r) ? d.r : []).slice(0, 40).map(([nom, cartes, vivant]) => ({ nom: String(nom).slice(0, 40), cartes: nombre(cartes), vivant: !!vivant })),
+      rois: (Array.isArray(d.r) ? d.r : []).slice(0, 40).map(([nom, cartes, vivant, avatar]) => ({ nom: String(nom).slice(0, 40), cartes: nombre(cartes), vivant: !!vivant, avatar: nombre(avatar) })),
     };
   } catch {
     return null;
@@ -242,7 +278,7 @@ export function decodeTable(param) {
 }
 
 export function encodeTable({ jour, duree, pioche, bombes, rois }) {
-  const d = { j: jour, d: duree, p: pioche, b: bombes, r: rois.map((r) => [r.nom, r.cartes, r.vivant ? 1 : 0]) };
+  const d = { j: jour, d: duree, p: pioche, b: bombes, r: rois.map((r) => [r.nom, r.cartes, r.vivant ? 1 : 0, r.avatar ?? 0]) };
   return Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
 }
 
