@@ -61,6 +61,9 @@
     }
   },
   "concentration_max": 2,
+  "trophees": [
+    { "emoji": "🖱️", "label": "Trophée du missclick", "username": "Snaatchou" }
+  ],
   "sorts": [
     { "id": 1, "label": "Recule de 2 cases", "nom": "Recul", "type": "negatif", "avance": -2, "retire_concentration": 2 },
     { "id": 2, "label": "Gel : ton dé de demain ne fera avancer que d'1 case", "nom": "Gel", "type": "negatif", "gel": true, "retire_concentration": 1 },

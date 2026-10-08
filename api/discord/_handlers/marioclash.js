@@ -457,6 +457,17 @@ function buildManchesSection(manches, currentManche) {
   ];
 }
 
+// Trophées honorifiques ponctuels (ex. « Trophée du missclick »), saisis à
+// la main dans marioclash.json pour une course donnée : à vider ensuite.
+function buildTropheesSection(trophees = []) {
+  if (!trophees.length) return [];
+  return [
+    "",
+    "**🎖️ Mentions spéciales**",
+    ...trophees.map((t) => `${t.emoji} **${t.label}** : ${t.username}`),
+  ];
+}
+
 function buildFinEmbed(joueurs, config, manches, currentManche) {
   const ranking = sortedRanking(joueurs);
   const meilleurePosition = ranking[0]?.position ?? 0;
@@ -473,6 +484,7 @@ function buildFinEmbed(joueurs, config, manches, currentManche) {
       "",
       "**Classement final**",
       ...formatRankingLines(joueurs, config, { limit: 10, detailed: false }),
+      ...buildTropheesSection(config.trophees),
       ...buildManchesSection(manches, currentManche),
       "",
       "Merci à tous les pilotes qui ont participé à cette course !",
@@ -1115,6 +1127,28 @@ export async function handleBoutiqueButton(
     const config = await loadMarioClashConfig();
     const joueur = await ensureJoueur(discordId, username);
     if (joueur.objet) {
+      // Objet à cible acheté aujourd'hui mais jamais activé (message
+      // éphémère fermé avant le choix de la cible) : on rouvre le select,
+      // sinon l'objet et l'Or dépensé seraient perdus.
+      const item = config.objets[joueur.objet];
+      const actions = await readActions(jour);
+      if (
+        item?.cible === "adversaire" &&
+        joueur.dernierAchatJour === Number(jour) &&
+        !actions[discordId]?.item
+      ) {
+        const candidats = ciblesObjet(await readJoueurs(), discordId, item);
+        await patchOriginal(webhookUrl, {
+          content: candidats.length
+            ? `🛍️ Tu as acheté ${item.emoji} **${item.label}** sans choisir de cible, choisis-la maintenant :`
+            : `🛍️ Aucun adversaire à portée pour ${item.emoji} **${item.label}** pour l'instant, réessaie plus tard.`,
+          embeds: [],
+          components: candidats.length
+            ? buildTargetSelectRow(`marioclash_item_target:${jour}`, candidats)
+            : [],
+        });
+        return;
+      }
       await patchOriginal(webhookUrl, {
         content: `🛍️ Tu as déjà acheté ${config.objets[joueur.objet]?.emoji || ""} **${config.objets[joueur.objet]?.label}** aujourd'hui, il s'appliquera à la clôture. Un seul objet par jour.`,
         embeds: [],
