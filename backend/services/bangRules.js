@@ -342,10 +342,12 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
   const index = j.main.indexOf(carte);
   if (index === -1) return { erreur: "pasEnMain" };
   if (carte === "moine" && j.moine) return { erreur: "moineActif" };
+  if ((j.jouees ?? 0) >= config.cartes_par_jour) return { erreur: "plafond" };
   const versPioche = carte === "fut" && cible === "pioche";
   if (CIBLEES.includes(carte) && !versPioche && (cible === id || !partie.joueurs[cible]?.vivant)) return { erreur: "cible" };
 
   j.main.splice(index, 1);
+  j.jouees = (j.jouees ?? 0) + 1;
 
   if (carte === "sarbacane") {
     noter(partie, "sarbacane", { s: id });
@@ -417,6 +419,7 @@ export function cloturer(partie, { config, rng = Math.random, dernier = false })
     j.tourFait = false;
     j.dette = 0;
     j.moine = false;
+    j.jouees = 0;
     if (!dernier) j.elixir = Math.min(config.elixir.max, j.elixir + config.elixir.par_jour);
   }
   return { automatiques };

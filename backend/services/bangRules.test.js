@@ -162,6 +162,18 @@ function main() {
     assert.strictEqual(jouer(p, "a", "moine", null, { config: CONFIG, rng }).erreur, "moineActif");
   }
 
+  // ── Plafond de cartes jouées par jour, remis à zéro à la clôture ──
+  {
+    const p = partieTest({ a: ["sarbacane", "sarbacane", "sarbacane", "sarbacane"] }, ["gobelin"]);
+    const config = { ...CONFIG, cartes_par_jour: 3 };
+    for (let k = 0; k < 3; k++) assert.ok(!jouer(p, "a", "sarbacane", null, { config, rng }).erreur);
+    assert.strictEqual(jouer(p, "a", "sarbacane", null, { config, rng }).erreur, "plafond");
+    assert.strictEqual(p.joueurs.a.main.length, 1, "la carte refusée reste en main");
+    p.joueurs.a.tourFait = true;
+    cloturer(p, { config, rng });
+    assert.ok(!jouer(p, "a", "sarbacane", null, { config, rng }).erreur);
+  }
+
   // ── Sarbacane : révèle les 3 premières cartes ──
   {
     const p = partieTest({ a: ["sarbacane"] }, ["gobelin", "bombe", "esprit", "fut"]);

@@ -192,6 +192,7 @@ function buildReglesEmbed(config) {
     description: [
       "Sois **le dernier joueur en vie** ! Pas de tour de jeu : connecte-toi quand tu veux.",
       "",
+      `**⚡ Cartes** : ${config.cartes_par_jour} cartes jouées au plus par jour.`,
       `**🧪 Élixir** : +${config.elixir.par_jour} par jour (${config.elixir.max} max). **Piocher** coûte 1 Élixir. Tu n'es jamais obligé de jouer la carte piochée.`,
       `**⏰ Chaque jour**, pioche au moins une fois (ou joue un Fût à gobelins) : sinon, la clôture pioche pour toi.`,
       "",
@@ -405,6 +406,7 @@ const ERREURS = {
   injouable: "Cette carte ne se joue pas.",
   pasEnMain: "Cette carte n'est plus dans ta main.",
   moineActif: "Ton Moine te protège déjà.",
+  plafond: "Tu as déjà joué toutes tes cartes du jour.",
   cible: "Cible impossible.",
   pasEnAttente: "Aucun Gobelin explosif à cacher.",
   position: "Emplacement inconnu.",
@@ -554,6 +556,7 @@ function buildJouerView(config, partie, discordId, { entete = null, nouveau = fa
     ...(entete ? [entete, ""] : []),
     ...alertes(j),
     `🧪 Élixir : **${j.elixir}/${config.elixir.max}**`,
+    `⚡ Cartes jouées aujourd'hui : **${j.jouees ?? 0}/${config.cartes_par_jour}**`,
     `**Ton deck** : ${formatMain(j.main)}`,
   ];
   const components = [];
@@ -569,7 +572,9 @@ function buildJouerView(config, partie, discordId, { entete = null, nouveau = fa
     );
   } else {
     const jouables = JOUABLES.filter((c) => j.main.includes(c) && !(c === "moine" && j.moine));
-    if (!jouables.length) {
+    if ((j.jouees ?? 0) >= config.cartes_par_jour) {
+      lignes.push("", "Tu as joué toutes tes cartes du jour : la suite demain !");
+    } else if (!jouables.length) {
       lignes.push("", "Tu n'as aucune carte à jouer pour l'instant.");
     } else {
       components.push({
