@@ -436,6 +436,17 @@ function getRoundScores(myRound, oppRound) {
   };
 }
 
+// Icône de la forme réellement jouée d'une carte du battle log :
+// `evolutionLevel` 1 = évolution, 2 ou plus = héros (cf. computeEvolutionLayer
+// dans matchupEngine.js), sinon version normale.
+export function battleCardIconUrl(card) {
+  const icons = card?.iconUrls ?? {};
+  const level = card?.evolutionLevel ?? 0;
+  if (level >= 2 && icons.heroMedium) return icons.heroMedium;
+  if (level >= 1 && icons.evolutionMedium) return icons.evolutionMedium;
+  return icons.medium ?? null;
+}
+
 export function normalizeWarDeckCardId(card) {
   const rawId = card?.id ?? card?.name ?? card;
   if (rawId === null || rawId === undefined) return "";
@@ -512,10 +523,14 @@ export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
       const cardIds = deckCards
         .map((card) => String(card?.id ?? "").trim())
         .filter(Boolean);
+      const cardIcons = deckCards
+        .filter((card) => String(card?.id ?? "").trim())
+        .map(battleCardIconUrl);
       const existing = decks.get(signature) ?? {
         cards: formatWarDeckCards(deckCards),
         cardNames,
         cardIds,
+        cardIcons,
         signature,
         plays: 0,
         wins: 0,
@@ -545,6 +560,7 @@ export function summarizeDecks(battleLog, limit = 4, dayKey = null) {
       cards: deck.cards,
       cardNames: deck.cardNames,
       cardIds: deck.cardIds,
+      cardIcons: deck.cardIcons,
       plays: deck.plays,
       wins: deck.wins,
       winRate: deck.plays > 0 ? Math.round((deck.wins / deck.plays) * 100) : 0,
@@ -610,6 +626,9 @@ export async function summarizeWarDecksForMatchup(
       const cardIds = chunk
         .map((card) => String(card?.id ?? "").trim())
         .filter(Boolean);
+      const cardIcons = chunk
+        .filter((card) => String(card?.id ?? "").trim())
+        .map(battleCardIconUrl);
 
       const displayLabel = dayDeckLabel;
       dayDeckCounts.set(
@@ -623,6 +642,7 @@ export async function summarizeWarDecksForMatchup(
         cards: formatWarDeckCards(chunk),
         cardNames,
         cardIds,
+        cardIcons,
         plays: 1,
         wins:
           deckWon === undefined ? (result === "win" ? 1 : 0) : deckWon ? 1 : 0,
@@ -700,12 +720,16 @@ export async function summarizeRecentBattlesForMatchup(
     const cardIds = chunk
       .map((card) => String(card?.id ?? "").trim())
       .filter(Boolean);
+    const cardIcons = chunk
+      .filter((card) => String(card?.id ?? "").trim())
+      .map(battleCardIconUrl);
 
     entries.push({
       label: `Deck ${entries.length + 1}`,
       cards: formatWarDeckCards(chunk),
       cardNames,
       cardIds,
+      cardIcons,
       plays: 1,
       wins: result === "win" ? 1 : 0,
       matchup: matchupDetail.matchup,
@@ -910,6 +934,9 @@ export async function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
       const cardIds = deckCards
         .map((card) => String(card?.id ?? "").trim())
         .filter(Boolean);
+      const cardIcons = deckCards
+        .filter((card) => String(card?.id ?? "").trim())
+        .map(battleCardIconUrl);
       const opponentName = String(
         battle.opponent?.[0]?.name ?? battle.opponent?.[0]?.tag ?? "?",
       ).trim();
@@ -925,6 +952,7 @@ export async function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
         cards: formatWarDeckCards(deckCards),
         cardNames,
         cardIds,
+        cardIcons,
         signature,
         plays: 0,
         wins: 0,
@@ -967,6 +995,7 @@ export async function summarizeWarDecks(battleLog, limit = 4, dayKey = null) {
       cards: deck.cards,
       cardNames: deck.cardNames,
       cardIds: deck.cardIds,
+      cardIcons: deck.cardIcons,
       plays: deck.plays,
       wins: deck.wins,
       matchup:

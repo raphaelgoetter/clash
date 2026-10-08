@@ -47,6 +47,7 @@ import {
   computeTourLevel,
 } from "../../backend/services/collectionConstants.js";
 import { getOrSet } from "../../backend/services/cache.js";
+import { readBlobAsset } from "../../backend/services/blobAssets.js";
 import {
   handleHistory as handleChampionHistory,
   handleHistoryPage as handleChampionHistoryPage,
@@ -2252,9 +2253,34 @@ async function loadCardDefinitions() {
   return Array.isArray(value) ? value : [];
 }
 
+// Icônes de l'API Clash Royale encore servies avec un ancien design :
+// remplacées par l'illustration à jour déjà stockée sur Blob (images du jeu
+// Palette). Clé = URL périmée, pour que le remplacement cesse de lui-même si
+// Supercell change l'URL.
+const STALE_CARD_ICON_OVERRIDES = new Map([
+  // Bandit (Voleuse) : capuche verte depuis la refonte
+  [
+    "https://api-assets.clashroyale.com/cards/300/QWDdXMKJNpv0go-HYaWQWP6p8uIOHjqn-zX7G0p3DyM.png",
+    "jeux-visuels/palette/images/bandit.png",
+  ],
+]);
+
 async function fetchImageDataUrl(url, signal) {
   if (!url) return null;
   if (CARD_ICON_CACHE.has(url)) return CARD_ICON_CACHE.get(url);
+
+  const overridePath = STALE_CARD_ICON_OVERRIDES.get(url);
+  if (overridePath) {
+    try {
+      const buffer = await readBlobAsset(overridePath);
+      const dataUrl = `data:image/png;base64,${buffer.toString("base64")}`;
+      CARD_ICON_CACHE.set(url, dataUrl);
+      return dataUrl;
+    } catch (err) {
+      // repli sur l'icône de l'API
+      console.error("Icône de remplacement indisponible :", err?.message || err);
+    }
+  }
 
   const res = await fetch(url, { signal });
   if (!res.ok) return null;
@@ -2319,15 +2345,18 @@ async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) 
       return sum + cardHeight + matchBlock + deckSpacing;
     }, 0);
 
+  // Icône de la forme jouée (évolution/héros) mémorisée depuis le battle log
+  // (cardIcons, cf. battleCardIconUrl), sinon version normale du catalogue.
+  const cardIconUrl = (deck, id, index) =>
+    deck.cardIcons?.[index] ?? cardById.get(String(id))?.iconUrls?.medium ?? null;
+
   const uniqueUrls = new Map();
   for (const deck of rows) {
     const ids = Array.isArray(deck.cardIds) ? deck.cardIds : [];
-    for (const id of ids) {
-      const card = cardById.get(String(id));
-      if (card?.iconUrls?.medium) {
-        uniqueUrls.set(card.iconUrls.medium, null);
-      }
-    }
+    ids.slice(0, 8).forEach((id, index) => {
+      const iconUrl = cardIconUrl(deck, id, index);
+      if (iconUrl) uniqueUrls.set(iconUrl, null);
+    });
   }
 
   const abortController = new AbortController();
@@ -2383,10 +2412,8 @@ async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) 
     const cardsSvg = ids
       .slice(0, 8)
       .map((id, index) => {
-        const card = cardById.get(String(id));
-        const url = card?.iconUrls?.medium
-          ? uniqueUrls.get(card.iconUrls.medium)
-          : null;
+        const iconUrl = cardIconUrl(deck, id, index);
+        const url = iconUrl ? uniqueUrls.get(iconUrl) : null;
         const x = padding + index * (cardWidth + cardGap);
         return url
           ? `<image x="${x}" y="${yStart}" width="${cardWidth}" height="${cardHeight}" href="${url}" preserveAspectRatio="xMidYMid slice"/>`
