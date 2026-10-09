@@ -363,30 +363,58 @@ function buildTableComponents() {
 async function discordFetch(url, init) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
+  // FormData (pièce jointe) : Content-Type multipart posé par fetch
+  const multipart = init?.body instanceof FormData;
   return fetch(`https://discord.com/api/v10${url}`, {
     ...init,
     headers: {
       Authorization: `Bot ${token}`,
-      "Content-Type": "application/json",
+      ...(multipart ? {} : { "Content-Type": "application/json" }),
     },
   });
 }
 
-// Génère l'image du plateau avant de la confier à Discord : à froid, son
-// rendu (police, tapis, illustrations) dépasse le délai de Discord, qui
-// affiche alors le message sans image. La réponse est ensuite servie depuis
-// le cache CDN (s-maxage, voir backend/server.js).
-async function prechaufferImage(embed) {
+// Image du plateau jointe au message (`attachment://`) plutôt que confiée
+// par URL à Discord : son proxy va chercher l'image depuis sa propre région
+// (cache CDN Vercel régional, rendu à froid), dépasse parfois son délai et
+// affiche alors le message sans image, l'image apparaissant ou disparaissant
+// d'une édition à l'autre. Repli sur l'URL si le téléchargement échoue.
+const PLATEAU_FILENAME = "plateau.png";
+
+async function joindreImage(embed) {
   const url = embed?.image?.url;
-  if (!url?.includes("/api/bang/table")) return;
+  if (!url?.includes("/api/bang/table")) return null;
   try {
-    await fetch(url, { signal: AbortSignal.timeout(15_000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buffer = Buffer.from(await res.arrayBuffer());
+    embed.image = { url: `attachment://${PLATEAU_FILENAME}` };
+    return buffer;
   } catch (err) {
-    console.warn(
-      "[Bang] Préchauffage de l'image du plateau échoué:",
-      err.message,
-    );
+    console.warn("[Bang] Image du plateau non jointe:", err.message);
+    return null;
   }
+}
+
+// Corps JSON, ou multipart avec l'image du plateau. `attachments` liste la
+// seule pièce jointe conservée : en édition, l'ancien plateau est retiré
+// (y compris au repli sur l'URL, sinon il s'afficherait hors de l'embed).
+function corpsMessage(payload, image) {
+  if (!image) return JSON.stringify({ ...payload, attachments: [] });
+  const form = new FormData();
+  form.append(
+    "payload_json",
+    JSON.stringify({
+      ...payload,
+      attachments: [{ id: 0, filename: PLATEAU_FILENAME }],
+    }),
+  );
+  form.append(
+    "files[0]",
+    new Blob([image], { type: "image/png" }),
+    PLATEAU_FILENAME,
+  );
+  return form;
 }
 
 async function supprimerMessage(state) {
@@ -413,17 +441,16 @@ async function publishAndWriteState(
   previousState,
   { phase, jour, embed, components, ping, termine = false, isPublic, noPing },
 ) {
-  await prechaufferImage(embed);
+  const image = await joindreImage(embed);
   await supprimerMessage(previousState);
   const roleId =
     ping && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
   const res = await discordFetch(`/channels/${channelId}/messages`, {
     method: "POST",
-    body: JSON.stringify({
-      embeds: [embed],
-      components,
-      ...buildRolePingFields(roleId),
-    }),
+    body: corpsMessage(
+      { embeds: [embed], components, ...buildRolePingFields(roleId) },
+      image,
+    ),
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -449,17 +476,18 @@ async function rafraichirTable(state, partie) {
   try {
     const config = await loadBangConfig();
     const embed = buildTableEmbed(state.jour, config, partie);
-    await prechaufferImage(embed);
-    await discordFetch(
+    const image = await joindreImage(embed);
+    const res = await discordFetch(
       `/channels/${state.channelId}/messages/${state.messageId}`,
       {
         method: "PATCH",
-        body: JSON.stringify({
-          embeds: [embed],
-          components: buildTableComponents(),
-        }),
+        body: corpsMessage(
+          { embeds: [embed], components: buildTableComponents() },
+          image,
+        ),
       },
     );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   } catch (err) {
     console.error(
       "[Bang] Échec rafraîchissement du message officiel:",
