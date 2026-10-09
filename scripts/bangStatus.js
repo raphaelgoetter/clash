@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // bangStatus.js
-// Affiche l'état courant de Bang! (phase, jour, pioche, mains, Élixir,
+// Affiche l'état courant de Bang! (phase, jour, pioche, mains, Bravoure,
 // effets en cours) sans ouvrir Discord — vue organisateur, les mains et
 // l'ordre de la pioche y sont donc visibles.
 //
@@ -39,7 +39,7 @@ import { CARTES, nbBombes, texteJournal } from "../backend/services/bangRules.js
       continue;
     }
     const effets = [j.moine && "Moine", j.maudit && `maudit ×${j.maudit}`, j.dette && `${j.dette} pioche(s) due(s)`, j.enAttente && "bombe à cacher", !j.tourFait && "pas encore pioché"].filter(Boolean);
-    console.log(`  - ${j.username} — ${j.elixir} Élixir · ${j.main.map(nom).join(", ") || "main vide"}${effets.length ? ` · ${effets.join(", ")}` : ""}`);
+    console.log(`  - ${j.username} — ${j.bravoure ?? 0} Bravoure · ${j.main.map(nom).join(", ") || "main vide"}${effets.length ? ` · ${effets.join(", ")}` : ""}`);
   }
   console.log("\nDerniers événements :");
   for (const e of partie.journal.filter((x) => !x.p).slice(-10)) console.log(`  J${e.j} ${texteJournal(partie, e).replace(/\*\*/g, "")}`);

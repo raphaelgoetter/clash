@@ -6,8 +6,7 @@
 //   - l'illustration statique (présentation).
 // Même technique que marioclashImage.js : SVG avec un `<image href="data:...">`
 // de fond, rastérisé en PNG via @resvg/resvg-js. Dessin des cartes
-// (illustration officielle) partagé via cardImage.js, sans goutte d'élixir
-// (l'Élixir de Bang! est une ressource du jeu, pas le coût de la carte).
+// (illustration officielle) partagé via cardImage.js, sans goutte d'élixir.
 //
 // ⚠️ Tapis en JPEG, jamais en WebP : resvg ne décode pas le WebP embarqué et
 // échoue SILENCIEUSEMENT (fond absent) — voir marioclashImage.js.

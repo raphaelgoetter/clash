@@ -17,7 +17,7 @@ function seeded(seed = 42) {
 function partieTest(mains, pioche = []) {
   const p = creerPartie();
   Object.entries(mains).forEach(([id, main], i) => {
-    p.joueurs[id] = { username: id, main: [...main], elixir: 2, vivant: true, moine: false, maudit: 0, dette: 0, tourFait: false, enAttente: false, arrivee: i, rangElimination: null };
+    p.joueurs[id] = { username: id, main: [...main], bravoure: 0, pioches: 0, vivant: true, moine: false, maudit: 0, dette: 0, tourFait: false, enAttente: false, arrivee: i, rangElimination: null };
   });
   p.pioche = [...pioche];
   return p;
@@ -43,39 +43,42 @@ function main() {
     assert.strictEqual(p.pioche.length, avant);
   }
 
-  // ── Pioche : coûte 1 Élixir, refusée sans Élixir ni dette ──
+  // ── Pioche : gratuite, +Bravoure, plafonnée par jour ; les pioches dues
+  // et automatiques n'en rapportent pas et ne comptent pas ──
   {
-    const p = partieTest({ a: [] }, ["gobelin", "moine", "fut"]);
-    p.joueurs.a.elixir = 1;
-    assert.strictEqual(piocher(p, "a").carte, "gobelin");
-    assert.strictEqual(p.joueurs.a.elixir, 0);
-    assert.strictEqual(piocher(p, "a").erreur, "elixir");
+    const p = partieTest({ a: [] }, ["gobelin", "moine", "fut", "gang", "voleuse"]);
+    const config = { ...CONFIG, pioches_par_jour: 2, bravoure: { pioche: 1, attaque: 1 } };
+    assert.strictEqual(piocher(p, "a", { config }).carte, "gobelin");
+    assert.strictEqual(piocher(p, "a", { config }).carte, "moine");
+    assert.strictEqual(p.joueurs.a.bravoure, 2);
+    assert.strictEqual(piocher(p, "a", { config }).erreur, "plafondPioche");
     p.joueurs.a.dette = 1;
-    assert.strictEqual(piocher(p, "a").carte, "moine");
+    assert.strictEqual(piocher(p, "a", { config }).carte, "fut", "pioche due malgré le plafond");
+    assert.strictEqual(piocher(p, "a", { config, auto: true }).carte, "gang");
     assert.strictEqual(p.joueurs.a.dette, 0);
+    assert.strictEqual(p.joueurs.a.bravoure, 2, "pioches due et automatique sans Bravoure");
   }
 
   // ── Gobelin explosif : Esprit sacrifié puis bombe cachée, sinon élimination ──
   {
     const p = partieTest({ a: ["esprit"], b: [], c: ["gobelin"] }, ["bombe", "gang", "voleuse", "bombe"]);
-    const r = piocher(p, "a");
+    const r = piocher(p, "a", { config: CONFIG });
     assert.strictEqual(r.bang, "sauve");
     assert.ok(p.joueurs.a.enAttente && !p.joueurs.a.main.includes("esprit"));
-    assert.strictEqual(piocher(p, "a").erreur, "enAttente");
+    assert.strictEqual(piocher(p, "a", { config: CONFIG }).erreur, "enAttente");
     placer(p, "a", "1");
     assert.deepStrictEqual(p.pioche, ["bombe", "gang", "voleuse", "bombe"]);
-    assert.strictEqual(piocher(p, "b").bang, "elimine");
+    assert.strictEqual(piocher(p, "b", { config: CONFIG }).bang, "elimine");
     assert.ok(!p.joueurs.b.vivant && p.joueurs.b.rangElimination === 1);
     assert.strictEqual(nbBombes(p), 1, "la bombe de l'éliminé quitte le jeu");
     assert.ok(p.journal.at(-1).c && p.journal.at(-1).j === 1, "explosion : entrée cruciale du jour 1");
     assert.ok(!p.journal[0].c, "Gobelin désamorcé : entrée non cruciale");
     assert.ok(!p.termine);
-    p.joueurs.c.elixir = 4;
-    piocher(p, "c");
-    piocher(p, "c");
-    assert.strictEqual(piocher(p, "c").bang, "elimine");
+    piocher(p, "c", { config: CONFIG });
+    piocher(p, "c", { config: CONFIG });
+    assert.strictEqual(piocher(p, "c", { config: CONFIG }).bang, "elimine");
     assert.ok(p.termine, "dernier Roi debout");
-    assert.strictEqual(piocher(p, "a").erreur, "termine");
+    assert.strictEqual(piocher(p, "a", { config: CONFIG }).erreur, "termine");
   }
 
   // ── Placement : positions ──
@@ -93,10 +96,10 @@ function main() {
   {
     const p = partieTest({ a: ["malediction"], b: [] }, ["voleuse", "fut"]);
     jouer(p, "a", "malediction", "b", { config: CONFIG, rng });
-    const r = piocher(p, "b");
+    const r = piocher(p, "b", { config: CONFIG });
     assert.strictEqual(r.carte, "gobelin");
     assert.strictEqual(r.transformee, "voleuse");
-    assert.strictEqual(piocher(p, "b").carte, "fut");
+    assert.strictEqual(piocher(p, "b", { config: CONFIG }).carte, "fut");
   }
 
   // ── Gang : 2 pioches dues ; Fût : annule une pioche due ──
@@ -106,21 +109,22 @@ function main() {
     assert.strictEqual(p.joueurs.b.dette, CONFIG.gang_pioches);
     jouer(p, "b", "fut", "pioche", { config: CONFIG, rng });
     assert.strictEqual(p.joueurs.b.dette, CONFIG.gang_pioches - 1);
-    assert.strictEqual(p.joueurs.b.elixir, 3);
+    assert.strictEqual(p.joueurs.a.bravoure, CONFIG.bravoure.attaque, "attaque réussie : Bravoure");
+    assert.strictEqual(p.joueurs.b.bravoure, 0, "Fût vers la pioche : esquive seule");
   }
 
   // ── Gang : un seul clic pioche les cartes dues, arrêt sur un Gobelin explosif ──
   {
     const p = partieTest({ a: ["esprit"] }, ["gobelin", "fut", "voleuse", "bombe", "moine"]);
     p.joueurs.a.dette = 2;
-    p.joueurs.a.elixir = 1;
-    assert.deepStrictEqual(piocherClic(p, "a").tirages.map((r) => r.carte), ["gobelin", "fut"]);
-    assert.strictEqual(p.joueurs.a.elixir, 0, "1 Élixir payé, la 2e pioche due est gratuite");
-    assert.strictEqual(piocherClic(p, "a").erreur, "elixir", "plus de dette : un clic normal coûte 1 Élixir");
+    assert.deepStrictEqual(piocherClic(p, "a", { config: CONFIG }).tirages.map((r) => r.carte), ["gobelin", "fut"]);
+    assert.strictEqual(p.joueurs.a.bravoure, 0, "pioches dues : pas de Bravoure");
+    assert.strictEqual(piocherClic(p, "a", { config: CONFIG }).tirages.length, 1, "plus de dette : une seule carte");
+    assert.strictEqual(p.joueurs.a.bravoure, CONFIG.bravoure.pioche);
     p.joueurs.a.dette = 3;
-    const r = piocherClic(p, "a");
-    assert.deepStrictEqual(r.tirages.map((t) => t.carte), ["voleuse", "bombe"]);
-    assert.ok(p.joueurs.a.enAttente && p.joueurs.a.dette === 1, "arrêt sur la bombe, une pioche encore due");
+    const r = piocherClic(p, "a", { config: CONFIG });
+    assert.deepStrictEqual(r.tirages.map((t) => t.carte), ["bombe"]);
+    assert.ok(p.joueurs.a.enAttente && p.joueurs.a.dette === 2, "arrêt sur la bombe, deux pioches encore dues");
   }
 
   // ── Moine : renvoie l'attaque à l'envoyeur, une seule fois, en secret ──
@@ -149,6 +153,21 @@ function main() {
     assert.ok(p.journal.some((e) => e.ids?.includes("pierre") && e.ids.includes("thomas")), "événement public lié aux deux joueurs");
     assert.strictEqual(p.jour.renvois, 1);
     assert.strictEqual(p.joueurs.thomas.main.length, 1);
+    assert.strictEqual(p.joueurs.pierre.bravoure, 1, "renvoi : Bravoure pour le joueur protégé");
+    assert.strictEqual(p.joueurs.thomas.bravoure, 1, "2e Voleuse aboutie");
+  }
+
+  // ── Fût sur un joueur : vole 1 Bravoure (rien si la cible n'en a pas) ──
+  {
+    const p = partieTest({ a: ["fut", "fut"], b: [] });
+    jouer(p, "a", "fut", "b", { config: CONFIG, rng });
+    assert.strictEqual(p.joueurs.a.bravoure, 0);
+    assert.strictEqual(p.journal.at(-1).k, "futVide");
+    p.joueurs.b.bravoure = 3;
+    jouer(p, "a", "fut", "b", { config: CONFIG, rng });
+    assert.strictEqual(p.joueurs.a.bravoure, 1);
+    assert.strictEqual(p.joueurs.b.bravoure, 2);
+    assert.match(texteJournal(p, p.journal.at(-1), "b"), /te chipe 1 Bravoure/);
   }
 
   // ── Cibles et cartes invalides ──
@@ -180,33 +199,24 @@ function main() {
     assert.deepStrictEqual(jouer(p, "a", "sarbacane", null, { config: CONFIG, rng }).revelation, ["gobelin", "bombe", "esprit"]);
   }
 
-  // ── Clôture : pioche automatique, dettes soldées, Élixir plafonné ──
+  // ── Clôture : pioches automatiques (pénalité), dettes soldées ──
   {
-    const p = partieTest({ a: [], b: [], c: ["esprit"] }, ["gobelin", "moine", "fut", "gang", "voleuse", "bombe"]);
+    const p = partieTest({ a: [], b: [], c: ["esprit"] }, ["gobelin", "moine", "fut", "gang", "voleuse", "sarbacane", "gobelin"]);
+    const config = { ...CONFIG, pioches_auto: 2 };
     p.joueurs.a.tourFait = true;
-    p.joueurs.a.elixir = 4;
-    p.joueurs.b.dette = 2;
-    p.joueurs.c.elixir = 0;
+    p.joueurs.a.pioches = 3;
+    p.joueurs.b.dette = 3;
     p.joueurs.a.moine = true;
-    cloturer(p, { config: CONFIG, rng });
+    cloturer(p, { config, rng });
     assert.ok(!p.joueurs.a.moine, "le Moine ne protège que le jour où il est joué");
     assert.strictEqual(p.joueurs.a.main.length, 0, "a avait déjà pioché");
-    assert.strictEqual(p.joueurs.a.elixir, CONFIG.elixir.max);
-    assert.strictEqual(p.joueurs.b.main.length, 2);
-    assert.strictEqual(p.joueurs.c.main.length, 2, "pioche auto même sans Élixir");
-    assert.strictEqual(p.joueurs.c.elixir, CONFIG.elixir.par_jour);
-    assert.ok(vivants(p).every(([, j]) => !j.tourFait && j.dette === 0));
+    assert.strictEqual(p.joueurs.b.main.length, 3, "dette plus grande que la pénalité");
+    assert.strictEqual(p.joueurs.c.main.length, 3, "Esprit + 2 pioches automatiques");
+    assert.ok(vivants(p).every(([, j]) => j.bravoure === 0), "pioches automatiques sans Bravoure");
+    assert.ok(vivants(p).every(([, j]) => !j.tourFait && j.dette === 0 && j.pioches === 0));
     assert.strictEqual(p.veille.automatiques.length, 2, "bilan de la veille : b et c ont pioché automatiquement");
     assert.deepStrictEqual(p.jour.explosions, []);
     assert.strictEqual(p.numeroJour, 2);
-  }
-
-  // ── Clôture du dernier jour : pas d'Élixir distribué ──
-  {
-    const p = partieTest({ a: [] }, ["gobelin"]);
-    p.joueurs.a.tourFait = true;
-    cloturer(p, { config: CONFIG, rng, dernier: true });
-    assert.strictEqual(p.joueurs.a.elixir, 2);
   }
 
   // ── Clôture : bombe en attente cachée au hasard ──
@@ -219,40 +229,20 @@ function main() {
     assert.ok(!p.joueurs.a.enAttente);
   }
 
-  // ── Secousse : à l'ouverture du J6, cartes ordinaires retirées jusqu'à 1/3 de bombes ──
-  {
-    const p = partieTest({ a: [] }, [...Array(20).fill("gobelin"), "bombe", "bombe"]);
-    p.joueurs.a.tourFait = true;
-    p.numeroJour = 5;
-    const config = { ...CONFIG, secousses: [{ jour: 6, proportion: 0.5 }] };
-    cloturer(p, { config, rng });
-    assert.strictEqual(p.pioche.length, 4);
-    assert.strictEqual(nbBombes(p), 2, "les Gobelins explosifs restent");
-    const e = p.journal.find((x) => x.k === "secousse");
-    assert.ok(e.c && e.j === 6 && e.retirees === 18);
-    assert.match(texteJournal(p, e), /^🌋 \*\*L'Arène tremble !\*\* 18 cartes disparaissent/);
-    // Proportion déjà atteinte : rien ne bouge
-    p.numeroJour = 5;
-    p.joueurs.a.tourFait = true;
-    const avant = p.pioche.length;
-    cloturer(p, { config, rng });
-    assert.ok(p.pioche.length <= avant);
-  }
-
-  // ── Classement : survivants (Élixir, Esprits, cartes), puis éliminés du dernier au premier ──
+  // ── Classement : survivants (Bravoure, Esprits, cartes), puis éliminés du dernier au premier ──
   {
     const p = partieTest({ a: ["gobelin", "gobelin"], b: ["esprit"], c: [], d: [], e: [] });
-    p.joueurs.e.elixir = 3;
+    p.joueurs.e.bravoure = 3;
     Object.assign(p.joueurs.e, { vivant: false, rangElimination: 3 });
-    p.joueurs.a.elixir = 1;
-    p.joueurs.b.elixir = 1;
+    p.joueurs.a.bravoure = 1;
+    p.joueurs.b.bravoure = 1;
     Object.assign(p.joueurs.c, { vivant: false, rangElimination: 1 });
     Object.assign(p.joueurs.d, { vivant: false, rangElimination: 2 });
     const r = classement(p);
     assert.deepStrictEqual(r.map((x) => x.discordId), ["b", "a", "e", "d", "c"]);
     assert.deepStrictEqual(r.map((x) => x.score), [4, 3, 2, 1, 0]);
-    p.joueurs.a.elixir = 2;
-    assert.strictEqual(classement(p)[0].discordId, "a", "l'Élixir prime");
+    p.joueurs.a.bravoure = 2;
+    assert.strictEqual(classement(p)[0].discordId, "a", "la Bravoure prime");
   }
 
   console.log("bangRules.test.js : OK");

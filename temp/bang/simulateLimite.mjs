@@ -33,7 +33,7 @@ function botTour(p, id) {
   maxJouees = Math.max(maxJouees, jouees);
   const nb = 1 + (rng() < 0.4 ? 1 : 0);
   for (let k = 0; k < nb && j.vivant && !p.termine; k++) {
-    const r = piocherClic(p, id);
+    const r = piocherClic(p, id, { config });
     if (r.erreur) break;
     if (j.enAttente) placer(p, id, "hasard", { rng });
   }
@@ -43,7 +43,7 @@ for (let g = 0; g < PARTIES; g++) {
   for (let i = 0; i < N; i++) ajouterJoueur(p, `j${i}`, `j${i}`, { config, rng });
   for (let jour = 1; jour <= config.duree_jours && !p.termine; jour++) {
     for (const [id] of vivants(p)) if (!p.termine && rng() < 0.75) botTour(p, id);
-    if (!p.termine) cloturer(p, { config, rng, dernier: jour === config.duree_jours });
+    if (!p.termine) cloturer(p, { config, rng });
   }
   if (p.termine) finAvant++;
   else survivants.push(vivants(p).length);

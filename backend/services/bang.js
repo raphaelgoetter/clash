@@ -160,17 +160,17 @@ export async function agir(jour, discordId, username, fn = () => null) {
 // Lecture seule (aucune écriture Redis) — branche --dry-run du script.
 export async function previewCloture(jour) {
   const [config, partie] = await Promise.all([loadBangConfig(), readPartie()]);
-  if (!partie.termine) cloturer(partie, { config, dernier: jour >= config.duree_jours });
+  if (!partie.termine) cloturer(partie, { config });
   const termine = partie.termine || jour >= config.duree_jours;
   return { partie, termine, final: termine ? classement(partie) : null, jourSuivant: jour + 1 };
 }
 
-// Pioches automatiques et Élixir du jour ; classement final au dernier
+// Pioches automatiques du jour ; classement final au dernier
 // jour ou s'il ne reste qu'un Roi.
 export async function closeDayAndAdvance(jour) {
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadBangConfig(), readPartie()]);
-    if (!partie.termine) cloturer(partie, { config, dernier: jour >= config.duree_jours });
+    if (!partie.termine) cloturer(partie, { config });
     const termine = partie.termine || jour >= config.duree_jours;
     const final = termine ? classement(partie) : null;
     await writePartie(partie);

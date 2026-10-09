@@ -113,15 +113,15 @@ export function texteJournal(partie, e, moi = null) {
       if (surMoi) return `🦹 La Voleuse de ${S} te dérobe une carte !`;
       return `🦹 La Voleuse de ${S} dérobe une carte à ${V} !`;
     case "futVol":
-      if (parMoi) return `🛢️ Tu surgis d'un Fût à gobelins et chipes 1 Élixir à ${V} !`;
-      if (surMoi) return `🛢️ ${S} surgit d'un Fût à gobelins et te chipe 1 Élixir !`;
-      return `🛢️ ${S} surgit d'un Fût à gobelins et chipe 1 Élixir à ${V} !`;
+      if (parMoi) return `🛢️ Tu surgis d'un Fût à gobelins et chipes 1 Bravoure à ${V} !`;
+      if (surMoi) return `🛢️ ${S} surgit d'un Fût à gobelins et te chipe 1 Bravoure !`;
+      return `🛢️ ${S} surgit d'un Fût à gobelins et chipe 1 Bravoure à ${V} !`;
     case "futVide":
-      if (parMoi) return `🛢️ Tu surgis d'un Fût à gobelins chez ${V}… qui n'a plus d'Élixir !`;
-      if (surMoi) return `🛢️ ${S} surgit d'un Fût à gobelins chez toi… mais tu n'as plus d'Élixir !`;
-      return `🛢️ ${S} surgit d'un Fût à gobelins chez ${V}… qui n'a plus d'Élixir !`;
+      if (parMoi) return `🛢️ Tu surgis d'un Fût à gobelins chez ${V}… qui n'a aucune Bravoure !`;
+      if (surMoi) return `🛢️ ${S} surgit d'un Fût à gobelins chez toi… mais tu n'as aucune Bravoure !`;
+      return `🛢️ ${S} surgit d'un Fût à gobelins chez ${V}… qui n'a aucune Bravoure !`;
     case "futBanque":
-      return parMoi ? "🛢️ Tu te caches dans un Fût à gobelins et récupères 1 Élixir." : `🛢️ ${S} se cache dans un Fût à gobelins et récupère 1 Élixir.`;
+      return parMoi ? "🛢️ Tu te caches dans un Fût à gobelins et esquives la pioche." : `🛢️ ${S} se cache dans un Fût à gobelins et esquive la pioche.`;
     case "sarbacane":
       return parMoi ? "🎯 Tu scrutes la pioche avec ton Gobelin à sarbacane…" : `🎯 ${S} scrute la pioche avec son Gobelin à sarbacane…`;
     case "renvoi": {
@@ -130,8 +130,6 @@ export function texteJournal(partie, e, moi = null) {
       if (surMoi) return `🙏 Le Moine de ${S} renvoie ton attaque (${carte}) contre toi !`;
       return `🙏 Le Moine de ${S} renvoie l'attaque (${carte}) de ${V} à l'envoyeur !`;
     }
-    case "secousse":
-      return `🌋 **L'Arène tremble !** ${e.retirees} cartes disparaissent de la pioche : il reste ${e.bombes} Gobelins explosifs sur ${e.cartes} cartes.`;
     case "auto":
       if (moi != null && e.ids.includes(moi)) return "⏰ Tu n'avais pas pioché : pioche automatique à la clôture.";
       return `⏰ Pioche automatique à la clôture : ${e.ids.map(n).join(", ")}.`;
@@ -192,7 +190,8 @@ export function ajouterJoueur(partie, id, username, { config, rng = Math.random 
   const joueur = {
     username: username || "?",
     main,
-    elixir: config.elixir.depart,
+    bravoure: 0,
+    pioches: 0,
     vivant: true,
     moine: false,
     maudit: 0,
@@ -223,17 +222,22 @@ function eliminer(partie, id) {
   }
 }
 
-// Pioche la carte du sommet. Coûte 1 Élixir ; une pioche due (Gang de
-// gobelins) ou automatique (clôture) reste possible sans Élixir.
+// Pioche la carte du sommet. Gratuite ; une pioche volontaire (ni due
+// par un Gang de gobelins, ni automatique) rapporte de la Bravoure, dans la
+// limite de `pioches_par_jour` par jour.
 // Renvoie { erreur } ou { carte, transformee, bang: null | "sauve" | "elimine" }.
-export function piocher(partie, id, { auto = false } = {}) {
+export function piocher(partie, id, { config, auto = false }) {
   const j = partie.joueurs[id];
   if (partie.termine) return { erreur: "termine" };
   if (!j?.vivant) return { erreur: "elimine" };
   if (j.enAttente) return { erreur: "enAttente" };
   if (!partie.pioche.length) return { erreur: "pioche" };
-  if (j.elixir < 1 && j.dette < 1 && !auto) return { erreur: "elixir" };
-  j.elixir = Math.max(0, j.elixir - 1);
+  const volontaire = !auto && j.dette < 1;
+  if (volontaire && (j.pioches ?? 0) >= config.pioches_par_jour) return { erreur: "plafondPioche" };
+  if (volontaire) {
+    j.pioches = (j.pioches ?? 0) + 1;
+    j.bravoure = (j.bravoure ?? 0) + config.bravoure.pioche;
+  }
   if (j.dette > 0) j.dette -= 1;
   j.tourFait = true;
   let carte = partie.pioche.shift();
@@ -268,12 +272,12 @@ export function piocher(partie, id, { auto = false } = {}) {
 // Clic sur Piocher : une carte, ou toutes les pioches dues d'un coup
 // (Gang de gobelins), en s'arrêtant sur un Gobelin explosif.
 // Renvoie { erreur } ou { tirages: [résultats de piocher()] }.
-export function piocherClic(partie, id) {
+export function piocherClic(partie, id, { config }) {
   const j = partie.joueurs[id];
   const nb = Math.max(1, j?.dette ?? 0);
   const tirages = [];
   for (let k = 0; k < nb; k++) {
-    const r = piocher(partie, id);
+    const r = piocher(partie, id, { config });
     if (r.erreur) {
       if (!tirages.length) return { erreur: r.erreur };
       break;
@@ -322,16 +326,22 @@ function appliquer(partie, carte, sourceId, victimeId, { config, rng }) {
     noter(partie, "voleuse", { s: sourceId, v: victimeId });
     prive(partie, sourceId, `🦹 Carte dérobée à ${nom(v)} : ${CARTES[vole].nom}.`);
     prive(partie, victimeId, `🦹 ${nom(s)} t'a volé : ${CARTES[vole].nom}.`);
+    s.bravoure = (s.bravoure ?? 0) + config.bravoure.attaque;
     return { vole };
   } else if (carte === "fut") {
-    if (v.elixir > 0) {
-      v.elixir -= 1;
-      s.elixir = Math.min(config.elixir.max, s.elixir + 1);
+    // Le Fût vole 1 Bravoure au lieu d'en rapporter
+    if ((v.bravoure ?? 0) > 0) {
+      v.bravoure -= 1;
+      s.bravoure = (s.bravoure ?? 0) + 1;
       noter(partie, "futVol", { s: sourceId, v: victimeId });
     } else {
       noter(partie, "futVide", { s: sourceId, v: victimeId });
     }
+    return;
   }
+  // Attaque aboutie : Bravoure pour qui l'inflige (le joueur protégé par
+  // son Moine, en cas de renvoi)
+  s.bravoure = (s.bravoure ?? 0) + config.bravoure.attaque;
 }
 
 // Joue une carte de la main. `cible` : discordId d'un adversaire vivant,
@@ -370,7 +380,6 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
     if (j.dette > 0) j.dette -= 1;
     else j.tourFait = true;
     if (versPioche) {
-      j.elixir = Math.min(config.elixir.max, j.elixir + 1);
       noter(partie, "futBanque", { s: id });
       return { carte };
     }
@@ -392,22 +401,22 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
 
 // Clôture du jour, dans un ordre aléatoire : les Gobelins explosifs encore
 // en main sont cachés au hasard, puis chaque survivant qui n'a pas pioché
-// (ni esquivé) pioche automatiquement, ainsi que ses pioches dues. Les
-// Moines non utilisés s'en vont. Chacun reçoit ensuite son Élixir du jour (sauf au dernier jour : les survivants
-// sont classés sur l'Élixir qu'il leur reste).
-export function cloturer(partie, { config, rng = Math.random, dernier = false }) {
+// (ni esquivé) pioche automatiquement `pioches_auto` cartes (pénalité de
+// passivité, sans Bravoure), ou ses pioches dues si elles sont plus
+// nombreuses. Les Moines non utilisés s'en vont.
+export function cloturer(partie, { config, rng = Math.random }) {
   const automatiques = [];
   const idsAuto = [];
   for (const [id] of shuffle(vivants(partie), rng)) {
     const j = partie.joueurs[id];
     if (j.enAttente) placer(partie, id, "hasard", { rng });
-    const nb = Math.max(j.dette, j.tourFait ? 0 : 1);
+    const nb = Math.max(j.dette, j.tourFait ? 0 : config.pioches_auto);
     if (nb > 0 && !partie.termine) {
       automatiques.push(j.username);
       idsAuto.push(id);
     }
     for (let k = 0; k < nb && j.vivant && !partie.termine; k++) {
-      const r = piocher(partie, id, { auto: true });
+      const r = piocher(partie, id, { config, auto: true });
       if (r.erreur) break;
       if (r.bang === "sauve") placer(partie, id, "hasard", { rng });
     }
@@ -418,39 +427,17 @@ export function cloturer(partie, { config, rng = Math.random, dernier = false })
   partie.veille = { ...bilan(partie), automatiques };
   partie.jour = bilanVide();
   partie.numeroJour = (partie.numeroJour ?? 1) + 1;
-  if (!partie.termine && !dernier) secousse(partie, config, rng);
   for (const [, j] of vivants(partie)) {
     j.tourFait = false;
     j.dette = 0;
     j.moine = false;
     j.jouees = 0;
-    if (!dernier) j.elixir = Math.min(config.elixir.max, j.elixir + config.elixir.par_jour);
+    j.pioches = 0;
   }
   return { automatiques };
 }
 
-// Secousse de fin de partie (config.secousses, ex. J6 et J7) : à
-// l'ouverture du jour, des cartes ordinaires disparaissent au hasard de la
-// pioche (jamais un Gobelin explosif) jusqu'à ce que les Gobelins
-// explosifs y atteignent la proportion voulue. Rien si elle l'est déjà.
-// Annoncée au journal (entrée cruciale, affichée sur le message du jour).
-function secousse(partie, config, rng) {
-  const regle = (config.secousses || []).find((x) => x.jour === partie.numeroJour);
-  const bombes = nbBombes(partie);
-  if (!regle || !bombes) return;
-  const cible = Math.ceil(bombes / regle.proportion);
-  const retrait = partie.pioche.length - cible;
-  if (retrait <= 0) return;
-  const ordinaires = shuffle(
-    partie.pioche.map((c, i) => (c === "bombe" ? -1 : i)).filter((i) => i >= 0),
-    rng,
-  ).slice(0, retrait);
-  const retires = new Set(ordinaires);
-  partie.pioche = partie.pioche.filter((_, i) => !retires.has(i));
-  noter(partie, "secousse", { retirees: retires.size, cartes: partie.pioche.length, bombes, crucial: true });
-}
-
-// Classement : survivants d'abord (Élixir restant, puis Esprits de
+// Classement : survivants d'abord (Bravoure, puis Esprits de
 // guérison en main, nombre de cartes, ordre d'arrivée), puis éliminés du
 // dernier au premier. Score = nombre de joueurs classés derrière.
 export function classement(partie) {
@@ -458,7 +445,7 @@ export function classement(partie) {
   const esprits = (j) => j.main.filter((c) => c === "esprit").length;
   const survivants = entries
     .filter(([, j]) => j.vivant)
-    .sort(([, a], [, b]) => b.elixir - a.elixir || esprits(b) - esprits(a) || b.main.length - a.main.length || a.arrivee - b.arrivee);
+    .sort(([, a], [, b]) => (b.bravoure ?? 0) - (a.bravoure ?? 0) || esprits(b) - esprits(a) || b.main.length - a.main.length || a.arrivee - b.arrivee);
   const elimines = entries.filter(([, j]) => !j.vivant).sort(([, a], [, b]) => b.rangElimination - a.rangElimination);
   const ordre = [...survivants, ...elimines];
   return ordre.map(([discordId, j], i) => ({

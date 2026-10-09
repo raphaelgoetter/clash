@@ -1,17 +1,15 @@
 {
   "duree_jours": 7,
   "inscription_jours": 2,
-  "elixir": { "depart": 2, "par_jour": 2, "max": 4 },
+  "pioches_par_jour": 3,
+  "pioches_auto": 2,
+  "bravoure": { "pioche": 1, "attaque": 1 },
   "main_depart": 2,
   "gang_pioches": 2,
   "cartes_par_jour": 3,
-  "secousses": [
-    { "jour": 6, "proportion": 0.33 },
-    { "jour": 7, "proportion": 0.5 }
-  ],
   "bombes_par_joueur": 1.5,
   "paquet_par_joueur": {
-    "gobelin": 2,
+    "gobelin": 4,
     "sarbacane": 1,
     "moine": 1,
     "fut": 1,

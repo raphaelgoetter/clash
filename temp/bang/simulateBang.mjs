@@ -16,6 +16,11 @@ for (const kv of process.argv.slice(5)) {
 }
 const rng = Math.random;
 
+// Profils : nombre de pioches volontaires visées par jour (0 = passif, laisse
+// la clôture piocher pour lui), attribués au hasard
+const PROFILS = { passif: 0, prudent: 1, hardi: 2, audacieux: 3 };
+const profilDe = {};
+
 function botTour(p, id) {
   const j = p.joueurs[id];
   const adversaires = () => vivants(p).map(([x]) => x).filter((x) => x !== id);
@@ -29,13 +34,13 @@ function botTour(p, id) {
   if (j.main.includes("malediction") && rng() < 0.5 && adversaires().length) jouer(p, id, "malediction", cibleAu(), { config, rng });
   if (j.main.includes("voleuse") && rng() < 0.6 && adversaires().length) jouer(p, id, "voleuse", cibleAu(), { config, rng });
   // Pioche (dette comprise), esquive si bombe repérée au sommet
-  const nb = Math.max(j.dette, 1) + (rng() < 0.4 ? 1 : 0);
+  const nb = Math.max(j.dette, PROFILS[profilDe[id]]);
   for (let k = 0; k < nb && j.vivant && !p.termine; k++) {
     if (connuBombeEnHaut && (j.main.includes("gang") || j.main.includes("fut"))) {
       if (j.main.includes("gang") && adversaires().length) { jouer(p, id, "gang", cibleAu(), { config, rng }); connuBombeEnHaut = false; break; }
       jouer(p, id, "fut", "pioche", { config, rng }); connuBombeEnHaut = false; continue;
     }
-    const r = piocher(p, id);
+    const r = piocher(p, id, { config });
     if (r.erreur) break;
     connuBombeEnHaut = false;
     if (r.bang === "sauve") placer(p, id, rng() < 0.5 ? "1" : "hasard", { rng });
@@ -43,10 +48,12 @@ function botTour(p, id) {
   if (j.vivant && j.main.includes("gang") && rng() < 0.4 && adversaires().length) jouer(p, id, "gang", cibleAu(), { config, rng });
 }
 
+const parProfil = Object.fromEntries(Object.keys(PROFILS).map((k) => [k, { joueurs: 0, survies: 0, victoires: 0, score: 0 }]));
 const stats = { finAvantJ7: 0, jourFin: [], survivantsJ7: [], elimParJour: Array(config.duree_jours + 1).fill(0), piocheRestante: [], bombesRestantes: [], piocheVide: 0, taillePioche: [] };
 for (let g = 0; g < PARTIES; g++) {
   const p = creerPartie();
   const ids = Array.from({ length: N }, (_, i) => `j${i}`);
+  for (const id of ids) profilDe[id] = Object.keys(PROFILS)[Math.floor(rng() * 4)];
   // 70 % arrivent J1, le reste J2
   const tard = ids.filter(() => rng() < 0.3);
   for (const id of ids.filter((x) => !tard.includes(x))) ajouterJoueur(p, id, id, { config, rng });
@@ -56,7 +63,7 @@ for (let g = 0; g < PARTIES; g++) {
     if (jour === 2) for (const id of tard) ajouterJoueur(p, id, id, { config, rng });
     const avant = p.elimines;
     for (const [id] of vivants(p).sort(() => rng() - 0.5)) if (!p.termine && rng() < ACTIF) botTour(p, id);
-    if (!p.termine) cloturer(p, { config, rng, dernier: jour === config.duree_jours });
+    if (!p.termine) cloturer(p, { config, rng });
     if (!p.pioche.length) stats.piocheVide++;
     stats.elimParJour[jour] += p.elimines - avant;
     if (p.termine) jourFin = jour;
@@ -65,7 +72,20 @@ for (let g = 0; g < PARTIES; g++) {
   else stats.survivantsJ7.push(vivants(p).length);
   stats.piocheRestante.push(p.pioche.length);
   stats.bombesRestantes.push(nbBombes(p));
-  classement(p);
+  // Variante BONUS=x : points = Bravoure + x si survivant (éliminés compris)
+  const c = process.env.BONUS == null ? classement(p) : (() => {
+    const B = Number(process.env.BONUS);
+    const pts = (j) => (j.bravoure ?? 0) + (j.vivant ? B : 0);
+    const o = Object.entries(p.joueurs).sort(([, a], [, b]) => pts(b) - pts(a) || (b.vivant - a.vivant) || (b.rangElimination ?? 99) - (a.rangElimination ?? 99));
+    return o.map(([discordId, j], i) => ({ discordId, vivant: j.vivant, rang: i + 1, score: o.length - 1 - i }));
+  })();
+  for (const r of c) {
+    const s = parProfil[profilDe[r.discordId]];
+    s.joueurs++;
+    s.score += r.score / Math.max(1, c.length - 1);
+    if (r.vivant) s.survies++;
+    if (r.rang === 1) s.victoires++;
+  }
 }
 const moy = (a) => (a.length ? (a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : "-");
 console.log(`${N} joueurs, ${PARTIES} parties, ${ACTIF * 100} % actifs/jour`);
@@ -74,3 +94,5 @@ console.log(`Fin avant J7 (dernier survivant) : ${((stats.finAvantJ7 / PARTIES) 
 console.log(`Survivants au J7 sinon : ${moy(stats.survivantsJ7)}`);
 console.log(`Éliminations moyennes par jour : ${stats.elimParJour.slice(1).map((x) => (x / PARTIES).toFixed(1)).join(" / ")}`);
 console.log(`Pioche restante en fin : ${moy(stats.piocheRestante)} (vide : ${stats.piocheVide} jours-parties), bombes restantes ${moy(stats.bombesRestantes)}`);
+for (const [k, v] of Object.entries(parProfil))
+  console.log(`${k.padEnd(9)} : survie ${((v.survies / v.joueurs) * 100).toFixed(0)} %, victoire ${((v.victoires / PARTIES) * 100).toFixed(0)} % des parties, score normalisé ${(v.score / v.joueurs).toFixed(2)}`);

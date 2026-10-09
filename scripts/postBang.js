@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // postBang.js
 // Poste manuellement (ou via cron) le jour de Bang!. Clôture d'abord le
-// jour actif (s'il y en a un) : pioches automatiques, Élixir du jour,
+// jour actif (s'il y en a un) : pioches automatiques,
 // classement final au dernier jour ou s'il ne reste qu'un Roi, puis
 // publie le message officiel du jour suivant (ou le message de fin).
 //

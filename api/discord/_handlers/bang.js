@@ -188,12 +188,6 @@ function buildTableEmbed(jour, config, partie) {
     jour === 1 || !partie.veille
       ? [INTRO_J1]
       : ["**📰 Hier dans l'Arène**", ...bilanVeilleLignes(partie.veille)];
-  // Annonce de la secousse du lendemain (voir config.secousses)
-  if ((config.secousses || []).some((x) => x.jour === jour + 1))
-    lignes.push(
-      "",
-      "⚠️ Demain, **l'Arène tremble** : des cartes vont disparaître de la pioche…",
-    );
   lignes.push("", piocheLigne(partie));
   if (survivants.length) {
     lignes.push(
@@ -226,7 +220,7 @@ function buildTableEmbed(jour, config, partie) {
     color: BANG_COLOR,
     image: { url: tableImageUrl(jour, config, partie) },
     footer: {
-      text: `+${config.elixir.par_jour} Élixirs (${config.elixir.max} max) et pioche automatique pour ceux qui n'ont pas pioché à ${formatUtcTimeAsParis(8)}.`,
+      text: `Pioche automatique de ${config.pioches_auto} cartes pour ceux qui n'ont pas pioché à ${formatUtcTimeAsParis(8)}.`,
     },
   };
 }
@@ -237,12 +231,12 @@ function formatMancheLine(record, isCurrent) {
 }
 
 // Critère qui a départagé le vainqueur du 2e survivant, dans l'ordre de
-// classement() (Élixir, Esprits de guérison, cartes en main, arrivée).
+// classement() (Bravoure, Esprits de guérison, cartes en main, arrivée).
 function critereVictoire(a, b) {
   const esprits = (j) => j.main.filter((c) => c === "esprit").length;
-  if (a.elixir !== b.elixir) return "avec le plus d'Élixir";
-  if (esprits(a) !== esprits(b)) return "à Élixir égal, avec le plus d'Esprits de guérison";
-  if (a.main.length !== b.main.length) return "à Élixir égal, avec le plus de cartes en main";
+  if ((a.bravoure ?? 0) !== (b.bravoure ?? 0)) return "avec le plus de Bravoure";
+  if (esprits(a) !== esprits(b)) return "à Bravoure égale, avec le plus d'Esprits de guérison";
+  if (a.main.length !== b.main.length) return "à Bravoure égale, avec le plus de cartes en main";
   return "à égalité parfaite, grâce à son inscription plus précoce";
 }
 
@@ -256,7 +250,7 @@ function buildFinEmbed(jour, ranking, partie, config, manches, currentManche) {
       : `👑 **${top.username}** l'emporte parmi les ${vivants(partie).length} survivants, ${critereVictoire(partie.joueurs[top.discordId], partie.joueurs[ranking[1].discordId])} !`;
   const statut = (r) => {
     const j = partie.joueurs[r.discordId];
-    return j.vivant ? `👑 ${j.elixir} Élixir` : "💀";
+    return j.vivant ? `🔥 ${j.bravoure ?? 0} Bravoure` : "💀";
   };
   return {
     title: "🏆 Bang! — Partie terminée !",
@@ -294,21 +288,20 @@ function buildReglesEmbed(config) {
       "Sois **le dernier joueur en vie** !",
       "",
       `**⚡ Cartes** : ${config.cartes_par_jour} cartes jouées max par jour.`,
-      `**🧪 Élixir** : +${config.elixir.par_jour} par jour (${config.elixir.max} max). **Piocher** coûte 1 Élixir.`,
-      `**⏰ Chaque jour**, pioche au moins une fois, sinon, la clôture pioche pour toi.`,
+      `**🔥 Bravoure** : chaque pioche (${config.pioches_par_jour} max par jour) et chaque attaque réussie rapporte ${plural(config.bravoure.pioche, "point")}.`,
+      `**⏰ Chaque jour**, pioche au moins une fois, sinon, la clôture te fait piocher ${config.pioches_auto} cartes (sans Bravoure).`,
       "",
       `${carteLabel("bombe")} : si tu le pioches, ton Esprit de guérison est sacrifié. Sans Esprit, tu exploses et quittes l'Arène.`,
       `${carteLabel("esprit")} : te sauve, puis tu caches le Gobelin explosif où tu veux dans la pioche. Chacun en reçoit un au départ.`,
       `${carteLabel("moine")} : joue-le à l'avance, la prochaine attaque contre toi est renvoyée à l'envoyeur. Personne ne sait que tu es sous sa protection.`,
-      `${carteLabel("fut")} : esquive une pioche (celle du jour, ou une pioche due), et vole 1 Élixir à la banque ou à un joueur.`,
+      `${carteLabel("fut")} : esquive une pioche (celle du jour, ou une pioche due), et peut voler 1 Bravoure à un joueur.`,
       `${carteLabel("malediction")} : la prochaine carte que ta cible piochera sera un simple Gobelin.`,
       `${carteLabel("gang")} : ta cible devra piocher ${config.gang_pioches} cartes d'un coup.`,
       `${carteLabel("sarbacane")} : regarde les 3 prochaines cartes de la pioche.`,
       `${carteLabel("voleuse")} : vole une carte au hasard à un joueur.`,
       `${carteLabel("gobelin")} : carte purement décorative.`,
       "",
-      `**🌋 Fin de partie** : aux jours ${(config.secousses || []).map((x) => x.jour).join(" et ")}, l'Arène tremble et des cartes disparaissent de la pioche (les Gobelins explosifs, eux, restent).`,
-      `**🏁 Fin** : dès qu'il ne reste qu'un joueur, sinon au jour ${config.duree_jours}. Les survivants sont alors classés par Élixir restant.`,
+      `**🏁 Fin** : dès qu'il ne reste qu'un joueur, sinon au jour ${config.duree_jours}. Les survivants sont alors classés par Bravoure.`,
     ].join("\n"),
     color: BANG_COLOR,
   };
@@ -677,7 +670,7 @@ const ERREURS = {
   elimine: "Tu as explosé, tu ne peux plus jouer.",
   enAttente: "Cache d'abord le Gobelin explosif dans la pioche.",
   pioche: "La pioche est vide.",
-  elixir: "Pas assez d'Élixir pour piocher.",
+  plafondPioche: "Tu as fait toutes tes pioches du jour.",
   injouable: "Cette carte ne se joue pas.",
   pasEnMain: "Cette carte n'est plus dans ta main.",
   moineActif: "Ton Moine te protège déjà.",
@@ -703,7 +696,7 @@ function jouerTexte(r, cible, partie) {
   if (r.carte === "moine")
     return "🙏 Ton Moine veille jusqu'à la clôture : la prochaine attaque contre toi sera renvoyée à l'envoyeur.";
   if (r.carte === "fut" && cible === "pioche")
-    return "🛢️ Tu esquives une pioche et récupères 1 Élixir.";
+    return "🛢️ Tu esquives une pioche.";
   if (r.renvoi) {
     return `🙏 Aïe ! Le Moine de **${nomCible}** renvoie ta carte (${carteLabel(r.carte)}) contre toi.${r.vole ? ` Tu perds : ${carteLabel(r.vole)}.` : ""}`;
   }
@@ -719,7 +712,7 @@ function alertes(j) {
   const lignes = [];
   if (j.dette > 0)
     lignes.push(
-      `👊 Gang de gobelins : **${plural(j.dette, "pioche")}** à faire, d'un seul clic sur Piocher (même sans Élixir).`,
+      `👊 Gang de gobelins : **${plural(j.dette, "pioche")}** à faire, d'un seul clic sur Piocher.`,
     );
   if (j.maudit > 0)
     lignes.push(
@@ -739,7 +732,7 @@ const EFFETS = {
   esprit: "Te sauve si tu pioches un Gobelin explosif.",
   sarbacane: "Regarde les 3 premières cartes de la pioche.",
   moine: "Renvoie la prochaine attaque contre toi (jusqu'à la clôture).",
-  fut: "Esquive une pioche et vole 1 Élixir (banque ou joueur).",
+  fut: "Esquive une pioche et peut voler 1 Bravoure à un joueur.",
   gang: "Ta cible devra piocher 2 cartes d'un coup.",
   malediction: "La prochaine carte piochée par ta cible devient un Gobelin.",
   voleuse: "Vole une carte au hasard à un joueur.",
@@ -749,8 +742,10 @@ const EFFETS = {
 const NOUVEAU = (config) =>
   `Bienvenue dans l'Arène ! Tu reçois un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}.`;
 
-function elixirFooter(j, config) {
-  return { text: `Élixir : ${j.elixir}/${config.elixir.max}` };
+function bravoureFooter(j, config) {
+  return {
+    text: `Bravoure : ${j.bravoure ?? 0} · Pioches du jour : ${j.pioches ?? 0}/${config.pioches_par_jour}`,
+  };
 }
 
 function finVue(j) {
@@ -763,17 +758,20 @@ function finVue(j) {
   };
 }
 
-// Bouton personnel « Piocher (N) » de l'éphémère, N = Élixir restant
-// (le bouton du message officiel, commun à tous, ne peut pas l'afficher).
-function repiocherRow(j, partie) {
-  const possible = partie.pioche.length > 0 && (j.elixir >= 1 || j.dette > 0);
+// Bouton personnel « Piocher (N) » de l'éphémère, N = pioches restantes
+// du jour, ou dues (le bouton du message officiel, commun à tous, ne peut
+// pas l'afficher).
+function repiocherRow(j, partie, config) {
+  const restantes =
+    j.dette > 0 ? j.dette : config.pioches_par_jour - (j.pioches ?? 0);
+  const possible = partie.pioche.length > 0 && restantes > 0;
   return {
     type: 1,
     components: [
       {
         type: 2,
         style: 1,
-        label: `Piocher (${j.elixir})`,
+        label: `Piocher (${Math.max(0, restantes)})`,
         emoji: { name: "🃏" },
         custom_id: "bang_e_piocher",
         disabled: !possible,
@@ -832,7 +830,7 @@ function buildPiocheView(
           ].join("\n"),
           color: BANG_COLOR,
           thumbnail: { url: mainImageUrl(["bombe"]) },
-          footer: elixirFooter(j, config),
+          footer: bravoureFooter(j, config),
         },
       ],
       components: [placementRow()],
@@ -867,7 +865,7 @@ function buildPiocheView(
           color: BANG_COLOR,
         },
       ],
-      components: [repiocherRow(j, partie)],
+      components: [repiocherRow(j, partie, config)],
     };
   }
   const lignes = [...intro];
@@ -899,11 +897,11 @@ function buildPiocheView(
         image: { url: mainImageUrl(cartes.map((t) => t.carte)) },
       },
     ],
-    components: [repiocherRow(j, partie)],
+    components: [repiocherRow(j, partie, config)],
   };
 }
 
-// [⚡ Jouer une carte] : résultat de l'action, alertes, Élixir, deck (texte
+// [⚡ Jouer une carte] : résultat de l'action, alertes, Bravoure, deck (texte
 // et image), menu des cartes jouables avec leur effet ; `carteCiblee` :
 // carte choisie, en attente de sa cible.
 function buildJouerView(
@@ -920,7 +918,8 @@ function buildJouerView(
     ...(nouveau ? [NOUVEAU(config), ""] : []),
     ...(entete ? [entete, ""] : []),
     ...alertes(j),
-    `🧪 Élixir : **${j.elixir}/${config.elixir.max}**`,
+    `🔥 Bravoure : **${j.bravoure ?? 0}**`,
+    `🃏 Pioches aujourd'hui : **${j.pioches ?? 0}/${config.pioches_par_jour}**`,
     `⚡ Cartes jouées aujourd'hui : **${j.jouees ?? 0}/${config.cartes_par_jour}**`,
     `**Ton deck** : ${formatMain(j.main)}`,
   ];
@@ -938,9 +937,9 @@ function buildJouerView(
       ...(carteCiblee === "fut"
         ? [
             {
-              label: "La banque (+1 Élixir)",
+              label: "Personne (esquive seule)",
               value: "pioche",
-              emoji: { name: "🧪" },
+              emoji: { name: "🛢️" },
             },
           ]
         : []),
@@ -1085,8 +1084,8 @@ export async function handlePiocher(webhookUrl, discordId, username) {
       webhookUrl,
       discordId,
       username,
-      (partie) => {
-        const r = piocherClic(partie, discordId);
+      (partie, config) => {
+        const r = piocherClic(partie, discordId, { config });
         return r.erreur ? { erreur: r.erreur } : { tirages: r.tirages };
       },
       buildPiocheView,
@@ -1188,7 +1187,7 @@ export async function handlePlacer(webhookUrl, discordId, username, position) {
           return buildPiocheView(config, partie, id, { entete: texte });
         return {
           embeds: [{ description: texte, color: BANG_COLOR }],
-          components: [repiocherRow(j, partie)],
+          components: [repiocherRow(j, partie, config)],
         };
       },
     );
@@ -1219,12 +1218,7 @@ export async function handleJournal(webhookUrl, discordId) {
     }
     const jours = new Map();
     for (const e of partie.journal) {
-      if (
-        e.p !== discordId &&
-        !e.ids?.includes(discordId) &&
-        e.k !== "secousse"
-      )
-        continue;
+      if (e.p !== discordId && !e.ids?.includes(discordId)) continue;
       if (!jours.has(e.j)) jours.set(e.j, []);
       jours.get(e.j).push(texteJournal(partie, e, discordId));
     }
