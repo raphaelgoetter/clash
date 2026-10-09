@@ -662,6 +662,7 @@ export async function summarizeWarDecksForMatchup(
             matchupDetail,
             dayKey: effectiveDayKey,
             type: battle.type ?? null,
+            gameMode: battle.gameMode?.name ?? null,
           },
         ],
       });

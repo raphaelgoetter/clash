@@ -2478,9 +2478,13 @@ function getCombatsDayBadge(decks, { isFuture = false, isToday = false } = {}) {
   return SCORE_BADGES.error;
 }
 
-function getWarMatchTypeLabel(type) {
+// Les journées GDC en élixir x3 restent des combats "riverRacePvP" : seul le
+// mode de jeu les distingue.
+function getWarMatchTypeLabel(type, gameMode = null) {
   const normalized = String(type || "").toLowerCase();
-  if (normalized === "riverracepvp") return "(PvP)";
+  if (normalized === "riverracepvp") {
+    return String(gameMode ?? "").startsWith("TripleElixir") ? "(ElixirX3)" : "(PvP)";
+  }
   if (normalized === "riverraceboat") return "(Bateau)";
   if (normalized === "riverraceduel" || normalized === "riverraceduelcolosseum")
     return "(Duel)";
@@ -2506,7 +2510,7 @@ function getBattleTypeLabel(type, gameMode = null) {
   }
   const category = categorizeBattleType(type);
   if (category === "gdc") {
-    const warLabel = getWarMatchTypeLabel(type);
+    const warLabel = getWarMatchTypeLabel(type, gameMode);
     return warLabel ? `(${BATTLE_CATEGORY_LABELS.gdc} ${warLabel.slice(1, -1)})` : "(GDC)";
   }
   return `(${BATTLE_CATEGORY_LABELS[category] ?? BATTLE_CATEGORY_LABELS.other})`;
@@ -2590,7 +2594,7 @@ function formatWarDecksField(warDecks) {
           // Ligne épurée : résultat en tête, puis type (PvP/Duel/Bateau),
           // adversaire, score et difficulté séparés par "·" (même ordre que
           // /matchup ; le numéro de deck reste dans le menu "ℹ️ Détails").
-          const typeLabel = getWarMatchTypeLabel(match.type).replace(
+          const typeLabel = getWarMatchTypeLabel(match.type, match.gameMode).replace(
             /^\(|\)$/g,
             "",
           );
@@ -2690,7 +2694,7 @@ function formatRecentBattlesField(recentBattles) {
       // types), sans le préfixe "GDC" de getBattleTypeLabel().
       const typeLabel =
         categorizeBattleType(match.type) === "gdc"
-          ? getWarMatchTypeLabel(match.type) || "(GDC)"
+          ? getWarMatchTypeLabel(match.type, match.gameMode) || "(GDC)"
           : getBattleTypeLabel(match.type, match.gameMode);
       const opponentName = escapeText(match.opponentName || "?");
       const resultEmoji =
@@ -3197,7 +3201,7 @@ function buildMatchupDetailSelectRow(tag, warDecks, kind = "gdc") {
       const typeLabel =
         kind === "recent"
           ? getBattleTypeLabel(match.type, match.gameMode)
-          : getWarMatchTypeLabel(match.type);
+          : getWarMatchTypeLabel(match.type, match.gameMode);
       const deckLabel = [deck.label, typeLabel].filter(Boolean).join(" ");
       const matchupPct = Number.isFinite(match.matchup)
         ? `${Math.round(match.matchup * 100)}%`
@@ -3270,7 +3274,7 @@ function buildMatchupDetailEmbed(warDecks, index, kind = "gdc") {
   const typeLabel =
     kind === "recent"
       ? getBattleTypeLabel(match.type, match.gameMode)
-      : getWarMatchTypeLabel(match.type);
+      : getWarMatchTypeLabel(match.type, match.gameMode);
   const deckLabel = [deck.label, typeLabel].filter(Boolean).join(" ");
   const matchupPct = Number.isFinite(match.matchup)
     ? Math.round(match.matchup * 100)
