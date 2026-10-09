@@ -259,7 +259,7 @@ function computeBattleTourLevel(entry) {
 // chunk de 8 cartes correspondant au round exact, des deux côtés (le deck
 // adverse change aussi d'un round à l'autre), sous peine de calculer le
 // matchup sur le mauvais deck adverse (identique pour tous les rounds).
-function deckCardsFromBattle(battle) {
+export function deckCardsFromBattle(battle) {
   const teamCards = Array.isArray(battle?.team?.[0]?.cards)
     ? battle.team[0].cards
     : [];

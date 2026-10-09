@@ -17,6 +17,7 @@ La documentation orientée utilisateur final reste dans README.md.
 - `npm run notify-members:sim` — dry-run avec données simulées.
 - `npm run war-summary` — publie le résumé quotidien de guerre après le reset.
 - `npm run war-summary:dry` — version dry-run du résumé quotidien.
+- `npm run war-exploit` / `npm run war-exploit:dry` — publie (ou affiche) l'« Exploit du jour » : la victoire GDC (1v1 ou manche de duel, hors bateau) au %matchup le plus élevé de la journée écoulée, un seul combat pour toute la famille, départage par écart de couronnes puis combat le plus tôt. Salon de test des jeux par défaut, `--public` pour le salon public. Anti-doublon Redis `dedup:warexploit`. Image des deux decks jointe, même rendu que `/matchup-gdc` (`buildWarDecksImage()`, `backend/services/warDecksImage.js`) ; en dry-run, PNG écrit dans le dossier temporaire du système.
 - `node scripts/registerCommands.js` — enregistre ou met à jour les slash commands Discord.
 - `npm run ping-test` — vérifie rapidement la disponibilité réseau ou les secrets utilisés par les scripts de ping.
 - `npm run rules` — poste le rappel des règles du clan le premier mardi du mois.
@@ -88,6 +89,7 @@ Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/w
 | `preResetSnapshot.js`                                   | `pre-reset-snapshot.yml` | Ven, Sam, Dim, Lun                            | 07:30                        | 09:30 / 08:30             | Aucun post (données uniquement)       |
 | `notifyWarSummary.js`                                   | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05                        | 12:05 / 11:05             | Salon membres principal               |
 | `notifyClanStatus.js`                                   | `war-summary.yml`        | Tous les jours (idem)                         | 10:05                        | 12:05 / 11:05             | Salon staff (`DISCORD_CHANNEL_STAFF`) |
+| `notifyWarExploit.js`                                   | `war-summary.yml`        | Tous les jours (idem)                         | 10:05                        | 12:05 / 11:05             | Salon test jeux (`DISCORD_CHANNEL_FRAME_TEST`) |
 | `notifyLastSeen.js`                                     | `last-seen.yml`          | Tous les jours                                | 10:08                        | 12:08 / 11:08             | Salon membres principal               |
 | `notifyGdcLaunch.js`                                    | `gdc-launch.yml`         | Jeudi                                         | 10:30                        | 12:30 / 11:30             | Salon membres principal               |
 | `notifyPreWarSummary.js` (`npm run pre-war-summary`)    | `pre-war-summary.yml`    | Mercredi                                      | 14:00                        | 16:00 / 15:00             | Salon membres principal               |

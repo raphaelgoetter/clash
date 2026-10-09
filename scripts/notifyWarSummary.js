@@ -136,7 +136,7 @@ const WAR_DAY_FR = {
  *   10:05 UTC vendredi → 08:35 UTC vendredi (avant reset) → jeudi GDC (J1)
  *   10:05 UTC lundi    → 08:35 UTC lundi    (avant reset) → dimanche GDC (J4)
  */
-function getEndedWarDay(now = new Date(), clanTag = null) {
+export function getEndedWarDay(now = new Date(), clanTag = null) {
   const resetUtcMs = warResetOffsetMs(clanTag);
   const dayUtcStart = Date.UTC(
     now.getUTCFullYear(),
