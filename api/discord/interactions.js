@@ -166,6 +166,19 @@ import {
   handleJournal as handleBangJournal,
 } from "./_handlers/bang.js";
 import {
+  memberHasMiniJeuxRole as bangDuelMemberHasMiniJeuxRole,
+  handleBangDuelRoleRejected,
+  handleBangDuelCommand,
+  handleBangDuelPiocher,
+  handleBangDuelFinir,
+  handleBangDuelPlacer,
+  handleBangDuelCarte,
+  handleBangDuelVoler,
+  handleBangDuelAbandon,
+  handleBangDuelRejouer,
+  handleBangDuelRegles,
+} from "./_handlers/bangDuel.js";
+import {
   handleJouer as handleBlackjackJouer,
   handlePiocher as handleBlackjackPiocher,
   handleArreter as handleBlackjackArreter,
@@ -8837,6 +8850,49 @@ export default async function handler(req, res) {
       }
       await handleBlackjackDuelCommand(webhookUrl, body, { maxPlayers, totalManches });
     });
+    return;
+  }
+
+  // ── /bang : Bang! Duel contre le Bot (partie privée, éphémère) ──
+  // Réservé au rôle MINI-JEUX, même principe que /blackjack ci-dessus.
+  if (body.type === 2 && body.data?.name === "bang") {
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await bangDuelMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleBangDuelRoleRejected(webhookUrl);
+        return;
+      }
+      await handleBangDuelCommand(webhookUrl, discordId);
+    });
+    return;
+  }
+
+  // ── Bang! Duel : composants du message éphémère, édition en place ──
+  // custom_id : bangduel_piocher, bangduel_finir, bangduel_abandon,
+  // bangduel_rejouer (boutons), bangduel_carte, bangduel_voler,
+  // bangduel_placer (menus) ; bangduel_regles : nouvel éphémère
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bangduel_")) {
+    const action = body.data.custom_id;
+    const discordId = body.member?.user?.id;
+    const value = body.data.values?.[0];
+    if (action === "bangduel_regles") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      runBackground(() => handleBangDuelRegles(webhookUrl));
+      return;
+    }
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "bangduel_piocher") runBackground(() => handleBangDuelPiocher(webhookUrl, discordId));
+    else if (action === "bangduel_finir") runBackground(() => handleBangDuelFinir(webhookUrl, discordId));
+    else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value));
+    else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value));
+    else if (action === "bangduel_voler") runBackground(() => handleBangDuelVoler(webhookUrl, discordId, value));
+    else if (action === "bangduel_abandon") runBackground(() => handleBangDuelAbandon(webhookUrl, discordId));
+    else if (action === "bangduel_rejouer") runBackground(() => handleBangDuelRejouer(webhookUrl, discordId));
     return;
   }
 

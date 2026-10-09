@@ -535,6 +535,12 @@ const commands = [
     options: [],
   },
   {
+    name: "bang",
+    description:
+      "Bang! Duel : affronte le Bot en tête-à-tête (partie privée) — réservé au rôle MINI-JEUX.",
+    options: [],
+  },
+  {
     name: "blackjack",
     description:
       "Lance un duel de Blackjack (1-3 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",

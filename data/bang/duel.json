@@ -1,0 +1,18 @@
+{
+  "tours_max": 10,
+  "main_depart": 4,
+  "pioches_par_tour": 3,
+  "cartes_par_tour": 3,
+  "gang_pioches": 2,
+  "esprits_pioche": 2,
+  "bombes": 2,
+  "paquet": {
+    "gobelin": 10,
+    "fut": 3,
+    "sarbacane": 3,
+    "gang": 2,
+    "voleuse": 2,
+    "moine": 2,
+    "tornade": 2
+  }
+}

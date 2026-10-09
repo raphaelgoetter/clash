@@ -124,6 +124,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/champion-history clan:N` | Historique des vrais champions GDC passés d'un clan |
 | `/recap [saison:-1\|-2]` | Bottom 10 La Resistance / top 10 Les Resistants (saison passée) |
 | `/blacklist ajoute tag:#TAG [raison]` / `retire tag:#TAG` / `/blacklist consulte` | Liste Noire (rôle commençant par `STAFF`) |
+| `/bang` | Bang! Duel contre le Bot (partie privée, rôle MINI-JEUX) |
 | `/frame` | Scores personnels au jeu Frame (devine le film) — manche en cours, historique, total saison |
 
 ## Sous-agents

@@ -24,6 +24,8 @@ export const CARTES = {
   sarbacane: { nom: "Gobelin à sarbacane", cardKey: "Dart Goblin", emoji: "🎯" },
   voleuse: { nom: "Voleuse", cardKey: "Bandit", emoji: "🦹" },
   gobelin: { nom: "Gobelin", cardKey: "Goblins", emoji: "👺" },
+  // Duel uniquement (bangDuelRules.js)
+  tornade: { nom: "Tornade", cardKey: "Tornado", emoji: "🌪️" },
 };
 
 // Cartes jouables depuis la main, et celles qui visent un adversaire
