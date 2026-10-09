@@ -112,7 +112,7 @@ async function main() {
     const original = [100, 120, 80, null];
     const currentRace = {
       periodType: "warDay",
-      periodIndex: 2,
+      periodIndex: 5, // semaine 1 : 3=J1 … 6=J4
       clan: {
         participants: [
           { tag: "#A", decksUsedToday: 2 },
@@ -138,7 +138,7 @@ async function main() {
     const original = [100, 120, 80, null];
     const currentRace = {
       periodType: "warDay",
-      periodIndex: 1,
+      periodIndex: 4,
       clan: {
         participants: [
           { tag: "#A", decksUsedToday: 0 },
@@ -163,7 +163,7 @@ async function main() {
     const original = [100, 120, 80, null];
     const currentRace = {
       state: "warDay",
-      periodIndex: 0,
+      periodIndex: 3,
       clan: {
         participants: [
           { tag: "#A", decksUsedToday: 2 },

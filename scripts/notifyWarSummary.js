@@ -25,6 +25,7 @@ import {
   warResetOffsetMs,
   warDayKey,
   hasWeeklyDonationResetOccurred,
+  warDayIndexFromPeriodIndex,
 } from "../backend/services/dateUtils.js";
 import {
   fetchRaceLog,
@@ -735,9 +736,7 @@ function isActiveWarPeriod(race) {
     race?.state === "warDay" ||
     race?.state === "overtime" ||
     race?.state === "full" ||
-    (typeof race?.periodIndex === "number" &&
-      race.periodIndex >= 0 &&
-      race.periodIndex <= 3)
+    warDayIndexFromPeriodIndex(race?.periodIndex) !== null
   );
 }
 

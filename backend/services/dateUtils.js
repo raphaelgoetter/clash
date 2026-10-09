@@ -92,6 +92,19 @@ export function parisOffsetMs(date = new Date()) {
 }
 
 /**
+ * Convertit le `periodIndex` de /currentriverrace en index de jour GDC (0=J1 … 3=J4).
+ * `periodIndex` est cumulatif sur la saison : chaque semaine compte 7 périodes
+ * (0-2 entraînement, 3-6 GDC), soit 3-6 en semaine 1, 10-13 en semaine 2, etc.
+ * @param {number|null|undefined} periodIndex
+ * @returns {number|null}  null si entraînement ou valeur invalide
+ */
+export function warDayIndexFromPeriodIndex(periodIndex) {
+  if (typeof periodIndex !== "number" || periodIndex < 0) return null;
+  const dayIndex = (periodIndex % 7) - 3;
+  return dayIndex >= 0 ? dayIndex : null;
+}
+
+/**
  * Nombre de ms à soustraire à un timestamp UTC pour obtenir le « jour GDC ».
  * Par défaut 09:40 UTC ; certains clans ont un reset différent (voir CLAN_RESET_TIMES).
  * @param {string|null} [clanTag]  Tag du clan sans '#' (ex. 'LRQP20V9'). Optionnel — fallback 09:40.

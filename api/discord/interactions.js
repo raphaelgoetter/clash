@@ -1346,10 +1346,11 @@ function isWarDayPeriod(currentRace) {
   );
 }
 
+// periodIndex cumulatif sur la saison (3-6 en semaine 1, 10-13 en semaine 2…)
 function getCurrentWarDayIndex(currentRace) {
   if (!currentRace || typeof currentRace.periodIndex !== "number") return null;
-  const index = currentRace.periodIndex;
-  return index >= 0 && index <= 3 ? index : null;
+  const index = (currentRace.periodIndex % 7) - 3;
+  return index >= 0 ? index : null;
 }
 
 function getPreviousWarDayIndex(currentRace) {
@@ -1540,8 +1541,8 @@ async function buildLateReportPayload(resolved, clanVal) {
     const resetUtcMs = warResetOffsetMs(resolved.tag);
     // Garde calendaire : hors jeu–dim (après reset lundi), jamais en mode GDC
     // même si l'API retourne encore periodType='warDay' transitoirement.
-    // periodIndex n'est PAS utilisé : il est 0–3 aussi bien en entraînement
-    // qu'en GDC et provoquerait de faux positifs.
+    // periodIndex n'est PAS utilisé : il est cumulatif sur la saison et
+    // n'indique pas à lui seul l'état de la GDC.
     const _gdcDow = new Date(Date.now() - resetUtcMs).getUTCDay();
     const isCalendarWarDay = _gdcDow === 0 || _gdcDow >= 4;
     const isWarDay =

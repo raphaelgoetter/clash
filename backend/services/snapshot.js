@@ -13,7 +13,11 @@
 
 import { Redis } from "@upstash/redis";
 
-import { parisOffsetMs, warResetOffsetMs } from "./dateUtils.js";
+import {
+  parisOffsetMs,
+  warResetOffsetMs,
+  warDayIndexFromPeriodIndex,
+} from "./dateUtils.js";
 import { hasDuelOnWarDay } from "./battleLogUtils.js";
 
 const RETENTION_DAYS = 60;
@@ -1135,13 +1139,8 @@ function getCurrentWarDayIndex(currentRace, clanTag = null, now = new Date()) {
     currentRace.state === "full";
   if (!isWarDay) return null;
 
-  if (
-    typeof currentRace.periodIndex === "number" &&
-    currentRace.periodIndex >= 0 &&
-    currentRace.periodIndex <= 3
-  ) {
-    return currentRace.periodIndex;
-  }
+  const periodDayIndex = warDayIndexFromPeriodIndex(currentRace.periodIndex);
+  if (periodDayIndex !== null) return periodDayIndex;
 
   if (!clanTag) return null;
 

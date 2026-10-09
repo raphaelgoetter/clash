@@ -16,6 +16,7 @@ import {
   warResetOffsetMs,
   warDayKey,
   MS_PER_DAY,
+  warDayIndexFromPeriodIndex,
 } from "./dateUtils.js";
 import {
   TOTAL_CARDS,
@@ -512,12 +513,9 @@ export function buildCurrentWarDays(
     const { state, periodIndex } = raceMeta;
     // Journée d'entraînement → pas de période de guerre active
     if (state === "trainingDay" || state === "preparation") return null;
-    if (
-      typeof periodIndex === "number" &&
-      periodIndex >= 0 &&
-      periodIndex <= 3
-    ) {
-      daysFromThu = periodIndex; // 0=Jeu, 1=Ven, 2=Sam, 3=Dim
+    const periodDayIndex = warDayIndexFromPeriodIndex(periodIndex);
+    if (periodDayIndex !== null) {
+      daysFromThu = periodDayIndex; // 0=Jeu, 1=Ven, 2=Sam, 3=Dim
       // Protection : ne pas avancer avant le reset officiel (selon le clan)
       if (
         fallbackDaysFromThu !== undefined &&

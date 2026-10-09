@@ -27,6 +27,7 @@ import {
   buildCurrentWarDays,
   estimateWinsFromFame,
   warResetOffsetMs,
+  warDayIndexFromPeriodIndex,
   applyOldestWeekIgnore,
   computeCurrentWeekId,
   computePrevWeekId,
@@ -804,11 +805,7 @@ router.get("/:tag/current-war", async (req, res) => {
       0,
     );
     const daysFromThu =
-      typeof currentRace.periodIndex === "number" &&
-      currentRace.periodIndex >= 0 &&
-      currentRace.periodIndex <= 3
-        ? currentRace.periodIndex
-        : 0;
+      warDayIndexFromPeriodIndex(currentRace.periodIndex) ?? 0;
     const MAX_MEMBERS = 50;
     const maxDecksElapsed = MAX_MEMBERS * (daysFromThu + 1) * 4;
     const maxDecksWeek = MAX_MEMBERS * 16;
@@ -2354,13 +2351,11 @@ export async function buildClanAnalysis(clanTag, options = {}) {
 
     let daysFromThu = sampleWarDays?.daysFromThu;
     if (daysFromThu === undefined || daysFromThu === null) {
-      if (
-        currentRace &&
-        typeof currentRace.periodIndex === "number" &&
-        currentRace.periodIndex >= 0 &&
-        currentRace.periodIndex <= 3
-      ) {
-        daysFromThu = currentRace.periodIndex;
+      const periodDayIndex = warDayIndexFromPeriodIndex(
+        currentRace?.periodIndex,
+      );
+      if (periodDayIndex !== null) {
+        daysFromThu = periodDayIndex;
       } else {
         const now = new Date();
         const nowGdcDate = new Date(now.getTime() - warResetOffsetMs(clanTag));
