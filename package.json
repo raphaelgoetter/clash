@@ -21,6 +21,7 @@
     "war-summary:dry": "node scripts/notifyWarSummary.js --dry-run",
     "war-exploit": "node scripts/notifyWarExploit.js",
     "war-exploit:dry": "node scripts/notifyWarExploit.js --dry-run",
+    "war-exploit:test": "node scripts/notifyWarExploit.js --test",
     "pre-war-summary": "node scripts/notifyPreWarSummary.js",
     "pre-war-summary:dry": "node scripts/notifyPreWarSummary.js --dry-run",
     "gdc-launch": "node scripts/notifyGdcLaunch.js",

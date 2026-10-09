@@ -16,7 +16,7 @@ jobs:
       DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
       DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
       DISCORD_CHANNEL_STAFF: ${{ secrets.DISCORD_CHANNEL_STAFF }}
-      DISCORD_CHANNEL_FRAME_TEST: ${{ secrets.DISCORD_CHANNEL_FRAME_TEST }}
+      DISCORD_CHANNEL_GENERAL: ${{ secrets.DISCORD_CHANNEL_GENERAL }}
       DISCORD_CHANNEL_MEMBERS_Y8JUPC9C: ${{ secrets.DISCORD_CHANNEL_MEMBERS_Y8JUPC9C }}
       DISCORD_CHANNEL_MEMBERS_LRQP20V9: ${{ secrets.DISCORD_CHANNEL_MEMBERS_LRQP20V9 }}
       DISCORD_CHANNEL_MEMBERS_QU9UQJRL: ${{ secrets.DISCORD_CHANNEL_MEMBERS_QU9UQJRL }}
@@ -41,7 +41,8 @@ jobs:
         run: node scripts/notifyClanStatus.js
 
       # Exploit du jour : la victoire GDC la plus difficile de la famille.
-      # En test (salon de test des jeux) : un échec ne doit pas faire échouer le job.
+      # Posté dans le salon général, uniquement au lendemain d'une journée de
+      # GDC (getEndedWarDay) ; un échec ne doit pas faire échouer le job.
       - name: Post war exploit
         continue-on-error: true
         run: node scripts/notifyWarExploit.js
