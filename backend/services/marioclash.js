@@ -171,6 +171,15 @@ export async function ensureJoueur(discordId, username) {
   return fresh;
 }
 
+// ── Ligne d'arrivée ──────────────────────────────────────────────────
+// Un joueur qui atteint la case d'arrivée a TERMINÉ sa course : il ne joue
+// plus (dé, sort, boutique refusés), n'est plus ciblable (objets, Carapace,
+// échange aléatoire) et plus aucun effet ne modifie sa position. Son jour
+// d'arrivée (`arriveJour`) fixe son rang : premier arrivé = vainqueur.
+export function estArrive(joueur, config) {
+  return config?.case_arrivee != null && (joueur?.position ?? 0) >= config.case_arrivee;
+}
+
 // ── Boutique — résolution immédiate au clic ─────────────────────────
 // Pas de clôture différée : achat individuel, sans interaction avec
 // d'autres joueurs (contrairement au dé/objet/sort, voir en-tête).
@@ -179,6 +188,7 @@ export async function purchaseItem(discordId, username, itemId, jour, config) {
   const item = config.objets[itemId];
   if (!item) return { status: "unknownItem" };
   const joueur = await ensureJoueur(discordId, username);
+  if (estArrive(joueur, config)) return { status: "arrived", joueur };
   // Achat et activation ne font plus qu'un (voir handleBoutiqueSelect) :
   // l'objet acheté est toujours mis en file pour la clôture du jour même,
   // donc "un seul objet à la fois" n'a plus lieu d'être vérifié ici — seul
@@ -251,9 +261,10 @@ function dansPorteeOuPlusProches(candidats, portee) {
 // seuls les joueurs situés devant soi, à `portee` cases au plus, sont
 // éligibles (élargi au prochain joueur devant si personne n'est à portée)
 // — évaluée sur les positions au moment du choix, pas à la clôture.
-export function ciblesObjet(joueurs, discordId, item) {
+// Joueurs arrivés exclus (protégés, voir estArrive()).
+export function ciblesObjet(joueurs, discordId, item, config) {
   const posJoueur = joueurs[discordId]?.position ?? 0;
-  const autres = Object.entries(joueurs).filter(([id]) => id !== discordId);
+  const autres = Object.entries(joueurs).filter(([id, j]) => id !== discordId && !estArrive(j, config));
   const nom = (id) => joueurs[id].username;
   if (item.portee == null) return autres.map(([id]) => ({ discordId: id, username: nom(id) }));
   const devant = autres
@@ -265,8 +276,9 @@ export function ciblesObjet(joueurs, discordId, item) {
 // Partenaires possibles du sort d'échange aléatoire : avec `portee`, joueurs
 // à `portee` cases d'écart au plus, devant OU derrière (même case exclue,
 // l'échange n'y changerait rien), élargi au(x) plus proche(s) sinon.
-export function partenairesEchange(joueurs, targetId, portee) {
-  const autres = Object.keys(joueurs).filter((id) => id !== targetId);
+// Joueurs arrivés exclus (protégés, voir estArrive()).
+export function partenairesEchange(joueurs, targetId, portee, config) {
+  const autres = Object.keys(joueurs).filter((id) => id !== targetId && !estArrive(joueurs[id], config));
   if (portee == null) return autres;
   const posCible = joueurs[targetId]?.position ?? 0;
   const candidats = autres
@@ -319,6 +331,7 @@ export async function rollDiceForPlayer(jour, discordId, deId, config, rng = Mat
   if (actions[discordId]?.dice) return { status: "alreadyRolled" };
   const joueur = await readJoueur(discordId);
   if (!joueur) return { status: "unknownPlayer" };
+  if (estArrive(joueur, config)) return { status: "arrived" };
   // Dé imposé par le sort de la veille (Dé Farceur) : remplace le dé choisi.
   // Un dé `reserve_sort` ne peut jamais être choisi librement.
   if (joueur.deImpose && config.des[joueur.deImpose]) deId = joueur.deImpose;
@@ -338,7 +351,8 @@ export async function rollDiceForPlayer(jour, discordId, deId, config, rng = Mat
     avance > 0
       ? applyCaseSpeciale(positionDe, joueur.points + de.or, config)
       : { position: positionDe, points: joueur.points + de.or, caseSpeciale: null };
-  await writeJoueur(discordId, { ...joueur, position, points, gel: false, rage: 0, deImpose: null });
+  const arriveJour = position >= config.case_arrivee ? jour : null;
+  await writeJoueur(discordId, { ...joueur, position, points, gel: false, rage: 0, deImpose: null, arriveJour });
   // Détail du lancer conservé pour le bilan du Journal (voir computeCloture) :
   // le dé est résolu ici, mais n'apparaîtrait sinon nulle part après coup.
   await updateAction(jour, discordId, {
@@ -371,6 +385,7 @@ export async function castSpellForPlayer(jour, discordId, config, rng = Math.ran
   const joueurs = await readJoueurs();
   const joueur = joueurs[discordId];
   if (!joueur) return { status: "unknownPlayer" };
+  if (estArrive(joueur, config)) return { status: "arrived" };
   const concentration = joueur.concentration || 0;
   const sort = rollSort(sortsDisponibles(config.sorts, concentration), rng);
   await writeJoueur(discordId, { ...joueur, concentration: 0 });
@@ -382,7 +397,7 @@ export async function castSpellForPlayer(jour, discordId, config, rng = Math.ran
 // désérialisés (aucun I/O ici). Retourne { joueursApres, lignes,
 // immunises } — `lignes` est une liste de faits bruts (pas de texte
 // narratif, voir handler pour la mise en forme Discord).
-export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.random }) {
+export function computeCloture({ actionsRaw, joueursAvant, config, jour = null, rng = Math.random }) {
   const joueurs = {};
   for (const [id, j] of Object.entries(joueursAvant)) joueurs[id] = { ...j };
   const lignes = [];
@@ -438,6 +453,12 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
       lignes.push({ type: "sort", discordId: id, effet: "bloque", cibleId: targetId });
       continue;
     }
+    // Arrivé entre le lancer du sort et la clôture (dé du jour) : sort
+    // sans effet, sa course est terminée.
+    if (estArrive(cible, config)) {
+      lignes.push({ type: "sort", discordId: id, effet: "arrivee", cibleId: targetId });
+      continue;
+    }
     const sort = config.sorts.find((s) => s.id === action.spell.sortId) || rollSort(sortsDisponibles(config.sorts), rng);
     if (sort.avance) {
       cible.position = clampPosition(cible.position + sort.avance, config.case_arrivee);
@@ -460,7 +481,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     }
     let autreEchangeId = null;
     if (sort.echangeAleatoire) {
-      const autres = partenairesEchange(joueurs, targetId, sort.portee);
+      const autres = partenairesEchange(joueurs, targetId, sort.portee, config);
       if (autres.length) {
         autreEchangeId = autres[Math.floor(rng() * autres.length)];
         const posCible = cible.position;
@@ -486,6 +507,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
   let classementCarapace = null;
   const leaderHorsDe = (id) => {
     classementCarapace ??= Object.entries(joueurs)
+      .filter(([, j]) => !estArrive(j, config))
       .map(([jid, j]) => ({ id: jid, position: j.position, username: j.username || "" }))
       .sort((x, y) => y.position - x.position || x.username.localeCompare(y.username));
     return classementCarapace.find((j) => j.id !== id)?.id || null;
@@ -497,6 +519,14 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     const item = config.objets[itemId];
     if (!item || item.invincible) {
       if (item?.invincible) joueur.objet = null; // Étoile consommée telle quelle
+      continue;
+    }
+    // Objet acheté avant d'avoir franchi l'arrivée (dé du jour) : course
+    // terminée, objet annulé et remboursé.
+    if (estArrive(joueur, config)) {
+      joueur.points += item.cout || 0;
+      lignes.push({ type: "objet", discordId: id, itemId, effet: "arrivee", valeur: item.cout || 0 });
+      joueur.objet = null;
       continue;
     }
     if (item.cible === "soi") {
@@ -511,6 +541,14 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
     const targetId = item.cible === "leader" ? leaderHorsDe(id) : action.item.target;
     const cible = targetId ? joueurs[targetId] : null;
     if (!cible) { joueur.objet = null; continue; }
+    // Cible arrivée depuis l'achat (dé du jour ou effet antérieur de la
+    // clôture) : protégée, objet remboursé.
+    if (estArrive(cible, config)) {
+      joueur.points += item.cout || 0;
+      lignes.push({ type: "objet", discordId: id, itemId, effet: "arrivee", cibleId: targetId, valeur: item.cout || 0 });
+      joueur.objet = null;
+      continue;
+    }
     // L'Étoile RENVOIE l'objet : l'attaquant recule à la place de sa cible
     // (dissuasion, les achats du jour restent cachés jusqu'au bilan). Le
     // renvoi ne peut pas lui-même être bloqué : l'attaquant a acheté cet
@@ -549,6 +587,11 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
   // les autres joueurs, elle est résolue EN DIRECT au clic (voir
   // rollDiceForPlayer()) — même principe que la boutique.
 
+  // Arrivées par sort/objet du jour : datées du jour clôturé.
+  for (const joueur of Object.values(joueurs)) {
+    if (estArrive(joueur, config) && joueur.arriveJour == null) joueur.arriveJour = jour;
+  }
+
   return { joueursApres: joueurs, lignes, immunises: [...immunises] };
 }
 
@@ -558,7 +601,7 @@ export function computeCloture({ actionsRaw, joueursAvant, config, rng = Math.ra
 // previewCloture() de bossraid.js.
 export async function previewCloture(jour, config) {
   const [actionsRaw, joueursAvant] = await Promise.all([readActions(jour), readJoueurs()]);
-  const { joueursApres, lignes, immunises } = computeCloture({ actionsRaw, joueursAvant, config });
+  const { joueursApres, lignes, immunises } = computeCloture({ actionsRaw, joueursAvant, config, jour });
   const jourSuivant = jour + 1;
   if (jourSuivant > config.duree_jours) {
     return { termine: true, joueurs: joueursApres, joueursAvant, lignes, immunises };
@@ -580,7 +623,7 @@ export function isTooSoonSinceLastClosure(publishedAt, now = Date.now()) {
 // cette branche vit dans le handler, comme pour bossraid.js.
 export async function closeDayAndAdvance(jour, config) {
   const [actionsRaw, joueursAvant] = await Promise.all([readActions(jour), readJoueurs()]);
-  const { joueursApres, lignes, immunises } = computeCloture({ actionsRaw, joueursAvant, config });
+  const { joueursApres, lignes, immunises } = computeCloture({ actionsRaw, joueursAvant, config, jour });
 
   // Instantané des positions/Or après clôture : permet de retracer le
   // parcours exact de chaque joueur jour après jour (récit de fin de course).

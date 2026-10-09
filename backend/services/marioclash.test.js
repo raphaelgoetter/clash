@@ -394,6 +394,59 @@ async function main() {
     assert.deepStrictEqual(partenairesEchange({ a: { position: 5 }, b: { position: 5 } }, "a", 10), []);
   }
 
+  // ── Ligne d'arrivée : joueur arrivé protégé et classé ─────────────────
+  {
+    const joueurs = { a: { position: 40 }, b: { position: 48 }, c: { position: 45 } };
+    assert.deepStrictEqual(ciblesObjet(joueurs, "a", {}, CONFIG).map((c) => c.discordId).sort(), ["c"], "arrivé non ciblable");
+    assert.deepStrictEqual(ciblesObjet(joueurs, "a", { portee: 10 }, CONFIG).map((c) => c.discordId), ["c"]);
+    assert.deepStrictEqual(partenairesEchange(joueurs, "a", null, CONFIG), ["c"], "arrivé exclu de l'échange");
+  }
+  {
+    // Bombe visant un joueur arrivé entre l'achat et la clôture : sans effet, remboursée.
+    const joueursAvant = {
+      a: { username: "A", position: 30, points: 0, objet: "bombe" },
+      b: { username: "B", position: 48, points: 0, arriveJour: 3 },
+    };
+    const r = computeCloture({ actionsRaw: { a: { item: { target: "b" } } }, joueursAvant, config: CONFIG, jour: 3, rng: Math.random });
+    assert.strictEqual(r.joueursApres.b.position, 48);
+    assert.strictEqual(r.joueursApres.a.points, 2, "Bombe remboursée");
+    assert.ok(r.lignes.some((l) => l.effet === "arrivee" && l.cibleId === "b"));
+  }
+  {
+    // Carapace : vise le meilleur NON arrivé.
+    const joueursAvant = {
+      a: { username: "A", position: 10, points: 0, objet: "carapace" },
+      b: { username: "B", position: 48, points: 0, arriveJour: 2 },
+      c: { username: "C", position: 30, points: 0 },
+    };
+    const r = computeCloture({ actionsRaw: { a: { item: { target: null } } }, joueursAvant, config: CONFIG, jour: 3, rng: Math.random });
+    assert.strictEqual(r.joueursApres.b.position, 48);
+    assert.strictEqual(r.joueursApres.c.position, 25);
+  }
+  {
+    // Sort lancé avant d'arriver au dé : sans effet. Arrivée par objet : datée du jour.
+    const joueursAvant = {
+      a: { username: "A", position: 48, points: 0, arriveJour: 4 },
+      b: { username: "B", position: 46, points: 0, objet: "accelerateur" },
+    };
+    const actionsRaw = { a: { spell: { target: "a", sortId: 1 } }, b: { item: { target: null } } };
+    const r = computeCloture({ actionsRaw, joueursAvant, config: CONFIG, jour: 4, rng: Math.random });
+    assert.strictEqual(r.joueursApres.a.position, 48, "sort Recule sans effet");
+    assert.ok(r.lignes.some((l) => l.type === "sort" && l.effet === "arrivee"));
+    assert.strictEqual(r.joueursApres.b.arriveJour, 4);
+  }
+  {
+    // Objet acheté avant d'arriver au dé : annulé et remboursé (pas de renvoi possible).
+    const joueursAvant = {
+      a: { username: "A", position: 48, points: 0, objet: "banane", arriveJour: 5 },
+      b: { username: "B", position: 20, points: 0 },
+    };
+    const r = computeCloture({ actionsRaw: { a: { item: { target: "b" } } }, joueursAvant, config: CONFIG, jour: 5, rng: Math.random });
+    assert.strictEqual(r.joueursApres.a.position, 48);
+    assert.strictEqual(r.joueursApres.b.position, 20);
+    assert.strictEqual(r.joueursApres.a.points, 3);
+  }
+
   // ── isTooSoonSinceLastClosure ────────────────────────────────────────
   assert.strictEqual(isTooSoonSinceLastClosure(null), false);
   assert.strictEqual(isTooSoonSinceLastClosure(new Date().toISOString()), true);

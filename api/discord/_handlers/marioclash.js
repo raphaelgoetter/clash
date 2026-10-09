@@ -63,11 +63,18 @@ function illustrationUrl() {
 
 // ── Classement ───────────────────────────────────────────────────────
 
+// Arrivés d'abord, dans l'ordre d'arrivée (premier arrivé = vainqueur),
+// puis les autres par position.
+const ordreArrivee = (j) => j.arriveJour ?? Infinity;
+
 function sortedRanking(joueurs) {
   return Object.entries(joueurs)
     .map(([discordId, j]) => ({ discordId, ...j }))
     .sort(
-      (a, b) => b.position - a.position || a.username.localeCompare(b.username),
+      (a, b) =>
+        ordreArrivee(a) - ordreArrivee(b) ||
+        b.position - a.position ||
+        a.username.localeCompare(b.username),
     );
 }
 
@@ -144,7 +151,7 @@ function buildEvenementsExceptionnels(jour, joueursApres, joueursAvant, closureL
       const c = l.caseSpeciale != null ? config.cases_speciales?.[l.caseSpeciale] : null;
       if (c?.avance > 0) gagne(l.discordId, `case ${c.label}`, c.avance);
       if (c?.avance < 0) perd(l.discordId, `case ${c.label}`, -c.avance);
-    } else if (l.type === "sort" && l.effet !== "bloque") {
+    } else if (l.type === "sort" && !l.effet) {
       const sort = config.sorts?.find((s) => s.id === l.sortId);
       if (sort?.clone) {
         if (l.valeurClone > 0) gagne(l.cibleId, "Clone du jet", l.valeurClone);
@@ -217,6 +224,20 @@ function buildResumeLignes(
   const rankingApres = sortedRanking(joueursApres);
   const rankingAvant = sortedRanking(joueursAvant || {});
   const lines = [];
+
+  // Arrivées du jour (dé au clic ou effet de la clôture) : toujours annoncées.
+  // Arrivés le même jour = ex aequo.
+  const arrivesDuJour = rankingApres.filter((j) => j.arriveJour === jour);
+  if (arrivesDuJour.length) {
+    const rang = rankingApres.filter((j) => j.arriveJour < jour).length + 1;
+    const noms = arrivesDuJour.map((j) => `**${j.username}**`).join(", ");
+    const ensemble = arrivesDuJour.length > 1;
+    lines.push(
+      rang === 1
+        ? `🏁 ${noms} ${ensemble ? "franchissent la ligne d'arrivée ex aequo et remportent" : "franchit la ligne d'arrivée en premier et remporte"} la course !`
+        : `🏁 ${noms} ${ensemble ? "franchissent" : "franchit"} la ligne d'arrivée (${rang}ᵉ${ensemble ? " ex aequo" : ""}) !`,
+    );
+  }
 
   if (rankingApres.length) {
     const leader = rankingApres[0];
@@ -345,6 +366,14 @@ function formatBilanLignes(lignes, joueurs, config, moiId) {
             if (cible) return `⭐ Ton Étoile renvoie l'objet de ${nomDe(l.discordId)}, qui recule de ${l.valeur}`;
             return `⭐ L'Étoile de ${nomDe(l.cibleId)} renvoie l'objet de ${nomDe(l.discordId)}, qui recule de ${l.valeur}`;
           }
+          if (l.effet === "arrivee") {
+            const objet = config.objets[l.itemId];
+            const nom = `${objet?.emoji || "🎒"} ${objet?.label || "Objet"}`;
+            if (!l.cibleId) return `🏁 Course terminée : ${nom} annulé(e), ${l.valeur} Or remboursés`;
+            if (auteur) return `🏁 ${nomDe(l.cibleId)} a déjà franchi l'arrivée : ${nom} sans effet, ${l.valeur} Or remboursés`;
+            if (cible) return `🏁 Arrivée franchie : ${nom} de ${nomDe(l.discordId)} sans effet sur toi`;
+            return `🏁 ${nomDe(l.cibleId)} a déjà franchi l'arrivée : ${nom} de ${nomDe(l.discordId)} sans effet`;
+          }
           if (l.effet === "rembourse")
             return `${config.objets[l.itemId]?.emoji || "🎒"} ${config.objets[l.itemId]?.label || "Objet"} sans cible : ${l.valeur} Or remboursés`;
           return null;
@@ -353,6 +382,10 @@ function formatBilanLignes(lignes, joueurs, config, moiId) {
             if (cible) return `⭐ Ton Étoile te protège : le sort de ${nomDe(l.discordId)} n'a aucun effet`;
             if (auteur) return `⭐ ${nomDe(l.cibleId)} est protégé(e) par son Étoile : ton sort n'a aucun effet`;
             return `⭐ ${nomDe(l.cibleId)} est protégé(e) par son Étoile, le sort de ${nomDe(l.discordId)} n'a aucun effet`;
+          }
+          if (l.effet === "arrivee") {
+            if (auteur) return "🏁 Arrivée franchie : ton sort n'a aucun effet";
+            return `🏁 ${nomDe(l.cibleId)} a déjà franchi l'arrivée : son sort n'a aucun effet`;
           }
           let tiers = "";
           if (l.autreEchangeId) {
@@ -471,7 +504,9 @@ function buildTropheesSection(trophees = []) {
 function buildFinEmbed(joueurs, config, manches, currentManche) {
   const ranking = sortedRanking(joueurs);
   const meilleurePosition = ranking[0]?.position ?? 0;
-  const vainqueurs = ranking.filter((j) => j.position === meilleurePosition);
+  const vainqueurs = ranking.filter(
+    (j) => j.position === meilleurePosition && ordreArrivee(j) === ordreArrivee(ranking[0]),
+  );
   const titreVainqueur =
     vainqueurs.length > 1
       ? `Égalité entre ${vainqueurs.map((j) => j.username).join(", ")} !`
@@ -664,6 +699,8 @@ function buildReglesEmbed(config) {
       "2. ✨ **Sorts** : appliqués au bilan du jour.",
       "3. 🎁 **Objets** : appliqués au bilan du jour, après les sorts (la Carapace bleue en dernier).",
       "Tu peux lancer ton sort avant ton dé : il s'applique quand même après.",
+      "",
+      `🏁 **Arrivée** : le premier à atteindre la case ${config.case_arrivee} gagne. Une fois arrivé, tu ne joues plus et plus rien ne peut te faire reculer.`,
       "",
       "**Objets spéciaux**",
       ...objetsLines,
@@ -1078,6 +1115,10 @@ export async function handleDiceSelect(webhookUrl, jour, discordId, username, de
 // Lance le dé et affiche le résultat (choix au select, ou dé imposé).
 async function rollAndReport(webhookUrl, jour, discordId, deId, config) {
   const result = await rollDiceForPlayer(Number(jour), discordId, deId, config);
+  if (result.status === "arrived") {
+    await patchOriginal(webhookUrl, { content: "🏁 Tu as franchi la ligne d'arrivée : ta course est terminée !", embeds: [], components: [] });
+    return;
+  }
   if (result.status === "alreadyRolled") {
     await patchOriginal(webhookUrl, {
       content: "🎲 Tu as déjà lancé le dé aujourd'hui.",
@@ -1107,6 +1148,7 @@ async function rollAndReport(webhookUrl, jour, discordId, deId, config) {
     lignes.push(`${c.emoji} Case **${c.label}** : ${effetCaseTexte(c)} !`);
   }
   lignes.push(`📍 Case **${result.position}**${arrivee} · ${result.points} Or au total.`);
+  if (arrivee) lignes.push("🏁 Tu franchis la ligne d'arrivée ! Plus personne ne peut te faire reculer.");
   await patchOriginal(webhookUrl, {
     content: lignes.join("\n"),
     embeds: [],
@@ -1137,7 +1179,7 @@ export async function handleBoutiqueButton(
         joueur.dernierAchatJour === Number(jour) &&
         !actions[discordId]?.item
       ) {
-        const candidats = ciblesObjet(await readJoueurs(), discordId, item);
+        const candidats = ciblesObjet(await readJoueurs(), discordId, item, config);
         await patchOriginal(webhookUrl, {
           content: candidats.length
             ? `🛍️ Tu as acheté ${item.emoji} **${item.label}** sans choisir de cible, choisis-la maintenant :`
@@ -1196,7 +1238,7 @@ export async function handleBoutiqueSelect(
     // n'est pas dépensé pour rien.
     let candidats = null;
     if (item?.cible === "adversaire") {
-      candidats = ciblesObjet(await readJoueurs(), discordId, item);
+      candidats = ciblesObjet(await readJoueurs(), discordId, item, config);
       if (!candidats.length) {
         await patchOriginal(webhookUrl, {
           content: item.portee
@@ -1215,6 +1257,10 @@ export async function handleBoutiqueSelect(
       Number(jour),
       config,
     );
+    if (result.status === "arrived") {
+      await patchOriginal(webhookUrl, { content: "🏁 Tu as franchi la ligne d'arrivée : ta course est terminée !", embeds: [], components: [] });
+      return;
+    }
     if (result.status === "insufficientPoints") {
       await patchOriginal(webhookUrl, {
         content: `🛍️ Pas assez d'Or (tu as ${result.joueur.points} Or, il en faut ${item.cout}).`,
@@ -1302,7 +1348,7 @@ export async function handleItemTargetSelect(
       return;
     }
     const item = config.objets[joueur.objet];
-    const candidats = ciblesObjet(await readJoueurs(), discordId, item);
+    const candidats = ciblesObjet(await readJoueurs(), discordId, item, config);
     if (!candidats.some((c) => c.discordId === targetId)) {
       await patchOriginal(webhookUrl, {
         content: `${item.emoji} Cible hors de portée, choisis-en une autre :`,
@@ -1387,6 +1433,10 @@ export async function handleSpellConfirm(webhookUrl, jour, discordId, username) 
     const config = await loadMarioClashConfig();
     await ensureJoueur(discordId, username);
     const result = await castSpellForPlayer(Number(jour), discordId, config);
+    if (result.status === "arrived") {
+      await patchOriginal(webhookUrl, { content: "🏁 Tu as franchi la ligne d'arrivée : ta course est terminée !", embeds: [], components: [] });
+      return;
+    }
     if (result.status === "alreadyCast") {
       await patchOriginal(webhookUrl, {
         content: "✨ Tu as déjà lancé un sort aujourd'hui.",
