@@ -67,6 +67,7 @@
     "palette:public": "node scripts/postPalette.js --public",
     "palette:public:dry": "node scripts/postPalette.js --public --dry-run",
     "palette:reset": "node scripts/resetPalette.js",
+    "palette:scores": "node scripts/paletteScores.js",
     "visuels:test": "node scripts/postJeuxVisuels.js",
     "visuels:test:dry": "node scripts/postJeuxVisuels.js --dry-run",
     "visuels:public": "node scripts/postJeuxVisuels.js --public",
