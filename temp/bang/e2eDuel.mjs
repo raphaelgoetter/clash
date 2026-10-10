@@ -54,7 +54,7 @@ vues.forEach(verifier);
 await h.handleBangDuelRegles(W);
 verifier(vues.at(-1));
 console.log(`${parties} parties, ${actions} actions, ${vues.length} vues conformes ; résultats`, resultats);
-const exemple = vues.find((v) => v.embeds?.[0]?.description?.includes("Tour du Bot"));
+const exemple = vues.find((v) => v.embeds?.[0]?.description?.includes("Tour de Kévina"));
 console.log("\n--- Exemple de vue ---\n" + exemple.embeds[0].title + "\n" + exemple.embeds[0].description);
 console.log("Composants :", exemple.components.map((r) => r.components.map((c) => c.label || c.placeholder).join(" | ")).join(" / "));
 console.log("\n--- Vue finale ---\n" + vues.at(-2).embeds[0].title + "\n" + vues.at(-2).embeds[0].description);

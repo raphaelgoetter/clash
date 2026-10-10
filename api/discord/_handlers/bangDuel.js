@@ -1,16 +1,16 @@
 // ============================================================
 // bangDuel.js (handler) — Bang! Duel (`/bang`), deux modes :
-// - contre le Bot (`/bang bot`) : un seul message éphémère édité en place à
-//   chaque action ; le Bot joue son tour aussitôt que le joueur a fini le
+// - contre Kévina, le bot (`/bang adversaire:bot`) : un seul message éphémère édité en place à
+//   chaque action ; Kévina joue son tour aussitôt que le joueur a fini le
 //   sien ;
-// - 1v1 (`/bang 1v1`) : message public dans le salon (bouton Jouer :
+// - 1v1 (`/bang adversaire:1v1`) : message public dans le salon (bouton Jouer :
 //   rejoindre, puis afficher sa main) et une vue éphémère par joueur,
 //   rééditée après chaque action adverse (webhook mémorisé, valable 15 min,
 //   bouton Actualiser sinon). Une seule partie à la fois, comme Blackjack
 //   et Gobelet Duel.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
-// custom_id : bangduel_<action> (contre le Bot), bangduel_<action>:pvp
+// custom_id : bangduel_<action> (contre Kévina), bangduel_<action>:pvp
 // (1v1), bangduel_ouvrir (bouton Jouer du message public), bangduel_regles.
 //
 // Service : backend/services/bangDuel.js (Redis),
@@ -133,8 +133,8 @@ function mainImageUrl(main) {
   return `${TRUST_ROYALE_URL}/api/bang/main?${new URLSearchParams({ c: [...main].sort().join("|") })}`;
 }
 
-// Désignation de l'adversaire dans les textes : le Bot ou un joueur.
-const BOT = { Sujet: "Le Bot", sujet: "le Bot", de: "du Bot", a: "au Bot", emoji: "🤖" };
+// Désignation de l'adversaire dans les textes : Kévina (le bot) ou un joueur.
+const BOT = { Sujet: "Kévina", sujet: "Kévina", de: "de Kévina", a: "à Kévina", emoji: "🤖" };
 
 function nomsJoueur(pseudo) {
   const elision = /^[aeiouyhàâéèêëîïôûAEIOUYHÀÂÉÈÊËÎÏÔÛ]/.test(pseudo);
@@ -222,7 +222,7 @@ function lignesAdv(entrees, moi, A) {
   return lignes;
 }
 
-// Fin du tour du joueur (pioche, Fût ou Gang) : le Bot joue aussitôt.
+// Fin du tour du joueur (pioche, Fût ou Gang) : Kévina joue aussitôt.
 function tourDuBot(d, config) {
   if (d.termine || d.actif !== "bot") return;
   const avant = d.journal.length;
@@ -289,7 +289,7 @@ function buildVue(d, config, { texte = null, moi = "joueur", A = BOT, pvp = fals
   const adv = d.joueurs[adversaire(moi)];
   const monTour = d.actif === moi;
   const bombes = d.pioche.filter((c) => c === "bombe").length;
-  // Contre le Bot : son dernier tour ; 1v1 : le dernier tour adverse (à
+  // Contre Kévina : son dernier tour ; 1v1 : le dernier tour adverse (à
   // mon tour) ou le tour adverse en cours (en attente)
   const resume = !pvp
     ? d.resumeBot
@@ -447,7 +447,7 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles — Bang! Duel",
     description: [
-      "Fais exploser ton adversaire (le Bot ou un autre joueur) avant d'exploser toi-même !",
+      "Fais exploser ton adversaire (Kévina ou un autre joueur) avant d'exploser toi-même !",
       "",
       `**🔁 Tour** : chacun son tour. ${config.tours_max} tours au plus : si personne n'a explosé, match nul.`,
       `**🃏 À ton tour** : joue d'abord jusqu'à ${config.cartes_par_tour} cartes (ou aucune), puis **Piocher** : une seule carte, et ton tour se termine.`,
@@ -462,7 +462,7 @@ function buildReglesEmbed(config) {
       `${carteLabel("tornade")} : mélange la pioche.`,
       `${carteLabel("gobelin")} : carte purement décorative.`,
       "",
-      `**👥 1v1** (\`/bang 1v1\`) : le premier qui clique sur **Jouer** relève le défi, le joueur qui commence est tiré au sort. ${plural(config.delai_tour_minutes, "minute")} par tour, sinon défaite.`,
+      `**👥 1v1** (\`/bang\` puis 1v1) : le premier qui clique sur **Jouer** relève le défi, le joueur qui commence est tiré au sort. ${plural(config.delai_tour_minutes, "minute")} par tour, sinon défaite.`,
       "⏰ Sans action pendant 2 h, la partie est abandonnée.",
     ].join("\n"),
     color: BANG_COLOR,
@@ -545,7 +545,7 @@ const ACTIONS = {
   voler: actionVoler,
 };
 
-// ── Contre le Bot ────────────────────────────────────────────────────
+// ── Contre Kévina ────────────────────────────────────────────────────
 
 export async function handleBangDuelRoleRejected(webhookUrl) {
   await patchOriginal(webhookUrl, {
@@ -572,7 +572,7 @@ export async function handleBangDuelCommand(webhookUrl, discordId) {
     await patchOriginal(
       webhookUrl,
       buildVue(duel, config, {
-        texte: `Nouvelle partie contre le Bot ! Tu commences. Tu as un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}.`,
+        texte: `Nouvelle partie contre Kévina ! Tu commences. Tu as un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}.`,
       }),
     );
   } catch (err) {
@@ -580,12 +580,12 @@ export async function handleBangDuelCommand(webhookUrl, discordId) {
   }
 }
 
-// Action sous verrou ; le Bot joue s'il a la main.
+// Action sous verrou ; Kévina joue si elle a la main.
 async function executerSolo(webhookUrl, discordId, action, valeur) {
   const { duel, config, resultat } = await agirDuel(discordId, (d, cfg) => {
     const r = ACTIONS[action](d, "joueur", cfg, BOT, valeur) || {};
     if (!r.erreur) {
-      // Nouvelle action du joueur : le récit du tour du Bot s'efface
+      // Nouvelle action du joueur : le récit du tour de Kévina s'efface
       d.resumeBot = [];
       tourDuBot(d, cfg);
     }
@@ -596,7 +596,7 @@ async function executerSolo(webhookUrl, discordId, action, valeur) {
       embeds: [
         {
           description:
-            "⏰ Aucune partie en cours (abandonnée après 2 h sans action). Relance `/bang bot` !",
+            "⏰ Aucune partie en cours (abandonnée après 2 h sans action). Relance `/bang` !",
           color: BANG_COLOR,
         },
       ],
@@ -618,7 +618,7 @@ async function abandonSolo(webhookUrl, discordId) {
     embeds: [
       {
         title: "💣 Bang! Duel · Partie abandonnée",
-        description: "Le Bot l'emporte par forfait.",
+        description: "Kévina l'emporte par forfait.",
         color: BANG_COLOR,
       },
     ],
@@ -749,14 +749,14 @@ async function diffuserPvp(partie, config, discordId, webhookUrl, texte) {
 const AUCUNE_PARTIE_PVP = {
   embeds: [
     {
-      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/bang 1v1` !",
+      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/bang` (1v1) !",
       color: BANG_COLOR,
     },
   ],
   components: boutonsFin(),
 };
 
-// `/bang 1v1` : ouvre le lobby (message public), la réponse
+// `/bang adversaire:1v1` : ouvre le lobby (message public), la réponse
 // éphémère devient la vue du lanceur.
 export async function handleBangDuelPvpCommand(webhookUrl, body) {
   try {
@@ -806,7 +806,7 @@ export async function handleBangDuelOuvrir(webhookUrl, body) {
     if (resultat.erreur) {
       const [a, b] = Object.values(partie.sieges);
       await patchOriginal(webhookUrl, {
-        content: `Ce duel oppose <@${a}> et <@${b}>. Lance le tien avec \`/bang 1v1\` une fois qu'il est terminé !`,
+        content: `Ce duel oppose <@${a}> et <@${b}>. Lance le tien avec \`/bang\` (1v1) une fois qu'il est terminé !`,
       });
       return;
     }

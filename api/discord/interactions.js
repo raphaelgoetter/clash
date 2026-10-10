@@ -8854,12 +8854,12 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── /bang bot : Bang! Duel contre le Bot (partie privée, éphémère) ;
-  // /bang 1v1 : contre un joueur (message public). Réservé au rôle MINI-JEUX pour lancer,
+  // ── /bang adversaire:bot : Bang! Duel contre Kévina (partie privée, éphémère) ;
+  // adversaire:1v1 : contre un joueur (message public). Réservé au rôle MINI-JEUX pour lancer,
   // même principe que /blackjack ci-dessus.
   if (body.type === 2 && body.data?.name === "bang") {
     const discordId = body.member?.user?.id;
-    const pvp = body.data.options?.[0]?.name === "1v1"; // sous-commande bot | 1v1
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(async () => {
@@ -8875,7 +8875,7 @@ export default async function handler(req, res) {
   }
 
   // ── Bang! Duel : composants des messages (édition en place) ──
-  // custom_id : bangduel_<action> contre le Bot, bangduel_<action>:pvp en
+  // custom_id : bangduel_<action> contre Kévina, bangduel_<action>:pvp en
   // 1v1 ; actions : piocher, abandon, actualiser (boutons), carte, voler,
   // placer (menus). bangduel_ouvrir (Jouer du message public 1v1) et
   // bangduel_regles : nouvel éphémère.

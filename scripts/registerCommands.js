@@ -537,17 +537,17 @@ const commands = [
   {
     name: "bang",
     description:
-      "Bang! Duel : affronte le Bot ou un autre joueur en tête-à-tête — réservé au rôle MINI-JEUX.",
+      "Bang! Duel : affronte Kévina ou un autre joueur en tête-à-tête — réservé au rôle MINI-JEUX.",
     options: [
       {
-        type: 1, // SUB_COMMAND
-        name: "bot",
-        description: "Contre le Bot (partie privée).",
-      },
-      {
-        type: 1, // SUB_COMMAND
-        name: "1v1",
-        description: "Contre un autre joueur (duel dans ce salon).",
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
+        required: true,
+        choices: [
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
+        ],
       },
     ],
   },
