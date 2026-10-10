@@ -19,7 +19,6 @@ import {
   CARTES,
   JOUABLES_DUEL,
   POSITIONS,
-  finirTour,
   jouer,
   jouerBot,
   piocherClic,
@@ -88,7 +87,7 @@ function mainImageUrl(main) {
 const EFFETS = {
   sarbacane: "Regarde les 3 premières cartes de la pioche.",
   moine: "Renvoie la prochaine attaque du Bot.",
-  fut: "Esquive une pioche.",
+  fut: "Esquive une pioche (ton tour se termine sans piocher).",
   gang: "Termine ton tour : le Bot devra piocher 2 fois.",
   voleuse: "Regarde la main du Bot et prends-lui une carte.",
   tornade: "Mélange la pioche.",
@@ -100,10 +99,7 @@ const ERREURS = {
   enAttente: "Cache d'abord le Gobelin explosif dans la pioche.",
   vol: "Choisis d'abord la carte à voler.",
   pioche: "La pioche est vide.",
-  plafondPioche: "Tu as fait toutes tes pioches de ce tour.",
   plafond: "Tu as joué toutes tes cartes de ce tour.",
-  doitPiocher: "Pioche au moins une fois avant de finir ton tour.",
-  dette: "Fais d'abord tes pioches dues (Gang de gobelins).",
   injouable: "Cette carte ne se joue pas.",
   pasEnMain: "Cette carte n'est plus disponible.",
   moineActif: "Ton Moine te protège déjà.",
@@ -164,7 +160,7 @@ function lignesBot(entrees) {
   return lignes;
 }
 
-// Fin du tour du joueur (bouton ou Gang) : le Bot joue aussitôt.
+// Fin du tour du joueur (pioche, Fût ou Gang) : le Bot joue aussitôt.
 function tourDuBot(d, config) {
   if (d.termine || d.actif !== "bot") return;
   const avant = d.journal.length;
@@ -179,13 +175,6 @@ function boutonsFin() {
     {
       type: 1,
       components: [
-        {
-          type: 2,
-          style: 1,
-          label: "Rejouer",
-          emoji: { name: "🔁" },
-          custom_id: "bangduel_rejouer",
-        },
         {
           type: 2,
           style: 2,
@@ -234,14 +223,14 @@ function buildVue(d, config, { texte = null } = {}) {
     ...(d.resumeBot?.length ? ["**🤖 Tour du Bot**", ...d.resumeBot, ""] : []),
     `🃏 Pioche : **${plural(d.pioche.length, "carte")}**, dont **${bombes}** 💥`,
     `🤖 Le Bot a **${plural(bot.main.length, "carte")}** en main.`,
-    ...(j.dette > 0
-      ? [`👊 Gang de gobelins : **${plural(j.dette, "pioche")}** à faire, d'un seul clic sur Piocher.`]
+    ...(j.dette > 1
+      ? [`👊 Gang de gobelins : **${j.dette} cartes** à piocher d'un seul clic.`]
       : []),
     ...(j.moine
       ? ["🙏 Ton Moine te protège : la prochaine attaque du Bot sera renvoyée."]
       : []),
     "",
-    `Ce tour : **${j.pioches}/${config.pioches_par_tour}** pioches · **${j.jouees}/${config.cartes_par_tour}** cartes jouées`,
+    `Cartes jouées ce tour : **${j.jouees}/${config.cartes_par_tour}**`,
     `**Ta main** : ${formatMain(j.main)}`,
   ];
   const image = mainImageUrl(j.main);
@@ -300,9 +289,6 @@ function buildVue(d, config, { texte = null } = {}) {
     };
   }
 
-  const restantes = j.dette > 0 ? j.dette : config.pioches_par_tour - j.pioches;
-  const peutFinir =
-    !d.pioche.length || (j.dette === 0 && (j.pioches > 0 || j.esquive));
   const components = [
     {
       type: 1,
@@ -310,18 +296,13 @@ function buildVue(d, config, { texte = null } = {}) {
         {
           type: 2,
           style: 1,
-          label: `Piocher (${Math.max(0, restantes)})`,
+          label: d.pioche.length
+            ? j.dette > 1
+              ? `Piocher ${j.dette} cartes`
+              : "Piocher"
+            : "Passer (pioche vide)",
           emoji: { name: "🃏" },
           custom_id: "bangduel_piocher",
-          disabled: !d.pioche.length || restantes <= 0,
-        },
-        {
-          type: 2,
-          style: 3,
-          label: "Finir mon tour",
-          emoji: { name: "✅" },
-          custom_id: "bangduel_finir",
-          disabled: !peutFinir,
         },
         {
           type: 2,
@@ -373,13 +354,13 @@ function buildReglesEmbed(config) {
       "Fais exploser le Bot avant d'exploser toi-même !",
       "",
       `**🔁 Tour** : tu joues, puis le Bot. ${config.tours_max} tours au plus : si personne n'a explosé, match nul.`,
-      `**🃏 À ton tour** : pioche (${config.pioches_par_tour} fois au plus, au moins une fois) et joue jusqu'à ${config.cartes_par_tour} cartes, dans l'ordre que tu veux, puis **Finir mon tour**.`,
+      `**🃏 À ton tour** : joue d'abord jusqu'à ${config.cartes_par_tour} cartes (ou aucune), puis **Piocher** : une seule carte, et ton tour se termine.`,
       `**🎴 Départ** : chacun reçoit un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}. La pioche contient ${plural(config.bombes, "Gobelin explosif")} et ${plural(config.esprits_pioche, "Esprit de guérison")}.`,
       "",
       `${carteLabel("bombe")} : si tu le pioches, ton Esprit de guérison est sacrifié et tu le caches où tu veux dans la pioche. Sans Esprit, tu exploses.`,
       `${carteLabel("sarbacane")} : regarde les 3 premières cartes de la pioche.`,
-      `${carteLabel("fut")} : esquive une pioche (celle du tour, ou une pioche due).`,
-      `${carteLabel("gang")} : termine ton tour sans piocher ; le Bot devra piocher ${config.gang_pioches} fois.`,
+      `${carteLabel("fut")} : esquive une pioche (ton tour se termine sans piocher, ou une pioche de moins à faire après un Gang).`,
+      `${carteLabel("gang")} : termine ton tour sans piocher ; le Bot devra piocher ${config.gang_pioches} cartes.`,
       `${carteLabel("voleuse")} : regarde la main du Bot et prends-lui la carte de ton choix.`,
       `${carteLabel("moine")} : joue-le à l'avance, la prochaine attaque du Bot (Gang, Voleuse) lui est renvoyée.`,
       `${carteLabel("tornade")} : mélange la pioche.`,
@@ -465,6 +446,8 @@ export async function handleBangDuelPiocher(webhookUrl, discordId) {
       const r = piocherClic(d, "joueur", { config });
       if (r.erreur) return r;
       d.resumeBot = [];
+      if (r.vide && !r.tirages.length)
+        return { texte: "🃏 La pioche est vide : ton tour passe." };
       const cartes = r.tirages.filter((t) => !t.bang).map((t) => t.carte);
       const bang = r.tirages.find((t) => t.bang)?.bang;
       const avant = cartes.length
@@ -495,20 +478,10 @@ export async function handleBangDuelPiocher(webhookUrl, discordId) {
   }
 }
 
-export async function handleBangDuelFinir(webhookUrl, discordId) {
-  try {
-    await executer(webhookUrl, discordId, (d, config) =>
-      finirTour(d, "joueur", { config }),
-    );
-  } catch (err) {
-    console.error("[BangDuel] Échec fin de tour:", err.message);
-  }
-}
-
 export async function handleBangDuelPlacer(webhookUrl, discordId, position) {
   try {
-    await executer(webhookUrl, discordId, (d) => {
-      const r = placer(d, "joueur", position);
+    await executer(webhookUrl, discordId, (d, config) => {
+      const r = placer(d, "joueur", position, { config });
       if (r.erreur) return r;
       return {
         texte: `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.`,
@@ -540,8 +513,9 @@ export async function handleBangDuelCarte(webhookUrl, discordId, carte) {
         return { texte: "🌪️ Tornade ! La pioche est mélangée." };
       if (r.carte === "fut")
         return {
-          texte:
-            "🛢️ Tu te caches dans un Fût à gobelins et esquives une pioche.",
+          texte: r.finTour
+            ? "🛢️ Tu te caches dans un Fût à gobelins : ton tour se termine sans piocher."
+            : "🛢️ Tu te caches dans un Fût à gobelins et esquives une des pioches du Gang.",
         };
       if (r.renvoi && r.carte === "gang")
         return {
@@ -553,7 +527,7 @@ export async function handleBangDuelCarte(webhookUrl, discordId, carte) {
         };
       if (r.carte === "gang")
         return {
-          texte: `👊 Ton Gang de gobelins attend le Bot : il devra piocher ${config.gang_pioches} fois. Ton tour est terminé.`,
+          texte: `👊 Ton Gang de gobelins attend le Bot : il devra piocher ${config.gang_pioches} cartes. Ton tour est terminé.`,
         };
       if (r.choix)
         return {
@@ -596,21 +570,6 @@ export async function handleBangDuelAbandon(webhookUrl, discordId) {
     });
   } catch (err) {
     console.error("[BangDuel] Échec abandon:", err.message);
-  }
-}
-
-export async function handleBangDuelRejouer(webhookUrl, discordId) {
-  try {
-    const config = await loadDuelConfig();
-    const { duel } = await nouveauDuel(discordId);
-    await patchOriginal(
-      webhookUrl,
-      buildVue(duel, config, {
-        texte: "Nouvelle partie contre le Bot ! Tu commences.",
-      }),
-    );
-  } catch (err) {
-    console.error("[BangDuel] Échec nouvelle partie:", err.message);
   }
 }
 

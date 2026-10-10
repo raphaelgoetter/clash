@@ -3,7 +3,7 @@
 // Usage : node temp/bang/simulateDuel.mjs [parties] [profilJoueur] [profilBot] [cle=valeur ...]
 // ex. : node temp/bang/simulateDuel.mjs 20000 stratege stratege bombes=3 paquet.gobelin=8
 import fs from "fs";
-import { creerDuel, piocher, placer, jouer, voler, finirTour, jouerBot } from "../../backend/services/bangDuelRules.js";
+import { creerDuel, piocher, placer, jouer, voler, jouerBot } from "../../backend/services/bangDuelRules.js";
 
 const PARTIES = Number(process.argv[2] || 20000);
 const PROFILS = { joueur: process.argv[3] || "stratege", bot: process.argv[4] || "stratege" };
@@ -26,12 +26,11 @@ function tourNaif(d, id) {
     if (r.choix) voler(d, id, r.choix[Math.floor(rng() * r.choix.length)]);
   }
   if (j.main.includes("gang") && rng() < 0.3 && !jouer(d, id, "gang", { config, rng }).erreur && d.actif !== id) return;
-  for (let k = 0; k < 10 && !d.termine && (j.dette > 0 || !j.pioches); k++) {
+  for (let k = 0; k < 10 && !d.termine && d.actif === id; k++) {
     const r = piocher(d, id, { config });
     if (r.erreur) break;
-    if (r.bang === "sauve") placer(d, id, "hasard", { rng });
+    if (r.bang === "sauve") placer(d, id, "hasard", { config, rng });
   }
-  if (!d.termine && d.actif === id) finirTour(d, id, { config, force: true });
 }
 
 const r = { nul: 0, joueur: 0, bot: 0, t5: 0, tours: [] };

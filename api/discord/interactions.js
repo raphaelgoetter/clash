@@ -170,12 +170,10 @@ import {
   handleBangDuelRoleRejected,
   handleBangDuelCommand,
   handleBangDuelPiocher,
-  handleBangDuelFinir,
   handleBangDuelPlacer,
   handleBangDuelCarte,
   handleBangDuelVoler,
   handleBangDuelAbandon,
-  handleBangDuelRejouer,
   handleBangDuelRegles,
 } from "./_handlers/bangDuel.js";
 import {
@@ -8871,8 +8869,8 @@ export default async function handler(req, res) {
   }
 
   // ── Bang! Duel : composants du message éphémère, édition en place ──
-  // custom_id : bangduel_piocher, bangduel_finir, bangduel_abandon,
-  // bangduel_rejouer (boutons), bangduel_carte, bangduel_voler,
+  // custom_id : bangduel_piocher, bangduel_abandon
+  // (boutons), bangduel_carte, bangduel_voler,
   // bangduel_placer (menus) ; bangduel_regles : nouvel éphémère
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bangduel_")) {
     const action = body.data.custom_id;
@@ -8887,12 +8885,10 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (action === "bangduel_piocher") runBackground(() => handleBangDuelPiocher(webhookUrl, discordId));
-    else if (action === "bangduel_finir") runBackground(() => handleBangDuelFinir(webhookUrl, discordId));
     else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value));
     else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value));
     else if (action === "bangduel_voler") runBackground(() => handleBangDuelVoler(webhookUrl, discordId, value));
     else if (action === "bangduel_abandon") runBackground(() => handleBangDuelAbandon(webhookUrl, discordId));
-    else if (action === "bangduel_rejouer") runBackground(() => handleBangDuelRejouer(webhookUrl, discordId));
     return;
   }
 

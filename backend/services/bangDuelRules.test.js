@@ -1,6 +1,6 @@
 import assert from "assert";
 import fs from "fs";
-import { creerDuel, piocher, piocherClic, placer, jouer, voler, finirTour, jouerBot } from "./bangDuelRules.js";
+import { creerDuel, piocher, piocherClic, placer, jouer, voler, jouerBot } from "./bangDuelRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/bang/duel.json", import.meta.url), "utf8"));
 
@@ -37,30 +37,32 @@ function main() {
     assert.strictEqual(d.actif, "joueur");
   }
 
-  // ── Tour : au moins une pioche, plafond, puis la main passe au Bot ──
+  // ── Tour : cartes d'abord, puis la pioche (une seule) termine le tour ──
   {
-    const d = duelTest([], [], ["gobelin", "fut", "moine", "gang"]);
-    assert.strictEqual(finirTour(d, "joueur", { config: CONFIG }).erreur, "doitPiocher");
-    for (let k = 0; k < CONFIG.pioches_par_tour; k++) assert.ok(!piocher(d, "joueur", { config: CONFIG }).erreur);
-    assert.strictEqual(piocher(d, "joueur", { config: CONFIG }).erreur, "plafondPioche");
+    const d = duelTest(["tornade"], [], ["gobelin", "fut", "moine", "gang"]);
     assert.strictEqual(piocher(d, "bot", { config: CONFIG }).erreur, "pasTonTour");
-    assert.ok(!finirTour(d, "joueur", { config: CONFIG }).erreur);
-    assert.strictEqual(d.actif, "bot");
+    assert.ok(!jouer(d, "joueur", "tornade", { config: CONFIG, rng }).erreur);
+    assert.strictEqual(d.actif, "joueur", "jouer une carte ne termine pas le tour");
+    const r = piocher(d, "joueur", { config: CONFIG });
+    assert.ok(r.finTour && d.actif === "bot", "la pioche termine le tour");
+    assert.strictEqual(d.joueurs.joueur.main.length, 1);
+    assert.strictEqual(jouer(d, "joueur", "fut", { config: CONFIG, rng }).erreur, "pasTonTour");
     assert.strictEqual(d.tour, 1);
-    finirTour(d, "bot", { config: CONFIG, force: true });
+    piocher(d, "bot", { config: CONFIG });
     assert.strictEqual(d.tour, 2, "un tour = joueur puis Bot");
+    assert.strictEqual(d.actif, "joueur");
   }
 
-  // ── Gobelin explosif : Esprit sacrifié et bombe cachée, sinon défaite ──
+  // ── Gobelin explosif : Esprit sacrifié, bombe cachée puis fin du tour, sinon défaite ──
   {
-    const d = duelTest(["esprit"], [], ["bombe", "gobelin", "bombe"]);
+    const d = duelTest(["esprit", "fut"], [], ["bombe", "gobelin", "bombe"]);
     assert.strictEqual(piocher(d, "joueur", { config: CONFIG }).bang, "sauve");
-    assert.strictEqual(finirTour(d, "joueur", { config: CONFIG }).erreur, "enAttente");
-    placer(d, "joueur", "2");
-    assert.deepStrictEqual(d.pioche, ["gobelin", "bombe", "bombe"]);
+    assert.strictEqual(d.actif, "joueur", "le tour attend le placement");
+    assert.strictEqual(jouer(d, "joueur", "fut", { config: CONFIG, rng }).erreur, "enAttente");
+    assert.ok(placer(d, "joueur", "1", { config: CONFIG }).finTour);
+    assert.deepStrictEqual(d.pioche, ["bombe", "gobelin", "bombe"]);
     assert.ok(d.soupcon.bot, "le Bot sait qu'une bombe a été cachée");
-    finirTour(d, "joueur", { config: CONFIG });
-    piocher(d, "bot", { config: CONFIG });
+    assert.strictEqual(d.actif, "bot");
     assert.strictEqual(piocher(d, "bot", { config: CONFIG }).bang, "elimine");
     assert.ok(d.termine && d.gagnant === "joueur");
   }
@@ -71,11 +73,10 @@ function main() {
     const r = jouer(d, "joueur", "gang", { config: CONFIG, rng });
     assert.ok(r.finTour && d.actif === "bot");
     assert.strictEqual(d.joueurs.bot.dette, CONFIG.gang_pioches);
-    assert.strictEqual(finirTour(d, "bot", { config: CONFIG }).erreur, "dette");
-    jouer(d, "bot", "fut", { config: CONFIG, rng });
-    assert.strictEqual(d.joueurs.bot.dette, CONFIG.gang_pioches - 1, "le Fût esquive une des pioches dues");
-    piocher(d, "bot", { config: CONFIG });
-    assert.ok(!finirTour(d, "bot", { config: CONFIG }).erreur);
+    const f = jouer(d, "bot", "fut", { config: CONFIG, rng });
+    assert.ok(!f.finTour && d.joueurs.bot.dette === CONFIG.gang_pioches - 1, "le Fût esquive une des pioches dues");
+    assert.ok(piocher(d, "bot", { config: CONFIG }).finTour);
+    assert.strictEqual(d.actif, "joueur");
   }
 
   // ── Gang subi : les pioches dues d'un seul clic, arrêt sur un Gobelin explosif ──
@@ -84,25 +85,35 @@ function main() {
     d.joueurs.joueur.dette = CONFIG.gang_pioches;
     const r = piocherClic(d, "joueur", { config: CONFIG });
     assert.strictEqual(r.tirages.length, CONFIG.gang_pioches);
-    assert.strictEqual(d.joueurs.joueur.dette, 0);
-    assert.ok(!finirTour(d, "joueur", { config: CONFIG }).erreur);
+    assert.strictEqual(d.actif, "bot");
 
-    const d2 = duelTest(["esprit"], [], ["bombe", "gobelin"]);
+    const d2 = duelTest(["esprit"], [], ["bombe", "gobelin", "fut"]);
     d2.joueurs.joueur.dette = CONFIG.gang_pioches;
     const r2 = piocherClic(d2, "joueur", { config: CONFIG });
     assert.strictEqual(r2.tirages.length, 1, "arrêt sur le Gobelin explosif");
     assert.strictEqual(r2.tirages[0].bang, "sauve");
-    assert.strictEqual(d2.joueurs.joueur.dette, CONFIG.gang_pioches - 1);
+    assert.ok(!placer(d2, "joueur", "fond", { config: CONFIG }).finTour, "encore une pioche due");
+    assert.strictEqual(piocherClic(d2, "joueur", { config: CONFIG }).tirages.length, 1);
+    assert.strictEqual(d2.actif, "bot");
 
     const d3 = duelTest([], [], ["gobelin", "fut"]);
-    assert.strictEqual(piocherClic(d3, "joueur", { config: CONFIG }).tirages.length, 1, "sans dette : une seule carte");
+    assert.strictEqual(piocherClic(d3, "joueur", { config: CONFIG }).tirages.length, 1, "sans Gang : une seule carte");
+    assert.strictEqual(d3.actif, "bot");
   }
 
-  // ── Fût : compte comme la pioche du tour ──
+  // ── Fût : remplace la pioche du tour ──
   {
     const d = duelTest(["fut"], [], ["gobelin"]);
-    jouer(d, "joueur", "fut", { config: CONFIG, rng });
-    assert.ok(!finirTour(d, "joueur", { config: CONFIG }).erreur);
+    assert.ok(jouer(d, "joueur", "fut", { config: CONFIG, rng }).finTour);
+    assert.strictEqual(d.actif, "bot");
+    assert.deepStrictEqual(d.pioche, ["gobelin"]);
+  }
+
+  // ── Pioche vide : le tour passe ──
+  {
+    const d = duelTest([], [], []);
+    const r = piocherClic(d, "joueur", { config: CONFIG });
+    assert.ok(r.vide && d.actif === "bot");
   }
 
   // ── Voleuse : le voleur choisit dans la main adverse ──
@@ -121,7 +132,7 @@ function main() {
     const d = duelTest(["gang", "voleuse", "gobelin"], ["moine", "gobelin"], ["gobelin", "gobelin", "gobelin"]);
     d.actif = "bot";
     jouer(d, "bot", "moine", { config: CONFIG, rng });
-    finirTour(d, "bot", { config: CONFIG, force: true });
+    piocher(d, "bot", { config: CONFIG });
     const r = jouer(d, "joueur", "gang", { config: CONFIG, rng });
     assert.ok(r.renvoi && !r.finTour, "Gang renvoyé : le tour du joueur continue");
     assert.strictEqual(d.joueurs.joueur.dette, CONFIG.gang_pioches);
@@ -134,9 +145,7 @@ function main() {
     const d = duelTest([], [], Array(50).fill("gobelin"));
     for (let t = 0; t < CONFIG.tours_max; t++) {
       piocher(d, "joueur", { config: CONFIG });
-      finirTour(d, "joueur", { config: CONFIG });
       piocher(d, "bot", { config: CONFIG });
-      finirTour(d, "bot", { config: CONFIG });
     }
     assert.ok(d.termine && d.gagnant === null && d.tour === CONFIG.tours_max);
   }

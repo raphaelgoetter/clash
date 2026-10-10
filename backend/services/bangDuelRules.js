@@ -1,8 +1,8 @@
 // ============================================================
 // bangDuelRules.js — Règles pures de Bang! Duel (`/bang`) : un joueur
 // contre le Bot, à tour de rôle sur une pioche commune, adaptation
-// d'Exploding Kittens Duel avec le principe de Bang! (plusieurs pioches
-// par tour, cartes jouables avant ou après la pioche, « Finir mon tour »).
+// d'Exploding Kittens Duel : cartes jouées d'abord, puis la pioche
+// (une seule, ou les pioches dues d'un Gang) termine le tour.
 // Aucune I/O : la couche Redis (bangDuel.js) lit le duel, appelle ces
 // fonctions sous verrou puis le réécrit. `rng` injectable (tests,
 // simulation).
@@ -32,10 +32,10 @@ function shuffle(arr, rng) {
 }
 
 function joueurVide(main) {
-  // pioches / jouees : compteurs du tour ; esquive : Fût joué (compte comme
-  // la pioche du tour) ; dette : pioches dues (Gang) ; enAttente : Gobelin
-  // explosif désamorcé à cacher ; vol : Voleuse jouée, carte à choisir
-  return { main, moine: false, dette: 0, pioches: 0, jouees: 0, esquive: false, enAttente: false, vol: false };
+  // jouees : cartes jouées ce tour ; dette : pioches restantes du tour (1,
+  // ou `gang_pioches` après un Gang) ; enAttente :
+  // Gobelin explosif désamorcé à cacher ; vol : Voleuse jouée, carte à choisir
+  return { main, moine: false, dette: 0, jouees: 0, enAttente: false, vol: false };
 }
 
 // Paquet fixe (`config.paquet`) mélangé : `main_depart` cartes à chacun en
@@ -52,6 +52,7 @@ export function creerDuel(config, { rng = Math.random } = {}) {
     [...paquet, ...Array(config.esprits_pioche).fill("esprit"), ...Array(config.bombes).fill("bombe")],
     rng,
   );
+  joueurs.joueur.dette = 1;
   return { tour: 1, actif: "joueur", pioche, joueurs, termine: false, gagnant: null, journal: [], soupcon: { joueur: false, bot: false } };
 }
 
@@ -72,23 +73,33 @@ function verifierActif(d, id) {
   return null;
 }
 
-// Pioche la carte du sommet : pioche due (Gang) d'abord, sinon pioche
-// volontaire, `pioches_par_tour` au plus.
-// Renvoie { erreur } ou { carte, bang: null | "sauve" | "elimine" }.
+// Une pioche consommée (carte piochée ou Fût) : le tour se termine quand
+// il n'en reste plus, sauf Gobelin explosif à cacher (fin après placer()).
+function consommerPioche(d, id, { config }) {
+  const j = d.joueurs[id];
+  j.dette = Math.max(0, j.dette - 1);
+  if (!j.dette && !j.enAttente && !d.termine) finirTour(d, id, { config });
+  return !j.dette;
+}
+
+// Pioche la carte du sommet. La pioche termine le tour (après les
+// éventuelles pioches dues d'un Gang).
+// Renvoie { erreur } ou { carte, bang: null | "sauve" | "elimine", finTour }.
 export function piocher(d, id, { config }) {
   const erreur = verifierActif(d, id);
   if (erreur) return { erreur };
   const j = d.joueurs[id];
-  if (!d.pioche.length) return { erreur: "pioche" };
-  if (j.dette < 1 && j.pioches >= config.pioches_par_tour) return { erreur: "plafondPioche" };
-  if (j.dette > 0) j.dette -= 1;
-  j.pioches += 1;
+  if (!d.pioche.length) {
+    // Pioche vide : plus rien à piocher, le tour passe
+    finirTour(d, id, { config });
+    return { erreur: "pioche", finTour: true };
+  }
   const carte = d.pioche.shift();
   d.soupcon[id] = false;
   if (carte !== "bombe") {
     j.main.push(carte);
     noter(d, id, "pioche", { carte });
-    return { carte, bang: null };
+    return { carte, bang: null, finTour: consommerPioche(d, id, { config }) };
   }
   const esprit = j.main.indexOf("esprit");
   if (esprit === -1) {
@@ -100,30 +111,27 @@ export function piocher(d, id, { config }) {
   j.main.splice(esprit, 1);
   j.enAttente = true;
   noter(d, id, "sauve");
-  return { carte, bang: "sauve" };
+  consommerPioche(d, id, { config });
+  return { carte, bang: "sauve", finTour: false };
 }
 
 // Clic sur Piocher : une carte, ou toutes les pioches dues d'un coup
 // (Gang de gobelins), en s'arrêtant sur un Gobelin explosif.
-// Renvoie { erreur } ou { tirages: [résultats de piocher()] }.
+// Renvoie { erreur } ou { tirages: [résultats de piocher()], vide? }.
 export function piocherClic(d, id, { config }) {
-  const nb = Math.max(1, d.joueurs[id]?.dette ?? 0);
   const tirages = [];
-  for (let k = 0; k < nb; k++) {
+  for (;;) {
     const r = piocher(d, id, { config });
-    if (r.erreur) {
-      if (!tirages.length) return { erreur: r.erreur };
-      break;
-    }
+    // Pioche vide : le tour est passé sans carte
+    if (r.erreur) return r.finTour ? { tirages, vide: true } : tirages.length ? { tirages } : r;
     tirages.push(r);
-    if (r.bang) break;
+    if (r.bang || r.finTour) return { tirages };
   }
-  return { tirages };
 }
 
 // Cache le Gobelin explosif désamorcé (positions de Bang!). L'adversaire
 // sait qu'il est dans la pioche, pas où (`soupcon`, utilisé par le Bot).
-export function placer(d, id, position, { rng = Math.random } = {}) {
+export function placer(d, id, position, { config, rng = Math.random } = {}) {
   const j = d.joueurs[id];
   if (!j?.enAttente) return { erreur: "pasEnAttente" };
   if (!(position in POSITIONS)) return { erreur: "position" };
@@ -137,21 +145,20 @@ export function placer(d, id, position, { rng = Math.random } = {}) {
   j.enAttente = false;
   d.soupcon[adversaire(id)] = true;
   noter(d, id, "cache", { position });
-  return { index };
+  // Dernière pioche du tour : la main passe
+  const finTour = !j.dette;
+  if (finTour) finirTour(d, id, { config });
+  return { index, finTour };
 }
 
-// Fin du tour : au moins une pioche (ou un Fût), pioches dues faites (sauf
-// pioche vide). Passe la main ; tour suivant après le Bot, match nul après
-// le dernier tour.
-export function finirTour(d, id, { config, force = false }) {
-  const erreur = verifierActif(d, id);
-  if (erreur) return { erreur };
-  const j = d.joueurs[id];
-  if (!force && d.pioche.length) {
-    if (j.dette > 0) return { erreur: "dette" };
-    if (!j.pioches && !j.esquive) return { erreur: "doitPiocher" };
-  }
-  Object.assign(j, { dette: 0, pioches: 0, jouees: 0, esquive: false });
+// Fin du tour (pioche faite, Fût ou Gang) : passe la main ; tour suivant
+// après le Bot, match nul après le dernier tour.
+export function finirTour(d, id, { config }) {
+  if (d.termine || d.actif !== id) return { erreur: d.termine ? "termine" : "pasTonTour" };
+  Object.assign(d.joueurs[id], { dette: 0, jouees: 0 });
+  // Une pioche au moins pour le suivant (davantage s'il subit un Gang)
+  const adv = d.joueurs[adversaire(id)];
+  adv.dette = Math.max(adv.dette, 1);
   d.actif = adversaire(id);
   if (id === "bot") {
     d.tour += 1;
@@ -196,10 +203,9 @@ export function jouer(d, id, carte, { config, rng = Math.random }) {
     return { carte };
   }
   if (carte === "fut") {
-    if (j.dette > 0) j.dette -= 1;
-    else j.esquive = true;
+    // Esquive une pioche : la seule du tour, ou une des pioches dues
     noter(d, id, "fut");
-    return { carte };
+    return { carte, finTour: consommerPioche(d, id, { config }) };
   }
   // Attaques : le Moine de l'adversaire les renvoie (une fois)
   if (adv.moine) {
@@ -221,7 +227,7 @@ export function jouer(d, id, carte, { config, rng = Math.random }) {
     // (sans cumul)
     adv.dette = config.gang_pioches;
     noter(d, id, "gang", { n: config.gang_pioches });
-    finirTour(d, id, { config, force: true });
+    finirTour(d, id, { config });
     return { carte, finTour: true };
   }
   // Voleuse : le voleur voit la main adverse et choisit (voler())
@@ -268,15 +274,14 @@ export function jouerBot(d, id, { config, rng = Math.random }) {
     if (r.choix) voler(d, id, PRIORITE_VOL.find((c) => r.choix.includes(c)) ?? r.choix[0]);
   }
 
+  // Pioche (ou pioches dues d'un Gang) jusqu'à la fin du tour, sauf
+  // esquive si un Gobelin explosif est vu ou soupçonné au sommet
   for (let garde = 0; garde < 20 && !d.termine && d.actif === id; garde++) {
-    const doit = j.dette > 0 || (!j.pioches && !j.esquive);
-    if (!doit || !d.pioche.length) break;
     if (!connu && a("sarbacane")) connu = jouer(d, id, "sarbacane", { config, rng }).revelation;
     const danger = connu ? connu[0] === "bombe" : d.soupcon[id];
     if (danger) {
       if (a("gang")) {
         jouer(d, id, "gang", { config, rng });
-        if (d.actif !== id) return;
         connu = null;
         continue;
       }
@@ -295,16 +300,11 @@ export function jouerBot(d, id, { config, rng = Math.random }) {
     connu = connu ? connu.slice(1) : null;
     if (r.bang === "elimine") return;
     if (r.bang === "sauve") {
-      placer(d, id, rng() < 0.5 ? "1" : "hasard", { rng });
+      placer(d, id, rng() < 0.5 ? "1" : "hasard", { config, rng });
       connu = null;
     }
   }
-  // Pioche supplémentaire si le sommet est connu et sûr
-  while (!d.termine && connu?.length && connu[0] !== "bombe" && j.pioches < config.pioches_par_tour) {
-    piocher(d, id, { config });
-    connu = connu.slice(1);
-  }
-  if (!d.termine && d.actif === id) finirTour(d, id, { config, force: true });
+  if (!d.termine && d.actif === id) finirTour(d, id, { config });
 }
 
 export { CARTES, POSITIONS };
