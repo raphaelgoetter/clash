@@ -93,16 +93,24 @@ async function messageSalon(method, channelId, messageId, payload) {
   try {
     const res = await fetch(url, {
       method,
-      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
       ...(payload ? { body: JSON.stringify(payload) } : {}),
     });
     if (!res.ok && res.status !== 404) {
-      console.warn(`[BangDuel] Échec ${method} du message public (${res.status}).`);
+      console.warn(
+        `[BangDuel] Échec ${method} du message public (${res.status}).`,
+      );
       return null;
     }
     return method === "POST" ? await res.json() : {};
   } catch (err) {
-    console.warn(`[BangDuel] Erreur réseau (${method} message public):`, err.message);
+    console.warn(
+      `[BangDuel] Erreur réseau (${method} message public):`,
+      err.message,
+    );
     return null;
   }
 }
@@ -134,11 +142,23 @@ function mainImageUrl(main) {
 }
 
 // Désignation de l'adversaire dans les textes : Kévina (le bot) ou un joueur.
-const BOT = { Sujet: "Kévina", sujet: "Kévina", de: "de Kévina", a: "à Kévina", emoji: "🤖" };
+const BOT = {
+  Sujet: "Kévina",
+  sujet: "Kévina",
+  de: "de Kévina",
+  a: "à Kévina",
+  emoji: "🤖",
+};
 
 function nomsJoueur(pseudo) {
   const elision = /^[aeiouyhàâéèêëîïôûAEIOUYHÀÂÉÈÊËÎÏÔÛ]/.test(pseudo);
-  return { Sujet: pseudo, sujet: pseudo, de: `${elision ? "d'" : "de "}${pseudo}`, a: `à ${pseudo}`, emoji: "🤠" };
+  return {
+    Sujet: pseudo,
+    sujet: pseudo,
+    de: `${elision ? "d'" : "de "}${pseudo}`,
+    a: `à ${pseudo}`,
+    emoji: "🤠",
+  };
 }
 
 // Adversaire du siège `moi` dans une partie 1v1.
@@ -184,7 +204,8 @@ function lignesAdv(entrees, moi, A) {
   const lignes = [];
   let pioches = 0;
   const vider = () => {
-    if (pioches) lignes.push(`🃏 ${A.Sujet} pioche ${plural(pioches, "carte")}.`);
+    if (pioches)
+      lignes.push(`🃏 ${A.Sujet} pioche ${plural(pioches, "carte")}.`);
     pioches = 0;
   };
   for (const e of entrees) {
@@ -203,16 +224,23 @@ function lignesAdv(entrees, moi, A) {
     }
     if (e.id !== adv) continue;
     const textes = {
-      sarbacane: () => `🎯 ${A.Sujet} scrute la pioche avec son Gobelin à sarbacane…`,
-      tornade: () => `🌪️ ${A.Sujet} déclenche une Tornade : la pioche est mélangée !`,
-      fut: () => `🛢️ ${A.Sujet} se cache dans un Fût à gobelins et esquive une pioche.`,
-      gang: () => `👊 ${A.Sujet} t'envoie son Gang de gobelins : tu devras piocher ${e.n} cartes d'un coup !`,
-      voleuse: () => `🦹 La Voleuse ${A.de} te prend : ${carteLabel(e.carte)} !`,
+      sarbacane: () =>
+        `🎯 ${A.Sujet} scrute la pioche avec son Gobelin à sarbacane…`,
+      tornade: () =>
+        `🌪️ ${A.Sujet} déclenche une Tornade : la pioche est mélangée !`,
+      fut: () =>
+        `🛢️ ${A.Sujet} se cache dans un Fût à gobelins et esquive une pioche.`,
+      gang: () =>
+        `👊 ${A.Sujet} t'envoie son Gang de gobelins : tu devras piocher ${e.n} cartes d'un coup !`,
+      voleuse: () =>
+        `🦹 La Voleuse ${A.de} te prend : ${carteLabel(e.carte)} !`,
       voleuseVide: () => `🦹 La Voleuse ${A.de} ne trouve rien dans ta main.`,
       renvoi: () =>
         `🙏 Aïe ! Le Moine ${A.de} renvoie ta carte (${carteLabel(e.carte)})${e.vole ? ` et te prend ${carteLabel(e.vole)}` : ""}.`,
-      sauve: () => `💥 ${A.Sujet} pioche un Gobelin explosif… sauvé par son Esprit de guérison !`,
-      cache: () => `🤫 ${A.Sujet} cache le Gobelin explosif quelque part dans la pioche…`,
+      sauve: () =>
+        `💥 ${A.Sujet} pioche un Gobelin explosif… sauvé par son Esprit de guérison !`,
+      cache: () =>
+        `🤫 ${A.Sujet} cache le Gobelin explosif quelque part dans la pioche…`,
       explose: () => `🚀 **BANG !** ${A.Sujet} explose !`,
     };
     const texte = textes[e.k]?.();
@@ -246,11 +274,19 @@ function boutonsFin() {
 
 // `ctx` : { moi (siège du moteur), A (adversaire), pvp, raison, echeance }
 function vueFin(d, texte, { moi = "joueur", A = BOT, raison = null } = {}) {
-  const resume = lignesAdv(d.journal.slice(d.debutTour ?? d.journal.length), moi, A);
+  const resume = lignesAdv(
+    d.journal.slice(d.debutTour ?? d.journal.length),
+    moi,
+    A,
+  );
   const lignes = [
     ...(texte ? [texte, ""] : []),
-    ...(d.resumeBot?.length && A === BOT ? [`**${A.emoji} Tour ${A.de}**`, ...d.resumeBot, ""] : []),
-    ...(A !== BOT && resume.length && d.actif !== moi ? [`**${A.emoji} Tour ${A.de}**`, ...resume, ""] : []),
+    ...(d.resumeBot?.length && A === BOT
+      ? [`**${A.emoji} Tour ${A.de}**`, ...d.resumeBot, ""]
+      : []),
+    ...(A !== BOT && resume.length && d.actif !== moi
+      ? [`**${A.emoji} Tour ${A.de}**`, ...resume, ""]
+      : []),
   ];
   const gagne = d.gagnant === moi;
   const titre = !d.gagnant
@@ -282,7 +318,18 @@ function vueFin(d, texte, { moi = "joueur", A = BOT, raison = null } = {}) {
 // (`texte`), tour de l'adversaire, état de la pioche, main ; composants
 // selon l'étape (placement d'un Gobelin explosif, choix de la Voleuse, tour
 // normal, attente du tour adverse en 1v1).
-function buildVue(d, config, { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null } = {}) {
+function buildVue(
+  d,
+  config,
+  {
+    texte = null,
+    moi = "joueur",
+    A = BOT,
+    pvp = false,
+    echeance = null,
+    raison = null,
+  } = {},
+) {
   if (d.termine) return vueFin(d, texte, { moi, A, raison });
   const sfx = pvp ? ":pvp" : "";
   const j = d.joueurs[moi];
@@ -298,11 +345,19 @@ function buildVue(d, config, { texte = null, moi = "joueur", A = BOT, pvp = fals
       : lignesAdv(d.journal.slice(d.debutTour ?? 0), moi, A);
   const lignes = [
     ...(texte ? [texte, ""] : []),
-    ...(resume?.length ? [`**${A.emoji} Tour ${A.de}${monTour ? "" : " (en cours)"}**`, ...resume, ""] : []),
+    ...(resume?.length
+      ? [
+          `**${A.emoji} Tour ${A.de}${monTour ? "" : " (en cours)"}**`,
+          ...resume,
+          "",
+        ]
+      : []),
     `🃏 Pioche : **${plural(d.pioche.length, "carte")}**, dont **${bombes}** 💥`,
     `${A.emoji} ${A.Sujet} a **${plural(adv.main.length, "carte")}** en main.`,
     ...(monTour && j.dette > 1
-      ? [`👊 Gang de gobelins : **${j.dette} cartes** à piocher d'un seul clic.`]
+      ? [
+          `👊 Gang de gobelins : **${j.dette} cartes** à piocher d'un seul clic.`,
+        ]
       : []),
     // Qui piochera la prochaine carte : moi pendant mon tour, sauf Gobelin
     // explosif à cacher après ma dernière pioche (la main passe ensuite)
@@ -310,7 +365,9 @@ function buildVue(d, config, { texte = null, moi = "joueur", A = BOT, pvp = fals
       ? `👉 Prochaine pioche : **toi**${j.enAttente ? ` (encore ${plural(j.dette, "carte")} à piocher)` : ""}.`
       : `👉 Prochaine pioche : **${A.Sujet}**.`,
     ...(j.moine
-      ? [`🙏 Ton Moine te protège : la prochaine attaque ${A.de} sera renvoyée.`]
+      ? [
+          `🙏 Ton Moine te protège : la prochaine attaque ${A.de} sera renvoyée.`,
+        ]
       : []),
     "",
     ...(monTour
@@ -341,7 +398,12 @@ function buildVue(d, config, { texte = null, moi = "joueur", A = BOT, pvp = fals
               custom_id: "bangduel_actualiser:pvp",
             },
             BOUTON_REGLES,
-            { type: 2, style: 4, label: "Abandonner", custom_id: "bangduel_abandon:pvp" },
+            {
+              type: 2,
+              style: 4,
+              label: "Abandonner",
+              custom_id: "bangduel_abandon:pvp",
+            },
           ],
         },
       ],
@@ -452,11 +514,11 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles — Bang! Duel",
     description: [
-      "Fais exploser ton adversaire (Kévina ou un autre joueur) avant d'exploser toi-même !",
+      "Fais exploser ton adversaire avant d'exploser toi-même !",
       "",
       `**🔁 Tour** : chacun son tour. ${config.tours_max} tours au plus : si personne n'a explosé, match nul.`,
       `**🃏 À ton tour** : joue d'abord jusqu'à ${config.cartes_par_tour} cartes (ou aucune), puis **Piocher** : une seule carte, et ton tour se termine.`,
-      `**🎴 Départ** : chacun reçoit un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}. La pioche contient ${plural(config.bombes, "Gobelin explosif")} et ${plural(config.esprits_pioche, "Esprit de guérison")}.`,
+      `**🎴 Départ** : chacun reçoit un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}. La pioche contient ${config.bombes} Gobelin${config.bombes > 1 ? "s explosifs" : " explosif"} et ${config.esprits_pioche} Esprit${config.esprits_pioche > 1 ? "s" : ""} de guérison.`,
       "",
       `${carteLabel("bombe")} : si tu le pioches, ton Esprit de guérison est sacrifié et tu le caches où tu veux dans la pioche. Sans Esprit, tu exploses.`,
       `${carteLabel("sarbacane")} : regarde les 3 premières cartes de la pioche.`,
@@ -467,7 +529,6 @@ function buildReglesEmbed(config) {
       `${carteLabel("tornade")} : mélange la pioche.`,
       `${carteLabel("gobelin")} : carte purement décorative.`,
       "",
-      `**👥 1v1** (\`/bang\` puis 1v1) : le premier qui clique sur **Jouer** relève le défi, le joueur qui commence est tiré au sort. ${plural(config.delai_tour_minutes, "minute")} par tour, sinon défaite.`,
       "⏰ Sans action pendant 2 h, la partie est abandonnée.",
     ].join("\n"),
     color: BANG_COLOR,
@@ -517,8 +578,11 @@ function actionCarte(d, moi, config, A, carte) {
     return { texte: `🎯 **Sommet de la pioche** :\n${vues}` };
   }
   if (r.carte === "moine")
-    return { texte: `🙏 Ton Moine veille : la prochaine attaque ${A.de} lui sera renvoyée.` };
-  if (r.carte === "tornade") return { texte: "🌪️ Tornade ! La pioche est mélangée." };
+    return {
+      texte: `🙏 Ton Moine veille : la prochaine attaque ${A.de} lui sera renvoyée.`,
+    };
+  if (r.carte === "tornade")
+    return { texte: "🌪️ Tornade ! La pioche est mélangée." };
   if (r.carte === "fut")
     return {
       texte: r.finTour
@@ -537,7 +601,10 @@ function actionCarte(d, moi, config, A, carte) {
     return {
       texte: `👊 Ton Gang de gobelins attend ${A.sujet} : il faudra piocher ${config.gang_pioches} cartes. Ton tour est terminé.`,
     };
-  if (r.choix) return { texte: `🦹 Ta Voleuse fouille la main ${A.de} : choisis la carte à prendre.` };
+  if (r.choix)
+    return {
+      texte: `🦹 Ta Voleuse fouille la main ${A.de} : choisis la carte à prendre.`,
+    };
   return { texte: `🦹 Ta Voleuse ne trouve rien : la main ${A.de} est vide.` };
 }
 
@@ -638,10 +705,13 @@ async function abandonSolo(webhookUrl, discordId) {
 // ── 1v1 ──────────────────────────────────────────────────────────────
 
 const echeanceDe = (partie, config) =>
-  Math.floor((partie.dernierCoupAt + config.delai_tour_minutes * 60_000) / 1000);
+  Math.floor(
+    (partie.dernierCoupAt + config.delai_tour_minutes * 60_000) / 1000,
+  );
 
 function memoriserWebhook(partie, discordId, webhookUrl) {
-  if (webhookUrl) partie.webhooks[discordId] = { url: webhookUrl, at: Date.now() };
+  if (webhookUrl)
+    partie.webhooks[discordId] = { url: webhookUrl, at: Date.now() };
 }
 
 function webhookValide(partie, discordId) {
@@ -682,7 +752,13 @@ function messagePublic(partie, config) {
   const bouton = {
     type: 1,
     components: [
-      { type: 2, style: 3, label: "Jouer", emoji: { name: "💣" }, custom_id: "bangduel_ouvrir" },
+      {
+        type: 2,
+        style: 3,
+        label: "Jouer",
+        emoji: { name: "💣" },
+        custom_id: "bangduel_ouvrir",
+      },
       BOUTON_REGLES,
     ],
   };
@@ -741,24 +817,45 @@ function messageFinal(partie) {
 // Après une action : vue de l'auteur, vue de l'adversaire (webhook encore
 // valable), message public (ou récapitulatif final).
 async function diffuserPvp(partie, config, discordId, webhookUrl, texte) {
-  const autres = Object.values(partie.sieges ?? {}).filter((id) => id !== discordId);
+  const autres = Object.values(partie.sieges ?? {}).filter(
+    (id) => id !== discordId,
+  );
   await Promise.all([
     patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte)),
-    ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id))),
+    ...autres.map((id) =>
+      patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id)),
+    ),
   ]);
   if (partie.statut === "fini") {
-    const ok = await messageSalon("POST", partie.channelId, null, messageFinal(partie));
+    const ok = await messageSalon(
+      "POST",
+      partie.channelId,
+      null,
+      messageFinal(partie),
+    );
     if (ok) await messageSalon("DELETE", partie.channelId, partie.messageId);
-    else await messageSalon("PATCH", partie.channelId, partie.messageId, messageFinal(partie));
+    else
+      await messageSalon(
+        "PATCH",
+        partie.channelId,
+        partie.messageId,
+        messageFinal(partie),
+      );
     return;
   }
-  await messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(partie, config));
+  await messageSalon(
+    "PATCH",
+    partie.channelId,
+    partie.messageId,
+    messagePublic(partie, config),
+  );
 }
 
 const AUCUNE_PARTIE_PVP = {
   embeds: [
     {
-      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/bang` (1v1) !",
+      description:
+        "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/bang` (1v1) !",
       color: BANG_COLOR,
     },
   ],
@@ -770,7 +867,11 @@ const AUCUNE_PARTIE_PVP = {
 export async function handleBangDuelPvpCommand(webhookUrl, body) {
   try {
     const { discordId, username } = extractMember(body);
-    const r = await ouvrirPvp({ channelId: body.channel_id, lanceur: discordId, nom: username });
+    const r = await ouvrirPvp({
+      channelId: body.channel_id,
+      lanceur: discordId,
+      nom: username,
+    });
     if (r.dejaEnCours) {
       await patchOriginal(webhookUrl, {
         content: `Un duel 1v1 est déjà en cours dans <#${r.dejaEnCours.channelId}> : attends qu'il se termine.`,
@@ -778,18 +879,29 @@ export async function handleBangDuelPvpCommand(webhookUrl, body) {
       return;
     }
     // Lobby sans adversaire ou partie au délai dépassé, remplacés
-    if (r.ancienne?.messageId) await messageSalon("DELETE", r.ancienne.channelId, r.ancienne.messageId);
+    if (r.ancienne?.messageId)
+      await messageSalon("DELETE", r.ancienne.channelId, r.ancienne.messageId);
     const config = await loadDuelConfig();
-    const message = await messageSalon("POST", body.channel_id, null, messagePublic(r.partie, config));
+    const message = await messageSalon(
+      "POST",
+      body.channel_id,
+      null,
+      messagePublic(r.partie, config),
+    );
     if (!message?.id) throw new Error("message public non créé");
     await enregistrerMessagePvp(message.id);
     const { partie } = await agirPvp((p) => {
       memoriserWebhook(p, discordId, webhookUrl);
     });
-    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, "💣 Défi lancé dans le salon !"));
+    await patchOriginal(
+      webhookUrl,
+      vuePvp(partie, config, discordId, "💣 Défi lancé dans le salon !"),
+    );
   } catch (err) {
     console.error("[BangDuel] Échec lancement 1v1:", err.message);
-    await patchOriginal(webhookUrl, { content: "⚠️ Erreur lors du lancement du duel." });
+    await patchOriginal(webhookUrl, {
+      content: "⚠️ Erreur lors du lancement du duel.",
+    });
   }
 }
 
@@ -804,7 +916,8 @@ export async function handleBangDuelOuvrir(webhookUrl, body) {
         memoriserWebhook(p, discordId, webhookUrl);
         return { rejoint: true, coup: true };
       }
-      if (p.statut !== "lobby" && !siegeDe(p, discordId)) return { erreur: "pasJoueur" };
+      if (p.statut !== "lobby" && !siegeDe(p, discordId))
+        return { erreur: "pasJoueur" };
       memoriserWebhook(p, discordId, webhookUrl);
       return {};
     });
@@ -858,7 +971,11 @@ async function executerPvp(webhookUrl, discordId, action, valeur) {
     }
     d.resume = { ...(d.resume ?? {}), [moi]: [] };
     if (d.actif !== actifAvant && !d.termine) {
-      d.resume[d.actif] = lignesAdv(d.journal.slice(d.debutTour ?? 0), d.actif, nomsAdv(p, d.actif));
+      d.resume[d.actif] = lignesAdv(
+        d.journal.slice(d.debutTour ?? 0),
+        d.actif,
+        nomsAdv(p, d.actif),
+      );
       d.debutTour = d.journal.length;
     }
     return { ...r, coup: true };
@@ -871,7 +988,9 @@ async function executerPvp(webhookUrl, discordId, action, valeur) {
     await patchOriginal(webhookUrl, { content: avertissement("pasJoueur") });
     return;
   }
-  const texte = resultat.erreur ? avertissement(resultat.erreur) : resultat.texte;
+  const texte = resultat.erreur
+    ? avertissement(resultat.erreur)
+    : resultat.texte;
   if (resultat.coup || resultat.vientDeFinir) {
     await diffuserPvp(partie, config, discordId, webhookUrl, texte);
     return;
@@ -881,7 +1000,12 @@ async function executerPvp(webhookUrl, discordId, action, valeur) {
 
 // ── Points d'entrée des composants ───────────────────────────────────
 
-async function executer(webhookUrl, discordId, action, { pvp = false, valeur } = {}) {
+async function executer(
+  webhookUrl,
+  discordId,
+  action,
+  { pvp = false, valeur } = {},
+) {
   try {
     if (pvp) await executerPvp(webhookUrl, discordId, action, valeur);
     else if (action === "abandon") await abandonSolo(webhookUrl, discordId);

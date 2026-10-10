@@ -300,7 +300,8 @@ export function jouerBot(d, id, { config, rng = Math.random }) {
     connu = connu ? connu.slice(1) : null;
     if (r.bang === "elimine") return;
     if (r.bang === "sauve") {
-      placer(d, id, rng() < 0.5 ? "1" : "hasard", { config, rng });
+      // Pioche due restante (Gang) : jamais en haut, il la piocherait aussitôt
+      placer(d, id, !j.dette && rng() < 0.5 ? "1" : "hasard", { config, rng });
       connu = null;
     }
   }
