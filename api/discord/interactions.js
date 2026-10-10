@@ -175,6 +175,9 @@ import {
   handleBangDuelVoler,
   handleBangDuelAbandon,
   handleBangDuelRegles,
+  handleBangDuelPvpCommand,
+  handleBangDuelOuvrir,
+  handleBangDuelActualiser,
 } from "./_handlers/bangDuel.js";
 import {
   handleJouer as handleBlackjackJouer,
@@ -8851,10 +8854,12 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── /bang : Bang! Duel contre le Bot (partie privée, éphémère) ──
-  // Réservé au rôle MINI-JEUX, même principe que /blackjack ci-dessus.
+  // ── /bang : Bang! Duel contre le Bot (partie privée, éphémère) ou 1v1
+  // (`joueurs:2`, message public). Réservé au rôle MINI-JEUX pour lancer,
+  // même principe que /blackjack ci-dessus.
   if (body.type === 2 && body.data?.name === "bang") {
     const discordId = body.member?.user?.id;
+    const joueurs = Number(body.data.options?.find((o) => o.name === "joueurs")?.value) || 1;
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(async () => {
@@ -8863,32 +8868,37 @@ export default async function handler(req, res) {
         await handleBangDuelRoleRejected(webhookUrl);
         return;
       }
-      await handleBangDuelCommand(webhookUrl, discordId);
+      if (joueurs === 2) await handleBangDuelPvpCommand(webhookUrl, body);
+      else await handleBangDuelCommand(webhookUrl, discordId);
     });
     return;
   }
 
-  // ── Bang! Duel : composants du message éphémère, édition en place ──
-  // custom_id : bangduel_piocher, bangduel_abandon
-  // (boutons), bangduel_carte, bangduel_voler,
-  // bangduel_placer (menus) ; bangduel_regles : nouvel éphémère
+  // ── Bang! Duel : composants des messages (édition en place) ──
+  // custom_id : bangduel_<action> contre le Bot, bangduel_<action>:pvp en
+  // 1v1 ; actions : piocher, abandon, actualiser (boutons), carte, voler,
+  // placer (menus). bangduel_ouvrir (Jouer du message public 1v1) et
+  // bangduel_regles : nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bangduel_")) {
-    const action = body.data.custom_id;
+    const [action, mode] = body.data.custom_id.split(":");
+    const pvp = mode === "pvp";
     const discordId = body.member?.user?.id;
     const value = body.data.values?.[0];
-    if (action === "bangduel_regles") {
+    if (action === "bangduel_regles" || action === "bangduel_ouvrir") {
       res.status(200).json({ type: 5, data: { flags: 64 } });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      runBackground(() => handleBangDuelRegles(webhookUrl));
+      if (action === "bangduel_regles") runBackground(() => handleBangDuelRegles(webhookUrl));
+      else runBackground(() => handleBangDuelOuvrir(webhookUrl, body));
       return;
     }
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "bangduel_piocher") runBackground(() => handleBangDuelPiocher(webhookUrl, discordId));
-    else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value));
-    else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value));
-    else if (action === "bangduel_voler") runBackground(() => handleBangDuelVoler(webhookUrl, discordId, value));
-    else if (action === "bangduel_abandon") runBackground(() => handleBangDuelAbandon(webhookUrl, discordId));
+    if (action === "bangduel_piocher") runBackground(() => handleBangDuelPiocher(webhookUrl, discordId, { pvp }));
+    else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value, { pvp }));
+    else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value, { pvp }));
+    else if (action === "bangduel_voler") runBackground(() => handleBangDuelVoler(webhookUrl, discordId, value, { pvp }));
+    else if (action === "bangduel_abandon") runBackground(() => handleBangDuelAbandon(webhookUrl, discordId, { pvp }));
+    else if (action === "bangduel_actualiser") runBackground(() => handleBangDuelActualiser(webhookUrl, discordId));
     return;
   }
 

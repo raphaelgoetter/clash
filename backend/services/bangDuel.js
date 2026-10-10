@@ -1,11 +1,15 @@
 // ============================================================
-// bangDuel.js — Bang! Duel (`/bang`) : un joueur contre le Bot, partie
-// privée (message éphémère). Règles pures dans bangDuelRules.js.
+// bangDuel.js — Bang! Duel (`/bang`) : un joueur contre le Bot (partie
+// privée, message éphémère) ou contre un autre joueur (`/bang joueurs:2`,
+// message public + vue éphémère par joueur). Règles pures dans
+// bangDuelRules.js.
 //
-// Stockage : Upstash Redis, une clé par joueur (`bangduel:<discordId>`),
-// plusieurs parties en même temps possibles. Chaque écriture relance
-// l'expiration : sans action pendant `INACTIVITE_SECONDES`, la partie
-// disparaît (abandon, aucun score conservé : jeu libre).
+// Stockage : Upstash Redis. Contre le Bot : une clé par joueur
+// (`bangduel:<discordId>`), plusieurs parties en même temps possibles.
+// 1v1 : une seule partie à la fois (`bangduel:pvp`), comme Blackjack et
+// Gobelet Duel. Chaque écriture relance l'expiration : sans action pendant
+// `INACTIVITE_SECONDES`, la partie disparaît (aucun score conservé : jeu
+// libre).
 //
 // ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
 // Bang! Duel), source de vérité.
@@ -18,7 +22,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { creerDuel } from "./bangDuelRules.js";
+import { adversaire, creerDuel } from "./bangDuelRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "bang", "duel.json");
@@ -106,4 +110,119 @@ export async function agirDuel(discordId, fn) {
     await writeDuel(discordId, duel);
     return { duel, config, resultat };
   });
+}
+
+// ── 1v1 (`/bang joueurs:2`) ──────────────────────────────────────────
+// Partie : { statut: "lobby" | "enCours" | "fini", channelId, messageId,
+// lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
+// moteur → discordId ; "joueur" commence), duel, webhooks: { discordId:
+// { url, at } } (vue éphémère de chaque joueur, rééditée après chaque
+// action adverse), dernierCoupAt, raisonFin: "bang" | "nul" | "delai" |
+// "abandon" }.
+
+const CLE_PVP = "bangduel:pvp";
+const VERROU_PVP = "pvp";
+
+export async function readPvp() {
+  return fromJson(await getRedis().get(CLE_PVP));
+}
+
+async function writePvp(partie) {
+  await getRedis().set(CLE_PVP, JSON.stringify(partie), { ex: INACTIVITE_SECONDES });
+}
+
+// Siège d'un joueur dans la partie (null s'il n'y joue pas).
+export function siegeDe(partie, discordId) {
+  if (!partie?.sieges) return null;
+  return Object.keys(partie.sieges).find((s) => partie.sieges[s] === discordId) ?? null;
+}
+
+// Délai dépassé par le joueur actif : il perd. Vérifié paresseusement à
+// chaque interaction (pas de cron).
+function verifierDelai(partie, config, now = Date.now()) {
+  if (partie.statut !== "enCours" || partie.duel.termine) return false;
+  if (now - partie.dernierCoupAt <= config.delai_tour_minutes * 60_000) return false;
+  partie.duel.termine = true;
+  partie.duel.gagnant = adversaire(partie.duel.actif);
+  partie.raisonFin = "delai";
+  return true;
+}
+
+// Ouvre une partie (lobby) ; refusée si une autre est en cours. Un lobby
+// sans adversaire depuis `delai_tour_minutes` (ou relancé par son lanceur)
+// et une partie au délai dépassé sont remplacés : `ancienne` est renvoyée
+// pour supprimer son message public.
+export async function ouvrirPvp({ channelId, lanceur, nom }) {
+  const config = await loadDuelConfig();
+  return withLock(VERROU_PVP, async () => {
+    const enCours = await readPvp();
+    const lobbyLibre =
+      enCours?.statut === "lobby" &&
+      (enCours.lanceur === lanceur || Date.now() - enCours.dernierCoupAt > config.delai_tour_minutes * 60_000);
+    if (enCours && enCours.statut !== "fini" && !lobbyLibre && !verifierDelai(enCours, config)) {
+      return { dejaEnCours: enCours };
+    }
+    const ancienne = enCours && enCours.statut !== "fini" ? enCours : null;
+    const partie = {
+      statut: "lobby",
+      channelId,
+      messageId: null,
+      lanceur,
+      noms: { [lanceur]: nom },
+      sieges: null,
+      duel: null,
+      webhooks: {},
+      dernierCoupAt: Date.now(),
+      raisonFin: null,
+    };
+    await writePvp(partie);
+    return { partie, ancienne };
+  });
+}
+
+export async function enregistrerMessagePvp(messageId) {
+  return withLock(VERROU_PVP, async () => {
+    const partie = await readPvp();
+    if (!partie) return;
+    partie.messageId = messageId;
+    await writePvp(partie);
+  });
+}
+
+// Action sous verrou : `fn(partie, config)` modifie la partie et renvoie un
+// résultat. Le délai du tour est vérifié avant (`resultat` vaut alors
+// { delai: true } sans appeler fn). Un coup joué (`resultat.coup`) remet le
+// chrono à zéro.
+// Renvoie { partie, config, resultat } ou { partie: null }.
+export async function agirPvp(fn) {
+  const config = await loadDuelConfig();
+  return withLock(VERROU_PVP, async () => {
+    const partie = await readPvp();
+    if (!partie) return { partie: null, config };
+    const finiAvant = partie.statut === "fini";
+    let resultat;
+    if (verifierDelai(partie, config)) resultat = { delai: true };
+    else {
+      resultat = (await fn(partie, config)) || {};
+      if (resultat.coup) partie.dernierCoupAt = Date.now();
+    }
+    if (partie.statut === "enCours" && partie.duel?.termine) {
+      partie.statut = "fini";
+      partie.raisonFin ??= partie.duel.gagnant ? "bang" : "nul";
+    }
+    resultat.vientDeFinir = !finiAvant && partie.statut === "fini";
+    await writePvp(partie);
+    return { partie, config, resultat };
+  });
+}
+
+// Le second joueur prend place : sièges tirés au sort, la partie commence.
+export function rejoindrePvp(partie, config, discordId, nom, { rng = Math.random } = {}) {
+  partie.noms[discordId] = nom;
+  const [premier, second] = rng() < 0.5 ? [partie.lanceur, discordId] : [discordId, partie.lanceur];
+  partie.sieges = { joueur: premier, bot: second };
+  partie.duel = creerDuel(config, { rng });
+  partie.duel.debutTour = 0;
+  partie.statut = "enCours";
+  partie.dernierCoupAt = Date.now();
 }
