@@ -304,6 +304,11 @@ function buildVue(d, config, { texte = null, moi = "joueur", A = BOT, pvp = fals
     ...(monTour && j.dette > 1
       ? [`👊 Gang de gobelins : **${j.dette} cartes** à piocher d'un seul clic.`]
       : []),
+    // Qui piochera la prochaine carte : moi pendant mon tour, sauf Gobelin
+    // explosif à cacher après ma dernière pioche (la main passe ensuite)
+    monTour && !(j.enAttente && !j.dette)
+      ? `👉 Prochaine pioche : **toi**${j.enAttente ? ` (encore ${plural(j.dette, "carte")} à piocher)` : ""}.`
+      : `👉 Prochaine pioche : **${A.Sujet}**.`,
     ...(j.moine
       ? [`🙏 Ton Moine te protège : la prochaine attaque ${A.de} sera renvoyée.`]
       : []),
@@ -495,7 +500,11 @@ function actionPiocher(d, moi, config) {
 function actionPlacer(d, moi, config, position) {
   const r = placer(d, moi, position, { config });
   if (r.erreur) return r;
-  return { texte: `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.` };
+  const texte = `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.`;
+  // Pioches dues d'un Gang restantes : elles s'enchaînent sans nouveau clic
+  if (r.finTour || d.termine || d.actif !== moi) return { texte };
+  const suite = actionPiocher(d, moi, config);
+  return suite.erreur ? { texte } : { texte: `${texte}\n${suite.texte}` };
 }
 
 function actionCarte(d, moi, config, A, carte) {
