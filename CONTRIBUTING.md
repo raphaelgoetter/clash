@@ -611,7 +611,7 @@ Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 
 | Jeu            | Cron         |
 | -------------- | ------------ |
-| Boss Raid      | `2 8 * * *`  |
+| Boss Raid      | `2 8 * * *` (📦 archivé, cron commenté) |
 | Goblin Hunters | `4 8 * * *`  |
 | Quiz           | `6 8 * * *`  |
 | Robinson       | `8 8 * * *`  |
@@ -640,7 +640,7 @@ Ordre chronologique de lancement **public** des jeux collaboratifs à avancée q
 - (2026-08-24) Robinson (10 jours)
 - (2026-08-31) Quiz (7 jours)
 
-**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours), Goblin Hunters (7 jours), Blackjack (7 jours), Bang! (7 jours).
+**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours, 📦 **archivé** le 2026-10-10), Goblin Hunters (7 jours), Blackjack (7 jours), Bang! (7 jours).
 
 ---
 
@@ -1604,6 +1604,8 @@ Aucune nouvelle variable : Robinson réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DIS
 ---
 
 ## Boss Raid (score attack communautaire, jeu de combinaison stratégique)
+
+> 📦 **Statut : archivé** (10/10/2026) — pas de relance prévue pour le moment. Le code, les données et l'archive des manches (`bossraid:manches`) sont conservés tels quels. Le `schedule` de `.github/workflows/bossraid.yml` est commenté (seul `workflow_dispatch` reste disponible) et l'entrée `bossraid` de `SPECIAL_GAMES` (`api/discord/_handlers/minijeux.js`) porte `archived: true`, ce qui l'exclut de `/mini-jeux` même si un état périmé reste dans Redis. **Pour relancer** : décommenter le `schedule`, retirer `archived: true`, puis `npm run bossraid:reset` avant le lancement manuel du jour d'annonce.
 
 Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 7 jours de combat (`duree_jours` dans `boss_raid.json`, précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Princesse) ; **aucun tirage n'a lieu au clic**, et le vote est **définitif** dès qu'il est posé (comme Robinson/Tamagotchi/Quiz — voir "Résolution du vote" ci-dessous). Pas de commande slash associée — la publication/suppression passe uniquement par `scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
 

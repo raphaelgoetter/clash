@@ -2,9 +2,9 @@
 // minijeux.js — Handler Discord pour /mini-jeux : état des lieux de tous
 // les mini-jeux réguliers (Frame, Jeux de lettres [Anagram/Pêle-mêle en
 // alternance], Jeux visuels [Zoom carte/Palette en alternance], La Juste
-// Carte) et du jeu spécial actuellement actif (Quiz, Robinson, Boss Raid,
+// Carte) et du jeu spécial actuellement actif (Quiz, Robinson,
 // Goblin Hunters, Blackjack, Mario Clash, Gobelet ou Bang! ;
-// Tamagotchi archivé).
+// Tamagotchi et Boss Raid archivés).
 // Lecture seule, aucune écriture Redis.
 //
 // ⚠️ Goblin Hunters : ne jamais lire/afficher state.joueurs[].camp/role/pv —
@@ -263,6 +263,9 @@ const SPECIAL_GAMES = [
     key: "bossraid",
     title: "Boss Raid",
     style: "Collaboratif",
+    // Jeu archivé (10/10, pas de relance prévue) : ignoré par
+    // findActiveSpecialGame(), même si un état périmé traîne dans Redis.
+    archived: true,
     readState: readBossraidState,
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
