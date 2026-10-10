@@ -167,12 +167,12 @@ import {
 } from "./_handlers/bang.js";
 import {
   memberHasMiniJeuxRole as bangDuelMemberHasMiniJeuxRole,
+  extractMember as bangDuelExtractMember,
   handleBangDuelRoleRejected,
   handleBangDuelCommand,
   handleBangDuelPiocher,
   handleBangDuelPlacer,
   handleBangDuelCarte,
-  handleBangDuelVoler,
   handleBangDuelRegles,
   handleBangDuelPvpCommand,
   handleBangDuelOuvrir,
@@ -8875,7 +8875,7 @@ export default async function handler(req, res) {
 
   // ── Bang! Duel : composants des messages (édition en place) ──
   // custom_id : bangduel_<action> contre Kévina, bangduel_<action>:pvp en
-  // 1v1 ; actions : piocher, actualiser (boutons), carte, voler,
+  // 1v1 ; actions : piocher, actualiser (boutons), carte,
   // placer (menus). bangduel_ouvrir (Jouer du message public 1v1) et
   // bangduel_regles : nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bangduel_")) {
@@ -8883,8 +8883,9 @@ export default async function handler(req, res) {
     const pvp = mode === "pvp";
     const discordId = body.member?.user?.id;
     const value = body.data.values?.[0];
-    // Salon de la partie : contre Kévina, le résultat final y est publié
+    // Salon et pseudo : contre Kévina, le résultat final y est publié
     const channelId = body.channel_id;
+    const pseudo = bangDuelExtractMember(body).username;
     if (action === "bangduel_regles" || action === "bangduel_ouvrir") {
       res.status(200).json({ type: 5, data: { flags: 64 } });
       const webhookUrl = buildDiscordWebhookUrl(body);
@@ -8894,10 +8895,9 @@ export default async function handler(req, res) {
     }
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "bangduel_piocher") runBackground(() => handleBangDuelPiocher(webhookUrl, discordId, { pvp, channelId }));
-    else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value, { pvp, channelId }));
-    else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value, { pvp, channelId }));
-    else if (action === "bangduel_voler") runBackground(() => handleBangDuelVoler(webhookUrl, discordId, value, { pvp, channelId }));
+    if (action === "bangduel_piocher") runBackground(() => handleBangDuelPiocher(webhookUrl, discordId, { pvp, channelId, pseudo }));
+    else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value, { pvp, channelId, pseudo }));
+    else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value, { pvp, channelId, pseudo }));
     else if (action === "bangduel_actualiser") runBackground(() => handleBangDuelActualiser(webhookUrl, discordId));
     return;
   }

@@ -34,8 +34,8 @@ function shuffle(arr, rng) {
 function joueurVide(main) {
   // jouees : cartes jouées ce tour ; dette : pioches restantes du tour (1,
   // ou `gang_pioches` après un Gang) ; enAttente :
-  // Gobelin explosif désamorcé à cacher ; vol : Voleuse jouée, carte à choisir
-  return { main, moine: false, dette: 0, jouees: 0, enAttente: false, vol: false };
+  // Gobelin explosif désamorcé à cacher
+  return { main, moine: false, dette: 0, jouees: 0, enAttente: false };
 }
 
 // Paquet fixe (`config.paquet`) mélangé : `main_depart` cartes à chacun en
@@ -69,7 +69,6 @@ function verifierActif(d, id) {
   if (d.actif !== id) return "pasTonTour";
   const j = d.joueurs[id];
   if (j.enAttente) return "enAttente";
-  if (j.vol) return "vol";
   return null;
 }
 
@@ -230,37 +229,23 @@ export function jouer(d, id, carte, { config, rng = Math.random }) {
     finirTour(d, id, { config });
     return { carte, finTour: true };
   }
-  // Voleuse : le voleur voit la main adverse et choisit (voler())
+  // Voleuse : une carte AU HASARD de la main adverse (décision du 10/10 :
+  // choisir revenait à prendre l'Esprit de guérison, trop fort)
   if (!adv.main.length) {
     noter(d, id, "voleuseVide");
     return { carte, vole: null };
   }
-  j.vol = true;
-  return { carte, choix: [...adv.main] };
-}
-
-// Voleuse : prend la carte choisie dans la main adverse.
-export function voler(d, id, carte) {
-  const j = d.joueurs[id];
-  if (!j?.vol) return { erreur: "pasDeVol" };
-  const adv = d.joueurs[adversaire(id)];
-  const index = adv.main.indexOf(carte);
-  if (index === -1) return { erreur: "pasEnMain" };
-  adv.main.splice(index, 1);
-  j.main.push(carte);
-  j.vol = false;
-  noter(d, id, "voleuse", { carte });
-  return { carte };
+  const vole = adv.main.splice(Math.floor(rng() * adv.main.length), 1)[0];
+  j.main.push(vole);
+  noter(d, id, "voleuse", { carte: vole });
+  return { carte, vole };
 }
 
 // ── Bot (stratège) ───────────────────────────────────────────────────
-// Joue le tour complet de `id` : Moine d'avance, Voleuse sur la meilleure
-// carte, Sarbacane avant de piocher, esquive (Gang, Tornade, Fût) si un
+// Joue le tour complet de `id` : Moine d'avance, Voleuse (carte au hasard), Sarbacane avant de piocher, esquive (Gang, Tornade, Fût) si un
 // Gobelin explosif est connu ou soupçonné en haut, Gobelin explosif
 // désamorcé caché en haut une fois sur deux (sinon au hasard, pour
 // bluffer). Les actions sont notées au journal.
-
-const PRIORITE_VOL = ["esprit", "gang", "fut", "tornade", "moine", "sarbacane", "voleuse", "gobelin"];
 
 export function jouerBot(d, id, { config, rng = Math.random }) {
   const j = d.joueurs[id];
@@ -269,10 +254,7 @@ export function jouerBot(d, id, { config, rng = Math.random }) {
   let connu = null; // sommet de la pioche vu à la Sarbacane
 
   if (a("moine") && !j.moine) jouer(d, id, "moine", { config, rng });
-  if (a("voleuse") && adv.main.length) {
-    const r = jouer(d, id, "voleuse", { config, rng });
-    if (r.choix) voler(d, id, PRIORITE_VOL.find((c) => r.choix.includes(c)) ?? r.choix[0]);
-  }
+  if (a("voleuse") && adv.main.length) jouer(d, id, "voleuse", { config, rng });
 
   // Pioche (ou pioches dues d'un Gang) jusqu'à la fin du tour, sauf
   // esquive si un Gobelin explosif est vu ou soupçonné au sommet

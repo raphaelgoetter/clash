@@ -76,7 +76,6 @@ for (let g = 0; g < 3; g++) {
     // L'adversaire en attente actualise de temps en temps
     if (k % 7 === 3) await h.handleBangDuelActualiser(W({ id: p.sieges[d.actif === "joueur" ? "bot" : "joueur"] }, k), p.sieges[d.actif === "joueur" ? "bot" : "joueur"]);
     if (j.enAttente) await h.handleBangDuelPlacer(w, id, "hasard", opts);
-    else if (j.vol) await h.handleBangDuelVoler(w, id, d.joueurs[d.actif === "joueur" ? "bot" : "joueur"].main[0], opts);
     else if (j.main.includes("voleuse") && j.jouees < 3 && Math.random() < 0.5) await h.handleBangDuelCarte(w, id, "voleuse", opts);
     else if (j.main.includes("gang") && j.jouees < 3 && Math.random() < 0.3) await h.handleBangDuelCarte(w, id, "gang", opts);
     else if (j.main.includes("sarbacane") && j.jouees < 3 && Math.random() < 0.5) await h.handleBangDuelCarte(w, id, "sarbacane", opts);

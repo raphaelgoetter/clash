@@ -3,7 +3,7 @@
 // Usage : node temp/bang/simulateDuel.mjs [parties] [profilJoueur] [profilBot] [cle=valeur ...]
 // ex. : node temp/bang/simulateDuel.mjs 20000 stratege stratege bombes=3 paquet.gobelin=8
 import fs from "fs";
-import { creerDuel, piocher, placer, jouer, voler, jouerBot } from "../../backend/services/bangDuelRules.js";
+import { creerDuel, piocher, placer, jouer, jouerBot } from "../../backend/services/bangDuelRules.js";
 
 const PARTIES = Number(process.argv[2] || 20000);
 const PROFILS = { joueur: process.argv[3] || "stratege", bot: process.argv[4] || "stratege" };
@@ -22,8 +22,7 @@ const rng = Math.random;
 function tourNaif(d, id) {
   const j = d.joueurs[id];
   if (j.main.includes("voleuse") && rng() < 0.5) {
-    const r = jouer(d, id, "voleuse", { config, rng });
-    if (r.choix) voler(d, id, r.choix[Math.floor(rng() * r.choix.length)]);
+    jouer(d, id, "voleuse", { config, rng });
   }
   if (j.main.includes("gang") && rng() < 0.3 && !jouer(d, id, "gang", { config, rng }).erreur && d.actif !== id) return;
   for (let k = 0; k < 10 && !d.termine && d.actif === id; k++) {

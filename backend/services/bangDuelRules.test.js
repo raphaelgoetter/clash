@@ -1,6 +1,6 @@
 import assert from "assert";
 import fs from "fs";
-import { creerDuel, piocher, piocherClic, placer, jouer, voler, jouerBot } from "./bangDuelRules.js";
+import { creerDuel, piocher, piocherClic, placer, jouer, jouerBot } from "./bangDuelRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/bang/duel.json", import.meta.url), "utf8"));
 
@@ -116,15 +116,14 @@ function main() {
     assert.ok(r.vide && d.actif === "bot");
   }
 
-  // ── Voleuse : le voleur choisit dans la main adverse ──
+  // ── Voleuse : une carte au hasard de la main adverse ──
   {
     const d = duelTest(["voleuse"], ["esprit", "gobelin"], ["gobelin"]);
-    const r = jouer(d, "joueur", "voleuse", { config: CONFIG, rng });
-    assert.deepStrictEqual(r.choix, ["esprit", "gobelin"]);
-    assert.strictEqual(piocher(d, "joueur", { config: CONFIG }).erreur, "vol", "choix obligatoire avant toute action");
-    voler(d, "joueur", "esprit");
-    assert.deepStrictEqual(d.joueurs.joueur.main, ["esprit"]);
-    assert.deepStrictEqual(d.joueurs.bot.main, ["gobelin"]);
+    const r = jouer(d, "joueur", "voleuse", { config: CONFIG, rng: () => 0.99 });
+    assert.strictEqual(r.vole, "gobelin", "carte tirée au hasard (ici la dernière)");
+    assert.deepStrictEqual(d.joueurs.joueur.main, ["gobelin"]);
+    assert.deepStrictEqual(d.joueurs.bot.main, ["esprit"]);
+    assert.ok(!piocher(d, "joueur", { config: CONFIG }).erreur, "aucun choix à faire : la pioche reste possible");
   }
 
   // ── Moine : renvoie la prochaine attaque, une seule fois ──
@@ -137,7 +136,7 @@ function main() {
     assert.ok(r.renvoi && !r.finTour, "Gang renvoyé : le tour du joueur continue");
     assert.strictEqual(d.joueurs.joueur.dette, CONFIG.gang_pioches);
     assert.ok(!d.joueurs.bot.moine);
-    assert.ok(jouer(d, "joueur", "voleuse", { config: CONFIG, rng }).choix, "2e attaque : plus de Moine");
+    assert.ok(jouer(d, "joueur", "voleuse", { config: CONFIG, rng }).vole, "2e attaque : plus de Moine");
   }
 
   // ── Fin : match nul après le dernier tour ──

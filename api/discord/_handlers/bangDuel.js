@@ -36,7 +36,6 @@ import {
   jouerBot,
   piocherClic,
   placer,
-  voler,
 } from "../../../backend/services/bangDuelRules.js";
 import {
   getRoleIdByName,
@@ -95,7 +94,10 @@ async function messageSalon(method, channelId, messageId, payload) {
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      ...(payload ? { body: JSON.stringify(payload) } : {}),
+      // Jamais de ping dans ce jeu, même si une mention se glissait
+      ...(payload
+        ? { body: JSON.stringify({ allowed_mentions: { parse: [] }, ...payload }) }
+        : {}),
     });
     if (!res.ok && res.status !== 404) {
       console.warn(
@@ -136,7 +138,9 @@ function formatMain(main) {
 
 function mainImageUrl(main) {
   if (!main?.length) return null;
-  return `${TRUST_ROYALE_URL}/api/bang/main?${new URLSearchParams({ c: [...main].sort().join("|") })}`;
+  // v : version du rendu ; Discord garde en cache une image par URL, une
+  // ancienne version (main sur le tapis) ressortait pour certaines mains
+  return `${TRUST_ROYALE_URL}/api/bang/main?${new URLSearchParams({ c: [...main].sort().join("|"), v: "2" })}`;
 }
 
 // Désignation de l'adversaire dans les textes : Kévina (le bot) ou un joueur.
@@ -170,7 +174,7 @@ function effets(A) {
     moine: `Renvoie la prochaine attaque ${A.de}.`,
     fut: "Esquive une pioche (ton tour se termine sans piocher).",
     gang: `Termine ton tour : ${A.sujet} devra piocher 2 fois.`,
-    voleuse: `Regarde la main ${A.de} et prends-lui une carte.`,
+    voleuse: `Prends une carte au hasard ${A.a}.`,
     tornade: "Mélange la pioche.",
   };
 }
@@ -179,7 +183,6 @@ const ERREURS = {
   termine: "La partie est terminée.",
   pasTonTour: "Ce n'est pas ton tour.",
   enAttente: "Cache d'abord le Gobelin explosif dans la pioche.",
-  vol: "Choisis d'abord la carte à voler.",
   pioche: "La pioche est vide.",
   plafond: "Tu as joué toutes tes cartes de ce tour.",
   injouable: "Cette carte ne se joue pas.",
@@ -187,7 +190,6 @@ const ERREURS = {
   moineActif: "Ton Moine te protège déjà.",
   pasEnAttente: "Aucun Gobelin explosif à cacher.",
   position: "Emplacement inconnu.",
-  pasDeVol: "Aucune carte à voler.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
 };
@@ -312,7 +314,7 @@ function vueFin(d, texte, { moi = "joueur", A = BOT, raison = null } = {}) {
 
 // Message de la partie pour le siège `moi` : résultat de la dernière action
 // (`texte`), tour de l'adversaire, état de la pioche, main ; composants
-// selon l'étape (placement d'un Gobelin explosif, choix de la Voleuse, tour
+// selon l'étape (placement d'un Gobelin explosif, tour
 // normal, attente du tour adverse en 1v1).
 function buildVue(
   d,
@@ -420,33 +422,6 @@ function buildVue(
       ],
     };
   }
-  if (j.vol) {
-    const options = Object.keys(CARTES)
-      .map((id) => [id, adv.main.filter((c) => c === id).length])
-      .filter(([, n]) => n > 0)
-      .map(([id, n]) => ({
-        label: `${CARTES[id].nom}${n > 1 ? ` (×${n})` : ""}`,
-        value: id,
-        emoji: { name: CARTES[id].emoji },
-      }));
-    return {
-      embeds: [embed],
-      components: [
-        {
-          type: 1,
-          components: [
-            {
-              type: 3,
-              custom_id: `bangduel_voler${sfx}`,
-              placeholder: `🦹 Quelle carte prendre ${A.a} ?`,
-              options,
-            },
-          ],
-        },
-      ],
-    };
-  }
-
   const components = [
     {
       type: 1,
@@ -508,7 +483,7 @@ function buildReglesEmbed(config) {
       `${carteLabel("sarbacane")} : regarde les 3 premières cartes de la pioche.`,
       `${carteLabel("fut")} : esquive une pioche (ton tour se termine sans piocher, ou une pioche de moins à faire après un Gang).`,
       `${carteLabel("gang")} : termine ton tour sans piocher ; ton adversaire devra piocher ${config.gang_pioches} cartes.`,
-      `${carteLabel("voleuse")} : regarde la main de ton adversaire et prends-lui la carte de ton choix.`,
+      `${carteLabel("voleuse")} : prends une carte au hasard dans la main de ton adversaire.`,
       `${carteLabel("moine")} : joue-le à l'avance, la prochaine attaque adverse (Gang, Voleuse) est renvoyée.`,
       `${carteLabel("tornade")} : mélange la pioche.`,
       `${carteLabel("gobelin")} : carte purement décorative.`,
@@ -585,24 +560,15 @@ function actionCarte(d, moi, config, A, carte) {
     return {
       texte: `👊 Ton Gang de gobelins attend ${A.sujet} : il faudra piocher ${config.gang_pioches} cartes. Ton tour est terminé.`,
     };
-  if (r.choix)
-    return {
-      texte: `🦹 Ta Voleuse fouille la main ${A.de} : choisis la carte à prendre.`,
-    };
+  if (r.vole)
+    return { texte: `🦹 Ta Voleuse prend une carte au hasard ${A.a} : **${carteLabel(r.vole)}**` };
   return { texte: `🦹 Ta Voleuse ne trouve rien : la main ${A.de} est vide.` };
-}
-
-function actionVoler(d, moi, config, A, carte) {
-  const r = voler(d, moi, carte);
-  if (r.erreur) return r;
-  return { texte: `🦹 Tu prends ${A.a} : **${carteLabel(r.carte)}**` };
 }
 
 const ACTIONS = {
   piocher: (d, moi, config) => actionPiocher(d, moi, config),
   placer: (d, moi, config, A, valeur) => actionPlacer(d, moi, config, valeur),
   carte: actionCarte,
-  voler: actionVoler,
 };
 
 // ── Contre Kévina ────────────────────────────────────────────────────
@@ -631,7 +597,7 @@ export async function handleBangDuelCommand(webhookUrl, discordId) {
 }
 
 // Action sous verrou ; Kévina joue si elle a la main.
-async function executerSolo(webhookUrl, discordId, action, valeur, channelId) {
+async function executerSolo(webhookUrl, discordId, action, valeur, { channelId, pseudo } = {}) {
   const { duel, config, resultat } = await agirDuel(discordId, (d, cfg) => {
     const r = ACTIONS[action](d, "joueur", cfg, BOT, valeur) || {};
     if (!r.erreur) {
@@ -644,7 +610,7 @@ async function executerSolo(webhookUrl, discordId, action, valeur, channelId) {
   });
   // Partie terminée : résultat et déroulé publiés dans le salon
   if (duel && resultat.vientDeFinir)
-    await messageSalon("POST", channelId, null, messageFinalSolo(duel, discordId));
+    await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
   if (!duel) {
     await patchOriginal(webhookUrl, {
       embeds: [
@@ -731,7 +697,7 @@ function messagePublic(partie, config) {
       embeds: [
         {
           title: "💣 Bang! Duel · 1v1",
-          description: `<@${partie.lanceur}> lance un duel ! Qui relève le défi ? Clique sur **Jouer** pour l'affronter.`,
+          description: `${partie.noms?.[partie.lanceur] ?? "?"} lance un duel ! Qui relève le défi ? Clique sur **Jouer** pour l'affronter.`,
           color: BANG_COLOR,
         },
       ],
@@ -746,7 +712,7 @@ function messagePublic(partie, config) {
       {
         title: `💣 Bang! Duel · ${partie.noms[a]} contre ${partie.noms[b]}`,
         description: [
-          `**Tour ${d.tour}/${config.tours_max}** · au tour de <@${partie.sieges[d.actif]}>, limite <t:${echeanceDe(partie, config)}:R>`,
+          `**Tour ${d.tour}/${config.tours_max}** · au tour de ${partie.noms[partie.sieges[d.actif]]}, limite <t:${echeanceDe(partie, config)}:R>`,
           `🃏 Pioche : **${plural(d.pioche.length, "carte")}**, dont **${bombes}** 💥`,
           "",
           "Joueurs : clique sur **Jouer** pour afficher ta main.",
@@ -760,22 +726,23 @@ function messagePublic(partie, config) {
 
 // Déroulé résumé de la partie, un tour par ligne (temps forts seulement :
 // pioches ordinaires, Sarbacanes et emplacements des bombes omis).
-// `noms` : siège → nom affiché.
+// `noms` : siège → désignations (BOT ou nomsJoueur()), sans mention.
 function deroule(d, noms) {
   const evenement = (e) => {
-    const S = noms[e.id];
+    const N = noms[e.id];
+    const S = N.Sujet;
     const V = noms[adversaire(e.id)];
     switch (e.k) {
       case "voleuse":
-        return `🦹 ${S} vole ${carteLabel(e.carte)} à ${V}`;
+        return `🦹 ${S} vole ${carteLabel(e.carte)} ${V.a}`;
       case "voleuseVide":
         return `🦹 ${S} joue une Voleuse, rien à prendre`;
       case "gang":
         return `👊 ${S} lance un Gang de gobelins`;
       case "renvoi":
         return e.carte === "gang"
-          ? `🙏 le Moine de ${S} renvoie le Gang`
-          : `🙏 le Moine de ${S} renvoie la Voleuse${e.vole ? ` (${S} prend ${carteLabel(e.vole)})` : ""}`;
+          ? `🙏 le Moine ${N.de} renvoie le Gang`
+          : `🙏 le Moine ${N.de} renvoie la Voleuse${e.vole ? ` (${S} prend ${carteLabel(e.vole)})` : ""}`;
       case "fut":
         return `🛢️ ${S} esquive avec un Fût`;
       case "tornade":
@@ -806,13 +773,14 @@ function descriptionAvecDeroule(resultat, d, noms) {
 
 // Fin d'une partie contre Kévina : message public (non éphémère) dans le
 // salon, avec le déroulé.
-function messageFinalSolo(d, discordId) {
-  const noms = { joueur: `<@${discordId}>`, bot: BOT.Sujet };
+// Pseudos en clair, jamais de mention (pas de ping).
+function messageFinalSolo(d, pseudo) {
+  const noms = { joueur: nomsJoueur(pseudo), bot: BOT };
   const resultat = !d.gagnant
-    ? `🤝 Match nul entre <@${discordId}> et Kévina : personne n'a explosé.`
+    ? `🤝 Match nul entre ${pseudo} et Kévina : personne n'a explosé.`
     : d.gagnant === "joueur"
-      ? `🏆 <@${discordId}> bat Kévina : Kévina a explosé au tour ${d.tour} !`
-      : `🤖 Kévina bat <@${discordId}>, qui a explosé au tour ${d.tour}.`;
+      ? `🏆 ${pseudo} bat Kévina : Kévina a explosé au tour ${d.tour} !`
+      : `🤖 Kévina bat ${pseudo}, qui a explosé au tour ${d.tour}.`;
   return {
     embeds: [
       {
@@ -830,14 +798,16 @@ function messageFinalSolo(d, discordId) {
 function messageFinal(partie) {
   const d = partie.duel;
   const [a, b] = [partie.sieges.joueur, partie.sieges.bot];
-  const gagnant = d.gagnant ? partie.sieges[d.gagnant] : null;
-  const perdant = d.gagnant ? partie.sieges[adversaire(d.gagnant)] : null;
+  // Pseudos en clair, jamais de mention (pas de ping)
+  const nom = (id) => partie.noms?.[id] ?? "?";
+  const gagnant = d.gagnant ? nom(partie.sieges[d.gagnant]) : null;
+  const perdant = d.gagnant ? nom(partie.sieges[adversaire(d.gagnant)]) : null;
   const description = !gagnant
-    ? `🤝 Match nul entre <@${a}> et <@${b}> : personne n'a explosé.`
+    ? `🤝 Match nul entre ${nom(a)} et ${nom(b)} : personne n'a explosé.`
     : partie.raisonFin === "delai"
-      ? `🏆 <@${gagnant}> remporte le duel : <@${perdant}> n'a pas joué à temps.`
-      : `🏆 <@${gagnant}> remporte le duel : <@${perdant}> a explosé au tour ${d.tour} !`;
-  const noms = { joueur: `<@${a}>`, bot: `<@${b}>` };
+      ? `🏆 ${gagnant} remporte le duel : ${perdant} n'a pas joué à temps.`
+      : `🏆 ${gagnant} remporte le duel : ${perdant} a explosé au tour ${d.tour} !`;
+  const noms = { joueur: nomsJoueur(nom(a)), bot: nomsJoueur(nom(b)) };
   return {
     embeds: [
       {
@@ -964,7 +934,7 @@ export async function handleBangDuelOuvrir(webhookUrl, body) {
     if (resultat.erreur) {
       const [a, b] = Object.values(partie.sieges);
       await patchOriginal(webhookUrl, {
-        content: `Ce duel oppose <@${a}> et <@${b}>. Lance le tien avec \`/bang\` (1v1) une fois qu'il est terminé !`,
+        content: `Ce duel oppose ${partie.noms[a]} et ${partie.noms[b]}. Lance le tien avec \`/bang\` (1v1) une fois qu'il est terminé !`,
       });
       return;
     }
@@ -1035,11 +1005,11 @@ async function executer(
   webhookUrl,
   discordId,
   action,
-  { pvp = false, valeur, channelId } = {},
+  { pvp = false, valeur, channelId, pseudo } = {},
 ) {
   try {
     if (pvp) await executerPvp(webhookUrl, discordId, action, valeur);
-    else await executerSolo(webhookUrl, discordId, action, valeur, channelId);
+    else await executerSolo(webhookUrl, discordId, action, valeur, { channelId, pseudo });
   } catch (err) {
     console.error(`[BangDuel] Échec ${action}:`, err.message);
   }
@@ -1051,8 +1021,6 @@ export const handleBangDuelPlacer = (webhookUrl, discordId, valeur, opts) =>
   executer(webhookUrl, discordId, "placer", { ...opts, valeur });
 export const handleBangDuelCarte = (webhookUrl, discordId, valeur, opts) =>
   executer(webhookUrl, discordId, "carte", { ...opts, valeur });
-export const handleBangDuelVoler = (webhookUrl, discordId, valeur, opts) =>
-  executer(webhookUrl, discordId, "voler", { ...opts, valeur });
 export const handleBangDuelActualiser = (webhookUrl, discordId) =>
   executer(webhookUrl, discordId, "actualiser", { pvp: true });
 

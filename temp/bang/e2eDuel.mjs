@@ -43,7 +43,6 @@ for (let g = 0; g < 3; g++) {
     const j = d.joueurs.joueur;
     actions++;
     if (j.enAttente) await h.handleBangDuelPlacer(W, ID, "1");
-    else if (j.vol) await h.handleBangDuelVoler(W, ID, d.joueurs.bot.main[0]);
     else if (j.main.includes("voleuse") && j.jouees < 3 && Math.random() < 0.5) await h.handleBangDuelCarte(W, ID, "voleuse");
     else if (j.main.includes("sarbacane") && j.jouees < 3 && Math.random() < 0.5) await h.handleBangDuelCarte(W, ID, "sarbacane");
     else await h.handleBangDuelPiocher(W, ID);

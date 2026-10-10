@@ -93,7 +93,9 @@ function tableImageUrl(jour, config, partie) {
 
 function mainImageUrl(main) {
   if (!main?.length) return null;
-  return `${TRUST_ROYALE_URL}/api/bang/main?${new URLSearchParams({ c: [...main].sort().join("|") })}`;
+  // v : version du rendu ; Discord garde en cache une image par URL, une
+  // ancienne version (main sur le tapis) ressortait pour certaines mains
+  return `${TRUST_ROYALE_URL}/api/bang/main?${new URLSearchParams({ c: [...main].sort().join("|"), v: "2" })}`;
 }
 
 // ── Mise en forme ────────────────────────────────────────────────────
