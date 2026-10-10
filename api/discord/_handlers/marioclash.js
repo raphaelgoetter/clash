@@ -229,7 +229,8 @@ function buildResumeLignes(
   // Arrivés le même jour = ex aequo.
   const arrivesDuJour = rankingApres.filter((j) => j.arriveJour === jour);
   if (arrivesDuJour.length) {
-    const rang = rankingApres.filter((j) => j.arriveJour < jour).length + 1;
+    // ⚠️ `null < jour` vaut true en JS : exclure explicitement les non-arrivés.
+    const rang = rankingApres.filter((j) => j.arriveJour != null && j.arriveJour < jour).length + 1;
     const noms = arrivesDuJour.map((j) => `**${j.username}**`).join(", ");
     const ensemble = arrivesDuJour.length > 1;
     lines.push(
