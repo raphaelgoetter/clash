@@ -84,7 +84,7 @@ for (let g = 0; g < 3; g++) {
   }
 }
 
-// Abandon et délai dépassé
+// Délai dépassé
 await redis.del("bangduel:pvp");
 await h.handleBangDuelPvpCommand(W(A), body(A));
 await h.handleBangDuelOuvrir(W(B), body(B));
@@ -97,13 +97,6 @@ await h.handleBangDuelActualiser(W({ id: patient }, 99), patient);
 p = await readPvp();
 if (p.statut !== "fini" || p.raisonFin !== "delai" || p.sieges[p.duel.gagnant] !== patient) throw new Error("délai non appliqué");
 const finDelai = appels.filter((a) => a.method === "POST" && a.url.includes("/channels/")).at(-1).body.embeds[0].description;
-
-await redis.del("bangduel:pvp");
-await h.handleBangDuelPvpCommand(W(A), body(A));
-await h.handleBangDuelOuvrir(W(B), body(B));
-await h.handleBangDuelAbandon(W(B, 5), B.id, { pvp: true });
-p = await readPvp();
-if (p.raisonFin !== "abandon" || p.sieges[p.duel.gagnant] !== A.id) throw new Error("abandon non appliqué");
 
 const vues = appels.filter((a) => a.body && (a.body.embeds || a.body.components));
 vues.forEach((a) => verifier(a.body));

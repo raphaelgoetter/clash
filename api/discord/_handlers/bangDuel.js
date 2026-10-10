@@ -24,10 +24,8 @@ import {
   loadDuelConfig,
   nouveauDuel,
   ouvrirPvp,
-  readDuel,
   rejoindrePvp,
   siegeDe,
-  supprimerDuel,
 } from "../../../backend/services/bangDuel.js";
 import {
   CARTES,
@@ -297,13 +295,9 @@ function vueFin(d, texte, { moi = "joueur", A = BOT, raison = null } = {}) {
       ? gagne
         ? `🏆 Victoire ! ${A.Sujet} n'a pas joué à temps.`
         : "💀 Défaite… tu n'as pas joué à temps."
-      : raison === "abandon"
-        ? gagne
-          ? `🏆 Victoire ! ${A.Sujet} abandonne.`
-          : "🏳️ Tu as abandonné."
-        : gagne
-          ? `🏆 Victoire ! ${A.Sujet} a explosé.`
-          : "💀 Défaite… tu as explosé.";
+      : gagne
+        ? `🏆 Victoire ! ${A.Sujet} a explosé.`
+        : "💀 Défaite… tu as explosé.";
   return {
     embeds: [
       {
@@ -400,12 +394,6 @@ function buildVue(
               custom_id: "bangduel_actualiser:pvp",
             },
             BOUTON_REGLES,
-            {
-              type: 2,
-              style: 4,
-              label: "Abandonner",
-              custom_id: "bangduel_abandon:pvp",
-            },
           ],
         },
       ],
@@ -475,12 +463,6 @@ function buildVue(
           custom_id: `bangduel_piocher${sfx}`,
         },
         BOUTON_REGLES,
-        {
-          type: 2,
-          style: 4,
-          label: "Abandonner",
-          custom_id: `bangduel_abandon${sfx}`,
-        },
       ],
     },
   ];
@@ -632,20 +614,10 @@ export async function handleBangDuelRoleRejected(webhookUrl) {
   });
 }
 
-// Reprend la partie en cours, sinon en lance une nouvelle.
+// Lance une nouvelle partie (remplace une éventuelle partie en cours).
 export async function handleBangDuelCommand(webhookUrl, discordId) {
   try {
     const config = await loadDuelConfig();
-    const enCours = await readDuel(discordId);
-    if (enCours && !enCours.termine) {
-      await patchOriginal(
-        webhookUrl,
-        buildVue(enCours, config, {
-          texte: "▶️ Reprise de ta partie en cours.",
-        }),
-      );
-      return;
-    }
     const { duel } = await nouveauDuel(discordId);
     await patchOriginal(
       webhookUrl,
@@ -659,16 +631,20 @@ export async function handleBangDuelCommand(webhookUrl, discordId) {
 }
 
 // Action sous verrou ; Kévina joue si elle a la main.
-async function executerSolo(webhookUrl, discordId, action, valeur) {
+async function executerSolo(webhookUrl, discordId, action, valeur, channelId) {
   const { duel, config, resultat } = await agirDuel(discordId, (d, cfg) => {
     const r = ACTIONS[action](d, "joueur", cfg, BOT, valeur) || {};
     if (!r.erreur) {
       // Nouvelle action du joueur : le récit du tour de Kévina s'efface
       d.resumeBot = [];
       tourDuBot(d, cfg);
+      if (d.termine) r.vientDeFinir = true;
     }
     return r;
   });
+  // Partie terminée : résultat et déroulé publiés dans le salon
+  if (duel && resultat.vientDeFinir)
+    await messageSalon("POST", channelId, null, messageFinalSolo(duel, discordId));
   if (!duel) {
     await patchOriginal(webhookUrl, {
       embeds: [
@@ -688,20 +664,6 @@ async function executerSolo(webhookUrl, discordId, action, valeur) {
       texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte,
     }),
   );
-}
-
-async function abandonSolo(webhookUrl, discordId) {
-  await supprimerDuel(discordId);
-  await patchOriginal(webhookUrl, {
-    embeds: [
-      {
-        title: "💣 Bang! Duel · Partie abandonnée",
-        description: "Kévina l'emporte par forfait.",
-        color: BANG_COLOR,
-      },
-    ],
-    components: boutonsFin(),
-  });
 }
 
 // ── 1v1 ──────────────────────────────────────────────────────────────
@@ -796,6 +758,73 @@ function messagePublic(partie, config) {
   };
 }
 
+// Déroulé résumé de la partie, un tour par ligne (temps forts seulement :
+// pioches ordinaires, Sarbacanes et emplacements des bombes omis).
+// `noms` : siège → nom affiché.
+function deroule(d, noms) {
+  const evenement = (e) => {
+    const S = noms[e.id];
+    const V = noms[adversaire(e.id)];
+    switch (e.k) {
+      case "voleuse":
+        return `🦹 ${S} vole ${carteLabel(e.carte)} à ${V}`;
+      case "voleuseVide":
+        return `🦹 ${S} joue une Voleuse, rien à prendre`;
+      case "gang":
+        return `👊 ${S} lance un Gang de gobelins`;
+      case "renvoi":
+        return e.carte === "gang"
+          ? `🙏 le Moine de ${S} renvoie le Gang`
+          : `🙏 le Moine de ${S} renvoie la Voleuse${e.vole ? ` (${S} prend ${carteLabel(e.vole)})` : ""}`;
+      case "fut":
+        return `🛢️ ${S} esquive avec un Fût`;
+      case "tornade":
+        return `🌪️ ${S} mélange la pioche`;
+      case "sauve":
+        return `💚 ${S} désamorce un Gobelin explosif`;
+      case "explose":
+        return `💥 ${S} explose`;
+      default:
+        return null;
+    }
+  };
+  const parTour = new Map();
+  for (const e of d.journal) {
+    const texte = evenement(e);
+    if (!texte) continue;
+    if (!parTour.has(e.tour)) parTour.set(e.tour, []);
+    parTour.get(e.tour).push(texte);
+  }
+  return [...parTour].map(([tour, evts]) => `**Tour ${tour}** : ${evts.join(" · ")}`);
+}
+
+function descriptionAvecDeroule(resultat, d, noms) {
+  const lignes = deroule(d, noms);
+  const texte = [resultat, ...(lignes.length ? ["", "**Déroulé**", ...lignes] : [])].join("\n");
+  return texte.length > 4096 ? `${texte.slice(0, 4095)}…` : texte;
+}
+
+// Fin d'une partie contre Kévina : message public (non éphémère) dans le
+// salon, avec le déroulé.
+function messageFinalSolo(d, discordId) {
+  const noms = { joueur: `<@${discordId}>`, bot: BOT.Sujet };
+  const resultat = !d.gagnant
+    ? `🤝 Match nul entre <@${discordId}> et Kévina : personne n'a explosé.`
+    : d.gagnant === "joueur"
+      ? `🏆 <@${discordId}> bat Kévina : Kévina a explosé au tour ${d.tour} !`
+      : `🤖 Kévina bat <@${discordId}>, qui a explosé au tour ${d.tour}.`;
+  return {
+    embeds: [
+      {
+        title: "💣 Bang! Duel · contre Kévina",
+        description: descriptionAvecDeroule(resultat, d, noms),
+        color: BANG_COLOR,
+      },
+    ],
+    allowed_mentions: { parse: [] },
+  };
+}
+
 // Fin du 1v1 : récapitulatif dans un NOUVEAU message (visible en bas du
 // salon), puis suppression du message de la partie (comme Gobelet Duel).
 function messageFinal(partie) {
@@ -807,11 +836,16 @@ function messageFinal(partie) {
     ? `🤝 Match nul entre <@${a}> et <@${b}> : personne n'a explosé.`
     : partie.raisonFin === "delai"
       ? `🏆 <@${gagnant}> remporte le duel : <@${perdant}> n'a pas joué à temps.`
-      : partie.raisonFin === "abandon"
-        ? `🏆 <@${gagnant}> remporte le duel : <@${perdant}> abandonne.`
-        : `🏆 <@${gagnant}> remporte le duel : <@${perdant}> a explosé au tour ${d.tour} !`;
+      : `🏆 <@${gagnant}> remporte le duel : <@${perdant}> a explosé au tour ${d.tour} !`;
+  const noms = { joueur: `<@${a}>`, bot: `<@${b}>` };
   return {
-    embeds: [{ title: "💣 Bang! Duel · 1v1", description, color: BANG_COLOR }],
+    embeds: [
+      {
+        title: "💣 Bang! Duel · 1v1",
+        description: descriptionAvecDeroule(description, d, noms),
+        color: BANG_COLOR,
+      },
+    ],
     components: boutonsFin(),
   };
 }
@@ -960,12 +994,7 @@ async function executerPvp(webhookUrl, discordId, action, valeur) {
     const d = p.duel;
     const actifAvant = d.actif;
     let r;
-    if (action === "abandon") {
-      d.termine = true;
-      d.gagnant = adversaire(moi);
-      p.raisonFin = "abandon";
-      r = { texte: null };
-    } else if (action === "actualiser") {
+    if (action === "actualiser") {
       return {};
     } else {
       r = ACTIONS[action](d, moi, cfg, nomsAdv(p, moi), valeur) || {};
@@ -1006,12 +1035,11 @@ async function executer(
   webhookUrl,
   discordId,
   action,
-  { pvp = false, valeur } = {},
+  { pvp = false, valeur, channelId } = {},
 ) {
   try {
     if (pvp) await executerPvp(webhookUrl, discordId, action, valeur);
-    else if (action === "abandon") await abandonSolo(webhookUrl, discordId);
-    else await executerSolo(webhookUrl, discordId, action, valeur);
+    else await executerSolo(webhookUrl, discordId, action, valeur, channelId);
   } catch (err) {
     console.error(`[BangDuel] Échec ${action}:`, err.message);
   }
@@ -1025,8 +1053,6 @@ export const handleBangDuelCarte = (webhookUrl, discordId, valeur, opts) =>
   executer(webhookUrl, discordId, "carte", { ...opts, valeur });
 export const handleBangDuelVoler = (webhookUrl, discordId, valeur, opts) =>
   executer(webhookUrl, discordId, "voler", { ...opts, valeur });
-export const handleBangDuelAbandon = (webhookUrl, discordId, opts) =>
-  executer(webhookUrl, discordId, "abandon", opts);
 export const handleBangDuelActualiser = (webhookUrl, discordId) =>
   executer(webhookUrl, discordId, "actualiser", { pvp: true });
 
