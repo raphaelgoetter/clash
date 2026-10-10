@@ -216,9 +216,11 @@ function lignesAdv(entrees, moi, A) {
     vider();
     if (e.id === moi && e.k === "renvoi") {
       lignes.push(
-        e.vole
-          ? `🙏 Ton Moine renvoie la Voleuse ${A.de} : tu lui prends ${carteLabel(e.vole)} !`
-          : `🙏 Ton Moine renvoie la Voleuse ${A.de}… qui n'a rien à prendre !`,
+        e.carte === "gang"
+          ? `🙏 Ton Moine renvoie le Gang de gobelins ${A.de} : ${A.sujet} doit piocher 2 cartes !`
+          : e.vole
+            ? `🙏 Ton Moine renvoie la Voleuse ${A.de} : tu lui prends ${carteLabel(e.vole)} !`
+            : `🙏 Ton Moine renvoie la Voleuse ${A.de}… qui n'a rien à prendre !`,
       );
       continue;
     }
