@@ -38,6 +38,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { rangExAequo } from "../../../backend/services/classement.js";
 
 const GOBELETDUEL_COLOR = 0x9b59b6;
 const NO_KEPT = [false, false, false, false, false];
@@ -319,8 +320,8 @@ async function buildFinalEmbed(state, results, ranking, highScore) {
     "**Classement final :**",
     ...(resolvedRanking.length
       ? resolvedRanking.map(
-          (r, i) =>
-            `${i + 1}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
+          (r, i, list) =>
+            `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
         )
       : ["Personne n'a marqué de point."]),
   ];
@@ -352,8 +353,8 @@ async function buildExpiredEmbed(state, ranking) {
     "**Classement final :**",
     ...(resolvedRanking.length
       ? resolvedRanking.map(
-          (r, i) =>
-            `${i + 1}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
+          (r, i, list) =>
+            `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
         )
       : ["Personne n'a marqué de point."]),
   ];

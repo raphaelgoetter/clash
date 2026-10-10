@@ -31,6 +31,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { rangExAequo } from "../../../backend/services/classement.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
 const QUIZ_COLOR = 0x3498db;
@@ -142,7 +143,7 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
       ? resolved
           .slice(0, 20)
           .map(
-            (r, i) => `${i + 1}. ${r.username} — ${r.score}/${TOTAL_QUESTIONS}`,
+            (r, i, list) => `${rangExAequo(list, i, "score")}. ${r.username} — ${r.score}/${TOTAL_QUESTIONS}`,
           )
       : ["Personne n'a voté cette manche."]),
   ];

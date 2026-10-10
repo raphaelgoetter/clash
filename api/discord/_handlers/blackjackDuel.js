@@ -30,6 +30,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { rangExAequo } from "../../../backend/services/classement.js";
 
 const BLACKJACKDUEL_COLOR = 0x2ecc71;
 
@@ -358,8 +359,8 @@ async function buildFinalEmbed(state, ranking, highScore) {
     "**Classement final :**",
     ...(resolvedRanking.length
       ? resolvedRanking.map(
-          (r, i) =>
-            `${i + 1}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
+          (r, i, list) =>
+            `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
         )
       : ["Personne n'a marqué de point."]),
   ];

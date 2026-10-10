@@ -89,15 +89,23 @@ function formatRankingLines(
 ) {
   const ranking = sortedRanking(joueurs);
   if (!ranking.length) return ["*Personne n'a encore rejoint la course.*"];
+  // Ex aequo (même jour d'arrivée et même case) : même rang, l'ordre
+  // alphabétique ne sert qu'à l'affichage. Rang = 1 + nombre de joueurs
+  // strictement devant (classement « 1, 2, 2, 4 »).
+  const rangDe = (index) => {
+    const j = ranking[index];
+    return ranking.findIndex((k) => ordreArrivee(k) === ordreArrivee(j) && k.position === j.position) + 1;
+  };
   const formatLigne = (j, index) => {
+    const rang = rangDe(index);
     const medal =
-      index === 0
+      rang === 1
         ? "🥇"
-        : index === 1
+        : rang === 2
           ? "🥈"
-          : index === 2
+          : rang === 3
             ? "🥉"
-            : `${index + 1}.`;
+            : `${rang}.`;
     const arrivee = j.position >= config.case_arrivee ? " 🏁" : "";
     const coche = deLances?.has(j.discordId) ? " ✅" : "";
     if (!detailed)

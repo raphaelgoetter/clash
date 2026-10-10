@@ -42,6 +42,11 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { rangExAequo } from "../../../backend/services/classement.js";
+
+// Ex aequo seulement si points ET cartes piochées égaux (départage officiel,
+// voir buildRanking()).
+const memeRang = (a, b) => a.points === b.points && a.cards === b.cards;
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
 const BLACKJACK_COLOR = 0x2ecc71;
@@ -262,8 +267,8 @@ async function buildRevealEmbed(
       ? resolvedRanking
           .slice(0, 20)
           .map(
-            (r, i) =>
-              `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+            (r, i, list) =>
+              `${rangExAequo(list, i, memeRang)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
           )
       : ["Personne n'a marqué de point cette manche."]),
   ];
@@ -842,8 +847,9 @@ export async function handleJournal(webhookUrl, discordId) {
 
     const myRankIndex = ranking.findIndex((r) => r.discordId === discordId);
     const myPoints = myRankIndex === -1 ? 0 : ranking[myRankIndex].points;
+    const myRank = myRankIndex === -1 ? null : rangExAequo(ranking, myRankIndex, memeRang);
     lines.push(
-      `Ton total : **${myPoints} pt${myPoints > 1 ? "s" : ""}**${myRankIndex === -1 ? "" : ` — ${myRankIndex + 1}${myRankIndex === 0 ? "er" : "ème"} au classement`}`,
+      `Ton total : **${myPoints} pt${myPoints > 1 ? "s" : ""}**${myRank == null ? "" : ` — ${myRank}${myRank === 1 ? "er" : "ème"} au classement`}`,
     );
 
     lines.push(
@@ -851,8 +857,8 @@ export async function handleJournal(webhookUrl, discordId) {
       "**Classement cumulé (top10) :**",
       ...(resolvedRanking.length
         ? resolvedRanking.map(
-            (r, i) =>
-              `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+            (r, i, list) =>
+              `${rangExAequo(list, i, memeRang)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
           )
         : ["Personne n'a encore marqué de point."]),
     );

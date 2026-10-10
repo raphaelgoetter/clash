@@ -47,6 +47,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "../../../backend/services/discordRoles.js";
 import { resolveDisplayName } from "../../../backend/services/discordUsers.js";
+import { rangExAequo } from "../../../backend/services/classement.js";
 import { formatUtcTimeAsParis } from "../../../backend/services/dateUtils.js";
 
 const GOBELET_COLOR = 0x9b59b6;
@@ -211,8 +212,8 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
       ? resolvedRanking
           .slice(0, 20)
           .map(
-            (r, i) =>
-              `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+            (r, i, list) =>
+              `${rangExAequo(list, i)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
           )
       : ["Personne n'a marqué de point cette manche."]),
   ];
@@ -848,8 +849,8 @@ export async function handleJournal(webhookUrl, discordId) {
       "**Classement cumulé :**",
       ...(resolvedRanking.length
         ? resolvedRanking.map(
-            (r, i) =>
-              `${i + 1}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+            (r, i, list) =>
+              `${rangExAequo(list, i)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
           )
         : ["Personne n'a encore marqué de point."]),
     );
