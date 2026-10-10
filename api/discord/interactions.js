@@ -8854,12 +8854,12 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ── /bang : Bang! Duel contre le Bot (partie privée, éphémère) ou 1v1
-  // (`joueurs:2`, message public). Réservé au rôle MINI-JEUX pour lancer,
+  // ── /bang bot : Bang! Duel contre le Bot (partie privée, éphémère) ;
+  // /bang 1v1 : contre un joueur (message public). Réservé au rôle MINI-JEUX pour lancer,
   // même principe que /blackjack ci-dessus.
   if (body.type === 2 && body.data?.name === "bang") {
     const discordId = body.member?.user?.id;
-    const joueurs = Number(body.data.options?.find((o) => o.name === "joueurs")?.value) || 1;
+    const pvp = body.data.options?.[0]?.name === "1v1"; // sous-commande bot | 1v1
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(async () => {
@@ -8868,7 +8868,7 @@ export default async function handler(req, res) {
         await handleBangDuelRoleRejected(webhookUrl);
         return;
       }
-      if (joueurs === 2) await handleBangDuelPvpCommand(webhookUrl, body);
+      if (pvp) await handleBangDuelPvpCommand(webhookUrl, body);
       else await handleBangDuelCommand(webhookUrl, discordId);
     });
     return;

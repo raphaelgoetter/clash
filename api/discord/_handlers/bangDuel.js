@@ -1,9 +1,9 @@
 // ============================================================
 // bangDuel.js (handler) — Bang! Duel (`/bang`), deux modes :
-// - contre le Bot (`/bang`) : un seul message éphémère édité en place à
+// - contre le Bot (`/bang bot`) : un seul message éphémère édité en place à
 //   chaque action ; le Bot joue son tour aussitôt que le joueur a fini le
 //   sien ;
-// - 1v1 (`/bang joueurs:2`) : message public dans le salon (bouton Jouer :
+// - 1v1 (`/bang 1v1`) : message public dans le salon (bouton Jouer :
 //   rejoindre, puis afficher sa main) et une vue éphémère par joueur,
 //   rééditée après chaque action adverse (webhook mémorisé, valable 15 min,
 //   bouton Actualiser sinon). Une seule partie à la fois, comme Blackjack
@@ -462,7 +462,7 @@ function buildReglesEmbed(config) {
       `${carteLabel("tornade")} : mélange la pioche.`,
       `${carteLabel("gobelin")} : carte purement décorative.`,
       "",
-      `**👥 1v1** (\`/bang joueurs:2\`) : le premier qui clique sur **Jouer** relève le défi, le joueur qui commence est tiré au sort. ${plural(config.delai_tour_minutes, "minute")} par tour, sinon défaite.`,
+      `**👥 1v1** (\`/bang 1v1\`) : le premier qui clique sur **Jouer** relève le défi, le joueur qui commence est tiré au sort. ${plural(config.delai_tour_minutes, "minute")} par tour, sinon défaite.`,
       "⏰ Sans action pendant 2 h, la partie est abandonnée.",
     ].join("\n"),
     color: BANG_COLOR,
@@ -596,7 +596,7 @@ async function executerSolo(webhookUrl, discordId, action, valeur) {
       embeds: [
         {
           description:
-            "⏰ Aucune partie en cours (abandonnée après 2 h sans action). Relance `/bang` !",
+            "⏰ Aucune partie en cours (abandonnée après 2 h sans action). Relance `/bang bot` !",
           color: BANG_COLOR,
         },
       ],
@@ -749,14 +749,14 @@ async function diffuserPvp(partie, config, discordId, webhookUrl, texte) {
 const AUCUNE_PARTIE_PVP = {
   embeds: [
     {
-      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/bang joueurs:2` !",
+      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/bang 1v1` !",
       color: BANG_COLOR,
     },
   ],
   components: boutonsFin(),
 };
 
-// `/bang joueurs:2` : ouvre le lobby (message public), la réponse
+// `/bang 1v1` : ouvre le lobby (message public), la réponse
 // éphémère devient la vue du lanceur.
 export async function handleBangDuelPvpCommand(webhookUrl, body) {
   try {
@@ -806,7 +806,7 @@ export async function handleBangDuelOuvrir(webhookUrl, body) {
     if (resultat.erreur) {
       const [a, b] = Object.values(partie.sieges);
       await patchOriginal(webhookUrl, {
-        content: `Ce duel oppose <@${a}> et <@${b}>. Lance le tien avec \`/bang joueurs:2\` une fois qu'il est terminé !`,
+        content: `Ce duel oppose <@${a}> et <@${b}>. Lance le tien avec \`/bang 1v1\` une fois qu'il est terminé !`,
       });
       return;
     }

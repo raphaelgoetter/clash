@@ -540,14 +540,14 @@ const commands = [
       "Bang! Duel : affronte le Bot ou un autre joueur en tête-à-tête — réservé au rôle MINI-JEUX.",
     options: [
       {
-        type: 4, // INTEGER
-        name: "joueurs",
-        description: "1 : contre le Bot (partie privée), 2 : contre un autre joueur (1v1 dans ce salon).",
-        required: false,
-        choices: [
-          { name: "1 (contre le Bot)", value: 1 },
-          { name: "2 (contre un joueur)", value: 2 },
-        ],
+        type: 1, // SUB_COMMAND
+        name: "bot",
+        description: "Contre le Bot (partie privée).",
+      },
+      {
+        type: 1, // SUB_COMMAND
+        name: "1v1",
+        description: "Contre un autre joueur (duel dans ce salon).",
       },
     ],
   },

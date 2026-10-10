@@ -1,6 +1,6 @@
 // ============================================================
 // bangDuel.js — Bang! Duel (`/bang`) : un joueur contre le Bot (partie
-// privée, message éphémère) ou contre un autre joueur (`/bang joueurs:2`,
+// privée, message éphémère) ou contre un autre joueur (`/bang 1v1`,
 // message public + vue éphémère par joueur). Règles pures dans
 // bangDuelRules.js.
 //
@@ -112,7 +112,7 @@ export async function agirDuel(discordId, fn) {
   });
 }
 
-// ── 1v1 (`/bang joueurs:2`) ──────────────────────────────────────────
+// ── 1v1 (`/bang 1v1`) ──────────────────────────────────────────
 // Partie : { statut: "lobby" | "enCours" | "fini", channelId, messageId,
 // lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
 // moteur → discordId ; "joueur" commence), duel, webhooks: { discordId:
