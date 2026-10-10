@@ -240,7 +240,9 @@ function buildResumeLignes(
     );
   }
 
-  if (rankingApres.length) {
+  // Leader déjà arrivé : la ligne d'arrivée l'a annoncé vainqueur, un
+  // narratif "en tête" ou "course serrée" serait redondant.
+  if (rankingApres.length && rankingApres[0].arriveJour == null) {
     const leader = rankingApres[0];
     if (rankingAvant.length && rankingAvant[0].discordId !== leader.discordId) {
       lines.push(
