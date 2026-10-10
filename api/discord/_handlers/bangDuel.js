@@ -663,7 +663,8 @@ function vuePvp(partie, config, discordId, texte = null) {
           color: BANG_COLOR,
         },
       ],
-      components: boutonsFin(),
+      // Pas de bouton Règles : celui du message public suffit
+      components: [],
     };
   }
   const moi = siegeDe(partie, discordId);
@@ -770,9 +771,19 @@ function deroule(d, noms) {
   return [...parTour].map(([tour, evts]) => `**Tour ${tour}** : ${evts.join(" · ")}`);
 }
 
+// Fin de partie : les 3 prochaines cartes de la pioche.
+function lignePioche(pioche) {
+  if (!pioche?.length) return "🃏 La pioche était vide.";
+  const cartes = pioche.slice(0, 3).map(carteLabel);
+  const liste = cartes.length > 1 ? `${cartes.slice(0, -1).join(", ")} et ${cartes.at(-1)}` : cartes[0];
+  return cartes.length > 1
+    ? `🃏 Les ${cartes.length} prochaines cartes dans la pioche : ${liste}`
+    : `🃏 La prochaine carte dans la pioche : ${liste}`;
+}
+
 function descriptionAvecDeroule(resultat, d, noms) {
   const lignes = deroule(d, noms);
-  const texte = [resultat, ...(lignes.length ? ["", "**Déroulé**", ...lignes] : [])].join("\n");
+  const texte = [resultat, "", lignePioche(d.pioche), ...(lignes.length ? ["", "**Déroulé**", ...lignes] : [])].join("\n");
   return texte.length > 4096 ? `${texte.slice(0, 4095)}…` : texte;
 }
 

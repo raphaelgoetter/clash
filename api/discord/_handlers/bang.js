@@ -242,6 +242,16 @@ function critereVictoire(a, b) {
   return "à égalité parfaite, grâce à son inscription plus précoce";
 }
 
+// Fin de partie : les 3 prochaines cartes de la pioche.
+function lignePioche(pioche) {
+  if (!pioche?.length) return "🃏 La pioche était vide.";
+  const cartes = pioche.slice(0, 3).map(carteLabel);
+  const liste = cartes.length > 1 ? `${cartes.slice(0, -1).join(", ")} et ${cartes.at(-1)}` : cartes[0];
+  return cartes.length > 1
+    ? `🃏 Les ${cartes.length} prochaines cartes dans la pioche : ${liste}`
+    : `🃏 La prochaine carte dans la pioche : ${liste}`;
+}
+
 function buildFinEmbed(jour, ranking, partie, config, manches, currentManche) {
   const top = ranking[0];
   const seul = top && vivants(partie).length === 1;
@@ -266,6 +276,8 @@ function buildFinEmbed(jour, ranking, partie, config, manches, currentManche) {
           (r, i) =>
             `${MEDALS[i] || `${i + 1}.`} **${r.username}** (${statut(r)}, ${plural(r.score, "pt")})`,
         ),
+      "",
+      lignePioche(partie.pioche),
       ...(manches.length
         ? [
             "",
