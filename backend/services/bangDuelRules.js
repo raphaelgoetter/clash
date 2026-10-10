@@ -130,15 +130,18 @@ export function piocherClic(d, id, { config }) {
 
 // Cache le Gobelin explosif désamorcé (positions de Bang!). L'adversaire
 // sait qu'il est dans la pioche, pas où (`soupcon`, utilisé par le Bot).
-export function placer(d, id, position, { config, rng = Math.random } = {}) {
+// `eviterSommet` (Bot avec une pioche due restante) : « au hasard » exclut
+// le sommet, qu'il repiocherait aussitôt.
+export function placer(d, id, position, { config, rng = Math.random, eviterSommet = false } = {}) {
   const j = d.joueurs[id];
   if (!j?.enAttente) return { erreur: "pasEnAttente" };
   if (!(position in POSITIONS)) return { erreur: "position" };
   const len = d.pioche.length;
+  const min = eviterSommet && len ? 1 : 0; // premier emplacement autorisé
   const index =
     position === "milieu" ? Math.floor(len / 2)
       : position === "fond" ? len
-        : position === "hasard" ? Math.floor(rng() * (len + 1))
+        : position === "hasard" ? min + Math.floor(rng() * (len + 1 - min))
           : Math.min(Number(position) - 1, len);
   d.pioche.splice(index, 0, "bombe");
   j.enAttente = false;
@@ -282,8 +285,8 @@ export function jouerBot(d, id, { config, rng = Math.random }) {
     connu = connu ? connu.slice(1) : null;
     if (r.bang === "elimine") return;
     if (r.bang === "sauve") {
-      // Pioche due restante (Gang) : jamais en haut, il la piocherait aussitôt
-      placer(d, id, !j.dette && rng() < 0.5 ? "1" : "hasard", { config, rng });
+      // Pioche due restante (Gang) : jamais au sommet, il la piocherait aussitôt
+      placer(d, id, !j.dette && rng() < 0.5 ? "1" : "hasard", { config, rng, eviterSommet: j.dette > 0 });
       connu = null;
     }
   }

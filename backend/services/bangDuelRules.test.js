@@ -139,6 +139,15 @@ function main() {
     assert.ok(jouer(d, "joueur", "voleuse", { config: CONFIG, rng }).vole, "2e attaque : plus de Moine");
   }
 
+  // ── Bot : avec une pioche due restante, jamais caché au sommet ──
+  for (let k = 0; k < 200; k++) {
+    const d = duelTest([], ["esprit"], ["bombe", "gobelin", "gobelin", "gobelin"]);
+    d.actif = "bot";
+    d.joueurs.bot.dette = 2;
+    jouerBot(d, "bot", { config: CONFIG, rng: Math.random });
+    assert.ok(!d.termine, "le Bot ne repioche pas la bombe qu'il vient de cacher");
+  }
+
   // ── Fin : match nul après le dernier tour ──
   {
     const d = duelTest([], [], Array(50).fill("gobelin"));
