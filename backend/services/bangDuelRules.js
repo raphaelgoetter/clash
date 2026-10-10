@@ -146,7 +146,8 @@ export function placer(d, id, position, { config, rng = Math.random, eviterSomme
   d.pioche.splice(index, 0, "bombe");
   j.enAttente = false;
   d.soupcon[adversaire(id)] = true;
-  noter(d, id, "cache", { position });
+  // index : emplacement réel (révélé seulement dans le déroulé de fin)
+  noter(d, id, "cache", { position, index });
   // Dernière pioche du tour : la main passe
   const finTour = !j.dette;
   if (finTour) finirTour(d, id, { config });

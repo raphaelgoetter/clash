@@ -725,7 +725,8 @@ function messagePublic(partie, config) {
 }
 
 // Déroulé résumé de la partie, un tour par ligne (temps forts seulement :
-// pioches ordinaires, Sarbacanes et emplacements des bombes omis).
+// pioches ordinaires et Sarbacanes omises). Partie finie : l'emplacement des
+// Gobelins explosifs cachés est révélé.
 // `noms` : siège → désignations (BOT ou nomsJoueur()), sans mention.
 function deroule(d, noms) {
   const evenement = (e) => {
@@ -748,9 +749,13 @@ function deroule(d, noms) {
       case "tornade":
         return `🌪️ ${S} mélange la pioche`;
       case "sauve":
-        return `💚 ${S} désamorce un Gobelin explosif`;
+        return `💚 ${S} désamorce un Gobelin explosif grâce à son Esprit de guérison`;
+      case "cache":
+        return e.index == null
+          ? `🤫 ${S} remet le Gobelin explosif dans la pioche (${POSITIONS[e.position].toLowerCase()})`
+          : `🤫 ${S} remet le Gobelin explosif en ${e.index ? `${e.index + 1}e` : "1re"} place de la pioche`;
       case "explose":
-        return `💥 ${S} explose`;
+        return `💥 ${S} n'a plus d'Esprit de guérison pour le sauver et explose`;
       default:
         return null;
     }
