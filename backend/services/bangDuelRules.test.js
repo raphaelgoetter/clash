@@ -1,6 +1,6 @@
 import assert from "assert";
 import fs from "fs";
-import { creerDuel, piocher, placer, jouer, voler, finirTour, jouerBot } from "./bangDuelRules.js";
+import { creerDuel, piocher, piocherClic, placer, jouer, voler, finirTour, jouerBot } from "./bangDuelRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/bang/duel.json", import.meta.url), "utf8"));
 
@@ -76,6 +76,26 @@ function main() {
     assert.strictEqual(d.joueurs.bot.dette, CONFIG.gang_pioches - 1, "le Fût esquive une des pioches dues");
     piocher(d, "bot", { config: CONFIG });
     assert.ok(!finirTour(d, "bot", { config: CONFIG }).erreur);
+  }
+
+  // ── Gang subi : les pioches dues d'un seul clic, arrêt sur un Gobelin explosif ──
+  {
+    const d = duelTest(["esprit"], [], ["gobelin", "fut", "moine"]);
+    d.joueurs.joueur.dette = CONFIG.gang_pioches;
+    const r = piocherClic(d, "joueur", { config: CONFIG });
+    assert.strictEqual(r.tirages.length, CONFIG.gang_pioches);
+    assert.strictEqual(d.joueurs.joueur.dette, 0);
+    assert.ok(!finirTour(d, "joueur", { config: CONFIG }).erreur);
+
+    const d2 = duelTest(["esprit"], [], ["bombe", "gobelin"]);
+    d2.joueurs.joueur.dette = CONFIG.gang_pioches;
+    const r2 = piocherClic(d2, "joueur", { config: CONFIG });
+    assert.strictEqual(r2.tirages.length, 1, "arrêt sur le Gobelin explosif");
+    assert.strictEqual(r2.tirages[0].bang, "sauve");
+    assert.strictEqual(d2.joueurs.joueur.dette, CONFIG.gang_pioches - 1);
+
+    const d3 = duelTest([], [], ["gobelin", "fut"]);
+    assert.strictEqual(piocherClic(d3, "joueur", { config: CONFIG }).tirages.length, 1, "sans dette : une seule carte");
   }
 
   // ── Fût : compte comme la pioche du tour ──

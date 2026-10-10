@@ -22,7 +22,7 @@ import {
   finirTour,
   jouer,
   jouerBot,
-  piocher,
+  piocherClic,
   placer,
   voler,
 } from "../../../backend/services/bangDuelRules.js";
@@ -47,7 +47,12 @@ async function patchOriginal(webhookUrl, payload) {
     await fetch(`${webhookUrl}/messages/@original`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: "", embeds: [], components: [], ...payload }),
+      body: JSON.stringify({
+        content: "",
+        embeds: [],
+        components: [],
+        ...payload,
+      }),
     });
   } catch (err) {
     console.error("[BangDuel] Échec PATCH:", err.message);
@@ -70,7 +75,9 @@ function formatMain(main) {
     .map((id) => [id, main.filter((c) => c === id).length])
     .filter(([, n]) => n > 0);
   if (!groupes.length) return "aucune carte";
-  return groupes.map(([id, n]) => `${carteLabel(id)}${n > 1 ? ` ×${n}` : ""}`).join(" · ");
+  return groupes
+    .map(([id, n]) => `${carteLabel(id)}${n > 1 ? ` ×${n}` : ""}`)
+    .join(" · ");
 }
 
 function mainImageUrl(main) {
@@ -132,15 +139,22 @@ function lignesBot(entrees) {
     }
     if (e.id !== "bot") continue;
     const textes = {
-      sarbacane: () => "🎯 Le Bot scrute la pioche avec son Gobelin à sarbacane…",
-      tornade: () => "🌪️ Le Bot déclenche une Tornade : la pioche est mélangée !",
-      fut: () => "🛢️ Le Bot se cache dans un Fût à gobelins et esquive une pioche.",
-      gang: () => `👊 Le Bot t'envoie son Gang de gobelins : tu devras piocher ${e.n} fois !`,
+      sarbacane: () =>
+        "🎯 Le Bot scrute la pioche avec son Gobelin à sarbacane…",
+      tornade: () =>
+        "🌪️ Le Bot déclenche une Tornade : la pioche est mélangée !",
+      fut: () =>
+        "🛢️ Le Bot se cache dans un Fût à gobelins et esquive une pioche.",
+      gang: () =>
+        `👊 Le Bot t'envoie son Gang de gobelins : tu devras piocher ${e.n} cartes d'un coup !`,
       voleuse: () => `🦹 La Voleuse du Bot te prend : ${carteLabel(e.carte)} !`,
       voleuseVide: () => "🦹 La Voleuse du Bot ne trouve rien dans ta main.",
-      renvoi: () => `🙏 Aïe ! Le Moine du Bot renvoie ta carte (${carteLabel(e.carte)})${e.vole ? ` et te prend ${carteLabel(e.vole)}` : ""}.`,
-      sauve: () => "💥 Le Bot pioche un Gobelin explosif… sauvé par son Esprit de guérison !",
-      cache: () => "🤫 Le Bot cache le Gobelin explosif quelque part dans la pioche…",
+      renvoi: () =>
+        `🙏 Aïe ! Le Moine du Bot renvoie ta carte (${carteLabel(e.carte)})${e.vole ? ` et te prend ${carteLabel(e.vole)}` : ""}.`,
+      sauve: () =>
+        "💥 Le Bot pioche un Gobelin explosif… sauvé par son Esprit de guérison !",
+      cache: () =>
+        "🤫 Le Bot cache le Gobelin explosif quelque part dans la pioche…",
       explose: () => "🚀 **BANG !** Le Bot explose !",
     };
     const texte = textes[e.k]?.();
@@ -165,15 +179,30 @@ function boutonsFin() {
     {
       type: 1,
       components: [
-        { type: 2, style: 1, label: "Rejouer", emoji: { name: "🔁" }, custom_id: "bangduel_rejouer" },
-        { type: 2, style: 2, label: "Règles", emoji: { name: "📖" }, custom_id: "bangduel_regles" },
+        {
+          type: 2,
+          style: 1,
+          label: "Rejouer",
+          emoji: { name: "🔁" },
+          custom_id: "bangduel_rejouer",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Règles",
+          emoji: { name: "📖" },
+          custom_id: "bangduel_regles",
+        },
       ],
     },
   ];
 }
 
 function vueFin(d, texte) {
-  const lignes = [...(texte ? [texte, ""] : []), ...(d.resumeBot?.length ? ["**🤖 Tour du Bot**", ...d.resumeBot, ""] : [])];
+  const lignes = [
+    ...(texte ? [texte, ""] : []),
+    ...(d.resumeBot?.length ? ["**🤖 Tour du Bot**", ...d.resumeBot, ""] : []),
+  ];
   const titre =
     d.gagnant === "joueur"
       ? "🏆 Victoire ! Le Bot a explosé."
@@ -181,7 +210,13 @@ function vueFin(d, texte) {
         ? "💀 Défaite… tu as explosé."
         : "🤝 Match nul : personne n'a explosé.";
   return {
-    embeds: [{ title: `🔫 Bang! Duel · ${titre}`, description: lignes.join("\n") || " ", color: BANG_COLOR }],
+    embeds: [
+      {
+        title: `💣 Bang! Duel · ${titre}`,
+        description: lignes.join("\n") || " ",
+        color: BANG_COLOR,
+      },
+    ],
     components: boutonsFin(),
   };
 }
@@ -199,15 +234,19 @@ function buildVue(d, config, { texte = null } = {}) {
     ...(d.resumeBot?.length ? ["**🤖 Tour du Bot**", ...d.resumeBot, ""] : []),
     `🃏 Pioche : **${plural(d.pioche.length, "carte")}**, dont **${bombes}** 💥`,
     `🤖 Le Bot a **${plural(bot.main.length, "carte")}** en main.`,
-    ...(j.dette > 0 ? [`👊 Gang de gobelins : **${plural(j.dette, "pioche")}** à faire.`] : []),
-    ...(j.moine ? ["🙏 Ton Moine te protège : la prochaine attaque du Bot sera renvoyée."] : []),
+    ...(j.dette > 0
+      ? [`👊 Gang de gobelins : **${plural(j.dette, "pioche")}** à faire, d'un seul clic sur Piocher.`]
+      : []),
+    ...(j.moine
+      ? ["🙏 Ton Moine te protège : la prochaine attaque du Bot sera renvoyée."]
+      : []),
     "",
     `Ce tour : **${j.pioches}/${config.pioches_par_tour}** pioches · **${j.jouees}/${config.cartes_par_tour}** cartes jouées`,
     `**Ta main** : ${formatMain(j.main)}`,
   ];
   const image = mainImageUrl(j.main);
   const embed = {
-    title: `🔫 Bang! Duel · Tour ${d.tour}/${config.tours_max}`,
+    title: `💣 Bang! Duel · Tour ${d.tour}/${config.tours_max}`,
     description: lignes.join("\n").slice(0, 4096),
     color: BANG_COLOR,
     ...(image ? { image: { url: image } } : {}),
@@ -224,7 +263,10 @@ function buildVue(d, config, { texte = null } = {}) {
               type: 3,
               custom_id: "bangduel_placer",
               placeholder: "Où cacher le Gobelin explosif ?",
-              options: Object.entries(POSITIONS).map(([value, label]) => ({ label, value })),
+              options: Object.entries(POSITIONS).map(([value, label]) => ({
+                label,
+                value,
+              })),
             },
           ],
         },
@@ -235,17 +277,32 @@ function buildVue(d, config, { texte = null } = {}) {
     const options = Object.keys(CARTES)
       .map((id) => [id, bot.main.filter((c) => c === id).length])
       .filter(([, n]) => n > 0)
-      .map(([id, n]) => ({ label: `${CARTES[id].nom}${n > 1 ? ` (×${n})` : ""}`, value: id, emoji: { name: CARTES[id].emoji } }));
+      .map(([id, n]) => ({
+        label: `${CARTES[id].nom}${n > 1 ? ` (×${n})` : ""}`,
+        value: id,
+        emoji: { name: CARTES[id].emoji },
+      }));
     return {
       embeds: [embed],
       components: [
-        { type: 1, components: [{ type: 3, custom_id: "bangduel_voler", placeholder: "🦹 Quelle carte prendre au Bot ?", options }] },
+        {
+          type: 1,
+          components: [
+            {
+              type: 3,
+              custom_id: "bangduel_voler",
+              placeholder: "🦹 Quelle carte prendre au Bot ?",
+              options,
+            },
+          ],
+        },
       ],
     };
   }
 
   const restantes = j.dette > 0 ? j.dette : config.pioches_par_tour - j.pioches;
-  const peutFinir = !d.pioche.length || (j.dette === 0 && (j.pioches > 0 || j.esquive));
+  const peutFinir =
+    !d.pioche.length || (j.dette === 0 && (j.pioches > 0 || j.esquive));
   const components = [
     {
       type: 1,
@@ -258,13 +315,33 @@ function buildVue(d, config, { texte = null } = {}) {
           custom_id: "bangduel_piocher",
           disabled: !d.pioche.length || restantes <= 0,
         },
-        { type: 2, style: 3, label: "Finir mon tour", emoji: { name: "✅" }, custom_id: "bangduel_finir", disabled: !peutFinir },
-        { type: 2, style: 2, label: "Règles", emoji: { name: "📖" }, custom_id: "bangduel_regles" },
-        { type: 2, style: 4, label: "Abandonner", custom_id: "bangduel_abandon" },
+        {
+          type: 2,
+          style: 3,
+          label: "Finir mon tour",
+          emoji: { name: "✅" },
+          custom_id: "bangduel_finir",
+          disabled: !peutFinir,
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Règles",
+          emoji: { name: "📖" },
+          custom_id: "bangduel_regles",
+        },
+        {
+          type: 2,
+          style: 4,
+          label: "Abandonner",
+          custom_id: "bangduel_abandon",
+        },
       ],
     },
   ];
-  const jouables = JOUABLES_DUEL.filter((c) => j.main.includes(c) && !(c === "moine" && j.moine));
+  const jouables = JOUABLES_DUEL.filter(
+    (c) => j.main.includes(c) && !(c === "moine" && j.moine),
+  );
   if (jouables.length && j.jouees < config.cartes_par_tour) {
     components.push({
       type: 1,
@@ -275,7 +352,12 @@ function buildVue(d, config, { texte = null } = {}) {
           placeholder: "⚡ Jouer une carte",
           options: jouables.map((c) => {
             const n = j.main.filter((x) => x === c).length;
-            return { label: `${CARTES[c].nom}${n > 1 ? ` (×${n})` : ""}`, value: c, emoji: { name: CARTES[c].emoji }, description: EFFETS[c] };
+            return {
+              label: `${CARTES[c].nom}${n > 1 ? ` (×${n})` : ""}`,
+              value: c,
+              emoji: { name: CARTES[c].emoji },
+              description: EFFETS[c],
+            };
           }),
         },
       ],
@@ -313,7 +395,8 @@ function buildReglesEmbed(config) {
 
 export async function handleBangDuelRoleRejected(webhookUrl) {
   await patchOriginal(webhookUrl, {
-    content: "Tu n'as pas le rôle nécessaire (MINI-JEUX) pour lancer une partie.",
+    content:
+      "Tu n'as pas le rôle nécessaire (MINI-JEUX) pour lancer une partie.",
   });
 }
 
@@ -323,13 +406,20 @@ export async function handleBangDuelCommand(webhookUrl, discordId) {
     const config = await loadDuelConfig();
     const enCours = await readDuel(discordId);
     if (enCours && !enCours.termine) {
-      await patchOriginal(webhookUrl, buildVue(enCours, config, { texte: "▶️ Reprise de ta partie en cours." }));
+      await patchOriginal(
+        webhookUrl,
+        buildVue(enCours, config, {
+          texte: "▶️ Reprise de ta partie en cours.",
+        }),
+      );
       return;
     }
     const { duel } = await nouveauDuel(discordId);
     await patchOriginal(
       webhookUrl,
-      buildVue(duel, config, { texte: `Nouvelle partie contre le Bot ! Tu commences. Tu as un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}.` }),
+      buildVue(duel, config, {
+        texte: `Nouvelle partie contre le Bot ! Tu commences. Tu as un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}.`,
+      }),
     );
   } catch (err) {
     console.error("[BangDuel] Échec lancement:", err.message);
@@ -348,24 +438,57 @@ async function executer(webhookUrl, discordId, fn) {
   });
   if (!duel) {
     await patchOriginal(webhookUrl, {
-      embeds: [{ description: "⏰ Aucune partie en cours (abandonnée après 2 h sans action). Relance `/bang` !", color: BANG_COLOR }],
+      embeds: [
+        {
+          description:
+            "⏰ Aucune partie en cours (abandonnée après 2 h sans action). Relance `/bang` !",
+          color: BANG_COLOR,
+        },
+      ],
       components: boutonsFin(),
     });
     return;
   }
-  await patchOriginal(webhookUrl, buildVue(duel, config, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte }));
+  await patchOriginal(
+    webhookUrl,
+    buildVue(duel, config, {
+      texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte,
+    }),
+  );
 }
 
 export async function handleBangDuelPiocher(webhookUrl, discordId) {
   try {
     await executer(webhookUrl, discordId, (d, config) => {
       // Nouvelle action du joueur : le récit du tour du Bot s'efface
-      const r = piocher(d, "joueur", { config });
+      // Pioches dues d'un Gang de gobelins : toutes d'un seul clic
+      const r = piocherClic(d, "joueur", { config });
       if (r.erreur) return r;
       d.resumeBot = [];
-      if (r.bang === "elimine") return { texte: "💥 **BANG !** Tu as pioché un Gobelin explosif sans Esprit de guérison." };
-      if (r.bang === "sauve") return { texte: `${carteLabel("bombe")} désamorcé ! Ton Esprit de guérison te sauve : choisis où cacher le Gobelin explosif.` };
-      return { texte: `Tu pioches : **${carteLabel(r.carte)}**` };
+      const cartes = r.tirages.filter((t) => !t.bang).map((t) => t.carte);
+      const bang = r.tirages.find((t) => t.bang)?.bang;
+      const avant = cartes.length
+        ? `Tu pioches : **${cartes.map(carteLabel).join("**, **")}**`
+        : null;
+      if (bang === "elimine")
+        return {
+          texte: [
+            avant,
+            "💥 **BANG !** Tu as pioché un Gobelin explosif sans Esprit de guérison.",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        };
+      if (bang === "sauve")
+        return {
+          texte: [
+            avant,
+            `${carteLabel("bombe")} désamorcé ! Ton Esprit de guérison te sauve : choisis où cacher le Gobelin explosif.`,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        };
+      return { texte: avant };
     });
   } catch (err) {
     console.error("[BangDuel] Échec pioche:", err.message);
@@ -374,7 +497,9 @@ export async function handleBangDuelPiocher(webhookUrl, discordId) {
 
 export async function handleBangDuelFinir(webhookUrl, discordId) {
   try {
-    await executer(webhookUrl, discordId, (d, config) => finirTour(d, "joueur", { config }));
+    await executer(webhookUrl, discordId, (d, config) =>
+      finirTour(d, "joueur", { config }),
+    );
   } catch (err) {
     console.error("[BangDuel] Échec fin de tour:", err.message);
   }
@@ -385,7 +510,9 @@ export async function handleBangDuelPlacer(webhookUrl, discordId, position) {
     await executer(webhookUrl, discordId, (d) => {
       const r = placer(d, "joueur", position);
       if (r.erreur) return r;
-      return { texte: `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.` };
+      return {
+        texte: `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.`,
+      };
     });
   } catch (err) {
     console.error("[BangDuel] Échec placement:", err.message);
@@ -399,19 +526,43 @@ export async function handleBangDuelCarte(webhookUrl, discordId, carte) {
       if (r.erreur) return r;
       d.resumeBot = [];
       if (r.carte === "sarbacane") {
-        const vues = r.revelation.length ? r.revelation.map((c, i) => `${i + 1}. ${carteLabel(c)}`).join("\n") : "La pioche est vide.";
+        const vues = r.revelation.length
+          ? r.revelation.map((c, i) => `${i + 1}. ${carteLabel(c)}`).join("\n")
+          : "La pioche est vide.";
         return { texte: `🎯 **Sommet de la pioche** :\n${vues}` };
       }
-      if (r.carte === "moine") return { texte: "🙏 Ton Moine veille : la prochaine attaque du Bot lui sera renvoyée." };
-      if (r.carte === "tornade") return { texte: "🌪️ Tornade ! La pioche est mélangée." };
-      if (r.carte === "fut") return { texte: "🛢️ Tu te caches dans un Fût à gobelins et esquives une pioche." };
+      if (r.carte === "moine")
+        return {
+          texte:
+            "🙏 Ton Moine veille : la prochaine attaque du Bot lui sera renvoyée.",
+        };
+      if (r.carte === "tornade")
+        return { texte: "🌪️ Tornade ! La pioche est mélangée." };
+      if (r.carte === "fut")
+        return {
+          texte:
+            "🛢️ Tu te caches dans un Fût à gobelins et esquives une pioche.",
+        };
       if (r.renvoi && r.carte === "gang")
-        return { texte: `🙏 Aïe ! Le Moine du Bot renvoie ton Gang de gobelins : tu dois piocher ${config.gang_pioches} fois.` };
+        return {
+          texte: `🙏 Aïe ! Le Moine du Bot renvoie ton Gang de gobelins : tu dois piocher ${config.gang_pioches} cartes d'un coup.`,
+        };
       if (r.renvoi)
-        return { texte: `🙏 Aïe ! Le Moine du Bot renvoie ta Voleuse${r.vole ? ` : il te prend ${carteLabel(r.vole)}` : ""}.` };
-      if (r.carte === "gang") return { texte: `👊 Ton Gang de gobelins attend le Bot : il devra piocher ${config.gang_pioches} fois. Ton tour est terminé.` };
-      if (r.choix) return { texte: "🦹 Ta Voleuse fouille la main du Bot : choisis la carte à prendre." };
-      return { texte: "🦹 Ta Voleuse ne trouve rien : la main du Bot est vide." };
+        return {
+          texte: `🙏 Aïe ! Le Moine du Bot renvoie ta Voleuse${r.vole ? ` : il te prend ${carteLabel(r.vole)}` : ""}.`,
+        };
+      if (r.carte === "gang")
+        return {
+          texte: `👊 Ton Gang de gobelins attend le Bot : il devra piocher ${config.gang_pioches} fois. Ton tour est terminé.`,
+        };
+      if (r.choix)
+        return {
+          texte:
+            "🦹 Ta Voleuse fouille la main du Bot : choisis la carte à prendre.",
+        };
+      return {
+        texte: "🦹 Ta Voleuse ne trouve rien : la main du Bot est vide.",
+      };
     });
   } catch (err) {
     console.error("[BangDuel] Échec carte:", err.message);
@@ -434,7 +585,13 @@ export async function handleBangDuelAbandon(webhookUrl, discordId) {
   try {
     await supprimerDuel(discordId);
     await patchOriginal(webhookUrl, {
-      embeds: [{ title: "🔫 Bang! Duel · Partie abandonnée", description: "Le Bot l'emporte par forfait.", color: BANG_COLOR }],
+      embeds: [
+        {
+          title: "💣 Bang! Duel · Partie abandonnée",
+          description: "Le Bot l'emporte par forfait.",
+          color: BANG_COLOR,
+        },
+      ],
       components: boutonsFin(),
     });
   } catch (err) {
@@ -446,7 +603,12 @@ export async function handleBangDuelRejouer(webhookUrl, discordId) {
   try {
     const config = await loadDuelConfig();
     const { duel } = await nouveauDuel(discordId);
-    await patchOriginal(webhookUrl, buildVue(duel, config, { texte: "Nouvelle partie contre le Bot ! Tu commences." }));
+    await patchOriginal(
+      webhookUrl,
+      buildVue(duel, config, {
+        texte: "Nouvelle partie contre le Bot ! Tu commences.",
+      }),
+    );
   } catch (err) {
     console.error("[BangDuel] Échec nouvelle partie:", err.message);
   }
@@ -455,7 +617,9 @@ export async function handleBangDuelRejouer(webhookUrl, discordId) {
 // [📖 Règles] : nouvel éphémère.
 export async function handleBangDuelRegles(webhookUrl) {
   try {
-    await patchOriginal(webhookUrl, { embeds: [buildReglesEmbed(await loadDuelConfig())] });
+    await patchOriginal(webhookUrl, {
+      embeds: [buildReglesEmbed(await loadDuelConfig())],
+    });
   } catch (err) {
     console.error("[BangDuel] Échec Règles:", err.message);
   }

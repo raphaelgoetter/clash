@@ -103,6 +103,24 @@ export function piocher(d, id, { config }) {
   return { carte, bang: "sauve" };
 }
 
+// Clic sur Piocher : une carte, ou toutes les pioches dues d'un coup
+// (Gang de gobelins), en s'arrêtant sur un Gobelin explosif.
+// Renvoie { erreur } ou { tirages: [résultats de piocher()] }.
+export function piocherClic(d, id, { config }) {
+  const nb = Math.max(1, d.joueurs[id]?.dette ?? 0);
+  const tirages = [];
+  for (let k = 0; k < nb; k++) {
+    const r = piocher(d, id, { config });
+    if (r.erreur) {
+      if (!tirages.length) return { erreur: r.erreur };
+      break;
+    }
+    tirages.push(r);
+    if (r.bang) break;
+  }
+  return { tirages };
+}
+
 // Cache le Gobelin explosif désamorcé (positions de Bang!). L'adversaire
 // sait qu'il est dans la pioche, pas où (`soupcon`, utilisé par le Bot).
 export function placer(d, id, position, { rng = Math.random } = {}) {
