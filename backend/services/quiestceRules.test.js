@@ -114,12 +114,35 @@ function main() {
     assert.strictEqual(desinscrire(p, "i0").erreur, "inscriptions");
   }
 
+  // ── Indice de départ : une caractéristique exacte à chaque nouvelle cible ──
+  {
+    const p = partieTest(8);
+    for (const j of Object.values(p.joueurs)) {
+      const cible = p.joueurs[j.cible];
+      assert.strictEqual(j.enquete.ordre.length, 1);
+      const [q] = j.enquete.ordre;
+      assert.strictEqual(j.enquete.sources[q], "depart");
+      assert.strictEqual(j.enquete.infos[q], p.cartes[cible.carte].profil[q]);
+      assert.strictEqual(j.enquete.posees, 0, "l'indice n'est pas une question posée");
+    }
+    // Choix d'une cible déjà éclairée par un Projecteur : indice sur une autre caractéristique
+    const moi = p.joueurs.j0;
+    const autre = ciblesDisponibles(p, "j0", { config: CONFIG }).find((id) => id !== moi.cible);
+    p.reveles[autre] = { rarete: p.cartes[p.joueurs[autre].carte].profil.rarete };
+    moi.cible = null;
+    const r = choisirCible(p, "j0", autre, { config: CONFIG, rng });
+    assert.notStrictEqual(r.depart.q, "rarete");
+    assert.deepStrictEqual(moi.enquete.ordre, ["rarete", r.depart.q]);
+  }
+
   // ── Question : une par jour, parmi le pool du jour, réponse exacte ──
   {
     const p = partieTest(6);
     const id = "j0";
     const moi = p.joueurs[id];
     const cible = p.joueurs[moi.cible];
+    // Enquête vidée (sans indice de départ) pour tester le pool seul
+    moi.enquete = { infos: {}, ordre: [], sources: {}, posees: 0, eliminees: [] };
     assert.deepStrictEqual(questionsPossibles(p, id, { config: CONFIG }), CONFIG.pool["1"]);
     assert.strictEqual(poser(p, id, "pv", { config: CONFIG }).erreur, "question");
     const r = poser(p, id, "rarete", { config: CONFIG });
@@ -137,6 +160,7 @@ function main() {
   {
     const p = partieTest(6);
     const moi = p.joueurs.j0;
+    moi.enquete = { infos: {}, ordre: [], sources: {}, posees: 0, eliminees: [] };
     for (const q of CONFIG.pool["1"]) moi.enquete.infos[q] = "x";
     const libres = questionsPossibles(p, "j0", { config: CONFIG });
     assert.deepStrictEqual(libres.sort(), QIDS.filter((q) => !CONFIG.pool["1"].includes(q)).sort());

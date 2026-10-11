@@ -246,7 +246,5 @@ const REC = { ...BASE, pool: true, objects: ['projecteur', 'vol', 'double'], dou
 const R0 = { ...REC, excludeKnown: true, ab: true };
 const costs = (p, v, d) => ({ ...COST, projecteur: p, vol: v, double: d });
 const FINAL = { ...R0, ab: false, cost: costs(3, 2, 4), volMode: 'last' };
-run('Cercle J1 puis choix libre (limite 2)', { ...FINAL, initialCycle: true });
-run('Toujours automatique : au hasard (limite 1)', { ...FINAL, initialCycle: true, auto: 'random', cap: 1 });
-run('Toujours automatique : au hasard (limite 2)', { ...FINAL, initialCycle: true, auto: 'random' });
-run('Toujours automatique : plus grosse prime dispo (limite 2)', { ...FINAL, initialCycle: true, auto: 'maxPrime' });
+run('Règles actuelles', { ...FINAL, initialCycle: true });
+run('Règles actuelles + indice de départ au hasard', { ...FINAL, initialCycle: true, freeClue: true });

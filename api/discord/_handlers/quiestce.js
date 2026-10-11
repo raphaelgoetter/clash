@@ -242,6 +242,7 @@ function buildReglesEmbed(config) {
       `**🎯 Démasquer** : ${config.gain_base} pts moins le numéro du jour, plus la **prime** de ta cible. Accusation ratée : -${config.penalite_erreur} pt.`,
       `**💰 Prime** : +${config.prime_par_jour} par jour sans être démasqué, +${config.prime_par_demasquage} par cible démasquée, remise à 0 quand on te démasque.`,
       `**👀 Cibles** : la première est tirée au sort. Ensuite, tu choisis (${config.chasseurs_max} chasseurs au plus par joueur, jamais un joueur que tu as déjà démasqué).`,
+      "**🗂️ Indice de départ** : à chaque nouvelle cible, tu reçois une caractéristique de sa carte, tirée au hasard.",
       `**🪙 Or** : ${config.or_par_jour} par jour joué, +${config.or_par_demasquage} par démasquage.`,
       `**🎒 Objets** (1 par jour, ${config.objets_max} par partie) :`,
       `${objetLabel("projecteur")} (${o.projecteur.cout} Or) : ${OBJETS.projecteur.effet}`,
@@ -543,7 +544,7 @@ function statutLigne(j, config) {
   return `💰 Prime : **${j.prime}** · 🏆 **${plural(j.score, "pt")}** · 🪙 **${j.or} Or** · 🎒 Objets : ${j.objets}/${config.objets_max}`;
 }
 
-const SOURCES = { projecteur: " (Projecteur)", vol: " (piste volée)" };
+const SOURCES = { projecteur: " (Projecteur)", vol: " (piste volée)", depart: " (indice de départ)" };
 
 function chunk(arr, n) {
   const out = [];
@@ -842,7 +843,9 @@ export async function handleCible(webhookUrl, discordId, username, cibleId) {
       username,
       (partie, config) => {
         const r = choisirCible(partie, discordId, cibleId, { config });
-        return { entete: r.erreur ? avertissement(r.erreur) : `🎯 Nouvelle cible : **${partie.joueurs[cibleId].username}**.` };
+        if (r.erreur) return { entete: avertissement(r.erreur) };
+        const indice = r.depart ? ` Indice de départ : ${QUESTIONS[r.depart.q].nom.toLowerCase()} **${r.depart.valeur}**.` : "";
+        return { entete: `🎯 Nouvelle cible : **${partie.joueurs[cibleId].username}**.${indice}` };
       },
       buildEnqueteView,
     );

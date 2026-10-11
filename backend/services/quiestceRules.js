@@ -205,9 +205,9 @@ export function demarrer(partie, { config, cartesData, rng = Math.random }) {
   const pioche = shuffle(partie.grille, rng);
   ids.forEach((id, i) => {
     partie.joueurs[id].carte = pioche[i] ?? null;
-    if (ids.length > 1) partie.joueurs[id].cible = ids[(i + 1) % ids.length];
   });
   partie.demarree = true;
+  if (ids.length > 1) ids.forEach((id, i) => assignerCible(partie, id, ids[(i + 1) % ids.length], { rng }));
   return partie;
 }
 
@@ -228,18 +228,35 @@ export function ciblesDisponibles(partie, id, { config }) {
     .map(([cid]) => cid);
 }
 
-export function choisirCible(partie, id, cibleId, { config }) {
+export function choisirCible(partie, id, cibleId, { config, rng = Math.random }) {
   const moi = partie.joueurs[id];
   if (partie.termine) return { erreur: "termine" };
   if (!moi?.carte) return { erreur: "inconnu" };
   if (moi.cible) return { erreur: "dejaCible" };
   if (!ciblesDisponibles(partie, id, { config }).includes(cibleId)) return { erreur: "cible" };
+  const depart = assignerCible(partie, id, cibleId, { rng });
+  noter(partie, "cible", { s: id, v: cibleId });
+  return { cible: cibleId, depart };
+}
+
+// Nouvelle cible : enquête neuve, révélations publiques (Projecteur) déjà
+// connues de tous, puis l'indice de départ (décision du 11/10) : une
+// caractéristique de la carte tirée au hasard parmi celles encore
+// inconnues. Rend le rythme moins uniforme (une cible peut tomber dès le
+// premier jour, ou résister plusieurs jours). Renvoie l'indice { q, valeur }.
+function assignerCible(partie, id, cibleId, { rng }) {
+  const moi = partie.joueurs[id];
   moi.cible = cibleId;
   moi.enquete = nouvelleEnquete();
-  // Révélations publiques (Projecteur) déjà connues de tous
   for (const [q, valeur] of Object.entries(partie.reveles[cibleId] ?? {})) ajouterInfo(moi.enquete, q, valeur, "projecteur");
-  noter(partie, "cible", { s: id, v: cibleId });
-  return { cible: cibleId };
+  const inconnues = QIDS.filter((q) => !(q in moi.enquete.infos));
+  if (!inconnues.length) return null;
+  const q = inconnues[Math.floor(rng() * inconnues.length)];
+  const cible = partie.joueurs[cibleId];
+  const valeur = partie.cartes[cible.carte].profil[q];
+  ajouterInfo(moi.enquete, q, valeur, "depart");
+  prive(partie, id, `🗂️ Indice de départ sur **${cible.username}** : ${QUESTIONS[q].nom.toLowerCase()} **${valeur}**.`);
+  return { q, valeur };
 }
 
 function ajouterInfo(enquete, q, valeur, source) {
