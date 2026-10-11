@@ -9,12 +9,17 @@
 // Rendu sans état : la grille et les cartes barrées sont passées dans l'URL
 // (encodeGrille) ; l'URL change avec l'état, ce qui contourne le cache
 // d'images de Discord.
+//
+// Illustration de présentation servie depuis Vercel Blob (voir
+// blobAssets.js), data/ n'est pas lu au runtime : relancer
+// `npm run assets:upload-blob -- quiestce` après modification.
 // ============================================================
 
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { cardSvg, loadDataUrls, rasterize, RATIO_CARTE } from "./cardImage.js";
+import { readBlobAsset } from "./blobAssets.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARDS_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "cardNames.json");
@@ -92,4 +97,14 @@ async function buildGrilleSvg(entrees) {
 export async function getGrilleImage(entrees) {
   const { svg, width } = await buildGrilleSvg(entrees);
   return { buffer: await rasterize(svg, width), mimeType: "image/png" };
+}
+
+const ILLUSTRATION_IMAGE_PATH = "quiestce/images/quiestce-launch.webp";
+let illustrationCache = null;
+
+export async function getIllustrationImage() {
+  if (!illustrationCache) {
+    illustrationCache = { buffer: await readBlobAsset(ILLUSTRATION_IMAGE_PATH), mimeType: "image/webp" };
+  }
+  return illustrationCache;
 }

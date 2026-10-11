@@ -62,6 +62,10 @@ const JOURNAL_AFFICHE = 10;
 // Heure de la clôture quotidienne (cron quiestce.yml, 8h20 UTC)
 const CLOTURE_UTC = [8, 20];
 
+function illustrationUrl() {
+  return `${TRUST_ROYALE_URL}/api/quiestce/illustration?v=${Date.now()}`;
+}
+
 async function grilleUrl(partie, barrees = []) {
   return `${TRUST_ROYALE_URL}/api/quiestce/grille?d=${await encodeGrille(partie.grille, barrees)}`;
 }
@@ -103,6 +107,7 @@ function buildAnnonceEmbed(config, partie) {
       .join("\n")
       .slice(0, 4096),
     color: QEC_COLOR,
+    image: { url: illustrationUrl() },
     footer: { text: `La partie commence demain à ${heureCloture()}.` },
   };
 }

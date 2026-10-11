@@ -60,6 +60,7 @@ const TARGETS = [
   { file: "bang/images/bang-table.jpg" },
   { file: "bang/images/bang-launch.webp" },
   { dir: "bang/avatars" },
+  { file: "quiestce/images/quiestce-launch.webp" },
   { dir: "jeux-visuels/palette/images" },
   { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },

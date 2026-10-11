@@ -2102,7 +2102,7 @@ Un objet par jour au plus, `objets_max` (4) par partie. **Or** : `or_par_jour` (
 ### Images (Qui est-ce ?)
 
 - `/api/quiestce/grille?d=…` : grille de la partie (6 colonnes, illustrations officielles via `cardImage.js`, nom sous chaque carte), publique ou fiche d'enquête (cartes barrées grisées avec une croix rouge). État encodé dans l'URL (`encodeGrille()` : index des cartes dans `cardNames.json` et masque des cartes barrées, ~180 caractères à 30 cartes) : rendu sans état, cache CDN (`s-maxage`). Rendu local : `node temp/quiestce/renderGrille.mjs <sortie.png>`.
-- Aucun asset Blob propre (pas d'illustration de présentation pour l'instant) : seule la police `fonts/Inter-Bold.ttf` et les illustrations de cartes, déjà servies.
+- `/api/quiestce/illustration` : `quiestce-launch.webp` (illustration dédiée, 1200×675, goblin détective devant une grille façon Qui est-ce ?), message de présentation seulement. Servie depuis Vercel Blob : relancer `npm run assets:upload-blob -- quiestce` après modification.
 
 ### Stockage — Upstash Redis (`quiestce:*`)
 

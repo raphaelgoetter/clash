@@ -40,7 +40,11 @@ import {
   getTableImage as getBangTableImage,
   decodeTable as decodeBangTable,
 } from "./services/bangImage.js";
-import { decodeGrille as decodeQuiEstCeGrille, getGrilleImage as getQuiEstCeGrilleImage } from "./services/quiestceImage.js";
+import {
+  decodeGrille as decodeQuiEstCeGrille,
+  getGrilleImage as getQuiEstCeGrilleImage,
+  getIllustrationImage as getQuiEstCeIllustrationImage,
+} from "./services/quiestceImage.js";
 import { readCardArtFile } from "./services/cardArt.js";
 
 const app = express();
@@ -442,6 +446,15 @@ app.get("/api/quiestce/grille", async (req, res) => {
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Qui est-ce ? : illustration statique (présentation).
+app.get("/api/quiestce/illustration", async (req, res) => {
+  const image = await getQuiEstCeIllustrationImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
   res.send(image.buffer);
 });
 
