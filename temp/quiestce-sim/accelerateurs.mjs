@@ -10,6 +10,7 @@ const nbCommuns = (a, b) => QIDS.filter((q) => a.p[q] === b.p[q]).length;
 const VARIANTES = {
   "actuel": {},
   "indice de départ (au hasard)": { depart: true },
+  "indice de départ hors pool du jour": { depart: true, horsPool: true },
   "accusation ratée → proche/loin": { fb: (a, b) => (nbCommuns(a, b) >= 4 ? "proche" : "loin") },
   "accusation ratée → nb communs": { fb: nbCommuns },
   "indice de départ + proche/loin": { depart: true, fb: (a, b) => (nbCommuns(a, b) >= 4 ? "proche" : "loin") },
@@ -22,7 +23,10 @@ for (const [nom, v] of Object.entries(VARIANTES)) {
       for (const cible of grille) {
         const jour0 = 1 + Math.floor(Math.random() * 5);
         let cs = grille.slice(); const connues = new Set(); let d = 0; let trouve = false;
-        if (v.depart) { const q = QIDS[Math.floor(Math.random() * QIDS.length)]; connues.add(q); cs = cs.filter((c) => c.p[q] === cible.p[q]); }
+        if (v.depart) {
+          const choixQ = v.horsPool ? QIDS.filter((x) => !config.pool[jour0].includes(x)) : QIDS;
+          const q = choixQ[Math.floor(Math.random() * choixQ.length)]; connues.add(q); cs = cs.filter((c) => c.p[q] === cible.p[q]);
+        }
         while (!trouve && d < 9) {
           const jour = ((jour0 - 1 + d) % 7) + 1; d++;
           let pool = config.pool[jour].filter((x) => !connues.has(x));

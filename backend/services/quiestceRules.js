@@ -207,7 +207,7 @@ export function demarrer(partie, { config, cartesData, rng = Math.random }) {
     partie.joueurs[id].carte = pioche[i] ?? null;
   });
   partie.demarree = true;
-  if (ids.length > 1) ids.forEach((id, i) => assignerCible(partie, id, ids[(i + 1) % ids.length], { rng }));
+  if (ids.length > 1) ids.forEach((id, i) => assignerCible(partie, id, ids[(i + 1) % ids.length], { config, rng }));
   return partie;
 }
 
@@ -234,7 +234,7 @@ export function choisirCible(partie, id, cibleId, { config, rng = Math.random })
   if (!moi?.carte) return { erreur: "inconnu" };
   if (moi.cible) return { erreur: "dejaCible" };
   if (!ciblesDisponibles(partie, id, { config }).includes(cibleId)) return { erreur: "cible" };
-  const depart = assignerCible(partie, id, cibleId, { rng });
+  const depart = assignerCible(partie, id, cibleId, { config, rng });
   noter(partie, "cible", { s: id, v: cibleId });
   return { cible: cibleId, depart };
 }
@@ -242,16 +242,21 @@ export function choisirCible(partie, id, cibleId, { config, rng = Math.random })
 // Nouvelle cible : enquête neuve, révélations publiques (Projecteur) déjà
 // connues de tous, puis l'indice de départ (décision du 11/10) : une
 // caractéristique de la carte tirée au hasard parmi celles encore
-// inconnues. Rend le rythme moins uniforme (une cible peut tomber dès le
-// premier jour, ou résister plusieurs jours). Renvoie l'indice { q, valeur }.
-function assignerCible(partie, id, cibleId, { rng }) {
+// inconnues, de préférence hors des questions du jour (sinon il retirerait
+// une des 3 questions proposées). Rend le rythme moins uniforme (une cible
+// peut tomber dès le premier jour, ou résister plusieurs jours). Renvoie
+// l'indice { q, valeur }.
+function assignerCible(partie, id, cibleId, { config, rng }) {
   const moi = partie.joueurs[id];
   moi.cible = cibleId;
   moi.enquete = nouvelleEnquete();
   for (const [q, valeur] of Object.entries(partie.reveles[cibleId] ?? {})) ajouterInfo(moi.enquete, q, valeur, "projecteur");
   const inconnues = QIDS.filter((q) => !(q in moi.enquete.infos));
   if (!inconnues.length) return null;
-  const q = inconnues[Math.floor(rng() * inconnues.length)];
+  const duJour = config.pool[String(partie.numeroJour)] ?? [];
+  const horsPool = inconnues.filter((q) => !duJour.includes(q));
+  const tirage = horsPool.length ? horsPool : inconnues;
+  const q = tirage[Math.floor(rng() * tirage.length)];
   const cible = partie.joueurs[cibleId];
   const valeur = partie.cartes[cible.carte].profil[q];
   ajouterInfo(moi.enquete, q, valeur, "depart");

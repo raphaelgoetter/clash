@@ -2,9 +2,10 @@
 // quiestce.js — Handlers Discord de Qui est-ce ? (jeu spécial de 7 jours).
 // Un seul message officiel par jour (questions du jour, classement, tableau
 // de chasse, révélations), réédité en direct après chaque action, avec
-// quatre boutons, chacun en éphémère : Enquêter (sa carte secrète, sa
-// cible, ses indices, la question du jour et l'accusation, édités en
-// place), Objets, Journal (ce qui concerne le joueur) et Règles.
+// trois boutons, chacun en éphémère : Jouer (l'enquête : sa carte secrète,
+// sa cible, ses indices, la question du jour et l'accusation, édités en
+// place ; bouton Objets pour passer aux objets), Règles et Journal (ce qui
+// concerne le joueur).
 // Fenêtre d'inscription (comme Goblin Hunters) : boutons S'inscrire, Se
 // désinscrire et Règles, rappel quotidien, prolongation si l'effectif
 // minimum n'est pas atteint.
@@ -133,7 +134,7 @@ function buildAnnonceEmbed(config, partie, closingAt, { prolongee = false } = {}
 }
 
 const INTRO_J1 =
-  "Les cartes secrètes sont distribuées et chacun a reçu une première cible. Clique sur *Enquêter* pour découvrir ta carte et poser ta première question !";
+  "Les cartes secrètes sont distribuées et chacun a reçu une première cible. Clique sur *Jouer* pour découvrir ta carte et poser ta première question !";
 
 function bilanVeilleLignes(partie) {
   const v = partie.veille;
@@ -290,10 +291,9 @@ function buildTableComponents() {
     {
       type: 1,
       components: [
-        bouton("Enquêter", "🔎", "quiestce_enqueter", 1),
-        bouton("Objets", "🎒", "quiestce_objets", 3),
-        bouton("Journal", "📜", "quiestce_journal"),
+        bouton("Jouer", "🔎", "quiestce_enqueter", 1),
         reglesButton(),
+        bouton("Journal", "📜", "quiestce_journal"),
       ],
     },
   ];
@@ -888,7 +888,7 @@ export async function handleCible(webhookUrl, discordId, username, cibleId) {
 
 function texteObjet(r, partie) {
   if (r.erreur) return avertissement(r.erreur);
-  if (r.objet === "double") return "🔁 Double enquête : une question de plus aujourd'hui, à poser avec le bouton Enquêter.";
+  if (r.objet === "double") return "🔁 Double enquête : une question de plus aujourd'hui, à poser avec le bouton Enquêter ci-dessous.";
   if (r.objet === "vol") return `🕵️ Piste volée à **${partie.joueurs[r.rival].username}** : ${QUESTIONS[r.q].nom.toLowerCase()} **${r.valeur}**.`;
   return `🔦 Projecteur braqué sur **${partie.joueurs[r.leader].username}** : ${QUESTIONS[r.q].nom.toLowerCase()} **${r.valeur}** (révélé à tous).`;
 }

@@ -124,6 +124,8 @@ function main() {
       assert.strictEqual(j.enquete.sources[q], "depart");
       assert.strictEqual(j.enquete.infos[q], p.cartes[cible.carte].profil[q]);
       assert.strictEqual(j.enquete.posees, 0, "l'indice n'est pas une question posée");
+      assert.ok(!CONFIG.pool["1"].includes(q), "indice hors des questions du jour");
+      assert.strictEqual(questionsPossibles(p, Object.keys(p.joueurs).find((id) => p.joueurs[id] === j), { config: CONFIG }).length, 3);
     }
     // Choix d'une cible déjà éclairée par un Projecteur : indice sur une autre caractéristique
     const moi = p.joueurs.j0;
