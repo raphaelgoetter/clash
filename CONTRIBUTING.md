@@ -896,6 +896,10 @@ Mini-jeu hebdomadaire alterné avec Anagram sous le nom collectif "Jeux de lettr
 
 Le tirage garantit **deux** solutions plutôt qu'une : une carte "seed" principale suit une rotation équitable persistée (`loadSeedOrder`/`pickNextIndex`, même principe que La Juste Carte), et une seconde carte compatible est tirée au hasard (`pickCompatibleSecondarySeed`) parmi celles dont les lettres combinées à la première tiennent dans `DRAW_SIZE`. Passer d'1 à 2 solutions garanties fait chuter le taux de tirages "une seule carte trouvable" de 38% à 0% (mesuré par simulation, moyenne de mots trouvables : 2.4 → 3.9). Les lettres des deux mots seed (union, pas somme — une lettre partagée par les deux ne compte qu'une fois) sont complétées jusqu'à 14 par un tirage pondéré aux fréquences du Scrabble français (`FR_LETTER_WEIGHTS`, `weightedRandomLetter`), puis l'ensemble est mélangé (`buildLetterBagFromSeeds`) pour qu'aucun mot seed ne soit devinable par sa position.
 
+Depuis le 2026-10-11, chaque tirage doit offrir **entre 4 et 9 cartes trouvables** (`MIN_VALID_WORDS`/`MAX_VALID_WORDS`) : `generateDraw()` retire seconde carte et lettres de complément jusqu'à tomber dans la fourchette (~2 essais en moyenne, 1000 au maximum, sinon le tirage le plus proche est gardé). Sans cette contrainte, seuls 48,5 % des tirages y tombaient (simulation sur 20 000 tirages). Une carte principale de 13 lettres ou plus ne laisse qu'une lettre libre au plus : son minimum est abaissé à 3 (`validWordsRangeFor`). Cinq cartes sont retirées de la rotation des cartes principales (`filterPrimarySeedPool`), car elles ne dépassent jamais 3 mots trouvables : Bélier de combat, Recrues royales, Électrocuteurs, Gang de gobelins et Fût à squelettes. Elles restent des réponses valides et peuvent toujours sortir comme seconde carte seed.
+
+Les tirages sont **préparés à l'avance** et stockés dans `pelemele:draws` : la file est complétée à `PREPARED_DRAWS_TARGET` (50) tirages après chaque manche (`refillPreparedDraws`), et `startNewGame()` consomme le premier. Chaque entrée stocke la carte principale (`seedCardKey`) plutôt que son index de rotation, insensible aux changements de pool ; le nombre de cartes trouvables est recalculé à la consommation. `npm run pelemele:draws` complète la file et affiche le nombre de cartes trouvables de chaque manche à venir (`--reveal` pour les lettres et les cartes).
+
 `computeValidWordsForDraw()` calcule UNE FOIS à la génération de la manche (`startNewGame`) la liste complète des cartes du pool qui rentrent dans ce tirage précis, et la stocke dans l'état (`totalValidWords`/`maxWordLength`) — jamais recalculée à chaque proposition. Sert à afficher "X cartes valides sur ce tirage" et à déterminer le bonus du mot le plus long.
 
 ### Barème (Pêle-mêle)
@@ -930,6 +934,7 @@ Même stockage que La Juste Carte (mêmes pièges `automaticDeserialization`/`HG
 | `pelemele:season:<seasonId>`                | ZSET | Score cumulé de saison par joueur, incrémenté en continu (`zincrby`)     |
 | `pelemele:archived:<seasonId>`              | HASH | Résultats figés par manche terminée (`finalizeRound`), pour l'historique |
 | `pelemele:season:<seasonId>:manche_numbers` | HASH | `gameId → n° de manche dans la saison`, assigné une seule fois           |
+| `pelemele:draws`                            | LIST | Tirages préparés à l'avance (`{seedCardKey, letters}`), dans l'ordre     |
 
 Contrairement à La Juste Carte (archivage au moment du "solved"), les résultats de TOUS les participants d'une manche sont figés en une fois (`finalizeRound`), au moment où `startNewGame()` la remplace.
 
@@ -961,7 +966,8 @@ Même règles de troncage qu'Anagram (20 joueurs max, exclusion des 0 pt, médai
 | `npm run pelemele:test:dry`                    | Aperçu console de la prochaine manche, sans écrire d'état ni poster sur Discord.                                                                                 |
 | `npm run pelemele:public`                      | Poste sur le salon public si le gating hebdomadaire le permet — usage manuel, l'orchestrateur passe par `npm run lettres:public`.                                |
 | `npm run pelemele:public:dry`                  | Équivalent dry-run de `pelemele:public`.                                                                                                                         |
-| `npm run pelemele:reset`                       | Remet le jeu à zéro : plus de manche active, ordre de rotation des cartes seed remélangé, historique et scores effacés. **Destructif**.                          |
+| `npm run pelemele:reset`                       | Remet le jeu à zéro : plus de manche active, ordre de rotation des cartes seed remélangé, tirages préparés supprimés, historique et scores effacés. **Destructif**.                          |
+| `npm run pelemele:draws`                       | Complète la file des tirages préparés (50) et affiche le nombre de cartes trouvables de chaque manche à venir, sans spoiler (`-- --reveal` pour tout afficher).  |
 | `npm run lettres:test`/`:public` (`:dry` idem) | Point d'entrée de l'orchestrateur (voir [Alternance avec Anagram](#alternance-avec-anagram--jeux-de-lettres)) — décide lui-même s'il poste Anagram ou Pêle-mêle. |
 
 ### Variables d'environnement requises (Pêle-mêle)

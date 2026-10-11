@@ -8,6 +8,12 @@ import {
   buildLetterBag,
   buildLetterBagFromSeeds,
   pickCompatibleSecondarySeed,
+  filterPrimarySeedPool,
+  validWordsRangeFor,
+  generateDraw,
+  loadEligiblePool,
+  MIN_VALID_WORDS,
+  MAX_VALID_WORDS,
   weightedRandomLetter,
   computeValidWordsForDraw,
   validateSubmission,
@@ -94,6 +100,30 @@ async function main() {
   assert.ok(["B", "C"].includes(secondary?.cardKey));
   // aucune carte compatible disponible (pool à une seule carte) -> null, pas d'erreur
   assert.strictEqual(pickCompatibleSecondarySeed([miniPool[0]], miniPool[0], mulberry32(3)), null);
+
+  // validWordsRangeFor — minimum abaissé à 3 pour une carte principale de 13+ lettres
+  assert.deepStrictEqual(validWordsRangeFor({ fr: "Gel" }), { min: MIN_VALID_WORDS, max: MAX_VALID_WORDS });
+  assert.deepStrictEqual(validWordsRangeFor({ fr: "Molosse de lave" }), { min: 3, max: MAX_VALID_WORDS });
+
+  // generateDraw — aucun tirage dans la fourchette possible : garde le plus
+  // proche, sans erreur
+  const lonelyDraw = generateDraw([miniPool[0]], miniPool[0], mulberry32(4), 5);
+  assert.strictEqual(lonelyDraw.validWords.length, 1);
+  assert.strictEqual(canFormFromBag("Gel", lonelyDraw.letters), true);
+
+  // generateDraw sur le vrai pool — chaque carte principale de la rotation
+  // tombe dans sa fourchette, et les cartes exclues de la rotation n'y sont plus
+  const realPool = await loadEligiblePool();
+  const primaryPool = filterPrimarySeedPool(realPool);
+  assert.strictEqual(realPool.length - primaryPool.length, 5);
+  assert.ok(!primaryPool.some((c) => c.fr === "Bélier de combat"));
+  const rngReal = mulberry32(11);
+  for (const entry of primaryPool) {
+    const { letters, validWords } = generateDraw(realPool, entry, rngReal);
+    const { min, max } = validWordsRangeFor(entry);
+    assert.strictEqual(canFormFromBag(entry.fr, letters), true);
+    assert.ok(validWords.length >= min && validWords.length <= max, `${entry.fr} : ${validWords.length} mots`);
+  }
 
   // weightedRandomLetter — toujours une lettre valide de la table
   const seenLetters = new Set();

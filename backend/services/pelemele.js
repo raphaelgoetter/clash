@@ -115,6 +115,7 @@ async function hgetallJson(key) {
 const STATE_KEY = "pelemele:state";
 const ORDER_KEY = "pelemele:order";
 const ROUND_SEQ_KEY = "pelemele:round_seq";
+const DRAWS_KEY = "pelemele:draws";
 
 function participantsKey(gameId) {
   return `pelemele:participants:${gameId}`;
@@ -360,6 +361,67 @@ export function pickCompatibleSecondarySeed(pool, primaryEntry, rng = Math.rando
   return null;
 }
 
+// ── Fourchette du nombre de cartes trouvables par tirage ───────────
+// Décision produit (2026-10-11) : chaque tirage doit offrir entre
+// MIN_VALID_WORDS et MAX_VALID_WORDS cartes trouvables. Mesuré par
+// simulation (20 000 tirages) : sans contrainte, seuls 48,5% des tirages
+// tombaient dans [4, 9] (24,5% à 1-2 mots, 26,6% à 3). Une carte principale
+// de LONG_SEED_MIN_LENGTH lettres ou plus ne laisse qu'une lettre libre au
+// plus : jamais plus de 3 mots trouvables en simulation, d'où le minimum
+// abaissé à LONG_SEED_MIN_VALID_WORDS pour elles.
+export const MIN_VALID_WORDS = 4;
+export const MAX_VALID_WORDS = 9;
+const LONG_SEED_MIN_LENGTH = 13;
+const LONG_SEED_MIN_VALID_WORDS = 3;
+
+// Cartes retirées de la rotation des cartes principales : aucune ne
+// dépasse 3 mots trouvables (et les trois premières jamais plus d'1, faute
+// de seconde carte compatible). Elles restent des réponses valides et
+// peuvent toujours sortir comme seconde carte seed.
+const EXCLUDED_PRIMARY_SEEDS = new Set([
+  "Battle Ram", // Bélier de combat
+  "Royal Recruits", // Recrues royales
+  "Zappies", // Électrocuteurs
+  "Goblin Gang", // Gang de gobelins
+  "Skeleton Barrel", // Fût à squelettes
+]);
+
+export function filterPrimarySeedPool(pool) {
+  return pool.filter((c) => !EXCLUDED_PRIMARY_SEEDS.has(c.cardKey));
+}
+
+export function validWordsRangeFor(primaryEntry) {
+  const min = wordLetterCount(primaryEntry.fr) >= LONG_SEED_MIN_LENGTH ? LONG_SEED_MIN_VALID_WORDS : MIN_VALID_WORDS;
+  return { min, max: MAX_VALID_WORDS };
+}
+
+// Distance d'un nombre de mots à la fourchette (0 = dedans).
+function distanceToRange(count, { min, max }) {
+  if (count < min) return min - count;
+  if (count > max) return count - max;
+  return 0;
+}
+
+// Retire seconde carte + lettres de complément jusqu'à tomber dans la
+// fourchette de la carte principale. ~2 essais en moyenne (~50 pour
+// Berserker, le cas le plus dur) ; maxTries est un filet de sécurité : à
+// défaut, garde le tirage le plus proche de la fourchette plutôt que de
+// bloquer la génération d'une manche.
+export function generateDraw(pool, primaryEntry, rng = Math.random, maxTries = 1000) {
+  const range = validWordsRangeFor(primaryEntry);
+  let best = null;
+  for (let i = 0; i < maxTries; i++) {
+    const secondaryEntry = pickCompatibleSecondarySeed(pool, primaryEntry, rng);
+    const seedFrs = secondaryEntry ? [primaryEntry.fr, secondaryEntry.fr] : [primaryEntry.fr];
+    const letters = buildLetterBagFromSeeds(seedFrs, rng);
+    const validWords = computeValidWordsForDraw(pool, letters);
+    const distance = distanceToRange(validWords.length, range);
+    if (!best || distance < best.distance) best = { letters, validWords, distance };
+    if (distance === 0) break;
+  }
+  return { letters: best.letters, validWords: best.validWords };
+}
+
 // ── Résolution d'une proposition texte → carte du pool ─────────────
 // Même stratégie que matchByFrName (lajustecarte.js) : égalité stricte sur
 // le nom FR normalisé, avec repli "compact" (espaces retirés) pour tolérer
@@ -413,7 +475,7 @@ async function cleanupGameScratchData(gameId) {
 }
 
 export async function resetGame() {
-  await getRedis().del(STATE_KEY, ORDER_KEY, ROUND_SEQ_KEY);
+  await getRedis().del(STATE_KEY, ORDER_KEY, ROUND_SEQ_KEY, DRAWS_KEY);
   await scanDelete("pelemele:participants:*");
   await scanDelete("pelemele:usernames:*");
   await scanDelete("pelemele:attempts:*");
@@ -483,21 +545,70 @@ export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
   return seasonManche + countRemainingWeekdayOccurrences(now, SATURDAY);
 }
 
+// ── Tirages préparés à l'avance ──────────────────────────────────
+// Décision produit (2026-10-11) : les tirages sont générés à l'avance et
+// stockés dans une LIST Redis (une entrée JSON {seedCardKey, letters} par
+// manche, dans l'ordre de passage), complétée à PREPARED_DRAWS_TARGET après
+// chaque manche. On stocke la carte principale plutôt que son index : un
+// changement de pool (carte ajoutée/retirée) peut décaler les index de la
+// rotation, pas les cardKey. Le nombre de mots trouvables est recalculé à la
+// consommation, pour tenir compte d'une carte ajoutée au pool entre-temps.
+export const PREPARED_DRAWS_TARGET = 50;
+
+export async function listPreparedDraws() {
+  const raw = (await getRedis().lrange(DRAWS_KEY, 0, -1)) || [];
+  return raw.map(fromJson).filter(Boolean);
+}
+
+// Carte principale à partir de laquelle continuer la rotation : la
+// dernière en file, sinon celle de la manche en cours. Les états antérieurs
+// aux tirages préparés n'ont pas de seedCardKey : on la retrouve via leur
+// currentIndex dans l'ordre stocké AVANT son éventuelle réécriture.
+export async function refillPreparedDraws(target = PREPARED_DRAWS_TARGET) {
+  const pool = await loadEligiblePool();
+  const storedOrder = fromJson(await getRedis().get(ORDER_KEY)) || [];
+  const order = await loadSeedOrder(filterPrimarySeedPool(pool));
+  const queued = await listPreparedDraws();
+  if (queued.length >= target) return queued.length;
+
+  const state = await readState();
+  const lastSeedKey = queued.at(-1)?.seedCardKey ?? state?.seedCardKey ?? storedOrder[state?.currentIndex];
+  let index = order.indexOf(lastSeedKey);
+  const newDraws = [];
+  for (let i = queued.length; i < target; i++) {
+    index = pickNextIndex({ currentIndex: index }, order);
+    const primaryEntry = pool.find((c) => c.cardKey === order[index]);
+    const { letters } = generateDraw(pool, primaryEntry);
+    newDraws.push(toJson({ seedCardKey: primaryEntry.cardKey, letters }));
+  }
+  await getRedis().rpush(DRAWS_KEY, ...newDraws);
+  return target;
+}
+
+// Retire le prochain tirage de la file (en la remplissant d'abord si elle
+// est vide) ; un tirage dont la carte principale a quitté le pool est jeté.
+async function takeNextDraw(pool, order) {
+  for (;;) {
+    let draw = fromJson(await getRedis().lpop(DRAWS_KEY));
+    if (!draw) {
+      await refillPreparedDraws();
+      draw = fromJson(await getRedis().lpop(DRAWS_KEY));
+    }
+    const currentIndex = order.indexOf(draw.seedCardKey);
+    if (currentIndex >= 0) return { currentIndex, seedCardKey: draw.seedCardKey, letters: draw.letters };
+  }
+}
+
 // ── Cycle de vie d'une manche ────────────────────────────────────
 
 export async function startNewGame(channelId) {
   const pool = await loadEligiblePool();
-  const order = await loadSeedOrder(pool);
+  const order = await loadSeedOrder(filterPrimarySeedPool(pool));
   const previousState = await readState();
-  const currentIndex = pickNextIndex(previousState, order);
-  const seedCardKey = order[currentIndex];
-  const primaryEntry = pool.find((c) => c.cardKey === seedCardKey);
-  // La carte PRINCIPALE suit toujours la rotation équitable persistée
-  // (currentIndex) — seule la seconde, purement là pour garantir davantage
-  // de solutions, est tirée au hasard sans notion de rotation/répétition.
-  const secondaryEntry = pickCompatibleSecondarySeed(pool, primaryEntry);
-  const seedFrs = secondaryEntry ? [primaryEntry.fr, secondaryEntry.fr] : [primaryEntry.fr];
-  const letters = buildLetterBagFromSeeds(seedFrs);
+  // La carte PRINCIPALE de chaque tirage préparé suit la rotation équitable
+  // persistée — seule la seconde, purement là pour garantir davantage de
+  // solutions, est tirée au hasard sans notion de rotation/répétition.
+  const { currentIndex, seedCardKey, letters } = await takeNextDraw(pool, order);
   const validWords = computeValidWordsForDraw(pool, letters);
   const totalValidWords = validWords.length;
   const maxWordLength = validWords[0]?.length ?? 0;
@@ -510,6 +621,7 @@ export async function startNewGame(channelId) {
 
   const newState = {
     currentIndex,
+    seedCardKey,
     gameId,
     seasonId,
     seasonManche,
@@ -531,6 +643,8 @@ export async function startNewGame(channelId) {
     await finalizeRound(previousState);
     await cleanupGameScratchData(previousState.gameId);
   }
+
+  await refillPreparedDraws();
 
   return { state: newState };
 }

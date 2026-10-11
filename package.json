@@ -86,6 +86,7 @@
     "pelemele:public:dry": "node scripts/postPeleMele.js --public --dry-run",
     "pelemele:reset": "node scripts/resetPeleMele.js",
     "pelemele:scores": "node scripts/peleMeleScores.js",
+    "pelemele:draws": "node scripts/peleMeleDraws.js",
     "lettres:test": "node scripts/postJeuxDeLettres.js",
     "lettres:test:dry": "node scripts/postJeuxDeLettres.js --dry-run",
     "lettres:public": "node scripts/postJeuxDeLettres.js --public",
