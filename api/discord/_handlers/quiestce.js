@@ -147,23 +147,27 @@ function bilanVeilleLignes(partie) {
   return lignes;
 }
 
-// Tableau de chasse : chaque joueur chassé (prime décroissante) et ses
-// chasseurs, avec le nombre de questions déjà posées sur lui.
+// Tableau de chasse, lu du point de vue du chasseur : « **Chasseur** →
+// cible (prime, questions posées) », trié par prime de la cible (les
+// chasseurs d'une même cible côte à côte), puis les joueurs en train de
+// choisir une cible et ceux que personne ne chasse.
 function tableauChasseLignes(partie) {
   const joueurs = Object.entries(partie.joueurs).filter(([, j]) => j.carte);
-  const parPrime = [...joueurs].sort(([, a], [, b]) => b.prime - a.prime || a.username.localeCompare(b.username));
-  const lignes = [];
-  const libres = [];
-  for (const [id, j] of parPrime) {
-    const hs = chasseurs(partie, id);
-    if (!hs.length) {
-      libres.push(`${j.username} (${j.prime})`);
-      continue;
-    }
-    const detail = hs.map((h) => `${partie.joueurs[h].username} (${partie.joueurs[h].enquete.posees} ❓)`).join(", ");
-    lignes.push(`**${j.username}** (prime ${j.prime}) ← ${detail}`);
-  }
-  if (libres.length) lignes.push(`Sans chasseur : ${libres.join(", ")}`);
+  const lignes = joueurs
+    .filter(([, j]) => j.cible)
+    .sort(([, a], [, b]) => {
+      const ca = partie.joueurs[a.cible];
+      const cb = partie.joueurs[b.cible];
+      return cb.prime - ca.prime || ca.username.localeCompare(cb.username) || a.username.localeCompare(b.username);
+    })
+    .map(([, j]) => {
+      const c = partie.joueurs[j.cible];
+      return `**${j.username}** → ${c.username} (prime ${c.prime}, ${j.enquete.posees} ❓)`;
+    });
+  const sansCible = joueurs.filter(([, j]) => !j.cible).map(([, j]) => j.username);
+  if (sansCible.length) lignes.push(`Choisit sa cible : ${sansCible.join(", ")}`);
+  const libres = joueurs.filter(([id]) => !chasseurs(partie, id).length).sort(([, a], [, b]) => b.prime - a.prime).map(([, j]) => `${j.username} (prime ${j.prime})`);
+  if (libres.length) lignes.push(`Personne ne les chasse : ${libres.join(", ")}`);
   return lignes;
 }
 
@@ -188,7 +192,7 @@ async function buildTableEmbed(jour, config, partie) {
     );
   }
   const chasse = tableauChasseLignes(partie);
-  if (chasse.length) lignes.push("", "**🎯 Tableau de chasse**", ...chasse);
+  if (chasse.length) lignes.push("", "**🎯 Tableau de chasse** (chasseur → cible)", ...chasse);
   const reveles = revelationsLignes(partie);
   if (reveles.length) lignes.push("", "**🔦 Révélations**", ...reveles);
   const cruciaux = partie.journal.filter((e) => e.c && e.j === (partie.numeroJour ?? jour)).slice(-JOURNAL_AFFICHE);
@@ -545,6 +549,26 @@ function statutLigne(j, config) {
   return `💰 Prime : **${j.prime}** · 🏆 **${plural(j.score, "pt")}** · 🪙 **${j.or} Or** · 🎒 Objets : ${j.objets}/${config.objets_max}`;
 }
 
+// Boutons de navigation personnels de l'éphémère, grisés quand il n'y a
+// plus rien à y faire (les boutons du message officiel, communs à tous,
+// ne peuvent pas l'être).
+function objetsUtilisables(partie, discordId, config) {
+  return Object.keys(OBJETS).filter((o) => etatObjet(partie, discordId, o, { config }).ok);
+}
+
+function enqueteActive(partie, discordId, config) {
+  const j = partie.joueurs[discordId];
+  if (!j.cible) return ciblesDisponibles(partie, discordId, { config }).length > 0;
+  const question = questionsRestantes(j, config) > 0 && questionsPossibles(partie, discordId, { config }).length > 0;
+  const accusation = !j.accuseJour && candidats(partie, discordId).length > 0;
+  return question || accusation;
+}
+
+function navRow(vers, actif) {
+  const b = vers === "objets" ? bouton("Objets", "🎒", "quiestce_e_objets", 3) : bouton("Enquêter", "🔎", "quiestce_e_enqueter", 1);
+  return { type: 1, components: [{ ...b, disabled: !actif }] };
+}
+
 const SOURCES = { projecteur: " (Projecteur)", vol: " (piste volée)", depart: " (indice de départ)" };
 
 function chunk(arr, n) {
@@ -615,6 +639,10 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
     const cs = candidats(partie, discordId);
     barrees = partie.grille.filter((k) => !cs.includes(k));
     lignes.push("", `🃏 Cartes encore possibles : **${cs.length}**`);
+    // Quota quotidien, toutes cibles confondues (une question posée sur la
+    // cible précédente compte aussi)
+    const total = config.questions_par_jour + (j.bonusQuestions ?? 0);
+    lignes.push(`❓ Questions aujourd'hui : **${j.questionsJour}/${total}**${j.bonusQuestions ? " (Double enquête)" : ""}`);
     const possibles = questionsPossibles(partie, discordId, { config });
     if (questionsRestantes(j, config) > 0 && possibles.length) {
       components.push({
@@ -628,11 +656,11 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
           },
         ],
       });
-    } else {
-      lignes.push("✅ Question du jour posée.");
+    } else if (questionsRestantes(j, config) < 1) {
+      lignes.push("Plus de question aujourd'hui (toutes cibles confondues) : la suite demain !");
     }
     if (!j.accuseJour && cs.length) {
-      const groupes = chunk(cs, 25).slice(0, 4 - (components.length - 1));
+      const groupes = chunk(cs, 25).slice(0, 4 - components.length);
       groupes.forEach((groupe, n) => {
         components.push({
           type: 1,
@@ -650,6 +678,7 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
       lignes.push("✅ Accusation du jour faite.");
     }
   }
+  components.push(navRow("objets", objetsUtilisables(partie, discordId, config).length > 0));
   return {
     embeds: [
       {
@@ -696,7 +725,8 @@ function buildObjetsView(config, partie, discordId, { entete = null, nouveau = f
         {
           type: 3,
           custom_id: "quiestce_objet",
-          placeholder: "🎒 Utiliser un objet (1 par jour)",
+          placeholder: Object.values(etats).some((e) => e.ok) ? "🎒 Utiliser un objet (1 par jour)" : "🔒 Aucun objet utilisable pour l'instant",
+          disabled: !Object.values(etats).some((e) => e.ok),
           options: Object.keys(OBJETS).map((o) => ({
             label: `${OBJETS[o].nom} (${config.objets[o].cout} Or)`,
             value: o,
@@ -707,6 +737,7 @@ function buildObjetsView(config, partie, discordId, { entete = null, nouveau = f
       ],
     });
   }
+  components.push(navRow("enqueter", enqueteActive(partie, discordId, config)));
   return { embeds: [{ title: "🎒 Objets", description: lignes.join("\n").slice(0, 4096), color: QEC_COLOR }], components };
 }
 
@@ -857,7 +888,7 @@ export async function handleCible(webhookUrl, discordId, username, cibleId) {
 
 function texteObjet(r, partie) {
   if (r.erreur) return avertissement(r.erreur);
-  if (r.objet === "double") return "🔁 Double enquête : tu peux poser une 2e question aujourd'hui (bouton Enquêter).";
+  if (r.objet === "double") return "🔁 Double enquête : une question de plus aujourd'hui, à poser avec le bouton Enquêter.";
   if (r.objet === "vol") return `🕵️ Piste volée à **${partie.joueurs[r.rival].username}** : ${QUESTIONS[r.q].nom.toLowerCase()} **${r.valeur}**.`;
   return `🔦 Projecteur braqué sur **${partie.joueurs[r.leader].username}** : ${QUESTIONS[r.q].nom.toLowerCase()} **${r.valeur}** (révélé à tous).`;
 }

@@ -9996,11 +9996,12 @@ export default async function handler(req, res) {
 
   // ── Qui est-ce ? : composants de l'éphémère, édition en place ──
   // custom_id : quiestce_question, quiestce_accuser:<n>, quiestce_cible_menu,
-  // quiestce_objet, quiestce_projecteur (menus), quiestce_cible:<id> (bouton)
+  // quiestce_objet, quiestce_projecteur (menus), quiestce_cible:<id>,
+  // quiestce_e_enqueter, quiestce_e_objets (boutons de navigation)
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    /^quiestce_(question|accuser|cible|objet|projecteur)/.test(body.data.custom_id)
+    /^quiestce_(question|accuser|cible|objet|projecteur|e_enqueter|e_objets)/.test(body.data.custom_id)
   ) {
     const [action, param] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
@@ -10014,6 +10015,8 @@ export default async function handler(req, res) {
     else if (action === "quiestce_cible") runBackground(() => handleQuiEstCeCible(webhookUrl, discordId, username, param));
     else if (action === "quiestce_cible_menu") runBackground(() => handleQuiEstCeCible(webhookUrl, discordId, username, value));
     else if (action === "quiestce_objet") runBackground(() => handleQuiEstCeObjet(webhookUrl, discordId, username, value));
+    else if (action === "quiestce_e_enqueter") runBackground(() => handleQuiEstCeEnqueter(webhookUrl, discordId, username));
+    else if (action === "quiestce_e_objets") runBackground(() => handleQuiEstCeObjets(webhookUrl, discordId, username));
     else runBackground(() => handleQuiEstCeProjecteur(webhookUrl, discordId, username, value));
     return;
   }
