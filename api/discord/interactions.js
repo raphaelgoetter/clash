@@ -166,6 +166,18 @@ import {
   handleJournal as handleBangJournal,
 } from "./_handlers/bang.js";
 import {
+  handleParticiper as handleQuiEstCeParticiper,
+  handleEnqueter as handleQuiEstCeEnqueter,
+  handleObjets as handleQuiEstCeObjets,
+  handleQuestion as handleQuiEstCeQuestion,
+  handleAccuser as handleQuiEstCeAccuser,
+  handleCible as handleQuiEstCeCible,
+  handleObjet as handleQuiEstCeObjet,
+  handleProjecteur as handleQuiEstCeProjecteur,
+  handleJournal as handleQuiEstCeJournal,
+  handleRegles as handleQuiEstCeRegles,
+} from "./_handlers/quiestce.js";
+import {
   memberHasMiniJeuxRole as bangDuelMemberHasMiniJeuxRole,
   extractMember as bangDuelExtractMember,
   handleBangDuelRoleRejected,
@@ -9954,6 +9966,51 @@ export default async function handler(req, res) {
     else if (action === "bang_cible") runBackground(() => handleBangCible(webhookUrl, discordId, username, carte, value));
     else if (action === "bang_placer") runBackground(() => handleBangPlacer(webhookUrl, discordId, username, value));
     else runBackground(() => handleBangJouer(webhookUrl, discordId, username));
+    return;
+  }
+
+  // ── Qui est-ce ? : boutons du message officiel (nouvel éphémère) ──
+  // custom_id : quiestce_participer, quiestce_enqueter, quiestce_objets,
+  // quiestce_journal, quiestce_regles
+  if (
+    body.type === 3 &&
+    ["quiestce_participer", "quiestce_enqueter", "quiestce_objets", "quiestce_journal", "quiestce_regles"].includes(body.data?.custom_id)
+  ) {
+    const action = body.data.custom_id;
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "quiestce_regles") runBackground(() => handleQuiEstCeRegles(webhookUrl));
+    else if (action === "quiestce_journal") runBackground(() => handleQuiEstCeJournal(webhookUrl, discordId));
+    else if (action === "quiestce_participer") runBackground(() => handleQuiEstCeParticiper(webhookUrl, discordId, username));
+    else if (action === "quiestce_objets") runBackground(() => handleQuiEstCeObjets(webhookUrl, discordId, username));
+    else runBackground(() => handleQuiEstCeEnqueter(webhookUrl, discordId, username));
+    return;
+  }
+
+  // ── Qui est-ce ? : composants de l'éphémère, édition en place ──
+  // custom_id : quiestce_question, quiestce_accuser:<n>, quiestce_cible_menu,
+  // quiestce_objet, quiestce_projecteur (menus), quiestce_cible:<id> (bouton)
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    /^quiestce_(question|accuser|cible|objet|projecteur)/.test(body.data.custom_id)
+  ) {
+    const [action, param] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    const value = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "quiestce_question") runBackground(() => handleQuiEstCeQuestion(webhookUrl, discordId, username, value));
+    else if (action === "quiestce_accuser") runBackground(() => handleQuiEstCeAccuser(webhookUrl, discordId, username, value));
+    else if (action === "quiestce_cible") runBackground(() => handleQuiEstCeCible(webhookUrl, discordId, username, param));
+    else if (action === "quiestce_cible_menu") runBackground(() => handleQuiEstCeCible(webhookUrl, discordId, username, value));
+    else if (action === "quiestce_objet") runBackground(() => handleQuiEstCeObjet(webhookUrl, discordId, username, value));
+    else runBackground(() => handleQuiEstCeProjecteur(webhookUrl, discordId, username, value));
     return;
   }
 

@@ -3,7 +3,7 @@
 // les mini-jeux réguliers (Frame, Jeux de lettres [Anagram/Pêle-mêle en
 // alternance], Jeux visuels [Zoom carte/Palette en alternance], La Juste
 // Carte) et du jeu spécial actuellement actif (Quiz, Robinson,
-// Goblin Hunters, Blackjack, Mario Clash, Gobelet ou Bang! ;
+// Goblin Hunters, Blackjack, Mario Clash, Gobelet, Bang! ou Qui est-ce ? ;
 // Tamagotchi et Boss Raid archivés).
 // Lecture seule, aucune écriture Redis.
 //
@@ -93,6 +93,11 @@ import {
   loadBangConfig,
   readPartie as readBangPartie,
 } from "../../../backend/services/bang.js";
+import {
+  readState as readQuiEstCeState,
+  loadQuiEstCeConfig,
+  readPartie as readQuiEstCePartie,
+} from "../../../backend/services/quiestce.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -434,7 +439,7 @@ const SPECIAL_GAMES = [
       if (!joueur) return { played: false, scoreLabel: null };
       return {
         played: joueur.tourFait || !joueur.vivant,
-        scoreLabel: joueur.vivant ? `👑 En vie (**${joueur.elixir} Élixir**)` : "💀 Éliminé de l'Arène",
+        scoreLabel: joueur.vivant ? `👑 En vie (**${joueur.bravoure ?? 0} Bravoure**)` : "💀 Éliminé de l'Arène",
       };
     },
     async detail(state) {
@@ -453,6 +458,38 @@ const SPECIAL_GAMES = [
         jour: state.jour,
         dureeJours: config.duree_jours,
         participantsLabel: `${vivants} joueur${vivants > 1 ? "s" : ""} en vie sur ${joueurs.length}`,
+      };
+    },
+  },
+  {
+    key: "quiestce",
+    title: "Qui est-ce ?",
+    style: "Enquête",
+    readState: readQuiEstCeState,
+    async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
+      const joueur = (await readQuiEstCePartie()).joueurs[discordId];
+      if (!joueur?.carte) return { played: false, scoreLabel: null };
+      return {
+        played: joueur.actifJour,
+        scoreLabel: `🎯 **${joueur.score} pt${Math.abs(joueur.score) > 1 ? "s" : ""}** (prime ${joueur.prime})`,
+      };
+    },
+    async detail(state) {
+      if (state.phase === "annonce") {
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: null,
+          phaseLabel: "Phase de présentation du jeu",
+        };
+      }
+      const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readQuiEstCePartie()]);
+      const n = Object.values(partie.joueurs).filter((j) => j.carte).length;
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: `${n} joueur${n > 1 ? "s" : ""}`,
       };
     },
   },

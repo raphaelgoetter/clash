@@ -40,6 +40,7 @@ import {
   getTableImage as getBangTableImage,
   decodeTable as decodeBangTable,
 } from "./services/bangImage.js";
+import { decodeGrille as decodeQuiEstCeGrille, getGrilleImage as getQuiEstCeGrilleImage } from "./services/quiestceImage.js";
 import { readCardArtFile } from "./services/cardArt.js";
 
 const app = express();
@@ -429,6 +430,18 @@ app.get("/api/bang/illustration", async (req, res) => {
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Qui est-ce ? : grille des cartes de la partie (publique ou fiche
+// d'enquête avec cartes barrées), rendu sans état à partir de l'état encodé
+// dans l'URL (d = base64url, voir encodeGrille).
+app.get("/api/quiestce/grille", async (req, res) => {
+  const entrees = await decodeQuiEstCeGrille(req.query.d);
+  const image = entrees ? await getQuiEstCeGrilleImage(entrees).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
   res.send(image.buffer);
 });
 

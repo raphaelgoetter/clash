@@ -1324,7 +1324,15 @@
     "fr": "Ronin",
     "type": "troop",
     "family": "human",
-    "elixir": 5
+    "elixir": 5,
+    "hp": 1779,
+    "damage": 371,
+    "range": {
+      "kind": "melee",
+      "category": "medium",
+      "value": null,
+      "rank": 2
+    }
   },
   {
     "cardKey": "Royal Delivery",

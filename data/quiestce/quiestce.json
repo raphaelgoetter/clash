@@ -1,0 +1,39 @@
+{
+  "duree_jours": 7,
+  "inscription_jours": 2,
+  "taille_grille": 30,
+  "reserve_min": 5,
+  "questions_par_jour": 1,
+  "gain_base": 12,
+  "penalite_erreur": 1,
+  "prime_par_jour": 1,
+  "prime_par_demasquage": 3,
+  "chasseurs_max": 2,
+  "or_par_jour": 1,
+  "or_par_demasquage": 2,
+  "objets_max": 4,
+  "objets": {
+    "projecteur": { "cout": 3 },
+    "vol": { "cout": 2 },
+    "double": { "cout": 4, "max": 1 }
+  },
+  "complements": {
+    "Goblin Giant": { "hp": 3110, "portee": "melee" },
+    "Goblin Machine": { "hp": 2265, "portee": "melee" },
+    "Inferno Dragon": { "hp": 1295, "portee": "ranged" },
+    "Mighty Miner": { "hp": 2250, "portee": "melee" },
+    "Monk": { "hp": 2214, "portee": "melee" },
+    "Ram Rider": { "hp": 1766, "portee": "melee" },
+    "Suspicious Bush": { "hp": 81, "portee": "melee" },
+    "Three Musketeers": { "hp": 883, "portee": "ranged" }
+  },
+  "pool": {
+    "1": ["rarete", "elixir", "type"],
+    "2": ["portee", "famille", "pv"],
+    "3": ["rarete", "type", "pv"],
+    "4": ["elixir", "portee", "famille"],
+    "5": ["rarete", "elixir", "portee"],
+    "6": ["type", "famille", "pv"],
+    "7": ["rarete", "elixir", "pv"]
+  }
+}

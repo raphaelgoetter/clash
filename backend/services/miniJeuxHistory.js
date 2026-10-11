@@ -22,6 +22,7 @@ import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
 import { listManches as listBangManches } from "./bang.js";
+import { listManches as listQuiEstCeManches } from "./quiestce.js";
 
 // Ordre d'affichage canonique — indépendant de l'ordre de découverte des
 // données (les trois groupes ci-dessous tournent en parallèle).
@@ -34,6 +35,7 @@ const GAME_ORDER = [
   "blackjack",
   "marioclash",
   "bang",
+  "quiestce",
 ];
 
 // Tague chaque résultat avec le nom du jeu précis qui l'a produit — permet à
@@ -122,6 +124,12 @@ const MANCHE_SCORE_GAMES = [
     key: "bang",
     label: "🔫 Bang!",
     fetch: () => listBangManches({ limit: Infinity }),
+    scoreField: "score",
+  },
+  {
+    key: "quiestce",
+    label: "🕵️ Qui est-ce ?",
+    fetch: () => listQuiEstCeManches({ limit: Infinity }),
     scoreField: "score",
   },
 ];

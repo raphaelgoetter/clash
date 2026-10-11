@@ -620,6 +620,7 @@ Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 | Jeu du Gobelet | `16 8 * * *` |
 | Mario Clash    | `14 8 * * *` |
 | Bang!          | `18 8 * * *` |
+| Qui est-ce ?   | `20 8 * * *` |
 
 ⚠️ **Incident du 27/08** : les 5 crons alors existants étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont _best-effort_ et que le délai augmente aux heures rondes, justement à cause de la charge — caler plusieurs workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Blackjack a suivi le même principe à son activation, décalé sur la minute suivante (`12 8 * * *`).
 
@@ -640,7 +641,7 @@ Ordre chronologique de lancement **public** des jeux collaboratifs à avancée q
 - (2026-08-24) Robinson (10 jours)
 - (2026-08-31) Quiz (7 jours)
 
-**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours, 📦 **archivé** le 2026-10-10), Goblin Hunters (7 jours), Blackjack (7 jours), Bang! (7 jours).
+**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours, 📦 **archivé** le 2026-10-10), Goblin Hunters (7 jours), Blackjack (7 jours), Bang! (7 jours), Qui est-ce ? (7 jours).
 
 ---
 
@@ -2041,6 +2042,95 @@ Test de bout en bout local (Redis et Discord simulés) : `node --import ./temp/f
 ### Variables d'environnement requises (Bang!)
 
 Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (images). Le `schedule` du cron (`18 8 * * *`) est actif dans `.github/workflows/bang.yml` : avec `--require-active`, il n'avance qu'une partie déjà lancée à la main (`workflow_dispatch`).
+
+## Qui est-ce ? — démasquer les cartes secrètes en 7 jours
+
+Jeu spécial **100 % asynchrone** inspiré du jeu de société Qui est-ce ? (idée proposée par un membre, conçue le 11/10) : chaque joueur reçoit en secret une carte d'une grille commune, et chasse les cartes des autres en posant **une question par jour** à propos de sa cible, puis en l'accusant. Compétition individuelle, action quotidienne décisive et classement final, sur le modèle de Mario Clash ; rivalités par le tableau de chasse public et les objets. Code : `backend/services/quiestceRules.js` (règles pures, testées par `quiestceRules.test.js`), `backend/services/quiestce.js` (Redis), `backend/services/quiestceImage.js` (grille), `api/discord/_handlers/quiestce.js` (Discord), `scripts/postQuiEstCe.js`. Config : `data/quiestce/quiestce.json`.
+
+### Grille et questions (Qui est-ce ?)
+
+- **Grille** (`tirerGrille()`) : `taille_grille` (30) cartes tirées de `data/cardNames.json`, agrandie si besoin pour garder `reserve_min` (5) cartes libres pour les retardataires. **Une seule carte par profil de réponses** (sinon deux cartes « jumelles » seraient indiscernables, même après les 6 questions), au moins 4 sorts, 2 bâtiments, 3 troupes aériennes et 1 ou 2 champions.
+- **Troupes sans PV ni portée dans `cardNames.json`** (valeurs doubles ou variables, exclues volontairement de La Juste Carte par `scripts/generateCardStats.js`) : complétées pour Qui est-ce ? seulement par la table `complements` de `quiestce.json` (`completerCartes()`, PV et type de portée relevés le 11/10 sur la table des troupes du wiki Clash Royale, niveau Tournament Standard ; décision du 11/10 : `cardNames.json` non modifié pour ne pas faire entrer ces cartes dans La Juste Carte) : Gobelin géant, Machine gobeline, Dragon de l'enfer, Maître Mineur, Moine, Cavabélier, Buisson suspicieux, Trois mousquetaires (unité principale quand une sous-unité diffère). Ronin, aux valeurs simples (1779 PV, 371 dégâts, mêlée moyenne), a été ajouté directement à `cardNames.json` (il entre donc aussi dans La Juste Carte).
+- **Cartes écartées** (`carteEligible()`) : le Miroir (coût inconnu) et 3 troupes à réponse ambiguë, laissées hors grille (décision du 11/10) : Gang de gobelins (gobelins en mêlée, lanciers à distance), Fripons (Fripon 1832 PV en mêlée, Fripones 261 PV à distance), Impératrice spirituelle (portée selon la forme).
+- **6 questions ouvertes en tranches** (`QUESTIONS`, décision du 11/10 : avec les valeurs exactes, « Élixir ? » était la meilleure première question dans 83 % des cas ; en tranches, Rareté 66 %, Élixir 21 %, PV 9 %, Famille 4 %) :
+
+| Question | Réponses |
+| -------- | -------- |
+| 💎 Rareté | commune, rare, épique, légendaire ou champion (regroupés) |
+| 💧 Élixir | 1 ou 2, 3, 4, 5 ou plus |
+| 🧩 Type | troupe terrestre, troupe aérienne, sort, bâtiment |
+| 🏹 Portée | mêlée, distance ; « sans objet » pour un sort ou un bâtiment |
+| 👪 Famille | humain, gobelin, squelette, gargouille, aucune |
+| ❤️ Points de vie | moins de 500, 500 à 1500, plus de 1500 ; « sans objet » pour un sort ou un bâtiment |
+
+- **Pool du jour** (`pool`, fixé à l'avance, décision du 11/10, plus lisible qu'un stock disputé ou des événements) : 3 questions possibles par jour, chacune 3 ou 4 fois dans la semaine (J1 Rareté/Élixir/Type, J2 Portée/Famille/PV, J3 Rareté/Type/PV, J4 Élixir/Portée/Famille, J5 Rareté/Élixir/Portée, J6 Type/Famille/PV, J7 Rareté/Élixir/PV). Une question déjà connue sur la cible n'est plus proposée ; si les 3 du jour le sont, **choix libre** parmi les autres (`questionsPossibles()`).
+
+### Déroulement (Qui est-ce ?)
+
+- **Présentation** (1er post, ping MINI-JEUX) : bouton **Participer** (inscription sans carte, liste des inscrits rééditée dans le message).
+- **Jour 1** (`demarrer()`) : grille tirée, une carte secrète unique par inscrit, **première cible attribuée en cercle** (décision du 11/10 : chacun chasse le suivant d'un ordre tiré au sort, donc un seul chasseur par cible, sans paire qui se chasse mutuellement ; évite la ruée sur des primes toutes à 0). Retardataires jusqu'au jour `inscription_jours` (2), au premier clic : carte libre de la grille (refus si la grille est pleine), cible à choisir.
+- **Chaque jour** : `questions_par_jour` (1) question sur sa cible, puis au plus une accusation par jour, parmi les cartes encore possibles.
+- **Accusation juste** : `gain_base` (12) moins le numéro du jour, **plus la prime de la cible** ; prime du chasseur +`prime_par_demasquage` (3), Or +`or_par_demasquage` (2) ; la prime de la cible retombe à 0. Le démasquage est **public** (qui a démasqué qui), la carte reste **secrète** (connue du seul chasseur, révélée à tous à la fin). Le chasseur choisit ensuite sa nouvelle cible.
+- **Accusation fausse** : -`penalite_erreur` (1), la carte est barrée de sa fiche (note privée uniquement : rendre l'erreur publique dévoilerait une information sur la cible).
+- **Choix de cible** (`ciblesDisponibles()`, décision du 11/10 : choix libre plutôt qu'attribution automatique, pour la vengeance et l'évitement d'un rival) : au plus `chasseurs_max` (2) chasseurs par cible (sans limite, jusqu'à 14 joueurs chassaient la même personne en simulation), **jamais un joueur qu'on a déjà démasqué** (faille : on connaît sa carte, une re-chasse = accusation gratuite ; gagnant à 50 pts au lieu de 38 en simulation). Le menu propose par défaut la plus grosse prime disponible (bouton « Viser X »). Pas de changement de cible en cours de chasse (« Changer de cible » écarté : toujours perdant en simulation).
+- **Prime** (`cloturer()`) : +`prime_par_jour` (1) à la clôture pour chaque joueur non démasqué ce jour-là. Mécanisme de rattrapage : un joueur qui démasque voit sa prime monter et devient une cible convoitée, mais jamais par plus de 2 chasseurs.
+- **Fiche d'enquête** : les cartes incompatibles avec les réponses connues sont barrées, ainsi que sa propre carte et celles des joueurs qu'on a déjà démasqués (chaque carte n'appartient qu'à un joueur, `candidats()`).
+- **Fin** : à la clôture du jour `duree_jours` (7). **Classement** (`classement()`) : points, puis le moins d'accusations fausses, puis **le premier à avoir atteint son score final** (`seqScore`, compteur global `partie.seq` ; départage 100 % des égalités en simulation), puis l'ordre d'arrivée. Score de manche = points (cumulés dans l'historique de saison des mini-jeux).
+
+### Objets (Qui est-ce ?)
+
+Un objet par jour au plus, `objets_max` (4) par partie. **Or** : `or_par_jour` (1) au premier geste du jour (question ou accusation), +2 par démasquage.
+
+| Objet | Coût | Effet |
+| ----- | ---- | ----- |
+| 🔦 Projecteur | 3 Or | Révèle **publiquement** une caractéristique (parmi les questions du jour) de la carte du **leader en prime** (`leaderPrime()` : plus grosse prime, puis meilleur score, puis arrivée). Ajoutée à l'enquête de ses chasseurs, et de tout futur chasseur (`partie.reveles`). Interdit au leader lui-même. |
+| 🕵️ Vol de piste | 2 Or | Copie la **dernière** réponse obtenue par un rival qui chasse la même cible (`pisteAVoler()`). Annoncé dans le journal (« X vole la piste de Y »). |
+| 🔁 Double enquête | 4 Or | Une 2e question le jour même, **une fois par partie**. |
+
+**Écartés par simulation** (A/B dans les mêmes parties, 11/10) : Se cacher (échanger sa carte, 0,2 démasquage évité par partie seulement), Brouillage (bloquer la question d'un rival : -2 à -3 pts pour l'acheteur, l'attaque profite surtout aux autres), Usurpation (échanger sa carte avec un joueur démasqué : inutile), Vol de piste complet (copie de toutes les déductions : 2,6 fois plus de victoires pour ses utilisateurs). **Rejetés à la conception** : Mensonge (trop de hasard), Dénonciation (épuise la réserve de cartes ou immunise le dénoncé), Leurre, Contre-enquête, question bonus après un démasquage.
+
+**Équilibrage** (`temp/quiestce-sim/sim-objets.cjs`, 11/10, 3000 parties à 15-20 joueurs, profils optimal/prudent/parieur/occasionnel/passif) : gagnant ≈ 3,6 démasquages et 43-47 pts, 6-8 % d'égalités en tête avant départage ; victoires optimal 12 %, parieur 11-12 %, prudent 4 %, occasionnel 0 % ; joueur actif : 2 à 3 objets par partie (4 pour 11 %), chaque objet vaut 2 à 3 pts (un démasquage 10 à 15). ⚠️ À surveiller en vrai : plusieurs Projecteurs le même jour sur le même leader dévoilent presque toute sa carte.
+
+### Interface (Qui est-ce ?)
+
+- **Message officiel** (un par jour, réédité en direct après chaque action, `rafraichirMessage()`) : intro au J1, puis **bilan de la veille** (« 📰 Hier » : démasquages, nombre de Projecteurs, de pistes volées, d'accusations ratées ; `partie.jour` archivé dans `partie.veille`), **questions du jour**, **classement** (joueurs ayant marqué), **tableau de chasse** (chaque joueur chassé par prime décroissante, ses chasseurs et leur nombre de questions posées, puis les joueurs sans chasseur), **révélations** du Projecteur, faits du jour (démasquages, Projecteurs). Image : la grille publique, **jointe au message** (`attachment://grille.png`, même raison que le plateau de Bang!). Boutons **Enquêter**, **Objets**, **Journal**, **Règles**, chacun en éphémère.
+- **Enquêter** (`buildEnqueteView()`) : carte secrète, prime/points/Or/objets, cible (et autre chasseur), indices connus (source : question, Projecteur, piste volée), nombre de cartes encore possibles, menu de la question du jour, menu(s) d'accusation (25 cartes par menu), fiche d'enquête en image ; sans cible : bouton « Viser X (prime N) » et menu des autres cibles disponibles.
+- **Objets** (`buildObjetsView()`) : les 3 objets avec leur coût et, s'ils sont indisponibles, la raison ; Projecteur : menu de la caractéristique à révéler.
+- **Journal** : ce qui concerne le joueur (réponses obtenues, accusations, démasquages, vols, prises de cible le visant) et tous les Projecteurs, regroupé par jour. `{ j, k, s, v, c, ids, … }` rédigé par `texteJournal()`, `{ j, t, p }` pour une note privée.
+- **Fin** : classement final (points, démasquages), **toutes les cartes secrètes révélées**, manches précédentes.
+
+### Images (Qui est-ce ?)
+
+- `/api/quiestce/grille?d=…` : grille de la partie (6 colonnes, illustrations officielles via `cardImage.js`, nom sous chaque carte), publique ou fiche d'enquête (cartes barrées grisées avec une croix rouge). État encodé dans l'URL (`encodeGrille()` : index des cartes dans `cardNames.json` et masque des cartes barrées, ~180 caractères à 30 cartes) : rendu sans état, cache CDN (`s-maxage`). Rendu local : `node temp/quiestce/renderGrille.mjs <sortie.png>`.
+- Aucun asset Blob propre (pas d'illustration de présentation pour l'instant) : seule la police `fonts/Inter-Bold.ttf` et les illustrations de cartes, déjà servies.
+
+### Stockage — Upstash Redis (`quiestce:*`)
+
+| Clé Redis | Type | Contenu |
+| --------- | ---- | ------- |
+| `quiestce:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing }` |
+| `quiestce:partie` | STRING | `{ demarree, grille, cartes, reveles, joueurs, journal, numeroJour, seq, termine, jour, veille }` (`cartes` : nom et profil de réponses de chaque carte de la grille) ; joueur : `{ username, arrivee, carte, cible, enquete: { infos, ordre, sources, posees, eliminees }, score, prime, or, demasques, nbDemasque, erreurs, seqScore, objets, doubleUtilise, questionsJour, bonusQuestions, accuseJour, objetJour, actifJour, demasqueJour }`. Lue et réécrite sous verrou à chaque action. |
+| `quiestce:resultat` | STRING | Classement final |
+| `quiestce:lock` | STRING | Verrou des actions (10 s) |
+| `quiestce:manches` / `quiestce:manche_seq` | HASH / compteur | Archive `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }` des parties publiques, jamais nettoyée sauf `--manches` |
+
+### Scripts npm (Qui est-ce ?)
+
+| Commande | Effet |
+| -------- | ----- |
+| `npm run quiestce:test` | Poste manuellement le jour sur le salon de test. Au passage au J1, inscrit 6 ou 7 **PNJ** (joueurs fictifs `pnj-N`, pseudos Kévina, Josette…) : ils ont une carte et une cible mais ne jouent jamais, ils servent de cibles. `-- --sans-pnj` pour s'en passer. Jamais sur le salon public. |
+| `npm run quiestce:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
+| `npm run quiestce:public` | Poste sur le salon public (cron `quiestce.yml`). |
+| `npm run quiestce:public:dry` | Équivalent dry-run. |
+| `npm run quiestce:reset` | Remet la partie à zéro (préserve l'archive des manches). **Destructif**. |
+| `npm run quiestce:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
+| `npm run quiestce:status` | Vue organisateur sans Discord (cartes secrètes, cibles, indices, scores). |
+
+Test de bout en bout local (Redis et Discord simulés) : `node --import ./temp/fake-redis/register.mjs temp/quiestce/e2eQuiEstCe.mjs [joueurs]`.
+
+### Variables d'environnement requises (Qui est-ce ?)
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (police). Le `schedule` du cron (`20 8 * * *`) est actif dans `.github/workflows/quiestce.yml` : avec `--require-active`, il n'avance qu'une partie déjà lancée à la main (`workflow_dispatch`).
 
 ## Blackjack Duel (duel à la demande, 1-3 joueurs)
 
