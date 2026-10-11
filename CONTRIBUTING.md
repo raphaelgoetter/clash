@@ -2049,7 +2049,7 @@ Jeu spécial **100 % asynchrone** inspiré du jeu de société Qui est-ce ? (id�
 
 ### Grille et questions (Qui est-ce ?)
 
-- **Grille** (`tirerGrille()`) : `taille_grille` (30) cartes tirées de `data/cardNames.json`, agrandie si besoin pour garder `reserve_min` (5) cartes libres pour les retardataires. **Une seule carte par profil de réponses** (sinon deux cartes « jumelles » seraient indiscernables, même après les 6 questions), au moins 4 sorts, 2 bâtiments, 3 troupes aériennes et 1 ou 2 champions.
+- **Grille** (`tirerGrille()`) : `taille_grille` (30) cartes tirées de `data/cardNames.json` (au moins une par joueur ; 18 joueurs au plus). **Une seule carte par profil de réponses** (sinon deux cartes « jumelles » seraient indiscernables, même après les 6 questions), au moins 4 sorts, 2 bâtiments, 3 troupes aériennes et 1 ou 2 champions.
 - **Troupes sans PV ni portée dans `cardNames.json`** (valeurs doubles ou variables, exclues volontairement de La Juste Carte par `scripts/generateCardStats.js`) : complétées pour Qui est-ce ? seulement par la table `complements` de `quiestce.json` (`completerCartes()`, PV et type de portée relevés le 11/10 sur la table des troupes du wiki Clash Royale, niveau Tournament Standard ; décision du 11/10 : `cardNames.json` non modifié pour ne pas faire entrer ces cartes dans La Juste Carte) : Gobelin géant, Machine gobeline, Dragon de l'enfer, Maître Mineur, Moine, Cavabélier, Buisson suspicieux, Trois mousquetaires (unité principale quand une sous-unité diffère). Ronin, aux valeurs simples (1779 PV, 371 dégâts, mêlée moyenne), a été ajouté directement à `cardNames.json` (il entre donc aussi dans La Juste Carte).
 - **Cartes écartées** (`carteEligible()`) : le Miroir (coût inconnu) et 3 troupes à réponse ambiguë, laissées hors grille (décision du 11/10) : Gang de gobelins (gobelins en mêlée, lanciers à distance), Fripons (Fripon 1832 PV en mêlée, Fripones 261 PV à distance), Impératrice spirituelle (portée selon la forme).
 - **6 questions ouvertes en tranches** (`QUESTIONS`, décision du 11/10 : avec les valeurs exactes, « Élixir ? » était la meilleure première question dans 83 % des cas ; en tranches, Rareté 66 %, Élixir 21 %, PV 9 %, Famille 4 %) :
@@ -2067,8 +2067,8 @@ Jeu spécial **100 % asynchrone** inspiré du jeu de société Qui est-ce ? (id�
 
 ### Déroulement (Qui est-ce ?)
 
-- **Présentation** (1er post, ping MINI-JEUX) : bouton **Participer** (inscription sans carte, liste des inscrits rééditée dans le message).
-- **Jour 1** (`demarrer()`) : grille tirée, une carte secrète unique par inscrit, **première cible attribuée en cercle** (décision du 11/10 : chacun chasse le suivant d'un ordre tiré au sort, donc un seul chasseur par cible, sans paire qui se chasse mutuellement ; évite la ruée sur des primes toutes à 0). Retardataires jusqu'au jour `inscription_jours` (2), au premier clic : carte libre de la grille (refus si la grille est pleine), cible à choisir.
+- **Fenêtre d'inscription** (décision du 11/10, même fonctionnement que Goblin Hunters ; `state.phase === "annonce"`, `state.closingAt`) : le 1er post ouvre les inscriptions pour `fenetre_inscription_jours` (3) jours (ping MINI-JEUX), boutons **S'inscrire (N/18)**, **Se désinscrire** et Règles ; liste des inscrits rééditée dans le message à chaque clic. Effectif `effectif_min` (10) à `effectif_max` (18) : au-delà, inscription refusée (`inscrire()`). Chaque passage du cron reposte le message (rappel, sans ping) tant que la fenêtre n'est pas close ; **effectif maximum atteint** : lancement anticipé au passage suivant ; à la clôture, **moins de 10 inscrits** : fenêtre **prolongée** de la même durée (`state.prolongee`, titre « inscriptions prolongées », ping ; jamais d'annulation), sinon Jour 1. Désinscription possible jusqu'au lancement (`desinscrire()`). **Aucune arrivée après le lancement** (roster figé).
+- **Jour 1** (`demarrer()`) : grille tirée, une carte secrète unique par inscrit, **première cible attribuée en cercle** (décision du 11/10 : chacun chasse le suivant d'un ordre tiré au sort, donc un seul chasseur par cible, sans paire qui se chasse mutuellement ; évite la ruée sur des primes toutes à 0).
 - **Chaque jour** : `questions_par_jour` (1) question sur sa cible, puis au plus une accusation par jour, parmi les cartes encore possibles.
 - **Accusation juste** : `gain_base` (12) moins le numéro du jour, **plus la prime de la cible** ; prime du chasseur +`prime_par_demasquage` (3), Or +`or_par_demasquage` (2) ; la prime de la cible retombe à 0. Le démasquage est **public** (qui a démasqué qui), la carte reste **secrète** (connue du seul chasseur, révélée à tous à la fin). Le chasseur choisit ensuite sa nouvelle cible.
 - **Accusation fausse** : -`penalite_erreur` (1), la carte est barrée de sa fiche (note privée uniquement : rendre l'erreur publique dévoilerait une information sur la cible).
@@ -2108,7 +2108,7 @@ Un objet par jour au plus, `objets_max` (4) par partie. **Or** : `or_par_jour` (
 
 | Clé Redis | Type | Contenu |
 | --------- | ---- | ------- |
-| `quiestce:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing }` |
+| `quiestce:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, prolongee }` (`phase` : `annonce` pendant la fenêtre d'inscription, puis `jour`) |
 | `quiestce:partie` | STRING | `{ demarree, grille, cartes, reveles, joueurs, journal, numeroJour, seq, termine, jour, veille }` (`cartes` : nom et profil de réponses de chaque carte de la grille) ; joueur : `{ username, arrivee, carte, cible, enquete: { infos, ordre, sources, posees, eliminees }, score, prime, or, demasques, nbDemasque, erreurs, seqScore, objets, doubleUtilise, questionsJour, bonusQuestions, accuseJour, objetJour, actifJour, demasqueJour }`. Lue et réécrite sous verrou à chaque action. |
 | `quiestce:resultat` | STRING | Classement final |
 | `quiestce:lock` | STRING | Verrou des actions (10 s) |
@@ -2118,7 +2118,8 @@ Un objet par jour au plus, `objets_max` (4) par partie. **Or** : `or_par_jour` (
 
 | Commande | Effet |
 | -------- | ----- |
-| `npm run quiestce:test` | Poste manuellement le jour sur le salon de test. Au passage au J1, inscrit 6 ou 7 **PNJ** (joueurs fictifs `pnj-N`, pseudos Kévina, Josette…) : ils ont une carte et une cible mais ne jouent jamais, ils servent de cibles. `-- --sans-pnj` pour s'en passer. Jamais sur le salon public. |
+| `npm run quiestce:test` | Poste manuellement l'étape suivante sur le salon de test. Au lancement, inscrit 6 ou 7 **PNJ** (joueurs fictifs `pnj-N`, pseudos Kévina, Josette…, comptés dans l'effectif minimum) : ils ont une carte et une cible mais ne jouent jamais, ils servent de cibles. `-- --sans-pnj` pour s'en passer. Jamais sur le salon public. |
+| `npm run quiestce:test:force-close` | ⚠️ **TESTS UNIQUEMENT**, jamais câblé dans `quiestce.yml` : ignore la date de clôture des inscriptions et lance la partie dès l'effectif minimum atteint (PNJ compris), sinon prolonge. |
 | `npm run quiestce:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
 | `npm run quiestce:public` | Poste sur le salon public (cron `quiestce.yml`). |
 | `npm run quiestce:public:dry` | Équivalent dry-run. |

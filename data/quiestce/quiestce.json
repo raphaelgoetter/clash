@@ -1,8 +1,9 @@
 {
   "duree_jours": 7,
-  "inscription_jours": 2,
+  "effectif_min": 10,
+  "effectif_max": 18,
+  "fenetre_inscription_jours": 3,
   "taille_grille": 30,
-  "reserve_min": 5,
   "questions_par_jour": 1,
   "gain_base": 12,
   "penalite_erreur": 1,

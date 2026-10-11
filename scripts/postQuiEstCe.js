@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // postQuiEstCe.js
-// Poste manuellement (ou via cron) le jour de Qui est-ce ?. Clôture d'abord
-// le jour actif (s'il y en a un) : primes du jour, classement final au
-// dernier jour, puis publie le message officiel du jour suivant (ou le
+// Poste manuellement (ou via cron) l'étape suivante de Qui est-ce ? :
+// ouverture des inscriptions, rappel quotidien, prolongation (effectif
+// minimum non atteint) ou Jour 1 ; puis chaque jour, clôture du jour actif
+// (primes, classement final au dernier jour) et message du jour suivant (ou
 // message de fin).
 //
 // Usage :
@@ -14,6 +15,8 @@
 //   node scripts/postQuiEstCe.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node scripts/postQuiEstCe.js --force          — ignore le garde-fou anti-double-avancée
 //   node scripts/postQuiEstCe.js --sans-pnj       — salon de test sans les 6-7 joueurs fictifs (PNJ) inscrits au J1
+//   node scripts/postQuiEstCe.js --force-close    — TESTS UNIQUEMENT : ignore la date de clôture des inscriptions
+//                                                  (lance la partie si l'effectif minimum est atteint, PNJ compris)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -23,6 +26,7 @@ import { postQuiEstCe } from "../api/discord/_handlers/quiestce.js";
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
+const FORCE_CLOSE = process.argv.includes("--force-close");
 const FORCE = process.argv.includes("--force") || !PUBLIC;
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 // Salon de test : 6-7 joueurs fictifs inscrits au J1 (jamais en public)
@@ -39,7 +43,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postQuiEstCe(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE, pnj: PNJ });
+    const result = await postQuiEstCe(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE, forceClose: FORCE_CLOSE, pnj: PNJ });
 
     if (result.skipped) {
       if (result.reason === "tooSoonSinceLastClosure") {
@@ -65,11 +69,15 @@ if (!channelId) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
+    if (result.prolongation) {
+      console.log(`Effectif minimum non atteint : inscriptions prolongées dans ${channelId} (message ${result.message.id}).`);
+      return;
+    }
     if (result.final) {
       console.log(`Fin de partie postée dans ${channelId} (message ${result.message.id}).`);
       return;
     }
-    console.log(`Jour ${result.jour ?? "de présentation"} posté dans ${channelId} (message ${result.message.id}).`);
+    console.log(`${result.jour ? `Jour ${result.jour}` : "Message d'inscription"} posté dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
     console.error("Échec de la publication du jour :", err.message);
     process.exit(1);

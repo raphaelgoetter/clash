@@ -23,7 +23,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { creerPartie, inscrire, demarrer, rejoindre, cloturer, classement, completerCartes } from "./quiestceRules.js";
+import { creerPartie, inscrire, desinscrire, demarrer, cloturer, classement, completerCartes, nbInscrits } from "./quiestceRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "quiestce", "quiestce.json");
@@ -115,7 +115,7 @@ async function writePartie(partie) {
   await getRedis().set(PARTIE_KEY, toJson(partie));
 }
 
-// Jour de présentation : partie vide, inscriptions ouvertes.
+// Ouverture de la fenêtre d'inscription : partie vide.
 export async function initPartie() {
   const partie = creerPartie();
   await writePartie(partie);
@@ -142,7 +142,8 @@ async function withLock(fn) {
 export async function demarrerPartie({ pnj = [] } = {}) {
   return withLock(async () => {
     const [config, cartesData, partie] = await Promise.all([loadQuiEstCeConfig(), loadCartesData(), readPartie()]);
-    pnj.forEach((nom, i) => inscrire(partie, `pnj-${i + 1}`, nom));
+    // PNJ inscrits hors plafond d'effectif (salon de test seulement)
+    pnj.forEach((nom, i) => inscrire(partie, `pnj-${i + 1}`, nom, { config: { ...config, effectif_max: Infinity } }));
     demarrer(partie, { config, cartesData });
     await writePartie(partie);
     return partie;
@@ -150,23 +151,20 @@ export async function demarrerPartie({ pnj = [] } = {}) {
 }
 
 // Action d'un joueur sous verrou : `fn(partie, config)` modifie la partie
-// (fonctions de quiestceRules.js) et renvoie un résultat. Le joueur
-// s'inscrit à sa première action : sans carte avant le Jour 1, avec une
-// carte libre ensuite, tant que les inscriptions sont ouvertes.
-// Renvoie { partie, resultat, nouveau } ou { erreur: "inscriptions" | "complet" }.
-export async function agir(jour, discordId, username, fn = () => null) {
+// (fonctions de quiestceRules.js) et renvoie un résultat. `inscription` :
+// le joueur s'inscrit s'il ne l'est pas encore (bouton S'inscrire, pendant
+// la fenêtre d'inscription et dans la limite de `effectif_max`) ; sinon un
+// non-inscrit est refusé.
+// Renvoie { partie, resultat, nouveau } ou { erreur: "inscriptions" | "complet" | "pasInscrit" }.
+export async function agir(discordId, username, fn = () => null, { inscription = false } = {}) {
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);
     let nouveau = false;
     const joueur = partie.joueurs[discordId];
     if (!joueur) {
-      if (!partie.demarree) {
-        inscrire(partie, discordId, username);
-      } else {
-        if (jour > config.inscription_jours) return { erreur: "inscriptions", partie };
-        const r = rejoindre(partie, discordId, username);
-        if (r.erreur) return { erreur: r.erreur, partie };
-      }
+      if (!inscription) return { erreur: partie.demarree ? "inscriptions" : "pasInscrit", partie };
+      const r = inscrire(partie, discordId, username, { config });
+      if (r.erreur) return { erreur: r.erreur, partie };
       nouveau = true;
     } else if (username && joueur.username !== username) {
       joueur.username = username;
@@ -175,6 +173,20 @@ export async function agir(jour, discordId, username, fn = () => null) {
     await writePartie(partie);
     return { partie, resultat, nouveau };
   });
+}
+
+// Désinscription (bouton Se désinscrire), possible jusqu'au lancement.
+export async function desinscrireJoueur(discordId) {
+  return withLock(async () => {
+    const partie = await readPartie();
+    const r = desinscrire(partie, discordId);
+    if (!r.erreur) await writePartie(partie);
+    return { ...r, partie };
+  });
+}
+
+export async function countInscrits() {
+  return nbInscrits(await readPartie());
 }
 
 // ── Clôture ─────────────────────────────────────────────────────────

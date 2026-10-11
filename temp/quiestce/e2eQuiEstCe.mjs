@@ -46,13 +46,21 @@ const menu = (e, prefix) => e.components?.flatMap((r) => r.components).filter((c
 
 await S.resetQuiEstCe({ clearManches: true });
 await H.postQuiEstCe("chan", { force: true, noPing: true });
-// Inscriptions : 2/3 des joueurs pendant la présentation
-for (const id of ids.slice(0, Math.ceil((nb * 2) / 3))) {
+// Inscriptions : 8 joueurs d'abord (sous le minimum de 10)
+for (const id of ids.slice(0, 8)) {
   await H.handleParticiper(`wh-${id}`, id, nom(id));
-  verifier(lastEph(id), `participer ${id}`);
+  verifier(lastEph(id), `inscription ${id}`);
 }
-console.log(`--- Présentation ---\n${lastEph("u1").embeds[0].description}`);
+await H.handleDesinscrire("wh-u8", "u8");
+console.log(`--- Désinscription de u8 : ${lastEph("u8").content}`);
+// Rappel (fenêtre non close), puis clôture forcée sous le minimum : prolongation
 await H.postQuiEstCe("chan", { force: true, noPing: true, pnj: false });
+console.log(`--- Rappel : ${lastPost().embeds[0].description.split("\n").slice(-2).join(" / ")}`);
+const prolong = await H.postQuiEstCe("chan", { force: true, noPing: true, pnj: false, forceClose: true });
+console.log(`--- Prolongation : ${prolong.prolongation} · ${lastPost().embeds[0].title}\n${lastPost().embeds[0].description.split("\n")[0]}`);
+for (const id of ids) await H.handleParticiper(`wh-${id}`, id, nom(id));
+console.log(`--- Inscription au-delà de ${nb > 18 ? 18 : nb} : ${lastEph(ids.at(-1)).content || "acceptée"}`);
+await H.postQuiEstCe("chan", { force: true, noPing: true, pnj: false, forceClose: true });
 console.log(`\n===== ${lastPost().embeds[0].title} =====\n${lastPost().embeds[0].description}`);
 
 for (let jour = 1; jour <= 7; jour++) {

@@ -477,10 +477,12 @@ const SPECIAL_GAMES = [
     },
     async detail(state) {
       if (state.phase === "annonce") {
+        // Fenêtre d'inscription (comme Goblin Hunters)
+        const count = Object.keys((await readQuiEstCePartie()).joueurs).length;
         return {
           jour: null,
           dureeJours: null,
-          participantsLabel: null,
+          participantsLabel: `${count} inscrit${count > 1 ? "s" : ""} à ce jour`,
           phaseLabel: "Phase de présentation du jeu",
         };
       }

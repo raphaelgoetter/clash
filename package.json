@@ -200,6 +200,7 @@
     "bang:status": "node scripts/bangStatus.js",
     "quiestce:test": "node scripts/postQuiEstCe.js",
     "quiestce:test:dry": "node scripts/postQuiEstCe.js --dry-run",
+    "quiestce:test:force-close": "node scripts/postQuiEstCe.js --force-close",
     "quiestce:public": "node scripts/postQuiEstCe.js --public",
     "quiestce:public:dry": "node scripts/postQuiEstCe.js --public --dry-run",
     "quiestce:reset": "node scripts/resetQuiEstCe.js",

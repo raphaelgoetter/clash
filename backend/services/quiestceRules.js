@@ -142,12 +142,30 @@ function nouveauJoueur(username, arrivee) {
   };
 }
 
-// Inscription avant le Jour 1 (bouton Participer) : sans carte, la carte
-// et la première cible sont attribuées par demarrer().
-export function inscrire(partie, id, username) {
-  if (partie.joueurs[id]) return partie.joueurs[id];
-  partie.joueurs[id] = nouveauJoueur(username, Object.keys(partie.joueurs).length);
-  return partie.joueurs[id];
+export function nbInscrits(partie) {
+  return Object.keys(partie.joueurs).length;
+}
+
+// Inscription pendant la fenêtre d'inscription (bouton S'inscrire), dans la
+// limite de `effectif_max` : sans carte, la carte et la première cible sont
+// attribuées par demarrer(). Plus aucune arrivée une fois la partie lancée.
+export function inscrire(partie, id, username, { config }) {
+  if (partie.joueurs[id]) return { joueur: partie.joueurs[id] };
+  if (partie.demarree) return { erreur: "inscriptions" };
+  if (nbInscrits(partie) >= config.effectif_max) return { erreur: "complet" };
+  partie.joueurs[id] = nouveauJoueur(username, nbInscrits(partie));
+  return { joueur: partie.joueurs[id], nouveau: true };
+}
+
+// Désinscription, possible jusqu'au lancement ; les ordres d'arrivée
+// suivants sont recalés.
+export function desinscrire(partie, id) {
+  const j = partie.joueurs[id];
+  if (!j) return { erreur: "pasInscrit" };
+  if (partie.demarree) return { erreur: "inscriptions" };
+  delete partie.joueurs[id];
+  for (const autre of Object.values(partie.joueurs)) if (autre.arrivee > j.arrivee) autre.arrivee -= 1;
+  return { ok: true };
 }
 
 // Tirage de la grille : `taille` cartes éligibles, une seule par profil de
@@ -174,13 +192,13 @@ export function tirerGrille(cartesData, taille, rng = Math.random) {
   return meilleure;
 }
 
-// Jour 1 : grille tirée (au moins `taille_grille` cartes, et `reserve_min`
-// cartes libres pour les retardataires), une carte secrète par joueur, et
+// Jour 1 : grille tirée (`taille_grille` cartes, au moins une par joueur),
+// une carte secrète par joueur, et
 // première cible attribuée en cercle (chacun chasse le suivant : un seul
 // chasseur par cible, sans paire qui se chasse mutuellement).
 export function demarrer(partie, { config, cartesData, rng = Math.random }) {
   const ids = shuffle(Object.keys(partie.joueurs), rng);
-  const taille = Math.max(config.taille_grille, ids.length + config.reserve_min);
+  const taille = Math.max(config.taille_grille, ids.length);
   const grille = tirerGrille(cartesData, taille, rng);
   partie.grille = grille.map((c) => c.cardKey);
   partie.cartes = Object.fromEntries(grille.map((c) => [c.cardKey, { nom: c.fr, profil: profil(c) }]));
@@ -191,23 +209,6 @@ export function demarrer(partie, { config, cartesData, rng = Math.random }) {
   });
   partie.demarree = true;
   return partie;
-}
-
-export function cartesLibres(partie) {
-  const prises = new Set(Object.values(partie.joueurs).map((j) => j.carte));
-  return partie.grille.filter((k) => !prises.has(k));
-}
-
-// Arrivée en cours de partie (jusqu'au jour `inscription_jours`) : une
-// carte libre de la grille, cible à choisir.
-export function rejoindre(partie, id, username, { rng = Math.random } = {}) {
-  if (partie.joueurs[id]) return { joueur: partie.joueurs[id] };
-  const libres = cartesLibres(partie);
-  if (!libres.length) return { erreur: "complet" };
-  const joueur = nouveauJoueur(username, Object.keys(partie.joueurs).length);
-  joueur.carte = libres[Math.floor(rng() * libres.length)];
-  partie.joueurs[id] = joueur;
-  return { joueur };
 }
 
 // ── Cibles ──────────────────────────────────────────────────────────

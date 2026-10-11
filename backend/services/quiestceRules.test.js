@@ -7,10 +7,9 @@ import {
   profil,
   creerPartie,
   inscrire,
+  desinscrire,
   tirerGrille,
   demarrer,
-  rejoindre,
-  cartesLibres,
   chasseurs,
   ciblesDisponibles,
   choisirCible,
@@ -42,7 +41,7 @@ function seeded(seed = 42) {
 // Partie démarrée avec `n` joueurs j0…j(n-1)
 function partieTest(n, rng = seeded()) {
   const p = creerPartie();
-  for (let i = 0; i < n; i++) inscrire(p, `j${i}`, `j${i}`);
+  for (let i = 0; i < n; i++) inscrire(p, `j${i}`, `j${i}`, { config: { ...CONFIG, effectif_max: Infinity } });
   demarrer(p, { config: CONFIG, cartesData: CARTES, rng });
   return p;
 }
@@ -96,20 +95,23 @@ function main() {
       // pas de paire qui se chasse mutuellement (12 joueurs)
       assert.notStrictEqual(p.joueurs[p.joueurs[id].cible].cible, id);
     }
-    // Grille agrandie s'il y a beaucoup de joueurs (réserve de 5 cartes)
-    const grand = partieTest(28);
-    assert.strictEqual(grand.grille.length, 33);
-    assert.strictEqual(cartesLibres(grand).length, 5);
+    // Grille agrandie au-delà de 30 joueurs (une carte par joueur)
+    assert.strictEqual(partieTest(32).grille.length, 32);
   }
 
-  // ── Retardataire : carte libre, refusé si la grille est pleine ──
+  // ── Inscriptions : plafond d'effectif, désinscription, fermées au lancement ──
   {
-    const p = partieTest(4);
-    const { joueur } = rejoindre(p, "tard", "Tard", { rng });
-    assert.ok(joueur.carte && !Object.entries(p.joueurs).some(([id, j]) => id !== "tard" && j.carte === joueur.carte));
-    assert.strictEqual(joueur.cible, null);
-    p.grille = p.grille.filter((k) => Object.values(p.joueurs).some((j) => j.carte === k));
-    assert.strictEqual(rejoindre(p, "trop", "Trop").erreur, "complet");
+    const p = creerPartie();
+    for (let i = 0; i < CONFIG.effectif_max; i++) assert.ok(inscrire(p, `i${i}`, `i${i}`, { config: CONFIG }).nouveau);
+    assert.strictEqual(inscrire(p, "trop", "Trop", { config: CONFIG }).erreur, "complet");
+    assert.ok(!inscrire(p, "i0", "i0", { config: CONFIG }).erreur, "déjà inscrit : pas d'erreur");
+    assert.ok(desinscrire(p, "i3").ok);
+    assert.strictEqual(desinscrire(p, "i3").erreur, "pasInscrit");
+    assert.deepStrictEqual(Object.values(p.joueurs).map((j) => j.arrivee).sort((a, b) => a - b), [...Array(CONFIG.effectif_max - 1).keys()]);
+    assert.ok(inscrire(p, "trop", "Trop", { config: CONFIG }).nouveau, "une place libérée");
+    demarrer(p, { config: CONFIG, cartesData: CARTES, rng });
+    assert.strictEqual(inscrire(p, "tard", "Tard", { config: CONFIG }).erreur, "inscriptions");
+    assert.strictEqual(desinscrire(p, "i0").erreur, "inscriptions");
   }
 
   // ── Question : une par jour, parmi le pool du jour, réponse exacte ──

@@ -5,7 +5,9 @@
 // quatre boutons, chacun en éphémère : Enquêter (sa carte secrète, sa
 // cible, ses indices, la question du jour et l'accusation, édités en
 // place), Objets, Journal (ce qui concerne le joueur) et Règles.
-// Jour de présentation : boutons Participer et Règles.
+// Fenêtre d'inscription (comme Goblin Hunters) : boutons S'inscrire, Se
+// désinscrire et Règles, rappel quotidien, prolongation si l'effectif
+// minimum n'est pas atteint.
 //
 // La publication/clôture quotidienne passe uniquement par
 // scripts/postQuiEstCe.js (postQuiEstCe).
@@ -23,6 +25,7 @@ import {
   initPartie,
   demarrerPartie,
   agir,
+  desinscrireJoueur,
   previewCloture,
   closeDayAndAdvance,
   archiveManche,
@@ -92,23 +95,40 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 // ── Embeds publics ───────────────────────────────────────────────────
 
-function buildAnnonceEmbed(config, partie) {
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+function formatDateFr(iso) {
+  return new Date(iso).toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "long", timeStyle: "short" });
+}
+
+// Message d'inscription (ouverture, rappel quotidien, prolongation) :
+// inscrits, effectif requis, date de clôture.
+function buildAnnonceEmbed(config, partie, closingAt, { prolongee = false } = {}) {
   const inscrits = Object.values(partie.joueurs)
     .sort((a, b) => a.arrivee - b.arrivee)
     .map((j) => j.username);
   return {
-    title: "🕵️ Qui est-ce ?",
+    title: prolongee ? "🕵️ Qui est-ce ? (inscriptions prolongées)" : "🕵️ Qui est-ce ?",
     description: [
+      ...(prolongee
+        ? [`Seulement **${inscrits.length}** joueur${inscrits.length > 1 ? "s" : ""} inscrit${inscrits.length > 1 ? "s" : ""}, il en faut au moins **${config.effectif_min}** pour lancer la partie. Les inscriptions sont prolongées, parles-en autour de toi !`, ""]
+        : []),
       "Chaque joueur reçoit en secret **une carte Clash Royale**. Démasque celles des autres, une question par jour, avant qu'on ne démasque la tienne !",
       "",
-      `📅 **${config.duree_jours} jours de jeu**, à partir de demain. Clique sur *Participer* pour recevoir ta carte secrète.`,
-      ...(inscrits.length ? ["", `**✋ Inscrits (${inscrits.length})**`, inscrits.join(" · ")] : []),
+      `📅 **${config.duree_jours} jours de jeu**, 1 question par jour. Effectif requis : **${config.effectif_min} à ${config.effectif_max} joueurs**.`,
+      "",
+      "Merci de t'inscrire uniquement si tu es sûr de pouvoir participer chaque jour au jeu, pour ne pas pénaliser les autres.",
+      ...(inscrits.length ? ["", `**✋ Inscrits (${inscrits.length}/${config.effectif_max})**`, inscrits.join(" · ")] : []),
     ]
       .join("\n")
       .slice(0, 4096),
     color: QEC_COLOR,
     image: { url: illustrationUrl() },
-    footer: { text: `La partie commence demain à ${heureCloture()}.` },
+    footer: { text: `${prolongee ? "Nouvelle clôture" : "Clôture des inscriptions"} : ${formatDateFr(closingAt)}.` },
   };
 }
 
@@ -246,8 +266,18 @@ function reglesButton() {
   return bouton("Règles", "📖", "quiestce_regles");
 }
 
-function buildAnnonceComponents() {
-  return [{ type: 1, components: [bouton("Participer", "✋", "quiestce_participer", 1), reglesButton()] }];
+function buildAnnonceComponents(config, partie) {
+  const n = Object.keys(partie.joueurs).length;
+  return [
+    {
+      type: 1,
+      components: [
+        bouton(`S'inscrire (${n}/${config.effectif_max})`, "✅", "quiestce_participer", 3),
+        bouton("Se désinscrire", "✖️", "quiestce_desinscrire", 4),
+        reglesButton(),
+      ],
+    },
+  ];
 }
 
 function buildTableComponents() {
@@ -317,7 +347,7 @@ async function supprimerMessage(state) {
   }
 }
 
-async function publishAndWriteState(channelId, previousState, { phase, jour, embed, components, ping, termine = false, isPublic, noPing }) {
+async function publishAndWriteState(channelId, previousState, { phase, jour, embed, components, ping, termine = false, isPublic, noPing, closingAt = null, prolongee = false }) {
   const image = await joindreImage(embed);
   await supprimerMessage(previousState);
   const roleId = ping && !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
@@ -330,7 +360,7 @@ async function publishAndWriteState(channelId, previousState, { phase, jour, emb
     throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
   }
   const message = await res.json();
-  await writeState({ phase, jour, channelId, messageId: message.id, publishedAt: new Date().toISOString(), termine, isPublic, noPing });
+  await writeState({ phase, jour, channelId, messageId: message.id, publishedAt: new Date().toISOString(), termine, isPublic, noPing, ...(closingAt ? { closingAt } : {}), ...(prolongee ? { prolongee } : {}) });
   return { jour, embed, message, termine };
 }
 
@@ -341,11 +371,11 @@ async function rafraichirMessage(state, partie) {
   try {
     const config = await loadQuiEstCeConfig();
     const annonce = state.phase === "annonce";
-    const embed = annonce ? buildAnnonceEmbed(config, partie) : await buildTableEmbed(state.jour, config, partie);
+    const embed = annonce ? buildAnnonceEmbed(config, partie, state.closingAt, { prolongee: state.prolongee }) : await buildTableEmbed(state.jour, config, partie);
     const image = await joindreImage(embed);
     const res = await discordFetch(`/channels/${state.channelId}/messages/${state.messageId}`, {
       method: "PATCH",
-      body: corpsMessage({ embeds: [embed], components: annonce ? buildAnnonceComponents() : buildTableComponents() }, image),
+      body: corpsMessage({ embeds: [embed], components: annonce ? buildAnnonceComponents(config, partie) : buildTableComponents() }, image),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
   } catch (err) {
@@ -394,7 +424,7 @@ function tirerPnj() {
 
 export async function postQuiEstCe(
   channelId,
-  { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false, pnj = !isPublic } = {},
+  { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false, forceClose = false, pnj = !isPublic } = {},
 ) {
   const config = await loadQuiEstCeConfig();
   const state = await readState();
@@ -406,18 +436,41 @@ export async function postQuiEstCe(
   if (state && state.channelId !== channelId) return { wrongChannel: true, activeChannelId: state.channelId };
   if (!state && requireActiveState) return { skipped: true };
 
-  // 1) Aucun état → jour de présentation (inscriptions)
+  // 1) Aucun état → ouverture de la fenêtre d'inscription (ping)
   if (!state) {
     const partie = dryRun ? await readPartie() : await initPartie();
-    const embed = buildAnnonceEmbed(config, partie);
-    const components = buildAnnonceComponents();
+    const closingAt = addDays(new Date(), config.fenetre_inscription_jours).toISOString();
+    const embed = buildAnnonceEmbed(config, partie, closingAt);
+    const components = buildAnnonceComponents(config, partie);
     if (dryRun) return { dryRun: true, phase: "annonce", embed, components };
-    return publishAndWriteState(channelId, null, { phase: "annonce", jour: null, embed, components, ping: true, isPublic, noPing });
+    return publishAndWriteState(channelId, null, { phase: "annonce", jour: null, embed, components, ping: true, isPublic, noPing, closingAt });
   }
 
-  // 2) Présentation → Jour 1 : grille, cartes secrètes, cercle de cibles
+  // 2) Fenêtre d'inscription : rappel tant qu'elle n'est pas close (sauf
+  // effectif maximum atteint : lancement anticipé), prolongation de la
+  // même durée si l'effectif minimum n'est pas atteint (PNJ du salon de
+  // test compris), sinon Jour 1. `forceClose` (tests uniquement) : ignore
+  // la date de clôture.
   if (state.phase === "annonce") {
-    const partie = dryRun ? await readPartie() : await demarrerPartie({ pnj: pnj && !isPublic ? tirerPnj() : [] });
+    const now = new Date();
+    const partieInscrits = await readPartie();
+    const count = Object.keys(partieInscrits.joueurs).length;
+    const pnjs = pnj && !isPublic ? tirerPnj() : [];
+    if (!forceClose && count < config.effectif_max && new Date(state.closingAt) > now) {
+      const embed = buildAnnonceEmbed(config, partieInscrits, state.closingAt, { prolongee: state.prolongee });
+      const components = buildAnnonceComponents(config, partieInscrits);
+      if (dryRun) return { dryRun: true, phase: "annonce", rappel: true, embed, components };
+      return publishAndWriteState(channelId, state, { phase: "annonce", jour: null, embed, components, ping: false, isPublic, noPing, closingAt: state.closingAt, prolongee: state.prolongee });
+    }
+    if (count + pnjs.length < config.effectif_min) {
+      const closingAt = addDays(now, config.fenetre_inscription_jours).toISOString();
+      const embed = buildAnnonceEmbed(config, partieInscrits, closingAt, { prolongee: true });
+      const components = buildAnnonceComponents(config, partieInscrits);
+      if (dryRun) return { dryRun: true, phase: "annonce", prolongation: true, embed, components };
+      const r = await publishAndWriteState(channelId, state, { phase: "annonce", jour: null, embed, components, ping: true, isPublic, noPing, closingAt, prolongee: true });
+      return { ...r, prolongation: true };
+    }
+    const partie = dryRun ? partieInscrits : await demarrerPartie({ pnj: pnjs });
     const embed = await buildTableEmbed(1, config, partie);
     const components = buildTableComponents();
     if (dryRun) return { dryRun: true, phase: "jour", jour: 1, embed, components };
@@ -452,6 +505,7 @@ async function patchOriginal(webhookUrl, payload) {
 
 const ERREURS = {
   termine: "La partie est terminée.",
+  pasInscrit: "Tu n'es pas inscrit.",
   inconnu: "Tu ne participes pas à cette partie.",
   sansCible: "Choisis d'abord une cible.",
   dejaCible: "Tu as déjà une cible : démasque-la d'abord.",
@@ -505,7 +559,7 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
     return {
       embeds: [
         {
-          description: `${nouveau ? "✋ Inscription confirmée !" : "✋ Tu es déjà inscrit."} La partie commence demain à ${heureCloture()} : tu recevras ta carte secrète et ta première cible.`,
+          description: `${nouveau ? "✅ Inscription confirmée !" : "✅ Tu es déjà inscrit."} À la clôture des inscriptions, tu recevras ta carte secrète et ta première cible.`,
           color: QEC_COLOR,
         },
       ],
@@ -614,15 +668,10 @@ function buildObjetsView(config, partie, discordId, { entete = null, nouveau = f
   const j = partie.joueurs[discordId];
   if (!partie.demarree) return { embeds: [{ description: "La partie n'a pas encore commencé.", color: QEC_COLOR }] };
   if (partie.termine) return { embeds: [{ description: "🏁 La partie est terminée.", color: QEC_COLOR }] };
-  const lignes = [...(nouveau ? ["Bienvenue dans la partie !", ""] : []), ...(entete ? [entete, ""] : []), statutLigne(j, config), ""];
-  const disponibles = [];
-  for (const o of Object.keys(OBJETS)) {
-    const etat = etatObjet(partie, discordId, o, { config });
-    lignes.push(`${objetLabel(o)} (${config.objets[o].cout} Or) : ${OBJETS[o].effet}${etat.ok ? "" : ` *(${RAISONS_OBJET[etat.raison]})*`}`);
-    if (etat.ok) disponibles.push(o);
-  }
+  const lignes = [...(nouveau ? ["Bienvenue dans la partie !", ""] : []), ...(entete ? [entete, ""] : []), statutLigne(j, config)];
+  const etats = Object.fromEntries(Object.keys(OBJETS).map((o) => [o, etatObjet(partie, discordId, o, { config })]));
   const components = [];
-  if (projecteur && disponibles.includes("projecteur")) {
+  if (projecteur && etats.projecteur.ok) {
     const leader = partie.joueurs[leaderPrime(partie)];
     lignes.push("", `🔦 Leader en prime : **${leader.username}** (prime ${leader.prime}). Quelle caractéristique révéler à tous ?`);
     components.push({
@@ -636,15 +685,22 @@ function buildObjetsView(config, partie, discordId, { entete = null, nouveau = f
         },
       ],
     });
-  } else if (disponibles.length) {
+  } else {
+    // Tous les objets dans le menu (Discord ne permet pas de griser une
+    // option) : effet si utilisable, sinon 🔒 et la raison.
     components.push({
       type: 1,
       components: [
         {
           type: 3,
           custom_id: "quiestce_objet",
-          placeholder: "🎒 Utiliser un objet",
-          options: disponibles.map((o) => ({ label: `${OBJETS[o].nom} (${config.objets[o].cout} Or)`, value: o, emoji: { name: OBJETS[o].emoji }, description: OBJETS[o].effet.slice(0, 100) })),
+          placeholder: "🎒 Utiliser un objet (1 par jour)",
+          options: Object.keys(OBJETS).map((o) => ({
+            label: `${OBJETS[o].nom} (${config.objets[o].cout} Or)`,
+            value: o,
+            emoji: { name: etats[o].ok ? OBJETS[o].emoji : "🔒" },
+            description: (etats[o].ok ? OBJETS[o].effet : `Indisponible : ${RAISONS_OBJET[etats[o].raison]}`).slice(0, 100),
+          })),
         },
       ],
     });
@@ -653,12 +709,12 @@ function buildObjetsView(config, partie, discordId, { entete = null, nouveau = f
 }
 
 // État requis pour toute action ; null (et message) sinon. `annonce` :
-// action permise le jour de présentation (Participer).
+// action permise pendant la fenêtre d'inscription (S'inscrire).
 async function guardActive(webhookUrl, { annonce = false } = {}) {
   const state = await readState();
   const ok = state && !state.termine && (state.phase === "jour" || (annonce && state.phase === "annonce"));
   if (!ok) {
-    await patchOriginal(webhookUrl, { content: state?.phase === "annonce" ? "La partie commence demain : clique sur *Participer* pour t'inscrire." : "Aucune partie de Qui est-ce ? en cours." });
+    await patchOriginal(webhookUrl, { content: state?.phase === "annonce" ? "La partie n'a pas encore commencé : inscris-toi avec le bouton *S'inscrire*." : "Aucune partie de Qui est-ce ? en cours." });
     return null;
   }
   return state;
@@ -666,17 +722,18 @@ async function guardActive(webhookUrl, { annonce = false } = {}) {
 
 // Action commune : sous verrou (quiestce.js), puis vue éphémère (`vue`,
 // éventuellement asynchrone) et message officiel réédité.
-async function executer(webhookUrl, discordId, username, action, vue, { rafraichir = true, annonce = false } = {}) {
+async function executer(webhookUrl, discordId, username, action, vue, { rafraichir = true, annonce = false, inscription = false } = {}) {
   const state = await guardActive(webhookUrl, { annonce });
   if (!state) return;
   const config = await loadQuiEstCeConfig();
-  const r = await agir(state.jour ?? 0, discordId, username, action);
-  if (r.erreur === "inscriptions") {
-    await patchOriginal(webhookUrl, { content: `🔒 Trop tard : on ne peut plus rejoindre la partie après le jour ${config.inscription_jours}. Rendez-vous à la prochaine !` });
-    return;
-  }
-  if (r.erreur === "complet") {
-    await patchOriginal(webhookUrl, { content: "🔒 Toutes les cartes de la grille sont déjà distribuées. Rendez-vous à la prochaine partie !" });
+  const r = await agir(discordId, username, action, { inscription });
+  const refus = {
+    inscriptions: "🔒 Les inscriptions sont closes : tu ne participes pas à cette partie. Rendez-vous à la prochaine !",
+    complet: `🔒 Désolé, l'effectif maximum (${config.effectif_max} joueurs) est atteint.`,
+    pasInscrit: "Tu n'es pas inscrit : clique sur *S'inscrire*.",
+  };
+  if (refus[r.erreur]) {
+    await patchOriginal(webhookUrl, { content: refus[r.erreur] });
     return;
   }
   await patchOriginal(webhookUrl, await vue(config, r.partie, discordId, { ...(r.resultat || {}), nouveau: r.nouveau }));
@@ -692,12 +749,29 @@ function texteAccusation(r, partie, cibleId, cardKey) {
 
 // ── Boutons du message officiel (nouvel éphémère) ────────────────────
 
-// [✋ Participer] (présentation ; en cours de partie, comme Enquêter).
+// [✅ S'inscrire] (fenêtre d'inscription).
 export async function handleParticiper(webhookUrl, discordId, username) {
   try {
-    await executer(webhookUrl, discordId, username, () => ({}), buildEnqueteView, { rafraichir: false, annonce: true });
+    await executer(webhookUrl, discordId, username, () => ({}), buildEnqueteView, { rafraichir: false, annonce: true, inscription: true });
   } catch (err) {
-    console.error("[QuiEstCe] Échec participer:", err.message);
+    console.error("[QuiEstCe] Échec inscription:", err.message);
+  }
+}
+
+// [✖️ Se désinscrire] (fenêtre d'inscription).
+export async function handleDesinscrire(webhookUrl, discordId) {
+  try {
+    const state = await guardActive(webhookUrl, { annonce: true });
+    if (!state) return;
+    if (state.phase !== "annonce") {
+      await patchOriginal(webhookUrl, { content: "🔒 La partie est lancée, il n'est plus possible de se désinscrire." });
+      return;
+    }
+    const r = await desinscrireJoueur(discordId);
+    await patchOriginal(webhookUrl, { content: r.erreur ? "Tu n'étais pas inscrit." : "✖️ Désinscription confirmée." });
+    if (!r.erreur) await rafraichirMessage(state, r.partie);
+  } catch (err) {
+    console.error("[QuiEstCe] Échec désinscription:", err.message);
   }
 }
 
@@ -789,7 +863,17 @@ function texteObjet(r, partie) {
 export async function handleObjet(webhookUrl, discordId, username, objet) {
   try {
     if (objet === "projecteur") {
-      await executer(webhookUrl, discordId, username, () => ({ projecteur: true }), buildObjetsView, { rafraichir: false });
+      await executer(
+        webhookUrl,
+        discordId,
+        username,
+        (partie, config) => {
+          const etat = etatObjet(partie, discordId, "projecteur", { config });
+          return etat.ok ? { projecteur: true } : { entete: avertissement(etat.raison) };
+        },
+        buildObjetsView,
+        { rafraichir: false },
+      );
       return;
     }
     await executer(

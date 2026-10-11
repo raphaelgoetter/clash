@@ -21,7 +21,7 @@ import { nomCarte, candidats, classement, texteJournal } from "../backend/servic
   const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);
   if (state.phase === "annonce") {
     const inscrits = Object.values(partie.joueurs).map((j) => j.username);
-    console.log(`Phase : présentation (la partie commence au prochain post). Inscrits (${inscrits.length}) : ${inscrits.join(", ") || "aucun"}`);
+    console.log(`Phase : inscriptions${state.prolongee ? " (prolongées)" : ""}, clôture le ${new Date(state.closingAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}. Inscrits (${inscrits.length}/${config.effectif_max}, minimum ${config.effectif_min}) : ${inscrits.join(", ") || "aucun"}`);
     return;
   }
   console.log(`Jour ${state.jour}/${config.duree_jours}${state.termine ? " (terminée)" : ""} · questions du jour : ${(config.pool[String(partie.numeroJour)] ?? []).join(", ")}`);

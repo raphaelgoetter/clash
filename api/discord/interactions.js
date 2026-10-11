@@ -167,6 +167,7 @@ import {
 } from "./_handlers/bang.js";
 import {
   handleParticiper as handleQuiEstCeParticiper,
+  handleDesinscrire as handleQuiEstCeDesinscrire,
   handleEnqueter as handleQuiEstCeEnqueter,
   handleObjets as handleQuiEstCeObjets,
   handleQuestion as handleQuiEstCeQuestion,
@@ -9970,11 +9971,13 @@ export default async function handler(req, res) {
   }
 
   // ── Qui est-ce ? : boutons du message officiel (nouvel éphémère) ──
-  // custom_id : quiestce_participer, quiestce_enqueter, quiestce_objets,
-  // quiestce_journal, quiestce_regles
+  // custom_id : quiestce_participer (S'inscrire), quiestce_desinscrire,
+  // quiestce_enqueter, quiestce_objets, quiestce_journal, quiestce_regles
   if (
     body.type === 3 &&
-    ["quiestce_participer", "quiestce_enqueter", "quiestce_objets", "quiestce_journal", "quiestce_regles"].includes(body.data?.custom_id)
+    ["quiestce_participer", "quiestce_desinscrire", "quiestce_enqueter", "quiestce_objets", "quiestce_journal", "quiestce_regles"].includes(
+      body.data?.custom_id,
+    )
   ) {
     const action = body.data.custom_id;
     const discordId = body.member?.user?.id;
@@ -9985,6 +9988,7 @@ export default async function handler(req, res) {
     if (action === "quiestce_regles") runBackground(() => handleQuiEstCeRegles(webhookUrl));
     else if (action === "quiestce_journal") runBackground(() => handleQuiEstCeJournal(webhookUrl, discordId));
     else if (action === "quiestce_participer") runBackground(() => handleQuiEstCeParticiper(webhookUrl, discordId, username));
+    else if (action === "quiestce_desinscrire") runBackground(() => handleQuiEstCeDesinscrire(webhookUrl, discordId));
     else if (action === "quiestce_objets") runBackground(() => handleQuiEstCeObjets(webhookUrl, discordId, username));
     else runBackground(() => handleQuiEstCeEnqueter(webhookUrl, discordId, username));
     return;
