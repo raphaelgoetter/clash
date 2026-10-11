@@ -2119,8 +2119,7 @@ Un objet par jour au plus, `objets_max` (4) par partie. **Or** : `or_par_jour` (
 
 | Commande | Effet |
 | -------- | ----- |
-| `npm run quiestce:test` | Poste manuellement l'étape suivante sur le salon de test. Au lancement, inscrit 6 ou 7 **PNJ** (joueurs fictifs `pnj-N`, pseudos Kévina, Josette…, comptés dans l'effectif minimum) : ils ont une carte et une cible mais ne jouent jamais, ils servent de cibles. `-- --sans-pnj` pour s'en passer. Jamais sur le salon public. |
-| `npm run quiestce:test:force-close` | ⚠️ **TESTS UNIQUEMENT**, jamais câblé dans `quiestce.yml` : ignore la date de clôture des inscriptions et lance la partie dès l'effectif minimum atteint (PNJ compris), sinon prolonge. |
+| `npm run quiestce:test` | Poste manuellement l'étape suivante sur le salon de test : 1er lancement = ouverture des inscriptions, 2e = **Jour 1 immédiatement** (clôture des inscriptions forcée sur le salon de test, comme `--force`), puis un jour par lancement. Au lancement, inscrit des **PNJ** (joueurs fictifs `pnj-N`, pseudos Kévina, Josette… : 6 ou 7, ou plus pour atteindre l'effectif minimum de 10) : ils ont une carte et une cible mais ne jouent jamais, ils servent de cibles. `-- --sans-pnj` pour s'en passer (prolongation si moins de 10 inscrits). Jamais sur le salon public. |
 | `npm run quiestce:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
 | `npm run quiestce:public` | Poste sur le salon public (cron `quiestce.yml`). |
 | `npm run quiestce:public:dry` | Équivalent dry-run. |

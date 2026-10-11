@@ -415,12 +415,13 @@ async function terminerPartie(state, partie, final, { dryRun = false } = {}) {
 
 // ── Publication quotidienne (appelée uniquement par scripts/postQuiEstCe.js) ──
 
-// Joueurs fictifs du salon de test (6 ou 7 tirés au sort), voir demarrerPartie.
-const PNJ = ["Kévina", "Josette", "Gérard", "Ginette", "Jean-Mi", "Bernadette", "Régis", "Huguette"];
+// Joueurs fictifs du salon de test (6 ou 7 tirés au sort, ou plus pour
+// atteindre l'effectif minimum), voir demarrerPartie.
+const PNJ = ["Kévina", "Josette", "Gérard", "Ginette", "Jean-Mi", "Bernadette", "Régis", "Huguette", "Raymonde", "Lucien", "Simone", "Marcel"];
 
-function tirerPnj() {
+function tirerPnj(minimum = 0) {
   const noms = [...PNJ].sort(() => Math.random() - 0.5);
-  return noms.slice(0, 6 + Math.floor(Math.random() * 2));
+  return noms.slice(0, Math.max(minimum, 6 + Math.floor(Math.random() * 2)));
 }
 
 export async function postQuiEstCe(
@@ -456,7 +457,7 @@ export async function postQuiEstCe(
     const now = new Date();
     const partieInscrits = await readPartie();
     const count = Object.keys(partieInscrits.joueurs).length;
-    const pnjs = pnj && !isPublic ? tirerPnj() : [];
+    const pnjs = pnj && !isPublic ? tirerPnj(config.effectif_min - count) : [];
     if (!forceClose && count < config.effectif_max && new Date(state.closingAt) > now) {
       const embed = buildAnnonceEmbed(config, partieInscrits, state.closingAt, { prolongee: state.prolongee });
       const components = buildAnnonceComponents(config, partieInscrits);

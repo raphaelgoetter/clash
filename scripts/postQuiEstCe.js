@@ -15,8 +15,8 @@
 //   node scripts/postQuiEstCe.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node scripts/postQuiEstCe.js --force          — ignore le garde-fou anti-double-avancée
 //   node scripts/postQuiEstCe.js --sans-pnj       — salon de test sans les 6-7 joueurs fictifs (PNJ) inscrits au J1
-//   node scripts/postQuiEstCe.js --force-close    — TESTS UNIQUEMENT : ignore la date de clôture des inscriptions
-//                                                  (lance la partie si l'effectif minimum est atteint, PNJ compris)
+//   node scripts/postQuiEstCe.js --force-close    — ignore la date de clôture des inscriptions (lance la partie si
+//                                                  l'effectif minimum est atteint) ; implicite sur le salon de test
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -26,7 +26,10 @@ import { postQuiEstCe } from "../api/discord/_handlers/quiestce.js";
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
-const FORCE_CLOSE = process.argv.includes("--force-close");
+// Salon de test : la clôture des inscriptions est forcée (comme --force),
+// pour passer au Jour 1 sans attendre les 3 jours ; des PNJ complètent
+// l'effectif minimum (voir tirerPnj).
+const FORCE_CLOSE = process.argv.includes("--force-close") || !PUBLIC;
 const FORCE = process.argv.includes("--force") || !PUBLIC;
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 // Salon de test : 6-7 joueurs fictifs inscrits au J1 (jamais en public)
