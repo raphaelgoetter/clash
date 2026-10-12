@@ -60,6 +60,8 @@ async function main() {
     const state = baseState({ players: ["a", "b"] });
     assert.strictEqual(isMancheReady(state, { a: { status: "termine" } }), false);
     assert.strictEqual(isMancheReady(state, { a: { status: "termine" }, b: { status: "en_cours" } }), false);
+    // Main en attente de choix de combinaison : pas encore finie.
+    assert.strictEqual(isMancheReady(state, { a: { status: "termine" }, b: { status: "choix" } }), false);
     assert.strictEqual(isMancheReady(state, { a: { status: "termine" }, b: { status: "termine" } }), true);
   }
 

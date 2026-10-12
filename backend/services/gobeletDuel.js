@@ -34,6 +34,8 @@ import {
   rollDice,
   rerollKept,
   computeBestCombination,
+  finishHand,
+  pickChoice,
   resolveJour,
   buildRanking,
   withUsedCategory,
@@ -365,8 +367,7 @@ export async function relance(discordId) {
   let updated;
   let nextKept;
   if (tirage >= 3) {
-    const { category, points } = computeBestCombination(dice, used);
-    updated = { ...hand, dice, tirage, status: "termine", category, points };
+    updated = finishHand({ ...hand, dice, tirage }, used);
     await resetKept(manche, discordId);
     nextKept = [false, false, false, false, false];
   } else {
@@ -398,16 +399,39 @@ export async function valider(discordId) {
 
   const used = await readUsedCategories(discordId);
   const opponents = await readOpponentsUsed(state, discordId);
-  const { category, points } = computeBestCombination(hand.dice, used, { allowJoker: false });
+  const { category } = computeBestCombination(hand.dice, used, { allowJoker: false });
   if (category === NO_COMBINATION) {
     const kept = await readKept(manche, discordId);
     return { notEligible: true, state, hand, kept, used, opponents };
   }
 
-  const updated = { ...hand, status: "termine", category, points };
+  const updated = finishHand(hand, used);
   await writeHand(manche, discordId, updated);
   await resetKept(manche, discordId);
 
+  const newState = { ...state, lastActivityAt: new Date().toISOString() };
+  await writeState(newState);
+
+  return { state: newState, hand: updated, kept: [false, false, false, false, false], used, opponents };
+}
+
+// Combinaison choisie dans le select de fin de main (main en statut
+// "choix", voir finishHand dans gobelet.js). Un choix invalide (ancien
+// message, main déjà figée) renvoie simplement l'état réel.
+export async function choisir(discordId, category) {
+  const state = await readState();
+  if (!state || state.termine) return { inactive: true };
+
+  const manche = state.manche;
+  const hand = await readHand(manche, discordId);
+  if (!hand) return { noHand: true, state };
+
+  const used = await readUsedCategories(discordId);
+  const opponents = await readOpponentsUsed(state, discordId);
+  const updated = pickChoice(hand, used, category);
+  if (!updated) return { alreadyDone: true, state, hand, used, opponents };
+
+  await writeHand(manche, discordId, updated);
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
   await writeState(newState);
 
@@ -431,7 +455,9 @@ async function claimResolution(manche) {
 // manche seul.
 export function isMancheReady(state, hands) {
   if (state.players.length < state.maxPlayers) return false;
-  return state.players.every((id) => hands[id] && hands[id].status !== "en_cours");
+  // Une main en attente de choix ("choix") n'est pas finie : la manche
+  // attend que le joueur choisisse sa combinaison.
+  return state.players.every((id) => hands[id] && hands[id].status === "termine");
 }
 
 // Appelée après CHAQUE action qui termine une main (3ᵉ tirage atteint) :

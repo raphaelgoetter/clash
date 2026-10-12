@@ -211,6 +211,7 @@ import {
   handleToggle as handleGobeletToggle,
   handleRelancer as handleGobeletRelancer,
   handleValider as handleGobeletValider,
+  handleChoisir as handleGobeletChoisir,
   handleRegles as handleGobeletRegles,
   handleJournal as handleGobeletJournal,
 } from "./_handlers/gobelet.js";
@@ -222,6 +223,7 @@ import {
   handleToggle as handleGobeletDuelToggle,
   handleRelancer as handleGobeletDuelRelancer,
   handleValider as handleGobeletDuelValider,
+  handleChoisir as handleGobeletDuelChoisir,
   handleRegles as handleGobeletDuelRegles,
   extractMember as extractGobeletDuelMember,
 } from "./_handlers/gobeletDuel.js";
@@ -9041,6 +9043,20 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── Gobelet Duel : select de choix de la combinaison (fin de main) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobeletduel_choix:")
+  ) {
+    const { discordId } = extractGobeletDuelMember(body);
+    const category = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletDuelChoisir(webhookUrl, discordId, category));
+    return;
+  }
+
   // ── Gobelet Duel : bouton "Manche suivante" (message éphémère) ──
   if (
     body.type === 3 &&
@@ -9534,6 +9550,21 @@ export default async function handler(req, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleGobeletValider(webhookUrl, jour, discordId));
+    return;
+  }
+
+  // ── Gobelet : select de choix de la combinaison (fin de main) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("gobelet_choix:")
+  ) {
+    const jour = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const category = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleGobeletChoisir(webhookUrl, jour, discordId, category));
     return;
   }
 

@@ -10,6 +10,11 @@ import {
   formatBaremeLines,
   COMBINATIONS,
   isTooSoonSinceLastClosure,
+  listChoices,
+  finishHand,
+  pickChoice,
+  JOKER,
+  NO_COMBINATION,
 } from "./gobelet.js";
 
 function rngSequence(values) {
@@ -155,6 +160,28 @@ async function main() {
   assert.strictEqual(isTooSoonSinceLastClosure(null, now), false);
   assert.strictEqual(isTooSoonSinceLastClosure(new Date(now - 1 * 3_600_000).toISOString(), now), true);
   assert.strictEqual(isTooSoonSinceLastClosure(new Date(now - 9 * 3_600_000).toISOString(), now), false);
+
+  // ── listChoices / finishHand / pickChoice — choix de la combinaison ──
+  // 6 6 6 5 5 : Full, Somme ≥ 28, Brelan, Double + Joker (28), triés par points.
+  const full = [6, 6, 6, 5, 5];
+  assert.deepStrictEqual(listChoices(full, []).map((c) => c.category), [
+    "Somme ≥ 28", "Full", JOKER, "Brelan", "Double quelconque",
+  ]);
+  assert.strictEqual(listChoices(full, [JOKER]).some((c) => c.category === JOKER), false);
+  assert.strictEqual(finishHand({ dice: full, status: "en_cours" }, []).status, "choix");
+  // Un seul choix possible : main figée directement.
+  const seulJoker = finishHand({ dice: [1, 2, 4, 5, 6] }, []);
+  assert.deepStrictEqual([seulJoker.status, seulJoker.category, seulJoker.points], ["termine", JOKER, 18]);
+  const rien = finishHand({ dice: [1, 2, 4, 5, 6] }, [JOKER]);
+  assert.deepStrictEqual([rien.status, rien.category, rien.points], ["termine", NO_COMBINATION, 0]);
+  // Choix du joueur : Full plutôt que Somme ≥ 28 ; choix invalide refusé.
+  const enChoix = { dice: full, status: "choix" };
+  assert.deepStrictEqual(pickChoice(enChoix, [], "Full"), { dice: full, status: "termine", category: "Full", points: 40 });
+  assert.strictEqual(pickChoice(enChoix, ["Full"], "Full"), null);
+  assert.strictEqual(pickChoice({ ...enChoix, status: "termine" }, [], "Full"), null);
+  // Main en attente de choix à la clôture : combinaison la plus payante (hors Joker).
+  const [auto] = resolveJour({ a: { ...enChoix, username: "A" } }, { a: [] });
+  assert.deepStrictEqual([auto.category, auto.points], ["Somme ≥ 28", 45]);
 
   console.log("✓ gobelet service tests passed");
 }

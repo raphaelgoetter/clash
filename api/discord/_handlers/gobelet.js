@@ -39,6 +39,10 @@ import {
   resetUsedCategories,
   withUsedCategory,
   formatBaremeLines,
+  listChoices,
+  finishHand,
+  pickChoice,
+  JOKER,
   NO_COMBINATION,
 } from "../../../backend/services/gobelet.js";
 import {
@@ -548,6 +552,9 @@ function buildHandStatusMessage(hand, kept) {
   if (hand.status === "termine") {
     return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** aujourd'hui !`;
   }
+  if (hand.status === "choix") {
+    return "🎯 Plusieurs combinaisons possibles : choisis celle à retenir dans la liste. Sans choix avant la clôture, la plus payante (hors Joker) est retenue.";
+  }
   const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
   return `Tirage ${hand.tirage}/3 — sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
@@ -595,7 +602,34 @@ function buildDieEmoji(value, kept, diceEmojis) {
 // réalisée — dès le 1ᵉʳ tirage. Permet de figer une bonne main tout de
 // suite sans passer par les 2 relances obligatoires. Le libellé ne nomme
 // volontairement pas la combinaison : à chacun de la repérer.
+// Main en attente de choix : un select avec chaque combinaison possible
+// (Joker compris s'il est libre), la plus payante en premier.
+function buildChoiceComponents(customId, hand, used) {
+  const choices = listChoices(hand.dice, used);
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: customId,
+          placeholder: "Choisis ta combinaison",
+          options: choices.map((c, i) => ({
+            label: `${c.category} (${c.points} pt${c.points > 1 ? "s" : ""})`,
+            value: c.category,
+            emoji: { name: c.category === JOKER ? "🃏" : "🎯" },
+            ...(i === 0 ? { description: "Le plus de points" } : {}),
+          })),
+        },
+      ],
+    },
+  ];
+}
+
 function buildHandComponents(jour, hand, kept, diceEmojis, used) {
+  if (hand.status === "choix") {
+    return buildChoiceComponents(`gobelet_choix:${jour}`, hand, used);
+  }
   if (hand.status !== "en_cours") return [];
   const { category } = computeBestCombination(hand.dice, used, {
     allowJoker: false,
@@ -714,7 +748,7 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
     if (hand.status !== "en_cours") {
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
-        components: [],
+        components: buildHandComponents(jour, hand, NO_KEPT, null, used),
       });
       return;
     }
@@ -759,7 +793,7 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
     if (hand.status !== "en_cours") {
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
-        components: [],
+        components: buildHandComponents(jour, hand, NO_KEPT, null, used),
       });
       return;
     }
@@ -771,8 +805,7 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
     let updated;
     let nextKept;
     if (tirage >= 3) {
-      const { category, points } = computeBestCombination(dice, used);
-      updated = { ...hand, dice, tirage, status: "termine", category, points };
+      updated = finishHand({ ...hand, dice, tirage }, used);
       await resetKept(jour, discordId);
       nextKept = NO_KEPT;
     } else {
@@ -819,13 +852,13 @@ export async function handleValider(webhookUrl, jour, discordId) {
     if (hand.status !== "en_cours") {
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
-        components: [],
+        components: buildHandComponents(jour, hand, NO_KEPT, null, used),
       });
       return;
     }
 
     const { diceEmojis } = await loadGobeletConfig();
-    const { category, points } = computeBestCombination(hand.dice, used, {
+    const { category } = computeBestCombination(hand.dice, used, {
       allowJoker: false,
     });
     if (category === NO_COMBINATION) {
@@ -842,7 +875,7 @@ export async function handleValider(webhookUrl, jour, discordId) {
       return;
     }
 
-    const updated = { ...hand, status: "termine", category, points };
+    const updated = finishHand(hand, used);
     await writeHand(jour, discordId, updated);
     await resetKept(jour, discordId);
 
@@ -852,6 +885,41 @@ export async function handleValider(webhookUrl, jour, discordId) {
     });
   } catch (err) {
     console.error("[Gobelet] Échec Valider:", err.message);
+  }
+}
+
+// Select de fin de main : fige la combinaison choisie par le joueur.
+export async function handleChoisir(webhookUrl, jour, discordId, category) {
+  try {
+    const state = await readState();
+    if (isDayInactive(state, jour)) {
+      await patchOriginal(webhookUrl, {
+        content: "La journée a changé, regarde le nouveau message !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const used = await readUsedCategories(discordId);
+    const hand = await readHand(jour, discordId);
+    if (!hand) {
+      await patchOriginal(webhookUrl, {
+        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    // Choix invalide ou main déjà figée : on repeint simplement l'état réel.
+    const updated = pickChoice(hand, used, category) ?? hand;
+    if (updated !== hand) await writeHand(jour, discordId, updated);
+
+    await patchOriginal(webhookUrl, {
+      embeds: [buildHandEmbed(jour, updated, NO_KEPT, used)],
+      components: buildHandComponents(jour, updated, NO_KEPT, null, used),
+    });
+  } catch (err) {
+    console.error("[Gobelet] Échec choix de combinaison:", err.message);
   }
 }
 
@@ -907,7 +975,9 @@ export async function handleJournal(webhookUrl, discordId) {
       const detail =
         hand.status === "termine"
           ? `**${hand.category}** (${hand.points} pt${hand.points > 1 ? "s" : ""})`
-          : `en cours (tirage ${hand.tirage}/3)`;
+          : hand.status === "choix"
+            ? "combinaison à choisir (clique sur **Jouer**)"
+            : `en cours (tirage ${hand.tirage}/3)`;
       lines.push(`Ta main aujourd'hui : ${formatDice(hand.dice)} — ${detail}`);
     } else {
       lines.push(
@@ -957,12 +1027,12 @@ function buildReglesEmbed(config) {
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
-      "👍 **Valider** — dès que tes dés forment une combinaison encore libre (hors Joker), fige ta main immédiatement sans attendre les relances restantes.",
-      "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
+      "👍 **Valider** : dès que tes dés forment une combinaison encore libre (hors Joker), arrête tes relances immédiatement.",
+      "🎯 **Choix de la combinaison** : si tes dés en forment plusieurs encore libres (Joker compris), choisis celle à retenir dans la liste, par exemple pour garder la plus payante pour un autre jour. Sans choix avant la clôture, la plus payante (hors Joker) est retenue.",
       "",
-      "**Une combinaison différente chaque jour :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt.",
+      "**Une combinaison différente chaque jour :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Les combinaisons déjà réalisées ne sont plus proposées ; s'il n'en reste aucune dans tes dés : 0 pt.",
       "",
-      "**Barème (la catégorie libre la plus valorisée est toujours retenue) :**",
+      "**Barème :**",
       ...formatBaremeLines(),
       "",
       `Au Jour ${config.duree_jours}, le classement cumulé désigne le(s) vainqueur(s) de la manche.`,

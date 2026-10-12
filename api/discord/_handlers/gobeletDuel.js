@@ -21,6 +21,7 @@ import {
   toggleKept,
   relance,
   valider,
+  choisir,
   checkAndResolveManche,
   listHands,
   expireIfStale,
@@ -31,6 +32,8 @@ import {
   loadGobeletConfig,
   computeBestCombination,
   formatBaremeLines,
+  listChoices,
+  JOKER,
   NO_COMBINATION,
 } from "../../../backend/services/gobelet.js";
 import {
@@ -213,7 +216,7 @@ function buildFinalComponents() {
 
 async function buildPendingLabel(state, hands) {
   const pendingIds = state.players.filter(
-    (id) => !hands[id] || hands[id].status === "en_cours",
+    (id) => !hands[id] || hands[id].status !== "termine",
   );
   const missingSeats = state.maxPlayers - state.players.length;
   const lines = [];
@@ -456,6 +459,9 @@ function buildHandStatusMessage(hand, kept) {
   if (hand.status === "termine") {
     return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** cette manche !`;
   }
+  if (hand.status === "choix") {
+    return "🎯 Plusieurs combinaisons possibles : choisis celle à retenir dans la liste pour terminer ta main.";
+  }
   const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
   return `Tirage ${hand.tirage}/3 — sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
@@ -534,8 +540,36 @@ function buildNextComponents(manche, totalManches, ready) {
   ];
 }
 
+// Main en attente de choix : un select avec chaque combinaison possible
+// (Joker compris s'il est libre), la plus payante en premier — même rendu
+// que le jeu spécial (dupliqué, voir _handlers/gobelet.js).
+function buildChoiceComponents(customId, hand, used) {
+  const choices = listChoices(hand.dice, used);
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: customId,
+          placeholder: "Choisis ta combinaison",
+          options: choices.map((c, i) => ({
+            label: `${c.category} (${c.points} pt${c.points > 1 ? "s" : ""})`,
+            value: c.category,
+            emoji: { name: c.category === JOKER ? "🃏" : "🎯" },
+            ...(i === 0 ? { description: "Le plus de points" } : {}),
+          })),
+        },
+      ],
+    },
+  ];
+}
+
 function buildHandComponents(state, hand, kept, diceEmojis, used) {
   const manche = state.manche;
+  if (hand.status === "choix") {
+    return buildChoiceComponents(`gobeletduel_choix:${manche}`, hand, used);
+  }
   if (hand.status !== "en_cours") return buildNextComponents(manche, state.totalManches, false);
   const { category } = computeBestCombination(hand.dice, used, {
     allowJoker: false,
@@ -620,7 +654,7 @@ async function refreshPublicMessage() {
 // main est terminée, rafraîchit le message public puis, si la manche vient
 // d'être résolue, active « Manche suivante » sur l'éphémère de chaque joueur.
 async function afterHandAction(webhookUrl, discordId, state, hand) {
-  const done = hand.status !== "en_cours";
+  const done = hand.status === "termine";
   if (done) await saveHandWebhook(state.manche, discordId, webhookUrl);
   const outcome = await refreshPublicMessage();
   if (!done || outcome.inactive || outcome.final) return;
@@ -704,7 +738,7 @@ export async function handleToggle(webhookUrl, discordId, index) {
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
-        components: [],
+        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, null, result.used) : [],
       });
       return;
     }
@@ -744,7 +778,7 @@ export async function handleRelancer(webhookUrl, discordId) {
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
-        components: [],
+        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, null, result.used) : [],
       });
       return;
     }
@@ -786,7 +820,7 @@ export async function handleValider(webhookUrl, discordId) {
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
-        components: [],
+        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, null, result.used) : [],
       });
       return;
     }
@@ -813,6 +847,43 @@ export async function handleValider(webhookUrl, discordId) {
   }
 }
 
+// Select de fin de main : fige la combinaison choisie par le joueur.
+export async function handleChoisir(webhookUrl, discordId, category) {
+  try {
+    if (await replyIfExpired(webhookUrl)) return;
+    const result = await choisir(discordId, category);
+
+    if (result.inactive) {
+      await patchOriginal(webhookUrl, {
+        content:
+          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (result.noHand) {
+      await patchOriginal(webhookUrl, {
+        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    await patchOriginal(webhookUrl, {
+      embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
+      components: buildHandComponents(result.state, result.hand, NO_KEPT, null, result.used),
+    });
+
+    if (!result.alreadyDone) {
+      await afterHandAction(webhookUrl, discordId, result.state, result.hand);
+    }
+  } catch (err) {
+    console.error("[GobeletDuel] Échec choix de combinaison:", err.message);
+  }
+}
+
 // ── Bouton [📖 Règles] — éphémère, statique ────────────────────────
 
 function buildReglesEmbed() {
@@ -827,15 +898,15 @@ function buildReglesEmbed() {
       "🎲 **Jouer** — lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
-      "👍 **Valider** — dès que tes dés forment une combinaison encore libre (hors Joker), fige ta main immédiatement sans attendre les relances restantes.",
-      "Ta combinaison finale est calculée automatiquement — pas besoin de choisir toi-même la catégorie.",
+      "👍 **Valider** : dès que tes dés forment une combinaison encore libre (hors Joker), arrête tes relances immédiatement.",
+      "🎯 **Choix de la combinaison** : si tes dés en forment plusieurs encore libres (Joker compris), choisis celle à retenir dans la liste, par exemple pour garder la plus payante pour une autre manche.",
       "",
-      "**Une combinaison différente à chaque manche :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Si ta meilleure combinaison est déjà réalisée, la meilleure combinaison encore libre est retenue — sinon 0 pt. Ta main affiche aussi celles déjà réalisées par tes adversaires.",
+      "**Une combinaison différente à chaque manche :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Les combinaisons déjà réalisées ne sont plus proposées ; s'il n'en reste aucune dans tes dés : 0 pt. Ta main affiche aussi celles déjà réalisées par tes adversaires.",
       "",
-      "**Barème (la catégorie libre la plus valorisée est toujours retenue) :**",
+      "**Barème :**",
       ...formatBaremeLines(),
       "",
-      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini ses 3 tirages. Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 2h est close automatiquement.",
+      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini sa main (combinaison choisie). Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 2h est close automatiquement.",
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };

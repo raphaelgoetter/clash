@@ -248,7 +248,7 @@ const CATEGORY_PRIORITY = [
 export function formatBaremeLines() {
   return [
     `🎲 ${NO_COMBINATION} (ou combinaison déjà réalisée) : 0 pt`,
-    `🃏 ${JOKER} (si aucune autre combinaison n'est libre, à la fin des 3 tirages) : somme des 5 dés`,
+    `🃏 ${JOKER} (une fois par partie, à choisir dans la liste) : somme des 5 dés`,
     ...COMBINATIONS.map(
       (c) =>
         `🎯 ${c.label}${c.description ? ` (${c.description})` : ""} : ${c.points} pts`,
@@ -327,6 +327,48 @@ export function computeBestCombination(dice, used = [], { allowJoker = true } = 
   return { category: best, points: POINTS_BY_LABEL[best] };
 }
 
+// Choix de la combinaison (12/10) : toutes les combinaisons libres
+// présentes dans les dés, plus le Joker s'il est encore libre (valeur =
+// somme des dés), de la plus payante à la moins payante. Le joueur choisit
+// celle à retenir dans un select dès qu'il y en a au moins deux, par
+// exemple pour garder une grosse combinaison pour un autre jour.
+export function listChoices(dice, used = []) {
+  const usedSet = new Set(used);
+  const choices = listMatchingCombinations(dice)
+    .filter((label) => !usedSet.has(label))
+    .map((label) => ({ category: label, points: POINTS_BY_LABEL[label] }));
+  if (!usedSet.has(JOKER)) {
+    choices.push({ category: JOKER, points: dice.reduce((total, d) => total + d, 0) });
+  }
+  // Tri stable : à points égaux, les vraies combinaisons (priorité
+  // CATEGORY_PRIORITY) passent avant le Joker.
+  const rank = (c) =>
+    c.category === JOKER ? CATEGORY_PRIORITY.length : CATEGORY_PRIORITY.indexOf(c.category);
+  return choices.sort((a, b) => b.points - a.points || rank(a) - rank(b));
+}
+
+// Fin de main (3ᵉ tirage ou Valider) : avec au moins deux choix possibles,
+// la main passe en statut "choix" (le joueur choisit dans le select) ;
+// sinon elle est figée sur l'unique choix, ou "Aucune combinaison". Une
+// main encore en "choix" à la clôture est résolue par resolveJour() comme
+// une main en cours (combinaison la plus payante, Joker en dernier recours).
+export function finishHand(hand, used = []) {
+  const choices = listChoices(hand.dice, used);
+  if (choices.length >= 2) {
+    return { ...hand, status: "choix", category: null, points: null };
+  }
+  const { category, points } = choices[0] ?? { category: NO_COMBINATION, points: 0 };
+  return { ...hand, status: "termine", category, points };
+}
+
+// Combinaison choisie dans le select : null si elle ne fait pas (ou plus)
+// partie des choix possibles (clic sur un ancien message, par exemple).
+export function pickChoice(hand, used, category) {
+  if (hand.status !== "choix") return null;
+  const choice = listChoices(hand.dice, used).find((c) => c.category === category);
+  return choice ? { ...hand, status: "termine", ...choice } : null;
+}
+
 // Ajoute la catégorie retenue à la liste des combinaisons réalisées
 // (pure). "Aucune combinaison" n'est jamais "consommée".
 export function withUsedCategory(used, category) {
@@ -335,7 +377,8 @@ export function withUsedCategory(used, category) {
   return [...used, category];
 }
 
-// Résout toutes les mains d'un jour. Une main encore "en_cours" à la
+// Résout toutes les mains d'un jour. Une main encore "en_cours" (ou en
+// attente de choix, statut "choix") à la
 // clôture (joueur qui n'a pas fini ses 2 relances) est figée sur les dés
 // courants plutôt qu'ignorée — un joueur qui a commencé sa main mérite
 // d'être jugé sur ce qu'il a, pas exclu du classement. Fonction pure (aucun
@@ -347,7 +390,7 @@ export function withUsedCategory(used, category) {
 // au moment où le joueur l'a finie.
 export function resolveJour(hands, usedByPlayer = {}) {
   return Object.entries(hands).map(([discordId, hand]) => {
-    if (hand.status === "en_cours") {
+    if (hand.status !== "termine") {
       const { category, points } = computeBestCombination(
         hand.dice,
         usedByPlayer[discordId] || [],

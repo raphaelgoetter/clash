@@ -47,7 +47,7 @@ const STALE_HOURS = 2;
   } else {
     for (const [discordId, hand] of handEntries) {
       const username = await resolveDisplayName(discordId, hand.username || discordId);
-      const detail = hand.status === "termine" ? `${hand.category} (${hand.points} pts)` : `en cours, tirage ${hand.tirage}/3`;
+      const detail = hand.status === "termine" ? `${hand.category} (${hand.points} pts)` : hand.status === "choix" ? "combinaison à choisir" : `en cours, tirage ${hand.tirage}/3`;
       console.log(`${username} — ${hand.dice.join(" ")} [${detail}]`);
     }
     console.log("");

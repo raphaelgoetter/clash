@@ -39,7 +39,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     for (const [discordId, hand] of entries) {
       const username = await resolveDisplayName(discordId, hand.username || discordId);
       const dice = hand.dice.join(" ");
-      const detail = hand.status === "termine" ? `${hand.category} (${hand.points} pts)` : `en cours, tirage ${hand.tirage}/3`;
+      const detail = hand.status === "termine" ? `${hand.category} (${hand.points} pts)` : hand.status === "choix" ? "combinaison à choisir" : `en cours, tirage ${hand.tirage}/3`;
       console.log(`${username} — ${dice} [${detail}]`);
     }
     console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""} aujourd'hui.\n`);
