@@ -102,16 +102,23 @@ async function formatResultsSection(results) {
   if (!results.length) return ["Personne n'a joué ce jour-là."];
 
   const lines = [
-    `${results.length} joueur${results.length > 1 ? "s" : ""} ont joué.`,
+    `${results.length} joueur${results.length > 1 ? "s ont" : " a"} joué.`,
   ];
   const maxPoints = Math.max(...results.map((r) => r.points));
+  if (maxPoints === 0) return [...lines, "Personne n'a marqué de point."];
   const winners = results.filter((r) => r.points === maxPoints);
-  const names = await Promise.all(
-    winners.map((r) => resolveDisplayName(r.discordId, r.username)),
-  );
-  lines.push(
-    `🏆 Meilleur${winners.length > 1 ? "s" : ""} score${winners.length > 1 ? "s" : ""} du jour (${maxPoints} pt${maxPoints > 1 ? "s" : ""}) : ${names.join(", ")}`,
-  );
+  // Une ligne par combinaison : deux meilleurs scores à égalité peuvent
+  // venir de combinaisons différentes (ex. Somme ≤ 7 et Somme ≥ 28).
+  const byCategory = new Map();
+  for (const r of winners) {
+    const name = await resolveDisplayName(r.discordId, r.username);
+    byCategory.set(r.category, [...(byCategory.get(r.category) || []), name]);
+  }
+  for (const [category, names] of byCategory) {
+    lines.push(
+      `🏆 ${names.join(", ")} : ${category} (${maxPoints} pt${maxPoints > 1 ? "s" : ""})`,
+    );
+  }
 
   return lines;
 }
