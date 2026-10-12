@@ -16,6 +16,8 @@
     "miroir": 1
   },
   "brouillard_bloque_accusation": true,
+  "bonus_efficacite": [3, 2, 1],
+  "bonus_survie_jour": 1,
   "complements": {
     "Goblin Giant": {
       "hp": 3110,

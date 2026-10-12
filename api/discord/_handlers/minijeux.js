@@ -98,6 +98,7 @@ import {
   loadQuiEstCeConfig,
   readPartie as readQuiEstCePartie,
 } from "../../../backend/services/quiestce.js";
+import { points as quiEstCePoints } from "../../../backend/services/quiestceRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -472,7 +473,7 @@ const SPECIAL_GAMES = [
       if (!joueur?.carte) return { played: false, scoreLabel: null };
       return {
         played: joueur.objetRecuJour,
-        scoreLabel: `🎯 **${joueur.demasques.length - joueur.nbDemasque} pt${Math.abs(joueur.demasques.length - joueur.nbDemasque) > 1 ? "s" : ""}** (${joueur.demasques.length} découverte${joueur.demasques.length > 1 ? "s" : ""}, ${joueur.nbDemasque}× démasqué)`,
+        scoreLabel: `🎯 **${quiEstCePoints(joueur)} pt${Math.abs(quiEstCePoints(joueur)) > 1 ? "s" : ""}** (${joueur.demasques.length} découverte${joueur.demasques.length > 1 ? "s" : ""}, ${joueur.nbDemasque}× démasqué)`,
       };
     },
     async detail(state) {

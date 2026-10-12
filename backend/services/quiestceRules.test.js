@@ -312,6 +312,30 @@ function main() {
     assert.deepStrictEqual([r[0].score, r[0].decouvertes], [2, 3]);
   }
 
+  // ── Bonus d'efficacité (+3/+2/+1 selon les indices connus) et survie ──
+  {
+    const p = partieTest(6);
+    const moi = p.joueurs.j0;
+    const cibleId = moi.cible;
+    // 1 indice (indice de départ seul) : +1 et +3 d'efficacité
+    assert.strictEqual(moi.enquete.ordre.length, 1);
+    const r = accuser(p, "j0", p.joueurs[cibleId].carte, { config: CONFIG, rng });
+    assert.deepStrictEqual([r.bonus, r.nbIndices], [CONFIG.bonus_efficacite[0], 1]);
+    assert.strictEqual(points(moi), 1 + CONFIG.bonus_efficacite[0]);
+    // Survie : +1 à la clôture sauf pour qui a été démasqué ce jour-là
+    cloturer(p, { config: CONFIG });
+    assert.strictEqual(moi.survie, CONFIG.bonus_survie_jour);
+    assert.strictEqual(p.joueurs[cibleId].survie, 0);
+    assert.strictEqual(points(p.joueurs[cibleId]), -1);
+    cloturer(p, { config: CONFIG });
+    assert.strictEqual(p.joueurs[cibleId].survie, CONFIG.bonus_survie_jour);
+    // 4 indices ou plus : pas de bonus
+    const c2 = ciblesDisponibles(p, "j0", { config: CONFIG })[0];
+    choisirCible(p, "j0", c2, { config: CONFIG, rng });
+    for (const q of QIDS) if (!(q in moi.enquete.infos) && moi.enquete.ordre.length < 4) { moi.enquete.infos[q] = p.cartes[p.joueurs[c2].carte].profil[q]; moi.enquete.ordre.push(q); }
+    assert.strictEqual(accuser(p, "j0", p.joueurs[c2].carte, { config: CONFIG, rng }).bonus, 0);
+  }
+
   console.log("quiestceRules.test.js : OK");
 }
 

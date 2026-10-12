@@ -131,6 +131,10 @@ function nouveauJoueur(username, arrivee) {
     demasques: [],
     cartesConnues: [],
     nbDemasque: 0,
+    // Bonus d'efficacité cumulés et jours de survie (non démasqué)
+    bonus: 0,
+    survie: 0,
+    demasqueJour: false,
     erreurs: 0,
     seqScore: 0,
     objets: [],
@@ -429,6 +433,11 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
     prive(partie, id, `❌ Raté : **${cible.username}** n'a pas la carte ${nomCarte(partie, cardKey)}.`);
     return { correct: false };
   }
+  // Bonus d'efficacité (décision du 12/10, `bonus_efficacite` : +3 avec 1
+  // indice connu, +2 avec 2, +1 avec 3, indice de départ compris)
+  const nbIndices = Math.max(1, moi.enquete.ordre.length);
+  const bonus = config.bonus_efficacite?.[nbIndices - 1] ?? 0;
+  moi.bonus = (moi.bonus ?? 0) + bonus;
   partie.seq = (partie.seq ?? 0) + 1;
   moi.seqScore = partie.seq;
   moi.demasques.push(cibleId);
@@ -436,10 +445,11 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   moi.cible = null;
   moi.enquete = nouvelleEnquete();
   cible.nbDemasque += 1;
+  cible.demasqueJour = true;
   bilan(partie).demasquages.push({ s: id, v: cibleId });
   noter(partie, "demasque", { s: id, v: cibleId, crucial: true });
   prive(partie, id, `🎯 Tu as démasqué **${cible.username}** : ${nomCarte(partie, cardKey)}.`);
-  return { correct: true, cible: cibleId };
+  return { correct: true, cible: cibleId, bonus, nbIndices };
 }
 
 // ── Objets ──────────────────────────────────────────────────────────
@@ -543,9 +553,13 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
 
 // ── Clôture et classement ───────────────────────────────────────────
 
-// Clôture du jour : compteurs quotidiens, Brouillard et Miroir remis à zéro.
-export function cloturer(partie) {
+// Clôture du jour : +`bonus_survie_jour` pour chaque joueur non démasqué
+// ce jour-là (décision du 12/10) ; compteurs quotidiens, Brouillard et
+// Miroir remis à zéro.
+export function cloturer(partie, { config = {} } = {}) {
   for (const j of Object.values(partie.joueurs)) {
+    if (j.carte && !j.demasqueJour) j.survie = (j.survie ?? 0) + (config.bonus_survie_jour ?? 0);
+    j.demasqueJour = false;
     j.questionsJour = 0;
     j.loupe = false;
     j.accusationsJour = 0;
@@ -561,19 +575,21 @@ export function cloturer(partie) {
   partie.numeroJour = (partie.numeroJour ?? 1) + 1;
 }
 
-// Classement (décision du 12/10) : points = cartes découvertes moins fois
-// démasqué ; puis le plus de cartes découvertes, le moins d'accusations
-// ratées, le premier à avoir atteint son total, l'arrivée.
+// Classement (décisions du 12/10) : points = cartes découvertes + bonus
+// d'efficacité + jours de survie - fois démasqué ; puis le plus de cartes
+// découvertes, le moins d'accusations ratées, le premier à avoir atteint
+// son total, l'arrivée.
 export function points(j) {
-  return j.demasques.length - j.nbDemasque;
+  return j.demasques.length + (j.bonus ?? 0) + (j.survie ?? 0) - j.nbDemasque;
 }
 
 export function classement(partie) {
+  const pts = points;
   const ordre = Object.entries(partie.joueurs)
     .filter(([, j]) => j.carte)
     .sort(
       ([, a], [, b]) =>
-        points(b) - points(a) ||
+        pts(b) - pts(a) ||
         b.demasques.length - a.demasques.length ||
         a.erreurs - b.erreurs ||
         (a.seqScore || Infinity) - (b.seqScore || Infinity) ||
@@ -583,7 +599,7 @@ export function classement(partie) {
     discordId,
     username: j.username,
     rang: i + 1,
-    score: points(j),
+    score: pts(j),
     decouvertes: j.demasques.length,
     nbDemasque: j.nbDemasque,
     erreurs: j.erreurs,

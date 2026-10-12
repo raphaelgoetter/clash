@@ -11,6 +11,9 @@ if (process.env.TIRAGE) CONFIG.tirage_objets = JSON.parse(process.env.TIRAGE);
 // Variantes : CHOIX=1 (cible choisie), BROUILLARD_FORT=1 (bloque aussi les accusations)
 const CHOIX = !!process.env.CHOIX;
 if (process.env.BROUILLARD_FORT) CONFIG.brouillard_bloque_accusation = true;
+// Bonus : BONUS_EFF='[3,2,1]' (efficacité), INTOUCHABLE=2
+if (process.env.BONUS_EFF) CONFIG.bonus_efficacite = JSON.parse(process.env.BONUS_EFF);
+if (process.env.INTOUCHABLE) CONFIG.bonus_intouchable = Number(process.env.INTOUCHABLE);
 
 // Choix de cible des bots : d'abord celle sur laquelle on a des renseignements
 // (Miroir), puis le meneur en points, puis au hasard
@@ -78,7 +81,7 @@ function jouer(p, id, bot, jour) {
 
 const ab = Object.fromEntries(OBJ.map((o) => [o, { oui: { n: 0, cartes: 0, demasque: 0, win: 0, u: 0 }, non: { n: 0, cartes: 0, demasque: 0, win: 0 } }]));
 const parProfil = {};
-let gagnant = 0, egalites = 0, cartesTot = 0, joueursTot = 0;
+let gagnant = 0, egalites = 0, cartesTot = 0, joueursTot = 0, ecartType = 0, distincts = 0, egalitesPoints = 0, ecartPodium = 0, intouchables = 0;
 for (let g = 0; g < PARTIES; g++) {
   const n = 10 + Math.floor(rng() * 9);
   const p = R.creerPartie();
@@ -94,7 +97,14 @@ for (let g = 0; g < PARTIES; g++) {
     for (const id of ordre) if (rng() < PROFILS[bots[id].profil].activite) jouer(p, id, bots[id], jour);
     R.cloturer(p, { config: CONFIG });
   }
-  const cl = R.classement(p);
+  const cl = R.classement(p, { config: CONFIG, final: true });
+  const scores = cl.map((r) => r.score);
+  const moy = scores.reduce((a, b) => a + b, 0) / scores.length;
+  ecartType += Math.sqrt(scores.reduce((a, b) => a + (b - moy) ** 2, 0) / scores.length);
+  distincts += new Set(scores).size / scores.length;
+  if (cl[1] && cl[1].score === cl[0].score) egalitesPoints++;
+  ecartPodium += cl[0].score - (cl[2]?.score ?? 0);
+  intouchables += cl.filter((r) => r.nbDemasque === 0).length / cl.length;
   gagnant += cl[0].score;
   if (cl[1] && cl[1].score === cl[0].score && cl[1].decouvertes === cl[0].decouvertes) egalites++;
   for (const r of cl) {
@@ -110,6 +120,7 @@ for (let g = 0; g < PARTIES; g++) {
   }
 }
 console.log(`${PARTIES} parties, 10-18 joueurs : gagnant ${(gagnant / PARTIES).toFixed(1)} pts, moyenne ${(cartesTot / joueursTot).toFixed(2)} cartes/joueur, égalité points+découvertes en tête ${(100 * egalites / PARTIES).toFixed(0)}%`);
+console.log(`  variété : écart-type ${(ecartType / PARTIES).toFixed(2)} pt | scores distincts ${(100 * distincts / PARTIES).toFixed(0)}% des joueurs | égalité de points en tête ${(100 * egalitesPoints / PARTIES).toFixed(0)}% | écart 1er-3e ${(ecartPodium / PARTIES).toFixed(1)} pt | jamais démasqués ${(100 * intouchables / PARTIES).toFixed(0)}%`);
 for (const [k, v] of Object.entries(parProfil)) console.log(`  ${k.padEnd(12)} ${(v.points / v.n).toFixed(2)} pts · ${(v.cartes / v.n).toFixed(2)} cartes · ${(v.demasque / v.n).toFixed(2)}× démasqué · victoire ${(100 * v.win / v.n).toFixed(1)}%`);
 for (const o of OBJ) {
   const { oui, non } = ab[o];
