@@ -4,9 +4,11 @@ permissions:
   contents: read
 
 on:
-  # Le Jour 1 se lance uniquement à la main (workflow_dispatch). Le cron ne
-  # fait qu'avancer une manche déjà en cours (voir --require-active passé au
-  # script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne se
+  # Le lancement se fait uniquement à la main (workflow_dispatch) et publie
+  # le jour de présentation (annonce), jamais le Jour 1 directement. Le cron
+  # ne fait qu'avancer une manche déjà lancée (annonce -> Jour 1 le
+  # lendemain, puis jour après jour, voir --require-active passé
+  # au script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne se
   # passe rien.
   schedule:
     # Décalé de la ronde (0 8) : 5 crons quotidiens du dépôt tombaient tous à

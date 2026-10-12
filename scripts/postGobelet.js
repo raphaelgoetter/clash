@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // postGobelet.js
-// Poste manuellement (ou via cron) le jour du Jeu du Gobelet. Clôture
-// d'abord le jour actif (s'il y en a un) : résout toutes les mains, attribue
-// les points, puis publie le jour suivant (ou la révélation finale).
+// Poste manuellement (ou via cron) le jour du Jeu du Gobelet. Sans partie
+// en cours : publie le jour d'annonce (jamais le Jour 1 directement). Sinon
+// clôture d'abord le jour actif : résout toutes les mains, attribue les
+// points, puis publie le jour suivant (ou la révélation finale).
 //
 // Usage :
 //   node scripts/postGobelet.js                — poste sur le salon de test
@@ -20,8 +21,8 @@ import { postGobelet } from "../api/discord/_handlers/gobelet.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
-// Réservé au cron quotidien (voir .github/workflows/gobelet.yml) : le Jour 1
-// doit toujours être déclenché manuellement (workflow_dispatch), le cron ne
+// Réservé au cron quotidien (voir .github/workflows/gobelet.yml) : l'annonce
+// doit toujours être déclenchée manuellement (workflow_dispatch), le cron ne
 // fait qu'avancer une partie déjà en cours.
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // Contourne le garde-fou anti-double-avancée (voir backend/services/gobelet.js,
@@ -86,6 +87,8 @@ if (!channelId) {
       console.log(`DRY-RUN — (salon ${channelId}) :`);
       if (result.final) {
         console.log("  Révélation finale.");
+      } else if (result.phase === "annonce") {
+        console.log("  Jour d'annonce (le Jour 1 suivra au prochain run).");
       } else {
         console.log(`  Jour ${result.jour}`);
       }
@@ -95,6 +98,11 @@ if (!channelId) {
 
     if (result.final) {
       console.log(`Révélation finale postée dans ${channelId} (message ${result.message.id}).`);
+      return;
+    }
+
+    if (result.jour === null) {
+      console.log(`Annonce postée dans ${channelId} (message ${result.message.id}). Le Jour 1 suivra au prochain cron.`);
       return;
     }
 

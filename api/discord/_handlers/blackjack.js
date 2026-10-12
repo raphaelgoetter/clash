@@ -163,6 +163,41 @@ function buildDealerTargetSection(dealer, jour) {
   return lines;
 }
 
+// ── Embed / composants du jour de présentation (annonce) ─────────────
+// Publié au lancement manuel, la veille du Jour 1 (même modèle que Mario
+// Clash) : aucun bouton d'action, seulement Règles.
+
+function buildAnnonceEmbed(config) {
+  return {
+    title: "🃏 Blackjack — La table ouvre demain",
+    description: [
+      `Le Croupier s'installe pour **${config.duree_jours} jours** : bats-le chaque jour pour cumuler des points (2 par victoire, 1 en cas d'égalité).`,
+      "",
+      "Plus d'infos ? Clique sur *Règles* ci-dessous.",
+    ].join("\n"),
+    color: BLACKJACK_COLOR,
+    image: { url: BLACKJACK_START_IMAGE_URL },
+    footer: { text: `La partie commence demain à ${formatUtcTimeAsParis(8)}.` },
+  };
+}
+
+function buildAnnonceComponents() {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: "Règles",
+          emoji: { name: "📖" },
+          custom_id: "blackjack_regles",
+        },
+      ],
+    },
+  ];
+}
+
 // ── Embed / composants du jour ────────────────────────────────────
 
 function buildDayComponents(jour) {
@@ -301,7 +336,7 @@ async function buildRevealEmbed(
 async function publishAndWriteState(
   channelId,
   previousState,
-  { jour, dealer, embed, components, noPing, termine = false },
+  { phase = "jour", jour, dealer, embed, components, noPing, termine = false },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -325,7 +360,7 @@ async function publishAndWriteState(
     }
   }
 
-  // Ping à chaque post (Jour 1, jours suivants, révélation finale) — comme
+  // Ping à chaque post (annonce, Jour 1, jours suivants, révélation finale) — comme
   // Quiz : une action est attendue CHAQUE jour (jouer sa main), contrairement
   // à Robinson/Tamagoshi qui ne pingent qu'au lancement/à la fin.
   const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
@@ -352,6 +387,7 @@ async function publishAndWriteState(
   const message = await res.json();
 
   await writeState({
+    phase,
     jour,
     dealer,
     channelId,
@@ -399,12 +435,34 @@ export async function postBlackjack(
     return { wrongChannel: true, activeChannelId: state.channelId };
   }
 
-  // Le cron quotidien ne fait qu'avancer une partie déjà lancée manuellement.
+  // Le cron quotidien ne fait qu'avancer une partie déjà lancée manuellement
+  // (l'état "annonce" compte comme partie lancée).
   if (!state && requireActiveState) return { skipped: true };
 
-  const estPremierJour = !state;
+  // 1) Aucun état -> jour de présentation (jamais le Jour 1 directement).
+  if (!state) {
+    const embed = buildAnnonceEmbed(config);
+    const components = buildAnnonceComponents();
+    if (dryRun) {
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
+      return { dryRun: true, phase: "annonce", embed, components, pingRoleId };
+    }
+    return publishAndWriteState(channelId, null, {
+      phase: "annonce",
+      jour: null,
+      dealer: null,
+      embed,
+      components,
+      noPing,
+      termine: false,
+    });
+  }
 
-  if (estPremierJour) {
+  // 2) Transition présentation -> Jour 1 : rien à clôturer, initialisation
+  // de la partie (remise à zéro des points) puis ouverture de la table.
+  if (state.phase === "annonce") {
     const jour = 1;
     const dealer = dealerPlay(
       Math.random,
@@ -420,11 +478,12 @@ export async function postBlackjack(
       const pingRoleId = !noPing
         ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
         : null;
-      return { dryRun: true, jour, embed, components, pingRoleId };
+      return { dryRun: true, phase: "jour", jour, embed, components, pingRoleId };
     }
 
     await resetPoints();
-    return publishAndWriteState(channelId, null, {
+    return publishAndWriteState(channelId, state, {
+      phase: "jour",
       jour,
       dealer,
       embed,
@@ -811,6 +870,14 @@ export async function handleJournal(webhookUrl, discordId) {
     if (!state) {
       await patchOriginal(webhookUrl, {
         content: "Aucune partie de Blackjack en cours pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (state.phase === "annonce") {
+      await patchOriginal(webhookUrl, {
+        content: `La partie commence demain à ${formatUtcTimeAsParis(8)}, rien à consulter pour l'instant.`,
         embeds: [],
         components: [],
       });

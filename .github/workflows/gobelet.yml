@@ -4,7 +4,8 @@ permissions:
   contents: read
 
 on:
-  # Le Jour 1 se lance uniquement à la main (workflow_dispatch). Le cron ne
+  # L'annonce (jour de présentation, avant le Jour 1) se lance uniquement à
+  # la main (workflow_dispatch) ; le cron du lendemain publie le Jour 1. Le cron ne
   # fait qu'avancer une partie déjà en cours (voir --require-active passé au
   # script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne se
   # passe rien, ce qui évite qu'un run automatique ne démarre une partie

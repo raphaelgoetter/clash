@@ -18,6 +18,10 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     console.log("Aucune partie de Blackjack active pour le moment.");
     return;
   }
+  if (state.phase === "annonce") {
+    console.log("Jour de présentation publié, la partie commence au prochain cron.");
+    return;
+  }
 
   const config = await loadBlackjackConfig();
   console.log(`Blackjack — Jour ${state.jour}/${config.duree_jours}${state.termine ? " (terminée)" : ""}\n`);

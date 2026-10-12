@@ -20,6 +20,10 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     console.log("Aucune manche de Quiz active pour le moment.");
     return;
   }
+  if (state.phase === "annonce") {
+    console.log("Jour de présentation publié, la partie commence au prochain cron.");
+    return;
+  }
 
   const config = await loadQuizConfig();
   const mancheConfig = config.manches[state.mancheIndex];

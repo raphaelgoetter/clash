@@ -209,10 +209,21 @@ const SPECIAL_GAMES = [
     // Classement Quiz volontairement secret (voir quiz.js) : participation
     // du jour uniquement, jamais de score.
     async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
       const votes = await listQuizVotes(state.manche, state.jour);
       return { played: votes.some((v) => v.discordId === discordId) };
     },
     async detail(state) {
+      if (state.phase === "annonce") {
+        // Jour de présentation : pas encore de jour joué (jour = null) —
+        // même traitement que Mario Clash ci-dessous.
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: null,
+          phaseLabel: "Phase de présentation du jeu",
+        };
+      }
       const config = await loadQuizConfig();
       const dureeJours =
         config.manches[state.mancheIndex]?.questions.length ?? null;
@@ -252,10 +263,21 @@ const SPECIAL_GAMES = [
     style: "Collaboratif",
     readState: readRobinsonState,
     async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
       const votes = await listRobinsonVotes(state.jour);
       return { played: votes.some((v) => v.discordId === discordId) };
     },
     async detail(state) {
+      if (state.phase === "annonce") {
+        // Jour de présentation : pas encore de jour joué (jour = null) —
+        // même traitement que Mario Clash ci-dessous.
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: null,
+          phaseLabel: "Phase de présentation du jeu",
+        };
+      }
       const config = await loadRobinsonConfig();
       const participants = await countRobinsonVoters(state.jour);
       return {
@@ -349,6 +371,7 @@ const SPECIAL_GAMES = [
     style: "Casino",
     readState: readBlackjackState,
     async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
       const [hand, points] = await Promise.all([
         readBlackjackHand(state.jour, discordId),
         readBlackjackPoints(),
@@ -359,6 +382,16 @@ const SPECIAL_GAMES = [
       };
     },
     async detail(state) {
+      if (state.phase === "annonce") {
+        // Jour de présentation : pas encore de jour joué (jour = null) —
+        // même traitement que Mario Clash ci-dessous.
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: null,
+          phaseLabel: "Phase de présentation du jeu",
+        };
+      }
       const config = await loadBlackjackConfig();
       const hands = await listBlackjackHands(state.jour);
       return {
@@ -410,6 +443,7 @@ const SPECIAL_GAMES = [
     style: "Casino",
     readState: readGobeletState,
     async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
       const [hand, points] = await Promise.all([
         readGobeletHand(state.jour, discordId),
         readGobeletPoints(),
@@ -421,6 +455,14 @@ const SPECIAL_GAMES = [
     },
     async detail(state) {
       const config = await loadGobeletConfig();
+      if (state.phase === "annonce") {
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: null,
+          phaseLabel: "Phase de présentation du jeu",
+        };
+      }
       const hands = await listGobeletHands(state.jour);
       return {
         jour: state.jour,

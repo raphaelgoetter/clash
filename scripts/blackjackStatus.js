@@ -42,6 +42,10 @@ function classifyHand(hand, dealer) {
     console.log("Aucune partie de Blackjack active pour le moment.");
     return;
   }
+  if (state.phase === "annonce") {
+    console.log("Jour de présentation publié, la partie commence au prochain cron.");
+    return;
+  }
   if (state.termine) {
     console.log("Partie déjà terminée.");
     return;

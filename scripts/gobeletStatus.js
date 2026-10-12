@@ -23,6 +23,10 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     console.log("Partie déjà terminée.");
     return;
   }
+  if (state.phase === "annonce") {
+    console.log("Jour d'annonce publié, la partie commence au prochain cron.");
+    return;
+  }
 
   const config = await loadGobeletConfig();
   console.log(`Jour ${state.jour}/${config.duree_jours}\n`);

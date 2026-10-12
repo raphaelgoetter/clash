@@ -244,6 +244,41 @@ async function buildRobinsonEmbed(
   };
 }
 
+// ── Jour de présentation (annonce) ─────────────────────────────────
+// Publié au lancement manuel, la veille du Jour 1 (même modèle que Mario
+// Clash) : aucun bouton de vote, seulement Règles.
+
+function buildAnnonceEmbed(config) {
+  return {
+    title: "🏝️ Robinson — Le navire lève l’ancre",
+    description: [
+      `Le clan embarque pour le prochain tournoi d’Arène… mais la météo s’annonce capricieuse. Préparez-vous à survivre **${config.duree_jours} jours** ensemble sur une île déserte (ou à vous évader plus tôt en Radeau).`,
+      "",
+      "Plus d’infos ? Clique sur *Règles* ci-dessous.",
+    ].join("\n"),
+    color: ROBINSON_COLOR,
+    image: { url: robinsonImageUrl(1) },
+    footer: { text: `La partie commence demain à ${formatUtcTimeAsParis(8)}.` },
+  };
+}
+
+function buildAnnonceComponents() {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: "Règles",
+          emoji: { name: "📖" },
+          custom_id: "robinson_regles",
+        },
+      ],
+    },
+  ];
+}
+
 function buildRobinsonComponents(jour, config, voteCounts, event) {
   const actionIds = Object.keys(config.actions).filter(
     (id) =>
@@ -424,15 +459,40 @@ export async function postRobinson(
   }
 
   // Le cron quotidien ne fait qu'avancer une partie déjà lancée manuellement
-  // — il ne doit jamais démarrer le Jour 1 tout seul (voir workflow_dispatch
-  // vs schedule dans .github/workflows/robinson.yml).
+  // (l'état "annonce" compte comme partie lancée) — il ne doit jamais
+  // démarrer une partie tout seul (voir workflow_dispatch vs schedule dans
+  // .github/workflows/robinson.yml).
   if (!state && requireActiveState) {
     return { skipped: true };
   }
 
-  const estPremierJour = !state;
+  // 1) Aucun état -> jour de présentation (jamais le Jour 1 directement).
+  if (!state) {
+    const embed = buildAnnonceEmbed(config);
+    const components = buildAnnonceComponents();
+    if (dryRun) {
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
+      return { dryRun: true, phase: "annonce", embed, components, pingRoleId };
+    }
+    return publishAndWriteState(channelId, null, {
+      phase: "annonce",
+      jour: null,
+      event: null,
+      zeroStreaks: { poisson: 0, eau: 0, bois: 0 },
+      dayVoters: [],
+      embed,
+      components,
+      noPing,
+      estAnnonce: true,
+    });
+  }
 
-  if (estPremierJour) {
+  // 2) Transition présentation -> Jour 1 : rien à clôturer, initialisation
+  // de l'économie (stocks initiaux, Radeau à 0) puis ouverture du Jour 1.
+  // Pas de ping : le lancement a déjà été annoncé la veille.
+  if (state.phase === "annonce") {
     const jour = 1;
     const stocks = config.stocks_initiaux;
     const embed = await buildRobinsonEmbed(
@@ -446,23 +506,19 @@ export async function postRobinson(
     );
     const components = buildRobinsonComponents(jour, config, {}, null);
 
-    if (dryRun) {
-      const pingRoleId = !noPing
-        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
-        : null;
-      return { dryRun: true, jour, embed, components, pingRoleId };
-    }
+    if (dryRun) return { dryRun: true, phase: "jour", jour, embed, components };
 
     await initEconomy(config.stocks_initiaux);
-    return publishAndWriteState(channelId, null, {
+    return publishAndWriteState(channelId, state, {
+      phase: "jour",
       jour,
       event: null,
       zeroStreaks: { poisson: 0, eau: 0, bois: 0 },
       dayVoters: [],
       embed,
       components,
-      noPing,
-      estPremierJour: true,
+      noPing: true,
+      estAnnonce: false,
     });
   }
 
@@ -503,7 +559,7 @@ export async function postRobinson(
       embed,
       components: [],
       noPing,
-      estPremierJour: false,
+      estAnnonce: false,
       termine: true,
     });
     return { ...result, final: true, outcome: closure.outcome };
@@ -537,7 +593,7 @@ export async function postRobinson(
       embed,
       components: [],
       noPing,
-      estPremierJour: false,
+      estAnnonce: false,
       termine: true,
     });
     return { ...result, final: true, outcome: "victoire_jour11" };
@@ -652,7 +708,7 @@ export async function postRobinson(
       embed: embedDefaite,
       components: [],
       noPing,
-      estPremierJour: false,
+      estAnnonce: false,
       termine: true,
     });
     return { ...result, final: true, outcome: "defaite" };
@@ -696,7 +752,7 @@ export async function postRobinson(
     embed,
     components,
     noPing: true,
-    estPremierJour: false,
+    estAnnonce: false,
   });
 }
 
@@ -706,6 +762,7 @@ async function publishAndWriteState(
   channelId,
   previousState,
   {
+    phase = "jour",
     jour,
     event,
     chefExplorateurId = null,
@@ -715,7 +772,7 @@ async function publishAndWriteState(
     embed,
     components,
     noPing,
-    estPremierJour,
+    estAnnonce,
     termine = false,
   },
 ) {
@@ -741,10 +798,10 @@ async function publishAndWriteState(
     }
   }
 
-  // Ping réservé au lancement (Jour 1) et à la fin de manche — jamais pour
-  // les jours intermédiaires.
+  // Ping réservé au lancement (jour de présentation) et à la fin de manche
+  // — jamais pour le Jour 1 ni les jours intermédiaires.
   const roleId =
-    (estPremierJour || termine) && !noPing
+    (estAnnonce || termine) && !noPing
       ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
       : null;
 
@@ -770,6 +827,7 @@ async function publishAndWriteState(
   const message = await res.json();
 
   await writeState({
+    phase,
     jour,
     channelId,
     messageId: message.id,
@@ -1123,6 +1181,14 @@ export async function handleJournal(webhookUrl) {
     if (!state) {
       await patchOriginal(webhookUrl, {
         content: "Aucune partie Robinson en cours pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (state.phase === "annonce") {
+      await patchOriginal(webhookUrl, {
+        content: `La partie commence demain à ${formatUtcTimeAsParis(8)}, rien à consulter pour l’instant.`,
         embeds: [],
         components: [],
       });

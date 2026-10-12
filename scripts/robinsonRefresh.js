@@ -26,6 +26,10 @@ const DRY_RUN = process.argv.includes("--dry-run");
     console.log("Aucune partie Robinson active pour le moment.");
     return;
   }
+  if (state.phase === "annonce") {
+    console.log("Jour de présentation publié, la partie commence au prochain cron.");
+    return;
+  }
   if (state.termine) {
     console.log("Partie déjà terminée, rien à réafficher.");
     return;

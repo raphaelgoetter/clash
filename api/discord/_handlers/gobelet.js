@@ -55,7 +55,7 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 // Illustrations statiques (frontend/public/images/gobelet/), même principe
 // que BLACKJACK_*_IMAGE_URL dans _handlers/blackjack.js. gobelet.webp pour
-// le lancement (Jour 1) et la révélation finale (Jour 8) ; dices.webp pour
+// l'annonce, le Jour 1 et la révélation finale (Jour 8) ; dices.webp pour
 // les jours intermédiaires (2 à 7).
 //
 // Suffixe ?v= : Discord met en cache une image par URL EXACTE, y compris
@@ -110,6 +110,46 @@ async function formatResultsSection(results) {
   );
 
   return lines;
+}
+
+// ── Embed / composants du jour d'annonce ───────────────────────────
+// Tous les jeux spéciaux ont au moins un jour de présentation avant le
+// Jour 1 (voir CONTRIBUTING.md) : le lancement manuel publie cette annonce,
+// le cron du lendemain publie le Jour 1.
+
+function buildAnnonceEmbed(config) {
+  return {
+    title: "🎲 Jeu du Gobelet — Les dés sont prêts…",
+    description: [
+      "Un nouveau jeu arrive sur l'Arène : lance tes dés façon Yahtzee et réalise les meilleures combinaisons !",
+      "",
+      `📅 **${config.duree_jours} jours de jeu**, à partir de demain : chaque jour, 5 dés et jusqu'à 2 relances pour marquer un maximum de points.`,
+      "",
+      "Plus d'infos ? Clique sur *Règles* ci-dessous.",
+    ].join("\n"),
+    color: GOBELET_COLOR,
+    image: { url: GOBELET_START_IMAGE_URL },
+    footer: {
+      text: `La partie commence demain à ${formatUtcTimeAsParis(8)}.`,
+    },
+  };
+}
+
+function buildAnnonceComponents() {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: "Règles",
+          emoji: { name: "📖" },
+          custom_id: "gobelet_regles",
+        },
+      ],
+    },
+  ];
 }
 
 // ── Embed / composants du jour ────────────────────────────────────
@@ -239,7 +279,7 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
 async function publishAndWriteState(
   channelId,
   previousState,
-  { jour, embed, components, noPing, termine = false },
+  { phase = "jour", jour, embed, components, noPing, termine = false },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -263,7 +303,7 @@ async function publishAndWriteState(
     }
   }
 
-  // Ping à chaque post (Jour 1, jours suivants, révélation finale) — comme
+  // Ping à chaque post (annonce, jours, révélation finale) — comme
   // Blackjack/Quiz : une action est attendue CHAQUE jour (lancer ses dés).
   const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
@@ -289,6 +329,7 @@ async function publishAndWriteState(
   const message = await res.json();
 
   await writeState({
+    phase,
     jour,
     channelId,
     messageId: message.id,
@@ -338,9 +379,31 @@ export async function postGobelet(
   // Le cron quotidien ne fait qu'avancer une partie déjà lancée manuellement.
   if (!state && requireActiveState) return { skipped: true };
 
-  const estPremierJour = !state;
+  // 1) Aucun état -> jour de présentation (jamais de Jour 1 direct).
+  if (!state) {
+    const embed = buildAnnonceEmbed(config);
+    const components = buildAnnonceComponents();
 
-  if (estPremierJour) {
+    if (dryRun) {
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
+      return { dryRun: true, phase: "annonce", embed, components, pingRoleId };
+    }
+
+    return publishAndWriteState(channelId, null, {
+      phase: "annonce",
+      jour: null,
+      embed,
+      components,
+      noPing,
+      termine: false,
+    });
+  }
+
+  // 2) Transition présentation -> Jour 1 : rien à clôturer. Un état sans
+  // `phase` (partie lancée avant l'ajout de l'annonce) est un jour normal.
+  if (state.phase === "annonce") {
     const jour = 1;
     const embed = await buildDayEmbed(jour, config, { estPremierJour: true });
     const components = buildDayComponents(jour);
@@ -354,7 +417,7 @@ export async function postGobelet(
 
     await resetPoints();
     await resetUsedCategories();
-    return publishAndWriteState(channelId, null, {
+    return publishAndWriteState(channelId, state, {
       jour,
       embed,
       components,
@@ -808,6 +871,14 @@ export async function handleJournal(webhookUrl, discordId) {
     if (!state) {
       await patchOriginal(webhookUrl, {
         content: "Aucune partie du Jeu du Gobelet en cours pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (state.phase === "annonce") {
+      await patchOriginal(webhookUrl, {
+        content: `La partie commence demain à ${formatUtcTimeAsParis(8)} !`,
         embeds: [],
         components: [],
       });

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // postBlackjack.js
-// Poste manuellement (ou via cron) le jour de Blackjack. Clôture d'abord le
-// jour actif (s'il y en a un) : résout toutes les mains face au Croupier,
+// Poste manuellement (ou via cron) le jour de Blackjack. Sans partie en
+// cours : publie le jour de présentation (jamais le Jour 1 directement).
+// Sinon clôture d'abord le jour actif : résout toutes les mains face au Croupier,
 // attribue les points, puis publie le jour suivant (ou la révélation finale).
 //
 // Usage :
@@ -21,8 +22,9 @@ import { postBlackjack } from "../api/discord/_handlers/blackjack.js";
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 // Réservé au cron quotidien (voir .github/workflows/blackjack.yml) : le
-// Jour 1 doit toujours être déclenché manuellement (workflow_dispatch), le
-// cron ne fait qu'avancer une partie déjà en cours.
+// lancement (jour de présentation, la veille du Jour 1) doit toujours être
+// déclenché manuellement (workflow_dispatch), le cron ne fait qu'avancer une
+// partie déjà lancée (annonce comprise).
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // Contourne le garde-fou anti-double-avancée (voir backend/services/blackjack.js,
 // isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
@@ -85,7 +87,9 @@ if (!channelId) {
 
     if (DRY_RUN) {
       console.log(`DRY-RUN — (salon ${channelId}) :`);
-      if (result.final) {
+      if (result.phase === "annonce") {
+        console.log("  Jour de présentation (annonce, veille du Jour 1)");
+      } else if (result.final) {
         console.log("  Révélation finale.");
       } else {
         console.log(`  Jour ${result.jour}`);
@@ -99,7 +103,7 @@ if (!channelId) {
       return;
     }
 
-    console.log(`Jour ${result.jour} posté dans ${channelId} (message ${result.message.id}).`);
+    console.log(`${result.jour == null ? "Jour de présentation" : `Jour ${result.jour}`} posté dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
     console.error("Échec de la publication du jour :", err.message);
     process.exit(1);

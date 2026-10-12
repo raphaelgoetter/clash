@@ -33,6 +33,10 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     console.log("Aucune partie Robinson active pour le moment.");
     return;
   }
+  if (state.phase === "annonce") {
+    console.log("Jour de présentation publié, la partie commence au prochain cron.");
+    return;
+  }
   if (state.termine) {
     console.log("Partie déjà terminée.");
     return;

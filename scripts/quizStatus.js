@@ -19,6 +19,10 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     console.log("Aucun Quiz actif pour le moment.");
     return;
   }
+  if (state.phase === "annonce") {
+    console.log("Jour de présentation publié, la partie commence au prochain cron.");
+    return;
+  }
   if (state.termine) {
     console.log(`Quiz terminé (manche ${state.manche} — « ${state.theme} »).`);
     return;

@@ -18,6 +18,10 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
     console.log("Aucune partie du Jeu du Gobelet active pour le moment.");
     return;
   }
+  if (state.phase === "annonce") {
+    console.log("Jour d'annonce publié, la partie commence au prochain cron.");
+    return;
+  }
 
   const config = await loadGobeletConfig();
   console.log(`Jeu du Gobelet — Jour ${state.jour}/${config.duree_jours}${state.termine ? " (terminée)" : ""}\n`);

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // postRobinson.js
 // Poste manuellement (ou via cron) le jour de Robinson (survie insulaire
-// communautaire). Clôture d'abord le jour actif (s'il y en a un) : consomme
+// communautaire). Sans partie en cours : publie le jour de présentation
+// (jamais le Jour 1 directement). Sinon clôture d'abord le jour actif : consomme
 // les ressources, applique l'événement éventuel, vérifie victoire/défaite,
 // puis publie le jour suivant (ou le message de fin de partie).
 //
@@ -10,7 +11,7 @@
 //   node scripts/postRobinson.js --public        — poste sur le salon public
 //   node scripts/postRobinson.js --dry-run       — simulation, sans écrire ni poster
 //   node scripts/postRobinson.js --public --dry-run
-//   node scripts/postRobinson.js --no-ping       — poste sans pinger @MINI JEUX (Jour 1 uniquement)
+//   node scripts/postRobinson.js --no-ping       — poste sans pinger @MINI JEUX
 //   node scripts/postRobinson.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node scripts/postRobinson.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
@@ -22,8 +23,9 @@ import { postRobinson } from "../api/discord/_handlers/robinson.js";
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 // Réservé au cron quotidien (voir .github/workflows/robinson.yml) : le
-// Jour 1 doit toujours être déclenché manuellement (workflow_dispatch), le
-// cron ne fait qu'avancer une partie déjà en cours.
+// lancement (jour de présentation, la veille du Jour 1) doit toujours être
+// déclenché manuellement (workflow_dispatch), le cron ne fait qu'avancer une
+// partie déjà lancée (annonce comprise).
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // Contourne le garde-fou anti-double-avancée (voir backend/services/robinson.js,
 // isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
@@ -32,8 +34,8 @@ const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // conflit : le garde-fou n'y sert à rien d'autre qu'à ralentir l'itération
 // manuelle, donc contourné automatiquement.
 const FORCE = process.argv.includes("--force") || !PUBLIC;
-// Ping @MINI JEUX réservé au vrai lancement public (Jour 1) — jamais sur le
-// salon de test, même sans --no-ping explicite, pour ne pas déranger le
+// Ping @MINI JEUX réservé au vrai lancement public (annonce) et à la fin —
+// jamais sur le salon de test, même sans --no-ping explicite, pour ne pas déranger le
 // serveur à chaque itération de test pendant le développement du jeu.
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
@@ -82,7 +84,9 @@ if (!channelId) {
 
     if (DRY_RUN) {
       console.log(`DRY-RUN — (salon ${channelId}) :`);
-      if (result.final) {
+      if (result.phase === "annonce") {
+        console.log("  Jour de présentation (annonce, veille du Jour 1)");
+      } else if (result.final) {
         console.log(`  Fin de partie — issue : ${result.outcome}`);
       } else {
         console.log(`  Jour ${result.jour}${result.event ? ` — événement : ${result.event.nom}` : ""}`);
@@ -96,7 +100,7 @@ if (!channelId) {
       return;
     }
 
-    console.log(`Jour ${result.jour} posté dans ${channelId} (message ${result.message.id}).`);
+    console.log(`${result.jour == null ? "Jour de présentation" : `Jour ${result.jour}`} posté dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
     console.error("Échec de la publication du jour :", err.message);
     process.exit(1);

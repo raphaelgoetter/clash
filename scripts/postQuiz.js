@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // postQuiz.js
-// Poste manuellement (ou via cron) le jour du Quiz thématique. Clôture
-// silencieusement le jour actif (s'il y en a un) et publie le jour suivant
+// Poste manuellement (ou via cron) le jour du Quiz thématique. Sans manche
+// en cours : publie le jour de présentation (jamais le Jour 1 directement).
+// Sinon clôture silencieusement le jour actif et publie le jour suivant
 // (ou l'embed de révélation finale au Jour 8).
 //
 // Usage :
@@ -9,7 +10,7 @@
 //   node scripts/postQuiz.js --public        — poste sur le salon public
 //   node scripts/postQuiz.js --dry-run       — simulation, sans écrire ni poster
 //   node scripts/postQuiz.js --public --dry-run
-//   node scripts/postQuiz.js --no-ping       — poste sans pinger @MINI-JEUX (Jour 1 uniquement)
+//   node scripts/postQuiz.js --no-ping       — poste sans pinger @MINI-JEUX
 //   node scripts/postQuiz.js --require-active — ne fait rien si aucune manche n'est déjà lancée (cron)
 //   node scripts/postQuiz.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
@@ -20,9 +21,10 @@ import { postQuiz } from "../api/discord/_handlers/quiz.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
-// Réservé au cron quotidien (voir .github/workflows/quiz.yml) : le Jour 1
-// doit toujours être déclenché manuellement (workflow_dispatch), le cron ne
-// fait qu'avancer une manche déjà en cours.
+// Réservé au cron quotidien (voir .github/workflows/quiz.yml) : le
+// lancement (jour de présentation, la veille du Jour 1) doit toujours être
+// déclenché manuellement (workflow_dispatch), le cron ne fait qu'avancer une
+// partie déjà lancée (annonce comprise).
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // Contourne le garde-fou anti-double-avancée (voir backend/services/quiz.js,
 // isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
@@ -31,7 +33,7 @@ const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // conflit : le garde-fou n'y sert à rien d'autre qu'à ralentir l'itération
 // manuelle, donc contourné automatiquement.
 const FORCE = process.argv.includes("--force") || !PUBLIC;
-// Ping @MINI-JEUX réservé au vrai lancement public (Jour 1) — jamais sur le
+// Ping @MINI-JEUX réservé au salon public — jamais sur le
 // salon de test, même sans --no-ping explicite.
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
@@ -83,7 +85,9 @@ if (!channelId) {
 
     if (DRY_RUN) {
       console.log(`DRY-RUN — (salon ${channelId}) :`);
-      if (result.final) {
+      if (result.phase === "annonce") {
+        console.log("  Jour de présentation (annonce, veille du Jour 1)");
+      } else if (result.final) {
         console.log("  Révélation finale");
       } else {
         console.log(`  Jour ${result.jour}${result.theme ? ` — ${result.theme}` : ""}`);
@@ -97,7 +101,7 @@ if (!channelId) {
       return;
     }
 
-    console.log(`Jour ${result.jour} posté dans ${channelId} (message ${result.message.id}).`);
+    console.log(`${result.jour == null ? "Jour de présentation" : `Jour ${result.jour}`} posté dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
     console.error("Échec de la publication du jour :", err.message);
     process.exit(1);

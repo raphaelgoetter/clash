@@ -60,6 +60,24 @@ function formatPostedAtParis(date = new Date()) {
   });
 }
 
+// ── Embed du jour de présentation (annonce) ───────────────────────
+// Publié au lancement manuel, la veille du Jour 1 (même modèle que Mario
+// Clash) : aucun bouton (le Quiz n'a pas de bouton Règles), la thématique
+// n'est tirée qu'à l'ouverture du Jour 1.
+
+function buildAnnonceEmbed() {
+  return {
+    title: "❓ Quiz — Une nouvelle manche se prépare",
+    description: [
+      `**${TOTAL_QUESTIONS} questions**, une par jour, sur une thématique révélée demain.`,
+      "",
+      "Un seul vote par question, définitif. Bonnes réponses et classement à la révélation finale.",
+    ].join("\n"),
+    color: QUIZ_COLOR,
+    footer: { text: `La partie commence demain à ${formatUtcTimeAsParis(8)}.` },
+  };
+}
+
 // ── Embed / composants d'une question ─────────────────────────────
 // Les propositions de réponses vivent dans l'EMBED (lettre + texte), jamais
 // sur les boutons — ceux-ci n'affichent qu'un label générique "Réponse A/B/…"
@@ -178,6 +196,7 @@ async function publishAndWriteState(
   channelId,
   previousState,
   {
+    phase = "jour",
     manche,
     mancheIndex,
     mancheId,
@@ -212,7 +231,7 @@ async function publishAndWriteState(
   }
 
   // Contrairement aux autres jeux collaboratifs, le Quiz pingue à chaque
-  // post (Jour 1, jours suivants, révélation finale) — seul --no-ping
+  // post (annonce, Jour 1, jours suivants, révélation finale) — seul --no-ping
   // (tests) le désactive.
   const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
@@ -238,6 +257,7 @@ async function publishAndWriteState(
   const message = await res.json();
 
   await writeState({
+    phase,
     manche,
     mancheIndex,
     mancheId,
@@ -297,12 +317,41 @@ export async function postQuiz(
   }
 
   // Le cron quotidien ne fait qu'avancer une manche déjà lancée manuellement
-  // — il ne doit jamais démarrer le Jour 1 tout seul.
+  // (l'état "annonce" compte comme manche lancée) — il ne doit jamais
+  // démarrer une manche tout seul.
   if (!state && requireActiveState) return { skipped: true };
 
-  const estPremierJour = !state;
+  // 1) Aucun état -> jour de présentation (jamais le Jour 1 directement).
+  if (!state) {
+    const embed = buildAnnonceEmbed();
+    if (dryRun) {
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
+      return {
+        dryRun: true,
+        phase: "annonce",
+        embed,
+        components: [],
+        pingRoleId,
+      };
+    }
+    return publishAndWriteState(channelId, null, {
+      phase: "annonce",
+      manche: null,
+      mancheIndex: null,
+      mancheId: null,
+      theme: null,
+      jour: null,
+      embed,
+      components: [],
+      noPing,
+    });
+  }
 
-  if (estPremierJour) {
+  // 2) Transition présentation -> Jour 1 : tirage de la thématique et
+  // allocation du numéro de manche, puis première question.
+  if (state.phase === "annonce") {
     const cursor = await getThemeCursor();
     const mancheIndex = pickNextMancheIndex(cursor, config.manches.length);
     const mancheConfig = config.manches[mancheIndex];
@@ -317,6 +366,7 @@ export async function postQuiz(
         : null;
       return {
         dryRun: true,
+        phase: "jour",
         jour,
         theme: mancheConfig.theme,
         embed,
@@ -327,7 +377,7 @@ export async function postQuiz(
 
     const manche = await nextMancheSeq();
     await setThemeCursor(mancheIndex);
-    return publishAndWriteState(channelId, null, {
+    return publishAndWriteState(channelId, state, {
       manche,
       mancheIndex,
       mancheId: mancheConfig.id,
