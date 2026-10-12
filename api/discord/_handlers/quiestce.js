@@ -234,22 +234,42 @@ async function buildFinEmbed(ranking, partie, manches, currentManche) {
 
 function buildReglesEmbed(config) {
   const n = config.pool["1"]?.length ?? 3;
+  const objets = (famille) => Object.keys(OBJETS).filter((o) => OBJETS[o].famille === famille).map((o) => `- ${objetLabel(o)} : ${OBJETS[o].effet.charAt(0).toLowerCase()}${OBJETS[o].effet.slice(1)}`);
   return {
     title: "📖 Règles : Qui est-ce ?",
     description: [
       "Démasque les cartes secrètes des autres joueurs, avant qu'on ne démasque la tienne !",
       "",
-      `**🔎 Chaque jour** : ${plural(config.questions_par_jour, "question")} sur ta cible, parmi les ${n} questions du jour (${n + 1} avec la Loupe ; si tu les connais déjà toutes, n'importe quelle autre). Puis, si tu veux, 1 accusation.`,
-      "**🎯 Démasquer** : une accusation juste te rapporte **+1 point** et une nouvelle cible ; être démasqué te coûte **-1 point**.",
-      `**👀 Cibles** : tirées au sort (${config.chasseurs_max} chasseurs au plus par joueur, jamais un joueur que tu as déjà démasqué).`,
-      "**🗂️ Indice de départ** : à chaque nouvelle cible, tu reçois une caractéristique de sa carte, tirée au hasard.",
-      `**🎁 Objets** : chaque jour, un objet gratuit tiré au hasard, à utiliser ou à garder (${config.inventaire_max} en réserve au plus, 1 utilisé par jour).`,
-      `⚔️ Contre ta cible : ${Object.keys(OBJETS).filter((o) => OBJETS[o].famille === "offensif").map((o) => `${objetLabel(o)} (${OBJETS[o].effet.charAt(0).toLowerCase()}${OBJETS[o].effet.slice(1, -1)})`).join(" ; ")}.`,
-      `🛡️ Contre ton chasseur : ${Object.keys(OBJETS).filter((o) => OBJETS[o].famille === "defensif").map((o) => `${objetLabel(o)} (${OBJETS[o].effet.charAt(0).toLowerCase()}${OBJETS[o].effet.slice(1, -1)})`).join(" ; ")}.`,
+      "**🗓️ Chaque jour**",
+      `- 🔎 **${plural(config.questions_par_jour, "question")}** sur ta cible, parmi les ${n} questions du jour (${n + 1} avec la Loupe).`,
+      "- 🎯 **1 accusation** si tu penses avoir trouvé sa carte.",
+      `- 🎁 **1 objet** gratuit tiré au hasard (${config.inventaire_max} en réserve au plus, 1 utilisé par jour).`,
       "",
-      "**❓ Questions** : 💎 Rareté (commune, rare, épique, légendaire ou champion), 💧 Élixir (1 ou 2, 3, 4, 5 ou plus), 🧩 Type (troupe terrestre, troupe aérienne, sort, bâtiment), 👪 Famille, 🏹 Portée et ❤️ Points de vie (troupes seulement).",
+      "**🏆 Points**",
+      "- Accusation juste : **+1 point**, puis tu choisis ta prochaine cible.",
+      "- Être démasqué : **-1 point**.",
+      "- Accusation ratée : la carte est barrée de ta fiche.",
       "",
-      `**🏁 Fin** au jour ${config.duree_jours} : classement aux points (cartes découvertes moins fois démasqué), puis le plus de cartes découvertes, puis le moins d'accusations ratées.`,
+      "**👀 Cibles**",
+      "- La première est tirée au sort, les suivantes sont choisies (le meneur t'est proposé).",
+      `- ${config.chasseurs_max} chasseurs au plus par joueur, jamais un joueur que tu as déjà démasqué.`,
+      "- À chaque nouvelle cible, un **indice de départ** : une caractéristique de sa carte.",
+      "",
+      "**⚔️ Objets contre ta cible**",
+      ...objets("offensif"),
+      "",
+      "**🛡️ Objets contre ton chasseur**",
+      ...objets("defensif"),
+      "",
+      "**❓ Questions**",
+      "- 💎 Rareté : commune, rare, épique, légendaire ou champion",
+      "- 💧 Élixir : 1 ou 2, 3, 4, 5 ou plus",
+      "- 🧩 Type : troupe terrestre, troupe aérienne, sort, bâtiment",
+      "- 👪 Famille : humain, gobelin, squelette, gargouille, aucune",
+      "- 🏹 Portée : mêlée, distance (troupes seulement)",
+      "- ❤️ Points de vie : moins de 500, 500 à 1500, plus de 1500 (troupes seulement)",
+      "",
+      `**🏁 Fin** au jour ${config.duree_jours} : classement aux points, puis le plus de cartes découvertes, puis le moins d'accusations ratées.`,
     ].join("\n"),
     color: QEC_COLOR,
   };
@@ -520,6 +540,7 @@ const ERREURS = {
   pasDeLeader: "Personne n'a encore découvert de carte.",
   dejaActif: "Cet objet est déjà actif.",
   questionPosee: "Tu as déjà posé ta question du jour : la Loupe ne servirait à rien.",
+  accusationsFaites: "Tu as déjà fait deux accusations sur cette cible aujourd'hui.",
   brouillard: "Ta cible est dans le brouillard : accusation impossible aujourd'hui.",
   dejaCible: "Tu as déjà une cible : démasque-la d'abord.",
   cible: "Cette cible n'est plus disponible.",
@@ -534,6 +555,7 @@ const RAISONS_OBJET = {
   objetJour: "déjà un objet aujourd'hui",
   sansCible: "pas de cible pour l'instant",
   questionPosee: "question du jour déjà posée",
+  accusationsFaites: "accusations déjà faites sur cette cible",
   dejaActif: "déjà actif",
   aucuneCarteLibre: "aucune carte libre",
 };
@@ -696,7 +718,8 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
         });
       });
     } else if (accusationsRestantes(j) < 1) {
-      lignes.push(`✅ Accusation${j.bonusAccusations ? "s" : ""} du jour faite${j.bonusAccusations ? "s" : ""}.`);
+      const double = j.doubleCible === j.cible;
+      lignes.push(double ? `✅ Accusations du jour faites (Double accusation sur ${cible.username}).` : "✅ Accusation du jour faite.");
     }
   }
   const objets = objetsRow(partie, discordId, config);
@@ -834,7 +857,7 @@ export async function handleAccuser(webhookUrl, discordId, username, cardKey) {
 function texteObjet(r, partie) {
   if (r.erreur) return avertissement(r.erreur);
   if (r.objet === "loupe") return `🔍 Loupe : 4e question débloquée aujourd'hui (${QUESTIONS[r.q].nom}), à choisir ci-dessous.`;
-  if (r.objet === "double") return "🎯 Double accusation : deux accusations aujourd'hui.";
+  if (r.objet === "double") return `🎯 Double accusation : deux accusations aujourd'hui sur **${partie.joueurs[r.cible].username}**.`;
   if (r.objet === "desamorcage") {
     const nom = partie.joueurs[r.cible].username;
     return r.detruit ? `🧨 Désamorçage : tu détruis le ${objetLabel(r.detruit)} de **${nom}** !` : `🧨 Désamorçage : **${nom}** n'avait rien à désamorcer.`;

@@ -2084,7 +2084,7 @@ Jeu spécial **100 % asynchrone** inspiré du jeu de société Qui est-ce ? (id�
 | Objet | Famille | Effet |
 | ----- | ------- | ----- |
 | 🔍 Loupe | ⚔️ offensif | Débloque la 4e question du jour (`pool_loupe`) : toujours une seule question, mais au choix parmi 4. Inutilisable une fois la question du jour posée. |
-| 🎯 Double accusation | ⚔️ offensif | Deux accusations aujourd'hui au lieu d'une (`accusationsRestantes()`). |
+| 🎯 Double accusation | ⚔️ offensif | Deux accusations aujourd'hui **sur la cible actuelle** (`doubleCible`, `accusationsRestantes()`), même si une accusation a déjà été faite plus tôt dans la journée sur une cible précédente (décision du 12/10 : avec un quota journalier commun, un démasquage réussi avant de l'activer ne laissait qu'une accusation sur la nouvelle cible). |
 | 🧨 Désamorçage | ⚔️ offensif | Coupe le Brouillard ou le Miroir actif de sa cible ; sinon détruit un objet défensif au hasard dans sa réserve (rien si elle n'en a pas). La cible est prévenue. |
 | 🌫️ Brouillard | 🛡️ défensif | Public : jusqu'à la clôture, toute question posée sur la carte du joueur reste **sans réponse** (la question est perdue pour le chasseur) et **aucune accusation n'est possible** contre lui (option `brouillard_bloque_accusation`, décision du 12/10 ; gain modeste en simulation : 0,09 démasquage évité par partie au lieu de 0,06). Signalé par 🌫️ dans le tableau de chasse et dans l'enquête du chasseur (menu d'accusation masqué). |
 | 🎭 Déguisement | 🛡️ défensif | La carte du joueur est échangée contre une **carte libre** de la grille (`cartesLibres()` : ni attribuée ni déjà découverte par un chasseur) ; les indices de ses chasseurs et les renseignements du Miroir sur lui sont effacés (annoncé publiquement). |
@@ -2111,7 +2111,7 @@ Jeu spécial **100 % asynchrone** inspiré du jeu de société Qui est-ce ? (id�
 | Clé Redis | Type | Contenu |
 | --------- | ---- | ------- |
 | `quiestce:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, prolongee }` (`phase` : `annonce` pendant la fenêtre d'inscription, puis `jour`) |
-| `quiestce:partie` | STRING | `{ demarree, grille, cartes, joueurs, journal, numeroJour, seq, termine, jour, veille }` (`cartes` : nom et profil de réponses de chaque carte de la grille) ; joueur : `{ username, arrivee, carte, cible, enquete: { infos, ordre, sources, posees, eliminees }, demasques, cartesConnues, nbDemasque, erreurs, seqScore, objets (réserve), renseignements (Miroir), questionsJour, bonusQuestions, accusationsJour, bonusAccusations, objetJour, objetRecuJour, brouillard, miroir }`. Lue et réécrite sous verrou à chaque action. |
+| `quiestce:partie` | STRING | `{ demarree, grille, cartes, joueurs, journal, numeroJour, seq, termine, jour, veille }` (`cartes` : nom et profil de réponses de chaque carte de la grille) ; joueur : `{ username, arrivee, carte, cible, enquete: { infos, ordre, sources, posees, eliminees }, demasques, cartesConnues, nbDemasque, erreurs, seqScore, objets (réserve), renseignements (Miroir), questionsJour, loupe, accusationsJour, accusationsCible, doubleCible, objetJour, objetRecuJour, brouillard, miroir }`. Lue et réécrite sous verrou à chaque action. |
 | `quiestce:resultat` | STRING | Classement final |
 | `quiestce:lock` | STRING | Verrou des actions (10 s) |
 | `quiestce:manches` / `quiestce:manche_seq` | HASH / compteur | Archive `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }` des parties publiques, jamais nettoyée sauf `--manches` |

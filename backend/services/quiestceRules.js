@@ -140,7 +140,10 @@ function nouveauJoueur(username, arrivee) {
     questionsJour: 0,
     loupe: false,
     accusationsJour: 0,
-    bonusAccusations: 0,
+    // Accusations du jour sur la cible actuelle, et cible visée par une
+    // Double accusation (valable pour cette cible seulement)
+    accusationsCible: 0,
+    doubleCible: null,
     objetJour: false,
     objetRecuJour: false,
     brouillard: false,
@@ -266,6 +269,7 @@ export function choisirCible(partie, id, cibleId, { config, rng = Math.random })
 function assignerCible(partie, id, cibleId, { config, rng }) {
   const moi = partie.joueurs[id];
   moi.cible = cibleId;
+  moi.accusationsCible = 0;
   moi.enquete = nouvelleEnquete();
   for (const [q, valeur] of Object.entries(moi.renseignements?.[cibleId] ?? {})) ajouterInfo(moi.enquete, q, valeur, "miroir");
   return donnerIndice(partie, id, { config, rng });
@@ -397,8 +401,13 @@ export function poser(partie, id, q, { config }) {
 // chasseur choisit sa prochaine cible. Fausse : la carte est barrée
 // (accusation ratée comptée dans le départage). Sous Brouillard (option
 // `brouillard_bloque_accusation`), aucune accusation possible.
+// Une accusation par jour, toutes cibles confondues ; avec une Double
+// accusation sur la cible actuelle, deux accusations sur elle, même si une
+// accusation a déjà été faite plus tôt dans la journée sur une autre cible
+// (décision du 12/10).
 export function accusationsRestantes(j) {
-  return 1 + (j.bonusAccusations ?? 0) - (j.accusationsJour ?? 0);
+  if (j.cible && j.doubleCible === j.cible) return 2 - (j.accusationsCible ?? 0);
+  return 1 - (j.accusationsJour ?? 0);
 }
 
 export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
@@ -412,6 +421,7 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   // Option `brouillard_bloque_accusation` : le Brouillard protège aussi des accusations
   if (cible.brouillard && config.brouillard_bloque_accusation) return { erreur: "brouillard" };
   moi.accusationsJour += 1;
+  moi.accusationsCible = (moi.accusationsCible ?? 0) + 1;
   if (cible.carte !== cardKey) {
     moi.erreurs += 1;
     moi.enquete.eliminees.push(cardKey);
@@ -439,7 +449,7 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
 
 export const OBJETS = {
   loupe: { nom: "Loupe", emoji: "🔍", famille: "offensif", effet: "Débloque une 4e question au choix aujourd'hui." },
-  double: { nom: "Double accusation", emoji: "🎯", famille: "offensif", effet: "Deux accusations aujourd'hui au lieu d'une." },
+  double: { nom: "Double accusation", emoji: "🎯", famille: "offensif", effet: "Deux accusations aujourd'hui sur ta cible actuelle." },
   desamorcage: { nom: "Désamorçage", emoji: "🧨", famille: "offensif", effet: "Coupe le Brouillard ou le Miroir de ta cible, sinon détruit un objet défensif de sa réserve." },
   brouillard: { nom: "Brouillard", emoji: "🌫️", famille: "defensif", effet: "Jusqu'à la clôture, questions sans réponse et accusations impossibles contre toi." },
   deguisement: { nom: "Déguisement", emoji: "🎭", famille: "defensif", effet: "Change ta carte contre une carte libre : tes chasseurs perdent leurs indices." },
@@ -455,6 +465,8 @@ export function etatObjet(partie, id, objet, { config }) {
   if (moi.objetJour) return { ok: false, raison: "objetJour" };
   if (OBJETS[objet].famille === "offensif" && !moi.cible) return { ok: false, raison: "sansCible" };
   if (objet === "loupe" && moi.loupe) return { ok: false, raison: "dejaActif" };
+  if (objet === "double" && moi.doubleCible === moi.cible) return { ok: false, raison: "dejaActif" };
+  if (objet === "double" && (moi.accusationsCible ?? 0) >= 2) return { ok: false, raison: "accusationsFaites" };
   if (objet === "loupe" && questionsRestantes(moi, config) < 1) return { ok: false, raison: "questionPosee" };
   if (objet === "brouillard" && moi.brouillard) return { ok: false, raison: "dejaActif" };
   if (objet === "miroir" && moi.miroir) return { ok: false, raison: "dejaActif" };
@@ -478,9 +490,9 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
     return { objet, q };
   }
   if (objet === "double") {
-    moi.bonusAccusations += 1;
-    prive(partie, id, "🎯 Double accusation : deux accusations aujourd'hui.");
-    return { objet };
+    moi.doubleCible = moi.cible;
+    prive(partie, id, `🎯 Double accusation : deux accusations aujourd'hui sur **${partie.joueurs[moi.cible].username}**.`);
+    return { objet, cible: moi.cible };
   }
   if (objet === "desamorcage") {
     const cible = partie.joueurs[moi.cible];
@@ -537,7 +549,8 @@ export function cloturer(partie) {
     j.questionsJour = 0;
     j.loupe = false;
     j.accusationsJour = 0;
-    j.bonusAccusations = 0;
+    j.accusationsCible = 0;
+    j.doubleCible = null;
     j.objetJour = false;
     j.objetRecuJour = false;
     j.brouillard = false;

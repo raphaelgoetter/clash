@@ -240,6 +240,23 @@ function main() {
     const fausse = candidats(p, "j0").find((k) => k !== vraie);
     assert.strictEqual(accuser(p, "j0", fausse, { config: CONFIG }).correct, false);
     assert.strictEqual(accuser(p, "j0", vraie, { config: CONFIG, rng }).correct, true, "2e accusation le même jour");
+    // Double accusation sur la cible actuelle, même après une accusation
+    // réussie plus tôt dans la journée sur une autre cible (cas du 12/10)
+    cloturer(p, { config: CONFIG });
+    const c1 = ciblesDisponibles(p, "j0", { config: CONFIG })[0];
+    choisirCible(p, "j0", c1, { config: CONFIG, rng });
+    assert.strictEqual(accuser(p, "j0", p.joueurs[c1].carte, { config: CONFIG, rng }).correct, true);
+    const c2 = ciblesDisponibles(p, "j0", { config: CONFIG })[0];
+    choisirCible(p, "j0", c2, { config: CONFIG, rng });
+    assert.strictEqual(accusationsRestantes(moi), 0, "sans objet : quota du jour épuisé");
+    moi.objets = ["double"];
+    moi.objetJour = false;
+    assert.ok(!utiliserObjet(p, "j0", "double", { config: CONFIG }).erreur);
+    assert.strictEqual(accusationsRestantes(moi), 2, "deux accusations sur la nouvelle cible");
+    moi.enquete = enqueteVide();
+    const fausse2 = candidats(p, "j0").find((k) => k !== p.joueurs[c2].carte);
+    accuser(p, "j0", fausse2, { config: CONFIG });
+    assert.strictEqual(accuser(p, "j0", p.joueurs[c2].carte, { config: CONFIG, rng }).correct, true);
   }
 
   // ── Miroir : la cible apprend la même caractéristique de son chasseur ──
