@@ -5,6 +5,8 @@ import {
   computeMissingDuelsCountFromBattleLog,
   computeClinchedWinInfo,
   computeDay3ClinchProof,
+  isRaceFinishedBeforeDay,
+  parseFinishTimeMs,
 } from "../../scripts/notifyWarSummary.js";
 import { computeGroupStandings } from "../../backend/services/warStandings.js";
 
@@ -307,5 +309,19 @@ assert.strictEqual(
   "En Colisée, un deck déjà joué en J4 doit invalider la preuve (instantané non propre)",
 );
 console.log("computeClinchedWinInfo / computeDay3ClinchProof passed");
+
+// Ligne d'arrivée franchie au reset du J4 (La Resistance, 11/10/2026)
+const day4 = { gdcPeriod: { start: "2026-10-11T09:45:00.000Z" } };
+const day3 = { gdcPeriod: { start: "2026-10-10T09:45:00.000Z" } };
+const finishMs = parseFinishTimeMs("20261011T094604.000Z");
+assert.strictEqual(
+  parseFinishTimeMs("19691231T235959.000Z"),
+  null,
+  "finishTime 1969 = course non terminée",
+);
+assert.strictEqual(isRaceFinishedBeforeDay(finishMs, day4), true);
+assert.strictEqual(isRaceFinishedBeforeDay(finishMs, day3), false);
+assert.strictEqual(isRaceFinishedBeforeDay(null, day4), false);
+console.log("isRaceFinishedBeforeDay passed");
 
 console.log("notifyWarSummary.duels.test.js passed");

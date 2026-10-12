@@ -2546,6 +2546,31 @@ Comment les reconnaître :
 
 - un jour est Colisée si `periodType === "colosseum"`.
 
+### Journées jouées après la ligne d'arrivée (GDC normale)
+
+Une fois la ligne d'arrivée franchie (`clan.finishTime` ≠ `19691231T235959.000Z`,
+dans `currentriverrace` ou `riverracelog` → `standings[].clan`), l'API continue de
+compter les `decksUsed` mais **ne crédite plus aucun point** (`participants[].fame`
+figé). Vu le 11/10/2026 : ligne franchie 1 min après le reset du J4, puis 123 decks
+joués pour +200 pts seulement.
+
+Le bateau n'avançant qu'au reset, une `finishTime` à moins de 30 min du début d'une
+journée signifie que la course était gagnée avant cette journée
+(`isRaceFinishedBeforeDay()` dans `scripts/notifyWarSummary.js`). Pour ces journées,
+le résumé GDC affiche « Non comptabilisés (victoire acquise) » au lieu des points, sans
+delta de decks ni combats/duels manquants ; le bilan hebdo exclut leurs decks de
+« Points moyens / deck » et leurs jours des duels manquants.
+
+Garde-fou général : un total journalier inférieur à 50 pts par deck joué
+(`MIN_FAME_PER_DECK`) est mathématiquement impossible hors course gagnée et est
+remplacé par « Données indisponibles (valeur incohérente avec les decks joués) ».
+La moyenne hebdo « Points moyens / deck » est masquée sous ce même seuil.
+
+La preuve de victoire J3 (`computeDay3ClinchProof`, utile surtout en Colisée où il
+n'y a pas de `finishTime`) est stockée dans Redis (`dedup:warclinch`) : l'ancien
+fichier `data/war-clinch-log.json` n'était jamais persisté entre deux runs GitHub
+Actions.
+
 ### Clans autorisés
 
 Liste fermée des clans de la famille pour lesquels l’analyse complète de clan est autorisée.

@@ -13,10 +13,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { readFile, writeFile } from "fs/promises";
-import { existsSync } from "fs";
 import { fileURLToPath } from "url";
-import path from "path";
 import fetch from "node-fetch";
 import { Redis } from "@upstash/redis";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
@@ -26,6 +23,7 @@ import {
   warDayKey,
   hasWeeklyDonationResetOccurred,
   warDayIndexFromPeriodIndex,
+  parseClashDate,
 } from "../backend/services/dateUtils.js";
 import {
   fetchRaceLog,
@@ -44,7 +42,6 @@ import { getRoleIdByName } from "../backend/services/discordRoles.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 import { getDiscordLinks } from "../backend/services/discordLinks.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOG_KEY = "dedup:warsummary";
 
 let _redis = null;
@@ -58,12 +55,10 @@ function getRedis() {
   }
   return _redis;
 }
-const CLINCH_LOG_FILE = path.join(
-  __dirname,
-  "..",
-  "data",
-  "war-clinch-log.json",
-);
+// Preuve de victoire J3 (calculée au run du samedi, lue au run du lundi).
+// Stockée dans Redis : un fichier écrit sur le runner GitHub Actions n'est
+// jamais persisté d'un run à l'autre (data/war-clinch-log.json figé depuis mai).
+const CLINCH_LOG_KEY = "dedup:warclinch";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -98,9 +93,9 @@ async function loadLog() {
 }
 
 async function loadClinchLog() {
-  if (!existsSync(CLINCH_LOG_FILE)) return {};
   try {
-    return JSON.parse(await readFile(CLINCH_LOG_FILE, "utf-8"));
+    const raw = await getRedis().get(CLINCH_LOG_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
@@ -108,7 +103,7 @@ async function loadClinchLog() {
 
 async function saveClinchLog(clinchLog) {
   if (DRY_RUN) return;
-  await writeFile(CLINCH_LOG_FILE, JSON.stringify(clinchLog, null, 2));
+  await getRedis().set(CLINCH_LOG_KEY, JSON.stringify(clinchLog));
 }
 
 async function markPosted(log, tag, warDay, realDay) {
@@ -516,7 +511,49 @@ function computeDailyFame(dayEntry, prevDayEntry) {
 const DECKS_MAX_WEEK = 800; // 50 membres × 4 decks × 4 jours
 const MISSING_DUELS_DETAIL_THRESHOLD = 15;
 
+// Plancher de cohérence : un deck joué rapporte au moins ~50 pts (duel perdu
+// 0-2 = 100 pts pour 2 decks, combat perdu = 100 pts). Un total sous ce seuil
+// est mathématiquement impossible et ne doit jamais être affiché tel quel.
+const MIN_FAME_PER_DECK = 50;
+
+// Le bateau n'avance qu'au reset : une ligne d'arrivée franchie au tout début
+// d'une journée (quelques minutes après le reset) signifie que la course était
+// gagnée avant que la journée ne commence.
+const FINISH_AT_RESET_TOLERANCE_MS = 30 * 60 * 1000;
+
+/**
+ * Retourne le timestamp (ms) de franchissement de la ligne d'arrivée, ou null
+ * si le clan n'a pas fini (l'API renvoie alors "19691231T235959.000Z").
+ */
+function parseFinishTimeMs(finishTime) {
+  if (!finishTime) return null;
+  const ms = parseClashDate(finishTime).getTime();
+  return Number.isFinite(ms) && ms > Date.UTC(2000, 0, 1) ? ms : null;
+}
+
+/**
+ * Vrai si la course était déjà gagnée (ligne d'arrivée franchie) avant le
+ * début de cette journée : après le franchissement, l'API continue de compter
+ * les decks joués mais ne crédite plus aucun point au clan.
+ */
+function isRaceFinishedBeforeDay(finishTimeMs, day) {
+  if (finishTimeMs == null) return false;
+  const startMs = Date.parse(day?.gdcPeriod?.start ?? "");
+  if (!Number.isFinite(startMs)) return false;
+  return finishTimeMs <= startMs + FINISH_AT_RESET_TOLERANCE_MS;
+}
+
 /** Formate un entier avec séparateur de milliers français : 88400 → "88 400". */
+/** Total des decks d'une journée : max(decks, decksPreReset) par joueur. */
+function sumMergedDayDecks(day) {
+  const merged = { ...(day?.decks ?? {}) };
+  for (const [t, v] of Object.entries(day?.decksPreReset ?? {})) {
+    if (!Number.isFinite(v)) continue;
+    if (!Number.isFinite(merged[t]) || v > merged[t]) merged[t] = v;
+  }
+  return Object.values(merged).reduce((a, b) => a + b, 0);
+}
+
 function fmt(n) {
   return Math.round(n).toLocaleString("fr-FR");
 }
@@ -911,6 +948,7 @@ async function postWarSummary(
   apiWeekFame = null, // clan.fame depuis raceLog[0] (cumul total pts de bataille semaine)
   apiWeekDecks = null, // sum(participants[].decksUsed) depuis raceLog[0]
   donationBaseline = null, // totalDonations capturé en début de semaine (lundi), pour le delta hebdo
+  raceLogFinishTime = null, // standings[].clan.finishTime depuis raceLog[0] (J4 uniquement)
 ) {
   const channelId = resolveMembersChannelId(tag);
   const token = process.env.DISCORD_TOKEN;
@@ -953,6 +991,18 @@ async function postWarSummary(
     // Appel live échoué — on tombera sur le calcul snapshot ci-dessous
   }
 
+  // Ligne d'arrivée franchie avant cette journée (GDC normale uniquement) :
+  // les decks joués restent comptés mais ne rapportent plus de points, donc
+  // points/deck, deltas et combats/duels manquants n'ont plus de sens.
+  // J4 : la course courante est déjà la semaine suivante → raceLog.
+  const finishTimeMs = parseFinishTimeMs(
+    isLastDay ? raceLogFinishTime : race?.clan?.finishTime,
+  );
+  const raceWonBeforeDay =
+    dayEntry.periodType !== "colosseum" &&
+    isRaceFinishedBeforeDay(finishTimeMs, dayEntry);
+  if (raceWonBeforeDay && isLastDay) earlyWinByDay3 = true;
+
   // Totaux du jour — max(dayEntry.decks, decksPreReset) par joueur, jamais
   // dayEntry.decks seul : contrairement au détail par joueur plus bas
   // (mergedDaySnapDecks), ce total ignorait decksPreReset jusqu'ici, donc
@@ -960,14 +1010,7 @@ async function postWarSummary(
   // aussi (cron GitHub désynchronisé, voir CONTRIBUTING.md) pouvait afficher
   // un nombre trop bas sans aucun avertissement, contrairement à "Points
   // marqués" qui a son propre garde-fou (hasFameData / isExactFame).
-  const totalDecks = (() => {
-    const merged = { ...(dayEntry.decks ?? {}) };
-    for (const [t, v] of Object.entries(dayEntry.decksPreReset ?? {})) {
-      if (!Number.isFinite(v)) continue;
-      if (!Number.isFinite(merged[t]) || v > merged[t]) merged[t] = v;
-    }
-    return Object.values(merged).reduce((a, b) => a + b, 0);
-  })();
+  const totalDecks = sumMergedDayDecks(dayEntry);
 
   // Snapshot pré-reset (T-2 min) : source de vérité exacte.
   // _cumulFamePreReset est le cumul hebdomadaire capturé avant tout deck de la nouvelle journée.
@@ -1117,6 +1160,23 @@ async function postWarSummary(
     }
   }
 
+  // Garde-fou : moins de MIN_FAME_PER_DECK pts par deck joué est impossible
+  // tant que la course n'est pas gagnée (vu le 12/10 : 200 pts pour 123 decks,
+  // ligne d'arrivée franchie au reset du J4). Plutôt qu'un chiffre absurde,
+  // on annonce l'absence de donnée fiable.
+  if (
+    !raceWonBeforeDay &&
+    totalFame !== null &&
+    totalDecks > 0 &&
+    totalFame < totalDecks * MIN_FAME_PER_DECK
+  ) {
+    console.warn(
+      `[${tag}] Points incohérents écartés : ${totalFame} pts pour ${totalDecks} decks.`,
+    );
+    totalFame = null;
+    fameUnavailableReason = "valeur incohérente avec les decks joués";
+  }
+
   // Totaux du jour précédent (pour les deltas)
   const prevDecks =
     prevDayEntry && Object.keys(prevDayEntry.decks ?? {}).length > 0
@@ -1162,7 +1222,9 @@ async function postWarSummary(
 
   // Couleur selon la tendance (fame en priorité, decks en fallback)
   let color = 0x5865f2; // bleu neutre (J1 ou données insuffisantes)
-  if (totalFame !== null && prevFame !== null) {
+  if (raceWonBeforeDay) {
+    color = 0x57f287;
+  } else if (totalFame !== null && prevFame !== null) {
     color = totalFame >= prevFame ? 0x57f287 : 0xed4245;
   } else if (prevDecks !== null) {
     color = totalDecks >= prevDecks ? 0x57f287 : 0xed4245;
@@ -1176,6 +1238,7 @@ async function postWarSummary(
     donationBaseline,
   );
   const weeklyDuelTargetDays = allWeekDays
+    .filter((day) => !isRaceFinishedBeforeDay(finishTimeMs, day))
     .map((day) => day?.realDay)
     .filter((day) => typeof day === "string" && day);
   const dailyDuelTargetDays =
@@ -1203,6 +1266,8 @@ async function postWarSummary(
       // plus haut) plutôt que d'afficher une valeur potentiellement fausse de
       // plusieurs milliers de points.
       line = `Données indisponibles (${fameUnavailableReason ?? "source fiable manquante"})`;
+    } else if (raceWonBeforeDay) {
+      line = "Non comptabilisés (victoire acquise)";
     } else if (
       isLastDay &&
       totalFame === 0 &&
@@ -1238,7 +1303,8 @@ async function postWarSummary(
       line = "Données indisponibles (snapshot pré-reset manquant)";
     } else {
       line = `${fmt(totalDecks)} decks`;
-      if (prevDecks !== null) line += ` ${fmtDelta(totalDecks - prevDecks)}`;
+      if (prevDecks !== null && !raceWonBeforeDay)
+        line += ` ${fmtDelta(totalDecks - prevDecks)}`;
     }
     fields.push({
       name: "<:cards:1493711279121104926> Decks joués",
@@ -1247,7 +1313,9 @@ async function postWarSummary(
     });
   }
 
-  {
+  // Course déjà gagnée : les combats de la journée ne rapportent rien, inutile
+  // de lister les combats/duels manquants.
+  if (!raceWonBeforeDay) {
     // Itérer sur les membres actuels du cache : inclut les membres absents du
     // snapshot (0 decks), exclut les ex-membres (riko, les Goetter…) qui ne sont
     // plus dans data.members/membersRaw mais pourraient traîner dans d'autres listes.
@@ -1413,7 +1481,11 @@ async function postWarSummary(
     }
   }
 
-  if (tag !== "QU9UQJRL" && dailyDuelMissingInfo.players.length > 0) {
+  if (
+    tag !== "QU9UQJRL" &&
+    !raceWonBeforeDay &&
+    dailyDuelMissingInfo.players.length > 0
+  ) {
     const totalMissingDuels = dailyDuelMissingInfo.players.reduce(
       (sum, player) => sum + player.missingDuels,
       0,
@@ -1568,8 +1640,17 @@ async function postWarSummary(
         inline: false,
       });
 
-      if (weekly.totalDecksWeek > 0) {
-        const avgPointsPerDeck = weekly.totalFameWeek / weekly.totalDecksWeek;
+      // Decks joués après la victoire : comptés par l'API mais sans points,
+      // exclus de la moyenne pour ne pas la fausser.
+      const decksAfterFinish = weekly.isColosseum
+        ? 0
+        : allWeekDays
+            .filter((day) => isRaceFinishedBeforeDay(finishTimeMs, day))
+            .reduce((sum, day) => sum + sumMergedDayDecks(day), 0);
+      const scoringDecks = weekly.totalDecksWeek - decksAfterFinish;
+      const avgPointsPerDeck =
+        scoringDecks > 0 ? weekly.totalFameWeek / scoringDecks : null;
+      if (avgPointsPerDeck !== null && avgPointsPerDeck >= MIN_FAME_PER_DECK) {
         weeklyFields.push({
           name: "<:stats:1499284927894650950> Points moyens / deck",
           value: `${avgPointsPerDeck.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} pts`,
@@ -1715,6 +1796,8 @@ export {
   computeMissingDuelsCountFromBattleLog,
   computeClinchedWinInfo,
   computeDay3ClinchProof,
+  isRaceFinishedBeforeDay,
+  parseFinishTimeMs,
 };
 
 async function main() {
@@ -1806,6 +1889,7 @@ async function main() {
       let apiWeekFame = null; // clan.fame depuis raceLog[0] = cumul total pts de bataille semaine
       let apiWeekDecks = null; // sum(participants[].decksUsed) depuis raceLog[0]
       let earlyWinByDay3 = null;
+      let raceLogFinishTime = null;
 
       // Sur le run post-reset de J3 (warDay = saturday), on tente d'établir une preuve
       // rigoureuse en lisant le groupe avant tout deck J4.
@@ -1841,6 +1925,7 @@ async function main() {
           );
           clanRank = standing?.rank ?? null;
           trophyChange = standing?.trophyChange ?? null;
+          raceLogFinishTime = standing?.clan?.finishTime ?? null;
           // sum(participants[].fame) = source de vérité pour le cumul pts de bataille semaine.
           // clan.fame dans raceLog est inconsistant (parfois = position bateau 10000, parfois = sum).
           // clan.clanScore dans raceLog = trophées de guerre (~3000-5000), ne pas utiliser.
@@ -1881,6 +1966,7 @@ async function main() {
         apiWeekFame,
         apiWeekDecks,
         donationBaseline,
+        raceLogFinishTime,
       );
       await markPosted(log, tag, warDay, realDay);
     } catch (err) {
