@@ -81,27 +81,14 @@ for (let jour = 1; jour <= 7; jour++) {
       e = lastEph(id);
       verifier(e, `cible ${id}`);
     }
-    // Objet de temps en temps
-    if (Math.random() < 0.3) {
-      await H.handleObjets(`wh-${id}`, id, nom(id));
-      const o = lastEph(id);
-      verifier(o, `objets ${id}`);
-      const m = menu(o, "quiestce_objet")[0];
-      if (m) {
-        const choix = m.options[Math.floor(Math.random() * m.options.length)].value;
-        await H.handleObjet(`wh-${id}`, id, nom(id), choix);
-        let r = lastEph(id);
-        verifier(r, `objet ${choix}`);
-        const p = menu(r, "quiestce_projecteur")[0];
-        if (p) {
-          await H.handleProjecteur(`wh-${id}`, id, nom(id), p.options[0].value);
-          r = lastEph(id);
-          verifier(r, "projecteur");
-        }
-        if (id === "u1" || choix !== "double") console.log(`--- ${id} utilise ${choix} : ${r.embeds[0].description.split("\n")[0]}`);
-      }
-      await H.handleEnqueter(`wh-${id}`, id, nom(id));
+    // Objet de temps en temps, depuis le menu de l'enquête
+    const m = menu(e, "quiestce_objet")[0];
+    if (m && !m.disabled && Math.random() < 0.4) {
+      const choix = m.options[Math.floor(Math.random() * m.options.length)].value;
+      await H.handleObjet(`wh-${id}`, id, nom(id), choix);
       e = lastEph(id);
+      verifier(e, `objet ${choix}`);
+      console.log(`--- ${id} utilise ${choix} : ${e.embeds[0].description.split("\n")[0]}`);
     }
     // Question (première option), puis accusation à 2 candidats ou moins
     for (let k = 0; k < 2; k++) {

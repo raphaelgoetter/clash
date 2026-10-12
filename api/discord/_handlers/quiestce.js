@@ -3,9 +3,8 @@
 // Un seul message officiel par jour (questions du jour, classement, tableau
 // de chasse, révélations), réédité en direct après chaque action, avec
 // trois boutons, chacun en éphémère : Jouer (l'enquête : sa carte secrète,
-// sa cible, ses indices, la question du jour et l'accusation, édités en
-// place ; bouton Objets pour passer aux objets), Règles et Journal (ce qui
-// concerne le joueur).
+// sa cible, ses indices, et trois menus édités en place : question du
+// jour, accusation, objet), Règles et Journal (ce qui concerne le joueur).
 // Fenêtre d'inscription (comme Goblin Hunters) : boutons S'inscrire, Se
 // désinscrire et Règles, rappel quotidien, prolongation si l'effectif
 // minimum n'est pas atteint.
@@ -178,12 +177,11 @@ function tableauChasseLignes(partie) {
   return lignes;
 }
 
-// Message officiel du jour : intro (J1) ou bilan de la veille, questions
-// du jour, classement, tableau de chasse, faits du jour.
+// Message officiel du jour : intro (J1) ou bilan de la veille, classement,
+// tableau de chasse, faits du jour (les questions du jour sont dans
+// l'enquête de chacun).
 async function buildTableEmbed(jour, config, partie) {
   const lignes = jour === 1 || !partie.veille ? [INTRO_J1] : ["**📰 Hier**", ...bilanVeilleLignes(partie)];
-  const pool = config.pool[String(jour)] ?? [];
-  lignes.push("", `**❓ Questions du jour** : ${pool.map(questionLabel).join(" · ")}`);
   const ranking = classement(partie).filter((r) => r.decouvertes || r.nbDemasque);
   if (ranking.length) {
     lignes.push(
@@ -235,13 +233,13 @@ async function buildFinEmbed(ranking, partie, manches, currentManche) {
 }
 
 function buildReglesEmbed(config) {
-  const n = config.pool["1"]?.length ?? 4;
+  const n = config.pool["1"]?.length ?? 3;
   return {
     title: "📖 Règles : Qui est-ce ?",
     description: [
       "Démasque les cartes secrètes des autres joueurs, avant qu'on ne démasque la tienne !",
       "",
-      `**🔎 Chaque jour** : ${plural(config.questions_par_jour, "question")} sur ta cible, parmi les ${n} questions du jour (si tu les connais déjà toutes, n'importe quelle autre). Puis, si tu veux, 1 accusation.`,
+      `**🔎 Chaque jour** : ${plural(config.questions_par_jour, "question")} sur ta cible, parmi les ${n} questions du jour (${n + 1} avec la Loupe ; si tu les connais déjà toutes, n'importe quelle autre). Puis, si tu veux, 1 accusation.`,
       "**🎯 Démasquer** : une accusation juste te rapporte **+1 point** et une nouvelle cible ; être démasqué te coûte **-1 point**.",
       `**👀 Cibles** : tirées au sort (${config.chasseurs_max} chasseurs au plus par joueur, jamais un joueur que tu as déjà démasqué).`,
       "**🗂️ Indice de départ** : à chaque nouvelle cible, tu reçois une caractéristique de sa carte, tirée au hasard.",
@@ -521,6 +519,7 @@ const ERREURS = {
   aucuneCarteLibre: "Aucune carte libre pour te déguiser.",
   pasDeLeader: "Personne n'a encore découvert de carte.",
   dejaActif: "Cet objet est déjà actif.",
+  questionPosee: "Tu as déjà posé ta question du jour : la Loupe ne servirait à rien.",
   brouillard: "Ta cible est dans le brouillard : accusation impossible aujourd'hui.",
   dejaCible: "Tu as déjà une cible : démasque-la d'abord.",
   cible: "Cette cible n'est plus disponible.",
@@ -534,22 +533,22 @@ function avertissement(code) {
 const RAISONS_OBJET = {
   objetJour: "déjà un objet aujourd'hui",
   sansCible: "pas de cible pour l'instant",
+  questionPosee: "question du jour déjà posée",
   dejaActif: "déjà actif",
   aucuneCarteLibre: "aucune carte libre",
 };
 
-// Réserve d'objets : « 🔍 Loupe ×2 · 🌫️ Brouillard »
-function formatReserve(objets) {
-  const groupes = Object.keys(OBJETS).map((o) => [o, objets.filter((x) => x === o).length]).filter(([, n]) => n);
-  return groupes.length ? groupes.map(([o, n]) => `${objetLabel(o)}${n > 1 ? ` ×${n}` : ""}`).join(" · ") : "aucun";
-}
-
-function statutLigne(j, config) {
+// Statut : points, objets défensifs actifs (la réserve est dans le menu
+// des objets), et chasseurs avec le nombre de questions déjà posées.
+function statutLigne(partie, discordId) {
+  const j = partie.joueurs[discordId];
   const actifs = [j.brouillard && "🌫️ Brouillard", j.miroir && "🪞 Miroir"].filter(Boolean);
-  return [
-    `🏆 **${plural(j.demasques.length - j.nbDemasque, "pt")}** (${nbCartes(j.demasques.length)}, ${j.nbDemasque}× démasqué)`,
-    `🎒 Objets (${j.objets.length}/${config.inventaire_max}) : ${formatReserve(j.objets)}${actifs.length ? ` · actif jusqu'à la clôture : ${actifs.join(", ")}` : ""}`,
-  ].join("\n");
+  const lignes = [`🏆 **${plural(j.demasques.length - j.nbDemasque, "pt")}** (${nbCartes(j.demasques.length)}, ${j.nbDemasque}× démasqué)`];
+  if (actifs.length) lignes.push(`🛡️ Actif jusqu'à la clôture : ${actifs.join(", ")}`);
+  const hs = chasseurs(partie, discordId).map((h) => partie.joueurs[h]);
+  if (hs.length === 1) lignes.push(`🕵️ Ton chasseur, **${hs[0].username}**, a déjà posé ${plural(hs[0].enquete.posees, "question")} sur toi.`);
+  else if (hs.length > 1) lignes.push(`🕵️ Tes chasseurs : ${hs.map((h) => `**${h.username}** (${plural(h.enquete.posees, "question")})`).join(", ")}.`);
+  return lignes.join("\n");
 }
 
 // Annonce de début de journée (objet reçu).
@@ -564,25 +563,36 @@ function texteNouvelleCible(partie, r) {
   return `🎯 Nouvelle cible : **${partie.joueurs[r.cible].username}**.${indice}`;
 }
 
-// Boutons de navigation personnels de l'éphémère, grisés quand il n'y a
-// plus rien à y faire (les boutons du message officiel, communs à tous,
-// ne peuvent pas l'être).
-function objetsUtilisables(partie, discordId, config) {
-  return Object.keys(OBJETS).filter((o) => etatObjet(partie, discordId, o, { config }).ok);
-}
-
-function enqueteActive(partie, discordId, config) {
+// Menu « Utiliser un objet » de l'enquête : objets de la réserve (Discord
+// ne permet pas de griser une option : effet si utilisable, sinon 🔒 et la
+// raison) ; menu grisé si aucun n'est utilisable, absent si la réserve est
+// vide.
+function objetsRow(partie, discordId, config) {
   const j = partie.joueurs[discordId];
-  if (!j.cible) return ciblesDisponibles(partie, discordId, { config }).length > 0;
-  const question = questionsRestantes(j, config) > 0 && questionsPossibles(partie, discordId, { config }).length > 0;
-  const bloquee = partie.joueurs[j.cible].brouillard && config.brouillard_bloque_accusation;
-  const accusation = !bloquee && accusationsRestantes(j) > 0 && candidats(partie, discordId).length > 0;
-  return question || accusation;
-}
-
-function navRow(vers, actif) {
-  const b = vers === "objets" ? bouton("Objets", "🎒", "quiestce_e_objets", 3) : bouton("Enquêter", "🔎", "quiestce_e_enqueter", 1);
-  return { type: 1, components: [{ ...b, disabled: !actif }] };
+  const enReserve = Object.keys(OBJETS).filter((o) => j.objets.includes(o));
+  if (!enReserve.length) return null;
+  const etats = Object.fromEntries(enReserve.map((o) => [o, etatObjet(partie, discordId, o, { config })]));
+  const utilisable = enReserve.some((o) => etats[o].ok);
+  return {
+    type: 1,
+    components: [
+      {
+        type: 3,
+        custom_id: "quiestce_objet",
+        placeholder: utilisable ? "🎒 Utiliser un objet (1 par jour)" : "🔒 Aucun objet utilisable pour l'instant",
+        disabled: !utilisable,
+        options: enReserve.map((o) => {
+          const n = j.objets.filter((x) => x === o).length;
+          return {
+            label: `${OBJETS[o].nom}${n > 1 ? ` (×${n})` : ""}`,
+            value: o,
+            emoji: { name: etats[o].ok ? OBJETS[o].emoji : "🔒" },
+            description: (etats[o].ok ? OBJETS[o].effet : `Indisponible : ${RAISONS_OBJET[etats[o].raison]}`).slice(0, 100),
+          };
+        }),
+      },
+    ],
+  };
 }
 
 const SOURCES = { miroir: " (Miroir)", depart: " (indice de départ)" };
@@ -612,7 +622,7 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
   const lignes = [
     ...(annonces.length ? [...annonces, ""] : []),
     `🃏 Ta carte secrète : **${nomCarte(partie, j.carte)}**`,
-    statutLigne(j, config),
+    statutLigne(partie, discordId),
     "",
   ];
   const components = [];
@@ -645,17 +655,16 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
   } else {
     const cible = partie.joueurs[j.cible];
     const rivaux = chasseurs(partie, j.cible).filter((id) => id !== discordId);
-    lignes.push(`🎯 Ta cible : **${cible.username}**${rivaux.length ? ` · 👥 autre chasseur : ${rivaux.map((id) => partie.joueurs[id].username).join(", ")}` : ""}`);
+    if (rivaux.length) lignes.push(`👥 ${rivaux.map((id) => `**${partie.joueurs[id].username}**`).join(", ")} chasse${rivaux.length > 1 ? "nt" : ""} aussi ${cible.username}.`);
     if (cible.brouillard) lignes.push(`🌫️ Ta cible est dans le brouillard jusqu'à la clôture : tes questions restent sans réponse${config.brouillard_bloque_accusation ? " et l'accusation est impossible" : ""}.`);
     const infos = j.enquete.ordre.map((q) => `${questionLabel(q)} : **${j.enquete.infos[q]}**${SOURCES[j.enquete.sources[q]] ?? ""}`);
-    lignes.push("", "**Ce que tu sais**", ...(infos.length ? infos : ["Rien pour l'instant."]));
+    lignes.push("", `**Ce que tu sais sur ${cible.username}**`, ...(infos.length ? infos : ["Rien pour l'instant."]));
     const cs = candidats(partie, discordId);
     barrees = partie.grille.filter((k) => !cs.includes(k));
-    lignes.push("", `🃏 Cartes encore possibles : **${cs.length}**`);
+    lignes.push("");
     // Quota quotidien, toutes cibles confondues (une question posée sur la
     // cible précédente compte aussi)
-    const total = config.questions_par_jour + (j.bonusQuestions ?? 0);
-    lignes.push(`❓ Questions aujourd'hui : **${j.questionsJour}/${total}**${j.bonusQuestions ? " (Loupe)" : ""}`);
+    lignes.push(`❓ Question du jour : **${j.questionsJour}/${config.questions_par_jour}**${j.loupe ? ` · 🔍 Loupe : 4e question débloquée (${QUESTIONS[config.pool_loupe[String(partie.numeroJour)]].nom})` : ""}`);
     const possibles = questionsPossibles(partie, discordId, { config });
     if (questionsRestantes(j, config) > 0 && possibles.length) {
       components.push({
@@ -669,8 +678,6 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
           },
         ],
       });
-    } else if (questionsRestantes(j, config) < 1) {
-      lignes.push("Plus de question aujourd'hui (toutes cibles confondues) : la suite demain !");
     }
     const accusationBloquee = cible.brouillard && config.brouillard_bloque_accusation;
     if (accusationsRestantes(j) > 0 && cs.length && !accusationBloquee) {
@@ -692,7 +699,8 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
       lignes.push(`✅ Accusation${j.bonusAccusations ? "s" : ""} du jour faite${j.bonusAccusations ? "s" : ""}.`);
     }
   }
-  components.push(navRow("objets", objetsUtilisables(partie, discordId, config).length > 0));
+  const objets = objetsRow(partie, discordId, config);
+  if (objets) components.push(objets);
   return {
     embeds: [
       {
@@ -705,49 +713,6 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
     ],
     components,
   };
-}
-
-// [🎒 Objets] : réserve d'objets (ou raison du refus).
-function buildObjetsView(config, partie, discordId, { entete = null, debut = null } = {}) {
-  const j = partie.joueurs[discordId];
-  if (!partie.demarree) return { embeds: [{ description: "La partie n'a pas encore commencé.", color: QEC_COLOR }] };
-  if (partie.termine) return { embeds: [{ description: "🏁 La partie est terminée.", color: QEC_COLOR }] };
-  const annonces = [...lignesDebut(partie, debut), ...(entete ? [entete] : [])];
-  const lignes = [...(annonces.length ? [...annonces, ""] : []), statutLigne(j, config)];
-  const etats = Object.fromEntries(Object.keys(OBJETS).map((o) => [o, etatObjet(partie, discordId, o, { config })]));
-  const components = [];
-  {
-    // Objets de la réserve dans le menu (Discord ne permet pas de griser
-    // une option) : effet si utilisable, sinon 🔒 et la raison.
-    const enReserve = Object.keys(OBJETS).filter((o) => j.objets.includes(o));
-    const utilisable = enReserve.some((o) => etats[o].ok);
-    if (enReserve.length) {
-      components.push({
-        type: 1,
-        components: [
-          {
-            type: 3,
-            custom_id: "quiestce_objet",
-            placeholder: utilisable ? "🎒 Utiliser un objet (1 par jour)" : "🔒 Aucun objet utilisable pour l'instant",
-            disabled: !utilisable,
-            options: enReserve.map((o) => {
-              const n = j.objets.filter((x) => x === o).length;
-              return {
-                label: `${OBJETS[o].nom}${n > 1 ? ` (×${n})` : ""}`,
-                value: o,
-                emoji: { name: etats[o].ok ? OBJETS[o].emoji : "🔒" },
-                description: (etats[o].ok ? OBJETS[o].effet : `Indisponible : ${RAISONS_OBJET[etats[o].raison]}`).slice(0, 100),
-              };
-            }),
-          },
-        ],
-      });
-    } else {
-      lignes.push("", "Ta réserve est vide : un nouvel objet t'attend demain.");
-    }
-  }
-  components.push(navRow("enqueter", enqueteActive(partie, discordId, config)));
-  return { embeds: [{ title: "🎒 Objets", description: lignes.join("\n").slice(0, 4096), color: QEC_COLOR }], components };
 }
 
 // État requis pour toute action ; null (et message) sinon. `annonce` :
@@ -826,15 +791,6 @@ export async function handleEnqueter(webhookUrl, discordId, username) {
   }
 }
 
-// [🎒 Objets].
-export async function handleObjets(webhookUrl, discordId, username) {
-  try {
-    await executer(webhookUrl, discordId, username, () => ({}), buildObjetsView, { rafraichir: false });
-  } catch (err) {
-    console.error("[QuiEstCe] Échec objets:", err.message);
-  }
-}
-
 // ── Composants de l'éphémère (édition en place) ──────────────────────
 
 // Menu « Pose ta question du jour ».
@@ -877,8 +833,8 @@ export async function handleAccuser(webhookUrl, discordId, username, cardKey) {
 
 function texteObjet(r, partie) {
   if (r.erreur) return avertissement(r.erreur);
-  if (r.objet === "loupe") return "🔍 Loupe : une question de plus aujourd'hui, à poser avec le bouton Enquêter ci-dessous.";
-  if (r.objet === "double") return "🎯 Double accusation : deux accusations aujourd'hui, avec le bouton Enquêter ci-dessous.";
+  if (r.objet === "loupe") return `🔍 Loupe : 4e question débloquée aujourd'hui (${QUESTIONS[r.q].nom}), à choisir ci-dessous.`;
+  if (r.objet === "double") return "🎯 Double accusation : deux accusations aujourd'hui.";
   if (r.objet === "desamorcage") {
     const nom = partie.joueurs[r.cible].username;
     return r.detruit ? `🧨 Désamorçage : tu détruis le ${objetLabel(r.detruit)} de **${nom}** !` : `🧨 Désamorçage : **${nom}** n'avait rien à désamorcer.`;
@@ -914,7 +870,7 @@ export async function handleObjet(webhookUrl, discordId, username, objet) {
       discordId,
       username,
       (partie, config) => ({ entete: texteObjet(utiliserObjet(partie, discordId, objet, { config }), partie) }),
-      buildObjetsView,
+      buildEnqueteView,
     );
   } catch (err) {
     console.error("[QuiEstCe] Échec objet:", err.message);

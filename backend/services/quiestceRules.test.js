@@ -67,14 +67,15 @@ function main() {
     assert.strictEqual(profil(tesla).pv, "sans objet (sort ou bâtiment)");
   }
 
-  // ── Pool : 4 questions par jour, chacune 4 ou 5 fois dans la semaine ──
+  // ── Pool : 3 questions de base par jour (3 ou 4 fois chacune), + 1 avec la Loupe ──
   {
     const compte = {};
     for (const [jour, qs] of Object.entries(CONFIG.pool)) {
-      assert.strictEqual(qs.length, 4, `jour ${jour}`);
+      assert.strictEqual(qs.length, 3, `jour ${jour}`);
+      assert.ok(!qs.includes(CONFIG.pool_loupe[jour]), `question Loupe hors base, jour ${jour}`);
       for (const q of qs) compte[q] = (compte[q] || 0) + 1;
     }
-    for (const q of QIDS) assert.ok(compte[q] >= 4 && compte[q] <= 5, q);
+    for (const q of QIDS) assert.ok(compte[q] >= 3 && compte[q] <= 4, q);
   }
 
   // ── Grille : taille, sans jumelles, contraintes de composition ──
@@ -95,8 +96,8 @@ function main() {
       const [q] = j.enquete.ordre;
       assert.strictEqual(j.enquete.sources[q], "depart");
       assert.strictEqual(j.enquete.infos[q], p.cartes[p.joueurs[j.cible].carte].profil[q]);
-      assert.ok(!CONFIG.pool["1"].includes(q), "indice hors des questions du jour");
-      assert.strictEqual(questionsPossibles(p, id, { config: CONFIG }).length, 4);
+      assert.ok(![...CONFIG.pool["1"], CONFIG.pool_loupe["1"]].includes(q), "indice hors des questions du jour (Loupe comprise)");
+      assert.strictEqual(questionsPossibles(p, id, { config: CONFIG }).length, 3);
     }
     assert.strictEqual(cartesLibres(p).length, 18);
   }
@@ -216,16 +217,23 @@ function main() {
     assert.ok(!cartesLibres(p).includes(ancienne));
   }
 
-  // ── Loupe, Double accusation, un objet par jour ──
+  // ── Loupe (4e question au choix), Double accusation, un objet par jour ──
   {
     const p = partieTest(8);
     const moi = p.joueurs.j0;
+    moi.enquete = enqueteVide();
     moi.objets = ["loupe", "double"];
+    assert.deepStrictEqual(questionsPossibles(p, "j0", { config: CONFIG }), CONFIG.pool["1"]);
     assert.ok(!utiliserObjet(p, "j0", "loupe", { config: CONFIG }).erreur);
-    assert.strictEqual(utiliserObjet(p, "j0", "double", { config: CONFIG }).erreur, "objetJour");
-    assert.ok(!poser(p, "j0", questionsPossibles(p, "j0", { config: CONFIG })[0], { config: CONFIG }).erreur);
-    assert.ok(!poser(p, "j0", questionsPossibles(p, "j0", { config: CONFIG })[0], { config: CONFIG }).erreur, "2e question avec la Loupe");
+    assert.deepStrictEqual(questionsPossibles(p, "j0", { config: CONFIG }), [...CONFIG.pool["1"], CONFIG.pool_loupe["1"]]);
+    assert.ok(!poser(p, "j0", CONFIG.pool_loupe["1"], { config: CONFIG }).erreur, "question Loupe posée");
+    assert.strictEqual(poser(p, "j0", CONFIG.pool["1"][0], { config: CONFIG }).erreur, "plafondQuestion", "toujours une seule question");
     cloturer(p, { config: CONFIG });
+    assert.strictEqual(moi.loupe, false);
+    // Loupe inutile une fois la question posée
+    poser(p, "j0", questionsPossibles(p, "j0", { config: CONFIG })[0], { config: CONFIG });
+    moi.objets.push("loupe");
+    assert.strictEqual(etatObjet(p, "j0", "loupe", { config: CONFIG }).raison, "questionPosee");
     assert.ok(!utiliserObjet(p, "j0", "double", { config: CONFIG }).erreur);
     moi.enquete = enqueteVide();
     const vraie = p.joueurs[moi.cible].carte;

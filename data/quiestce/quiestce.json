@@ -51,12 +51,21 @@
     }
   },
   "pool": {
-    "1": ["rarete", "elixir", "type", "famille"],
-    "2": ["rarete", "portee", "famille", "pv"],
-    "3": ["elixir", "type", "portee", "pv"],
-    "4": ["rarete", "elixir", "famille", "pv"],
-    "5": ["type", "portee", "famille", "pv"],
-    "6": ["rarete", "elixir", "type", "portee"],
-    "7": ["rarete", "elixir", "famille", "pv"]
+    "1": ["rarete", "elixir", "type"],
+    "2": ["portee", "famille", "pv"],
+    "3": ["rarete", "type", "pv"],
+    "4": ["elixir", "portee", "famille"],
+    "5": ["rarete", "elixir", "portee"],
+    "6": ["type", "famille", "pv"],
+    "7": ["rarete", "elixir", "pv"]
+  },
+  "pool_loupe": {
+    "1": "famille",
+    "2": "elixir",
+    "3": "portee",
+    "4": "type",
+    "5": "pv",
+    "6": "rarete",
+    "7": "famille"
   }
 }

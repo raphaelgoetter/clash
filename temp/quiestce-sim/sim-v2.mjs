@@ -22,10 +22,11 @@ function choisir(p, id) {
   const best = dispo.sort((a, b) => note(b) - note(a))[0];
   R.choisirCible(p, id, best, { config: CONFIG, rng });
 }
-function rechoisir(p, id) {
-  if (!CHOIX) return;
-  p.joueurs[id].cible = null;
-  choisir(p, id);
+// Sans cible (après un démasquage) : choix stratégique (CHOIX=1) ou au hasard
+function prendreCible(p, id) {
+  if (CHOIX) return choisir(p, id);
+  const dispo = R.ciblesDisponibles(p, id, { config: CONFIG });
+  if (dispo.length) R.choisirCible(p, id, dispo[Math.floor(rng() * dispo.length)], { config: CONFIG, rng });
 }
 const CARTES = R.completerCartes(JSON.parse(fs.readFileSync("data/cardNames.json", "utf8")), CONFIG.complements);
 const OBJ = Object.keys(R.OBJETS);
@@ -43,10 +44,9 @@ const PROFILS = {
 };
 
 function jouer(p, id, bot, jour) {
-  const avant = p.joueurs[id].cible;
-  const debut = R.debutAction(p, id, { config: CONFIG, rng });
-  if (debut.nouvelleCible && !avant) rechoisir(p, id);
+  R.debutAction(p, id, { config: CONFIG, rng });
   const j = p.joueurs[id];
+  if (!j.cible) prendreCible(p, id);
   // Objet (bots heuristiques, seulement les types autorisés)
   const peut = (o) => bot.droits[o] && R.etatObjet(p, id, o, { config: CONFIG }).ok;
   const chasseursDeMoi = R.chasseurs(p, id);
@@ -57,7 +57,7 @@ function jouer(p, id, bot, jour) {
   else if (peut("brouillard") && menace) objet = "brouillard";
   else if (peut("desamorcage") && j.cible && (p.joueurs[j.cible].brouillard || cs0 <= 4)) objet = "desamorcage";
   else if (peut("double") && cs0 >= 2 && cs0 <= 3) objet = "double";
-  else if (peut("loupe") && cs0 > 2) objet = "loupe";
+  else if (peut("loupe") && cs0 > 2 && R.questionsRestantes(j, CONFIG) > 0) objet = "loupe";
   else if (peut("miroir") && chasseursDeMoi.length) objet = "miroir";
   if (objet && !R.utiliserObjet(p, id, objet, { config: CONFIG, rng }).erreur) bot.utilises[objet] = (bot.utilises[objet] || 0) + 1;
   // Questions (meilleure partition), puis accusation
@@ -72,7 +72,7 @@ function jouer(p, id, bot, jour) {
     const cs = R.candidats(p, id);
     if (!(j.cible && R.accusationsRestantes(j) > 0 && cs.length && cs.length <= PROFILS[bot.profil].seuil(jour))) break;
     const r = R.accuser(p, id, cs[Math.floor(rng() * cs.length)], { config: CONFIG, rng });
-    if (r.correct && r.suivante) rechoisir(p, id);
+    if (r.correct) prendreCible(p, id);
   }
 }
 

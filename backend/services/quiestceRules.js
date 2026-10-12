@@ -2,7 +2,7 @@
 // quiestceRules.js — Règles pures de Qui est-ce ? (jeu spécial de 7 jours) :
 // chaque joueur reçoit une carte secrète d'une grille commune, chasse une
 // cible qu'il choisit (le meneur est proposé) en posant une question par
-// jour (parmi les 4 questions du jour), puis l'accuse ; score = cartes
+// jour (parmi les 3 questions du jour, 4 avec la Loupe), puis l'accuse ; score = cartes
 // découvertes moins fois démasqué. Chaque jour, un objet gratuit tiré au
 // hasard (offensif contre sa cible ou défensif contre son chasseur),
 // utilisable ou à garder. Aucune I/O : la couche Redis (quiestce.js) lit
@@ -138,7 +138,7 @@ function nouveauJoueur(username, arrivee) {
     // à l'enquête si l'un d'eux devient la cible
     renseignements: {},
     questionsJour: 0,
-    bonusQuestions: 0,
+    loupe: false,
     accusationsJour: 0,
     bonusAccusations: 0,
     objetJour: false,
@@ -275,9 +275,11 @@ function donnerIndice(partie, id, { config, rng }) {
   const moi = partie.joueurs[id];
   const inconnues = QIDS.filter((q) => !(q in moi.enquete.infos));
   if (!inconnues.length) return null;
-  const duJour = config.pool[String(partie.numeroJour)] ?? [];
-  const horsPool = inconnues.filter((q) => !duJour.includes(q));
-  const tirage = horsPool.length ? horsPool : inconnues;
+  const base = config.pool[String(partie.numeroJour)] ?? [];
+  const avecLoupe = [...base, config.pool_loupe?.[String(partie.numeroJour)]].filter(Boolean);
+  const horsTout = inconnues.filter((q) => !avecLoupe.includes(q));
+  const horsBase = inconnues.filter((q) => !base.includes(q));
+  const tirage = horsTout.length ? horsTout : horsBase.length ? horsBase : inconnues;
   const q = tirage[Math.floor(rng() * tirage.length)];
   const cible = partie.joueurs[moi.cible];
   const valeur = partie.cartes[cible.carte].profil[q];
@@ -306,8 +308,8 @@ export function debutAction(partie, id, { config, rng = Math.random }) {
     moi.objetRecuJour = true;
     if (moi.objets.length < config.inventaire_max) {
       r.objetRecu = tirerObjet(config, rng);
+      // Pas de note au journal : seuls les objets utilisés y figurent
       moi.objets.push(r.objetRecu);
-      prive(partie, id, `🎁 Objet du jour : ${OBJETS[r.objetRecu].emoji} ${OBJETS[r.objetRecu].nom}.`);
     }
   }
   return r;
@@ -338,18 +340,25 @@ export function candidats(partie, id) {
   );
 }
 
-// Questions du jour encore utiles sur la cible ; si les 3 sont déjà
-// connues, n'importe quelle autre question (décision du 11/10).
+// Questions du jour encore utiles sur la cible : les 3 de base, plus la
+// question Loupe du jour (`pool_loupe`) si la Loupe est active ; si elles
+// sont toutes connues, n'importe quelle autre question (décision du 11/10).
+export function questionsDuJour(partie, { config, loupe = false }) {
+  const jour = String(partie.numeroJour);
+  const base = config.pool[jour] ?? QIDS;
+  return loupe && config.pool_loupe?.[jour] ? [...base, config.pool_loupe[jour]] : base;
+}
+
 export function questionsPossibles(partie, id, { config }) {
   const moi = partie.joueurs[id];
   if (!moi?.cible) return [];
   const inconnues = (liste) => liste.filter((q) => !(q in moi.enquete.infos));
-  const duJour = inconnues(config.pool[String(partie.numeroJour)] ?? QIDS);
+  const duJour = inconnues(questionsDuJour(partie, { config, loupe: moi.loupe }));
   return duJour.length ? duJour : inconnues(QIDS);
 }
 
 export function questionsRestantes(j, config) {
-  return config.questions_par_jour + (j.bonusQuestions ?? 0) - (j.questionsJour ?? 0);
+  return config.questions_par_jour - (j.questionsJour ?? 0);
 }
 
 // Question sur la cible ; sous Brouillard, la question est perdue sans
@@ -429,7 +438,7 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
 // cible, défensifs contre son chasseur (décision du 12/10).
 
 export const OBJETS = {
-  loupe: { nom: "Loupe", emoji: "🔍", famille: "offensif", effet: "Une question de plus aujourd'hui sur ta cible." },
+  loupe: { nom: "Loupe", emoji: "🔍", famille: "offensif", effet: "Débloque une 4e question au choix aujourd'hui." },
   double: { nom: "Double accusation", emoji: "🎯", famille: "offensif", effet: "Deux accusations aujourd'hui au lieu d'une." },
   desamorcage: { nom: "Désamorçage", emoji: "🧨", famille: "offensif", effet: "Coupe le Brouillard ou le Miroir de ta cible, sinon détruit un objet défensif de sa réserve." },
   brouillard: { nom: "Brouillard", emoji: "🌫️", famille: "defensif", effet: "Jusqu'à la clôture, questions sans réponse et accusations impossibles contre toi." },
@@ -445,6 +454,8 @@ export function etatObjet(partie, id, objet, { config }) {
   if (!moi.objets.includes(objet)) return { ok: false, raison: "pasEnReserve" };
   if (moi.objetJour) return { ok: false, raison: "objetJour" };
   if (OBJETS[objet].famille === "offensif" && !moi.cible) return { ok: false, raison: "sansCible" };
+  if (objet === "loupe" && moi.loupe) return { ok: false, raison: "dejaActif" };
+  if (objet === "loupe" && questionsRestantes(moi, config) < 1) return { ok: false, raison: "questionPosee" };
   if (objet === "brouillard" && moi.brouillard) return { ok: false, raison: "dejaActif" };
   if (objet === "miroir" && moi.miroir) return { ok: false, raison: "dejaActif" };
   if (objet === "deguisement" && !cartesLibres(partie).length) return { ok: false, raison: "aucuneCarteLibre" };
@@ -461,9 +472,10 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
   moi.objetJour = true;
 
   if (objet === "loupe") {
-    moi.bonusQuestions += 1;
-    prive(partie, id, "🔍 Loupe : une question de plus aujourd'hui.");
-    return { objet };
+    moi.loupe = true;
+    const q = config.pool_loupe?.[String(partie.numeroJour)];
+    prive(partie, id, `🔍 Loupe : 4e question débloquée aujourd'hui (${QUESTIONS[q]?.nom ?? "?"}).`);
+    return { objet, q };
   }
   if (objet === "double") {
     moi.bonusAccusations += 1;
@@ -523,7 +535,7 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
 export function cloturer(partie) {
   for (const j of Object.values(partie.joueurs)) {
     j.questionsJour = 0;
-    j.bonusQuestions = 0;
+    j.loupe = false;
     j.accusationsJour = 0;
     j.bonusAccusations = 0;
     j.objetJour = false;
