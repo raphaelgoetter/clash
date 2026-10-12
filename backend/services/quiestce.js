@@ -23,7 +23,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { creerPartie, inscrire, desinscrire, demarrer, cloturer, classement, completerCartes, nbInscrits } from "./quiestceRules.js";
+import { creerPartie, inscrire, desinscrire, demarrer, debutAction, cloturer, classement, completerCartes, nbInscrits } from "./quiestceRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "quiestce", "quiestce.json");
@@ -154,8 +154,9 @@ export async function demarrerPartie({ pnj = [] } = {}) {
 // (fonctions de quiestceRules.js) et renvoie un résultat. `inscription` :
 // le joueur s'inscrit s'il ne l'est pas encore (bouton S'inscrire, pendant
 // la fenêtre d'inscription et dans la limite de `effectif_max`) ; sinon un
-// non-inscrit est refusé.
-// Renvoie { partie, resultat, nouveau } ou { erreur: "inscriptions" | "complet" | "pasInscrit" }.
+// non-inscrit est refusé. À la première action du jour, le joueur reçoit
+// son objet gratuit (et une cible s'il n'en a pas), voir debutAction().
+// Renvoie { partie, resultat, nouveau, debut } ou { erreur: "inscriptions" | "complet" | "pasInscrit" }.
 export async function agir(discordId, username, fn = () => null, { inscription = false } = {}) {
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);
@@ -169,9 +170,10 @@ export async function agir(discordId, username, fn = () => null, { inscription =
     } else if (username && joueur.username !== username) {
       joueur.username = username;
     }
+    const debut = debutAction(partie, discordId, { config });
     const resultat = await fn(partie, config);
     await writePartie(partie);
-    return { partie, resultat, nouveau };
+    return { partie, resultat, nouveau, debut };
   });
 }
 
@@ -199,7 +201,7 @@ export async function previewCloture(jour) {
   return { partie, termine, final: termine ? classement(partie) : null, jourSuivant: jour + 1 };
 }
 
-// Primes du jour ; classement final au dernier jour.
+// Compteurs du jour remis à zéro ; classement final au dernier jour.
 export async function closeDayAndAdvance(jour) {
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);

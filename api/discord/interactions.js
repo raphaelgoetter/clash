@@ -172,9 +172,8 @@ import {
   handleObjets as handleQuiEstCeObjets,
   handleQuestion as handleQuiEstCeQuestion,
   handleAccuser as handleQuiEstCeAccuser,
-  handleCible as handleQuiEstCeCible,
   handleObjet as handleQuiEstCeObjet,
-  handleProjecteur as handleQuiEstCeProjecteur,
+  handleCible as handleQuiEstCeCible,
   handleJournal as handleQuiEstCeJournal,
   handleRegles as handleQuiEstCeRegles,
 } from "./_handlers/quiestce.js";
@@ -8955,7 +8954,7 @@ export default async function handler(req, res) {
     (body.data.custom_id.startsWith("blackjackduel_piocher:") ||
       body.data.custom_id.startsWith("blackjackduel_arreter:"))
   ) {
-    const [action] = body.data.custom_id.split(":");
+    const [action, param] = body.data.custom_id.split(":");
     const { discordId } = extractBlackjackDuelMember(body);
     // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
     // déjà affiché, comme blackjack_piocher:/blackjack_arreter: existants.
@@ -9995,15 +9994,16 @@ export default async function handler(req, res) {
   }
 
   // ── Qui est-ce ? : composants de l'éphémère, édition en place ──
-  // custom_id : quiestce_question, quiestce_accuser:<n>, quiestce_cible_menu,
-  // quiestce_objet, quiestce_projecteur (menus), quiestce_cible:<id>,
-  // quiestce_e_enqueter, quiestce_e_objets (boutons de navigation)
+  // custom_id : quiestce_question, quiestce_accuser:<n>, quiestce_objet,
+  // quiestce_cible_menu (menus), quiestce_cible:<id>, quiestce_e_enqueter,
+  // quiestce_e_objets
+  // (boutons de navigation)
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
-    /^quiestce_(question|accuser|cible|objet|projecteur|e_enqueter|e_objets)/.test(body.data.custom_id)
+    /^quiestce_(question|accuser|objet|cible|e_enqueter|e_objets)/.test(body.data.custom_id)
   ) {
-    const [action, param] = body.data.custom_id.split(":");
+    const [action] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
@@ -10012,12 +10012,11 @@ export default async function handler(req, res) {
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (action === "quiestce_question") runBackground(() => handleQuiEstCeQuestion(webhookUrl, discordId, username, value));
     else if (action === "quiestce_accuser") runBackground(() => handleQuiEstCeAccuser(webhookUrl, discordId, username, value));
+    else if (action === "quiestce_objet") runBackground(() => handleQuiEstCeObjet(webhookUrl, discordId, username, value));
     else if (action === "quiestce_cible") runBackground(() => handleQuiEstCeCible(webhookUrl, discordId, username, param));
     else if (action === "quiestce_cible_menu") runBackground(() => handleQuiEstCeCible(webhookUrl, discordId, username, value));
-    else if (action === "quiestce_objet") runBackground(() => handleQuiEstCeObjet(webhookUrl, discordId, username, value));
     else if (action === "quiestce_e_enqueter") runBackground(() => handleQuiEstCeEnqueter(webhookUrl, discordId, username));
     else if (action === "quiestce_e_objets") runBackground(() => handleQuiEstCeObjets(webhookUrl, discordId, username));
-    else runBackground(() => handleQuiEstCeProjecteur(webhookUrl, discordId, username, value));
     return;
   }
 

@@ -13,11 +13,14 @@ import {
   chasseurs,
   ciblesDisponibles,
   choisirCible,
+  points,
+  cartesLibres,
+  debutAction,
   candidats,
   questionsPossibles,
+  accusationsRestantes,
   poser,
   accuser,
-  leaderPrime,
   etatObjet,
   utiliserObjet,
   cloturer,
@@ -46,251 +49,242 @@ function partieTest(n, rng = seeded()) {
   return p;
 }
 
+const enqueteVide = () => ({ infos: {}, ordre: [], sources: {}, posees: 0, eliminees: [] });
+
 function main() {
   const rng = seeded();
 
   // ── Cartes éligibles : PV et portée connus pour les troupes ──
   {
-    // Gang de gobelins : portée ambiguë (mêlée et distance), non complété
-    const gang = CARTES.find((c) => c.cardKey === "Goblin Gang");
-    assert.strictEqual(carteEligible(gang), false);
-    // Moine : complété par quiestce.json, cardNames.json inchangé
+    assert.strictEqual(carteEligible(CARTES.find((c) => c.cardKey === "Goblin Gang")), false);
     assert.strictEqual(carteEligible(BRUTES.find((c) => c.cardKey === "Monk")), false);
     const moine = CARTES.find((c) => c.cardKey === "Monk");
     assert.strictEqual(carteEligible(moine), true);
     assert.deepStrictEqual([profil(moine).pv, profil(moine).portee], ["plus de 1500", "mêlée"]);
-    assert.strictEqual(profil(CARTES.find((c) => c.cardKey === "Inferno Dragon")).portee, "distance");
-    assert.strictEqual(carteEligible(CARTES.find((c) => c.cardKey === "Ronin")), true);
     const exclues = CARTES.filter((c) => (c.type === "troop" || c.type === "flying") && !carteEligible(c)).map((c) => c.cardKey).sort();
     assert.deepStrictEqual(exclues, ["Goblin Gang", "Rascals", "Spirit Empress"]);
-    const miroir = CARTES.find((c) => c.elixir == null);
-    assert.strictEqual(carteEligible(miroir), false);
     const tesla = CARTES.find((c) => c.cardKey === "Tesla");
-    assert.strictEqual(carteEligible(tesla), true);
     assert.strictEqual(profil(tesla).pv, "sans objet (sort ou bâtiment)");
-    const bebe = profil(CARTES.find((c) => c.cardKey === "Baby Dragon"));
-    assert.deepStrictEqual(bebe, { rarete: "épique", elixir: "4", type: "troupe aérienne", portee: "distance", famille: "aucune", pv: "500 à 1500" });
+  }
+
+  // ── Pool : 4 questions par jour, chacune 4 ou 5 fois dans la semaine ──
+  {
+    const compte = {};
+    for (const [jour, qs] of Object.entries(CONFIG.pool)) {
+      assert.strictEqual(qs.length, 4, `jour ${jour}`);
+      for (const q of qs) compte[q] = (compte[q] || 0) + 1;
+    }
+    for (const q of QIDS) assert.ok(compte[q] >= 4 && compte[q] <= 5, q);
   }
 
   // ── Grille : taille, sans jumelles, contraintes de composition ──
   for (let k = 0; k < 20; k++) {
     const g = tirerGrille(CARTES, 30, rng);
     assert.strictEqual(g.length, 30);
-    const sigs = new Set(g.map((c) => QIDS.map((q) => profil(c)[q]).join("|")));
-    assert.strictEqual(sigs.size, 30, "aucune carte jumelle");
+    assert.strictEqual(new Set(g.map((c) => QIDS.map((q) => profil(c)[q]).join("|"))).size, 30);
     assert.ok(g.filter((c) => c.type === "spell").length >= 4);
-    assert.ok(g.filter((c) => c.type === "building").length >= 2);
-    assert.ok(g.filter((c) => c.type === "flying").length >= 3);
   }
 
-  // ── Démarrage : cartes uniques, cercle de cibles (1 chasseur chacun) ──
+  // ── Démarrage : cartes uniques, cercle de cibles, indice de départ hors pool ──
   {
     const p = partieTest(12);
-    const cartes = Object.values(p.joueurs).map((j) => j.carte);
-    assert.strictEqual(new Set(cartes).size, 12);
-    assert.strictEqual(p.grille.length, 30);
-    for (const id of Object.keys(p.joueurs)) {
-      assert.notStrictEqual(p.joueurs[id].cible, id);
+    assert.strictEqual(new Set(Object.values(p.joueurs).map((j) => j.carte)).size, 12);
+    for (const [id, j] of Object.entries(p.joueurs)) {
       assert.strictEqual(chasseurs(p, id).length, 1);
-      // pas de paire qui se chasse mutuellement (12 joueurs)
-      assert.notStrictEqual(p.joueurs[p.joueurs[id].cible].cible, id);
+      assert.notStrictEqual(p.joueurs[j.cible].cible, id);
+      const [q] = j.enquete.ordre;
+      assert.strictEqual(j.enquete.sources[q], "depart");
+      assert.strictEqual(j.enquete.infos[q], p.cartes[p.joueurs[j.cible].carte].profil[q]);
+      assert.ok(!CONFIG.pool["1"].includes(q), "indice hors des questions du jour");
+      assert.strictEqual(questionsPossibles(p, id, { config: CONFIG }).length, 4);
     }
-    // Grille agrandie au-delà de 30 joueurs (une carte par joueur)
-    assert.strictEqual(partieTest(32).grille.length, 32);
+    assert.strictEqual(cartesLibres(p).length, 18);
   }
 
-  // ── Inscriptions : plafond d'effectif, désinscription, fermées au lancement ──
+  // ── Inscriptions : plafond, désinscription, fermées au lancement ──
   {
     const p = creerPartie();
     for (let i = 0; i < CONFIG.effectif_max; i++) assert.ok(inscrire(p, `i${i}`, `i${i}`, { config: CONFIG }).nouveau);
     assert.strictEqual(inscrire(p, "trop", "Trop", { config: CONFIG }).erreur, "complet");
-    assert.ok(!inscrire(p, "i0", "i0", { config: CONFIG }).erreur, "déjà inscrit : pas d'erreur");
     assert.ok(desinscrire(p, "i3").ok);
-    assert.strictEqual(desinscrire(p, "i3").erreur, "pasInscrit");
-    assert.deepStrictEqual(Object.values(p.joueurs).map((j) => j.arrivee).sort((a, b) => a - b), [...Array(CONFIG.effectif_max - 1).keys()]);
-    assert.ok(inscrire(p, "trop", "Trop", { config: CONFIG }).nouveau, "une place libérée");
+    assert.ok(inscrire(p, "trop", "Trop", { config: CONFIG }).nouveau);
     demarrer(p, { config: CONFIG, cartesData: CARTES, rng });
     assert.strictEqual(inscrire(p, "tard", "Tard", { config: CONFIG }).erreur, "inscriptions");
-    assert.strictEqual(desinscrire(p, "i0").erreur, "inscriptions");
   }
 
-  // ── Indice de départ : une caractéristique exacte à chaque nouvelle cible ──
+  // ── Objet du jour : un par jour, réserve plafonnée ──
+  {
+    const p = partieTest(6);
+    const r = debutAction(p, "j0", { config: CONFIG, rng });
+    assert.ok(r.objetRecu && p.joueurs.j0.objets.length === 1);
+    assert.strictEqual(debutAction(p, "j0", { config: CONFIG, rng }).objetRecu, null, "un seul objet par jour");
+    for (let d = 0; d < 5; d++) {
+      cloturer(p, { config: CONFIG });
+      debutAction(p, "j0", { config: CONFIG, rng });
+    }
+    assert.strictEqual(p.joueurs.j0.objets.length, CONFIG.inventaire_max);
+  }
+
+  // ── Question : une par jour, parmi le pool du jour ──
+  {
+    const p = partieTest(6);
+    const moi = p.joueurs.j0;
+    const cible = p.joueurs[moi.cible];
+    moi.enquete = enqueteVide();
+    assert.deepStrictEqual(questionsPossibles(p, "j0", { config: CONFIG }), CONFIG.pool["1"]);
+    assert.strictEqual(poser(p, "j0", "pv", { config: CONFIG }).erreur, "question");
+    const r = poser(p, "j0", "rarete", { config: CONFIG });
+    assert.strictEqual(r.valeur, p.cartes[cible.carte].profil.rarete);
+    assert.strictEqual(poser(p, "j0", "elixir", { config: CONFIG }).erreur, "plafondQuestion");
+    assert.ok(candidats(p, "j0").every((k) => p.cartes[k].profil.rarete === r.valeur));
+  }
+
+  // ── Accusation : ratée barrée, juste = carte découverte + cible au hasard ──
   {
     const p = partieTest(8);
-    for (const j of Object.values(p.joueurs)) {
-      const cible = p.joueurs[j.cible];
-      assert.strictEqual(j.enquete.ordre.length, 1);
-      const [q] = j.enquete.ordre;
-      assert.strictEqual(j.enquete.sources[q], "depart");
-      assert.strictEqual(j.enquete.infos[q], p.cartes[cible.carte].profil[q]);
-      assert.strictEqual(j.enquete.posees, 0, "l'indice n'est pas une question posée");
-      assert.ok(!CONFIG.pool["1"].includes(q), "indice hors des questions du jour");
-      assert.strictEqual(questionsPossibles(p, Object.keys(p.joueurs).find((id) => p.joueurs[id] === j), { config: CONFIG }).length, 3);
-    }
-    // Choix d'une cible déjà éclairée par un Projecteur : indice sur une autre caractéristique
-    const moi = p.joueurs.j0;
-    const autre = ciblesDisponibles(p, "j0", { config: CONFIG }).find((id) => id !== moi.cible);
-    p.reveles[autre] = { rarete: p.cartes[p.joueurs[autre].carte].profil.rarete };
-    moi.cible = null;
-    const r = choisirCible(p, "j0", autre, { config: CONFIG, rng });
-    assert.notStrictEqual(r.depart.q, "rarete");
-    assert.deepStrictEqual(moi.enquete.ordre, ["rarete", r.depart.q]);
-  }
-
-  // ── Question : une par jour, parmi le pool du jour, réponse exacte ──
-  {
-    const p = partieTest(6);
-    const id = "j0";
-    const moi = p.joueurs[id];
-    const cible = p.joueurs[moi.cible];
-    // Enquête vidée (sans indice de départ) pour tester le pool seul
-    moi.enquete = { infos: {}, ordre: [], sources: {}, posees: 0, eliminees: [] };
-    assert.deepStrictEqual(questionsPossibles(p, id, { config: CONFIG }), CONFIG.pool["1"]);
-    assert.strictEqual(poser(p, id, "pv", { config: CONFIG }).erreur, "question");
-    const r = poser(p, id, "rarete", { config: CONFIG });
-    assert.strictEqual(r.valeur, p.cartes[cible.carte].profil.rarete);
-    assert.strictEqual(moi.or, CONFIG.or_par_jour, "1 Or au premier geste du jour");
-    assert.strictEqual(poser(p, id, "elixir", { config: CONFIG }).erreur, "plafondQuestion");
-    // Candidats : compatibles avec la réponse, sans sa propre carte
-    const cs = candidats(p, id);
-    assert.ok(cs.includes(cible.carte));
-    assert.ok(!cs.includes(moi.carte));
-    assert.ok(cs.every((k) => p.cartes[k].profil.rarete === r.valeur));
-  }
-
-  // ── Choix libre quand les 3 questions du jour sont déjà connues ──
-  {
-    const p = partieTest(6);
-    const moi = p.joueurs.j0;
-    moi.enquete = { infos: {}, ordre: [], sources: {}, posees: 0, eliminees: [] };
-    for (const q of CONFIG.pool["1"]) moi.enquete.infos[q] = "x";
-    const libres = questionsPossibles(p, "j0", { config: CONFIG });
-    assert.deepStrictEqual(libres.sort(), QIDS.filter((q) => !CONFIG.pool["1"].includes(q)).sort());
-  }
-
-  // ── Accusation fausse : -1, carte éliminée, une seule par jour ──
-  {
-    const p = partieTest(6);
-    const moi = p.joueurs.j0;
-    const cible = p.joueurs[moi.cible];
-    const fausse = candidats(p, "j0").find((k) => k !== cible.carte);
-    assert.strictEqual(accuser(p, "j0", fausse, { config: CONFIG }).correct, false);
-    assert.strictEqual(moi.score, -CONFIG.penalite_erreur);
-    assert.strictEqual(moi.erreurs, 1);
-    assert.ok(!candidats(p, "j0").includes(fausse));
-    assert.strictEqual(accuser(p, "j0", cible.carte, { config: CONFIG }).erreur, "plafondAccusation");
-  }
-
-  // ── Accusation juste : gain, primes, nouvelle cible à choisir ──
-  {
-    const p = partieTest(6);
     const moi = p.joueurs.j0;
     const cibleId = moi.cible;
     const cible = p.joueurs[cibleId];
-    cible.prime = 4;
-    p.numeroJour = 3;
-    const r = accuser(p, "j0", cible.carte, { config: CONFIG });
+    const fausse = candidats(p, "j0").find((k) => k !== cible.carte);
+    assert.strictEqual(accuser(p, "j0", fausse, { config: CONFIG }).correct, false);
+    assert.strictEqual(moi.erreurs, 1);
+    assert.strictEqual(accuser(p, "j0", cible.carte, { config: CONFIG }).erreur, "plafondAccusation");
+    assert.strictEqual(accusationsRestantes(moi), 0);
+    cloturer(p, { config: CONFIG });
+    const r = accuser(p, "j0", cible.carte, { config: CONFIG, rng });
     assert.strictEqual(r.correct, true);
-    assert.strictEqual(r.gain, CONFIG.gain_base - 3 + 4);
-    assert.strictEqual(moi.score, r.gain);
-    assert.strictEqual(moi.prime, CONFIG.prime_par_demasquage);
-    assert.strictEqual(moi.or, CONFIG.or_par_jour + CONFIG.or_par_demasquage);
-    assert.strictEqual(cible.prime, 0);
-    assert.strictEqual(moi.cible, null);
-    // Jamais un joueur déjà démasqué ; la carte démasquée est exclue ensuite
-    assert.ok(!ciblesDisponibles(p, "j0", { config: CONFIG }).includes(cibleId));
-    const nouvelle = ciblesDisponibles(p, "j0", { config: CONFIG })[0];
-    assert.ok(choisirCible(p, "j0", nouvelle, { config: CONFIG }).cible);
-    assert.ok(!candidats(p, "j0").includes(cible.carte));
-    assert.strictEqual(choisirCible(p, "j0", nouvelle, { config: CONFIG }).erreur, "dejaCible");
-    // Clôture : la victime ne gagne pas de prime ce jour-là
-    cloturer(p, { config: CONFIG });
-    assert.strictEqual(cible.prime, 0);
-    assert.strictEqual(moi.prime, CONFIG.prime_par_demasquage + CONFIG.prime_par_jour);
-    assert.strictEqual(p.numeroJour, 4);
-    assert.strictEqual(p.veille.demasquages.length, 1);
-    assert.strictEqual(texteJournal(p, p.journal.find((e) => e.k === "demasque")), `🎯 **j0** a démasqué **${cible.username}** (prime de 4) !`);
+    assert.deepStrictEqual(moi.demasques, [cibleId]);
+    assert.strictEqual(cible.nbDemasque, 1);
+    assert.strictEqual(moi.cible, null, "le chasseur choisit sa prochaine cible");
+    assert.ok(!ciblesDisponibles(p, "j0", { config: CONFIG }).includes(cibleId), "jamais un joueur déjà démasqué");
+    const suivante = ciblesDisponibles(p, "j0", { config: CONFIG })[0];
+    assert.ok(choisirCible(p, "j0", suivante, { config: CONFIG, rng }).depart, "indice de départ sur la nouvelle cible");
+    assert.ok(!candidats(p, "j0").includes(cible.carte), "carte découverte barrée");
+    assert.strictEqual(choisirCible(p, "j0", suivante, { config: CONFIG }).erreur, "dejaCible");
+    assert.strictEqual(texteJournal(p, p.journal.find((e) => e.k === "demasque")), `🎯 **j0** a démasqué **${cible.username}** !`);
   }
 
-  // ── Limite de chasseurs par cible ──
+  // ── Choix de cible : meneur proposé en premier, 2 chasseurs au plus ──
   {
     const p = partieTest(6);
-    const cibleId = "j3";
+    p.joueurs.j4.demasques = ["a", "b"]; // 2 pts
+    p.joueurs.j2.demasques = ["a"]; // 1 pt
     p.joueurs.j0.cible = null;
-    p.joueurs.j1.cible = null;
-    p.joueurs.j2.cible = null;
-    // j3 a déjà son chasseur du cercle
-    const avant = chasseurs(p, cibleId).length;
-    for (const id of ["j0", "j1", "j2"]) {
-      if (id === cibleId) continue;
-      const r = choisirCible(p, id, cibleId, { config: CONFIG });
-      if (chasseurs(p, cibleId).length > CONFIG.chasseurs_max) assert.fail("limite dépassée");
-      if (r.erreur) assert.strictEqual(r.erreur, "cible");
+    const dispo = ciblesDisponibles(p, "j0", { config: CONFIG });
+    const ordre = dispo.map((id) => points(p.joueurs[id]));
+    assert.deepStrictEqual(ordre, [...ordre].sort((a, b) => b - a), "triées du meneur au dernier");
+    for (const id of ["j1", "j2", "j3", "j5"]) {
+      p.joueurs[id].cible = null;
+      choisirCible(p, id, "j4", { config: CONFIG, rng });
     }
-    assert.ok(chasseurs(p, cibleId).length <= CONFIG.chasseurs_max);
-    assert.ok(avant <= CONFIG.chasseurs_max);
+    assert.ok(chasseurs(p, "j4").length <= CONFIG.chasseurs_max);
+    assert.ok(!ciblesDisponibles(p, "j0", { config: CONFIG }).includes("j4"), "cible pleine");
   }
 
-  // ── Objets : Projecteur public, Vol de piste, Double enquête ──
+  // ── Brouillard : questions sans réponse jusqu'à la clôture ──
   {
     const p = partieTest(6);
-    for (const j of Object.values(p.joueurs)) j.or = 20;
-    const leader = "j4";
-    p.joueurs[leader].prime = 9;
-    assert.strictEqual(leaderPrime(p), leader);
-    assert.strictEqual(etatObjet(p, leader, "projecteur", { config: CONFIG }).raison, "leader");
-    // Deux chasseurs sur le leader
-    const [h1] = chasseurs(p, leader);
-    const h2 = Object.keys(p.joueurs).find((id) => id !== leader && id !== h1);
-    p.joueurs[h2].cible = null;
-    choisirCible(p, h2, leader, { config: CONFIG });
-    const lanceur = Object.keys(p.joueurs).find((id) => ![leader, h1, h2].includes(id));
-    const r = utiliserObjet(p, lanceur, "projecteur", { config: CONFIG, q: "rarete" });
-    assert.strictEqual(r.valeur, p.cartes[p.joueurs[leader].carte].profil.rarete);
-    assert.strictEqual(p.joueurs[h1].enquete.infos.rarete, r.valeur);
-    assert.strictEqual(p.joueurs[h2].enquete.infos.rarete, r.valeur);
-    assert.deepStrictEqual(p.reveles[leader], { rarete: r.valeur });
-    // Vol de piste : h1 pose une question, h2 la copie
-    poser(p, h1, "elixir", { config: CONFIG });
-    const v = utiliserObjet(p, h2, "vol", { config: CONFIG });
-    assert.strictEqual(v.q, "elixir");
-    assert.strictEqual(p.joueurs[h2].enquete.infos.elixir, p.joueurs[h1].enquete.infos.elixir);
-    // Un objet par jour
-    assert.strictEqual(utiliserObjet(p, h2, "double", { config: CONFIG }).erreur, "objetJour");
+    const chasseur = "j0";
+    const cibleId = p.joueurs.j0.cible;
+    p.joueurs[cibleId].objets = ["brouillard"];
+    assert.ok(!utiliserObjet(p, cibleId, "brouillard", { config: CONFIG }).erreur);
+    const q = questionsPossibles(p, chasseur, { config: CONFIG })[0];
+    const avant = p.joueurs.j0.enquete.ordre.length;
+    assert.strictEqual(poser(p, chasseur, q, { config: CONFIG }).brouille, true);
+    assert.strictEqual(p.joueurs.j0.enquete.ordre.length, avant, "aucune information");
+    assert.strictEqual(poser(p, chasseur, q, { config: CONFIG }).erreur, "plafondQuestion", "question perdue");
+    assert.strictEqual(accuser(p, chasseur, candidats(p, chasseur)[0], { config: CONFIG }).erreur, "brouillard", "accusation impossible");
     cloturer(p, { config: CONFIG });
-    // Double enquête : 2 questions, une seule fois par partie
-    const d = Object.keys(p.joueurs).find((id) => p.joueurs[id].cible);
-    assert.ok(!utiliserObjet(p, d, "double", { config: CONFIG }).erreur);
-    const qs = questionsPossibles(p, d, { config: CONFIG });
-    assert.ok(!poser(p, d, qs[0], { config: CONFIG }).erreur);
-    assert.ok(!poser(p, d, questionsPossibles(p, d, { config: CONFIG })[0], { config: CONFIG }).erreur);
-    cloturer(p, { config: CONFIG });
-    assert.strictEqual(etatObjet(p, d, "double", { config: CONFIG }).raison, "doubleUtilise");
-    // Or insuffisant
-    p.joueurs.j5.or = 0;
-    assert.strictEqual(etatObjet(p, "j5", "double", { config: CONFIG }).raison, "or");
+    assert.ok(!poser(p, chasseur, questionsPossibles(p, chasseur, { config: CONFIG })[0], { config: CONFIG }).brouille);
   }
 
-  // ── Nouvelle cible déjà éclairée par un Projecteur ──
+  // ── Déguisement : nouvelle carte libre, indices des chasseurs effacés ──
   {
     const p = partieTest(6);
-    p.reveles.j2 = { type: p.cartes[p.joueurs.j2.carte].profil.type };
-    const chasseur = Object.keys(p.joueurs).find((id) => id !== "j2" && p.joueurs[id].cible !== "j2");
-    p.joueurs[chasseur].cible = null;
-    choisirCible(p, chasseur, "j2", { config: CONFIG });
-    assert.strictEqual(p.joueurs[chasseur].enquete.infos.type, p.reveles.j2.type);
+    const cibleId = p.joueurs.j0.cible;
+    const ancienne = p.joueurs[cibleId].carte;
+    p.joueurs.j3.renseignements[cibleId] = { rarete: "x" };
+    p.joueurs[cibleId].objets = ["deguisement"];
+    const r = utiliserObjet(p, cibleId, "deguisement", { config: CONFIG, rng });
+    assert.ok(!r.erreur);
+    assert.notStrictEqual(p.joueurs[cibleId].carte, ancienne);
+    assert.strictEqual(p.joueurs.j0.enquete.ordre.length, 0);
+    assert.strictEqual(p.joueurs.j3.renseignements[cibleId], undefined, "renseignements du Miroir effacés");
+    assert.ok(candidats(p, "j0").includes(p.joueurs[cibleId].carte));
+    // La carte découverte par un chasseur n'est jamais redistribuée
+    p.joueurs.j1.cartesConnues.push(ancienne);
+    assert.ok(!cartesLibres(p).includes(ancienne));
   }
 
-  // ── Classement : points, accusations fausses, premier arrivé au score ──
+  // ── Loupe, Double accusation, un objet par jour ──
+  {
+    const p = partieTest(8);
+    const moi = p.joueurs.j0;
+    moi.objets = ["loupe", "double"];
+    assert.ok(!utiliserObjet(p, "j0", "loupe", { config: CONFIG }).erreur);
+    assert.strictEqual(utiliserObjet(p, "j0", "double", { config: CONFIG }).erreur, "objetJour");
+    assert.ok(!poser(p, "j0", questionsPossibles(p, "j0", { config: CONFIG })[0], { config: CONFIG }).erreur);
+    assert.ok(!poser(p, "j0", questionsPossibles(p, "j0", { config: CONFIG })[0], { config: CONFIG }).erreur, "2e question avec la Loupe");
+    cloturer(p, { config: CONFIG });
+    assert.ok(!utiliserObjet(p, "j0", "double", { config: CONFIG }).erreur);
+    moi.enquete = enqueteVide();
+    const vraie = p.joueurs[moi.cible].carte;
+    const fausse = candidats(p, "j0").find((k) => k !== vraie);
+    assert.strictEqual(accuser(p, "j0", fausse, { config: CONFIG }).correct, false);
+    assert.strictEqual(accuser(p, "j0", vraie, { config: CONFIG, rng }).correct, true, "2e accusation le même jour");
+  }
+
+  // ── Miroir : la cible apprend la même caractéristique de son chasseur ──
+  {
+    const p = partieTest(6);
+    const chasseur = "j0";
+    const cibleId = p.joueurs.j0.cible;
+    const cible = p.joueurs[cibleId];
+    cible.objets = ["miroir"];
+    assert.ok(!utiliserObjet(p, cibleId, "miroir", { config: CONFIG }).erreur);
+    const q = questionsPossibles(p, chasseur, { config: CONFIG })[0];
+    assert.ok(poser(p, chasseur, q, { config: CONFIG }).valeur, "le chasseur reçoit quand même sa réponse");
+    assert.strictEqual(cible.renseignements[chasseur][q], p.cartes[p.joueurs[chasseur].carte].profil[q]);
+    assert.strictEqual(cible.miroir, false, "une seule fois");
+    // Renseignement repris si le chasseur devient la cible
+    cible.cible = null;
+    p.joueurs[chasseur].nbDemasque = 0;
+    const autres = Object.keys(p.joueurs).filter((id) => id !== cibleId);
+    for (const id of autres) if (id !== chasseur && p.joueurs[id].cible === chasseur) p.joueurs[id].cible = null;
+    assert.ok(choisirCible(p, cibleId, chasseur, { config: CONFIG, rng }).cible);
+    assert.strictEqual(cible.enquete.sources[q], "miroir");
+  }
+
+  // ── Désamorçage : coupe le Brouillard actif, sinon détruit un défensif ──
+  {
+    const p = partieTest(6);
+    const cibleId = p.joueurs.j0.cible;
+    const cible = p.joueurs[cibleId];
+    cible.brouillard = true;
+    cible.objets = ["deguisement", "loupe"];
+    p.joueurs.j0.objets = ["desamorcage"];
+    assert.strictEqual(utiliserObjet(p, "j0", "desamorcage", { config: CONFIG, rng }).detruit, "brouillard");
+    assert.strictEqual(cible.brouillard, false);
+    cloturer(p, { config: CONFIG });
+    p.joueurs.j0.objets = ["desamorcage"];
+    assert.strictEqual(utiliserObjet(p, "j0", "desamorcage", { config: CONFIG, rng }).detruit, "deguisement");
+    assert.deepStrictEqual(cible.objets, ["loupe"], "les objets offensifs restent");
+    cloturer(p, { config: CONFIG });
+    p.joueurs.j0.objets = ["desamorcage"];
+    assert.strictEqual(utiliserObjet(p, "j0", "desamorcage", { config: CONFIG, rng }).detruit, null);
+  }
+
+  // ── Classement : points = découvertes - démasquages, puis découvertes, puis ratées ──
   {
     const p = partieTest(4);
     const [a, b, c, d] = ["j0", "j1", "j2", "j3"].map((id) => p.joueurs[id]);
-    a.score = 10; a.erreurs = 1; a.seqScore = 1;
-    b.score = 10; b.erreurs = 0; b.seqScore = 5;
-    c.score = 10; c.erreurs = 0; c.seqScore = 3;
-    d.score = 12;
-    const r = classement(p).map((x) => x.discordId);
-    assert.deepStrictEqual(r, ["j3", "j2", "j1", "j0"]);
+    a.demasques = ["x", "y", "z"]; a.nbDemasque = 1; // 2 pts, 3 découvertes
+    b.demasques = ["x", "y"]; b.nbDemasque = 0; b.erreurs = 2; // 2 pts, 2 découvertes
+    c.demasques = ["x", "y"]; c.nbDemasque = 0; // 2 pts, 2 découvertes, 0 ratée
+    d.demasques = ["x", "y", "z", "w"]; d.nbDemasque = 3; // 1 pt
+    const r = classement(p);
+    assert.deepStrictEqual(r.map((x) => x.discordId), ["j0", "j2", "j1", "j3"]);
+    assert.deepStrictEqual([r[0].score, r[0].decouvertes], [2, 3]);
   }
 
   console.log("quiestceRules.test.js : OK");

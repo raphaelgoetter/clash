@@ -471,8 +471,8 @@ const SPECIAL_GAMES = [
       const joueur = (await readQuiEstCePartie()).joueurs[discordId];
       if (!joueur?.carte) return { played: false, scoreLabel: null };
       return {
-        played: joueur.actifJour,
-        scoreLabel: `🎯 **${joueur.score} pt${Math.abs(joueur.score) > 1 ? "s" : ""}** (prime ${joueur.prime})`,
+        played: joueur.objetRecuJour,
+        scoreLabel: `🎯 **${joueur.demasques.length - joueur.nbDemasque} pt${Math.abs(joueur.demasques.length - joueur.nbDemasque) > 1 ? "s" : ""}** (${joueur.demasques.length} découverte${joueur.demasques.length > 1 ? "s" : ""}, ${joueur.nbDemasque}× démasqué)`,
       };
     },
     async detail(state) {

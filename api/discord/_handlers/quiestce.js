@@ -40,14 +40,14 @@ import {
   chasseurs,
   ciblesDisponibles,
   choisirCible,
+  points,
   candidats,
   questionsPossibles,
   questionsRestantes,
+  accusationsRestantes,
   poser,
   accuser,
-  leaderPrime,
   etatObjet,
-  questionsProjecteur,
   utiliserObjet,
   classement,
   texteJournal,
@@ -93,6 +93,15 @@ function objetLabel(o) {
 }
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+
+function nbCartes(n) {
+  return `${n} carte${n > 1 ? "s" : ""} découverte${n > 1 ? "s" : ""}`;
+}
+
+// « 2 pts (3 cartes découvertes, 1× démasqué) »
+function bilanJoueur(r) {
+  return `${plural(r.score, "pt")} (${nbCartes(r.decouvertes)}, ${r.nbDemasque}× démasqué)`;
+}
 
 // ── Embeds publics ───────────────────────────────────────────────────
 
@@ -142,60 +151,49 @@ function bilanVeilleLignes(partie) {
   const lignes = v.demasquages.length
     ? v.demasquages.map((d) => `🎯 ${n(d.s)} a démasqué ${n(d.v)}.`)
     : ["🎯 Personne n'a été démasqué."];
-  if (v.projecteurs) lignes.push(`🔦 ${plural(v.projecteurs, "Projecteur")} braqué${v.projecteurs > 1 ? "s" : ""}.`);
-  if (v.vols) lignes.push(`🕵️ ${plural(v.vols, "piste")} volée${v.vols > 1 ? "s" : ""}.`);
+  if (v.desamorcages) lignes.push(`🧨 ${plural(v.desamorcages, "Désamorçage")}.`);
+  if (v.deguisements) lignes.push(`🎭 ${plural(v.deguisements, "Déguisement")}.`);
+  if (v.brouillards) lignes.push(`🌫️ ${plural(v.brouillards, "Brouillard")}.`);
   if (v.erreurs) lignes.push(`❌ ${plural(v.erreurs, "accusation")} ratée${v.erreurs > 1 ? "s" : ""}.`);
   return lignes;
 }
 
 // Tableau de chasse, lu du point de vue du chasseur : « **Chasseur** →
-// cible (prime, questions posées) », trié par prime de la cible (les
-// chasseurs d'une même cible côte à côte), puis les joueurs en train de
-// choisir une cible et ceux que personne ne chasse.
+// cible (questions posées) », trié par cible (les chasseurs d'une même
+// cible côte à côte), 🌫️ pour une cible sous Brouillard, puis les joueurs
+// sans cible et ceux que personne ne chasse.
 function tableauChasseLignes(partie) {
   const joueurs = Object.entries(partie.joueurs).filter(([, j]) => j.carte);
   const lignes = joueurs
     .filter(([, j]) => j.cible)
-    .sort(([, a], [, b]) => {
-      const ca = partie.joueurs[a.cible];
-      const cb = partie.joueurs[b.cible];
-      return cb.prime - ca.prime || ca.username.localeCompare(cb.username) || a.username.localeCompare(b.username);
-    })
+    .sort(([, a], [, b]) => partie.joueurs[a.cible].username.localeCompare(partie.joueurs[b.cible].username) || a.username.localeCompare(b.username))
     .map(([, j]) => {
       const c = partie.joueurs[j.cible];
-      return `**${j.username}** → ${c.username} (prime ${c.prime}, ${j.enquete.posees} ❓)`;
+      return `**${j.username}** → ${c.username}${c.brouillard ? " 🌫️" : ""} (${j.enquete.posees} ❓)`;
     });
   const sansCible = joueurs.filter(([, j]) => !j.cible).map(([, j]) => j.username);
-  if (sansCible.length) lignes.push(`Choisit sa cible : ${sansCible.join(", ")}`);
-  const libres = joueurs.filter(([id]) => !chasseurs(partie, id).length).sort(([, a], [, b]) => b.prime - a.prime).map(([, j]) => `${j.username} (prime ${j.prime})`);
+  if (sansCible.length) lignes.push(`En attente d'une cible : ${sansCible.join(", ")}`);
+  const libres = joueurs.filter(([id]) => !chasseurs(partie, id).length).map(([, j]) => j.username);
   if (libres.length) lignes.push(`Personne ne les chasse : ${libres.join(", ")}`);
   return lignes;
 }
 
-function revelationsLignes(partie) {
-  return Object.entries(partie.reveles ?? {}).map(
-    ([id, infos]) => `**${partie.joueurs[id]?.username ?? "?"}** : ${Object.entries(infos).map(([q, v]) => `${QUESTIONS[q].nom.toLowerCase()} ${v}`).join(", ")}`,
-  );
-}
-
 // Message officiel du jour : intro (J1) ou bilan de la veille, questions
-// du jour, classement, tableau de chasse, révélations, faits du jour.
+// du jour, classement, tableau de chasse, faits du jour.
 async function buildTableEmbed(jour, config, partie) {
   const lignes = jour === 1 || !partie.veille ? [INTRO_J1] : ["**📰 Hier**", ...bilanVeilleLignes(partie)];
   const pool = config.pool[String(jour)] ?? [];
   lignes.push("", `**❓ Questions du jour** : ${pool.map(questionLabel).join(" · ")}`);
-  const ranking = classement(partie).filter((r) => r.score !== 0);
+  const ranking = classement(partie).filter((r) => r.decouvertes || r.nbDemasque);
   if (ranking.length) {
     lignes.push(
       "",
       "**🏆 Classement**",
-      ...ranking.slice(0, 10).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${plural(r.score, "pt")}`),
+      ...ranking.slice(0, 10).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${bilanJoueur(r)}`),
     );
   }
   const chasse = tableauChasseLignes(partie);
   if (chasse.length) lignes.push("", "**🎯 Tableau de chasse** (chasseur → cible)", ...chasse);
-  const reveles = revelationsLignes(partie);
-  if (reveles.length) lignes.push("", "**🔦 Révélations**", ...reveles);
   const cruciaux = partie.journal.filter((e) => e.c && e.j === (partie.numeroJour ?? jour)).slice(-JOURNAL_AFFICHE);
   if (cruciaux.length) lignes.push("", "**💥 Aujourd'hui**", ...cruciaux.map((e) => texteJournal(partie, e)));
   return {
@@ -204,7 +202,7 @@ async function buildTableEmbed(jour, config, partie) {
     color: QEC_COLOR,
     image: partie.grille.length ? { url: await grilleUrl(partie) } : undefined,
     footer: {
-      text: `Nouvelles questions chaque jour à ${heureCloture()} (+${config.prime_par_jour} de prime pour qui n'a pas été démasqué).`,
+      text: `Nouvelles questions et nouvel objet chaque jour à ${heureCloture()}.`,
     },
   };
 }
@@ -216,14 +214,14 @@ function formatMancheLine(record, isCurrent) {
 
 async function buildFinEmbed(ranking, partie, manches, currentManche) {
   const top = ranking[0];
-  const titre = top ? `👑 **${top.username}** remporte la partie avec ${plural(top.score, "pt")} !` : "Personne n'a participé.";
+  const titre = top ? `👑 **${top.username}** remporte la partie avec ${bilanJoueur(top)} !` : "Personne n'a participé.";
   return {
     title: "🏆 Qui est-ce ? Partie terminée !",
     description: [
       titre,
       "",
       "**Classement final**",
-      ...ranking.slice(0, 15).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** (${plural(r.score, "pt")}, ${r.demasques} 🎯)`),
+      ...ranking.slice(0, 15).map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${bilanJoueur(r)}`),
       "",
       "**🃏 Les cartes secrètes**",
       ranking.map((r) => `${r.username} : ${nomCarte(partie, r.carte)}`).join(" · "),
@@ -237,26 +235,23 @@ async function buildFinEmbed(ranking, partie, manches, currentManche) {
 }
 
 function buildReglesEmbed(config) {
-  const o = config.objets;
+  const n = config.pool["1"]?.length ?? 4;
   return {
     title: "📖 Règles : Qui est-ce ?",
     description: [
       "Démasque les cartes secrètes des autres joueurs, avant qu'on ne démasque la tienne !",
       "",
-      `**🔎 Chaque jour** : ${plural(config.questions_par_jour, "question")} sur ta cible, parmi les 3 questions du jour (si tu les as déjà toutes posées sur elle, n'importe quelle autre). Puis, si tu veux, 1 accusation.`,
-      `**🎯 Démasquer** : ${config.gain_base} pts moins le numéro du jour, plus la **prime** de ta cible. Accusation ratée : -${config.penalite_erreur} pt.`,
-      `**💰 Prime** : +${config.prime_par_jour} par jour sans être démasqué, +${config.prime_par_demasquage} par cible démasquée, remise à 0 quand on te démasque.`,
-      `**👀 Cibles** : la première est tirée au sort. Ensuite, tu choisis (${config.chasseurs_max} chasseurs au plus par joueur, jamais un joueur que tu as déjà démasqué).`,
+      `**🔎 Chaque jour** : ${plural(config.questions_par_jour, "question")} sur ta cible, parmi les ${n} questions du jour (si tu les connais déjà toutes, n'importe quelle autre). Puis, si tu veux, 1 accusation.`,
+      "**🎯 Démasquer** : une accusation juste te rapporte **+1 point** et une nouvelle cible ; être démasqué te coûte **-1 point**.",
+      `**👀 Cibles** : tirées au sort (${config.chasseurs_max} chasseurs au plus par joueur, jamais un joueur que tu as déjà démasqué).`,
       "**🗂️ Indice de départ** : à chaque nouvelle cible, tu reçois une caractéristique de sa carte, tirée au hasard.",
-      `**🪙 Or** : ${config.or_par_jour} par jour joué, +${config.or_par_demasquage} par démasquage.`,
-      `**🎒 Objets** (1 par jour, ${config.objets_max} par partie) :`,
-      `${objetLabel("projecteur")} (${o.projecteur.cout} Or) : ${OBJETS.projecteur.effet}`,
-      `${objetLabel("vol")} (${o.vol.cout} Or) : ${OBJETS.vol.effet}`,
-      `${objetLabel("double")} (${o.double.cout} Or) : ${OBJETS.double.effet}`,
+      `**🎁 Objets** : chaque jour, un objet gratuit tiré au hasard, à utiliser ou à garder (${config.inventaire_max} en réserve au plus, 1 utilisé par jour).`,
+      `⚔️ Contre ta cible : ${Object.keys(OBJETS).filter((o) => OBJETS[o].famille === "offensif").map((o) => `${objetLabel(o)} (${OBJETS[o].effet.charAt(0).toLowerCase()}${OBJETS[o].effet.slice(1, -1)})`).join(" ; ")}.`,
+      `🛡️ Contre ton chasseur : ${Object.keys(OBJETS).filter((o) => OBJETS[o].famille === "defensif").map((o) => `${objetLabel(o)} (${OBJETS[o].effet.charAt(0).toLowerCase()}${OBJETS[o].effet.slice(1, -1)})`).join(" ; ")}.`,
       "",
       "**❓ Questions** : 💎 Rareté (commune, rare, épique, légendaire ou champion), 💧 Élixir (1 ou 2, 3, 4, 5 ou plus), 🧩 Type (troupe terrestre, troupe aérienne, sort, bâtiment), 👪 Famille, 🏹 Portée et ❤️ Points de vie (troupes seulement).",
       "",
-      `**🏁 Fin** au jour ${config.duree_jours} : classement aux points, puis le moins d'accusations ratées, puis le premier à avoir atteint son score.`,
+      `**🏁 Fin** au jour ${config.duree_jours} : classement aux points (cartes découvertes moins fois démasqué), puis le plus de cartes découvertes, puis le moins d'accusations ratées.`,
     ].join("\n"),
     color: QEC_COLOR,
   };
@@ -521,13 +516,14 @@ const ERREURS = {
   plafondAccusation: "Tu as déjà accusé aujourd'hui.",
   carte: "Cette carte n'est plus possible.",
   objet: "Objet inconnu.",
+  pasEnReserve: "Tu n'as pas cet objet.",
   objetJour: "Tu as déjà utilisé un objet aujourd'hui.",
-  objetsMax: "Tu as déjà utilisé tous tes objets.",
-  or: "Pas assez d'Or.",
-  doubleUtilise: "Double enquête déjà utilisée.",
-  leader: "Tu es toi-même le leader en prime.",
-  rienAReveler: "Rien à révéler aujourd'hui sur le leader.",
-  pasDePiste: "Aucun rival à copier sur ta cible.",
+  aucuneCarteLibre: "Aucune carte libre pour te déguiser.",
+  pasDeLeader: "Personne n'a encore découvert de carte.",
+  dejaActif: "Cet objet est déjà actif.",
+  brouillard: "Ta cible est dans le brouillard : accusation impossible aujourd'hui.",
+  dejaCible: "Tu as déjà une cible : démasque-la d'abord.",
+  cible: "Cette cible n'est plus disponible.",
 };
 
 function avertissement(code) {
@@ -537,16 +533,35 @@ function avertissement(code) {
 // Raison courte affichée à côté d'un objet indisponible.
 const RAISONS_OBJET = {
   objetJour: "déjà un objet aujourd'hui",
-  objetsMax: "plus d'objet disponible",
-  or: "pas assez d'Or",
-  doubleUtilise: "déjà utilisée",
-  leader: "tu es le leader",
-  rienAReveler: "rien à révéler aujourd'hui",
-  pasDePiste: "aucun rival à copier",
+  sansCible: "pas de cible pour l'instant",
+  dejaActif: "déjà actif",
+  aucuneCarteLibre: "aucune carte libre",
 };
 
+// Réserve d'objets : « 🔍 Loupe ×2 · 🌫️ Brouillard »
+function formatReserve(objets) {
+  const groupes = Object.keys(OBJETS).map((o) => [o, objets.filter((x) => x === o).length]).filter(([, n]) => n);
+  return groupes.length ? groupes.map(([o, n]) => `${objetLabel(o)}${n > 1 ? ` ×${n}` : ""}`).join(" · ") : "aucun";
+}
+
 function statutLigne(j, config) {
-  return `💰 Prime : **${j.prime}** · 🏆 **${plural(j.score, "pt")}** · 🪙 **${j.or} Or** · 🎒 Objets : ${j.objets}/${config.objets_max}`;
+  const actifs = [j.brouillard && "🌫️ Brouillard", j.miroir && "🪞 Miroir"].filter(Boolean);
+  return [
+    `🏆 **${plural(j.demasques.length - j.nbDemasque, "pt")}** (${nbCartes(j.demasques.length)}, ${j.nbDemasque}× démasqué)`,
+    `🎒 Objets (${j.objets.length}/${config.inventaire_max}) : ${formatReserve(j.objets)}${actifs.length ? ` · actif jusqu'à la clôture : ${actifs.join(", ")}` : ""}`,
+  ].join("\n");
+}
+
+// Annonce de début de journée (objet reçu).
+function lignesDebut(partie, debut) {
+  const lignes = [];
+  if (debut?.objetRecu) lignes.push(`🎁 Objet du jour : **${objetLabel(debut.objetRecu)}** (${OBJETS[debut.objetRecu].effet.charAt(0).toLowerCase()}${OBJETS[debut.objetRecu].effet.slice(1)})`);
+  return lignes;
+}
+
+function texteNouvelleCible(partie, r) {
+  const indice = r.depart ? ` Indice de départ : ${QUESTIONS[r.depart.q].nom.toLowerCase()} **${r.depart.valeur}**.` : "";
+  return `🎯 Nouvelle cible : **${partie.joueurs[r.cible].username}**.${indice}`;
 }
 
 // Boutons de navigation personnels de l'éphémère, grisés quand il n'y a
@@ -560,7 +575,8 @@ function enqueteActive(partie, discordId, config) {
   const j = partie.joueurs[discordId];
   if (!j.cible) return ciblesDisponibles(partie, discordId, { config }).length > 0;
   const question = questionsRestantes(j, config) > 0 && questionsPossibles(partie, discordId, { config }).length > 0;
-  const accusation = !j.accuseJour && candidats(partie, discordId).length > 0;
+  const bloquee = partie.joueurs[j.cible].brouillard && config.brouillard_bloque_accusation;
+  const accusation = !bloquee && accusationsRestantes(j) > 0 && candidats(partie, discordId).length > 0;
   return question || accusation;
 }
 
@@ -569,7 +585,7 @@ function navRow(vers, actif) {
   return { type: 1, components: [{ ...b, disabled: !actif }] };
 }
 
-const SOURCES = { projecteur: " (Projecteur)", vol: " (piste volée)", depart: " (indice de départ)" };
+const SOURCES = { miroir: " (Miroir)", depart: " (indice de départ)" };
 
 function chunk(arr, n) {
   const out = [];
@@ -579,7 +595,7 @@ function chunk(arr, n) {
 
 // [🔎 Enquêter] : carte secrète, statut, cible (ou choix de la cible),
 // indices, question du jour et accusation ; fiche d'enquête en image.
-async function buildEnqueteView(config, partie, discordId, { entete = null, nouveau = false } = {}) {
+async function buildEnqueteView(config, partie, discordId, { entete = null, nouveau = false, debut = null } = {}) {
   const j = partie.joueurs[discordId];
   if (!partie.demarree) {
     return {
@@ -592,9 +608,9 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
     };
   }
   if (partie.termine) return { embeds: [{ description: "🏁 La partie est terminée.", color: QEC_COLOR }] };
+  const annonces = [...lignesDebut(partie, debut), ...(entete ? [entete] : [])];
   const lignes = [
-    ...(nouveau ? ["Bienvenue dans la partie !", ""] : []),
-    ...(entete ? [entete, ""] : []),
+    ...(annonces.length ? [...annonces, ""] : []),
     `🃏 Ta carte secrète : **${nomCarte(partie, j.carte)}**`,
     statutLigne(j, config),
     "",
@@ -605,14 +621,13 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
   if (!j.cible) {
     const dispo = ciblesDisponibles(partie, discordId, { config });
     if (!dispo.length) {
-      lignes.push("🎯 Aucune cible disponible pour l'instant, reviens plus tard.");
+      lignes.push("🎯 Aucune cible disponible pour l'instant (2 chasseurs au plus par joueur) : reviens un peu plus tard.");
     } else {
+      // Meneur disponible proposé par défaut, menu pour les autres
       const [top, ...autres] = dispo;
-      lignes.push("🎯 **Choisis ta prochaine cible.** La plus grosse prime disponible t'est proposée, ou choisis quelqu'un d'autre.");
-      components.push({
-        type: 1,
-        components: [bouton(`Viser ${partie.joueurs[top].username} (prime ${partie.joueurs[top].prime})`.slice(0, 80), "🎯", `quiestce_cible:${top}`, 1)],
-      });
+      const libelle = (id) => `${plural(points(partie.joueurs[id]), "pt")} · ${plural(chasseurs(partie, id).length, "chasseur")}`;
+      lignes.push("🎯 **Choisis ta prochaine cible.** Le meneur disponible t'est proposé (le démasquer lui retire un point), ou choisis quelqu'un d'autre.");
+      components.push({ type: 1, components: [bouton(`Viser ${partie.joueurs[top].username} (${plural(points(partie.joueurs[top]), "pt")})`.slice(0, 80), "🎯", `quiestce_cible:${top}`, 1)] });
       if (autres.length) {
         components.push({
           type: 1,
@@ -621,10 +636,7 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
               type: 3,
               custom_id: "quiestce_cible_menu",
               placeholder: "Ou choisis une autre cible",
-              options: autres.slice(0, 25).map((id) => {
-                const c = partie.joueurs[id];
-                return { label: c.username.slice(0, 100), value: id, description: `Prime ${c.prime} · ${plural(chasseurs(partie, id).length, "chasseur")}` };
-              }),
+              options: autres.slice(0, 25).map((id) => ({ label: partie.joueurs[id].username.slice(0, 100), value: id, description: libelle(id) })),
             },
           ],
         });
@@ -633,7 +645,8 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
   } else {
     const cible = partie.joueurs[j.cible];
     const rivaux = chasseurs(partie, j.cible).filter((id) => id !== discordId);
-    lignes.push(`🎯 Ta cible : **${cible.username}** (prime ${cible.prime})${rivaux.length ? ` · 👥 autre chasseur : ${rivaux.map((id) => partie.joueurs[id].username).join(", ")}` : ""}`);
+    lignes.push(`🎯 Ta cible : **${cible.username}**${rivaux.length ? ` · 👥 autre chasseur : ${rivaux.map((id) => partie.joueurs[id].username).join(", ")}` : ""}`);
+    if (cible.brouillard) lignes.push(`🌫️ Ta cible est dans le brouillard jusqu'à la clôture : tes questions restent sans réponse${config.brouillard_bloque_accusation ? " et l'accusation est impossible" : ""}.`);
     const infos = j.enquete.ordre.map((q) => `${questionLabel(q)} : **${j.enquete.infos[q]}**${SOURCES[j.enquete.sources[q]] ?? ""}`);
     lignes.push("", "**Ce que tu sais**", ...(infos.length ? infos : ["Rien pour l'instant."]));
     const cs = candidats(partie, discordId);
@@ -642,7 +655,7 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
     // Quota quotidien, toutes cibles confondues (une question posée sur la
     // cible précédente compte aussi)
     const total = config.questions_par_jour + (j.bonusQuestions ?? 0);
-    lignes.push(`❓ Questions aujourd'hui : **${j.questionsJour}/${total}**${j.bonusQuestions ? " (Double enquête)" : ""}`);
+    lignes.push(`❓ Questions aujourd'hui : **${j.questionsJour}/${total}**${j.bonusQuestions ? " (Loupe)" : ""}`);
     const possibles = questionsPossibles(partie, discordId, { config });
     if (questionsRestantes(j, config) > 0 && possibles.length) {
       components.push({
@@ -659,7 +672,8 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
     } else if (questionsRestantes(j, config) < 1) {
       lignes.push("Plus de question aujourd'hui (toutes cibles confondues) : la suite demain !");
     }
-    if (!j.accuseJour && cs.length) {
+    const accusationBloquee = cible.brouillard && config.brouillard_bloque_accusation;
+    if (accusationsRestantes(j) > 0 && cs.length && !accusationBloquee) {
       const groupes = chunk(cs, 25).slice(0, 4 - components.length);
       groupes.forEach((groupe, n) => {
         components.push({
@@ -674,8 +688,8 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
           ],
         });
       });
-    } else if (j.accuseJour) {
-      lignes.push("✅ Accusation du jour faite.");
+    } else if (accusationsRestantes(j) < 1) {
+      lignes.push(`✅ Accusation${j.bonusAccusations ? "s" : ""} du jour faite${j.bonusAccusations ? "s" : ""}.`);
     }
   }
   components.push(navRow("objets", objetsUtilisables(partie, discordId, config).length > 0));
@@ -693,49 +707,44 @@ async function buildEnqueteView(config, partie, discordId, { entete = null, nouv
   };
 }
 
-// [🎒 Objets] : Or, objets disponibles (ou raison du refus) ; `projecteur` :
-// choix de la question à révéler sur le leader.
-function buildObjetsView(config, partie, discordId, { entete = null, nouveau = false, projecteur = false } = {}) {
+// [🎒 Objets] : réserve d'objets (ou raison du refus).
+function buildObjetsView(config, partie, discordId, { entete = null, debut = null } = {}) {
   const j = partie.joueurs[discordId];
   if (!partie.demarree) return { embeds: [{ description: "La partie n'a pas encore commencé.", color: QEC_COLOR }] };
   if (partie.termine) return { embeds: [{ description: "🏁 La partie est terminée.", color: QEC_COLOR }] };
-  const lignes = [...(nouveau ? ["Bienvenue dans la partie !", ""] : []), ...(entete ? [entete, ""] : []), statutLigne(j, config)];
+  const annonces = [...lignesDebut(partie, debut), ...(entete ? [entete] : [])];
+  const lignes = [...(annonces.length ? [...annonces, ""] : []), statutLigne(j, config)];
   const etats = Object.fromEntries(Object.keys(OBJETS).map((o) => [o, etatObjet(partie, discordId, o, { config })]));
   const components = [];
-  if (projecteur && etats.projecteur.ok) {
-    const leader = partie.joueurs[leaderPrime(partie)];
-    lignes.push("", `🔦 Leader en prime : **${leader.username}** (prime ${leader.prime}). Quelle caractéristique révéler à tous ?`);
-    components.push({
-      type: 1,
-      components: [
-        {
-          type: 3,
-          custom_id: "quiestce_projecteur",
-          placeholder: "🔦 Caractéristique à révéler",
-          options: questionsProjecteur(partie, { config }).map((q) => ({ label: QUESTIONS[q].nom, value: q, emoji: { name: QUESTIONS[q].emoji } })),
-        },
-      ],
-    });
-  } else {
-    // Tous les objets dans le menu (Discord ne permet pas de griser une
-    // option) : effet si utilisable, sinon 🔒 et la raison.
-    components.push({
-      type: 1,
-      components: [
-        {
-          type: 3,
-          custom_id: "quiestce_objet",
-          placeholder: Object.values(etats).some((e) => e.ok) ? "🎒 Utiliser un objet (1 par jour)" : "🔒 Aucun objet utilisable pour l'instant",
-          disabled: !Object.values(etats).some((e) => e.ok),
-          options: Object.keys(OBJETS).map((o) => ({
-            label: `${OBJETS[o].nom} (${config.objets[o].cout} Or)`,
-            value: o,
-            emoji: { name: etats[o].ok ? OBJETS[o].emoji : "🔒" },
-            description: (etats[o].ok ? OBJETS[o].effet : `Indisponible : ${RAISONS_OBJET[etats[o].raison]}`).slice(0, 100),
-          })),
-        },
-      ],
-    });
+  {
+    // Objets de la réserve dans le menu (Discord ne permet pas de griser
+    // une option) : effet si utilisable, sinon 🔒 et la raison.
+    const enReserve = Object.keys(OBJETS).filter((o) => j.objets.includes(o));
+    const utilisable = enReserve.some((o) => etats[o].ok);
+    if (enReserve.length) {
+      components.push({
+        type: 1,
+        components: [
+          {
+            type: 3,
+            custom_id: "quiestce_objet",
+            placeholder: utilisable ? "🎒 Utiliser un objet (1 par jour)" : "🔒 Aucun objet utilisable pour l'instant",
+            disabled: !utilisable,
+            options: enReserve.map((o) => {
+              const n = j.objets.filter((x) => x === o).length;
+              return {
+                label: `${OBJETS[o].nom}${n > 1 ? ` (×${n})` : ""}`,
+                value: o,
+                emoji: { name: etats[o].ok ? OBJETS[o].emoji : "🔒" },
+                description: (etats[o].ok ? OBJETS[o].effet : `Indisponible : ${RAISONS_OBJET[etats[o].raison]}`).slice(0, 100),
+              };
+            }),
+          },
+        ],
+      });
+    } else {
+      lignes.push("", "Ta réserve est vide : un nouvel objet t'attend demain.");
+    }
   }
   components.push(navRow("enqueter", enqueteActive(partie, discordId, config)));
   return { embeds: [{ title: "🎒 Objets", description: lignes.join("\n").slice(0, 4096), color: QEC_COLOR }], components };
@@ -769,15 +778,15 @@ async function executer(webhookUrl, discordId, username, action, vue, { rafraich
     await patchOriginal(webhookUrl, { content: refus[r.erreur] });
     return;
   }
-  await patchOriginal(webhookUrl, await vue(config, r.partie, discordId, { ...(r.resultat || {}), nouveau: r.nouveau }));
+  await patchOriginal(webhookUrl, await vue(config, r.partie, discordId, { ...(r.resultat || {}), nouveau: r.nouveau, debut: r.debut }));
   if (rafraichir || r.nouveau) await rafraichirMessage(state, await readPartie());
 }
 
 function texteAccusation(r, partie, cibleId, cardKey) {
   const nom = partie.joueurs[cibleId]?.username ?? "?";
   if (r.erreur) return avertissement(r.erreur);
-  if (!r.correct) return `❌ Raté : **${nom}** n'a pas la carte ${nomCarte(partie, cardKey)} (-1 pt).`;
-  return `🎯 **Bravo !** **${nom}** avait bien la carte ${nomCarte(partie, cardKey)} : **+${plural(r.gain, "pt")}**${r.prime ? ` (dont ${r.prime} de prime)` : ""}.`;
+  if (!r.correct) return `❌ Raté : **${nom}** n'a pas la carte ${nomCarte(partie, cardKey)}.`;
+  return `🎯 **Bravo !** **${nom}** avait bien la carte ${nomCarte(partie, cardKey)} : +1 point !`;
 }
 
 // ── Boutons du message officiel (nouvel éphémère) ────────────────────
@@ -866,6 +875,19 @@ export async function handleAccuser(webhookUrl, discordId, username, cardKey) {
   }
 }
 
+function texteObjet(r, partie) {
+  if (r.erreur) return avertissement(r.erreur);
+  if (r.objet === "loupe") return "🔍 Loupe : une question de plus aujourd'hui, à poser avec le bouton Enquêter ci-dessous.";
+  if (r.objet === "double") return "🎯 Double accusation : deux accusations aujourd'hui, avec le bouton Enquêter ci-dessous.";
+  if (r.objet === "desamorcage") {
+    const nom = partie.joueurs[r.cible].username;
+    return r.detruit ? `🧨 Désamorçage : tu détruis le ${objetLabel(r.detruit)} de **${nom}** !` : `🧨 Désamorçage : **${nom}** n'avait rien à désamorcer.`;
+  }
+  if (r.objet === "brouillard") return "🌫️ Brouillard : jusqu'à la clôture, les questions sur ta carte restent sans réponse et personne ne peut t'accuser.";
+  if (r.objet === "miroir") return "🪞 Miroir posé (secret) : la prochaine question sur toi te révélera la même caractéristique de ton chasseur.";
+  return `🎭 Déguisement : ta carte secrète est maintenant **${nomCarte(partie, r.carte)}**.${r.chasseurs ? ` ${r.chasseurs > 1 ? "Tes chasseurs perdent" : "Ton chasseur perd"} ses indices !` : ""}`;
+}
+
 // Bouton « Viser X » et menu « Ou choisis une autre cible ».
 export async function handleCible(webhookUrl, discordId, username, cibleId) {
   try {
@@ -875,9 +897,7 @@ export async function handleCible(webhookUrl, discordId, username, cibleId) {
       username,
       (partie, config) => {
         const r = choisirCible(partie, discordId, cibleId, { config });
-        if (r.erreur) return { entete: avertissement(r.erreur) };
-        const indice = r.depart ? ` Indice de départ : ${QUESTIONS[r.depart.q].nom.toLowerCase()} **${r.depart.valeur}**.` : "";
-        return { entete: `🎯 Nouvelle cible : **${partie.joueurs[cibleId].username}**.${indice}` };
+        return { entete: r.erreur ? avertissement(r.erreur) : texteNouvelleCible(partie, r) };
       },
       buildEnqueteView,
     );
@@ -886,31 +906,9 @@ export async function handleCible(webhookUrl, discordId, username, cibleId) {
   }
 }
 
-function texteObjet(r, partie) {
-  if (r.erreur) return avertissement(r.erreur);
-  if (r.objet === "double") return "🔁 Double enquête : une question de plus aujourd'hui, à poser avec le bouton Enquêter ci-dessous.";
-  if (r.objet === "vol") return `🕵️ Piste volée à **${partie.joueurs[r.rival].username}** : ${QUESTIONS[r.q].nom.toLowerCase()} **${r.valeur}**.`;
-  return `🔦 Projecteur braqué sur **${partie.joueurs[r.leader].username}** : ${QUESTIONS[r.q].nom.toLowerCase()} **${r.valeur}** (révélé à tous).`;
-}
-
-// Menu « Utiliser un objet » : Projecteur → choix de la question ; autres
-// objets utilisés tout de suite.
+// Menu « Utiliser un objet ».
 export async function handleObjet(webhookUrl, discordId, username, objet) {
   try {
-    if (objet === "projecteur") {
-      await executer(
-        webhookUrl,
-        discordId,
-        username,
-        (partie, config) => {
-          const etat = etatObjet(partie, discordId, "projecteur", { config });
-          return etat.ok ? { projecteur: true } : { entete: avertissement(etat.raison) };
-        },
-        buildObjetsView,
-        { rafraichir: false },
-      );
-      return;
-    }
     await executer(
       webhookUrl,
       discordId,
@@ -920,21 +918,6 @@ export async function handleObjet(webhookUrl, discordId, username, objet) {
     );
   } catch (err) {
     console.error("[QuiEstCe] Échec objet:", err.message);
-  }
-}
-
-// Menu « Caractéristique à révéler » (Projecteur).
-export async function handleProjecteur(webhookUrl, discordId, username, q) {
-  try {
-    await executer(
-      webhookUrl,
-      discordId,
-      username,
-      (partie, config) => ({ entete: texteObjet(utiliserObjet(partie, discordId, "projecteur", { config, q }), partie) }),
-      buildObjetsView,
-    );
-  } catch (err) {
-    console.error("[QuiEstCe] Échec projecteur:", err.message);
   }
 }
 
@@ -956,7 +939,7 @@ export async function handleJournal(webhookUrl, discordId) {
     }
     const jours = new Map();
     for (const e of partie.journal) {
-      if (e.p !== discordId && !e.ids?.includes(discordId) && e.k !== "projecteur") continue;
+      if (e.p !== discordId && !e.ids?.includes(discordId)) continue;
       if (!jours.has(e.j)) jours.set(e.j, []);
       jours.get(e.j).push(texteJournal(partie, e, discordId));
     }
