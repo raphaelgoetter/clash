@@ -8953,7 +8953,7 @@ export default async function handler(req, res) {
     (body.data.custom_id.startsWith("blackjackduel_piocher:") ||
       body.data.custom_id.startsWith("blackjackduel_arreter:"))
   ) {
-    const [action, param] = body.data.custom_id.split(":");
+    const [action] = body.data.custom_id.split(":");
     const { discordId } = extractBlackjackDuelMember(body);
     // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
     // déjà affiché, comme blackjack_piocher:/blackjack_arreter: existants.
@@ -10000,7 +10000,7 @@ export default async function handler(req, res) {
     typeof body.data?.custom_id === "string" &&
     /^quiestce_(question|accuser|objet|cible)/.test(body.data.custom_id)
   ) {
-    const [action] = body.data.custom_id.split(":");
+    const [action, param] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
