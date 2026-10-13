@@ -402,8 +402,19 @@ function buildVue(
     };
   }
   if (j.enAttente) {
+    // Gobelin explosif désamorcé : vue dédiée avec l'image de la carte
     return {
-      embeds: [embed],
+      embeds: [
+        {
+          title: carteLabel("bombe"),
+          description: [
+            ...(texte ? [texte, ""] : []),
+            "Ton Esprit de guérison te sauve : choisis où cacher le Gobelin explosif.",
+          ].join("\n"),
+          color: BANG_COLOR,
+          image: { url: mainImageUrl(["bombe"]) },
+        },
+      ],
       components: [
         {
           type: 1,
@@ -511,9 +522,7 @@ function actionPiocher(d, moi, config) {
   const suite =
     bang === "elimine"
       ? "💥 **BANG !** Tu as pioché un Gobelin explosif sans Esprit de guérison."
-      : bang === "sauve"
-        ? `${carteLabel("bombe")} désamorcé ! Ton Esprit de guérison te sauve : choisis où cacher le Gobelin explosif.`
-        : null;
+      : null; // Désamorcé : vue dédiée (buildVue, placement)
   return { texte: [avant, suite].filter(Boolean).join("\n") };
 }
 
