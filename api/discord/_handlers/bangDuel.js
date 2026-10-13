@@ -402,14 +402,19 @@ function buildVue(
     };
   }
   if (j.enAttente) {
-    // Gobelin explosif désamorcé : vue dédiée avec l'image de la carte
+    // Gobelin explosif désamorcé : image de la carte, pioche et pioches
+    // restantes d'un Gang (utiles pour choisir où le cacher)
     return {
       embeds: [
         {
           title: carteLabel("bombe"),
           description: [
-            ...(texte ? [texte, ""] : []),
             "Ton Esprit de guérison te sauve : choisis où cacher le Gobelin explosif.",
+            "",
+            ...(j.dette
+              ? [`⚠️ **Attention, il te reste ${plural(j.dette, "carte")} à piocher !**`]
+              : []),
+            `🃏 Pioche : **${plural(d.pioche.length, "carte")}**, dont **${bombes}** 💥`,
           ].join("\n"),
           color: BANG_COLOR,
           image: { url: mainImageUrl(["bombe"]) },
