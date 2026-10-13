@@ -308,6 +308,7 @@ function buildReglesEmbed(config) {
       "Sois **le dernier joueur en vie** !",
       "",
       `**⚡ Cartes** : ${config.cartes_par_jour} cartes jouées max par jour.`,
+      `**🎴 Paquet** : chaque joueur apporte 1 exemplaire de chaque carte d'action et ${config.paquet_par_joueur.gobelin} Gobelins.`,
       `**🔥 Bravoure** : chaque pioche (${config.pioches_par_jour} max par jour) et chaque attaque réussie rapporte ${plural(config.bravoure.pioche, "point")}.`,
       `**⏰ Chaque jour**, pioche au moins une fois, sinon, la clôture te fait piocher ${config.pioches_auto} cartes (sans Bravoure).`,
       "",
