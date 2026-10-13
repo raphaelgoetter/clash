@@ -873,7 +873,7 @@ function buildPiocheView(
               "Tu as pioché un Gobelin explosif sans Esprit de guérison : tu exploses ! Fin de partie pour toi.",
             ].join("\n"),
             color: BANG_COLOR,
-            thumbnail: { url: mainImageUrl(["bombe"]) },
+            image: { url: mainImageUrl(["bombe"]) },
           },
         ],
         components: [],

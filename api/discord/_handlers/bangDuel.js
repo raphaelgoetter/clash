@@ -306,6 +306,10 @@ function vueFin(d, texte, { moi = "joueur", A = BOT, raison = null } = {}) {
         title: `💣 Bang! Duel · ${titre}`,
         description: lignes.join("\n").slice(0, 4096) || " ",
         color: BANG_COLOR,
+        // Fin par explosion : image du Gobelin explosif
+        ...(d.gagnant && raison !== "delai"
+          ? { image: { url: mainImageUrl(["bombe"]) } }
+          : {}),
       },
     ],
     components: boutonsFin(),
