@@ -32,7 +32,8 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   console.log(`Jour ${state.jour}/${config.duree_jours}\n`);
 
   const hands = await listHands(state.jour);
-  const entries = Object.entries(hands).sort(([, a], [, b]) => (a.status === "termine") - (b.status === "termine"));
+  // Par points décroissants ; mains pas encore figées (en cours, choix) à la fin.
+  const entries = Object.entries(hands).sort(([, a], [, b]) => (b.points ?? -1) - (a.points ?? -1));
   if (!entries.length) {
     console.log("Personne n'a encore joué aujourd'hui.\n");
   } else {
