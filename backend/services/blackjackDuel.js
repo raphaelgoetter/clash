@@ -22,9 +22,9 @@
 //   comme le jeu spécial) ;
 // - pas de nettoyage automatique (retiré le 12/09, retour utilisateur : "je
 //   ne souhaite absolument pas de cron/action pour cela") — une partie
-//   bloquée >2h (resetIfStale) ou dans n'importe quel état se nettoie
+//   bloquée >1h (resetIfStale) ou dans n'importe quel état se nettoie
 //   désormais À LA MAIN via `npm run blackjackduel:reset` (inconditionnel)
-//   ou `npm run blackjackduel:watchdog` (respecte le seuil de 2h) ; voir
+//   ou `npm run blackjackduel:watchdog` (respecte le seuil de 1h) ; voir
 //   `npm run blackjackduel:status` pour décider.
 // ============================================================
 
@@ -141,7 +141,7 @@ const DEALER_MIN = 16;
 const DEALER_MAX = 21;
 
 // ── Délai d'inactivité avant nettoyage automatique (watchdog) ─────
-const STALE_HOURS = 2;
+const STALE_HOURS = 1;
 
 // ── État de la partie ──────────────────────────────────────────────
 
@@ -462,7 +462,7 @@ async function updateHighScore(totalManches, ranking) {
 // joueur, ou partie jamais reprise) est nettoyée après STALE_HOURS. Un seul
 // horodatage (lastActivityAt, mis à jour à chaque action) suffit à couvrir
 // les deux cas demandés ("partie non finie" et "joueur inactif", seuil
-// ramené de 24h à 2h le 26/09) : tant qu'un joueur en attente n'agit
+// ramené de 24h à 2h le 26/09, puis 1h le 13/10) : tant qu'un joueur en attente n'agit
 // pas, la manche ne peut pas se résoudre, donc aucune autre activité n'a lieu non plus.
 
 export async function resetIfStale(now = Date.now()) {

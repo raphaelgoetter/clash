@@ -27,7 +27,7 @@ import { adversaire, creerDuel } from "./bangDuelRules.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "bang", "duel.json");
 
-export const INACTIVITE_SECONDES = 2 * 3600;
+export const INACTIVITE_SECONDES = 3600;
 
 const cleDuel = (discordId) => `bangduel:${discordId}`;
 const cleVerrou = (discordId) => `bangduel:lock:${discordId}`;

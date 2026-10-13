@@ -488,7 +488,7 @@ function buildReglesEmbed(config) {
       `${carteLabel("tornade")} : mélange la pioche.`,
       `${carteLabel("gobelin")} : carte purement décorative.`,
       "",
-      "⏰ Sans action pendant 2 h, la partie est abandonnée.",
+      "⏰ Sans action pendant 1 h, la partie est abandonnée.",
     ].join("\n"),
     color: BANG_COLOR,
   };
@@ -616,7 +616,7 @@ async function executerSolo(webhookUrl, discordId, action, valeur, { channelId, 
       embeds: [
         {
           description:
-            "⏰ Aucune partie en cours (abandonnée après 2 h sans action). Relance `/bang` !",
+            "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/bang` !",
           color: BANG_COLOR,
         },
       ],

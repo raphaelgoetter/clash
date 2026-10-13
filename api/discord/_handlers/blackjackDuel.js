@@ -386,7 +386,7 @@ export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, tot
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie de Blackjack Duel est déjà en cours dans <#${result.state.channelId}> — attends qu'elle se termine (ou qu'elle expire après 2h d'inactivité).`,
+        content: `Une partie de Blackjack Duel est déjà en cours dans <#${result.state.channelId}> — attends qu'elle se termine (ou qu'elle expire après 1h d'inactivité).`,
         embeds: [],
         components: [],
       });
@@ -714,7 +714,7 @@ function buildReglesEmbed() {
       "",
       "**Résultat d'une manche :** le vainqueur gagne **2 points**. Égalité (avec le Croupier en solo, ou entre joueurs à 2-3) = **1 point** quand même. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
       "",
-      "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 2h peut être remplacée en relançant /blackjack.",
+      "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 1h peut être remplacée en relançant /blackjack.",
     ].join("\n"),
     color: BLACKJACKDUEL_COLOR,
   };

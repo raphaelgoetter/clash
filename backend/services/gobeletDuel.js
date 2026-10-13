@@ -23,10 +23,10 @@
 //   comme le jeu spécial) ;
 // - pas de nettoyage automatique (même retour utilisateur que pour
 //   Blackjack Duel : "je ne souhaite absolument pas de cron/action pour
-//   cela") — une partie bloquée >2h (resetIfStale) ou dans n'importe quel
+//   cela") — une partie bloquée >1h (resetIfStale) ou dans n'importe quel
 //   état se nettoie désormais À LA MAIN via `npm run gobeletduel:reset`
 //   (inconditionnel) ou `npm run gobeletduel:watchdog` (respecte le seuil
-//   de 2h) ; voir `npm run gobeletduel:status` pour décider.
+//   de 1h) ; voir `npm run gobeletduel:status` pour décider.
 // ============================================================
 
 import { Redis } from "@upstash/redis";
@@ -138,7 +138,7 @@ export async function readHandWebhooks(manche) {
 }
 
 // ── Délai d'inactivité avant nettoyage automatique (watchdog) ─────
-const STALE_HOURS = 2;
+const STALE_HOURS = 1;
 
 // ── État de la partie ──────────────────────────────────────────────
 

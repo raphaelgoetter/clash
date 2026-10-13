@@ -351,7 +351,7 @@ async function buildExpiredEmbed(state, ranking) {
     })),
   );
   const lines = [
-    `⌛ Partie expirée après 2h d'inactivité (manche ${state.manche}/${state.totalManches}).`,
+    `⌛ Partie expirée après 1h d'inactivité (manche ${state.manche}/${state.totalManches}).`,
     "",
     "**Classement final :**",
     ...(resolvedRanking.length
@@ -369,7 +369,7 @@ async function buildExpiredEmbed(state, ranking) {
 }
 
 // Clôture paresseuse, sans cron : à chaque interaction, une partie inactive
-// depuis 2h est close et son récapitulatif reposté en "Partie terminée".
+// depuis 1h est close et son récapitulatif reposté en "Partie terminée".
 // Renvoie true si la partie vient d'expirer.
 async function closeIfStale() {
   const result = await expireIfStale();
@@ -382,7 +382,7 @@ async function closeIfStale() {
 async function replyIfExpired(webhookUrl) {
   if (!(await closeIfStale())) return false;
   await patchOriginal(webhookUrl, {
-    content: "Cette partie du Jeu du Gobelet Duel a expiré après 2h d'inactivité.",
+    content: "Cette partie du Jeu du Gobelet Duel a expiré après 1h d'inactivité.",
     embeds: [],
     components: [],
   });
@@ -404,7 +404,7 @@ export async function handleGobeletCommand(
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie du Jeu du Gobelet Duel est déjà en cours dans <#${result.state.channelId}> — attends qu'elle se termine (ou qu'elle expire après 2h d'inactivité).`,
+        content: `Une partie du Jeu du Gobelet Duel est déjà en cours dans <#${result.state.channelId}> — attends qu'elle se termine (ou qu'elle expire après 1h d'inactivité).`,
         embeds: [],
         components: [],
       });
@@ -906,7 +906,7 @@ function buildReglesEmbed() {
       "**Barème :**",
       ...formatBaremeLines(),
       "",
-      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini sa main (combinaison choisie). Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 2h est close automatiquement.",
+      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini sa main (combinaison choisie). Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 1h est close automatiquement.",
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };
