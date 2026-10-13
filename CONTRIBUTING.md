@@ -1933,6 +1933,10 @@ Titre `🎲 Jeu du Gobelet — Jour X/7`. Dés affichés en titre Markdown avec 
 
 Composants : `[🎲 Jouer]` (vert), `[📜 Journal]`, `[📖 Règles]`.
 
+### Mentions spéciales (Jeu du Gobelet)
+
+Comme Mario Clash : la liste `trophees` de `data/gobelet/gobelet.json` (`{ emoji, label, username }`, saisie à la main, ex. « Trophée du missclick ») s'affiche en « 🎖️ Mentions spéciales » dans la révélation finale. À vider pour la partie suivante.
+
 ### Manches (comparaison entre parties) — Jeu du Gobelet
 
 Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le classement final de chaque manche terminée (`archiveManche()`), jamais nettoyé sauf `--manches`. Archivage uniquement sur une vraie publication publique (`isPublic: true`).

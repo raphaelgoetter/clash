@@ -246,7 +246,19 @@ function formatMancheHistoryLine(record) {
   return `Manche ${record.manche} : 🏆 ${winners} — ${record.maxPoints} pts`;
 }
 
-async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
+// Trophées honorifiques ponctuels (ex. « Trophée du missclick »), saisis à
+// la main dans gobelet.json pour une partie donnée : à vider ensuite. Même
+// principe que Mario Clash.
+function buildTropheesSection(trophees = []) {
+  if (!trophees.length) return [];
+  return [
+    "",
+    "**🎖️ Mentions spéciales**",
+    ...trophees.map((t) => `${t.emoji} **${t.label}** : ${t.username}`),
+  ];
+}
+
+async function buildRevealEmbed(lastResults, ranking, manchesHistory, config) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
       ...r,
@@ -267,6 +279,7 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory) {
               `${rangExAequo(list, i)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
           )
       : ["Personne n'a marqué de point cette manche."]),
+    ...buildTropheesSection(config?.trophees),
   ];
 
   if (manchesHistory.length) {
@@ -454,7 +467,7 @@ export async function postGobelet(
           (pointsActuels[r.discordId] || 0) + r.points;
       }
       const ranking = buildRanking(pointsActuels);
-      const embed = await buildRevealEmbed(results, ranking, []);
+      const embed = await buildRevealEmbed(results, ranking, [], config);
       return { dryRun: true, final: true, embed };
     }
     const embed = await buildDayEmbed(jourSuivant, config, {
@@ -509,7 +522,7 @@ export async function postGobelet(
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = await buildRevealEmbed(results, ranking, manches);
+    const embed = await buildRevealEmbed(results, ranking, manches, config);
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       embed,
