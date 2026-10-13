@@ -786,8 +786,9 @@ function recit(d, noms) {
       else if (e.id === fin.id || e.k === "renvoi") continue;
       break;
     }
+    // Explosion sans piège ni Gang : déjà dite par la ligne de résultat
     const cause = !piege
-      ? `💥 ${P.Sujet} pioche un Gobelin explosif sans Esprit de guérison pour se sauver`
+      ? gang && `💥 ${P.Sujet} pioche un Gobelin explosif`
       : piege.par === fin.id
         ? `💥 Piège retourné : ${P.Sujet} tombe sur le Gobelin explosif caché par ses soins au tour ${piege.tour}`
         : `💥 ${P.Sujet} pioche le Gobelin explosif ${que(W)} avait caché ${piege.index ? `en ${piege.index + 1}e place` : "tout en haut de la pioche"} au tour ${piege.tour}`;
@@ -797,7 +798,7 @@ function recit(d, noms) {
         : gang === "renvoi"
           ? `, à cause de son propre Gang de gobelins renvoyé par le Moine ${W.de}`
           : "";
-    lignes.push(`${cause}${suite}.`);
+    if (cause) lignes.push(`${cause}${suite}.`);
     // Le tournant : l'Esprit de guérison du perdant volé
     const vol = j.findLast(
       (e) =>
@@ -864,8 +865,8 @@ function messageFinalSolo(d, pseudo) {
   const resultat = !d.gagnant
     ? `🤝 Match nul entre ${pseudo} et Kévina : personne n'a explosé.`
     : d.gagnant === "joueur"
-      ? `🏆 ${pseudo} bat Kévina : Kévina a explosé au tour ${d.tour} !`
-      : `🤖 Kévina bat ${pseudo}, qui a explosé au tour ${d.tour}.`;
+      ? `🏆 ${pseudo} bat Kévina : 💥 Kévina a explosé au tour ${d.tour} !`
+      : `🤖 Kévina bat ${pseudo} : 💥 ${pseudo} a explosé au tour ${d.tour}.`;
   return {
     embeds: [
       {
@@ -892,7 +893,7 @@ function messageFinal(partie) {
     ? `🤝 Match nul entre ${nom(a)} et ${nom(b)} : personne n'a explosé.`
     : partie.raisonFin === "delai"
       ? `🏆 ${gagnant} remporte le duel : ${perdant} n'a pas joué à temps.`
-      : `🏆 ${gagnant} remporte le duel : ${perdant} a explosé au tour ${d.tour} !`;
+      : `🏆 ${gagnant} remporte le duel : 💥 ${perdant} a explosé au tour ${d.tour} !`;
   const noms = { joueur: nomsJoueur(nom(a)), bot: nomsJoueur(nom(b)) };
   return {
     embeds: [
