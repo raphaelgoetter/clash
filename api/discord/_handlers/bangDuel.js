@@ -626,7 +626,7 @@ async function executerSolo(webhookUrl, discordId, action, valeur, { channelId, 
     }
     return r;
   });
-  // Partie terminée : résultat et déroulé publiés dans le salon
+  // Partie terminée : résultat et récit publiés dans le salon
   if (duel && resultat.vientDeFinir)
     await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
   if (!duel) {
@@ -743,50 +743,101 @@ function messagePublic(partie, config) {
   };
 }
 
-// Déroulé résumé de la partie, un tour par ligne (temps forts seulement :
-// pioches ordinaires et Sarbacanes omises). Partie finie : l'emplacement des
-// Gobelins explosifs cachés est révélé.
+// Récit de fin de partie : 3 moments forts au plus, en phrases (coup
+// fatal, Esprit de guérison volé, explosions évitées, Sarbacane), ou un
+// bilan pour un match nul.
 // `noms` : siège → désignations (BOT ou nomsJoueur()), sans mention.
-function deroule(d, noms) {
-  const evenement = (e) => {
-    const N = noms[e.id];
-    const S = N.Sujet;
-    const V = noms[adversaire(e.id)];
-    switch (e.k) {
-      case "voleuse":
-        return `🦹 ${S} vole ${carteLabel(e.carte)} ${V.a}`;
-      case "voleuseVide":
-        return `🦹 ${S} joue une Voleuse, rien à prendre`;
-      case "gang":
-        return `👊 ${S} lance un Gang de gobelins`;
-      case "renvoi":
-        return e.carte === "gang"
-          ? `🙏 le Moine ${N.de} renvoie le Gang`
-          : `🙏 le Moine ${N.de} renvoie la Voleuse${e.vole ? ` (${S} prend ${carteLabel(e.vole)})` : ""}`;
-      case "fut":
-        return `🛢️ ${S} esquive avec un Fût`;
-      case "tornade":
-        return `🌪️ ${S} mélange la pioche`;
-      case "sauve":
-        return `💚 ${S} désamorce un Gobelin explosif grâce à son Esprit de guérison`;
-      case "cache":
-        return e.index == null
-          ? `🤫 ${S} remet le Gobelin explosif dans la pioche (${POSITIONS[e.position].toLowerCase()})`
-          : `🤫 ${S} remet le Gobelin explosif en ${e.index ? `${e.index + 1}e` : "1re"} place de la pioche`;
-      case "explose":
-        return `💥 ${S} n'a plus d'Esprit de guérison pour le sauver et explose`;
-      default:
-        return null;
+const que = (N) => (/^[aeiouyhàâéèêëîïôû]/i.test(N.Sujet) ? `qu'${N.Sujet}` : `que ${N.Sujet}`);
+
+function listeTours(tours) {
+  const t = tours.map(String);
+  return t.length > 1 ? `tours ${t.slice(0, -1).join(", ")} et ${t.at(-1)}` : `tour ${t[0]}`;
+}
+
+function recit(d, noms) {
+  const j = d.journal;
+  // Gobelins explosifs cachés dont on suit l'emplacement : { par, index, tour }
+  // (inconnus après une Tornade)
+  let suivis = [];
+  let piege = null;
+  for (const e of j) {
+    if (e.k === "tornade") suivis = [];
+    else if (e.k === "pioche") suivis = suivis.map((b) => ({ ...b, index: b.index - 1 }));
+    else if (e.k === "sauve" || e.k === "explose") {
+      if (e.k === "explose") piege = suivis.find((b) => b.index === 0) ?? null;
+      suivis = suivis.filter((b) => b.index !== 0).map((b) => ({ ...b, index: b.index - 1 }));
+    } else if (e.k === "cache") {
+      suivis = suivis.map((b) => (b.index >= e.index ? { ...b, index: b.index + 1 } : b));
+      suivis.push({ par: e.id, index: e.index, tour: e.tour });
     }
-  };
-  const parTour = new Map();
-  for (const e of d.journal) {
-    const texte = evenement(e);
-    if (!texte) continue;
-    if (!parTour.has(e.tour)) parTour.set(e.tour, []);
-    parTour.get(e.tour).push(texte);
   }
-  return [...parTour].map(([tour, evts]) => `**Tour ${tour}** : ${evts.join(" · ")}`);
+
+  const fin = j.findLast((e) => e.k === "explose");
+  const lignes = [];
+  if (fin) {
+    const P = noms[fin.id];
+    const W = noms[adversaire(fin.id)];
+    // Pioche forcée par un Gang (celui du vainqueur, ou le sien renvoyé)
+    let gang = null;
+    for (let i = j.indexOf(fin) - 1; i >= 0; i--) {
+      const e = j[i];
+      if (e.k === "renvoi" && e.carte === "gang" && e.id !== fin.id) gang = "renvoi";
+      else if (e.k === "gang" && e.id !== fin.id) gang = "gang";
+      else if (e.id === fin.id || e.k === "renvoi") continue;
+      break;
+    }
+    const cause = !piege
+      ? `💥 ${P.Sujet} pioche un Gobelin explosif sans Esprit de guérison pour se sauver`
+      : piege.par === fin.id
+        ? `💥 Piège retourné : ${P.Sujet} tombe sur le Gobelin explosif caché par ses soins au tour ${piege.tour}`
+        : `💥 ${P.Sujet} pioche le Gobelin explosif ${que(W)} avait caché ${piege.index ? `en ${piege.index + 1}e place` : "tout en haut de la pioche"} au tour ${piege.tour}`;
+    const suite =
+      gang === "gang"
+        ? `, à cause du Gang de gobelins ${W.de}`
+        : gang === "renvoi"
+          ? `, à cause de son propre Gang de gobelins renvoyé par le Moine ${W.de}`
+          : "";
+    lignes.push(`${cause}${suite}.`);
+    // Le tournant : l'Esprit de guérison du perdant volé
+    const vol = j.findLast(
+      (e) =>
+        e.id !== fin.id &&
+        ((e.k === "voleuse" && e.carte === "esprit") || (e.k === "renvoi" && e.vole === "esprit")),
+    );
+    if (vol)
+      lignes.push(
+        vol.k === "voleuse"
+          ? `🦹 Le tournant : au tour ${vol.tour}, la Voleuse ${W.de} a pris l'Esprit de guérison ${P.de}.`
+          : `🙏 Le tournant : au tour ${vol.tour}, le Moine ${W.de} a renvoyé la Voleuse ${P.de} et lui a pris son Esprit de guérison.`,
+      );
+  } else if (!d.gagnant) {
+    const sauves = j.filter((e) => e.k === "sauve").length;
+    const gangs = j.filter((e) => e.k === "gang").length;
+    lignes.push(
+      `🤝 Personne n'a craqué : ${sauves ? `${plural(sauves, "explosion")} évitée${sauves > 1 ? "s" : ""}` : "aucun Gobelin explosif pioché"}, ${gangs ? `${plural(gangs, "Gang")} de gobelins envoyé${gangs > 1 ? "s" : ""}` : "aucun Gang de gobelins"}.`,
+    );
+  }
+
+  // Explosions évitées, le perdant d'abord
+  const ordre = fin ? [fin.id, adversaire(fin.id)] : ["joueur", "bot"];
+  for (const id of ordre) {
+    const tours = j.filter((e) => e.k === "sauve" && e.id === id).map((e) => e.tour);
+    if (!tours.length || (!fin && !d.gagnant)) continue;
+    lignes.push(
+      `💚 ${noms[id].Sujet} ${fin?.id === id ? "avait survécu" : "a survécu"} à ${plural(tours.length, "explosion")} grâce à ${tours.length > 1 ? "ses Esprits" : "son Esprit"} de guérison (${listeTours(tours)}).`,
+    );
+  }
+  // Gobelin explosif repéré à la Sarbacane (le plus récent)
+  const vu = j.findLast((e) => e.k === "sarbacane" && e.vu);
+  if (vu) {
+    const evite = j.some(
+      (e) => e.tour === vu.tour && e.id === vu.id && j.indexOf(e) > j.indexOf(vu) && ["fut", "gang", "tornade"].includes(e.k),
+    );
+    lignes.push(
+      `🎯 Au tour ${vu.tour}, ${noms[vu.id].Sujet} repère un Gobelin explosif avec son Gobelin à sarbacane${evite ? " et l'esquive" : ""}.`,
+    );
+  }
+  return lignes.slice(0, 3);
 }
 
 // Fin de partie : les 3 prochaines cartes de la pioche.
@@ -799,14 +850,14 @@ function lignePioche(pioche) {
     : `🃏 La prochaine carte dans la pioche : ${liste}`;
 }
 
-function descriptionAvecDeroule(resultat, d, noms) {
-  const lignes = deroule(d, noms);
-  const texte = [resultat, "", lignePioche(d.pioche), ...(lignes.length ? ["", "**Déroulé**", ...lignes] : [])].join("\n");
+function descriptionAvecRecit(resultat, d, noms) {
+  const lignes = recit(d, noms);
+  const texte = [resultat, ...(lignes.length ? ["", ...lignes] : []), "", lignePioche(d.pioche)].join("\n");
   return texte.length > 4096 ? `${texte.slice(0, 4095)}…` : texte;
 }
 
 // Fin d'une partie contre Kévina : message public (non éphémère) dans le
-// salon, avec le déroulé.
+// salon, avec le récit des moments forts.
 // Pseudos en clair, jamais de mention (pas de ping).
 function messageFinalSolo(d, pseudo) {
   const noms = { joueur: nomsJoueur(pseudo), bot: BOT };
@@ -819,10 +870,11 @@ function messageFinalSolo(d, pseudo) {
     embeds: [
       {
         title: "💣 Bang! Duel · contre Kévina",
-        description: descriptionAvecDeroule(resultat, d, noms),
+        description: descriptionAvecRecit(resultat, d, noms),
         color: BANG_COLOR,
       },
     ],
+    components: boutonsFin(),
     allowed_mentions: { parse: [] },
   };
 }
@@ -846,7 +898,7 @@ function messageFinal(partie) {
     embeds: [
       {
         title: "💣 Bang! Duel · 1v1",
-        description: descriptionAvecDeroule(description, d, noms),
+        description: descriptionAvecRecit(description, d, noms),
         color: BANG_COLOR,
       },
     ],

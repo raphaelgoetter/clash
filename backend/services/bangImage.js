@@ -177,7 +177,7 @@ function lignesPseudo(nom, max) {
 
 // Pile de dos de cartes, centrée en (cx, bas).
 function pileSvg(cx, bas, nbCartes) {
-  const w = 76;
+  const w = 104;
   const h = Math.round(w * 1.3);
   const couches = nbCartes ? Math.min(10, Math.max(1, Math.ceil(nbCartes / 5))) : 0;
   const parts = [];
@@ -191,7 +191,7 @@ function pileSvg(cx, bas, nbCartes) {
     parts.push(`<rect x="${cx - w / 2}" y="${bas - h}" width="${w}" height="${h}" rx="12" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="10 8" opacity="0.5"/>`);
   } else {
     const top = bas - h - (couches - 1) * 4;
-    parts.push(couronneSvg(cx + (couches - 1) * 2, top + h / 2, 34, true));
+    parts.push(couronneSvg(cx + (couches - 1) * 2, top + h / 2, 46, true));
   }
   return { svg: parts.join("\n") };
 }
@@ -207,32 +207,33 @@ async function buildTableSvg(etat) {
   parts.push(texte(MAT_WIDTH / 2, ZONE.y + 84, `${vivants} joueur${vivants > 1 ? "s" : ""} en vie sur ${etat.rois.length}`, { size: 20 }));
 
   // Pioche
-  const piocheX = ZONE.x + 95;
-  const pile = pileSvg(piocheX, ZONE.y + 300, etat.pioche);
+  const piocheX = ZONE.x + 115;
+  const pile = pileSvg(piocheX, ZONE.y + 265, etat.pioche);
   parts.push(pile.svg);
-  parts.push(texte(piocheX, ZONE.y + 330, `${etat.pioche} carte${etat.pioche > 1 ? "s" : ""}`, { size: 20 }));
+  parts.push(texte(piocheX, ZONE.y + 302, `${etat.pioche} carte${etat.pioche > 1 ? "s" : ""}`, { size: 30 }));
   // Gobelins explosifs puis Esprits de guérison restant dans la pioche
   const compteurs = [
     { carte: { key: CARTES.bombe.cardKey }, n: etat.bombes, fill: "#ff8a6a" },
     { carte: { key: CARTES.esprit.cardKey }, n: etat.esprits, fill: "#7be08a" },
   ];
   const urls = await loadDataUrls(compteurs.map((c) => c.carte));
-  const bw = 38;
+  const bw = 54;
   compteurs.forEach(({ carte, n, fill }, i) => {
-    const y = ZONE.y + 344 + i * (bw * RATIO + 8);
-    parts.push(cardSvg(carte, urls.get(carte.key), piocheX - bw - 4, y, { w: bw, drop: 0 }));
-    parts.push(texte(piocheX + 2, y + (bw * RATIO) / 2 + 8, `× ${n}`, { size: 22, fill, anchor: "start" }));
+    const y = ZONE.y + 320 + i * (bw * RATIO + 8);
+    parts.push(cardSvg(carte, urls.get(carte.key), piocheX - bw - 6, y, { w: bw, drop: 0 }));
+    parts.push(texte(piocheX + 4, y + (bw * RATIO) / 2 + 11, `× ${n}`, { size: 32, fill, anchor: "start" }));
   });
 
   // Rois
-  const zone = { x: ZONE.x + 200, y: ZONE.y + 110, w: ZONE.w - 210, h: ZONE.h - 125 };
+  const zone = { x: ZONE.x + 250, y: ZONE.y + 110, w: ZONE.w - 260, h: ZONE.h - 125 };
   const n = etat.rois.length;
   if (!n) {
     parts.push(texte(zone.x + zone.w / 2, zone.y + zone.h / 2, "En attente des premiers joueurs…", { size: 26, opacity: 0.85 }));
   } else {
     const cols = Math.min(6, Math.max(2, Math.ceil(Math.sqrt(n * 1.6))));
     const rows = Math.ceil(n / cols);
-    const cw = zone.w / cols;
+    // Colonnes bornées : joueurs regroupés plutôt qu'étalés sur le tapis
+    const cw = Math.min(150, zone.w / cols);
     const ch = Math.min(120, zone.h / rows);
     const taille = Math.min(68, ch * 0.5);
     const avatars = await Promise.all(Array.from({ length: NB_AVATARS }, (_, i) => avatarDataUrl(i)));

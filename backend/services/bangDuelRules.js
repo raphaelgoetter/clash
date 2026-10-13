@@ -146,7 +146,7 @@ export function placer(d, id, position, { config, rng = Math.random, eviterSomme
   d.pioche.splice(index, 0, "bombe");
   j.enAttente = false;
   d.soupcon[adversaire(id)] = true;
-  // index : emplacement réel (révélé seulement dans le déroulé de fin)
+  // index : emplacement réel (suivi par le récit de fin de partie)
   noter(d, id, "cache", { position, index });
   // Dernière pioche du tour : la main passe
   const finTour = !j.dette;
@@ -190,7 +190,8 @@ export function jouer(d, id, carte, { config, rng = Math.random }) {
   const adv = d.joueurs[adversaire(id)];
 
   if (carte === "sarbacane") {
-    noter(d, id, "sarbacane");
+    // vu : Gobelin explosif parmi les 3 cartes (récit de fin de partie)
+    noter(d, id, "sarbacane", { vu: d.pioche.slice(0, 3).includes("bombe") });
     return { carte, revelation: d.pioche.slice(0, 3) };
   }
   if (carte === "moine") {
