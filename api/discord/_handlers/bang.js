@@ -217,7 +217,7 @@ function buildTableEmbed(jour, config, partie) {
       ...cruciaux.map((e) => texteJournal(partie, e)),
     );
   return {
-    title: `🔫 Bang! — Jour ${jour}/${config.duree_jours}`,
+    title: `💣 Bang! — Jour ${jour}/${config.duree_jours}`,
     description: lignes.join("\n").slice(-4096),
     color: BANG_COLOR,
     image: { url: tableImageUrl(jour, config, partie) },
@@ -236,9 +236,12 @@ function formatMancheLine(record, isCurrent) {
 // classement() (Bravoure, Esprits de guérison, cartes en main, arrivée).
 function critereVictoire(a, b) {
   const esprits = (j) => j.main.filter((c) => c === "esprit").length;
-  if ((a.bravoure ?? 0) !== (b.bravoure ?? 0)) return "avec le plus de Bravoure";
-  if (esprits(a) !== esprits(b)) return "à Bravoure égale, avec le plus d'Esprits de guérison";
-  if (a.main.length !== b.main.length) return "à Bravoure égale, avec le plus de cartes en main";
+  if ((a.bravoure ?? 0) !== (b.bravoure ?? 0))
+    return "avec le plus de Bravoure";
+  if (esprits(a) !== esprits(b))
+    return "à Bravoure égale, avec le plus d'Esprits de guérison";
+  if (a.main.length !== b.main.length)
+    return "à Bravoure égale, avec le plus de cartes en main";
   return "à égalité parfaite, grâce à son inscription plus précoce";
 }
 
@@ -246,7 +249,10 @@ function critereVictoire(a, b) {
 function lignePioche(pioche) {
   if (!pioche?.length) return "🃏 La pioche était vide.";
   const cartes = pioche.slice(0, 3).map(carteLabel);
-  const liste = cartes.length > 1 ? `${cartes.slice(0, -1).join(", ")} et ${cartes.at(-1)}` : cartes[0];
+  const liste =
+    cartes.length > 1
+      ? `${cartes.slice(0, -1).join(", ")} et ${cartes.at(-1)}`
+      : cartes[0];
   return cartes.length > 1
     ? `🃏 Les ${cartes.length} prochaines cartes dans la pioche : ${liste}`
     : `🃏 La prochaine carte dans la pioche : ${liste}`;

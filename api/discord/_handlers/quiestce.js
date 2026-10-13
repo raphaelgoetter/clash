@@ -97,11 +97,6 @@ function nbCartes(n) {
   return `${n} carte${n > 1 ? "s" : ""} découverte${n > 1 ? "s" : ""}`;
 }
 
-// « 2 pts (3 cartes découvertes, 1× démasqué) »
-function bilanJoueur(r) {
-  return `${plural(r.score, "pt")} (${nbCartes(r.decouvertes)}, ${r.nbDemasque}× démasqué)`;
-}
-
 // ── Embeds publics ───────────────────────────────────────────────────
 
 function addDays(date, days) {
@@ -281,7 +276,7 @@ async function buildFinEmbed(ranking, partie, manches, currentManche) {
         .slice(0, 15)
         .map(
           (r, i) =>
-            `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${bilanJoueur(r)}`,
+            `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${plural(r.score, "pt")}`,
         ),
       "",
       "**🃏 Les cartes secrètes**",
