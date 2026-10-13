@@ -497,7 +497,7 @@ function buildReglesEmbed(config) {
       "",
       `**🔁 Tour** : chacun son tour. ${config.tours_max} tours au plus : si personne n'a explosé, match nul.`,
       `**🃏 À ton tour** : joue d'abord jusqu'à ${config.cartes_par_tour} cartes (ou aucune), puis **Piocher** : une seule carte, et ton tour se termine.`,
-      `**🎴 Départ** : chacun reçoit un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}. La pioche contient ${config.bombes} Gobelin${config.bombes > 1 ? "s explosifs" : " explosif"} et ${config.esprits_pioche} Esprit${config.esprits_pioche > 1 ? "s" : ""} de guérison.`,
+      `**🎴 Départ** : chacun reçoit un ${carteLabel("esprit")} et ${plural(config.main_depart, "carte")}. La pioche, **commune aux deux joueurs**, contient ${config.bombes} Gobelin${config.bombes > 1 ? "s explosifs" : " explosif"} et ${config.esprits_pioche} Esprit${config.esprits_pioche > 1 ? "s" : ""} de guérison.`,
       "",
       `${carteLabel("bombe")} : si tu le pioches, ton Esprit de guérison est sacrifié et tu le caches où tu veux dans la pioche. Sans Esprit, tu exploses.`,
       `${carteLabel("sarbacane")} : regarde les 3 premières cartes de la pioche.`,
