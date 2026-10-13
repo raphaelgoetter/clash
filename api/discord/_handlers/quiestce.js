@@ -272,17 +272,11 @@ async function buildFinEmbed(ranking, partie, manches, currentManche) {
       titre,
       "",
       "**Classement final**",
-      ...ranking
-        .slice(0, 15)
-        .map(
-          (r, i) =>
-            `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${plural(r.score, "pt")}`,
-        ),
-      "",
-      "**🃏 Les cartes secrètes**",
-      ranking
-        .map((r) => `${r.username} : ${nomCarte(partie, r.carte)}`)
-        .join(" · "),
+      // Tous les joueurs (18 au plus) : chacun voit ses cartes révélées
+      ...ranking.map(
+        (r, i) =>
+          `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${plural(r.score, "pt")} (${r.cartes.map((k) => nomCarte(partie, k)).join(", ")})`,
+      ),
       ...(manches.length
         ? [
             "",
@@ -296,7 +290,7 @@ async function buildFinEmbed(ranking, partie, manches, currentManche) {
       .join("\n")
       .slice(0, 4096),
     color: 0xf1c40f,
-    image: partie.grille.length ? { url: await grilleUrl(partie) } : undefined,
+    image: { url: illustrationUrl() },
   };
 }
 
@@ -320,10 +314,10 @@ function buildReglesEmbed(config) {
       `- 🎁 **1 objet** gratuit tiré au hasard (${config.inventaire_max} en réserve au plus, 1 utilisé par jour).`,
       "",
       "**🏆 Points**",
-      "- Accusation juste : **+1 point**, puis tu choisis ta prochaine cible.",
+      `- Accusation juste : **+${config.points_carte} points**, puis tu choisis ta prochaine cible.`,
       `- Efficacité : **+${config.bonus_efficacite.join("/+")}** si tu démasques avec ${config.bonus_efficacite.map((_, i) => i + 1).join("/")} indices (indice de départ compris).`,
-      `- Survie : **+${config.bonus_survie_jour}** par jour sans être démasqué.`,
-      "- Être démasqué : **-1 point**.",
+      `- Survie : **+${config.bonus_survie_jour}** par jour joué sans être démasqué.`,
+      `- Être démasqué : **-${config.malus_demasque} points**.`,
       "- Accusation ratée : la carte est barrée de ta fiche.",
       "",
       "**👀 Cibles**",
@@ -1001,13 +995,11 @@ async function buildEnqueteView(
               type: 3,
               custom_id: "quiestce_cible_menu",
               placeholder: "Ou choisis une autre cible",
-              options: autres
-                .slice(0, 25)
-                .map((id) => ({
-                  label: partie.joueurs[id].username.slice(0, 100),
-                  value: id,
-                  description: libelle(id),
-                })),
+              options: autres.slice(0, 25).map((id) => ({
+                label: partie.joueurs[id].username.slice(0, 100),
+                value: id,
+                description: libelle(id),
+              })),
             },
           ],
         });
@@ -1171,8 +1163,10 @@ function texteAccusation(r, partie, cibleId, cardKey) {
   if (r.erreur) return avertissement(r.erreur);
   if (!r.correct)
     return `❌ Raté : **${nom}** n'a pas la carte ${nomCarte(partie, cardKey)}.`;
-  const efficacite = r.bonus ? ` et **+${r.bonus}** d'efficacité (${plural(r.nbIndices, "indice")})` : "";
-  return `🎯 **Bravo !** **${nom}** avait bien la carte ${nomCarte(partie, cardKey)} : **+1 point**${efficacite} !`;
+  const efficacite = r.bonus
+    ? ` et **+${r.bonus}** d'efficacité (${plural(r.nbIndices, "indice")})`
+    : "";
+  return `🎯 **Bravo !** **${nom}** avait bien la carte ${nomCarte(partie, cardKey)} : **+${plural(r.points, "point")}**${efficacite} !`;
 }
 
 // ── Boutons du message officiel (nouvel éphémère) ────────────────────

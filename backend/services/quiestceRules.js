@@ -152,6 +152,16 @@ function nouveauJoueur(username, arrivee) {
     objetRecuJour: false,
     brouillard: false,
     miroir: false,
+    // A fait une action ce jour-là (question, accusation, objet ou choix de
+    // cible) : condition du bonus de survie (décision du 13/10)
+    actifJour: false,
+    // Points des cartes découvertes et malus des démasquages, cumulés avec
+    // le barème en vigueur au moment du démasquage
+    pointsCartes: 0,
+    malus: 0,
+    // Cartes quittées par Déguisement, de la plus ancienne à la plus
+    // récente (révélées au classement final)
+    anciennesCartes: [],
   };
 }
 
@@ -261,6 +271,7 @@ export function choisirCible(partie, id, cibleId, { config, rng = Math.random })
   if (moi.cible) return { erreur: "dejaCible" };
   if (!ciblesDisponibles(partie, id, { config }).includes(cibleId)) return { erreur: "cible" };
   const depart = assignerCible(partie, id, cibleId, { config, rng });
+  moi.actifJour = true;
   noter(partie, "cible", { s: id, v: cibleId });
   return { cible: cibleId, depart };
 }
@@ -379,6 +390,7 @@ export function poser(partie, id, q, { config }) {
   if (!questionsPossibles(partie, id, { config }).includes(q)) return { erreur: "question" };
   const cible = partie.joueurs[moi.cible];
   moi.questionsJour += 1;
+  moi.actifJour = true;
   bilan(partie).questions += 1;
   // Miroir (secret) : la cible apprend la même caractéristique de la carte
   // de son chasseur
@@ -401,7 +413,8 @@ export function poser(partie, id, q, { config }) {
 }
 
 // Une accusation par jour (deux avec la Double accusation). Juste : une
-// carte découverte (+1), la cible est démasquée (-1 pour elle), le
+// carte découverte (+`points_carte`), la cible est démasquée
+// (-`malus_demasque` pour elle, décision du 13/10), le
 // chasseur choisit sa prochaine cible. Fausse : la carte est barrée
 // (accusation ratée comptée dans le départage). Sous Brouillard (option
 // `brouillard_bloque_accusation`), aucune accusation possible.
@@ -426,6 +439,7 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   if (cible.brouillard && config.brouillard_bloque_accusation) return { erreur: "brouillard" };
   moi.accusationsJour += 1;
   moi.accusationsCible = (moi.accusationsCible ?? 0) + 1;
+  moi.actifJour = true;
   if (cible.carte !== cardKey) {
     moi.erreurs += 1;
     moi.enquete.eliminees.push(cardKey);
@@ -441,15 +455,17 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   partie.seq = (partie.seq ?? 0) + 1;
   moi.seqScore = partie.seq;
   moi.demasques.push(cibleId);
+  moi.pointsCartes = (moi.pointsCartes ?? 0) + (config.points_carte ?? 1);
   moi.cartesConnues.push(cardKey);
   moi.cible = null;
   moi.enquete = nouvelleEnquete();
   cible.nbDemasque += 1;
+  cible.malus = (cible.malus ?? 0) + (config.malus_demasque ?? 1);
   cible.demasqueJour = true;
   bilan(partie).demasquages.push({ s: id, v: cibleId });
   noter(partie, "demasque", { s: id, v: cibleId, crucial: true });
   prive(partie, id, `🎯 Tu as démasqué **${cible.username}** : ${nomCarte(partie, cardKey)}.`);
-  return { correct: true, cible: cibleId, bonus, nbIndices };
+  return { correct: true, cible: cibleId, points: config.points_carte ?? 1, bonus, nbIndices };
 }
 
 // ── Objets ──────────────────────────────────────────────────────────
@@ -492,6 +508,7 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
   if (!etat.ok) return { erreur: etat.raison };
   moi.objets.splice(moi.objets.indexOf(objet), 1);
   moi.objetJour = true;
+  moi.actifJour = true;
 
   if (objet === "loupe") {
     moi.loupe = true;
@@ -541,6 +558,7 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
   // renseignements du Miroir sur l'ancienne carte devenus faux
   const libres = cartesLibres(partie);
   const ancienne = moi.carte;
+  moi.anciennesCartes = [...(moi.anciennesCartes ?? []), ancienne];
   moi.carte = libres[Math.floor(rng() * libres.length)];
   for (const j of Object.values(partie.joueurs)) delete j.renseignements?.[id];
   const victimes = chasseurs(partie, id);
@@ -554,12 +572,14 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
 // ── Clôture et classement ───────────────────────────────────────────
 
 // Clôture du jour : +`bonus_survie_jour` pour chaque joueur non démasqué
-// ce jour-là (décision du 12/10) ; compteurs quotidiens, Brouillard et
-// Miroir remis à zéro.
+// ce jour-là (décision du 12/10) et qui a joué ce jour-là (décision du
+// 13/10 : un inscrit absent ne marque rien) ; compteurs quotidiens,
+// Brouillard et Miroir remis à zéro.
 export function cloturer(partie, { config = {} } = {}) {
   for (const j of Object.values(partie.joueurs)) {
-    if (j.carte && !j.demasqueJour) j.survie = (j.survie ?? 0) + (config.bonus_survie_jour ?? 0);
+    if (j.carte && j.actifJour && !j.demasqueJour) j.survie = (j.survie ?? 0) + (config.bonus_survie_jour ?? 0);
     j.demasqueJour = false;
+    j.actifJour = false;
     j.questionsJour = 0;
     j.loupe = false;
     j.accusationsJour = 0;
@@ -575,12 +595,14 @@ export function cloturer(partie, { config = {} } = {}) {
   partie.numeroJour = (partie.numeroJour ?? 1) + 1;
 }
 
-// Classement (décisions du 12/10) : points = cartes découvertes + bonus
-// d'efficacité + jours de survie - fois démasqué ; puis le plus de cartes
-// découvertes, le moins d'accusations ratées, le premier à avoir atteint
-// son total, l'arrivée.
+// Classement (décisions des 12 et 13/10) : points = points des cartes
+// découvertes + bonus d'efficacité + jours de survie - malus des
+// démasquages ; puis le plus de cartes découvertes, le moins d'accusations
+// ratées, le premier à avoir atteint son total, l'arrivée. Parties
+// antérieures au 13/10 (sans `pointsCartes`/`malus`) : 1 point par carte,
+// -1 par démasquage.
 export function points(j) {
-  return j.demasques.length + (j.bonus ?? 0) + (j.survie ?? 0) - j.nbDemasque;
+  return (j.pointsCartes ?? j.demasques.length) + (j.bonus ?? 0) + (j.survie ?? 0) - (j.malus ?? j.nbDemasque);
 }
 
 export function classement(partie) {
@@ -604,6 +626,8 @@ export function classement(partie) {
     nbDemasque: j.nbDemasque,
     erreurs: j.erreurs,
     carte: j.carte,
+    // Toutes les cartes tenues pendant la partie (Déguisements compris)
+    cartes: [...(j.anciennesCartes ?? []), j.carte],
   }));
 }
 

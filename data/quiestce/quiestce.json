@@ -16,6 +16,8 @@
     "miroir": 1
   },
   "brouillard_bloque_accusation": true,
+  "points_carte": 3,
+  "malus_demasque": 2,
   "bonus_efficacite": [3, 2, 1],
   "bonus_survie_jour": 1,
   "complements": {

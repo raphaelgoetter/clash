@@ -209,6 +209,8 @@ function main() {
     const r = utiliserObjet(p, cibleId, "deguisement", { config: CONFIG, rng });
     assert.ok(!r.erreur);
     assert.notStrictEqual(p.joueurs[cibleId].carte, ancienne);
+    // Classement final : toutes les cartes tenues, dans l'ordre
+    assert.deepStrictEqual(classement(p).find((x) => x.discordId === cibleId).cartes, [ancienne, p.joueurs[cibleId].carte]);
     assert.strictEqual(p.joueurs.j0.enquete.ordre.length, 0);
     assert.strictEqual(p.joueurs.j3.renseignements[cibleId], undefined, "renseignements du Miroir effacés");
     assert.ok(candidats(p, "j0").includes(p.joueurs[cibleId].carte));
@@ -299,17 +301,19 @@ function main() {
     assert.strictEqual(utiliserObjet(p, "j0", "desamorcage", { config: CONFIG, rng }).detruit, null);
   }
 
-  // ── Classement : points = découvertes - démasquages, puis découvertes, puis ratées ──
+  // ── Classement : points = points des cartes - malus, puis découvertes, puis ratées ──
   {
     const p = partieTest(4);
     const [a, b, c, d] = ["j0", "j1", "j2", "j3"].map((id) => p.joueurs[id]);
-    a.demasques = ["x", "y", "z"]; a.nbDemasque = 1; // 2 pts, 3 découvertes
-    b.demasques = ["x", "y"]; b.nbDemasque = 0; b.erreurs = 2; // 2 pts, 2 découvertes
-    c.demasques = ["x", "y"]; c.nbDemasque = 0; // 2 pts, 2 découvertes, 0 ratée
-    d.demasques = ["x", "y", "z", "w"]; d.nbDemasque = 3; // 1 pt
+    a.demasques = ["x", "y", "z"]; a.pointsCartes = 9; a.malus = 3; // 6 pts, 3 découvertes
+    b.demasques = ["x", "y"]; b.pointsCartes = 6; b.erreurs = 2; // 6 pts, 2 découvertes
+    c.demasques = ["x", "y"]; c.pointsCartes = 6; // 6 pts, 2 découvertes, 0 ratée
+    d.demasques = ["x", "y", "z", "w"]; d.pointsCartes = 12; d.malus = 8; // 4 pts
     const r = classement(p);
     assert.deepStrictEqual(r.map((x) => x.discordId), ["j0", "j2", "j1", "j3"]);
-    assert.deepStrictEqual([r[0].score, r[0].decouvertes], [2, 3]);
+    assert.deepStrictEqual([r[0].score, r[0].decouvertes], [6, 3]);
+    // Partie antérieure au 13/10 (sans pointsCartes ni malus) : 1 pt par carte, -1 par démasquage
+    assert.strictEqual(points({ demasques: ["x", "y"], nbDemasque: 1, bonus: 2, survie: 3 }), 6);
   }
 
   // ── Bonus d'efficacité (+3/+2/+1 selon les indices connus) et survie ──
@@ -320,15 +324,21 @@ function main() {
     // 1 indice (indice de départ seul) : +1 et +3 d'efficacité
     assert.strictEqual(moi.enquete.ordre.length, 1);
     const r = accuser(p, "j0", p.joueurs[cibleId].carte, { config: CONFIG, rng });
-    assert.deepStrictEqual([r.bonus, r.nbIndices], [CONFIG.bonus_efficacite[0], 1]);
-    assert.strictEqual(points(moi), 1 + CONFIG.bonus_efficacite[0]);
-    // Survie : +1 à la clôture sauf pour qui a été démasqué ce jour-là
+    assert.deepStrictEqual([r.points, r.bonus, r.nbIndices], [CONFIG.points_carte, CONFIG.bonus_efficacite[0], 1]);
+    assert.strictEqual(points(moi), CONFIG.points_carte + CONFIG.bonus_efficacite[0]);
+    // Survie : +1 à la clôture pour qui a joué ce jour-là sans être démasqué
+    const cible = p.joueurs[cibleId];
+    const inactif = Object.values(p.joueurs).find((j) => j !== moi && j !== cible && !j.actifJour);
+    cible.actifJour = true;
     cloturer(p, { config: CONFIG });
     assert.strictEqual(moi.survie, CONFIG.bonus_survie_jour);
-    assert.strictEqual(p.joueurs[cibleId].survie, 0);
-    assert.strictEqual(points(p.joueurs[cibleId]), -1);
+    assert.strictEqual(cible.survie, 0, "démasqué ce jour-là");
+    assert.strictEqual(inactif.survie, 0, "n'a pas joué ce jour-là");
+    assert.strictEqual(points(cible), -CONFIG.malus_demasque);
+    cible.actifJour = true;
     cloturer(p, { config: CONFIG });
-    assert.strictEqual(p.joueurs[cibleId].survie, CONFIG.bonus_survie_jour);
+    assert.strictEqual(cible.survie, CONFIG.bonus_survie_jour);
+    assert.strictEqual(moi.survie, CONFIG.bonus_survie_jour, "pas d'action ce jour-là");
     // 4 indices ou plus : pas de bonus
     const c2 = ciblesDisponibles(p, "j0", { config: CONFIG })[0];
     choisirCible(p, "j0", c2, { config: CONFIG, rng });
