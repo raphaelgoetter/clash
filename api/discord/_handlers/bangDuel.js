@@ -743,9 +743,9 @@ function messagePublic(partie, config) {
   };
 }
 
-// Récit de fin de partie : 3 moments forts au plus, en phrases (coup
-// fatal, Esprit de guérison volé, explosions évitées, Sarbacane), ou un
-// bilan pour un match nul.
+// Récit de fin de partie : les 3 moments les plus forts (coup fatal
+// d'abord, puis ordre chronologique) et les explosions évitées regroupées
+// en une ligne, ou un bilan pour un match nul.
 // `noms` : siège → désignations (BOT ou nomsJoueur()), sans mention.
 const que = (N) => (/^[aeiouyhàâéèêëîïôû]/i.test(N.Sujet) ? `qu'${N.Sujet}` : `que ${N.Sujet}`);
 
@@ -756,24 +756,61 @@ function listeTours(tours) {
 
 function recit(d, noms) {
   const j = d.journal;
+  const fin = j.findLast((e) => e.k === "explose");
+  const moments = []; // { prio, rang, texte }
+  const ajouter = (prio, rang, texte) => moments.push({ prio, rang, texte });
+
   // Gobelins explosifs cachés dont on suit l'emplacement : { par, index, tour }
   // (inconnus après une Tornade)
   let suivis = [];
   let piege = null;
-  for (const e of j) {
+  const pieges = new Map(); // indice d'un « sauve » → siège qui avait caché ce Gobelin explosif
+  j.forEach((e, i) => {
     if (e.k === "tornade") suivis = [];
     else if (e.k === "pioche") suivis = suivis.map((b) => ({ ...b, index: b.index - 1 }));
     else if (e.k === "sauve" || e.k === "explose") {
-      if (e.k === "explose") piege = suivis.find((b) => b.index === 0) ?? null;
-      suivis = suivis.filter((b) => b.index !== 0).map((b) => ({ ...b, index: b.index - 1 }));
+      const b = suivis.find((x) => x.index === 0);
+      if (e.k === "explose") piege = b ?? null;
+      // Piège de l'adversaire évité grâce à un Esprit de guérison
+      else if (b && b.par !== e.id) pieges.set(i, b.par);
+      suivis = suivis.filter((x) => x.index !== 0).map((x) => ({ ...x, index: x.index - 1 }));
     } else if (e.k === "cache") {
       suivis = suivis.map((b) => (b.index >= e.index ? { ...b, index: b.index + 1 } : b));
       suivis.push({ par: e.id, index: e.index, tour: e.tour });
     }
-  }
+  });
 
-  const fin = j.findLast((e) => e.k === "explose");
-  const lignes = [];
+  const racontes = new Set(); // « sauve » déjà racontés avec un Gang renvoyé
+  j.forEach((e, i) => {
+    const S = noms[e.id];
+    const V = noms[adversaire(e.id)];
+    // Suite immédiate d'une action, même tour, même joueur
+    const ensuite = (id, k) => j.slice(i + 1).find((x) => x.tour === e.tour && x.id === id && x.k === k);
+    if (e.k === "voleuse" && e.carte === "esprit")
+      ajouter(90, i, `🦹 Au tour ${e.tour}, la Voleuse ${S.de} prend l'Esprit de guérison ${V.de}.`);
+    else if (e.k === "voleuse" && e.carte === "gang" && ensuite(e.id, "gang"))
+      ajouter(55, i, `🦹 Au tour ${e.tour}, ${S.Sujet} vole le Gang de gobelins ${V.de} et le lui envoie aussitôt.`);
+    else if (e.k === "renvoi" && e.carte === "gang") {
+      // e.id : propriétaire du Moine ; V : l'attaquant, qui doit piocher
+      const sauve = ensuite(adversaire(e.id), "sauve");
+      const par = sauve && pieges.get(j.indexOf(sauve));
+      if (sauve) racontes.add(j.indexOf(sauve));
+      if (!ensuite(adversaire(e.id), "explose"))
+        ajouter(80, i, `🙏 Au tour ${e.tour}, le Moine ${S.de} renvoie le Gang de gobelins ${V.de}${sauve ? `, qui tombe sur ${par ? `le Gobelin explosif caché par ${noms[par].Sujet}` : "un Gobelin explosif"} et s'en sort de justesse` : ""}.`);
+    } else if (e.k === "renvoi")
+      ajouter(
+        e.vole === "esprit" ? 90 : e.vole === "gobelin" ? 20 : 50,
+        i,
+        `🙏 Au tour ${e.tour}, le Moine ${S.de} renvoie la Voleuse ${V.de}${e.vole ? ` et lui prend ${e.vole === "esprit" ? "son Esprit de guérison" : carteLabel(e.vole)}` : ""}.`,
+      );
+    else if (e.k === "sarbacane" && e.vu && ["fut", "gang", "tornade"].some((k) => ensuite(e.id, k)))
+      ajouter(40, i, `🎯 Au tour ${e.tour}, ${S.Sujet} repère un Gobelin explosif avec son Gobelin à sarbacane et l'esquive.`);
+  });
+  // Piège de l'adversaire évité grâce à un Esprit de guérison
+  for (const [i, par] of pieges)
+    if (!racontes.has(i))
+      ajouter(60, i, `💥 Au tour ${j[i].tour}, ${noms[j[i].id].Sujet} tombe sur le Gobelin explosif caché par ${noms[par].Sujet} et s'en sort grâce à son Esprit de guérison.`);
+
   if (fin) {
     const P = noms[fin.id];
     const W = noms[adversaire(fin.id)];
@@ -798,47 +835,42 @@ function recit(d, noms) {
         : gang === "renvoi"
           ? `, à cause de son propre Gang de gobelins renvoyé par le Moine ${W.de}`
           : "";
-    if (cause) lignes.push(`${cause}${suite}.`);
-    // Le tournant : l'Esprit de guérison du perdant volé
-    const vol = j.findLast(
-      (e) =>
-        e.id !== fin.id &&
-        ((e.k === "voleuse" && e.carte === "esprit") || (e.k === "renvoi" && e.vole === "esprit")),
-    );
-    if (vol)
-      lignes.push(
-        vol.k === "voleuse"
-          ? `🦹 Le tournant : au tour ${vol.tour}, la Voleuse ${W.de} a pris l'Esprit de guérison ${P.de}.`
-          : `🙏 Le tournant : au tour ${vol.tour}, le Moine ${W.de} a renvoyé la Voleuse ${P.de} et lui a pris son Esprit de guérison.`,
-      );
+    if (cause) ajouter(100, -1, `${cause}${suite}.`);
   } else if (!d.gagnant) {
     const sauves = j.filter((e) => e.k === "sauve").length;
     const gangs = j.filter((e) => e.k === "gang").length;
-    lignes.push(
+    ajouter(
+      100,
+      -1,
       `🤝 Personne n'a craqué : ${sauves ? `${plural(sauves, "explosion")} évitée${sauves > 1 ? "s" : ""}` : "aucun Gobelin explosif pioché"}, ${gangs ? `${plural(gangs, "Gang")} de gobelins envoyé${gangs > 1 ? "s" : ""}` : "aucun Gang de gobelins"}.`,
     );
   }
 
-  // Explosions évitées, le perdant d'abord
-  const ordre = fin ? [fin.id, adversaire(fin.id)] : ["joueur", "bot"];
-  for (const id of ordre) {
-    const tours = j.filter((e) => e.k === "sauve" && e.id === id).map((e) => e.tour);
-    if (!tours.length || (!fin && !d.gagnant)) continue;
-    lignes.push(
-      `💚 ${noms[id].Sujet} ${fin?.id === id ? "avait survécu" : "a survécu"} à ${plural(tours.length, "explosion")} grâce à ${tours.length > 1 ? "ses Esprits" : "son Esprit"} de guérison (${listeTours(tours)}).`,
-    );
+  // Explosions évitées, en une ligne (le perdant d'abord), toujours
+  // affichée en plus des moments forts, hors match nul
+  let sauves = null;
+  if (d.gagnant) {
+    const ordre = fin ? [fin.id, adversaire(fin.id)] : ["joueur", "bot"];
+    const parts = ordre
+      .map((id) => ({ id, tours: j.filter((e) => e.k === "sauve" && e.id === id).map((e) => e.tour) }))
+      .filter((x) => x.tours.length);
+    const verbe = (id) => (fin?.id === id ? "avait survécu" : "a survécu");
+    const bout = (x) => `${plural(x.tours.length, "explosion")} (${listeTours(x.tours)})`;
+    if (parts.length === 1) {
+      const [x] = parts;
+      sauves = `💚 ${noms[x.id].Sujet} ${verbe(x.id)} à ${plural(x.tours.length, "explosion")} grâce à ${x.tours.length > 1 ? "ses Esprits" : "son Esprit"} de guérison (${listeTours(x.tours)}).`;
+    } else if (parts.length === 2)
+      sauves = `💚 ${noms[parts[0].id].Sujet} ${verbe(parts[0].id)} à ${bout(parts[0])}, et ${noms[parts[1].id].Sujet} à ${bout(parts[1])}.`;
   }
-  // Gobelin explosif repéré à la Sarbacane (le plus récent)
-  const vu = j.findLast((e) => e.k === "sarbacane" && e.vu);
-  if (vu) {
-    const evite = j.some(
-      (e) => e.tour === vu.tour && e.id === vu.id && j.indexOf(e) > j.indexOf(vu) && ["fut", "gang", "tornade"].includes(e.k),
-    );
-    lignes.push(
-      `🎯 Au tour ${vu.tour}, ${noms[vu.id].Sujet} repère un Gobelin explosif avec son Gobelin à sarbacane${evite ? " et l'esquive" : ""}.`,
-    );
-  }
-  return lignes.slice(0, 3);
+
+  return [
+    ...moments
+      .sort((a, b) => b.prio - a.prio || a.rang - b.rang)
+      .slice(0, 3)
+      .sort((a, b) => a.rang - b.rang)
+      .map((m) => m.texte),
+    ...(sauves ? [sauves] : []),
+  ];
 }
 
 // Fin de partie : les 3 prochaines cartes de la pioche.
