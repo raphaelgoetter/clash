@@ -6,7 +6,7 @@
 // - 1v1 (`/bang adversaire:1v1`) : message public dans le salon (bouton Jouer :
 //   rejoindre, puis afficher sa main) et une vue éphémère par joueur,
 //   rééditée après chaque action adverse (webhook mémorisé, valable 15 min,
-//   bouton Actualiser sinon). Une seule partie à la fois, comme Blackjack
+//   Jouer la rouvre sinon). Une seule partie à la fois, comme Blackjack
 //   et Gobelet Duel.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
@@ -392,16 +392,7 @@ function buildVue(
       components: [
         {
           type: 1,
-          components: [
-            {
-              type: 2,
-              style: 1,
-              label: "Actualiser",
-              emoji: { name: "🔄" },
-              custom_id: "bangduel_actualiser:pvp",
-            },
-            BOUTON_REGLES,
-          ],
+          components: [BOUTON_REGLES],
         },
       ],
     };
@@ -1086,13 +1077,8 @@ async function executerPvp(webhookUrl, discordId, action, valeur) {
     if (p.statut !== "enCours") return { erreur: "termine" };
     const d = p.duel;
     const actifAvant = d.actif;
-    let r;
-    if (action === "actualiser") {
-      return {};
-    } else {
-      r = ACTIONS[action](d, moi, cfg, nomsAdv(p, moi), valeur) || {};
-      if (r.erreur) return r;
-    }
+    const r = ACTIONS[action](d, moi, cfg, nomsAdv(p, moi), valeur) || {};
+    if (r.erreur) return r;
     d.resume = { ...(d.resume ?? {}), [moi]: [] };
     if (d.actif !== actifAvant && !d.termine) {
       d.resume[d.actif] = lignesAdv(
@@ -1144,8 +1130,6 @@ export const handleBangDuelPlacer = (webhookUrl, discordId, valeur, opts) =>
   executer(webhookUrl, discordId, "placer", { ...opts, valeur });
 export const handleBangDuelCarte = (webhookUrl, discordId, valeur, opts) =>
   executer(webhookUrl, discordId, "carte", { ...opts, valeur });
-export const handleBangDuelActualiser = (webhookUrl, discordId) =>
-  executer(webhookUrl, discordId, "actualiser", { pvp: true });
 
 // [📖 Règles] : nouvel éphémère.
 export async function handleBangDuelRegles(webhookUrl) {

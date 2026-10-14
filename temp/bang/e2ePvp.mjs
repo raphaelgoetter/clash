@@ -73,8 +73,11 @@ for (let g = 0; g < 3; g++) {
     const w = W({ id }, k);
     const opts = { pvp: true };
     actions++;
-    // L'adversaire en attente actualise de temps en temps
-    if (k % 7 === 3) await h.handleBangDuelActualiser(W({ id: p.sieges[d.actif === "joueur" ? "bot" : "joueur"] }, k), p.sieges[d.actif === "joueur" ? "bot" : "joueur"]);
+    // L'adversaire en attente rouvre sa vue (Jouer) de temps en temps
+    if (k % 7 === 3) {
+      const attente = [A, B, C].find((x) => x.id === p.sieges[d.actif === "joueur" ? "bot" : "joueur"]);
+      await h.handleBangDuelOuvrir(W(attente, k), body(attente));
+    }
     if (j.enAttente) await h.handleBangDuelPlacer(w, id, "hasard", opts);
     else if (j.main.includes("voleuse") && j.jouees < 3 && Math.random() < 0.5) await h.handleBangDuelCarte(w, id, "voleuse", opts);
     else if (j.main.includes("gang") && j.jouees < 3 && Math.random() < 0.3) await h.handleBangDuelCarte(w, id, "gang", opts);
@@ -92,7 +95,7 @@ const lent = p.sieges[p.duel.actif];
 const patient = lent === A.id ? B.id : A.id;
 p.dernierCoupAt -= 10 * 60_000;
 await redis.set("bangduel:pvp", JSON.stringify(p));
-await h.handleBangDuelActualiser(W({ id: patient }, 99), patient);
+await h.handleBangDuelOuvrir(W({ id: patient }, 99), body(patient === A.id ? A : B));
 p = await readPvp();
 if (p.statut !== "fini" || p.raisonFin !== "delai" || p.sieges[p.duel.gagnant] !== patient) throw new Error("délai non appliqué");
 const finDelai = appels.filter((a) => a.method === "POST" && a.url.includes("/channels/")).at(-1).body.embeds[0].description;

@@ -188,7 +188,6 @@ import {
   handleBangDuelRegles,
   handleBangDuelPvpCommand,
   handleBangDuelOuvrir,
-  handleBangDuelActualiser,
 } from "./_handlers/bangDuel.js";
 import {
   handleJouer as handleBlackjackJouer,
@@ -8889,7 +8888,7 @@ export default async function handler(req, res) {
 
   // ── Bang! Duel : composants des messages (édition en place) ──
   // custom_id : bangduel_<action> contre Kévina, bangduel_<action>:pvp en
-  // 1v1 ; actions : piocher, actualiser (boutons), carte,
+  // 1v1 ; actions : piocher (bouton), carte,
   // placer (menus). bangduel_ouvrir (Jouer du message public 1v1) et
   // bangduel_regles : nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bangduel_")) {
@@ -8912,7 +8911,6 @@ export default async function handler(req, res) {
     if (action === "bangduel_piocher") runBackground(() => handleBangDuelPiocher(webhookUrl, discordId, { pvp, channelId, pseudo }));
     else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value, { pvp, channelId, pseudo }));
     else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value, { pvp, channelId, pseudo }));
-    else if (action === "bangduel_actualiser") runBackground(() => handleBangDuelActualiser(webhookUrl, discordId));
     return;
   }
 
