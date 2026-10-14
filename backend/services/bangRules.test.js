@@ -1,6 +1,6 @@
 import assert from "assert";
 import fs from "fs";
-import { creerPartie, ajouterJoueur, piocher, piocherClic, placer, jouer, cloturer, classement, nbBombes, vivants, texteJournal } from "./bangRules.js";
+import { creerPartie, ajouterJoueur, piocher, piocherClic, choixPioche, ciblesPossibles, placer, jouer, cloturer, classement, nbBombes, vivants, texteJournal } from "./bangRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/bang/bang.json", import.meta.url), "utf8"));
 
@@ -43,20 +43,64 @@ function main() {
     assert.strictEqual(p.pioche.length, avant);
   }
 
-  // ── Pioche : gratuite, +Bravoure, plafonnée par jour ; les pioches dues
-  // et automatiques n'en rapportent pas et ne comptent pas ──
+  // ── Pioche : 1 à 3 cartes d'un coup, +Bravoure par carte au-delà de
+  // la première ; piocher termine le tour ──
   {
-    const p = partieTest({ a: [] }, ["gobelin", "moine", "fut", "gang", "voleuse"]);
-    const config = { ...CONFIG, pioches_par_jour: 2, bravoure: { pioche: 1, attaque: 1 } };
-    assert.strictEqual(piocher(p, "a", { config }).carte, "gobelin");
-    assert.strictEqual(piocher(p, "a", { config }).carte, "moine");
+    const p = partieTest({ a: ["sarbacane"], b: [] }, ["gobelin", "moine", "fut", "gang", "voleuse"]);
+    const config = { ...CONFIG, pioches_par_jour: 3, bravoure: { pioche: 1, attaque: 1 } };
+    assert.deepStrictEqual(choixPioche(p, "a", { config }), { min: 1, max: 3 });
+    assert.strictEqual(piocherClic(p, "a", { config, nb: 4 }).erreur, "nbPioche");
+    assert.strictEqual(piocherClic(p, "a", { config }).erreur, "nbPioche", "nombre de cartes à choisir");
+    assert.deepStrictEqual(piocherClic(p, "a", { config, nb: 3 }).tirages.map((t) => t.carte), ["gobelin", "moine", "fut"]);
     assert.strictEqual(p.joueurs.a.bravoure, 2);
-    assert.strictEqual(piocher(p, "a", { config }).erreur, "plafondPioche");
-    p.joueurs.a.dette = 1;
-    assert.strictEqual(piocher(p, "a", { config }).carte, "fut", "pioche due malgré le plafond");
-    assert.strictEqual(piocher(p, "a", { config, auto: true }).carte, "gang");
-    assert.strictEqual(p.joueurs.a.dette, 0);
-    assert.strictEqual(p.joueurs.a.bravoure, 2, "pioches due et automatique sans Bravoure");
+    assert.strictEqual(choixPioche(p, "a", { config }), null, "tour terminé");
+    assert.strictEqual(piocherClic(p, "a", { config, nb: 1 }).erreur, "tourFini");
+    assert.strictEqual(jouer(p, "a", "sarbacane", null, { config, rng }).erreur, "tourFini");
+    piocherClic(p, "b", { config, nb: 1 });
+    assert.strictEqual(p.joueurs.b.bravoure, 0, "une seule carte : sans Bravoure");
+    // Pioche presque vide : pas plus de cartes que la pioche n'en contient
+    assert.deepStrictEqual(choixPioche(partieTest({ c: [] }, ["gobelin"]), "c", { config }), { min: 1, max: 1 });
+  }
+
+  // ── Gang avant le tour : minimum relevé, Bravoure au-delà ; après le
+  // tour : pioches imposées d'un clic, cartes jouables (Fût) entre-temps ──
+  {
+    const p = partieTest({ a: ["gang"], b: [] }, ["gobelin", "moine", "fut", "gang"]);
+    jouer(p, "a", "gang", "b", { config: CONFIG, rng });
+    assert.deepStrictEqual(choixPioche(p, "b", { config: CONFIG }), { min: 2, max: 3 });
+    assert.strictEqual(piocherClic(p, "b", { config: CONFIG, nb: 3 }).tirages.length, 3);
+    assert.strictEqual(p.joueurs.b.bravoure, CONFIG.bravoure.pioche, "Gang : seule la 3e carte rapporte");
+  }
+  {
+    const p = partieTest({ a: ["gang"], b: ["fut"] }, ["gobelin", "moine", "fut", "gang"]);
+    piocherClic(p, "b", { config: CONFIG, nb: 1 });
+    jouer(p, "a", "gang", "b", { config: CONFIG, rng });
+    assert.strictEqual(choixPioche(p, "b", { config: CONFIG }), null);
+    assert.ok(!jouer(p, "b", "fut", "pioche", { config: CONFIG, rng }).erreur, "Fût jouable contre un Gang reçu après le tour");
+    assert.strictEqual(piocherClic(p, "b", { config: CONFIG }).tirages.length, 1, "pioche due restante, sans choix");
+    assert.strictEqual(p.joueurs.b.bravoure, 0, "pioches dues sans Bravoure");
+  }
+
+  // ── Gang et Voleuse : subis une seule fois par jour par un même joueur
+  // (quel que soit l'attaquant) ; le renvoi d'un Moine compte pour
+  // l'attaquant ──
+  {
+    const p = partieTest({ a: ["gang", "voleuse"], b: ["gang", "voleuse", "moine"], c: ["gobelin", "gobelin"], d: ["voleuse"] });
+    assert.ok(!jouer(p, "a", "gang", "c", { config: CONFIG, rng }).erreur);
+    assert.strictEqual(jouer(p, "b", "gang", "c", { config: CONFIG, rng }).erreur, "dejaSubie");
+    assert.ok(p.joueurs.b.main.includes("gang"), "la carte refusée reste en main");
+    assert.ok(!jouer(p, "b", "voleuse", "c", { config: CONFIG, rng }).erreur, "autre attaque : permise");
+    p.joueurs.a.main.push("malediction"); p.joueurs.d.main.push("malediction");
+    assert.ok(!jouer(p, "a", "malediction", "c", { config: CONFIG, rng }).erreur);
+    assert.strictEqual(jouer(p, "d", "malediction", "c", { config: CONFIG, rng }).erreur, "dejaSubie", "une seule Malédiction par jour");
+    assert.deepStrictEqual(ciblesPossibles(p, "a", "voleuse").map(([id]) => id).sort(), ["b", "d"]);
+    jouer(p, "b", "moine", null, { config: CONFIG, rng });
+    assert.ok(jouer(p, "d", "voleuse", "b", { config: CONFIG, rng }).renvoi);
+    assert.deepStrictEqual(p.joueurs.d.subies, ["voleuse"], "renvoyée : subie par l'attaquant");
+    assert.ok(!jouer(p, "a", "voleuse", "b", { config: CONFIG, rng }).erreur, "le joueur protégé n'a rien subi");
+    p.joueurs.c.tourFait = true;
+    cloturer(p, { config: CONFIG, rng });
+    assert.ok(vivants(p).every(([, j]) => !j.subies.length), "remis à zéro à la clôture");
   }
 
   // ── Gobelin explosif : Esprit sacrifié puis bombe cachée, sinon élimination ──
@@ -113,18 +157,17 @@ function main() {
     assert.strictEqual(p.joueurs.b.bravoure, 0, "Fût vers la pioche : esquive seule");
   }
 
-  // ── Gang : un seul clic pioche les cartes dues, arrêt sur un Gobelin explosif ──
+  // ── Pioche multiple : arrêt sur un Gobelin explosif, les cartes
+  // restantes restent dues (et gardent leur Bravoure) ──
   {
-    const p = partieTest({ a: ["esprit"] }, ["gobelin", "fut", "voleuse", "bombe", "moine"]);
-    p.joueurs.a.dette = 2;
-    assert.deepStrictEqual(piocherClic(p, "a", { config: CONFIG }).tirages.map((r) => r.carte), ["gobelin", "fut"]);
-    assert.strictEqual(p.joueurs.a.bravoure, 0, "pioches dues : pas de Bravoure");
-    assert.strictEqual(piocherClic(p, "a", { config: CONFIG }).tirages.length, 1, "plus de dette : une seule carte");
-    assert.strictEqual(p.joueurs.a.bravoure, CONFIG.bravoure.pioche);
-    p.joueurs.a.dette = 3;
-    const r = piocherClic(p, "a", { config: CONFIG });
+    const p = partieTest({ a: ["esprit"] }, ["bombe", "gobelin", "fut", "moine"]);
+    const r = piocherClic(p, "a", { config: CONFIG, nb: 3 });
     assert.deepStrictEqual(r.tirages.map((t) => t.carte), ["bombe"]);
     assert.ok(p.joueurs.a.enAttente && p.joueurs.a.dette === 2, "arrêt sur la bombe, deux pioches encore dues");
+    assert.strictEqual(p.joueurs.a.bravoure, 0);
+    placer(p, "a", "fond", { rng });
+    assert.deepStrictEqual(piocherClic(p, "a", { config: CONFIG }).tirages.map((t) => t.carte), ["gobelin", "fut"]);
+    assert.strictEqual(p.joueurs.a.bravoure, 2 * CONFIG.bravoure.pioche);
   }
 
   // ── Moine : renvoie l'attaque à l'envoyeur, une seule fois, en secret ──
@@ -157,17 +200,16 @@ function main() {
     assert.strictEqual(p.joueurs.thomas.bravoure, 1, "2e Voleuse aboutie");
   }
 
-  // ── Fût sur un joueur : vole 1 Bravoure (rien si la cible n'en a pas) ──
+  // ── Fût : esquive seule (ne vise personne, ne vole rien), termine le tour ──
   {
     const p = partieTest({ a: ["fut", "fut"], b: [] });
-    jouer(p, "a", "fut", "b", { config: CONFIG, rng });
-    assert.strictEqual(p.joueurs.a.bravoure, 0);
-    assert.strictEqual(p.journal.at(-1).k, "futVide");
     p.joueurs.b.bravoure = 3;
-    jouer(p, "a", "fut", "b", { config: CONFIG, rng });
-    assert.strictEqual(p.joueurs.a.bravoure, 1);
-    assert.strictEqual(p.joueurs.b.bravoure, 2);
-    assert.match(texteJournal(p, p.journal.at(-1), "b"), /te chipe 1 Bravoure/);
+    assert.ok(!jouer(p, "a", "fut", null, { config: CONFIG, rng }).erreur);
+    assert.strictEqual(p.joueurs.a.bravoure, 0);
+    assert.strictEqual(p.joueurs.b.bravoure, 3);
+    assert.strictEqual(p.journal.at(-1).k, "futBanque");
+    assert.strictEqual(p.jour.attaques, 0, "pas une attaque");
+    assert.strictEqual(jouer(p, "a", "fut", null, { config: CONFIG, rng }).erreur, "tourFini", "le Fût termine le tour");
   }
 
   // ── Cibles et cartes invalides ──

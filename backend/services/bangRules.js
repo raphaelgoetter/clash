@@ -28,10 +28,12 @@ export const CARTES = {
   tornade: { nom: "Tornade", cardKey: "Tornado", emoji: "🌪️" },
 };
 
-// Cartes jouables depuis la main, et celles qui visent un adversaire
-// (le Fût peut aussi viser la pioche).
+// Cartes jouables depuis la main, et celles qui visent un adversaire.
 export const JOUABLES = ["sarbacane", "moine", "fut", "gang", "malediction", "voleuse"];
-export const CIBLEES = ["fut", "gang", "malediction", "voleuse"];
+export const CIBLEES = ["gang", "malediction", "voleuse"];
+// Attaques qu'un même joueur ne peut subir qu'une fois par jour (décision
+// du 14/10 : évite l'acharnement, deux Gangs = 4 cartes imposées).
+export const UNIQUES = ["gang", "voleuse", "malediction"];
 
 // Emplacements proposés pour cacher le Gobelin explosif désamorcé.
 export const POSITIONS = {
@@ -114,6 +116,8 @@ export function texteJournal(partie, e, moi = null) {
       if (parMoi) return `🦹 Ta Voleuse dérobe une carte à ${V} !`;
       if (surMoi) return `🦹 La Voleuse de ${S} te dérobe une carte !`;
       return `🦹 La Voleuse de ${S} dérobe une carte à ${V} !`;
+    // futVol / futVide : Fût visant un joueur, supprimé le 14/10 (journal
+    // des parties antérieures)
     case "futVol":
       if (parMoi) return `🛢️ Tu surgis d'un Fût à gobelins et chipes 1 Bravoure à ${V} !`;
       if (surMoi) return `🛢️ ${S} surgit d'un Fût à gobelins et te chipe 1 Bravoure !`;
@@ -194,6 +198,8 @@ export function ajouterJoueur(partie, id, username, { config, rng = Math.random 
     main,
     bravoure: 0,
     pioches: 0,
+    bonus: 0,
+    subies: [],
     vivant: true,
     moine: false,
     maudit: 0,
@@ -224,23 +230,19 @@ function eliminer(partie, id) {
   }
 }
 
-// Pioche la carte du sommet. Gratuite ; une pioche volontaire (ni due
-// par un Gang de gobelins, ni automatique) rapporte de la Bravoure, dans la
-// limite de `pioches_par_jour` par jour.
+// Pioche la carte du sommet (une pioche due de plus si le joueur en a).
+// Les `bonus` dernières pioches d'un tour rapportent de la Bravoure (cartes
+// choisies au-delà du minimum, voir piocherClic()).
 // Renvoie { erreur } ou { carte, transformee, bang: null | "sauve" | "elimine" }.
 export function piocher(partie, id, { config, auto = false }) {
   const j = partie.joueurs[id];
-  if (partie.termine) return { erreur: "termine" };
-  if (!j?.vivant) return { erreur: "elimine" };
-  if (j.enAttente) return { erreur: "enAttente" };
-  if (!partie.pioche.length) return { erreur: "pioche" };
-  const volontaire = !auto && j.dette < 1;
-  if (volontaire && (j.pioches ?? 0) >= config.pioches_par_jour) return { erreur: "plafondPioche" };
-  if (volontaire) {
-    j.pioches = (j.pioches ?? 0) + 1;
+  const erreur = blocage(partie, j);
+  if (erreur) return { erreur };
+  if (j.dette > 0) j.dette -= 1;
+  if ((j.bonus ?? 0) > j.dette) {
+    j.bonus -= 1;
     j.bravoure = (j.bravoure ?? 0) + config.bravoure.pioche;
   }
-  if (j.dette > 0) j.dette -= 1;
   j.tourFait = true;
   let carte = partie.pioche.shift();
   if (carte === "bombe") {
@@ -271,14 +273,46 @@ export function piocher(partie, id, { config, auto = false }) {
   return { carte, transformee, bang: null };
 }
 
-// Clic sur Piocher : une carte, ou toutes les pioches dues d'un coup
-// (Gang de gobelins), en s'arrêtant sur un Gobelin explosif.
-// Renvoie { erreur } ou { tirages: [résultats de piocher()] }.
-export function piocherClic(partie, id, { config }) {
+function blocage(partie, j) {
+  if (partie.termine) return "termine";
+  if (!j?.vivant) return "elimine";
+  if (j.enAttente) return "enAttente";
+  if (!partie.pioche.length) return "pioche";
+  return null;
+}
+
+// Choix du nombre de cartes à piocher, tant que le tour n'est pas terminé :
+// de `min` (1, ou les pioches dues d'un Gang) à `pioches_par_jour` (3),
+// chaque carte au-delà du minimum rapportant de la Bravoure. Null quand le
+// tour est terminé (il ne reste alors que les pioches dues, imposées).
+export function choixPioche(partie, id, { config }) {
   const j = partie.joueurs[id];
-  const nb = Math.max(1, j?.dette ?? 0);
+  if (!j || j.tourFait) return null;
+  const min = Math.max(1, j.dette);
+  const max = Math.max(min, Math.min(config.pioches_par_jour, partie.pioche.length));
+  return { min, max };
+}
+
+// Pioche de `nb` cartes d'un coup, qui termine le tour (tour en cours), ou
+// des pioches dues restantes (tour terminé : Gang reçu après avoir pioché,
+// cartes restantes après un Gobelin explosif désamorcé). S'arrête sur un
+// Gobelin explosif : les cartes restantes restent dues.
+// Renvoie { erreur } ou { tirages: [résultats de piocher()] }.
+export function piocherClic(partie, id, { config, nb = null }) {
+  const j = partie.joueurs[id];
+  const erreur = blocage(partie, j);
+  if (erreur) return { erreur };
+  const choix = choixPioche(partie, id, { config });
+  if (choix) {
+    if (!Number.isInteger(nb) || nb < choix.min || nb > choix.max) return { erreur: "nbPioche" };
+    j.dette = nb;
+    j.bonus = nb - choix.min;
+    j.pioches = nb;
+  } else if (j.dette < 1) {
+    return { erreur: "tourFini" };
+  }
   const tirages = [];
-  for (let k = 0; k < nb; k++) {
+  while (j.dette > 0) {
     const r = piocher(partie, id, { config });
     if (r.erreur) {
       if (!tirages.length) return { erreur: r.erreur };
@@ -312,6 +346,8 @@ export function placer(partie, id, position, { rng = Math.random } = {}) {
 function appliquer(partie, carte, sourceId, victimeId, { config, rng }) {
   const s = partie.joueurs[sourceId];
   const v = partie.joueurs[victimeId];
+  // Subie par la victime réelle (l'attaquant en cas de renvoi par un Moine)
+  if (UNIQUES.includes(carte)) (v.subies ??= []).push(carte);
   if (carte === "gang") {
     v.dette += config.gang_pioches;
     noter(partie, "gang", { s: sourceId, v: victimeId, n: config.gang_pioches });
@@ -330,37 +366,36 @@ function appliquer(partie, carte, sourceId, victimeId, { config, rng }) {
     prive(partie, victimeId, `🦹 ${nom(s)} t'a volé : ${CARTES[vole].nom}.`);
     s.bravoure = (s.bravoure ?? 0) + config.bravoure.attaque;
     return { vole };
-  } else if (carte === "fut") {
-    // Le Fût vole 1 Bravoure au lieu d'en rapporter
-    if ((v.bravoure ?? 0) > 0) {
-      v.bravoure -= 1;
-      s.bravoure = (s.bravoure ?? 0) + 1;
-      noter(partie, "futVol", { s: sourceId, v: victimeId });
-    } else {
-      noter(partie, "futVide", { s: sourceId, v: victimeId });
-    }
-    return;
   }
   // Attaque aboutie : Bravoure pour qui l'inflige (le joueur protégé par
   // son Moine, en cas de renvoi)
   s.bravoure = (s.bravoure ?? 0) + config.bravoure.attaque;
 }
 
-// Joue une carte de la main. `cible` : discordId d'un adversaire vivant,
-// ou "pioche" pour le Fût à gobelins.
+// Adversaires que `id` peut viser avec `carte` (vivants, sans l'attaque
+// déjà subie aujourd'hui, voir UNIQUES).
+export function ciblesPossibles(partie, id, carte) {
+  return vivants(partie).filter(([cid, c]) => cid !== id && !(UNIQUES.includes(carte) && c.subies?.includes(carte)));
+}
+
+// Joue une carte de la main. `cible` : discordId d'un adversaire vivant
+// (cartes CIBLEES).
 // Renvoie { erreur } ou { carte, revelation?, renvoi?, vole? }.
 export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
   const j = partie.joueurs[id];
   if (partie.termine) return { erreur: "termine" };
   if (!j?.vivant) return { erreur: "elimine" };
   if (j.enAttente) return { erreur: "enAttente" };
+  // Piocher termine le tour ; un Gang reçu ensuite rouvre le jeu (Fût…)
+  // jusqu'à ce que les pioches dues soient faites
+  if (j.tourFait && j.dette < 1) return { erreur: "tourFini" };
   if (!JOUABLES.includes(carte)) return { erreur: "injouable" };
   const index = j.main.indexOf(carte);
   if (index === -1) return { erreur: "pasEnMain" };
   if (carte === "moine" && j.moine) return { erreur: "moineActif" };
   if ((j.jouees ?? 0) >= config.cartes_par_jour) return { erreur: "plafond" };
-  const versPioche = carte === "fut" && cible === "pioche";
-  if (CIBLEES.includes(carte) && !versPioche && (cible === id || !partie.joueurs[cible]?.vivant)) return { erreur: "cible" };
+  if (CIBLEES.includes(carte) && (cible === id || !partie.joueurs[cible]?.vivant)) return { erreur: "cible" };
+  if (UNIQUES.includes(carte) && partie.joueurs[cible].subies?.includes(carte)) return { erreur: "dejaSubie" };
 
   j.main.splice(index, 1);
   j.jouees = (j.jouees ?? 0) + 1;
@@ -378,13 +413,11 @@ export function jouer(partie, id, carte, cible, { config, rng = Math.random }) {
     return { carte };
   }
   if (carte === "fut") {
-    // Esquive : annule une pioche due, sinon remplit la pioche du jour
+    // Esquive : annule une pioche due, sinon termine le tour sans piocher
     if (j.dette > 0) j.dette -= 1;
     else j.tourFait = true;
-    if (versPioche) {
-      noter(partie, "futBanque", { s: id });
-      return { carte };
-    }
+    noter(partie, "futBanque", { s: id });
+    return { carte };
   }
 
   // Attaque : le Moine de la cible la renvoie à l'envoyeur (une fois)
@@ -432,6 +465,8 @@ export function cloturer(partie, { config, rng = Math.random }) {
   for (const [, j] of vivants(partie)) {
     j.tourFait = false;
     j.dette = 0;
+    j.bonus = 0;
+    j.subies = [];
     j.moine = false;
     j.jouees = 0;
     j.pioches = 0;

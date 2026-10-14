@@ -139,6 +139,22 @@ function main() {
     assert.ok(jouer(d, "joueur", "voleuse", { config: CONFIG, rng }).vole, "2e attaque : plus de Moine");
   }
 
+  // ── Gang et Voleuse : subis une seule fois par tour ; renvoyés par un
+  // Moine, c'est l'attaquant qui les subit ──
+  {
+    const d = duelTest(["voleuse", "voleuse", "voleuse"], ["moine", "gobelin", "gobelin"], ["gobelin", "gobelin", "gobelin"]);
+    d.actif = "bot";
+    jouer(d, "bot", "moine", { config: CONFIG, rng });
+    piocher(d, "bot", { config: CONFIG });
+    assert.ok(jouer(d, "joueur", "voleuse", { config: CONFIG, rng }).renvoi);
+    assert.deepStrictEqual(d.joueurs.joueur.subies, ["voleuse"]);
+    assert.ok(!jouer(d, "joueur", "voleuse", { config: CONFIG, rng }).erreur, "l'adversaire n'avait rien subi");
+    d.joueurs.joueur.main.push("voleuse");
+    assert.strictEqual(jouer(d, "joueur", "voleuse", { config: CONFIG, rng }).erreur, "dejaSubie");
+    piocherClic(d, "joueur", { config: CONFIG });
+    assert.ok(!d.joueurs.joueur.subies.length && !d.joueurs.bot.subies.length, "remis à zéro à la fin du tour");
+  }
+
   // ── Bot : avec une pioche due restante, jamais caché au sommet ──
   for (let k = 0; k < 200; k++) {
     const d = duelTest([], ["esprit"], ["bombe", "gobelin", "gobelin", "gobelin"]);

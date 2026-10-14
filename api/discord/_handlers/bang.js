@@ -2,7 +2,8 @@
 // bang.js — Handlers Discord de Bang! (jeu spécial de 7 jours inspiré
 // d'Exploding Kittens). Un seul message officiel par jour (survivants,
 // pioche, derniers événements), réédité en direct après chaque action,
-// avec quatre boutons, chacun en éphémère : Piocher (la carte piochée),
+// avec quatre boutons, chacun en éphémère : Piocher (choix du nombre de
+// cartes, 1 à 3, qui termine le tour, puis les cartes piochées),
 // Jouer une carte (le deck et le menu des cartes, puis des cibles, édités
 // en place), Journal (ce qui concerne le joueur) et Règles.
 //
@@ -34,6 +35,8 @@ import {
   JOUABLES,
   CIBLEES,
   POSITIONS,
+  choixPioche,
+  ciblesPossibles,
   piocherClic,
   placer,
   jouer,
@@ -307,19 +310,20 @@ function buildReglesEmbed(config) {
     description: [
       "Sois **le dernier joueur en vie** !",
       "",
-      `**⚡ Cartes** : ${config.cartes_par_jour} cartes jouées max par jour.`,
+      `**🔄 Ton tour** : joue tes cartes (${config.cartes_par_jour} max), puis pioche ${config.pioches_par_jour > 1 ? `1 à ${config.pioches_par_jour} cartes d'un coup` : "1 carte"} : **piocher termine ton tour** jusqu'au lendemain.`,
       `**🎴 Pioche** : **commune à tous les joueurs**. Chaque joueur y apporte 1 exemplaire de chaque carte d'action et ${config.paquet_par_joueur.gobelin} Gobelins.`,
-      `**🔥 Bravoure** : chaque pioche (${config.pioches_par_jour} max par jour) et chaque attaque réussie rapporte ${plural(config.bravoure.pioche, "point")}.`,
+      `**🔥 Bravoure** : chaque carte piochée au-delà de la première, et chaque attaque réussie, rapporte ${plural(config.bravoure.pioche, "point")}.`,
       `**⏰ Chaque jour**, pioche au moins une fois, sinon, la clôture te fait piocher ${config.pioches_auto} cartes (sans Bravoure).`,
       "",
       `${carteLabel("bombe")} : si tu le pioches, ton Esprit de guérison est sacrifié. Sans Esprit, tu exploses et quittes l'Arène.`,
       `${carteLabel("esprit")} : te sauve, puis tu caches le Gobelin explosif où tu veux dans la pioche. Chacun en reçoit un au départ.`,
       `${carteLabel("moine")} : joue-le à l'avance, la prochaine attaque contre toi est renvoyée à l'envoyeur. Personne ne sait que tu es sous sa protection.`,
-      `${carteLabel("fut")} : esquive une pioche (celle du jour, ou une pioche due), et peut voler 1 Bravoure à un joueur.`,
+      `${carteLabel("fut")} : esquive une pioche (termine ton tour sans piocher, ou annule une pioche due).`,
       `${carteLabel("malediction")} : la prochaine carte que ta cible piochera sera un simple Gobelin.`,
-      `${carteLabel("gang")} : ta cible devra piocher ${config.gang_pioches} cartes d'un coup.`,
+      `${carteLabel("gang")} : ta cible devra piocher au moins ${config.gang_pioches} cartes d'un coup (Bravoure seulement au-delà).`,
       `${carteLabel("sarbacane")} : regarde les 3 prochaines cartes de la pioche.`,
       `${carteLabel("voleuse")} : vole une carte au hasard à un joueur.`,
+      `Un joueur ne peut subir **qu'une fois par jour** chaque attaque (${CARTES.gang.nom}, ${CARTES.voleuse.nom}, ${CARTES.malediction.nom}).`,
       `${carteLabel("gobelin")} : carte purement décorative.`,
       "",
       `**🏁 Fin** : dès qu'il ne reste qu'un joueur, sinon au jour ${config.duree_jours}. Les survivants sont alors classés par Bravoure.`,
@@ -691,7 +695,9 @@ const ERREURS = {
   elimine: "Tu as explosé, tu ne peux plus jouer.",
   enAttente: "Cache d'abord le Gobelin explosif dans la pioche.",
   pioche: "La pioche est vide.",
-  plafondPioche: "Tu as fait toutes tes pioches du jour.",
+  tourFini: "Ton tour est terminé : reviens demain !",
+  nbPioche: "Nombre de cartes impossible.",
+  dejaSubie: "Ce joueur a déjà subi cette attaque aujourd'hui.",
   injouable: "Cette carte ne se joue pas.",
   pasEnMain: "Cette carte n'est plus dans ta main.",
   moineActif: "Ton Moine te protège déjà.",
@@ -716,16 +722,11 @@ function jouerTexte(r, cible, partie) {
   }
   if (r.carte === "moine")
     return "🙏 Ton Moine veille jusqu'à la clôture : la prochaine attaque contre toi sera renvoyée à l'envoyeur.";
-  if (r.carte === "fut" && cible === "pioche")
-    return "🛢️ Tu esquives une pioche.";
+  if (r.carte === "fut") return "🛢️ Tu esquives une pioche.";
   if (r.renvoi) {
     return `🙏 Aïe ! Le Moine de **${nomCible}** renvoie ta carte (${carteLabel(r.carte)}) contre toi.${r.vole ? ` Tu perds : ${carteLabel(r.vole)}.` : ""}`;
   }
-  const extra = r.vole
-    ? ` Tu dérobes : **${carteLabel(r.vole)}**.`
-    : r.carte === "fut"
-      ? " Tu esquives une pioche."
-      : "";
+  const extra = r.vole ? ` Tu dérobes : **${carteLabel(r.vole)}**.` : "";
   return `✅ Tu joues ${carteLabel(r.carte)} contre **${nomCible}**.${extra}`;
 }
 
@@ -733,7 +734,9 @@ function alertes(j) {
   const lignes = [];
   if (j.dette > 0)
     lignes.push(
-      `👊 Gang de gobelins : **${plural(j.dette, "pioche")}** à faire, d'un seul clic sur Piocher.`,
+      j.tourFait
+        ? `👊 **${plural(j.dette, "carte")}** à piocher, d'un seul clic sur Piocher.`
+        : `👊 Gang de gobelins : au moins **${plural(j.dette, "carte")}** à piocher.`,
     );
   if (j.maudit > 0)
     lignes.push(
@@ -753,8 +756,8 @@ const EFFETS = {
   esprit: "Te sauve si tu pioches un Gobelin explosif.",
   sarbacane: "Regarde les 3 premières cartes de la pioche.",
   moine: "Renvoie la prochaine attaque contre toi (jusqu'à la clôture).",
-  fut: "Esquive une pioche et peut voler 1 Bravoure à un joueur.",
-  gang: "Ta cible devra piocher 2 cartes d'un coup.",
+  fut: "Esquive une pioche : termine ton tour sans piocher, ou annule une pioche due.",
+  gang: "Ta cible devra piocher au moins 2 cartes d'un coup.",
   malediction: "La prochaine carte piochée par ta cible devient un Gobelin.",
   voleuse: "Vole une carte au hasard à un joueur.",
   gobelin: "Carte sans pouvoir.",
@@ -765,7 +768,7 @@ const NOUVEAU = (config) =>
 
 function bravoureFooter(j, config) {
   return {
-    text: `Bravoure : ${j.bravoure ?? 0} · Pioches du jour : ${j.pioches ?? 0}/${config.pioches_par_jour}`,
+    text: `Bravoure : ${j.bravoure ?? 0}${j.tourFait && j.dette < 1 && !j.enAttente ? " · Tour terminé" : ""}`,
   };
 }
 
@@ -779,26 +782,59 @@ function finVue(j) {
   };
 }
 
-// Bouton personnel « Piocher (N) » de l'éphémère, N = pioches restantes
-// du jour, ou dues (le bouton du message officiel, commun à tous, ne peut
-// pas l'afficher).
-function repiocherRow(j, partie, config) {
-  const restantes =
-    j.dette > 0 ? j.dette : config.pioches_par_jour - (j.pioches ?? 0);
-  const possible = partie.pioche.length > 0 && restantes > 0;
-  return {
-    type: 1,
-    components: [
-      {
-        type: 2,
-        style: 1,
-        label: `Piocher (${Math.max(0, restantes)})`,
+// Pioche personnelle de l'éphémère : menu du nombre de cartes tant que
+// le tour n'est pas terminé (chaque carte au-delà du minimum rapporte de
+// la Bravoure), sinon bouton « Piocher (N) » pour les pioches dues
+// restantes ; rien quand le tour est terminé.
+function piocheComponents(partie, discordId, config) {
+  const j = partie.joueurs[discordId];
+  if (!j.vivant || j.enAttente || partie.termine || !partie.pioche.length)
+    return [];
+  const choix = choixPioche(partie, discordId, { config });
+  if (choix) {
+    const options = [];
+    for (let n = choix.min; n <= choix.max; n++) {
+      const bonus = (n - choix.min) * config.bravoure.pioche;
+      options.push({
+        label: plural(n, "carte"),
+        value: String(n),
         emoji: { name: "🃏" },
-        custom_id: "bang_e_piocher",
-        disabled: !possible,
+        ...(bonus
+          ? { description: `+${bonus} Bravoure` }
+          : j.dette > 0
+            ? { description: "Imposé par le Gang de gobelins" }
+            : {}),
+      });
+    }
+    return [
+      {
+        type: 1,
+        components: [
+          {
+            type: 3,
+            custom_id: "bang_nbpioche",
+            placeholder: "🃏 Combien de cartes piocher ?",
+            options,
+          },
+        ],
       },
-    ],
-  };
+    ];
+  }
+  if (j.dette < 1) return [];
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 1,
+          label: `Piocher (${j.dette})`,
+          emoji: { name: "🃏" },
+          custom_id: "bang_e_piocher",
+        },
+      ],
+    },
+  ];
 }
 
 function placementRow() {
@@ -818,9 +854,9 @@ function placementRow() {
   };
 }
 
-// [🃏 Piocher] : la ou les cartes piochées (image et effet ; plusieurs
-// d'un coup pour les pioches dues d'un Gang de gobelins), ou l'explosion.
-// Après un Gobelin explosif désamorcé, le menu pour le cacher.
+// [🃏 Piocher] : menu du nombre de cartes (tour en cours, `tirages`
+// vide), puis les cartes piochées (image et effet), ou l'explosion. Après
+// un Gobelin explosif désamorcé, le menu pour le cacher.
 function buildPiocheView(
   config,
   partie,
@@ -848,10 +884,11 @@ function buildPiocheView(
         {
           title: carteLabel("bombe"),
           description: [
+            ...intro,
             "Ton Esprit de guérison te sauve : choisis où cacher le Gobelin explosif.",
             "",
             ...(j.dette > 0
-              ? [`⚠️ **Attention, il te reste ${plural(j.dette, "carte")} à piocher !**`]
+              ? [`⚠️ **Attention, il te reste ${plural(j.dette, "carte")} à piocher**, juste après l'avoir caché !`]
               : []),
             piocheLigne(partie),
           ].join("\n"),
@@ -882,6 +919,26 @@ function buildPiocheView(
     }
     return finVue(j);
   }
+  if (!erreur && !tirages.length && choixPioche(partie, discordId, { config })) {
+    // Début de la pioche : choix du nombre de cartes
+    return {
+      embeds: [
+        {
+          title: "🃏 Piocher",
+          description: [
+            ...intro,
+            ...alertes(j),
+            "Combien de cartes veux-tu piocher ? **Piocher termine ton tour** : joue tes cartes avant !",
+            "",
+            piocheLigne(partie),
+          ].join("\n"),
+          color: BANG_COLOR,
+          footer: bravoureFooter(j, config),
+        },
+      ],
+      components: piocheComponents(partie, discordId, config),
+    };
+  }
   if (erreur || !cartes.length) {
     return {
       embeds: [
@@ -892,7 +949,7 @@ function buildPiocheView(
           color: BANG_COLOR,
         },
       ],
-      components: [repiocherRow(j, partie, config)],
+      components: piocheComponents(partie, discordId, config),
     };
   }
   const lignes = [...intro];
@@ -907,24 +964,26 @@ function buildPiocheView(
         : EFFETS[t.carte],
     );
   }
-  if (j.dette > 0)
-    lignes.push(
-      "",
-      `👊 Encore **${plural(j.dette, "pioche")}** à faire (Gang de gobelins).`,
-    );
+  lignes.push(
+    "",
+    j.dette > 0
+      ? `👊 Encore **${plural(j.dette, "carte")}** à piocher.`
+      : "✅ Ton tour est terminé : reviens demain !",
+  );
   return {
     embeds: [
       {
         title:
           cartes.length > 1
-            ? `Tu pioches ${cartes.length} cartes (Gang de gobelins)`
+            ? `Tu pioches ${cartes.length} cartes`
             : `Tu pioches : ${carteLabel(cartes[0].carte)}`,
         description: lignes.join("\n"),
         color: BANG_COLOR,
         image: { url: mainImageUrl(cartes.map((t) => t.carte)) },
+        footer: bravoureFooter(j, config),
       },
     ],
-    components: [repiocherRow(j, partie, config)],
+    components: piocheComponents(partie, discordId, config),
   };
 }
 
@@ -946,32 +1005,19 @@ function buildJouerView(
     ...(entete ? [entete, ""] : []),
     ...alertes(j),
     `🔥 Bravoure : **${j.bravoure ?? 0}**`,
-    `🃏 Pioches aujourd'hui : **${j.pioches ?? 0}/${config.pioches_par_jour}**`,
     `⚡ Cartes jouées aujourd'hui : **${j.jouees ?? 0}/${config.cartes_par_jour}**`,
     `**Ton deck** : ${formatMain(j.main)}`,
   ];
   const components = [];
   if (carteCiblee) {
-    const adversaires = vivants(partie)
-      .filter(([id]) => id !== discordId)
+    const adversaires = ciblesPossibles(partie, discordId, carteCiblee)
       .sort(([, a], [, b]) => a.username.localeCompare(b.username))
       .map(([id, a]) => ({
         label: a.username.slice(0, 100),
         value: id,
         description: `${plural(a.main.length, "carte")}`,
       }));
-    const options = [
-      ...(carteCiblee === "fut"
-        ? [
-            {
-              label: "Personne (esquive seule)",
-              value: "pioche",
-              emoji: { name: "🛢️" },
-            },
-          ]
-        : []),
-      ...adversaires,
-    ].slice(0, 25);
+    const options = adversaires.slice(0, 25);
     components.push(
       {
         type: 1,
@@ -995,10 +1041,12 @@ function buildJouerView(
     const jouables = JOUABLES.filter(
       (c) => j.main.includes(c) && !(c === "moine" && j.moine),
     );
-    if ((j.jouees ?? 0) >= config.cartes_par_jour) {
+    if (j.tourFait && j.dette < 1) {
+      lignes.push("", "✅ Ton tour est terminé : reviens demain !");
+    } else if ((j.jouees ?? 0) >= config.cartes_par_jour) {
       lignes.push(
         "",
-        "Tu as joué toutes tes cartes du jour : la suite demain !",
+        "Tu as joué toutes tes cartes du jour : il ne te reste qu'à piocher.",
       );
     } else if (!jouables.length) {
       lignes.push("", "Tu n'as aucune carte à jouer pour l'instant.");
@@ -1052,7 +1100,8 @@ async function guardActive(webhookUrl) {
 
 // Action commune : sous verrou (bang.js), puis vue éphémère (`vue`),
 // message officiel réédité et fin de partie éventuelle.
-// `action(partie, config)` renvoie les options de la vue.
+// `action(partie, config)` renvoie les options de la vue ; `rafraichir` :
+// booléen, ou fonction de ces options.
 async function executer(
   webhookUrl,
   discordId,
@@ -1083,7 +1132,9 @@ async function executer(
     if (final) await terminerPartie(state, r.partie, final);
     return;
   }
-  if (rafraichir || r.nouveau) await rafraichirTable(state, await readPartie());
+  const doit =
+    typeof rafraichir === "function" ? rafraichir(r.resultat) : rafraichir;
+  if (doit || r.nouveau) await rafraichirTable(state, await readPartie());
 }
 
 // ── Boutons du message officiel (nouvel éphémère) ────────────────────
@@ -1112,7 +1163,33 @@ export async function handlePiocher(webhookUrl, discordId, username) {
       discordId,
       username,
       (partie, config) => {
+        // Tour en cours : menu du nombre de cartes, sans piocher
+        if (
+          !partie.joueurs[discordId].enAttente &&
+          partie.pioche.length &&
+          choixPioche(partie, discordId, { config })
+        )
+          return {};
         const r = piocherClic(partie, discordId, { config });
+        return r.erreur ? { erreur: r.erreur } : { tirages: r.tirages };
+      },
+      buildPiocheView,
+      { rafraichir: (resultat) => !!resultat?.tirages },
+    );
+  } catch (err) {
+    console.error("[Bang] Échec pioche:", err.message);
+  }
+}
+
+// Menu « Combien de cartes piocher ? ».
+export async function handleNbPioche(webhookUrl, discordId, username, nb) {
+  try {
+    await executer(
+      webhookUrl,
+      discordId,
+      username,
+      (partie, config) => {
+        const r = piocherClic(partie, discordId, { config, nb: Number(nb) });
         return r.erreur ? { erreur: r.erreur } : { tirages: r.tirages };
       },
       buildPiocheView,
@@ -1137,8 +1214,12 @@ export async function handleCarte(webhookUrl, discordId, username, carte) {
           if (!j?.main.includes(carte))
             return { entete: avertissement("pasEnMain") };
           // Menu des cibles vide (seul joueur de la partie) : refusé par Discord
-          if (carte !== "fut" && vivants(partie).length < 2)
+          if (vivants(partie).length < 2)
             return { entete: "⚠️ Aucun adversaire à viser pour l'instant." };
+          if (!ciblesPossibles(partie, discordId, carte).length)
+            return {
+              entete: `⚠️ Tous les joueurs ont déjà subi : ${carteLabel(carte)} aujourd'hui.`,
+            };
           return { carteCiblee: carte };
         },
         buildJouerView,
@@ -1200,21 +1281,35 @@ export async function handlePlacer(webhookUrl, discordId, username, position) {
       webhookUrl,
       discordId,
       username,
-      (partie) => {
+      (partie, config) => {
         const r = placer(partie, discordId, position);
-        return {
-          texte: r.erreur
-            ? avertissement(r.erreur)
-            : `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.`,
-        };
+        if (r.erreur) return { texte: avertissement(r.erreur) };
+        const texte = `🤫 Gobelin explosif caché : ${POSITIONS[position].toLowerCase()}.`;
+        // Cartes restantes de la pioche : enchaînées sans nouveau clic
+        if (partie.joueurs[discordId].dette > 0) {
+          const p = piocherClic(partie, discordId, { config });
+          if (!p.erreur) return { texte, tirages: p.tirages };
+        }
+        return { texte };
       },
-      (config, partie, id, { texte }) => {
+      (config, partie, id, { texte, tirages = [] }) => {
         const j = partie.joueurs[id];
-        if (j.enAttente)
-          return buildPiocheView(config, partie, id, { entete: texte });
+        if (j.enAttente || tirages.length)
+          return buildPiocheView(config, partie, id, { entete: texte, tirages });
         return {
-          embeds: [{ description: texte, color: BANG_COLOR }],
-          components: [repiocherRow(j, partie, config)],
+          embeds: [
+            {
+              description: [
+                texte,
+                ...(j.vivant && !partie.termine && j.dette < 1
+                  ? ["", "✅ Ton tour est terminé : reviens demain !"]
+                  : []),
+              ].join("\n"),
+              color: BANG_COLOR,
+              footer: bravoureFooter(j, config),
+            },
+          ],
+          components: piocheComponents(partie, id, config),
         };
       },
     );

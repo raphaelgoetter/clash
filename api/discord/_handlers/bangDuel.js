@@ -188,6 +188,7 @@ const ERREURS = {
   injouable: "Cette carte ne se joue pas.",
   pasEnMain: "Cette carte n'est plus disponible.",
   moineActif: "Ton Moine te protège déjà.",
+  dejaSubie: "Ton adversaire a déjà subi cette attaque ce tour-ci.",
   pasEnAttente: "Aucun Gobelin explosif à cacher.",
   position: "Emplacement inconnu.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
@@ -462,7 +463,10 @@ function buildVue(
     },
   ];
   const jouables = JOUABLES_DUEL.filter(
-    (c) => j.main.includes(c) && !(c === "moine" && j.moine),
+    (c) =>
+      j.main.includes(c) &&
+      !(c === "moine" && j.moine) &&
+      !adv.subies?.includes(c),
   );
   if (jouables.length && j.jouees < config.cartes_par_tour) {
     const desc = effets(A);
@@ -503,7 +507,7 @@ function buildReglesEmbed(config) {
       `${carteLabel("sarbacane")} : regarde les 3 premières cartes de la pioche.`,
       `${carteLabel("fut")} : esquive une pioche (ton tour se termine sans piocher, ou une pioche de moins à faire après un Gang).`,
       `${carteLabel("gang")} : termine ton tour sans piocher ; ton adversaire devra piocher ${config.gang_pioches} cartes.`,
-      `${carteLabel("voleuse")} : prends une carte au hasard dans la main de ton adversaire.`,
+      `${carteLabel("voleuse")} : prends une carte au hasard dans la main de ton adversaire (une fois par tour).`,
       `${carteLabel("moine")} : joue-le à l'avance, la prochaine attaque adverse (Gang, Voleuse) est renvoyée.`,
       `${carteLabel("tornade")} : mélange la pioche.`,
       `${carteLabel("gobelin")} : carte purement décorative.`,

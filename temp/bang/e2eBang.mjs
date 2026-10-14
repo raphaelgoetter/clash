@@ -52,15 +52,27 @@ for (let jour = 1; jour <= 7; jour++) {
       if (cibles) await H.handleCible(`wh-${id}`, id, `Joueur ${id}`, carte, cibles.options[Math.floor(Math.random() * cibles.options.length)].value);
       if (id === "u1") console.log(`--- u1 joue ${carte} ---\n${lastEph(id).embeds[0].description.split("\n\n")[0]}`);
     }
-    for (let k = 0; k < 1 + (Math.random() < 0.4); k++) {
-      await H.handlePiocher(`wh-${id}`, id, `Joueur ${id}`);
+    // Pioche : menu du nombre de cartes (tour en cours) ou pioches dues
+    await H.handlePiocher(`wh-${id}`, id, `Joueur ${id}`);
+    e = lastEph(id);
+    const nbMenu = e.components?.find((r) => r.components[0].custom_id === "bang_nbpioche")?.components[0];
+    if (nbMenu) {
+      if (nbMenu.options.length < 1 || nbMenu.options.length > 25) { console.log("MENU PIOCHE INVALIDE", JSON.stringify(nbMenu)); process.exit(1); }
+      const opt = nbMenu.options[Math.floor(Math.random() * nbMenu.options.length)];
+      await H.handleNbPioche(`wh-${id}`, id, `Joueur ${id}`, opt.value);
+      if (id === "u1" && jour === 1) console.log(`--- u1 pioche ${opt.label} ---\n${JSON.stringify(lastEph(id).embeds[0], null, 1)}`);
+    }
+    for (let garde = 0; garde < 5; garde++) {
       e = lastEph(id);
-      if (e.components.some((r) => r.components[0].custom_id === "bang_placer")) {
-        await H.handlePlacer(`wh-${id}`, id, `Joueur ${id}`, Math.random() < 0.5 ? "1" : "hasard");
-        if (id === "u1") console.log(`--- u1 cache une bombe ---\n${lastEph(id).embeds[0].description}`);
-      } else if (id === "u1" && jour === 1) {
-        console.log(`--- u1 pioche ---\n${JSON.stringify(lastEph(id).embeds[0], null, 1)}`);
-      }
+      if (!e.components?.some((r) => r.components[0].custom_id === "bang_placer")) break;
+      await H.handlePlacer(`wh-${id}`, id, `Joueur ${id}`, Math.random() < 0.5 ? "1" : "hasard");
+      if (id === "u1") console.log(`--- u1 cache une bombe ---\n${lastEph(id).embeds[0].description}`);
+    }
+    // Après la pioche : plus aucune carte jouable (tour terminé)
+    const pj = (await S.readPartie()).joueurs[id];
+    if (pj?.vivant && pj.tourFait && pj.dette < 1 && !(await S.readState()).termine) {
+      await H.handleJouer(`wh-${id}`, id, `Joueur ${id}`);
+      if (lastEph(id).components?.some((r) => r.components[0].custom_id === "bang_carte")) { console.log("MENU CARTES APRÈS LE TOUR"); process.exit(1); }
     }
   }
   if (jour === 1) console.log(`\n===== Table J1 en direct =====\n${lastPatchTable()?.embeds[0].description}`);

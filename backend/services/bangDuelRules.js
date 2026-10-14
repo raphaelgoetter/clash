@@ -19,6 +19,9 @@ import { CARTES, POSITIONS } from "./bangRules.js";
 
 export const IDS = ["joueur", "bot"];
 export const JOUABLES_DUEL = ["sarbacane", "moine", "fut", "gang", "voleuse", "tornade"];
+// Attaques qu'un joueur ne peut subir qu'une fois par tour (décision du
+// 14/10, comme les attaques subies une fois par jour de Bang!)
+export const UNIQUES_DUEL = ["gang", "voleuse"];
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
 
@@ -32,10 +35,11 @@ function shuffle(arr, rng) {
 }
 
 function joueurVide(main) {
-  // jouees : cartes jouées ce tour ; dette : pioches restantes du tour (1,
+  // jouees : cartes jouées ce tour ; subies : attaques (UNIQUES_DUEL)
+  // subies ce tour ; dette : pioches restantes du tour (1,
   // ou `gang_pioches` après un Gang) ; enAttente :
   // Gobelin explosif désamorcé à cacher
-  return { main, moine: false, dette: 0, jouees: 0, enAttente: false };
+  return { main, moine: false, dette: 0, jouees: 0, subies: [], enAttente: false };
 }
 
 // Paquet fixe (`config.paquet`) mélangé : `main_depart` cartes à chacun en
@@ -159,6 +163,7 @@ export function placer(d, id, position, { config, rng = Math.random, eviterSomme
 export function finirTour(d, id, { config }) {
   if (d.termine || d.actif !== id) return { erreur: d.termine ? "termine" : "pasTonTour" };
   Object.assign(d.joueurs[id], { dette: 0, jouees: 0 });
+  for (const jid of IDS) d.joueurs[jid].subies = [];
   // Une pioche au moins pour le suivant (davantage s'il subit un Gang)
   const adv = d.joueurs[adversaire(id)];
   adv.dette = Math.max(adv.dette, 1);
@@ -185,9 +190,12 @@ export function jouer(d, id, carte, { config, rng = Math.random }) {
   if (index === -1) return { erreur: "pasEnMain" };
   if (carte === "moine" && j.moine) return { erreur: "moineActif" };
   if (j.jouees >= config.cartes_par_tour) return { erreur: "plafond" };
+  const adv = d.joueurs[adversaire(id)];
+  if (UNIQUES_DUEL.includes(carte) && adv.subies?.includes(carte)) return { erreur: "dejaSubie" };
   j.main.splice(index, 1);
   j.jouees += 1;
-  const adv = d.joueurs[adversaire(id)];
+  // Subie par la victime réelle (l'attaquant en cas de renvoi par un Moine)
+  if (UNIQUES_DUEL.includes(carte)) ((adv.moine ? j : adv).subies ??= []).push(carte);
 
   if (carte === "sarbacane") {
     // vu : Gobelin explosif parmi les 3 cartes (récit de fin de partie)
