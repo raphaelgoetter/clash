@@ -25,8 +25,32 @@ const MAX_ATTEMPTS = 3; // uniquement pour les 429 (rate limit) — jamais reten
 // produisant un résultat incohérent d'une exécution à l'autre. Discord
 // renvoie le délai exact à attendre (`retry_after`, en secondes) : on le
 // respecte et on retente, jusqu'à MAX_ATTEMPTS.
+//
+// Les retries ne suffisaient pas sur un classement de 17 joueurs (2 joueurs
+// toujours "Inconnu" après 3 essais, 14/10) : les requêtes sont donc aussi
+// limitées à MAX_CONCURRENT simultanées, le reste attend son tour.
+const MAX_CONCURRENT = 3;
+let enCours = 0;
+const fileAttente = [];
+
+async function avecLimite(fn) {
+  if (enCours >= MAX_CONCURRENT) await new Promise((resolve) => fileAttente.push(resolve));
+  enCours++;
+  try {
+    return await fn();
+  } finally {
+    enCours--;
+    fileAttente.shift()?.();
+  }
+}
+
 export async function resolveDiscordUsername(discordId) {
   if (!discordId) return null;
+  if (memberCache.has(discordId)) return memberCache.get(discordId);
+  return avecLimite(() => fetchDiscordUsername(discordId));
+}
+
+async function fetchDiscordUsername(discordId) {
   if (memberCache.has(discordId)) return memberCache.get(discordId);
 
   const guildId = process.env.DISCORD_GUILD_ID;

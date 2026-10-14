@@ -10,7 +10,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { loadGobeletConfig, readState, listHands, readPoints, buildRanking } from "../backend/services/gobelet.js";
+import { loadGobeletConfig, readState, listHands, readPoints, buildRanking, readAllUsernames } from "../backend/services/gobelet.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {
@@ -47,7 +47,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   }
 
   const points = await readPoints();
-  const ranking = buildRanking(points);
+  const ranking = buildRanking(points, await readAllUsernames());
   if (ranking.length) {
     console.log("Classement cumulé :");
     const rows = await Promise.all(

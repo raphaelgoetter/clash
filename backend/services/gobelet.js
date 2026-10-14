@@ -507,6 +507,12 @@ export async function readUsername(discordId) {
   return getRedis().hget(USERNAMES_KEY, discordId);
 }
 
+// Pseudos capturés au moment de jouer : repli d'affichage du classement
+// quand la résolution live Discord échoue (sinon "Inconnu").
+export async function readAllUsernames() {
+  return hgetallRaw(USERNAMES_KEY);
+}
+
 // Classement trié par points décroissants — les usernames stockés ne sont
 // qu'un repli d'affichage (voir resolveDisplayName côté handler), jamais la
 // source de vérité du pseudo actuel.

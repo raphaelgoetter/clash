@@ -9,7 +9,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { loadGobeletConfig, readState, readPoints, buildRanking } from "../backend/services/gobelet.js";
+import { loadGobeletConfig, readState, readPoints, buildRanking, readAllUsernames } from "../backend/services/gobelet.js";
 import { resolveDisplayName } from "../backend/services/discordUsers.js";
 
 (async () => {
@@ -27,7 +27,7 @@ import { resolveDisplayName } from "../backend/services/discordUsers.js";
   console.log(`Jeu du Gobelet — Jour ${state.jour}/${config.duree_jours}${state.termine ? " (terminée)" : ""}\n`);
 
   const points = await readPoints();
-  const ranking = buildRanking(points);
+  const ranking = buildRanking(points, await readAllUsernames());
   if (!ranking.length) {
     console.log("Personne n'a encore marqué de point.");
     return;

@@ -26,6 +26,7 @@ import {
   resetKept,
   addPoints,
   readPoints,
+  readAllUsernames,
   resetPoints,
   buildRanking,
   writeHistoriqueEntry,
@@ -467,7 +468,7 @@ export async function postGobelet(
         pointsActuels[r.discordId] =
           (pointsActuels[r.discordId] || 0) + r.points;
       }
-      const ranking = buildRanking(pointsActuels);
+      const ranking = buildRanking(pointsActuels, await readAllUsernames());
       const embed = await buildRevealEmbed(results, ranking, [], config);
       return { dryRun: true, final: true, embed };
     }
@@ -497,7 +498,7 @@ export async function postGobelet(
 
   if (estFinDeManche) {
     const points = await readPoints();
-    const ranking = buildRanking(points);
+    const ranking = buildRanking(points, await readAllUsernames());
     // Jamais archivé en dry-run NI sur le salon de test (isPublic) — seule
     // une vraie publication publique compte comme une manche réelle.
     let currentManche = null;
@@ -1004,7 +1005,7 @@ export async function handleJournal(webhookUrl, discordId) {
       listHistorique({ limit: 10 }),
     ]);
 
-    const ranking = buildRanking(points);
+    const ranking = buildRanking(points, await readAllUsernames());
     const resolvedRanking = await Promise.all(
       ranking
         .slice(0, 10)
