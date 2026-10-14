@@ -81,7 +81,7 @@ function robinsonImageUrl(jour) {
 // changement de durée ou de seuil de défaite.
 function buildDay1Intro(config) {
   return (
-    "⛵ **Naufrage général !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré cette nuit dans la tempête. Par miracle, tout le monde s’est échoué sain et sauf sur une île déserte — sans le moindre Coffre à l’horizon.\n\n" +
+    "⛵ **Naufrage général !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré cette nuit dans la tempête. Par miracle, tout le monde s’est échoué sain et sauf sur une île déserte, sans le moindre Coffre à l’horizon.\n\n" +
     `Tenez ${config.duree_jours} jours, le temps que les secours repèrent l’épave, ou évadez-vous plus tôt en achevant un Radeau. Chaque membre vote une fois par jour ; si une ressource reste à 0 pendant ${ZERO_STREAK_LIMIT} jours de suite, c’est le naufrage définitif. Besoin d’un rappel ? Clique sur *Règles du jeu*.`
   );
 }
@@ -154,7 +154,7 @@ async function buildNarrative(jour, stocks, voters, estPremierJour, config) {
 function formatStockLine(emoji, label, value) {
   const alerte =
     value === 0
-      ? " ⚠️ **à 0** — encore une journée comme ça et c'est la fin !"
+      ? " ⚠️ **à 0** : encore une journée comme ça et c'est la fin !"
       : "";
   return `${emoji} ${label} : **${value}**${alerte}`;
 }
@@ -219,7 +219,7 @@ async function buildRobinsonEmbed(
   // réels de la veille — voir pickChefCharpentier().
   if (chefCharpentierId) {
     lines.push(
-      `🪓 **Chef charpentier du jour :** <@${chefCharpentierId}> peut construire en solo aujourd’hui — un vote Radeau de sa part ne coûte aucun Bois commun et rapporte des points doublés !`,
+      `🪓 **Chef charpentier du jour :** <@${chefCharpentierId}> peut construire en solo aujourd’hui : un vote Radeau de sa part ne coûte aucun Bois commun et rapporte des points doublés !`,
       "",
     );
   }
@@ -232,7 +232,7 @@ async function buildRobinsonEmbed(
   );
 
   return {
-    title: `🏝️ Robinson — Jour ${jour}/${config.duree_jours}`,
+    title: `🏝️ Robinson (Jour ${jour}/${config.duree_jours})`,
     description: lines.join("\n"),
     color: ROBINSON_COLOR,
     image: { url: robinsonImageUrl(jour) },
@@ -250,7 +250,7 @@ async function buildRobinsonEmbed(
 
 function buildAnnonceEmbed(config) {
   return {
-    title: "🏝️ Robinson — Le navire lève l’ancre",
+    title: "🏝️ Robinson : le navire lève l’ancre",
     description: [
       `Le clan embarque pour le prochain tournoi d’Arène… mais la météo s’annonce capricieuse. Préparez-vous à survivre **${config.duree_jours} jours** ensemble sur une île déserte (ou à vous évader plus tôt en Radeau).`,
       "",
@@ -342,7 +342,7 @@ export function outcomeLabel(outcome) {
 function formatMancheLine(record, config, isCurrent, isBest) {
   const marker = isBest ? "🏆 " : "";
   const suffix = isCurrent ? " *(cette manche)*" : "";
-  return `${marker}Manche ${record.manche} — ${outcomeLabel(record.outcome)}, jour ${record.jour}${suffix}`;
+  return `${marker}Manche ${record.manche} : ${outcomeLabel(record.outcome)}, jour ${record.jour}${suffix}`;
 }
 
 function buildManchesSection(manches, config, currentManche) {
@@ -378,9 +378,9 @@ function buildOutcomeEmbed(
 
   if (outcome === "victoire_radeau") {
     return {
-      title: "🛶 Victoire anticipée — le Radeau est achevé !",
+      title: "🛶 Victoire anticipée : le Radeau est achevé !",
       description: [
-        "Contre toute attente, la communauté a fini de construire le Radeau avant l’arrivée des secours ! Direction le large — l’île est enfin derrière vous.",
+        "Contre toute attente, la communauté a fini de construire le Radeau avant l’arrivée des secours ! Direction le large, l’île est enfin derrière vous.",
         ...manchesLines,
       ].join("\n"),
       color: 0xf1c40f,
@@ -391,7 +391,7 @@ function buildOutcomeEmbed(
     return {
       title: "🚢 Les secours sont arrivés !",
       description: [
-        `Après ${config.duree_jours} jours de survie acharnée, un bateau apparaît enfin à l’horizon ! Bravo à tous les naufragés — vous avez survécu à l’île.`,
+        `Après ${config.duree_jours} jours de survie acharnée, un bateau apparaît enfin à l’horizon ! Bravo à tous les naufragés, vous avez survécu à l’île.`,
         ...manchesLines,
       ].join("\n"),
       color: 0xf1c40f,
@@ -401,7 +401,7 @@ function buildOutcomeEmbed(
   return {
     title: "💀 Naufrage définitif…",
     description: [
-      `Une ressource critique est restée à 0 pendant ${ZERO_STREAK_LIMIT} jours de suite — l’île a eu raison du campement. L’aventure s’arrête ici.`,
+      `Une ressource critique est restée à 0 pendant ${ZERO_STREAK_LIMIT} jours de suite, l’île a eu raison du campement. L’aventure s’arrête ici.`,
       ...manchesLines,
     ].join("\n"),
     color: 0x2c3e50,
@@ -1041,7 +1041,7 @@ async function handleRadeauVote(
       at: new Date().toISOString(),
     });
     await patchOriginal(webhookUrl, {
-      content: `🪓 Chef charpentier du jour : tu construis en solo, sans toucher au Bois commun — +${gain} points de construction (total : ${points}) !`,
+      content: `🪓 Chef charpentier du jour : tu construis en solo, sans toucher au Bois commun : +${gain} points de construction (total : ${points}) !`,
       embeds: [],
       components: [],
     });
@@ -1055,7 +1055,7 @@ async function handleRadeauVote(
   if (!contribution.success) {
     await releaseVoteSlot(state.jour, discordId);
     await patchOriginal(webhookUrl, {
-      content: `🛶 Pas assez de Bois pour construire le Radeau (il en faut ${config.bois_par_point_radeau}) — réessaie plus tard si le stock remonte !`,
+      content: `🛶 Pas assez de Bois pour construire le Radeau (il en faut ${config.bois_par_point_radeau}), réessaie plus tard si le stock remonte !`,
       embeds: [],
       components: [],
     });
@@ -1090,7 +1090,7 @@ export async function handleVoteButton(
     if (!state || state.termine || String(state.jour) !== String(jour)) {
       await patchOriginal(webhookUrl, {
         content:
-          "Le vote du jour a déjà été clôturé, la journée a changé — regarde le nouveau message !",
+          "Le vote du jour a déjà été clôturé, la journée a changé : regarde le nouveau message !",
         embeds: [],
         components: [],
       });
@@ -1120,7 +1120,7 @@ export async function handleVoteButton(
     ) {
       const { emoji, nom, jour_fin } = config.radeau_verrouille;
       await patchOriginal(webhookUrl, {
-        content: `${emoji} ${nom} : le Radeau est hors de portée avec une mer pareille — reviens à partir du Jour ${jour_fin + 1} !`,
+        content: `${emoji} ${nom} : le Radeau est hors de portée avec une mer pareille, reviens à partir du Jour ${jour_fin + 1} !`,
         embeds: [],
         components: [],
       });
@@ -1164,7 +1164,7 @@ function formatHistoriqueLine(entry) {
     return `Jour ${entry.jour} : 🚢 Les secours sont arrivés !`;
   if (entry.outcome === "defaite") return `Jour ${entry.jour} : 💀 Naufrage.`;
   const vol = entry.gobelinsVoleur
-    ? " — 🧌 les Gobelins ont volé 5 Poissons"
+    ? " (🧌 les Gobelins ont volé 5 Poissons)"
     : "";
   // radeauVotes absent sur les entrées enregistrées avant le 25/08 (champ
   // ajouté après coup) — omis proprement plutôt que d'afficher "undefined".
@@ -1231,9 +1231,9 @@ export async function handleJournal(webhookUrl) {
       `🛶 Radeau : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)`,
       "",
       `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} ${baseBesoin} :**`,
-      `🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` — **il en manque ${manque.poisson}**` : " (couvert)"}`,
-      `💧 Eau : ${besoin.eau} nécessaire${manque.eau > 0 ? ` — **il en manque ${manque.eau}**` : " (couvert)"}`,
-      `🪵 Bois : ${besoin.bois} nécessaire${manque.bois > 0 ? ` — **il en manque ${manque.bois}**` : " (couvert)"}`,
+      `🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` (**il en manque ${manque.poisson}**)` : " (couvert)"}`,
+      `💧 Eau : ${besoin.eau} nécessaire${manque.eau > 0 ? ` (**il en manque ${manque.eau}**)` : " (couvert)"}`,
+      `🪵 Bois : ${besoin.bois} nécessaire${manque.bois > 0 ? ` (**il en manque ${manque.bois}**)` : " (couvert)"}`,
     ];
 
     // Compteurs de jours consécutifs à 0 — invisibles partout ailleurs
@@ -1285,16 +1285,16 @@ export async function handleJournal(webhookUrl) {
 function buildReglesEmbed(config) {
   const actionLines = Object.entries(config.actions).map(([id, action]) => {
     if (id === "radeau") {
-      return `${action.emoji} **${action.label}** — coûte ${config.bois_par_point_radeau} Bois pour +1 point de construction (${config.points_par_section} points = 1 section, ${config.radeau_sections_max} sections = évasion !). Refusé sans consommer ton vote si le stock de Bois est insuffisant.`;
+      return `${action.emoji} **${action.label}** : coûte ${config.bois_par_point_radeau} Bois pour +1 point de construction (${config.points_par_section} points = 1 section, ${config.radeau_sections_max} sections = évasion !). Refusé sans consommer ton vote si le stock de Bois est insuffisant.`;
     }
     if (id === "explorer") {
-      return `${action.emoji} **${action.label}** — rapporte toujours 3 unités d’une seule ressource, tirée au hasard parmi Nourriture, Eau et Bois.`;
+      return `${action.emoji} **${action.label}** : rapporte toujours 3 unités d’une seule ressource, tirée au hasard parmi Nourriture, Eau et Bois.`;
     }
-    return `${action.emoji} **${action.label}** — rapporte de 0 à 5 ${RESOURCE_LABELS[action.resource]} au hasard (~16,7 % de chances chacun).`;
+    return `${action.emoji} **${action.label}** : rapporte de 0 à 5 ${RESOURCE_LABELS[action.resource]} au hasard (~16,7 % de chances chacun).`;
   });
 
   return {
-    title: "📖 Règles du jeu — Robinson",
+    title: "📖 Règles du jeu Robinson",
     description: [
       `Naufragés sur une île, survivez ${config.duree_jours} jours jusqu’à l’arrivée des secours au Jour ${config.duree_jours + 1}, ou évadez-vous plus tôt en achevant le Radeau.`,
       "",
@@ -1305,7 +1305,7 @@ function buildReglesEmbed(config) {
       "",
       `**Défaite :** une ressource à 0 pendant ${ZERO_STREAK_LIMIT} jours consécutifs met fin à l’aventure.`,
       "",
-      "📜 **Journal de Bord** — consulte les besoins du jour et l’historique des jours précédents. Simple lecture, ça ne consomme jamais ton vote : clique dessus autant de fois que tu veux.",
+      "📜 **Journal de Bord** : consulte les besoins du jour et l’historique des jours précédents. Simple lecture, ça ne consomme jamais ton vote : clique dessus autant de fois que tu veux.",
       "",
       "Un vote n’est pas modifiable une fois qu’il a réellement abouti. Attention, des événements imprévus peuvent frapper l’île à tout moment…",
     ].join("\n"),

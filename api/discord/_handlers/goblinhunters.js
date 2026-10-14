@@ -93,7 +93,7 @@ async function buildNarrative(jour, closure) {
 
 function buildAnnonceInscriptionEmbed(config, closingAt) {
   return {
-    title: "👺 Goblin Hunters — les inscriptions sont ouvertes !",
+    title: "👺 Goblin Hunters : les inscriptions sont ouvertes !",
     description: [
       "Des Gobelins se sont infiltrés parmi nous, déguisés en villageois. Sauras-tu les démasquer avant qu'ils ne prennent le contrôle du village ?",
       "",
@@ -115,7 +115,7 @@ function buildAnnonceInscriptionEmbed(config, closingAt) {
 // l'image ici aussi, elle disparaîtrait du message dès le premier clic.
 function buildInscriptionRappelEmbed(config, count, closingAt) {
   return {
-    title: "👺 Goblin Hunters — inscriptions en cours",
+    title: "👺 Goblin Hunters : inscriptions en cours",
     description: [
       `**${count}/${config.effectif_max}** joueurs inscrits pour l'instant (minimum requis : ${config.effectif_min}).`,
       "",
@@ -131,11 +131,11 @@ function buildInscriptionRappelEmbed(config, count, closingAt) {
 
 function buildInscriptionReportEmbed(config, count, closingAt) {
   return {
-    title: "👺 Goblin Hunters — inscriptions prolongées",
+    title: "👺 Goblin Hunters : inscriptions prolongées",
     description: [
       `Seulement **${count}** joueur(s) inscrit(s), il en faut au moins **${config.effectif_min}** pour lancer la partie.`,
       "",
-      "Les inscriptions sont prolongées — parles-en autour de toi !",
+      "Les inscriptions sont prolongées, parles-en autour de toi !",
     ].join("\n"),
     color: GOBLINHUNTERS_COLOR,
     image: { url: startImageUrl() },
@@ -213,7 +213,7 @@ function buildBilanLines(closure, joueursApres, config) {
       const attacker = joueursApres.find((p) => p.discordId === attackerId);
       const camp = config.camps[campReporte];
       lines.push(
-        `🪤 Piège du Guet-Apens : **${attacker?.username || "?"}** est démasqué(e) — camp ${camp.emoji} **${camp.labelSingulier}** !`,
+        `🪤 Piège du Guet-Apens : **${attacker?.username || "?"}** est démasqué(e) : camp ${camp.emoji} **${camp.labelSingulier}** !`,
       );
     }
   }
@@ -225,7 +225,7 @@ function buildBilanLines(closure, joueursApres, config) {
       (p) => p.discordId === closure.explosifRetaliation.targetId,
     );
     lines.push(
-      `💣 **${gobelin?.username || "?"}** explose en mourant — **${target?.username || "?"}** encaisse ${config.roles.explosif.degats_riposte} dégât.`,
+      `💣 **${gobelin?.username || "?"}** explose en mourant : **${target?.username || "?"}** encaisse ${config.roles.explosif.degats_riposte} dégât.`,
     );
   }
   // Tour de Guet surpeuplée (plus de la moitié des vivants) : aucune
@@ -233,7 +233,7 @@ function buildBilanLines(closure, joueursApres, config) {
   // explication au silence inhabituel de leur DM habituel.
   if (closure.tourDeGuetSurpeuplee) {
     lines.push(
-      "🔭 La Tour de Guet était trop encombrée — personne n'a rien pu observer.",
+      "🔭 La Tour de Guet était trop encombrée, personne n'a rien pu observer.",
     );
   }
   if (closure.absents?.length) {
@@ -288,7 +288,7 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
   const chasseursVivants = vivants.filter((j) => j.camp === "chasseur").length;
   const gobelinsVivants = vivants.filter((j) => j.camp === "gobelin").length;
   lines.push(
-    `${config.camps.chasseur.emoji} Villageois en vie : **${chasseursVivants}** — ${config.camps.gobelin.emoji} Gobelins en vie : **${gobelinsVivants}**`,
+    `${config.camps.chasseur.emoji} Villageois en vie : **${chasseursVivants}**, ${config.camps.gobelin.emoji} Gobelins en vie : **${gobelinsVivants}**`,
   );
 
   // Messages de tension informatifs : préviennent quand une victoire devient
@@ -320,17 +320,17 @@ async function buildJourEmbed(jour, joueursApres, config, closure) {
 
   if (Number(jour) === 1) {
     lines.push(
-      "🔒 Vote et combat n'ont aucun effet le Jour 1 — tu peux quand même te rendre au Château ou à l'Arène, mais ça ne servira à rien.",
+      "🔒 Vote et combat n'ont aucun effet le Jour 1. Tu peux quand même te rendre au Château ou à l'Arène, mais ça ne servira à rien.",
     );
   }
 
   return {
-    title: `👺 Goblin Hunters — Jour ${jour}/${config.duree_jours}`,
+    title: `👺 Goblin Hunters (Jour ${jour}/${config.duree_jours})`,
     description: lines.join("\n"),
     color: GOBLINHUNTERS_COLOR,
     image: { url: boardImageUrl(jour) },
     footer: {
-      text: "Choisis ton lieu du jour avant la clôture de demain — définitif dès validation.",
+      text: "Choisis ton lieu du jour avant la clôture de demain (définitif dès validation).",
     },
   };
 }
@@ -349,7 +349,7 @@ const LIEUX_SANS_CIBLE_JOUR1 = new Set(["chateau", "camp_entrainement"]);
 // Joueur humain dont la place a été reprise par un bot (voir
 // computeBotActions) : plus aucune action, ni Journal, ni Messagerie.
 function messageRemplace(joueur) {
-  return `🔄 Ta place a été reprise par **${joueur.username}** après plusieurs jours d'absence — tu ne participes plus à cette partie.`;
+  return `🔄 Ta place a été reprise par **${joueur.username}** après plusieurs jours d'absence, tu ne participes plus à cette partie.`;
 }
 
 function buildLieuButtonsRow(jour, config, slot) {
@@ -456,16 +456,16 @@ function buildOutcomeEmbed(
   jourClos,
 ) {
   const victoireTexte = {
-    gobelins_parite: `${config.camps.gobelin.emoji} Les **Gobelins** l'emportent — parité atteinte !`,
-    chasseurs_gobelins_elimines: `${config.camps.chasseur.emoji} Les **Villageois** l'emportent — tous les Gobelins ont été démasqués !`,
-    chasseurs_survie: `${config.camps.chasseur.emoji} Les **Villageois** l'emportent — le village a tenu ${config.duree_jours} jours !`,
+    gobelins_parite: `${config.camps.gobelin.emoji} Les **Gobelins** l'emportent : parité atteinte !`,
+    chasseurs_gobelins_elimines: `${config.camps.chasseur.emoji} Les **Villageois** l'emportent : tous les Gobelins ont été démasqués !`,
+    chasseurs_survie: `${config.camps.chasseur.emoji} Les **Villageois** l'emportent : le village a tenu ${config.duree_jours} jours !`,
   }[victory];
 
   const reveal = joueursApres
     .map((j) => {
       const statutSymbole = j.alive ? "✅" : "☠️";
       const roleTexte = j.role ? ` (${config.roles[j.role].label})` : "";
-      return `${statutSymbole} ${config.camps[j.camp].emoji} **${j.username}** — ${config.camps[j.camp].labelSingulier}${roleTexte}`;
+      return `${statutSymbole} ${config.camps[j.camp].emoji} **${j.username}** : ${config.camps[j.camp].labelSingulier}${roleTexte}`;
     })
     .join("\n");
 
@@ -475,13 +475,13 @@ function buildOutcomeEmbed(
         "**📊 Manches précédentes**",
         ...manches.map(
           (m) =>
-            `Manche ${m.manche} — ${victoireCourte(m.victory, config)}${m.manche === currentManche ? " *(cette manche)*" : ""}`,
+            `Manche ${m.manche} : ${victoireCourte(m.victory, config)}${m.manche === currentManche ? " *(cette manche)*" : ""}`,
         ),
       ]
     : [];
 
   return {
-    title: "🏆 Goblin Hunters — partie terminée !",
+    title: "🏆 Goblin Hunters : partie terminée !",
     description: [
       victoireTexte,
       "",
@@ -518,7 +518,7 @@ function roleDescription(roleKey, config) {
     case "infiltre":
       return 'l\'enquête menée sur toi à la Tour de Guet renvoie toujours "Villageois".';
     case "explosif":
-      return `si tu meurs (vote ou combat), tu infliges automatiquement ${r.degats_riposte} dégât à un Villageois avant de partir — jamais mortel.`;
+      return `si tu meurs (vote ou combat), tu infliges automatiquement ${r.degats_riposte} dégât à un Villageois avant de partir (jamais mortel).`;
     case "zombie":
       return "le premier Villageois que tu achèves à l'Arène ne meurt pas : il devient Gobelin et perd son rôle (une seule fois par partie).";
     default:
@@ -540,15 +540,15 @@ function buildReglesEmbed(config, rolesEnJeu = null) {
     "",
     "Chaque jour, tu choisis **un seul lieu**. Ton choix est **définitif**, et tu ne peux **pas retourner au même lieu deux jours de suite**. Tout se résout à la clôture, le lendemain matin.",
     "",
-    `${lieu("chateau")} — Tu votes contre un joueur. Celui qui a le plus de voix est éliminé. En cas d'égalité, personne ne l'est.`,
-    `${lieu("camp_entrainement")} — Tu attaques un joueur qui était à l'Arène la veille, ou que la Clairière t'a montré la veille (${config.combat.degats_base} dégât, ${degatsGobelin} pour un Gobelin). Sinon, tu frappes un joueur au hasard.`,
-    `${lieu("tour_de_guet")} — Tu découvres le camp d'un joueur qui était à la Tour la veille (sinon, un joueur au hasard). Si plus de la moitié des joueurs y vont le même jour, personne n'apprend rien.`,
-    `${lieu("taverne")} — Tu es protégé des attaques ce jour, si vous êtes ${config.taverne_seuil_protection} maximum.`,
-    `${lieu("clairiere_mystique")} — Tu découvres où sont allés 2 joueurs au hasard la veille. Le jour où tu reçois cette vision, tu peux les attaquer à l'Arène.`,
+    `${lieu("chateau")} : tu votes contre un joueur. Celui qui a le plus de voix est éliminé. En cas d'égalité, personne ne l'est.`,
+    `${lieu("camp_entrainement")} : tu attaques un joueur qui était à l'Arène la veille, ou que la Clairière t'a montré la veille (${config.combat.degats_base} dégât, ${degatsGobelin} pour un Gobelin). Sinon, tu frappes un joueur au hasard.`,
+    `${lieu("tour_de_guet")} : tu découvres le camp d'un joueur qui était à la Tour la veille (sinon, un joueur au hasard). Si plus de la moitié des joueurs y vont le même jour, personne n'apprend rien.`,
+    `${lieu("taverne")} : tu es protégé des attaques ce jour, si vous êtes ${config.taverne_seuil_protection} maximum.`,
+    `${lieu("clairiere_mystique")} : tu découvres où sont allés 2 joueurs au hasard la veille. Le jour où tu reçois cette vision, tu peux les attaquer à l'Arène.`,
     "",
     pvGobelin === config.combat.pv_base
       ? `❤️ Tout le monde a ${config.combat.pv_base} PV, mais les Gobelins frappent plus fort. Au plus 1 mort au combat par jour.`
-      : `❤️ Villageois : ${config.combat.pv_base} PV — Gobelins : ${pvGobelin} PV. Au plus 1 mort au combat par jour.`,
+      : `❤️ Villageois : ${config.combat.pv_base} PV, Gobelins : ${pvGobelin} PV. Au plus 1 mort au combat par jour.`,
     "🛡️ Chaque jour, un joueur tiré au hasard est immunisé : impossible de l'éliminer, au vote comme au combat.",
     "☀️ Jour 1 : personne ne peut mourir.",
     `💤 Absent ${config.absences_avant_remplacement ?? 2} jours de suite ? Un bot reprend ta place. Il ira un jour sur deux au Château pour apporter sa voix au vote majoritaire.`,
@@ -559,14 +559,14 @@ function buildReglesEmbed(config, rolesEnJeu = null) {
       .filter((roleKey) => !rolesEnJeu || rolesEnJeu.has(roleKey))
       .map(
       (roleKey) =>
-        `${config.roles[roleKey].emoji} **${config.roles[roleKey].label}** (camp ${config.camps[config.roles[roleKey].camp].label}) — ${roleDescription(roleKey, config)}`,
+        `${config.roles[roleKey].emoji} **${config.roles[roleKey].label}** (camp ${config.camps[config.roles[roleKey].camp].label}) : ${roleDescription(roleKey, config)}`,
     ),
     "",
     "📜 **Journal** : ton rôle, tes PV et tes indices.",
     "📬 **Messagerie** : 1 message anonyme par jour, les 3 derniers restent affichés.",
   ];
   return {
-    title: "📖 Règles — Goblin Hunters",
+    title: "📖 Règles de Goblin Hunters",
     description: lines.join("\n"),
     color: GOBLINHUNTERS_COLOR,
   };
@@ -581,7 +581,7 @@ async function sendConversionDMs(convertiId, joueursApres, estBot) {
   if (!converti) return;
   if (!estBot(convertiId)) {
     await sendGoblinHuntersDM(convertiId, {
-      title: "🧟 Goblin Hunters — tu as été converti(e) !",
+      title: "🧟 Goblin Hunters : tu as été converti(e) !",
       description: [
         "Le Gobelin-zombie t'a achevé(e) à l'Arène… mais tu ne meurs pas : **tu es désormais un Gobelin** 👺.",
         "Tu perds ton ancien rôle. Tu gagnes désormais avec les Gobelins.",
@@ -593,7 +593,7 @@ async function sendConversionDMs(convertiId, joueursApres, estBot) {
   for (const g of joueursApres) {
     if (!g.alive || g.camp !== "gobelin" || g.discordId === convertiId || estBot(g.discordId)) continue;
     await sendGoblinHuntersDM(g.discordId, {
-      title: "🧟 Goblin Hunters — un nouveau Gobelin",
+      title: "🧟 Goblin Hunters : un nouveau Gobelin",
       description: `**${converti.username}** a été converti(e) par le zombie et rejoint votre camp.`,
       color: GOBLINHUNTERS_COLOR,
     });
@@ -639,17 +639,17 @@ async function sendRoleDM(joueur, config, joueurs) {
   const camp = config.camps[joueur.camp];
   const roleLabel = joueur.role ? config.roles[joueur.role].label : null;
   const roleLine = joueur.role
-    ? `${config.roles[joueur.role].emoji} **${roleLabel}** — ${roleDescription(joueur.role, config)}`
+    ? `${config.roles[joueur.role].emoji} **${roleLabel}** : ${roleDescription(joueur.role, config)}`
     : null;
   const gobelinsLine = otherGobelinsLine(joueur, joueurs);
   const embed = {
-    title: "👺 Goblin Hunters — ton rôle secret",
+    title: "👺 Goblin Hunters : ton rôle secret",
     description: [
       `Tu es un(e) ${camp.emoji} **${camp.labelSingulier}**${roleLabel ? ` (rôle spécial : **${roleLabel}**)` : ""}.`,
       ...(roleLine ? ["", roleLine] : []),
       ...(gobelinsLine ? ["", gobelinsLine] : []),
       "",
-      "🤫 Garde ce rôle secret — le jeu n'a d'intérêt que si tu sais bluffer !",
+      "🤫 Garde ce rôle secret, le jeu n'a d'intérêt que si tu sais bluffer !",
     ].join("\n"),
     color: GOBLINHUNTERS_COLOR,
   };
@@ -660,7 +660,7 @@ async function sendInvestigationDM(investigation, joueursApres, config) {
   const cible = joueursApres.find((j) => j.discordId === investigation.cibleId);
   const camp = config.camps[investigation.campReporte];
   const embed = {
-    title: "🔭 Tour de Guet — résultat de ton enquête",
+    title: "🔭 Tour de Guet : résultat de ton enquête",
     description: `**${cible?.username || "?"}** appartient au camp des ${camp.emoji} **${camp.label}**.`,
     color: GOBLINHUNTERS_COLOR,
   };
@@ -745,7 +745,7 @@ async function sendEliminationDM(discordId, cause, closure, jourClos, config) {
   );
 
   const embed = {
-    title: "☠️ Goblin Hunters — tu as été éliminé(e)",
+    title: "☠️ Goblin Hunters : tu as été éliminé(e)",
     description: lines.join("\n"),
     color: GOBLINHUNTERS_COLOR,
   };
@@ -759,7 +759,7 @@ async function sendClairiereDM(discordId, reveals, config) {
       `**${r.cibleUsername}** était à ${config.lieux[r.lieu].emoji} ${config.lieux[r.lieu].label} hier.`,
   );
   const embed = {
-    title: "🌫️ Clairière — ta vision",
+    title: "🌫️ Clairière : ta vision",
     description: [
       ...lines,
       "",
@@ -1250,7 +1250,7 @@ export async function handleLieuButton(
     ) {
       await patchOriginal(webhookUrl, {
         content:
-          "La journée a changé entre-temps — regarde le nouveau message !",
+          "La journée a changé entre-temps, regarde le nouveau message !",
         embeds: [],
         components: [],
       });
@@ -1284,7 +1284,7 @@ export async function handleLieuButton(
     }
     if (!isLieuRepeatAllowed(joueur.position, lieu, jour)) {
       await patchOriginal(webhookUrl, {
-        content: `🚫 Tu étais déjà à ${config.lieux[lieu].label} hier — impossible d'y rester 2 jours de suite, choisis un autre lieu.`,
+        content: `🚫 Tu étais déjà à ${config.lieux[lieu].label} hier : impossible d'y rester 2 jours de suite, choisis un autre lieu.`,
         embeds: [],
         components: [],
       });
@@ -1294,7 +1294,7 @@ export async function handleLieuButton(
     if (isActionLocked(existingAction, slot, lieu)) {
       await patchOriginal(webhookUrl, {
         content:
-          "🔒 Tu as déjà choisi ton lieu aujourd'hui — définitif dès validation, impossible d'en changer ou de choisir un autre lieu.",
+          "🔒 Tu as déjà choisi ton lieu aujourd'hui (définitif dès validation), impossible d'en changer ou de choisir un autre lieu.",
         embeds: [],
         components: [],
       });
@@ -1305,7 +1305,7 @@ export async function handleLieuButton(
     // doublant un effet qui n'est censé compter qu'une fois par lieu/jour.
     if (slot === "secondary" && existingAction?.primary?.lieu === lieu) {
       await patchOriginal(webhookUrl, {
-        content: `🚫 Tu as déjà choisi ${config.lieux[lieu].label} pour ta 1ère action — ta 2ᵉ action doit viser un lieu différent.`,
+        content: `🚫 Tu as déjà choisi ${config.lieux[lieu].label} pour ta 1ère action, ta 2ᵉ action doit viser un lieu différent.`,
         embeds: [],
         components: [],
       });
@@ -1367,10 +1367,10 @@ export async function handleLieuButton(
           ? buildEclaireurSecondButtonRow(jour)
           : [];
       const confirmation = sansCibleJour1
-        ? `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — aucun effet aujourd'hui (vote et combat désactivés le Jour 1). **Choix définitif pour aujourd'hui.**`
+        ? `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} : aucun effet aujourd'hui (vote et combat désactivés le Jour 1). **Choix définitif pour aujourd'hui.**`
         : lieuAction === "protection"
           ? "🍺 Tu te rends à la Taverne (protection si le lieu n'est pas surpeuplé aujourd'hui). **Choix définitif pour aujourd'hui.**"
-          : "🌫️ Tu te rends à la Clairière — demain, tu sauras où 2 joueurs au hasard sont allés aujourd'hui. **Choix définitif pour aujourd'hui.**";
+          : "🌫️ Tu te rends à la Clairière. Demain, tu sauras où 2 joueurs au hasard sont allés aujourd'hui. **Choix définitif pour aujourd'hui.**";
       await patchOriginal(webhookUrl, {
         content: confirmation,
         embeds: [],
@@ -1426,7 +1426,7 @@ export async function handleLieuButton(
       // choisira une cible au hasard à la clôture — cibleId reste null ici,
       // c'est le tirage à la clôture qui tranche, jamais au clic.
       await patchOriginal(webhookUrl, {
-        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} — aucune cible possible, tu agiras sur un joueur tiré au hasard à la clôture. **Choix définitif pour aujourd'hui.**`,
+        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} : aucune cible possible, tu agiras sur un joueur tiré au hasard à la clôture. **Choix définitif pour aujourd'hui.**`,
         embeds: [],
         components: followup,
       });
@@ -1451,7 +1451,7 @@ export async function handleLieuButton(
       content:
         lieu === "chateau"
           ? `${config.lieux[lieu].emoji} Choisis ta cible à ${config.lieux[lieu].label} :`
-          : `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} (**lieu définitif**) — choisis ta cible parmi les joueurs ${lieu === "camp_entrainement" ? "présents ici hier ou repérés à la Clairière" : "présents ici hier"}, sinon elle sera tirée au hasard à la clôture :`,
+          : `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} (**lieu définitif**). Choisis ta cible parmi les joueurs ${lieu === "camp_entrainement" ? "présents ici hier ou repérés à la Clairière" : "présents ici hier"}, sinon elle sera tirée au hasard à la clôture :`,
       embeds: [],
       components,
     });
@@ -1533,7 +1533,7 @@ export async function handleTargetSelect(
     if (isActionLocked(existingAction, slot, lieu)) {
       await patchOriginal(webhookUrl, {
         content:
-          "🔒 Tu as déjà choisi ton lieu aujourd'hui — définitif dès validation, impossible d'en changer.",
+          "🔒 Tu as déjà choisi ton lieu aujourd'hui (définitif dès validation), impossible d'en changer.",
         embeds: [],
         components: [],
       });
@@ -1554,7 +1554,7 @@ export async function handleTargetSelect(
     const cibleUsername =
       state.joueurs.find((j) => j.discordId === cibleId)?.username || "?";
     await patchOriginal(webhookUrl, {
-      content: `${config.lieux[lieu].emoji} Action enregistrée — cible : **${cibleUsername}**. **Choix définitif pour aujourd'hui.**`,
+      content: `${config.lieux[lieu].emoji} Action enregistrée, cible : **${cibleUsername}**. **Choix définitif pour aujourd'hui.**`,
       embeds: [],
       components: followup,
     });
@@ -1615,12 +1615,12 @@ function formatIndiceLine(entry, config) {
   const lieu = config.lieux[entry.lieu];
   if (entry.type === "enquete") {
     const camp = config.camps[entry.campReporte];
-    return `Jour ${entry.jour} — 🔭 **${entry.cibleUsername}** = ${camp.emoji} ${camp.labelSingulier}`;
+    return `Jour ${entry.jour} : 🔭 **${entry.cibleUsername}** = ${camp.emoji} ${camp.labelSingulier}`;
   }
   if (entry.type === "reveal") {
-    return `Jour ${entry.jour} — 🌫️ **${entry.cibleUsername}** se trouvait à ${lieu.emoji} ${lieu.label}`;
+    return `Jour ${entry.jour} : 🌫️ **${entry.cibleUsername}** se trouvait à ${lieu.emoji} ${lieu.label}`;
   }
-  return `Jour ${entry.jour} — ⚔️ **${entry.cibleUsername}** croisé(e) au combat (${lieu.emoji} ${lieu.label})`;
+  return `Jour ${entry.jour} : ⚔️ **${entry.cibleUsername}** croisé(e) au combat (${lieu.emoji} ${lieu.label})`;
 }
 
 export async function handleJournal(webhookUrl, discordId) {
@@ -1707,7 +1707,7 @@ export async function handleJournal(webhookUrl, discordId) {
     );
 
     const embed = {
-      title: "📜 Ton Journal — Goblin Hunters",
+      title: "📜 Ton Journal (Goblin Hunters)",
       description: lines.join("\n"),
       color: GOBLINHUNTERS_COLOR,
     };
@@ -1754,7 +1754,7 @@ function buildMessagerieEmbed(messages, { inscrit, alive, alreadySent }) {
     : !alive
       ? "Tu es éliminé(e), tu ne peux plus poster de message."
       : alreadySent
-        ? "Tu as déjà envoyé ton message du jour — reviens demain."
+        ? "Tu as déjà envoyé ton message du jour, reviens demain."
         : "Un message par jour et par joueur (anonyme).";
   return {
     title: "📬 Messagerie du village",
@@ -1876,7 +1876,7 @@ export async function handleMessagerieSubmit(
     const result = await recordMessage(state.jour, discordId, content);
     if (result.status === "already_sent") {
       await patchOriginal(webhookUrl, {
-        content: "Tu as déjà envoyé ton message du jour — reviens demain.",
+        content: "Tu as déjà envoyé ton message du jour, reviens demain.",
         embeds: [],
         components: [],
       });

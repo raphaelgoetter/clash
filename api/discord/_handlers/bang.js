@@ -217,7 +217,7 @@ function buildTableEmbed(jour, config, partie) {
       ...cruciaux.map((e) => texteJournal(partie, e)),
     );
   return {
-    title: `💣 Bang! — Jour ${jour}/${config.duree_jours}`,
+    title: `💣 Bang! (Jour ${jour}/${config.duree_jours})`,
     description: lignes.join("\n").slice(-4096),
     color: BANG_COLOR,
     image: { url: tableImageUrl(jour, config, partie) },
@@ -271,7 +271,7 @@ function buildFinEmbed(jour, ranking, partie, config, manches, currentManche) {
     return j.vivant ? `🔥 ${j.bravoure ?? 0} Bravoure` : "💀";
   };
   return {
-    title: "🏆 Bang! — Partie terminée !",
+    title: "🏆 Bang! (partie terminée)",
     description: [
       titre,
       "",
@@ -303,7 +303,7 @@ function buildFinEmbed(jour, ranking, partie, config, manches, currentManche) {
 
 function buildReglesEmbed(config) {
   return {
-    title: "📖 Règles — Bang!",
+    title: "📖 Règles de Bang!",
     description: [
       "Sois **le dernier joueur en vie** !",
       "",

@@ -136,7 +136,7 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
       const rank = findTiedRank(shown, entry.discordId, "totalScore");
       const tiedCount = shown.filter((e) => e.totalScore === entry.totalScore).length;
       const label = tiedCount === 1 && rank <= 3 ? SEASON_RECAP_MEDALS[rank - 1] : `${rank}.`;
-      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+      return `${label} ${entry.pseudo} (${entry.totalScore} pts)`;
     }),
   ];
   if (hiddenCount > 0) {
@@ -391,7 +391,7 @@ function buildDmEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, answe
     description: [
       `**Zoom carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
       "",
-      `🔍 **${answer}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
+      `🔍 **${answer}** : tu es le ${ordinal(gameRank)} à avoir trouvé !`,
       `Score de cette manche : **${score} pts**`,
       `Score total de la saison : **${seasonScore} pts**`,
     ].join("\n"),

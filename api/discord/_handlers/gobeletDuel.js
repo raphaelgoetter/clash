@@ -291,12 +291,12 @@ async function buildTableEmbed(
   }
 
   return {
-    title: `🎲 Gobelet Duel — Manche ${state.manche}/${state.totalManches}`,
+    title: `🎲 Gobelet Duel (Manche ${state.manche}/${state.totalManches})`,
     description: lines.join("\n"),
     color: GOBELETDUEL_COLOR,
     footer: {
       text: state.rosterLocked
-        ? "Inscriptions closes — la partie a commencé."
+        ? "Inscriptions closes, la partie a commencé."
         : `Places restantes : ${state.maxPlayers - state.players.length}`,
     },
   };
@@ -335,7 +335,7 @@ async function buildFinalEmbed(state, results, ranking, highScore) {
   }
 
   return {
-    title: `🏁 Gobelet Duel — Partie terminée (${state.totalManches} manches)`,
+    title: `🏁 Gobelet Duel : partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     color: GOBELETDUEL_COLOR,
   };
@@ -362,7 +362,7 @@ async function buildExpiredEmbed(state, ranking) {
       : ["Personne n'a marqué de point."]),
   ];
   return {
-    title: `🏁 Gobelet Duel — Partie terminée (${state.totalManches} manches)`,
+    title: `🏁 Gobelet Duel : partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     color: GOBELETDUEL_COLOR,
   };
@@ -404,7 +404,7 @@ export async function handleGobeletCommand(
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie du Jeu du Gobelet Duel est déjà en cours dans <#${result.state.channelId}> — attends qu'elle se termine (ou qu'elle expire après 1h d'inactivité).`,
+        content: `Une partie du Jeu du Gobelet Duel est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle expire après 1h d'inactivité).`,
         embeds: [],
         components: [],
       });
@@ -455,7 +455,7 @@ export async function handleGobeletRoleRejected(webhookUrl) {
 
 // ── Main du joueur — Jouer / conserver un dé / Relancer ─────────────
 
-function buildHandStatusMessage(hand, kept) {
+function buildHandStatusMessage(hand, kept, manche) {
   if (hand.status === "termine") {
     return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** cette manche !`;
   }
@@ -464,7 +464,11 @@ function buildHandStatusMessage(hand, kept) {
   }
   const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
-  return `Tirage ${hand.tirage}/3 — sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
+  // Consigne détaillée à la première manche seulement, ensuite le joueur sait quoi faire
+  if (manche > 1) {
+    return `Tirage ${hand.tirage}/3. Il te reste ${rerollsLeft} lancer${rerollsLeft > 1 ? "s" : ""}.`;
+  }
+  return `Tirage ${hand.tirage}/3 : sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
 // Combinaisons réalisées aux manches précédentes : chacune ne rapporte
@@ -484,11 +488,11 @@ function formatOpponentsLines(opponents = []) {
 
 function buildHandEmbed(manche, hand, kept, used, opponents) {
   return {
-    title: `🎲 Ta main — Manche ${manche}`,
+    title: `🎲 Ta main (Manche ${manche})`,
     description: [
       ...formatDiceBlock(hand.dice),
       "",
-      buildHandStatusMessage(hand, kept),
+      buildHandStatusMessage(hand, kept, manche),
       ...formatUsedLine(used),
       ...formatOpponentsLines(opponents),
     ].join("\n"),
@@ -691,7 +695,7 @@ export async function handleJouer(webhookUrl, discordId, username) {
     if (result.rosterLocked) {
       await patchOriginal(webhookUrl, {
         content:
-          "Cette partie a déjà commencé (ou les sièges sont tous pris) — tu ne peux pas rejoindre.",
+          "Cette partie a déjà commencé (ou les sièges sont tous pris), tu ne peux pas rejoindre.",
         embeds: [],
         components: [],
       });
@@ -888,16 +892,16 @@ export async function handleChoisir(webhookUrl, discordId, category) {
 
 function buildReglesEmbed() {
   return {
-    title: "📖 Règles du jeu — Jeu du Gobelet Duel",
+    title: "📖 Règles du Jeu du Gobelet Duel",
     description: [
       "Duel fermé à 1-3 joueurs, sur plusieurs manches.",
       "",
-      "**Inscription :** clique sur **Jouer** pour rejoindre — dès que tous les sièges sont pris, les inscriptions sont définitivement closes.",
+      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes.",
       "",
       "**Déroulement (1 main par manche) :**",
-      "🎲 **Jouer** — lance tes 5 dés.",
+      "🎲 **Jouer** : lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
-      "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
+      "🔁 **Relancer** : relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
       "👍 **Valider** : dès que tes dés forment une combinaison encore libre (hors Joker), arrête tes relances immédiatement.",
       "🎯 **Choix de la combinaison** : si tes dés en forment plusieurs encore libres (Joker compris), choisis celle à retenir dans la liste, par exemple pour garder la plus payante pour une autre manche.",
       "",

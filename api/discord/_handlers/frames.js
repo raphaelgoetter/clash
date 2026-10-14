@@ -180,7 +180,7 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
         tiedCount === 1 && rank <= 3
           ? SEASON_RECAP_MEDALS[rank - 1]
           : `${rank}.`;
-      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+      return `${label} ${entry.pseudo} (${entry.totalScore} pts)`;
     }),
   ];
   if (hiddenCount > 0) {
@@ -519,7 +519,7 @@ function buildDmText({
   return [
     `**Trouve le film : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
-    `🎬 **${titre}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
+    `🎬 **${titre}** : tu es le ${ordinal(gameRank)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
     `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");

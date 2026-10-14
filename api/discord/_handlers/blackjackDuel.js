@@ -277,7 +277,7 @@ async function buildTableEmbed(
     // 2-3 joueurs : pas de Croupier — duel direct, résultat connu dès que
     // tous les joueurs inscrits ont fini leur main.
     lines.push(
-      "## 🃏 Duel entre joueurs — pas de Croupier",
+      "## 🃏 Duel entre joueurs (pas de Croupier)",
       "La meilleure main l'emporte. Résultat révélé dès que tout le monde a joué.",
       "",
       seatsLabel,
@@ -296,7 +296,7 @@ async function buildTableEmbed(
   } else {
     lines.push(
       "## 🎩 Le Croupier joue en second cette manche",
-      "Il n'a pas encore joué sa main — il jouera après tous les joueurs, résultat révélé à la fin de la manche.",
+      "Il n'a pas encore joué sa main : il jouera après tous les joueurs, résultat révélé à la fin de la manche.",
       "",
       seatsLabel,
     );
@@ -309,12 +309,12 @@ async function buildTableEmbed(
   }
 
   return {
-    title: `🃏 Blackjack Duel — Manche ${state.manche}/${state.totalManches}`,
+    title: `🃏 Blackjack Duel (Manche ${state.manche}/${state.totalManches})`,
     description: lines.join("\n"),
     color: BLACKJACKDUEL_COLOR,
     footer: {
       text: state.rosterLocked
-        ? "Inscriptions closes — la partie a commencé."
+        ? "Inscriptions closes, la partie a commencé."
         : `Places restantes : ${state.maxPlayers - state.players.length}`,
     },
   };
@@ -327,7 +327,7 @@ async function buildMancheHistoryBlocks(history) {
   const blocks = [];
   for (const entry of history) {
     const header = entry.dealer
-      ? `**Manche ${entry.manche}** — ${formatDealerLine(entry.dealer)}`
+      ? `**Manche ${entry.manche}** : ${formatDealerLine(entry.dealer)}`
       : `**Manche ${entry.manche}**`;
     const playerParts = await Promise.all(
       entry.results.map(async (r) => {
@@ -371,7 +371,7 @@ async function buildFinalEmbed(state, ranking, highScore) {
   }
 
   return {
-    title: `🏁 Blackjack Duel — Partie terminée (${state.totalManches} manches)`,
+    title: `🏁 Blackjack Duel : partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     color: BLACKJACKDUEL_COLOR,
   };
@@ -386,7 +386,7 @@ export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, tot
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie de Blackjack Duel est déjà en cours dans <#${result.state.channelId}> — attends qu'elle se termine (ou qu'elle expire après 1h d'inactivité).`,
+        content: `Une partie de Blackjack Duel est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle expire après 1h d'inactivité).`,
         embeds: [],
         components: [],
       });
@@ -467,12 +467,12 @@ function handStatusMessage(hand, dealer, manche, isSolo) {
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
     if (!revealed) {
-      return `${intro} Le Croupier n'a pas encore joué — il jouera en second cette manche, tu sauras si tu l'as battu à la résolution.`;
+      return `${intro} Le Croupier n'a pas encore joué : il jouera en second cette manche, tu sauras si tu l'as battu à la résolution.`;
     }
-    if (hand.score > dealer.score) return `${intro} Le Croupier était à ${dealer.score} — tu gagnes 2 points !`;
+    if (hand.score > dealer.score) return `${intro} Le Croupier était à ${dealer.score}, tu gagnes 2 points !`;
     if (hand.score === dealer.score)
-      return `${intro} Le Croupier était aussi à ${dealer.score} — égalité, tu gagnes quand même 1 point !`;
-    return `${intro} Le Croupier était à ${dealer.score} — pas de point cette manche.`;
+      return `${intro} Le Croupier était aussi à ${dealer.score} : égalité, tu gagnes quand même 1 point !`;
+    return `${intro} Le Croupier était à ${dealer.score}, pas de point cette manche.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
@@ -480,7 +480,7 @@ function handStatusMessage(hand, dealer, manche, isSolo) {
 function buildHandEmbed(manche, hand, message) {
   const scoreLabel = hand.status === "bust" ? "Dépassement" : `Score : ${hand.score}`;
   return {
-    title: `🃏 Ta main — Manche ${manche}`,
+    title: `🃏 Ta main (Manche ${manche})`,
     description: [...formatCardsBlock(hand.cards, scoreLabel), "", message].join("\n"),
     color: BLACKJACKDUEL_COLOR,
   };
@@ -609,7 +609,7 @@ export async function handleJouer(webhookUrl, discordId, username) {
     }
     if (result.rosterLocked) {
       await patchOriginal(webhookUrl, {
-        content: "Cette partie a déjà commencé (ou les sièges sont tous pris) — tu ne peux pas rejoindre.",
+        content: "Cette partie a déjà commencé (ou les sièges sont tous pris), tu ne peux pas rejoindre.",
         embeds: [],
         components: [],
       });
@@ -694,23 +694,23 @@ export async function handleArreter(webhookUrl, discordId) {
 
 function buildReglesEmbed() {
   return {
-    title: "📖 Règles du jeu — Blackjack Duel",
+    title: "📖 Règles du Blackjack Duel",
     description: [
       "Duel fermé à 1-3 joueurs, sur plusieurs manches.",
       "",
       "**Valeur des cartes :** 2 à 10 = leur valeur, Valet/Dame/Roi = 10, As = 11 ou 1 (ramené à 1 si besoin pour éviter de dépasser 21).",
       "",
-      "**Inscription :** clique sur **Jouer** pour rejoindre — dès que tous les sièges sont pris (ou dès que la 1ʳᵉ manche se termine), les inscriptions sont définitivement closes.",
+      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris (ou dès que la 1ʳᵉ manche se termine), les inscriptions sont définitivement closes.",
       "",
       "**Déroulement (1 main par manche) :**",
-      "🃏 **Jouer** — reçois 2 cartes.",
-      "👆 **Piocher** — reçois une carte de plus (autant de fois que tu veux).",
-      "🛑 **Arrêter** — fige ton score pour cette manche.",
+      "🃏 **Jouer** : reçois 2 cartes.",
+      "👆 **Piocher** : reçois une carte de plus (autant de fois que tu veux).",
+      "🛑 **Arrêter** : fige ton score pour cette manche.",
       "Dépasser 21 = main perdue immédiatement pour la manche.",
       "",
-      "**En solo (1 joueur) :** tu affrontes le Croupier. Sur les manches impaires (1, 3, 5…), il joue en premier — son score est connu à l'avance. Sur les manches paires, il joue en second — tu joues sans connaître son score, révélé seulement à la résolution.",
+      "**En solo (1 joueur) :** tu affrontes le Croupier. Sur les manches impaires (1, 3, 5…), il joue en premier : son score est connu à l'avance. Sur les manches paires, il joue en second : tu joues sans connaître son score, révélé seulement à la résolution.",
       "",
-      "**À 2 ou 3 joueurs :** pas de Croupier — vous vous affrontez directement. La meilleure main non dépassée l'emporte, résultat révélé dès que tout le monde a joué sa main.",
+      "**À 2 ou 3 joueurs :** pas de Croupier, vous vous affrontez directement. La meilleure main non dépassée l'emporte, résultat révélé dès que tout le monde a joué sa main.",
       "",
       "**Résultat d'une manche :** le vainqueur gagne **2 points**. Égalité (avec le Croupier en solo, ou entre joueurs à 2-3) = **1 point** quand même. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
       "",

@@ -74,7 +74,7 @@ function buildTriviaEmbed({
       ...choicesLines,
       "",
       "**Barème** : bonne réponse = **1 pt**, mauvaise réponse = 0 pt.",
-      "Réponds via les boutons ci-dessous — un seul essai possible, définitif.",
+      "Réponds via les boutons ci-dessous : un seul essai possible, définitif.",
     ].join("\n"),
     // Illustration statique (frontend/public/images/trivia/images/), même
     // principe que justecarte-game.webp (buildJusteCarteEmbed) : pas
@@ -123,7 +123,7 @@ function buildSeasonRecapEmbed(
         tiedCount === 1 && rank <= 3
           ? SEASON_RECAP_MEDALS[rank - 1]
           : `${rank}.`;
-      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+      return `${label} ${entry.pseudo} (${entry.totalScore} pts)`;
     }),
   ];
   if (hiddenCount > 0) {
@@ -522,7 +522,7 @@ function buildTriviaStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) — ${currentEntryQuestion} :**`,
+    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) · ${currentEntryQuestion} :**`,
   );
   if (currentAnswered) {
     lines.push(
@@ -543,7 +543,7 @@ function buildTriviaStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} — ${m.label} :**`,
+      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} · ${m.label} :**`,
     );
     if (m.played) {
       lines.push(

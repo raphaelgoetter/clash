@@ -81,7 +81,7 @@ function buildHistoryEmbed(seasons, offset) {
       ` (Saison ${estimatePublicSeasonForDate(season.start)})`;
     const lines = season.games.map((g) => {
       const names = g.winners.map((w) => `**${w.name}**`).join(" / ");
-      return `${g.label} — 🏆 ${names}`;
+      return `${g.label} : 🏆 ${names}`;
     });
     return `${label}\n${lines.join("\n")}`;
   });
@@ -90,7 +90,7 @@ function buildHistoryEmbed(seasons, offset) {
     offset === 0 ? "Les dernières saisons mini-jeux" : "Saisons précédentes";
 
   return {
-    title: "📜 Historique des vainqueurs — Mini-jeux",
+    title: "📜 Historique des vainqueurs des mini-jeux",
     color: MINIJEUX_COLOR,
     description: blocks.join("\n\n") || "Aucun historique.",
     footer: {

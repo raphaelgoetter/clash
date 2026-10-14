@@ -212,7 +212,7 @@ function buildSeasonRecapEmbed(
         tiedCount === 1 && rank <= 3
           ? SEASON_RECAP_MEDALS[rank - 1]
           : `${rank}.`;
-      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+      return `${label} ${entry.pseudo} (${entry.totalScore} pts)`;
     }),
   ];
   if (hiddenCount > 0) {
@@ -477,7 +477,7 @@ function buildDmText({
   return [
     `**La Juste Carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
-    `🃏 C'était bien **${reponse}** — trouvée en ${attempts} proposition${attempts > 1 ? "s" : ""} !`,
+    `🃏 C'était bien **${reponse}**, trouvée en ${attempts} proposition${attempts > 1 ? "s" : ""} !`,
     `Score de cette manche : **${score} pts**`,
     `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");
@@ -545,7 +545,7 @@ function buildUnknownCardEmbed(rawAnswer, history) {
   return {
     title: "🤔 Carte inconnue",
     description:
-      `Je ne reconnais pas « ${rawAnswer} » — vérifie l'orthographe (le nom doit être en français) et réessaie. Cette tentative n'a pas été comptabilisée.\n\n` +
+      `Je ne reconnais pas « ${rawAnswer} ». Vérifie l'orthographe (le nom doit être en français) et réessaie. Cette tentative n'a pas été comptabilisée.\n\n` +
       formatHistoryLine(history),
     color: JUSTECARTE_COLOR,
   };
@@ -647,7 +647,7 @@ export async function handleModalSubmit(
     await postEphemeralEmbed(webhookUrl, {
       title: "🃏 Bravo !",
       description:
-        `C'était bien **${secretEntry.fr}** — trouvée en ${participant.attempts} proposition${participant.attempts > 1 ? "s" : ""} !\n` +
+        `C'était bien **${secretEntry.fr}**, trouvée en ${participant.attempts} proposition${participant.attempts > 1 ? "s" : ""} !\n` +
         `Score de cette manche : **${score} pts**${hintUsed ? " _(indice rareté utilisé : -3 pts)_" : ""}`,
       ...(imageUrl ? { image: { url: imageUrl } } : {}),
       color: JUSTECARTE_COLOR,

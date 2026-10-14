@@ -67,7 +67,7 @@ function formatPostedAtParis(date = new Date()) {
 
 function buildAnnonceEmbed() {
   return {
-    title: "❓ Quiz — Une nouvelle manche se prépare",
+    title: "❓ Quiz : une nouvelle manche se prépare",
     description: [
       `**${TOTAL_QUESTIONS} questions**, une par jour, sur une thématique révélée demain.`,
       "",
@@ -90,13 +90,13 @@ function buildQuestionEmbed(mancheConfig, question, jour) {
     (label, idx) => `**${QCM_LETTERS[idx]}.** ${label}`,
   );
   return {
-    title: `❓ Quiz — ${mancheConfig.theme} — Jour ${jour}/${TOTAL_QUESTIONS}`,
+    title: `❓ Quiz : ${mancheConfig.theme} (Jour ${jour}/${TOTAL_QUESTIONS})`,
     description: [
       `# ${question.enonce}`,
       "",
       ...choicesLines,
       "",
-      "Vote via les boutons ci-dessous — un seul vote possible, définitif. Aucun résultat ni compteur n'est visible avant la révélation finale.",
+      "Vote via les boutons ci-dessous : un seul vote possible, définitif. Aucun résultat ni compteur n'est visible avant la révélation finale.",
     ].join("\n"),
     color: QUIZ_COLOR,
     ...(image ? { image: { url: image } } : {}),
@@ -133,7 +133,7 @@ function formatMancheHistoryLine(record) {
   const winners = record.winners?.length
     ? record.winners.join(", ")
     : "personne";
-  return `Manche ${record.manche} (${record.theme}) : 🏆 ${winners} — ${record.maxScore}/${TOTAL_QUESTIONS}`;
+  return `Manche ${record.manche} (${record.theme}) : 🏆 ${winners} (${record.maxScore}/${TOTAL_QUESTIONS})`;
 }
 
 async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
@@ -161,7 +161,7 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
       ? resolved
           .slice(0, 20)
           .map(
-            (r, i, list) => `${rangExAequo(list, i, "score")}. ${r.username} — ${r.score}/${TOTAL_QUESTIONS}`,
+            (r, i, list) => `${rangExAequo(list, i, "score")}. ${r.username} (${r.score}/${TOTAL_QUESTIONS})`,
           )
       : ["Personne n'a voté cette manche."]),
   ];
@@ -182,7 +182,7 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
   }
 
   return {
-    title: "🏁 Quiz — Révélation finale",
+    title: "🏁 Quiz : révélation finale",
     description: lines.join("\n"),
     color: QUIZ_COLOR,
   };

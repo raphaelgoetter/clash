@@ -69,7 +69,7 @@ const BLACKJACK_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack
 export const BLACKJACK_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-start.webp?v=${BLACKJACK_IMAGE_VERSION}`;
 
 const DAY1_INTRO =
-  "**Table ouverte !** Le Croupier s'installe pour 7 jours — bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour les détails.";
+  "**Table ouverte !** Le Croupier s'installe pour 7 jours. Bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour les détails.";
 
 // ── Cartes — rendu texte ────────────────────────────────────────────
 
@@ -143,7 +143,7 @@ function buildDealerTargetSection(dealer, jour) {
   if (!isDealerRevealed(jour)) {
     return [
       "## 🎩 Le Croupier joue en second aujourd'hui",
-      "Il n'a pas encore joué sa main — fais le meilleur score possible sans dépasser 21, le Croupier jouera après toi et le résultat sera révélé demain à la clôture.",
+      "Il n'a pas encore joué sa main. Fais le meilleur score possible sans dépasser 21, le Croupier jouera après toi et le résultat sera révélé demain à la clôture.",
       "",
     ];
   }
@@ -157,7 +157,7 @@ function buildDealerTargetSection(dealer, jour) {
   // joueurs avant qu'ils ne cliquent sur Jouer plutôt qu'à la clôture.
   lines.push(
     dealer.score === 21
-      ? "😱 21 pile — impossible de faire mieux aujourd'hui, seule une égalité (21 aussi, 1 point) est possible !"
+      ? "😱 21 pile, impossible de faire mieux aujourd'hui, seule une égalité (21 aussi, 1 point) est possible !"
       : "Fais mieux que ça sans dépasser 21 pour gagner 2 points (1 point en cas d'égalité).",
   );
   return lines;
@@ -169,7 +169,7 @@ function buildDealerTargetSection(dealer, jour) {
 
 function buildAnnonceEmbed(config) {
   return {
-    title: "🃏 Blackjack — La table ouvre demain",
+    title: "🃏 Blackjack : la table ouvre demain",
     description: [
       `Le Croupier s'installe pour **${config.duree_jours} jours** : bats-le chaque jour pour cumuler des points (2 par victoire, 1 en cas d'égalité).`,
       "",
@@ -251,7 +251,7 @@ async function buildDayEmbed(
   lines.push(...buildDealerTargetSection(dealer, jour));
 
   return {
-    title: `🃏 Blackjack — Jour ${jour}/${config.duree_jours}`,
+    title: `🃏 Blackjack (Jour ${jour}/${config.duree_jours})`,
     description: lines.join("\n"),
     color: BLACKJACK_COLOR,
     image: {
@@ -273,7 +273,7 @@ function formatMancheHistoryLine(record) {
   const winners = record.winners?.length
     ? record.winners.join(", ")
     : "personne";
-  return `Manche ${record.manche} : 🏆 ${winners} — ${record.maxPoints} pts`;
+  return `Manche ${record.manche} : 🏆 ${winners} (${record.maxPoints} pts)`;
 }
 
 async function buildRevealEmbed(
@@ -303,7 +303,7 @@ async function buildRevealEmbed(
           .slice(0, 20)
           .map(
             (r, i, list) =>
-              `${rangExAequo(list, i, memeRang)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+              `${rangExAequo(list, i, memeRang)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
           )
       : ["Personne n'a marqué de point cette manche."]),
   ];
@@ -324,7 +324,7 @@ async function buildRevealEmbed(
   }
 
   return {
-    title: "🏁 Blackjack — Révélation finale",
+    title: "🏁 Blackjack : révélation finale",
     description: lines.join("\n"),
     color: BLACKJACK_COLOR,
     image: { url: BLACKJACK_START_IMAGE_URL },
@@ -656,14 +656,14 @@ function handStatusMessage(hand, dealer, jour) {
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
     if (!revealed) {
-      return `${intro} Le Croupier n'a pas encore joué — il jouera en second aujourd'hui, tu sauras si tu l'as battu à la clôture, demain.`;
+      return `${intro} Le Croupier n'a pas encore joué : il jouera en second aujourd'hui, tu sauras si tu l'as battu à la clôture, demain.`;
     }
     const result = compareToDealer(hand.score, dealer);
     if (result === "win")
-      return `${intro} Le Croupier était à ${dealer.score} — tu gagnes 2 points aujourd'hui ! 🏆`;
+      return `${intro} Le Croupier était à ${dealer.score}, tu gagnes 2 points aujourd'hui ! 🏆`;
     if (result === "push")
-      return `${intro} Le Croupier était aussi à ${dealer.score} — égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝`;
-    return `${intro} Le Croupier était à ${dealer.score} — pas de point aujourd'hui.`;
+      return `${intro} Le Croupier était aussi à ${dealer.score} : égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝`;
+    return `${intro} Le Croupier était à ${dealer.score}, pas de point aujourd'hui.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
@@ -678,12 +678,12 @@ function journalStatusMessage(hand, dealer, jour) {
   }
   if (hand.status === "stand") {
     if (!revealed) {
-      return "Le Croupier n'a pas encore joué — tu sauras si tu l'as battu à la clôture, demain.";
+      return "Le Croupier n'a pas encore joué, tu sauras si tu l'as battu à la clôture, demain.";
     }
     const result = compareToDealer(hand.score, dealer);
-    if (result === "win") return "tu gagnes 2 points aujourd'hui ! 🏆";
-    if (result === "push") return "égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝";
-    return "pas de point aujourd'hui.";
+    if (result === "win") return "Tu gagnes 2 points aujourd'hui ! 🏆";
+    if (result === "push") return "Égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝";
+    return "Pas de point aujourd'hui.";
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
@@ -692,7 +692,7 @@ function buildHandEmbed(jour, hand, message) {
   const scoreLabel =
     hand.status === "bust" ? "Dépassement" : `Score : ${hand.score}`;
   return {
-    title: `🃏 Ta main — Jour ${jour}`,
+    title: `🃏 Ta main (Jour ${jour})`,
     description: [
       ...formatCardsBlock(hand.cards, scoreLabel),
       "",
@@ -855,12 +855,12 @@ export async function handleArreter(webhookUrl, jour, discordId) {
 function formatHistoriqueLine(entry, discordId) {
   const mine = entry.results?.find((r) => r.discordId === discordId);
   const monResultat = !mine
-    ? " — tu n'as pas joué"
+    ? " (tu n'as pas joué)"
     : mine.result === "win"
-      ? " — 🏆 tu as gagné"
+      ? " (🏆 tu as gagné)"
       : mine.result === "push"
-        ? " — 🤝 égalité"
-        : " — ❌ tu as perdu";
+        ? " (🤝 égalité)"
+        : " (❌ tu as perdu)";
   return `Jour ${entry.jour} : Croupier **${entry.dealer.score}**${monResultat}`;
 }
 
@@ -904,11 +904,11 @@ export async function handleJournal(webhookUrl, discordId) {
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
     if (hand) {
       lines.push(
-        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**) — ${journalStatusMessage(hand, state.dealer, state.jour)}`,
+        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**). ${journalStatusMessage(hand, state.dealer, state.jour)}`,
       );
     } else {
       lines.push(
-        "Tu n'as pas encore joué aujourd'hui — clique sur **Jouer** !",
+        "Tu n'as pas encore joué aujourd'hui, clique sur **Jouer** !",
       );
     }
 
@@ -916,7 +916,7 @@ export async function handleJournal(webhookUrl, discordId) {
     const myPoints = myRankIndex === -1 ? 0 : ranking[myRankIndex].points;
     const myRank = myRankIndex === -1 ? null : rangExAequo(ranking, myRankIndex, memeRang);
     lines.push(
-      `Ton total : **${myPoints} pt${myPoints > 1 ? "s" : ""}**${myRank == null ? "" : ` — ${myRank}${myRank === 1 ? "er" : "ème"} au classement`}`,
+      `Ton total : **${myPoints} pt${myPoints > 1 ? "s" : ""}**${myRank == null ? "" : ` (${myRank}${myRank === 1 ? "er" : "ème"} au classement)`}`,
     );
 
     lines.push(
@@ -925,7 +925,7 @@ export async function handleJournal(webhookUrl, discordId) {
       ...(resolvedRanking.length
         ? resolvedRanking.map(
             (r, i, list) =>
-              `${rangExAequo(list, i, memeRang)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+              `${rangExAequo(list, i, memeRang)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
           )
         : ["Personne n'a encore marqué de point."]),
     );
@@ -953,25 +953,25 @@ export async function handleJournal(webhookUrl, discordId) {
 
 function buildReglesEmbed(config) {
   return {
-    title: "📖 Règles du jeu — Blackjack",
+    title: "📖 Règles du Blackjack",
     description: [
       "Bats le Croupier chaque jour pendant 7 jours pour cumuler des points.",
       "",
       "**Valeur des cartes :** 2 à 10 = leur valeur, Valet/Dame/Roi = 10, As = 11 ou 1 (automatiquement ramené à 1 si besoin pour éviter de dépasser 21).",
       "",
       "**Déroulement (1 main par jour, définitive) :**",
-      "🃏 **Jouer** — reçois 2 cartes.",
-      "👆 **Piocher** — reçois une carte de plus (autant de fois que tu veux).",
-      "🛑 **Arrêter** — fige ton score pour aujourd'hui.",
+      "🃏 **Jouer** : reçois 2 cartes.",
+      "👆 **Piocher** : reçois une carte de plus (autant de fois que tu veux).",
+      "🛑 **Arrêter** : fige ton score pour aujourd'hui.",
       "Dépasser 21 = main perdue immédiatement pour la journée.",
       "",
-      "**Score du Croupier :** les jours impairs (1, 3, 5, 7), le Croupier joue en premier — son score est connu à l'avance. Les jours pairs (2, 4, 6), il joue en second — tu joues sans connaître son score, qui n'est révélé qu'à la clôture !",
+      "**Score du Croupier :** les jours impairs (1, 3, 5, 7), le Croupier joue en premier : son score est connu à l'avance. Les jours pairs (2, 4, 6), il joue en second : tu joues sans connaître son score, qui n'est révélé qu'à la clôture !",
       "",
       "**Résultat quotidien :** le plus proche de 21 sans le dépasser gagne **2 points**. Égalité avec le Croupier = **1 point** quand même. Une main non jouée ne rapporte ni ne coûte rien.",
       "",
       `Au Jour ${config.duree_jours}, le classement cumulé désigne le(s) vainqueur(s) de la manche.`,
       "",
-      "📜 **Journal** — consulte ta main du jour, le classement cumulé et l'historique des jours précédents. Simple lecture, clique dessus autant de fois que tu veux.",
+      "📜 **Journal** : consulte ta main du jour, le classement cumulé et l'historique des jours précédents. Simple lecture, clique dessus autant de fois que tu veux.",
     ].join("\n"),
     color: BLACKJACK_COLOR,
   };

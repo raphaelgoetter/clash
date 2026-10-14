@@ -84,7 +84,7 @@ function buildAnagramEmbed({
       "Devine le nom de la carte Clash Royale à partir de son anagramme :\n\n" +
       `# ${anagram.toUpperCase()}\n\n` +
       "_(les accents ne comptent pas)_\n\n" +
-      "**Barème** — tes points dépendent de ton rang d'arrivée :\n" +
+      "**Barème** : tes points dépendent de ton rang d'arrivée :\n" +
       "- 1er à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**...\n\n" +
       "Le classement de la saison est mis à jour après chaque manche, et un MP te sera envoyé pour récapituler tes points et ton classement.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
@@ -168,7 +168,7 @@ function buildSeasonRecapEmbed(
         tiedCount === 1 && rank <= 3
           ? SEASON_RECAP_MEDALS[rank - 1]
           : `${rank}.`;
-      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+      return `${label} ${entry.pseudo} (${entry.totalScore} pts)`;
     }),
   ];
   if (hiddenCount > 0) {
@@ -440,7 +440,7 @@ function buildDmText({
   return [
     `**Anagramme : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
-    `🃏 **${reponse}** — tu es le ${ordinal(position)} à avoir trouvé !`,
+    `🃏 **${reponse}** : tu es le ${ordinal(position)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
     `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");
@@ -538,7 +538,7 @@ export async function handleModalSubmit(
     await postEphemeralEmbed(webhookUrl, {
       title: "🃏 Bravo !",
       description:
-        `C'était bien **${entry.answer}** — tu es le ${ordinal(participant.position)} à avoir trouvé !\n` +
+        `C'était bien **${entry.answer}**, tu es le ${ordinal(participant.position)} à avoir trouvé !\n` +
         `Score de cette manche : **${score} pts**`,
       ...(imageUrl ? { image: { url: imageUrl } } : {}),
       color: ANAGRAM_COLOR,

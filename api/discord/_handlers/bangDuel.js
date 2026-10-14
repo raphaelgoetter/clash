@@ -491,7 +491,7 @@ function buildVue(
 
 function buildReglesEmbed(config) {
   return {
-    title: "📖 Règles — Bang! Duel",
+    title: "📖 Règles de Bang! Duel",
     description: [
       "Fais exploser ton adversaire avant d'exploser toi-même !",
       "",

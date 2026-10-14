@@ -90,7 +90,7 @@ function buildBlindRoyaleEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
     title: "🎧 Le jeu du lundi : Blind Royale !",
     description:
       `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
-      "Un son de carte Clash Royale mystère est joint à ce message ⬇️ — écoute-le autant de fois que tu veux, puis devine de quelle carte il s'agit !\n\n" +
+      "Un son de carte Clash Royale mystère est joint à ce message ⬇️ Écoute-le autant de fois que tu veux, puis devine de quelle carte il s'agit !\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +
@@ -159,7 +159,7 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
       const rank = findTiedRank(shown, entry.discordId, "totalScore");
       const tiedCount = shown.filter((e) => e.totalScore === entry.totalScore).length;
       const label = tiedCount === 1 && rank <= 3 ? SEASON_RECAP_MEDALS[rank - 1] : `${rank}.`;
-      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+      return `${label} ${entry.pseudo} (${entry.totalScore} pts)`;
     }),
   ];
   if (hiddenCount > 0) {
@@ -441,7 +441,7 @@ function buildDmText({ seasonId, seasonManche, seasonMancheTotal, reponse, score
   return [
     `**Blind Royale : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
-    `🎧 **${reponse}** — tu es le ${ordinal(gameRank)} à avoir trouvé !`,
+    `🎧 **${reponse}** : tu es le ${ordinal(gameRank)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**${hintUsed ? " _(indice rareté utilisé : -3 pts)_" : ""}`,
     `Score total de la saison : **${seasonScore} pts**`,
   ].join("\n");
@@ -511,7 +511,7 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
     await postEphemeralEmbed(webhookUrl, {
       title: "🎧 Bravo !",
       description:
-        `C'était bien **${entry.fr}** — tu es le ${ordinal(gameRank)} à avoir trouvé !\n` +
+        `C'était bien **${entry.fr}**, tu es le ${ordinal(gameRank)} à avoir trouvé !\n` +
         `Score de cette manche : **${score} pts**${hintUsed ? " _(indice rareté utilisé : -3 pts)_" : ""}`,
       ...(imageUrl ? { image: { url: imageUrl } } : {}),
       color: BLINDROYALE_COLOR,

@@ -119,7 +119,7 @@ function buildSeasonRecapEmbed(
         tiedCount === 1 && rank <= 3
           ? SEASON_RECAP_MEDALS[rank - 1]
           : `${rank}.`;
-      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+      return `${label} ${entry.pseudo} (${entry.totalScore} pts)`;
     }),
   ];
   if (hiddenCount > 0) {
@@ -456,7 +456,7 @@ function buildPaletteStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) — ${currentEntryFr} :**`,
+    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) · ${currentEntryFr} :**`,
   );
   if (currentAnswered) {
     lines.push(
@@ -477,7 +477,7 @@ function buildPaletteStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} — ${m.label} :**`,
+      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} · ${m.label} :**`,
     );
     if (m.played) {
       lines.push(

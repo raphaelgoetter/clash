@@ -109,8 +109,8 @@ function formatRankingLines(
     const arrivee = j.position >= config.case_arrivee ? " 🏁" : "";
     const coche = deLances?.has(j.discordId) ? " ✅" : "";
     if (!detailed)
-      return `${medal} **${j.username}** — case ${j.position}${arrivee}`;
-    return `${medal} **${j.username}** — case ${j.position}${arrivee} · ${j.points} Or${coche}`;
+      return `${medal} **${j.username}** (case ${j.position})${arrivee}`;
+    return `${medal} **${j.username}** (case ${j.position})${arrivee} · ${j.points} Or${coche}`;
   };
   const lignes = ranking.slice(0, limit).map(formatLigne);
   // Joueur hors du top affiché : on ajoute quand même sa propre ligne.
@@ -425,11 +425,11 @@ function formatBilanLignes(lignes, joueurs, config, moiId) {
 
 function buildAnnonceEmbed(config) {
   return {
-    title: "🏁 Mario Clash — Les moteurs chauffent…",
+    title: "🏁 Mario Clash : les moteurs chauffent…",
     description: [
       "Une course pas comme les autres s'annonce sur l'Arène : dés, objets spéciaux et sorts capricieux décideront qui franchira la ligne d'arrivée en tête !",
       "",
-      `📅 **${config.duree_jours} jours de course**, à partir de demain — chaque jour tu peux lancer le dé, aller à la boutique pour utiliser ton objet et lancer un sort.`,
+      `📅 **${config.duree_jours} jours de course**, à partir de demain. Chaque jour tu peux lancer le dé, aller à la boutique pour utiliser ton objet et lancer un sort.`,
       "",
       "Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
@@ -445,7 +445,7 @@ function buildAnnonceEmbed(config) {
 // noyer l'essentiel sous les chiffres.
 function buildJourEmbed(jour, config, resumeLignes) {
   return {
-    title: `🏁 Mario Clash — Jour ${jour}/${config.duree_jours}`,
+    title: `🏁 Mario Clash (Jour ${jour}/${config.duree_jours})`,
     description: resumeLignes.join("\n"),
     color: MARIOCLASH_COLOR,
     image: { url: boardImageUrl(jour) },
@@ -475,7 +475,7 @@ function buildJournalEmbed(jour, config, joueurs, bilanLignes, discordId, deLanc
   if (bilanPersonnel.length)
     lines.push(...formatBilanLignes(bilanPersonnel, joueurs, config, discordId));
   return {
-    title: `📜 Journal — Jour ${jour}/${config.duree_jours}`,
+    title: `📜 Journal (Jour ${jour}/${config.duree_jours})`,
     description: lines.join("\n"),
     color: MARIOCLASH_COLOR,
   };
@@ -484,7 +484,7 @@ function buildJournalEmbed(jour, config, joueurs, bilanLignes, discordId, deLanc
 function formatMancheLine(record, isCurrent, isBest) {
   const marker = isBest ? "🏆 " : "";
   const suffix = isCurrent ? " *(cette manche)*" : "";
-  return `${marker}Manche ${record.manche} — vainqueur **${record.vainqueur}** (case ${record.positionFinale})${suffix}`;
+  return `${marker}Manche ${record.manche} : vainqueur **${record.vainqueur}** (case ${record.positionFinale})${suffix}`;
 }
 
 function buildManchesSection(manches, currentManche) {
@@ -524,9 +524,9 @@ function buildFinEmbed(joueurs, config, manches, currentManche) {
       : `**${vainqueurs[0]?.username || "Personne"}** l'emporte !`;
 
   return {
-    title: "🏆 Mario Clash — Course terminée !",
+    title: "🏆 Mario Clash : course terminée !",
     description: [
-      `Après ${config.duree_jours} jours de course effrénée, le drapeau à damier tombe — ${titreVainqueur}`,
+      `Après ${config.duree_jours} jours de course effrénée, le drapeau à damier tombe : ${titreVainqueur}`,
       "",
       "**Classement final**",
       ...formatRankingLines(joueurs, config, { limit: 10, detailed: false }),
@@ -696,13 +696,13 @@ function buildReglesEmbed(config) {
     (d) => `${d.emoji} **${d.label}** : ${describeDe(d)}`,
   );
   return {
-    title: "📖 Règles — Mario Clash",
+    title: "📖 Règles de Mario Clash",
     description: [
       "Chaque jour, choisis librement parmi :",
       "🎲 **Lancer le dé** : choisis ton dé parmi",
       ...desLines,
-      "🛍️ **Boutique** — achète 1 objet spécial ; l'objet est utilisé automatiquement dès l'achat (cible à choisir s'il vise un adversaire), effet appliqué à la clôture.",
-      "✨ **Lancer un sort** — toujours sur toi-même, effet aléatoire annoncé immédiatement mais appliqué à la clôture.",
+      "🛍️ **Boutique** : achète 1 objet spécial ; l'objet est utilisé automatiquement dès l'achat (cible à choisir s'il vise un adversaire), effet appliqué à la clôture.",
+      "✨ **Lancer un sort** : toujours sur toi-même, effet aléatoire annoncé immédiatement mais appliqué à la clôture.",
       `🔋 **Concentration** : chaque jour sans sort charge ta jauge (${config.concentration_max} max). Chaque niveau retire un effet négatif de ton prochain sort, puis la jauge retombe à 0.`,
       "",
       "**Ordre de résolution**",
@@ -802,7 +802,7 @@ function buildBoutiqueSelect(jour, config, joueur) {
           custom_id: `marioclash_boutique_select:${jour}`,
           placeholder: `Tu as ${joueur.points} Or`,
           options: Object.entries(config.objets).map(([id, o]) => ({
-            label: `${o.label} — ${o.cout} Or`.slice(0, 100),
+            label: `${o.label} (${o.cout} Or)`.slice(0, 100),
             value: id,
             emoji: { name: o.emoji },
           })),
@@ -1065,7 +1065,7 @@ async function guardActiveDay(webhookUrl, jour) {
     String(state.jour) !== String(jour)
   ) {
     await patchOriginal(webhookUrl, {
-      content: "La journée a changé entre-temps — regarde le nouveau message !",
+      content: "La journée a changé entre-temps, regarde le nouveau message !",
       embeds: [],
       components: [],
     });
@@ -1212,7 +1212,7 @@ export async function handleBoutiqueButton(
     if (joueur.dernierAchatJour === Number(jour)) {
       await patchOriginal(webhookUrl, {
         content:
-          "🛍️ Tu as déjà acheté un objet aujourd'hui — un seul achat par jour.",
+          "🛍️ Tu as déjà acheté un objet aujourd'hui (un seul achat par jour).",
         embeds: [],
         components: [],
       });
@@ -1322,7 +1322,7 @@ export async function handleBoutiqueSelect(
       candidats,
     );
     await patchOriginal(webhookUrl, {
-      content: `🛍️ Acheté : ${item.emoji} **${item.label}** — choisis ta cible :`,
+      content: `🛍️ Acheté : ${item.emoji} **${item.label}**, choisis ta cible :`,
       embeds: [],
       components,
     });
@@ -1371,7 +1371,7 @@ export async function handleItemTargetSelect(
     await recordItemUse(jour, discordId, targetId);
     const cible = await readJoueur(targetId);
     await patchOriginal(webhookUrl, {
-      content: `${item.emoji} ${item.label} activé sur **${cible?.username || "?"}** — effet révélé à la clôture !`,
+      content: `${item.emoji} ${item.label} activé sur **${cible?.username || "?"}**, effet révélé à la clôture !`,
       embeds: [],
       components: [],
     });

@@ -79,7 +79,7 @@ function buildPeleMeleEmbed({
       "🏆 **1 point** par carte trouvée, **5 points** s'il s'agit du mot le plus long.\n" +
       "♾️ Tu as autant d'essais que tu veux !\n\n" +
       (totalValidWords != null
-        ? `🎯 **${totalValidWords} carte${totalValidWords > 1 ? "s" : ""} valide${totalValidWords > 1 ? "s" : ""} sur ce tirage** — à toi de toutes les trouver !\n\n`
+        ? `🎯 **${totalValidWords} carte${totalValidWords > 1 ? "s" : ""} valide${totalValidWords > 1 ? "s" : ""} sur ce tirage** : à toi de toutes les trouver !\n\n`
         : "") +
       "📜 Détails (orthographe, accents, ponctuation...) dans le bouton **Règles**.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
@@ -107,11 +107,11 @@ export function buildRulesEmbed() {
   return {
     title: "📜 Règles de Pêle-mêle",
     description:
-      `${DRAW_SIZE} lettres sont tirées au sort à chaque manche. Propose le nom d'une carte Clash Royale que tu peux former avec ces lettres — autant de fois que tu veux, aucune limite d'essais.\n\n` +
+      `${DRAW_SIZE} lettres sont tirées au sort à chaque manche. Propose le nom d'une carte Clash Royale que tu peux former avec ces lettres, autant de fois que tu veux, aucune limite d'essais.\n\n` +
       "**Barème**\n" +
       "🏆 **5 points** pour la (ou les) carte(s) la (les) plus longue(s) possible sur ce tirage.\n" +
       "✨ **+1 point** pour chaque autre carte valide trouvée.\n" +
-      "Reproposer une carte déjà trouvée ne rapporte rien — seules les cartes **distinctes** comptent.\n\n" +
+      "Reproposer une carte déjà trouvée ne rapporte rien : seules les cartes **distinctes** comptent.\n\n" +
       "**Orthographe**\n" +
       "• Les accents ne sont pas obligatoires (é/e, à/a… acceptés indifféremment).\n" +
       "• La casse n'a pas d'importance (majuscules/minuscules).\n" +
@@ -160,7 +160,7 @@ function buildSeasonRecapEmbed(
         tiedCount === 1 && rank <= 3
           ? SEASON_RECAP_MEDALS[rank - 1]
           : `${rank}.`;
-      return `${label} ${entry.pseudo} — ${entry.totalScore} pts`;
+      return `${label} ${entry.pseudo} (${entry.totalScore} pts)`;
     }),
   ];
   if (hiddenCount > 0) {
@@ -496,7 +496,7 @@ export async function handleJournalButton(webhookUrl, discordId) {
     }
 
     await postEphemeralEmbed(webhookUrl, {
-      title: "📖 Journal — Pêle-mêle",
+      title: "📖 Journal de Pêle-mêle",
       description: `**Manche actuelle**\n${currentSection}\n\n**Manches précédentes**\n${previousSection}`,
       color: PELEMELE_COLOR,
     });
@@ -530,7 +530,7 @@ export async function handleModalSubmit(
       const history = await getGuessHistory(gameId, discordId);
       await postEphemeral(
         webhookUrl,
-        `🤔 Je ne reconnais pas « ${rawAnswer} » — vérifie l'orthographe (le nom doit être en français). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
+        `🤔 Je ne reconnais pas « ${rawAnswer} », vérifie l'orthographe (le nom doit être en français). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
       );
       return;
     }
@@ -583,7 +583,7 @@ export async function handleModalSubmit(
 
     await postEphemeral(
       webhookUrl,
-      `${isLongest ? "🏆" : "🎉"} **${word}** (${result.length} lettre${result.length > 1 ? "s" : ""}) — +${points} pt${points > 1 ? "s" : ""} ! ` +
+      `${isLongest ? "🏆" : "🎉"} **${word}** (${result.length} lettre${result.length > 1 ? "s" : ""}) : +${points} pt${points > 1 ? "s" : ""} ! ` +
         `Score total sur cette manche : **${participant.score} pts**${progress}.` +
         (foundAll
           ? "\n\n🎊 Tu as trouvé TOUS les mots de cette manche, bravo !"

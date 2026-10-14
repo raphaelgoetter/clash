@@ -629,7 +629,7 @@ async function buildRegularGamesBlock(now) {
     if (entry.state == null) {
       // Ni "fin dans Xj" ni barre de progression : rien n'est en cours pour
       // ce jeu, seul son premier lancement à venir a un sens.
-      return `${index + 1}. **${entry.title}** — *jamais lancé, ${formatNextLaunchLabel(entry.daysUntil)}*`;
+      return `${index + 1}. **${entry.title}** *(jamais lancé, ${formatNextLaunchLabel(entry.daysUntil)})*`;
     }
     const relay = entry.next ? `, puis ${entry.next.title}` : "";
     const header = `${index + 1}. **${entry.title}** (${formatEndLabel(entry.daysUntil)}${relay})`;

@@ -70,7 +70,7 @@ const GOBELET_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/gobelet/dices.webp?v=
 const GOBELET_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/gobelet/gobelet.webp?v=${GOBELET_IMAGE_VERSION}`;
 
 const DAY1_INTRO =
-  "**Le Gobelet est prêt !** Lance tes dés chaque jour pendant 7 jours pour cumuler des points — clique sur *Règles* pour le barème complet.";
+  "**Le Gobelet est prêt !** Lance tes dés chaque jour pendant 7 jours pour cumuler des points. Clique sur *Règles* pour le barème complet.";
 
 // ── Dés — rendu texte ──────────────────────────────────────────────
 // Chiffres "keycap" (1️⃣-6️⃣) plutôt que les glyphes Unicode de dés
@@ -130,7 +130,7 @@ async function formatResultsSection(results) {
 
 function buildAnnonceEmbed(config) {
   return {
-    title: "🎲 Jeu du Gobelet — Les dés sont prêts…",
+    title: "🎲 Jeu du Gobelet : les dés sont prêts…",
     description: [
       "Un nouveau jeu arrive sur l'Arène : lance tes dés façon Yahtzee et réalise les meilleures combinaisons !",
       "",
@@ -199,7 +199,7 @@ function buildDayComponents(jour) {
 function buildTodaySection() {
   return [
     "## 🎲 À toi de jouer",
-    "Clique sur **Jouer** pour lancer tes 5 dés. Tu pourras ensuite conserver les dés de ton choix et relancer les autres — deux fois de suite.",
+    "Clique sur **Jouer** pour lancer tes 5 dés. Tu pourras ensuite conserver les dés de ton choix et relancer les autres, deux fois de suite.",
     "",
     "Consulte **Règles** pour le barème complet des combinaisons.",
   ];
@@ -223,7 +223,7 @@ async function buildDayEmbed(
   lines.push(...buildTodaySection());
 
   return {
-    title: `🎲 Jeu du Gobelet — Jour ${jour}/${config.duree_jours}`,
+    title: `🎲 Jeu du Gobelet (Jour ${jour}/${config.duree_jours})`,
     description: lines.join("\n"),
     color: GOBELET_COLOR,
     image: {
@@ -243,7 +243,7 @@ function formatMancheHistoryLine(record) {
   const winners = record.winners?.length
     ? record.winners.join(", ")
     : "personne";
-  return `Manche ${record.manche} : 🏆 ${winners} — ${record.maxPoints} pts`;
+  return `Manche ${record.manche} : 🏆 ${winners} (${record.maxPoints} pts)`;
 }
 
 // Trophées honorifiques ponctuels (ex. « Trophée du missclick »), saisis à
@@ -276,7 +276,7 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory, config) {
           .slice(0, 20)
           .map(
             (r, i, list) =>
-              `${rangExAequo(list, i)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+              `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
           )
       : ["Personne n'a marqué de point cette manche."]),
     ...buildTropheesSection(config?.trophees),
@@ -291,7 +291,7 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory, config) {
   }
 
   return {
-    title: "🏁 Jeu du Gobelet — Révélation finale",
+    title: "🏁 Jeu du Gobelet : révélation finale",
     description: lines.join("\n"),
     color: GOBELET_COLOR,
     image: { url: GOBELET_START_IMAGE_URL },
@@ -568,7 +568,7 @@ async function patchOriginal(webhookUrl, payload) {
 // jour n'est jamais repatché, il n'y a aucun compteur à y afficher — la
 // main de chacun reste secrète jusqu'à la clôture du lendemain.
 
-function buildHandStatusMessage(hand, kept) {
+function buildHandStatusMessage(hand, kept, jour) {
   if (hand.status === "termine") {
     return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** aujourd'hui !`;
   }
@@ -577,7 +577,11 @@ function buildHandStatusMessage(hand, kept) {
   }
   const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
-  return `Tirage ${hand.tirage}/3 — sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
+  // Consigne détaillée à la première manche seulement, ensuite le joueur sait quoi faire
+  if (jour > 1) {
+    return `Tirage ${hand.tirage}/3. Il te reste ${rerollsLeft} lancer${rerollsLeft > 1 ? "s" : ""}.`;
+  }
+  return `Tirage ${hand.tirage}/3 : sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
 // Combinaisons réalisées les jours précédents : chacune ne rapporte qu'une
@@ -588,11 +592,11 @@ function formatUsedLine(used) {
 
 function buildHandEmbed(jour, hand, kept, used) {
   return {
-    title: `🎲 Ta main — Jour ${jour}`,
+    title: `🎲 Ta main (Jour ${jour})`,
     description: [
       ...formatDiceBlock(hand.dice),
       "",
-      buildHandStatusMessage(hand, kept),
+      buildHandStatusMessage(hand, kept, jour),
       ...formatUsedLine(used),
     ].join("\n"),
     color: GOBELET_COLOR,
@@ -948,8 +952,8 @@ export async function handleChoisir(webhookUrl, jour, discordId, category) {
 function formatHistoriqueLine(entry, discordId) {
   const mine = entry.results?.find((r) => r.discordId === discordId);
   const monResultat = !mine
-    ? " — tu n'as pas joué"
-    : ` — **${mine.category}** (${mine.points} pt${mine.points > 1 ? "s" : ""})`;
+    ? " (tu n'as pas joué)"
+    : ` : **${mine.category}** (${mine.points} pt${mine.points > 1 ? "s" : ""})`;
   return `Jour ${entry.jour}${monResultat}`;
 }
 
@@ -998,10 +1002,10 @@ export async function handleJournal(webhookUrl, discordId) {
           : hand.status === "choix"
             ? "combinaison à choisir (clique sur **Jouer**)"
             : `en cours (tirage ${hand.tirage}/3)`;
-      lines.push(`Ta main aujourd'hui : ${formatDice(hand.dice)} — ${detail}`);
+      lines.push(`Ta main aujourd'hui : ${formatDice(hand.dice)} (${detail})`);
     } else {
       lines.push(
-        "Tu n'as pas encore joué aujourd'hui — clique sur **Jouer** !",
+        "Tu n'as pas encore joué aujourd'hui, clique sur **Jouer** !",
       );
     }
 
@@ -1011,7 +1015,7 @@ export async function handleJournal(webhookUrl, discordId) {
       ...(resolvedRanking.length
         ? resolvedRanking.map(
             (r, i, list) =>
-              `${rangExAequo(list, i)}. ${r.username} — ${r.points} pt${r.points > 1 ? "s" : ""}`,
+              `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
           )
         : ["Personne n'a encore marqué de point."]),
     );
@@ -1039,14 +1043,14 @@ export async function handleJournal(webhookUrl, discordId) {
 
 function buildReglesEmbed(config) {
   return {
-    title: "📖 Règles du jeu — Jeu du Gobelet",
+    title: "📖 Règles du Jeu du Gobelet",
     description: [
       "Lance tes dés chaque jour pendant 7 jours pour cumuler des points.",
       "",
       "**Déroulement (1 partie par jour, définitive) :**",
-      "🎲 **Jouer** — lance tes 5 dés.",
+      "🎲 **Jouer** : lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
-      "🔁 **Relancer** — relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
+      "🔁 **Relancer** : relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
       "👍 **Valider** : dès que tes dés forment une combinaison encore libre (hors Joker), arrête tes relances immédiatement.",
       "🎯 **Choix de la combinaison** : si tes dés en forment plusieurs encore libres (Joker compris), choisis celle à retenir dans la liste, par exemple pour garder la plus payante pour un autre jour. Sans choix avant la clôture, la plus payante (hors Joker) est retenue.",
       "",
@@ -1057,7 +1061,7 @@ function buildReglesEmbed(config) {
       "",
       `Au Jour ${config.duree_jours}, le classement cumulé désigne le(s) vainqueur(s) de la manche.`,
       "",
-      "📜 **Journal** — consulte ta main du jour, le classement cumulé et l'historique des jours précédents. Simple lecture, clique dessus autant de fois que tu veux.",
+      "📜 **Journal** : consulte ta main du jour, le classement cumulé et l'historique des jours précédents. Simple lecture, clique dessus autant de fois que tu veux.",
     ].join("\n"),
     color: GOBELET_COLOR,
   };
