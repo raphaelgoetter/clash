@@ -462,6 +462,24 @@ export async function resetKept(jour, discordId) {
   await getRedis().del(keptKey(jour, discordId));
 }
 
+// ── Verrou par joueur (clics simultanés) ─────────────────────────────
+// Les actions sur une main (Jouer, Relancer, Valider, choix) lisent la main,
+// attendent plusieurs appels Redis puis la réécrivent. Des clics arrivés
+// ensemble (double clic, ou clics accumulés pendant un démarrage à froid de
+// Vercel, affichés "Échec de l'interaction") lisaient tous le même tirage :
+// chacun relançait les dés sans faire avancer le compteur, d'où des
+// relances illimitées (signalé le 14/10). Un clic qui trouve le verrou
+// pris est simplement ignoré : le clic en cours repeint le message.
+export async function withHandLock(key, fn) {
+  const acquired = await getRedis().set(key, "1", { nx: true, px: 10_000 });
+  if (!acquired) return { busy: true };
+  try {
+    return await fn();
+  } finally {
+    await getRedis().del(key);
+  }
+}
+
 // ── Points cumulés (manche en cours) ──────────────────────────────────
 // Le score gagné chaque jour est directement le nombre de points de la
 // catégorie retenue (voir computeBestCombination) — remis à zéro à chaque

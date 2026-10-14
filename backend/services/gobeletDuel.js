@@ -39,6 +39,7 @@ import {
   resolveJour,
   buildRanking,
   withUsedCategory,
+  withHandLock,
   NO_COMBINATION,
 } from "./gobelet.js";
 
@@ -273,6 +274,12 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
   return { state };
 }
 
+// Verrou par joueur (voir withHandLock dans gobelet.js) : un clic arrivé
+// pendant le traitement d'un autre renvoie { busy: true } et est ignoré.
+function handLockKey(discordId) {
+  return `gobeletduel:lock:${discordId}`;
+}
+
 // ── Bouton [Jouer] — inscription (si nouveau siège libre) + 1ᵉʳ tirage ──
 // Idempotent comme le jeu spécial : un clic sur une main déjà distribuée
 // pour la manche en cours la renvoie telle quelle sans rien muter.
@@ -296,6 +303,10 @@ export function applyJoin(state, discordId) {
 }
 
 export async function joinAndDeal(discordId, username) {
+  return withHandLock(handLockKey(discordId), () => joinAndDealUnlocked(discordId, username));
+}
+
+async function joinAndDealUnlocked(discordId, username) {
   const state = await readState();
   if (!state || state.termine) return { inactive: true };
 
@@ -351,6 +362,10 @@ export async function toggleKept(discordId, index) {
 }
 
 export async function relance(discordId) {
+  return withHandLock(handLockKey(discordId), () => relanceUnlocked(discordId));
+}
+
+async function relanceUnlocked(discordId) {
   const state = await readState();
   if (!state || state.termine) return { inactive: true };
 
@@ -389,6 +404,10 @@ export async function relance(discordId) {
 // combinaison (n'importe laquelle sauf "Aucune combinaison"), sans attendre
 // les 2 relances — même règle que le jeu spécial (gobelet.js).
 export async function valider(discordId) {
+  return withHandLock(handLockKey(discordId), () => validerUnlocked(discordId));
+}
+
+async function validerUnlocked(discordId) {
   const state = await readState();
   if (!state || state.termine) return { inactive: true };
 
@@ -419,6 +438,10 @@ export async function valider(discordId) {
 // "choix", voir finishHand dans gobelet.js). Un choix invalide (ancien
 // message, main déjà figée) renvoie simplement l'état réel.
 export async function choisir(discordId, category) {
+  return withHandLock(handLockKey(discordId), () => choisirUnlocked(discordId, category));
+}
+
+async function choisirUnlocked(discordId, category) {
   const state = await readState();
   if (!state || state.termine) return { inactive: true };
 

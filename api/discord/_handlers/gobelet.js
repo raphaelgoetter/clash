@@ -42,6 +42,7 @@ import {
   listChoices,
   finishHand,
   pickChoice,
+  withHandLock,
   JOKER,
   NO_COMBINATION,
 } from "../../../backend/services/gobelet.js";
@@ -698,7 +699,7 @@ function isDayInactive(state, jour) {
 
 const NO_KEPT = [false, false, false, false, false];
 
-export async function handleJouer(webhookUrl, jour, discordId, username) {
+async function jouer(webhookUrl, jour, discordId, username) {
   try {
     const state = await readState();
     if (isDayInactive(state, jour)) {
@@ -792,7 +793,7 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
   }
 }
 
-export async function handleRelancer(webhookUrl, jour, discordId) {
+async function relancer(webhookUrl, jour, discordId) {
   try {
     const state = await readState();
     if (isDayInactive(state, jour)) {
@@ -851,7 +852,7 @@ export async function handleRelancer(webhookUrl, jour, discordId) {
   }
 }
 
-export async function handleValider(webhookUrl, jour, discordId) {
+async function validerMain(webhookUrl, jour, discordId) {
   try {
     const state = await readState();
     if (isDayInactive(state, jour)) {
@@ -913,7 +914,7 @@ export async function handleValider(webhookUrl, jour, discordId) {
 }
 
 // Select de fin de main : fige la combinaison choisie par le joueur.
-export async function handleChoisir(webhookUrl, jour, discordId, category) {
+async function choisirCombinaison(webhookUrl, jour, discordId, category) {
   try {
     const state = await readState();
     if (isDayInactive(state, jour)) {
@@ -946,6 +947,25 @@ export async function handleChoisir(webhookUrl, jour, discordId, category) {
     console.error("[Gobelet] Échec choix de combinaison:", err.message);
   }
 }
+
+// Jouer / Relancer / Valider / choix passent par un verrou par joueur
+// (voir withHandLock) : un clic simultané est ignoré au lieu de relancer.
+function verrouille(action) {
+  return async (webhookUrl, jour, discordId, ...rest) => {
+    try {
+      await withHandLock(`gobelet:lock:${jour}:${discordId}`, () =>
+        action(webhookUrl, jour, discordId, ...rest),
+      );
+    } catch (err) {
+      console.error("[Gobelet] Échec verrou de main:", err.message);
+    }
+  };
+}
+
+export const handleJouer = verrouille(jouer);
+export const handleRelancer = verrouille(relancer);
+export const handleValider = verrouille(validerMain);
+export const handleChoisir = verrouille(choisirCombinaison);
 
 // ── Bouton [📜 Journal] — lecture seule ─────────────────────────────
 

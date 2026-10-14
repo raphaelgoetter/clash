@@ -682,6 +682,8 @@ export async function handleJouer(webhookUrl, discordId, username) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
     const result = await joinAndDeal(discordId, username);
+    // Clic simultané d'un même joueur : le clic en cours repeint le message.
+    if (result.busy) return;
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, {
@@ -761,6 +763,8 @@ export async function handleRelancer(webhookUrl, discordId) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
     const result = await relance(discordId);
+    // Clic simultané d'un même joueur : le clic en cours repeint le message.
+    if (result.busy) return;
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, {
@@ -803,6 +807,8 @@ export async function handleValider(webhookUrl, discordId) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
     const result = await valider(discordId);
+    // Clic simultané d'un même joueur : le clic en cours repeint le message.
+    if (result.busy) return;
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, {
@@ -856,6 +862,8 @@ export async function handleChoisir(webhookUrl, discordId, category) {
   try {
     if (await replyIfExpired(webhookUrl)) return;
     const result = await choisir(discordId, category);
+    // Clic simultané d'un même joueur : le clic en cours repeint le message.
+    if (result.busy) return;
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, {
