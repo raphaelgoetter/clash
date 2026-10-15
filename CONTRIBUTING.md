@@ -587,6 +587,22 @@ Discord → POST /api/discord/interactions
 
 La fonction Discord est séparée de l’application Express principale pour limiter le cold start et respecter la fenêtre de réponse imposée par Discord.
 
+### Organisation des fichiers
+
+`api/discord/interactions.js` ne contient que le routeur : vérification de signature, PING, autocomplétion des tags, liste blanche des serveurs, puis délégation aux modules de `api/discord/_routes/` (essayés dans l'ordre jusqu'à ce que l'un d'eux réponde, `res.headersSent`) :
+
+| Module | Contenu |
+| --- | --- |
+| `_routes/admin.js` | `/help`, `/discord-link`, `/blacklist`, `/discord-check` |
+| `_routes/joueur.js` | `/stats`, `/combats`, `/matchup-gdc`, `/matchup` (+ détail), `/collection` |
+| `_routes/clan.js` | `/combats-clan`, `/trust-clan`, `/champion-history`, `/compare`, `/top-clans`, `/clan`, `/family`, `/stats-clan` et leurs boutons |
+| `_routes/suiviGdc.js` | `/promote`, `/demote`, `/chelem`, `/fail`, `/late`, `/late-ping`, `/top-players`, `/recap` et leurs boutons |
+| `_routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées, `/mini-jeux`, `/mini-jeux-history`) |
+| `_routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?) |
+| `_routes/duels.js` | `/blackjack`, `/bang`, `/gobelet` et leurs boutons de duel |
+
+Chaque module expose une fonction `routeXxx(body, res)` qui enchaîne des blocs `if (…) { …; return; }` : un bloc répond à Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend la main sans rien envoyer. Les fonctions utilitaires partagées par plusieurs modules sont dans `api/discord/_lib/commun.js` ; la logique propre à chaque jeu reste dans `api/discord/_handlers/`. Les dossiers préfixés `_` ne sont pas exposés comme fonctions par Vercel. Les `custom_id` et noms de commandes doivent rester disjoints d'un module à l'autre, puisque l'ordre des modules n'est pas un mécanisme de priorité.
+
 ### Règles techniques importantes
 
 - répondre immédiatement avec type: 5 avant tout await ;
@@ -2464,10 +2480,10 @@ isJoinedThisWar(streakInCurrentClan, (day1Decks = null));
 
 ### Commandes utilisatrices
 
-| Commande  | Fichier:ligne                           | Usage                                                                          |
+| Commande  | Fichier                                 | Usage                                                                          |
 | --------- | --------------------------------------- | ------------------------------------------------------------------------------ |
-| `/demote` | `api/discord/interactions.js:3220`      | Sépare les arrivés en cours de GDC des réguliers dans la liste des fails 16/16 |
-| `/fail`   | `api/discord/interactions.js:3886-3888` | Exclut les arrivés en cours de GDC de la liste des fails journaliers           |
+| `/demote` | `api/discord/_routes/suiviGdc.js`       | Sépare les arrivés en cours de GDC des réguliers dans la liste des fails 16/16 |
+| `/fail`   | `api/discord/_routes/suiviGdc.js`       | Exclut les arrivés en cours de GDC de la liste des fails journaliers           |
 
 ---
 
