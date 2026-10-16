@@ -598,7 +598,7 @@ La fonction Discord est séparée de l’application Express principale pour lim
 | `_routes/clan.js` | `/combats-clan`, `/trust-clan`, `/champion-history`, `/compare`, `/top-clans`, `/clan`, `/family`, `/stats-clan` et leurs boutons |
 | `_routes/suiviGdc.js` | `/promote`, `/demote`, `/chelem`, `/fail`, `/late`, `/late-ping`, `/top-players`, `/recap` et leurs boutons |
 | `_routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées, `/mini-jeux`, `/mini-jeux-history`) |
-| `_routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?) |
+| `_routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
 | `_routes/duels.js` | `/blackjack`, `/bang`, `/gobelet` et leurs boutons de duel |
 
 Chaque module expose une fonction `routeXxx(body, res)` qui enchaîne des blocs `if (…) { …; return; }` : un bloc répond à Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend la main sans rien envoyer. Les fonctions utilitaires partagées par plusieurs modules sont dans `api/discord/_lib/commun.js` ; la logique propre à chaque jeu reste dans `api/discord/_handlers/`. Les dossiers préfixés `_` ne sont pas exposés comme fonctions par Vercel. Les `custom_id` et noms de commandes doivent rester disjoints d'un module à l'autre, puisque l'ordre des modules n'est pas un mécanisme de priorité.
@@ -637,6 +637,7 @@ Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin
 | Mario Clash    | `14 8 * * *` |
 | Bang!          | `18 8 * * *` |
 | Qui est-ce ?   | `20 8 * * *` |
+| Meow           | `22 7 * * *` (8h22 à Paris en hiver, après la distribution de 8 h) |
 
 ⚠️ **Incident du 27/08** : les 5 crons alors existants étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont _best-effort_ et que le délai augmente aux heures rondes, justement à cause de la charge — caler plusieurs workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Blackjack a suivi le même principe à son activation, décalé sur la minute suivante (`12 8 * * *`).
 
@@ -661,7 +662,9 @@ Ordre chronologique de lancement **public** des jeux collaboratifs à avancée q
 - (2026-08-24) Robinson (10 jours)
 - (2026-08-31) Quiz (7 jours)
 
-**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours, 📦 **archivé** le 2026-10-10), Goblin Hunters (7 jours), Blackjack (7 jours), Bang! (7 jours), Qui est-ce ? (7 jours).
+**Jeux avec inscription : fenêtre de 2 jours** (`fenetre_inscription_jours: 2`, règle du 16/10/2026 pour Goblin Hunters, Qui est-ce ? et tous les suivants), prolongée de 2 jours si l’effectif minimum n’est pas atteint.
+
+**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours, 📦 **archivé** le 2026-10-10), Goblin Hunters (7 jours), Blackjack (7 jours), Bang! (7 jours), Qui est-ce ? (7 jours), Meow (7 jours).
 
 ---
 
@@ -2096,7 +2099,7 @@ Jeu spécial **100 % asynchrone** inspiré du jeu de société Qui est-ce ? (id�
 
 ### Déroulement (Qui est-ce ?)
 
-- **Fenêtre d'inscription** (décision du 11/10, même fonctionnement que Goblin Hunters ; `state.phase === "annonce"`, `state.closingAt`) : le 1er post ouvre les inscriptions pour `fenetre_inscription_jours` (3) jours (ping MINI-JEUX), boutons **S'inscrire (N/18)**, **Se désinscrire** et Règles ; liste des inscrits rééditée dans le message à chaque clic. Effectif `effectif_min` (10) à `effectif_max` (18) : au-delà, inscription refusée (`inscrire()`). Chaque passage du cron reposte le message (rappel, sans ping) tant que la fenêtre n'est pas close ; **effectif maximum atteint** : lancement anticipé au passage suivant ; à la clôture, **moins de 10 inscrits** : fenêtre **prolongée** de la même durée (`state.prolongee`, titre « inscriptions prolongées », ping ; jamais d'annulation), sinon Jour 1. Désinscription possible jusqu'au lancement (`desinscrire()`). **Aucune arrivée après le lancement** (roster figé).
+- **Fenêtre d'inscription** (décision du 11/10, même fonctionnement que Goblin Hunters ; `state.phase === "annonce"`, `state.closingAt`) : le 1er post ouvre les inscriptions pour `fenetre_inscription_jours` (2) jours (ping MINI-JEUX), boutons **S'inscrire (N/18)**, **Se désinscrire** et Règles ; liste des inscrits rééditée dans le message à chaque clic. Effectif `effectif_min` (10) à `effectif_max` (18) : au-delà, inscription refusée (`inscrire()`). Chaque passage du cron reposte le message (rappel, sans ping) tant que la fenêtre n'est pas close ; **effectif maximum atteint** : lancement anticipé au passage suivant ; à la clôture, **moins de 10 inscrits** : fenêtre **prolongée** de la même durée (`state.prolongee`, titre « inscriptions prolongées », ping ; jamais d'annulation), sinon Jour 1. Désinscription possible jusqu'au lancement (`desinscrire()`). **Aucune arrivée après le lancement** (roster figé).
 - **Jour 1** (`demarrer()`) : grille tirée, une carte secrète unique par inscrit, **première cible attribuée en cercle** (décision du 11/10 : chacun chasse le suivant d'un ordre tiré au sort, donc un seul chasseur par cible, sans paire qui se chasse mutuellement).
 - **Choix de la cible** (`choisirCible()`, décision du 12/10) : après chaque démasquage, le chasseur choisit sa prochaine cible parmi `ciblesDisponibles()` : au plus `chasseurs_max` (2) chasseurs par cible, **jamais un joueur qu'on a déjà démasqué** (on connaît sa carte : une re-chasse serait une accusation gratuite). La liste est triée du meneur au dernier (points, puis cartes découvertes) et **le meneur disponible est présélectionné** (bouton « 🎯 Viser X (N pts) », menu « Ou choisis une autre cible » avec points et nombre de chasseurs). Essai d'un tirage au sort le même jour, abandonné après simulation (`temp/quiestce-sim/sim-v2.mjs`, `CHOIX=1`) : avec le choix, le meneur devient la cible naturelle (le démasquer lui retire un point), d'où un rattrapage sans règle dédiée (gagnant à 2,3 pts au lieu de 3,2, joueur optimal démasqué 2,8 fois au lieu de 2,35, toujours 14 % de victoires), un Déguisement plus utile (8,8 % de victoires contre 5,5 % sans) et un Miroir un peu moins inutile (on peut viser le chasseur sur lequel on a appris quelque chose) ; de vrais joueurs y ajouteront la vengeance.
 - **Indice de départ** (`assignerCible()`, décision du 11/10) : à chaque nouvelle cible, le chasseur reçoit une caractéristique de sa carte **tirée au hasard** parmi celles encore inconnues (après les renseignements du Miroir), **de préférence hors des questions du jour, question Loupe comprise** (sinon l'indice retirait une des questions proposées). Sans lui, une cible demandait presque toujours 3 jours (16 % en 2 jours, 50 % en 3, 33 % en 4 ou plus, jamais en 1) ; avec lui, 16 % en 1 jour, 46 % en 2, 27 % en 3, 11 % en 4 ou plus (`temp/quiestce-sim/accelerateurs.mjs`, pool de 3 questions). Écartés le 11/10 : grille de 24 cartes (gain marginal), « une question **ou** une accusation » par jour (jeu plus lent), accusation ratée renvoyant un indice (cibles uniformément démasquées en 2 jours).
@@ -2165,6 +2168,80 @@ Test de bout en bout local (Redis et Discord simulés) : `node --import ./temp/f
 ### Variables d'environnement requises (Qui est-ce ?)
 
 Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (police). Le `schedule` du cron (`20 8 * * *`) est actif dans `.github/workflows/quiestce.yml` : avec `--require-active`, il n'avance qu'une partie déjà lancée à la main (`workflow_dispatch`).
+
+## Meow — trois bandes de chats squattent la maison en 7 jours
+
+Jeu spécial **en équipe et en temps réel** (conçu le 16/10/2026) : un **Risk simplifié** au thème non guerrier. Trois bandes de chats (🟠 **Roux**, ⚫ **Chats noirs**, 🔵 **Chartreux**) se disputent les 20 coins d'une maison. Chaque joueur reçoit des chats trois fois par jour, les **appelle** sur les coins de sa bande et **squatte** les coins voisins (concours de regards : dés du Risk, manche par manche). Chaque soir, la bande classée 1re du jour marque 3 points. Objectif de conception : une interaction répétée dans la journée (revenir après chaque distribution), de la stratégie collective et des échanges entre joueurs, sans que le volume de clics décide (les chats disponibles sont limités pour tous). Code : `backend/services/meowRules.js` (règles pures, testées par `meowRules.test.js`), `backend/services/meow.js` (Redis), `backend/services/meowImage.js` (carte), `api/discord/_handlers/meow.js` (Discord), `scripts/postMeow.js`. Config : `data/meow/meow.json`. Équilibrage : `temp/meow-simulation/simulate.mjs <parties> <scénario>`.
+
+### Carte (Meow)
+
+- **5 pièces de 4 coins** (`PIECES`) : Chambre (Fenêtre, Couette, Armoire, Carton), Grenier (Malle, Chapeaux, Poutre, Lucarne), Salon (Radiateur, Canapé, Tapis, Bibliothèque), Cuisine (Évier, Frigo, Corbeille, Gamelle), Jardin (Arbre, Perron, Potager, Cabane). Le coin « Panier » de la cuisine a été renommé **Corbeille** pour ne pas le confondre avec les paniers imprenables.
+- **Voisinage** (`VOISINS`) : dans une pièce, tous les coins se touchent ; entre pièces, seulement par les **6 passages** (`PASSAGES`, 🐾 sur la carte) : Carton ↔ Canapé, Armoire ↔ Malle, Évier ↔ Chapeaux, Gamelle ↔ Bibliothèque (la vraie porte de l'image), Tapis ↔ Perron, Cabane ↔ Lucarne (gouttière le long du mur extérieur).
+- **Carte symétrique** (décision du 16/10, idée de Raphael complétée par simulation) : chaque pièce de départ a **deux sorties sur deux coins distincts**, l'une vers le Salon, l'autre vers le Grenier (les deux pièces neutres), et **aucune bande ne touche une autre bande au départ**. Les cartes précédentes (passages de l'image, Carton ↔ Malle, Radiateur ↔ Arbre, Gamelle ↔ Cabane…) avantageaient la bande dont les sorties partaient de coins distincts : une pièce dont toutes les sorties partent d'un seul coin est enfermée dès que ce coin tombe.
+- **Départs** (`BANDES`) : Roux dans la Chambre, Chats noirs dans le Jardin, Chartreux dans la Cuisine, **2 chats par coin** (`chats_depart`) ; Salon et Grenier occupés par **2 chats errants par coin** (`chats_errants`), qui ne squattent ni ne reçoivent jamais de chats.
+- **Paniers imprenables** (`PANIERS`, anneau doré et cadenas sur la carte) : Fenêtre (Roux), Potager (Noirs), Frigo (Chartreux), hors passages. Jamais squattables : une bande n'est **jamais éliminée** et garde toujours un coin d'où repartir (en simulation, sans paniers, une bande était éliminée dans 96 % des parties et le leader du jour 3 gagnait 82 % du temps). Conséquence assumée (décision du 16/10) : seule la bande d'origine peut tenir sa pièce de départ entière ; les autres peuvent seulement l'en priver en y occupant un coin.
+
+### Déroulement (Meow)
+
+- **Fenêtre d'inscription** de **2 jours** (`fenetre_inscription_jours`, règle commune aux jeux avec inscription), même fonctionnement que Qui est-ce ? (`state.phase === "annonce"`, rappel quotidien, lancement anticipé à `effectif_max`, prolongation de la même durée sous `effectif_min`, jamais d'annulation). Effectif **12 à 20 joueurs** (décision du 16/10).
+- **Lancement** (`demarrer()`) : bandes **tirées au sort**, à un joueur près ; le ou les joueurs en plus vont dans des bandes elles aussi tirées au sort. Une **première distribution** a lieu aussitôt.
+- **Temps réel paresseux** (`rattraper()`) : aucun cron horaire. Les événements de la journée (heure de Paris, `evenementsEntre()`) sont rattrapés **dans l'ordre** au début de chaque action et de chaque publication : sieste (0 h), distributions (`distributions` : **8 h, 13 h, 18 h**, décision du 16/10 : 1 chat toutes les 3 h jour et nuit jugé trop), décompte (`heure_decompte` : **23 h**). Le décompte d'un soir sans aucune action est donc fait au premier clic suivant ou au cron du matin, sur l'état de la carte à 23 h (rien ne change entre-temps).
+- **Distribution** : **1 chat par joueur** (réserve plafonnée à `stock_max` = 4), compteur de squats remis à zéro, croquettes. **Recharge équilibrée** : une petite bande reçoit au total autant de chats qu'une grande (chaque joueur cumule `taille max / taille de sa bande − 1` chat par distribution et reçoit un chat de plus à chaque unité ; indispensable : sans elle, à 4/3/3 la bande de 4 gagnait 74 % des parties).
+- **Appeler** (`appeler()`) : poser 1, 2 ou tous ses chats de réserve sur un coin de sa bande (permis à toute heure, sieste comprise).
+- **Sieste** (0 h à `fin_sieste` = 8 h) : **aucun squat**. À 0 h, les chats encore en réserve **s'installent tout seuls** sur le coin le plus menacé de la bande (`menace()` : plus forte pile adverse voisine moins 1, moins les chats présents ; errants exclus). Un absent ne perd donc jamais ses chats, mais ne fait que défendre.
+- **Squatter** (`lancerSquat()`) : depuis un coin de sa bande d'au moins 2 chats vers un coin voisin d'une autre bande ou errant (jamais un panier) ; **1 chat reste garder** le coin de départ, tous les autres partent. **2 squats par joueur entre deux distributions** (`squats_par_distribution`, décision du 16/10 ; un squat compte dès son lancement, même suivi d'une retraite). Les chats d'un coin appartiennent à la bande : n'importe quel membre peut les engager (coordination voulue, pas de canal d'équipe dédié, décision du 16/10).
+- **Concours de regards** (`jouerManche()`) : à chaque manche, l'attaquant lance jusqu'à 3 dés, le défenseur jusqu'à 2 ; on compare les plus hauts dés deux à deux, le plus petit perd un chat, **l'égalité profite au défenseur**. La première manche est jouée au lancement ; ensuite **Manche suivante**, **Jusqu'au bout** (`jusquauBout()`) ou **Battre en retraite** (`retraite()`, décision du 16/10 : les survivants rentrent sur le coin de départ). Victoire : les survivants s'installent sur le coin pris. Pendant un combat, les **deux coins sont verrouillés** (ni appel ni squat). Sans clic pendant `delai_combat_minutes` (5), **retraite automatique** (le jeton d'un éphémère Discord expire au bout de 15 minutes). Pas de déplacement entre coins de sa bande (décision du 16/10 : règles plus simples).
+- **Croquettes** : à chaque distribution, une bande qui tient **une pièce entière** reçoit `croquettes` (+1) chat, posé sur le coin le plus menacé de la pièce (même règle que la sieste : une seule logique pour tout l'automatique).
+- **Décompte** (`decompter()`, 23 h) : total du jour = **1 point par coin tenu + `points_piece` (2) par pièce entière** ; la 1re bande marque **3 points**, la 2e **2**, la 3e **1** (`points_rang`) ; des ex aequo prennent tous les points de la meilleure place commune. Le classement par rang du jour (plutôt qu'un cumul des coins) limite l'effet boule de neige : en simulation, le leader du jour 3 ne gagne que dans 42 à 50 % des parties.
+- **Fin** : après le décompte du jour `duree_jours` (7), plus aucune action. Classement des bandes aux points, puis à la somme des totaux des décomptes (`classementBandes()`).
+- **🏅 Chat d'or** (classement individuel, décision du 16/10 ; la victoire reste collective) : `chat_or.coin` (3) points par coin pris + `chat_or.chat` (1) par chat adverse délogé (`chatOr()`).
+
+### Équilibrage (Meow)
+
+Simulateur `temp/meow-simulation/simulate.mjs` (bots « malins » et « naïfs », profils assidu 30 %, régulier 40 %, occasionnel 20 %, abandon après le jour 2 10 %), 1000 parties par réglage, effectifs de 12 à 20 joueurs. ⚠️ **Biais corrigé le 16/10** : les bots tranchaient leurs égalités par l'ordre des coins, ce qui avantageait certaines positions ; toutes les comparaisons de départs antérieures à la correction (`bruit: true` dans `BASE`) étaient faussées. Résultats retenus (carte symétrique, 3 distributions par jour) : victoires de chaque bande entre **32 et 36 %** de 12 à 20 joueurs (bandes inégales comprises) ; une bande de bots naïfs ne gagne plus que 24 % des parties (la stratégie compte) ; une bande entièrement assidue ne gagne pas plus que les autres (cliquer plus ne fait pas gagner). Rejetés : 3 dés en défense (piles qui gonflent, ou carte figée avec un plafond par coin), plafond de chats par coin, bonus de départ par bande (inutiles sur la carte symétrique), départ des Chats noirs au Jardin sur l'ancienne carte.
+
+### Interface (Meow)
+
+- **Message officiel** (un par jour, réédité après chaque appel et chaque fin de squat, `rafraichirMessage()`) : au J1 la présentation des bandes, ensuite **📰 La Gazette des moustaches** (décompte de la veille : coins, pièces entières, points gagnés ; nombre de squats et de réussites), **🏆 Classement des bandes**, **🐱 Les bandes** (pièce de départ, effectif, membres), **💥 Aujourd'hui** (8 derniers squats du jour), carte jointe. Boutons **Jouer**, **Règles**, **Journal**.
+- **Jouer** (`buildJouerView()`, éphémère sans image : la carte est sur le message du jour) : bande, réserve de chats, squats restants jusqu'à la prochaine distribution, sieste, croquettes, Chat d'or, coins de la bande avec ⚠️ pour les coins menacés ; menu **Appeler** (puis boutons +1 / +2 / Tout) et menu **Squatter** (chaque option : « Carton → Canapé · 4 chats contre 2 chats errants · 79 % de réussite », `pVictoire()` en jouant jusqu'au bout ; menu grisé avec la raison pendant la sieste, sans squat restant ou sans squat possible). Pendant un combat : vue **Concours de regards** (dés de la dernière manche, chances restantes, 3 boutons).
+- **Journal** : squats du joueur et ceux qui touchent sa bande, croquettes de sa bande, décomptes, par jour.
+- **Fin** : classement des bandes, top 10 du Chat d'or, manches précédentes, illustration de présentation.
+- **Ping** `@MINI-JEUX` : ouverture des inscriptions, prolongation et fin seulement (comme Qui est-ce ?).
+
+### Images (Meow)
+
+- `/api/meow/carte?d=…` : carte de la maison en **JPEG** (`jpeg-js`, pur JS, qualité 80, ~180 Ko au lieu de 1,2 Mo en PNG, décision du 16/10 ; `sharp` écarté : ~30 Mo de binaires par déploiement, voir Functions Storage), rendu sans état à partir de l'état encodé dans l'URL (`encodeCarte()` : par coin, bande `r`/`n`/`c`/`e` et nombre de chats sur 2 chiffres, 60 caractères). Fond `meow-map.jpg` (1000×667, volontairement compressé), pastilles aux couleurs des bandes (gris pour les errants), paniers dorés, passages en pointillés avec une patte. Positions des pastilles dans `POSITIONS` (`meowImage.js`, à recalibrer si le fond change). ~75 ms de rendu.
+- `/api/meow/illustration` : `meow-launch.webp` (présentation et fin de partie).
+- ⚠️ **Pas de cache dans Vercel Blob** pour les cartes (chaque écriture est une opération avancée, quota ~2 000/mois) : la carte est jointe au message (`attachment://`) et Discord la garde.
+- Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob -- meow` après modification.
+
+### Stockage — Upstash Redis (`meow:*`)
+
+| Clé Redis | Type | Contenu |
+| --------- | ---- | ------- |
+| `meow:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, prolongee }` (`phase` : `annonce` pendant la fenêtre d'inscription, puis `jour`) |
+| `meow:partie` | STRING | `{ demarree, termine, joueurs, coins, combats, points, decomptes, journal, jourDebut, debut, curseur }` ; joueur : `{ username, arrivee, bande, stock, frac, squats, coinsPris, chatsDeloges, jourActif }` ; coin : `{ b, n }` (`b` = -1 pour les errants) ; `curseur` : instant du dernier rattrapage |
+| `meow:lock` | STRING | Verrou des actions (10 s) |
+| `meow:manches` / `meow:manche_seq` | HASH / compteur | Archive `{ manche, vainqueur, points, nbJoueurs, bandes, ranking, resolvedAt }` des parties publiques, jamais nettoyée sauf `--manches` |
+
+Meow n'est pas compté dans le classement de saison des mini-jeux (`miniJeuxHistory.js`) : c'est un jeu d'équipe.
+
+### Scripts npm (Meow)
+
+| Commande | Effet |
+| -------- | ----- |
+| `npm run meow:test` | Poste l'étape suivante sur le salon de test : 1er lancement = ouverture des inscriptions, 2e = **Jour 1 immédiatement** (clôture forcée), avec des **PNJ** pour atteindre l'effectif minimum (ils ne jouent jamais : leurs chats s'installent à la sieste), puis le message du jour (`--force` implicite). |
+| `npm run meow:test:dry` | Aperçu console, sans écrire ni poster. |
+| `npm run meow:public` | Poste sur le salon public (cron `meow.yml`) ; ne republie jamais deux fois le même jour sans `--force`. |
+| `npm run meow:public:dry` | Équivalent dry-run. |
+| `npm run meow:reset` | Remet la partie à zéro (garde l'archive des manches). |
+| `npm run meow:reset:manches` | Idem, archive comprise. |
+
+Test de bout en bout local (Redis et Discord simulés, horloge avancée à la main) : `node --import ./temp/fake-redis/register.mjs temp/meow/e2eMeow.mjs [joueurs]`. Rendu local de la carte : `node temp/meow/renderCarte.mjs <sortie.jpg>`.
+
+### Variables d'environnement requises (Meow)
+
+Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (fond, police, illustration). Cron `22 7 * * *` (`.github/workflows/meow.yml`, 8h22 à Paris en hiver, 9h22 en été, après la distribution de 8 h) : avec `--require-active`, il n'avance qu'une partie déjà lancée à la main (`workflow_dispatch`).
 
 ## Blackjack Duel (duel à la demande, 1-3 joueurs)
 

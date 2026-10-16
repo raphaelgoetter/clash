@@ -99,6 +99,12 @@ import {
   readPartie as readQuiEstCePartie,
 } from "../../../backend/services/quiestce.js";
 import { points as quiEstCePoints } from "../../../backend/services/quiestceRules.js";
+import {
+  readState as readMeowState,
+  loadMeowConfig,
+  readPartie as readMeowPartie,
+} from "../../../backend/services/meow.js";
+import { BANDES as MEOW_BANDES, chatOr as meowChatOr, jourDe as meowJourDe } from "../../../backend/services/meowRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -531,6 +537,42 @@ const SPECIAL_GAMES = [
       }
       const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readQuiEstCePartie()]);
       const n = Object.values(partie.joueurs).filter((j) => j.carte).length;
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: `${n} joueur${n > 1 ? "s" : ""}`,
+      };
+    },
+  },
+  {
+    key: "meow",
+    title: "Meow",
+    style: "Stratégie en équipe",
+    readState: readMeowState,
+    async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
+      const [config, partie] = await Promise.all([loadMeowConfig(), readMeowPartie()]);
+      const joueur = partie.joueurs[discordId];
+      if (joueur?.bande == null) return { played: false, scoreLabel: null };
+      const bande = MEOW_BANDES[joueur.bande];
+      const score = meowChatOr(joueur, config);
+      return {
+        played: joueur.jourActif === meowJourDe(partie, Date.now()),
+        scoreLabel: `${bande.emoji} **${bande.nom}** · 🏅 ${score} pt${score > 1 ? "s" : ""} au Chat d'or`,
+      };
+    },
+    async detail(state) {
+      if (state.phase === "annonce") {
+        const count = Object.keys((await readMeowPartie()).joueurs).length;
+        return {
+          jour: null,
+          dureeJours: null,
+          participantsLabel: `${count} inscrit${count > 1 ? "s" : ""} à ce jour`,
+          phaseLabel: "Phase de présentation du jeu",
+        };
+      }
+      const [config, partie] = await Promise.all([loadMeowConfig(), readMeowPartie()]);
+      const n = Object.values(partie.joueurs).filter((j) => j.bande != null).length;
       return {
         jour: state.jour,
         dureeJours: config.duree_jours,

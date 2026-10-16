@@ -1,5 +1,5 @@
 // Jeux spéciaux sur 7 jours : Blackjack, Gobelet, Tamagotchi, Robinson,
-// Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?
+// Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -82,6 +82,17 @@ import {
   handleRegles as handleGobeletRegles,
   handleJournal as handleGobeletJournal,
 } from "../_handlers/gobelet.js";
+import {
+  handleParticiper as handleMeowParticiper,
+  handleDesinscrire as handleMeowDesinscrire,
+  handleJouer as handleMeowJouer,
+  handleAppelCoin as handleMeowAppelCoin,
+  handleAppeler as handleMeowAppeler,
+  handleSquat as handleMeowSquat,
+  handleCombat as handleMeowCombat,
+  handleJournal as handleMeowJournal,
+  handleRegles as handleMeowRegles,
+} from "../_handlers/meow.js";
 import { runBackground, buildDiscordWebhookUrl } from "../_lib/commun.js";
 
 export async function routeJeuxSpeciaux(body, res) {
@@ -725,6 +736,41 @@ export async function routeJeuxSpeciaux(body, res) {
     else if (action === "quiestce_objet") runBackground(() => handleQuiEstCeObjet(webhookUrl, discordId, username, value));
     else if (action === "quiestce_cible") runBackground(() => handleQuiEstCeCible(webhookUrl, discordId, username, param));
     else if (action === "quiestce_cible_menu") runBackground(() => handleQuiEstCeCible(webhookUrl, discordId, username, value));
+    return;
+  }
+
+  // ── Meow : boutons du message officiel (nouvel éphémère) ──
+  // custom_id : meow_participer (S'inscrire), meow_desinscrire, meow_jouer,
+  // meow_journal, meow_regles
+  if (body.type === 3 && ["meow_participer", "meow_desinscrire", "meow_jouer", "meow_journal", "meow_regles"].includes(body.data?.custom_id)) {
+    const action = body.data.custom_id;
+    const discordId = body.member?.user?.id;
+    const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "meow_regles") runBackground(() => handleMeowRegles(webhookUrl));
+    else if (action === "meow_journal") runBackground(() => handleMeowJournal(webhookUrl, discordId));
+    else if (action === "meow_participer") runBackground(() => handleMeowParticiper(webhookUrl, discordId, username));
+    else if (action === "meow_desinscrire") runBackground(() => handleMeowDesinscrire(webhookUrl, discordId));
+    else runBackground(() => handleMeowJouer(webhookUrl, discordId, username));
+    return;
+  }
+
+  // ── Meow : composants de l'éphémère, édition en place ──
+  // custom_id : meow_appel_coin, meow_squat (menus), meow_appeler:<coin>:<n>,
+  // meow_manche, meow_bout, meow_retraite, meow_vue (boutons)
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^meow_(appel_coin|squat|appeler:|manche|bout|retraite|vue)/.test(body.data.custom_id)) {
+    const [action, coin, n] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    const value = body.data.values?.[0];
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "meow_appel_coin") runBackground(() => handleMeowAppelCoin(webhookUrl, discordId, username, value));
+    else if (action === "meow_appeler") runBackground(() => handleMeowAppeler(webhookUrl, discordId, username, coin, n));
+    else if (action === "meow_squat") runBackground(() => handleMeowSquat(webhookUrl, discordId, username, value));
+    else if (action === "meow_vue") runBackground(() => handleMeowJouer(webhookUrl, discordId, username));
+    else runBackground(() => handleMeowCombat(webhookUrl, discordId, username, action.slice("meow_".length)));
     return;
   }
 }

@@ -1,0 +1,40 @@
+name: Meow — trois bandes de chats squattent la maison en 7 jours
+
+permissions:
+  contents: read
+
+on:
+  # Créneau réservé : minute 22 à 7h UTC (8h22 à Paris en hiver, 9h22 en
+  # été), juste après la première distribution de chats (8h, heure de
+  # Paris) ; jamais la même minute que les autres crons (voir
+  # CONTRIBUTING.md, incident du 27/08). Le cron passe --require-active : il
+  # n'avance qu'une partie déjà lancée à la main (workflow_dispatch). Les
+  # événements horaires (distributions, décompte, sieste) n'ont pas besoin
+  # de cron : ils sont rattrapés à chaque action.
+  schedule:
+    - cron: "22 7 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Poste le jour de Meow (salon public)
+        run: npm run meow:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}

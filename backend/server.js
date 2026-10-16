@@ -45,6 +45,11 @@ import {
   getGrilleImage as getQuiEstCeGrilleImage,
   getIllustrationImage as getQuiEstCeIllustrationImage,
 } from "./services/quiestceImage.js";
+import {
+  decodeCarte as decodeMeowCarte,
+  getCarteImage as getMeowCarteImage,
+  getIllustrationImage as getMeowIllustrationImage,
+} from "./services/meowImage.js";
 import { readCardArtFile } from "./services/cardArt.js";
 
 const app = express();
@@ -452,6 +457,26 @@ app.get("/api/quiestce/grille", async (req, res) => {
 // Qui est-ce ? : illustration statique (présentation).
 app.get("/api/quiestce/illustration", async (req, res) => {
   const image = await getQuiEstCeIllustrationImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Meow : carte de la maison, rendu sans état à partir de l'état encodé
+// dans l'URL (d, voir encodeCarte), en JPEG.
+app.get("/api/meow/carte", async (req, res) => {
+  const coins = decodeMeowCarte(req.query.d);
+  const image = coins ? await getMeowCarteImage(coins).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Meow : illustration statique (présentation et fin de partie).
+app.get("/api/meow/illustration", async (req, res) => {
+  const image = await getMeowIllustrationImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");

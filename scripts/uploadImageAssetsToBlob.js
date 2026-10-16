@@ -61,6 +61,8 @@ const TARGETS = [
   { file: "bang/images/bang-launch.webp" },
   { dir: "bang/avatars" },
   { file: "quiestce/images/quiestce-launch.webp" },
+  { file: "meow/images/meow-map.jpg" },
+  { file: "meow/images/meow-launch.webp" },
   { dir: "jeux-visuels/palette/images" },
   { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },
