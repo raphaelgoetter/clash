@@ -3,7 +3,7 @@
 // bandes de chats (Roux, Chats noirs, Chartreux) squattent les 20 coins
 // d'une maison, Risk simplifié en temps réel. Chaque joueur reçoit des
 // chats à 3 distributions par jour, les appelle sur les coins de sa bande
-// et squatte les coins voisins (concours de regards : dés du Risk, manche
+// et squatte les coins voisins (crêpage de poils : dés du Risk, manche
 // par manche, retraite possible). Décompte chaque soir : la bande classée
 // 1re du jour marque 3 points, la 2e 2, la 3e 1.
 //
@@ -186,6 +186,7 @@ export function creerPartie() {
     joueurs: {},
     coins: {},
     combats: {},
+    messages: [[], [], []],
     points: [0, 0, 0],
     decomptes: [],
     journal: [],
@@ -377,12 +378,15 @@ function expirerCombats(partie, { config, now }) {
 
 // Rattrape dans l'ordre tous les événements horaires passés depuis le
 // dernier passage. À appeler avant toute action et toute publication.
-export function rattraper(partie, { config, now = Date.now() }) {
+export function rattraper(partie, { config, now = Date.now(), rng = Math.random }) {
   if (!partie.demarree || partie.termine) return partie;
   expirerCombats(partie, { config, now });
   for (const e of evenementsEntre(partie.curseur, now, config)) {
     const jour = jourDe(partie, e.t);
-    if (e.type === "distribution") distribuer(partie, { config, t: e.t });
+    if (e.type === "distribution") {
+      distribuer(partie, { config, t: e.t });
+      if (partie.pnjActifs) for (const id of Object.keys(partie.joueurs).filter(estPnj)) jouerPnj(partie, id, { config, now: e.t, rng });
+    }
     else if (e.type === "decompte") decompter(partie, { config, t: e.t, jour });
     else siester(partie, { t: e.t });
     if (partie.termine) break;
@@ -468,9 +472,9 @@ function lancerDes(n, rng) {
   return Array.from({ length: n }, () => 1 + Math.floor(rng() * 6)).sort((x, y) => y - x);
 }
 
-// Une manche du concours de regards : jusqu'à 3 dés contre 2, on compare
+// Une manche du crêpage de poils : jusqu'à 3 dés contre 2, on compare
 // les plus hauts dés deux à deux, le plus petit perd un chat, l'égalité
-// profite au défenseur (le chat chez lui ne cligne pas des yeux).
+// profite au défenseur (le chat chez lui tient bon).
 export function jouerManche(partie, discordId, { now = Date.now(), rng = Math.random } = {}) {
   const c = partie.combats[discordId];
   if (!c) return { erreur: "pasDeCombat" };
@@ -519,6 +523,79 @@ function terminerCombat(partie, discordId, issue, now) {
   return entree;
 }
 
+// ── PNJ (salon de test uniquement) ──────────────────────────────────
+// Joueurs fictifs qui jouent à chaque distribution, pour animer une partie
+// de test : tous leurs chats sur le coin le plus menacé (sinon sur le coin
+// le plus garni, pour préparer un squat), puis leurs squats tant qu'une
+// cible offre au moins 60 % de réussite, joués jusqu'au bout.
+
+export function estPnj(id) {
+  return String(id).startsWith("pnj-");
+}
+
+export function jouerPnj(partie, id, { config, now, rng = Math.random }) {
+  const j = partie.joueurs[id];
+  if (!j || j.bande == null || partie.termine) return;
+  if (j.stock > 0) {
+    const front = frontiere(partie, j.bande).filter((c) => !coinsVerrouilles(partie).has(c));
+    if (front.length) {
+      const menace0 = front.reduce((best, c) => (menace(partie, c) > menace(partie, best) ? c : best));
+      const garni = front.reduce((best, c) => (partie.coins[c].n > partie.coins[best].n ? c : best));
+      appeler(partie, id, menace(partie, menace0) > 0 ? menace0 : garni, j.stock, { now });
+    }
+  }
+  if (enSieste(now, config)) return;
+  while (squatsRestants(j, config) > 0) {
+    const cible = squatsPossibles(partie, j.bande)[0];
+    if (!cible || cible.p < 0.6) break;
+    const r = lancerSquat(partie, id, cible.s, cible.t, { config, now, rng });
+    if (r.erreur) break;
+    if (!r.fin) jusquauBout(partie, id, { now, rng });
+  }
+}
+
+// ── Messagerie de bande ─────────────────────────────────────────────
+// Messages signés, visibles uniquement par la bande de l'auteur (décision du
+// 16/10, adaptée de la messagerie anonyme de Goblin Hunters), live.
+
+const MESSAGES_GARDES = 30;
+
+export function messagesBande(partie, b) {
+  return partie.messages?.[b] ?? [];
+}
+
+export function messagesRestants(partie, discordId, { config, now = Date.now() }) {
+  const j = partie.joueurs[discordId];
+  const n = j?.messagesJour?.jour === jourDe(partie, now) ? j.messagesJour.n : 0;
+  return Math.max(0, config.messages_par_jour - n);
+}
+
+// Messages de la bande arrivés depuis la dernière lecture du joueur
+export function nouveauxMessages(partie, discordId) {
+  const j = partie.joueurs[discordId];
+  if (j?.bande == null) return 0;
+  return messagesBande(partie, j.bande).filter((m) => m.p !== discordId && m.t > (j.vuMessages ?? 0)).length;
+}
+
+export function marquerLus(partie, discordId, { now = Date.now() } = {}) {
+  if (partie.joueurs[discordId]) partie.joueurs[discordId].vuMessages = now;
+}
+
+export function posterMessage(partie, discordId, texte, { config, now = Date.now() }) {
+  const err = verifierJoueur(partie, discordId);
+  if (err) return { erreur: err };
+  const txt = String(texte ?? "").replace(/\s+/g, " ").trim().slice(0, config.message_max);
+  if (!txt) return { erreur: "messageVide" };
+  if (messagesRestants(partie, discordId, { config, now }) <= 0) return { erreur: "plafondMessages" };
+  const j = partie.joueurs[discordId];
+  const jour = jourDe(partie, now);
+  j.messagesJour = { jour, n: (j.messagesJour?.jour === jour ? j.messagesJour.n : 0) + 1 };
+  partie.messages ??= [[], [], []];
+  partie.messages[j.bande] = [...partie.messages[j.bande], { p: discordId, t: now, txt }].slice(-MESSAGES_GARDES);
+  j.vuMessages = now;
+  return { ok: true };
+}
+
 // ── Probabilités (affichées dans le menu Squatter) ──────────────────
 
 const ROUNDS = (() => {
@@ -561,8 +638,8 @@ export function pVictoire(a, d) {
 
 // ── Classements ─────────────────────────────────────────────────────
 
-export function chatOr(j, config) {
-  return (j.coinsPris ?? 0) * config.chat_or.coin + (j.chatsDeloges ?? 0) * config.chat_or.chat;
+export function scoreCaid(j, config) {
+  return (j.coinsPris ?? 0) * config.caid.coin + (j.chatsDeloges ?? 0) * config.caid.chat;
 }
 
 // Bandes : points de rang cumulés, puis somme des totaux des décomptes.
@@ -572,10 +649,10 @@ export function classementBandes(partie) {
     .sort((x, y) => y.points - x.points || y.cumul - x.cumul);
 }
 
-export function classementChatOr(partie, config) {
+export function classementCaid(partie, config) {
   return Object.entries(partie.joueurs)
     .filter(([, j]) => j.bande != null)
-    .map(([discordId, j]) => ({ discordId, username: j.username, bande: j.bande, score: chatOr(j, config), coinsPris: j.coinsPris, chatsDeloges: j.chatsDeloges }))
+    .map(([discordId, j]) => ({ discordId, username: j.username, bande: j.bande, score: scoreCaid(j, config), coinsPris: j.coinsPris, chatsDeloges: j.chatsDeloges }))
     .sort((x, y) => y.score - x.score || y.coinsPris - x.coinsPris || x.username.localeCompare(y.username));
 }
 
@@ -592,7 +669,7 @@ export function texteJournal(partie, e) {
     const vers = nomCoin(e.vers);
     const adv = e.def === ERRANTS ? "les chats errants" : `les ${BANDES[e.def].nom}`;
     if (e.issue === "victoire") return `${BANDES[e.b].emoji} ${qui(e.p)} et ${e.a} ${BANDES[e.b].nom} ont délogé ${adv} de ${vers} (depuis ${de}).`;
-    if (e.issue === "defaite") return `${BANDES[e.b].emoji} ${qui(e.p)} a échoué devant ${vers} : ses ${e.aInit} ${BANDES[e.b].nom} ont cligné des yeux les premiers.`;
+    if (e.issue === "defaite") return `${BANDES[e.b].emoji} ${qui(e.p)} a échoué devant ${vers} : ses ${e.aInit} ${BANDES[e.b].nom} ont tous détalé.`;
     return `${BANDES[e.b].emoji} ${qui(e.p)} a battu en retraite devant ${vers} (${e.a} chat${e.a > 1 ? "s" : ""} rentré${e.a > 1 ? "s" : ""} sur ${de})${e.issue === "retraiteAuto" ? " faute de réponse" : ""}.`;
   }
   if (e.k === "croquettes") return `🍖 ${nomBande(e.b)} : croquettes servies dans la ${PIECES[e.piece].nom} (+${e.n} sur ${nomCoin(e.coin)}).`;

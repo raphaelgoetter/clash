@@ -92,6 +92,9 @@ import {
   handleCombat as handleMeowCombat,
   handleJournal as handleMeowJournal,
   handleRegles as handleMeowRegles,
+  handleBande as handleMeowBande,
+  handleMessageSubmit as handleMeowMessageSubmit,
+  buildMessageModal as buildMeowMessageModal,
 } from "../_handlers/meow.js";
 import { runBackground, buildDiscordWebhookUrl } from "../_lib/commun.js";
 
@@ -741,8 +744,8 @@ export async function routeJeuxSpeciaux(body, res) {
 
   // ── Meow : boutons du message officiel (nouvel éphémère) ──
   // custom_id : meow_participer (S'inscrire), meow_desinscrire, meow_jouer,
-  // meow_journal, meow_regles
-  if (body.type === 3 && ["meow_participer", "meow_desinscrire", "meow_jouer", "meow_journal", "meow_regles"].includes(body.data?.custom_id)) {
+  // meow_bande, meow_journal, meow_regles
+  if (body.type === 3 && ["meow_participer", "meow_desinscrire", "meow_jouer", "meow_bande", "meow_journal", "meow_regles"].includes(body.data?.custom_id)) {
     const action = body.data.custom_id;
     const discordId = body.member?.user?.id;
     const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
@@ -752,14 +755,15 @@ export async function routeJeuxSpeciaux(body, res) {
     else if (action === "meow_journal") runBackground(() => handleMeowJournal(webhookUrl, discordId));
     else if (action === "meow_participer") runBackground(() => handleMeowParticiper(webhookUrl, discordId, username));
     else if (action === "meow_desinscrire") runBackground(() => handleMeowDesinscrire(webhookUrl, discordId));
+    else if (action === "meow_bande") runBackground(() => handleMeowBande(webhookUrl, discordId, username));
     else runBackground(() => handleMeowJouer(webhookUrl, discordId, username));
     return;
   }
 
   // ── Meow : composants de l'éphémère, édition en place ──
   // custom_id : meow_appel_coin, meow_squat (menus), meow_appeler:<coin>:<n>,
-  // meow_manche, meow_bout, meow_retraite, meow_vue (boutons)
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^meow_(appel_coin|squat|appeler:|manche|bout|retraite|vue)/.test(body.data.custom_id)) {
+  // meow_manche, meow_bout, meow_retraite, meow_vue, meow_bande_vue (boutons)
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^meow_(appel_coin|squat|appeler:|manche|bout|retraite|vue|bande_vue)/.test(body.data.custom_id)) {
     const [action, coin, n] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
@@ -770,7 +774,28 @@ export async function routeJeuxSpeciaux(body, res) {
     else if (action === "meow_appeler") runBackground(() => handleMeowAppeler(webhookUrl, discordId, username, coin, n));
     else if (action === "meow_squat") runBackground(() => handleMeowSquat(webhookUrl, discordId, username, value));
     else if (action === "meow_vue") runBackground(() => handleMeowJouer(webhookUrl, discordId, username));
+    else if (action === "meow_bande_vue") runBackground(() => handleMeowBande(webhookUrl, discordId, username));
     else runBackground(() => handleMeowCombat(webhookUrl, discordId, username, action.slice("meow_".length)));
+    return;
+  }
+
+  // ── Meow : bouton « Écrire » → fenêtre de saisie ──
+  // Réponse synchrone immédiate obligatoire (pas de runBackground), même
+  // mécanisme que la Messagerie de Goblin Hunters.
+  if (body.type === 3 && body.data?.custom_id === "meow_ecrire") {
+    return res.status(200).json({ type: 9, data: buildMeowMessageModal() });
+  }
+
+  // ── Meow : envoi de la fenêtre « Écrire » (MODAL_SUBMIT) ──
+  // Ouverte depuis l'éphémère « Ma bande » : type 6, la vue est rééditée en
+  // place ; sinon nouvel éphémère.
+  if (body.type === 5 && body.data?.custom_id === "meow_message_modal") {
+    const discordId = body.member?.user?.id;
+    const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    const texte = body.data.components?.[0]?.components?.[0]?.value || "";
+    res.status(200).json(body.message ? { type: 6 } : { type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMeowMessageSubmit(webhookUrl, discordId, username, texte));
     return;
   }
 }

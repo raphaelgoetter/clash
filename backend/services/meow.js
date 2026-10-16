@@ -22,7 +22,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { creerPartie, inscrire, desinscrire, demarrer, rattraper, nbInscrits, classementBandes, classementChatOr } from "./meowRules.js";
+import { creerPartie, inscrire, desinscrire, demarrer, rattraper, nbInscrits, classementBandes, classementCaid } from "./meowRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "meow", "meow.json");
@@ -125,13 +125,14 @@ async function withLock(fn) {
 }
 
 // Lancement : bandes tirées au sort. `pnj` : pseudos de joueurs fictifs
-// inscrits d'office (salon de test, pour remplir les bandes) ; ils ne
-// jouent jamais (leurs chats s'installent tout seuls à la sieste).
+// inscrits d'office (salon de test, pour remplir les bandes) ; ils jouent
+// tout seuls à chaque distribution (jouerPnj() dans meowRules.js).
 export async function demarrerPartie({ pnj = [] } = {}) {
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadMeowConfig(), readPartie()]);
     pnj.forEach((nom, i) => inscrire(partie, `pnj-${i + 1}`, nom, { config: { ...config, effectif_max: Infinity } }));
     demarrer(partie, { config });
+    partie.pnjActifs = pnj.length > 0;
     await writePartie(partie);
     return partie;
   });
@@ -193,7 +194,7 @@ export async function rattraperPartie({ dryRun = false } = {}) {
 
 export async function classementsFinaux(partie) {
   const config = await loadMeowConfig();
-  return { bandes: classementBandes(partie), chatOr: classementChatOr(partie, config) };
+  return { bandes: classementBandes(partie), caid: classementCaid(partie, config) };
 }
 
 // ── Manches (comparaison entre parties, comme quiestce.js) ──────────

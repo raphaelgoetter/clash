@@ -26,8 +26,14 @@ import {
   pVictoire,
   totalBande,
   classementBandes,
-  classementChatOr,
+  classementCaid,
   texteJournal,
+  posterMessage,
+  messagesBande,
+  messagesRestants,
+  nouveauxMessages,
+  marquerLus,
+  estPnj,
 } from "./meowRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/meow/meow.json", import.meta.url), "utf8"));
@@ -293,7 +299,48 @@ function joueurDe(partie, b) {
   const id = joueurDe(partie, 0);
   assert.strictEqual(appeler(partie, id, "carton", 1).erreur, "termine");
   assert.strictEqual(classementBandes(partie).length, 3);
-  assert.strictEqual(classementChatOr(partie, CONFIG).length, 12);
+  assert.strictEqual(classementCaid(partie, CONFIG).length, 12);
+}
+
+// ── Messagerie de bande ───────────────────────────────────────────────
+
+{
+  const partie = partieDe(12);
+  const roux = Object.keys(partie.joueurs).filter((id) => partie.joueurs[id].bande === 0);
+  const noir = joueurDe(partie, 1);
+  assert.strictEqual(posterMessage(partie, roux[0], "   ", { config: CONFIG, now: LANCEMENT }).erreur, "messageVide");
+  assert.ok(posterMessage(partie, roux[0], "On  prend\nle Canapé ?", { config: CONFIG, now: LANCEMENT }).ok);
+  assert.deepStrictEqual(messagesBande(partie, 0).map((m) => m.txt), ["On prend le Canapé ?"]);
+  assert.strictEqual(messagesBande(partie, 1).length, 0, "invisible pour les autres bandes");
+  assert.strictEqual(nouveauxMessages(partie, roux[1]), 1);
+  assert.strictEqual(nouveauxMessages(partie, roux[0]), 0, "pas ses propres messages");
+  assert.strictEqual(nouveauxMessages(partie, noir), 0);
+  marquerLus(partie, roux[1], { now: LANCEMENT + 1 });
+  assert.strictEqual(nouveauxMessages(partie, roux[1]), 0);
+  assert.strictEqual(posterMessage(partie, roux[0], "x".repeat(500), { config: CONFIG, now: LANCEMENT }).ok, true);
+  assert.strictEqual(messagesBande(partie, 0).at(-1).txt.length, CONFIG.message_max);
+  for (let i = 2; i < CONFIG.messages_par_jour; i++) posterMessage(partie, roux[0], `m${i}`, { config: CONFIG, now: LANCEMENT });
+  assert.strictEqual(messagesRestants(partie, roux[0], { config: CONFIG, now: LANCEMENT }), 0);
+  assert.strictEqual(posterMessage(partie, roux[0], "encore", { config: CONFIG, now: LANCEMENT }).erreur, "plafondMessages");
+  // Quota remis à zéro le lendemain
+  const demain = parisInstant("2026-10-20", 10);
+  assert.strictEqual(messagesRestants(partie, roux[0], { config: CONFIG, now: demain }), CONFIG.messages_par_jour);
+  assert.ok(posterMessage(partie, roux[0], "nouveau jour", { config: CONFIG, now: demain }).ok);
+}
+
+// ── PNJ du salon de test ──────────────────────────────────────────────
+
+{
+  const partie = creerPartie();
+  for (let i = 0; i < 12; i++) inscrire(partie, `pnj-${i + 1}`, `PNJ ${i}`, { config: CONFIG });
+  demarrer(partie, { config: CONFIG, now: LANCEMENT, rng: seeded(7) });
+  partie.pnjActifs = true;
+  assert.ok(estPnj("pnj-3") && !estPnj("u1"));
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-21", 20), rng: seeded(8) });
+  const squats = partie.journal.filter((e) => e.k === "squat");
+  assert.ok(squats.length > 10, `les PNJ squattent (${squats.length})`);
+  assert.ok(squats.every((e) => estPnj(e.p)));
+  assert.ok(Object.values(partie.combats).length === 0, "aucun combat laissé en cours");
 }
 
 // ── Probabilités ──────────────────────────────────────────────────────

@@ -104,7 +104,7 @@ import {
   loadMeowConfig,
   readPartie as readMeowPartie,
 } from "../../../backend/services/meow.js";
-import { BANDES as MEOW_BANDES, chatOr as meowChatOr, jourDe as meowJourDe } from "../../../backend/services/meowRules.js";
+import { BANDES as MEOW_BANDES, scoreCaid as meowScoreCaid, jourDe as meowJourDe } from "../../../backend/services/meowRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -555,10 +555,10 @@ const SPECIAL_GAMES = [
       const joueur = partie.joueurs[discordId];
       if (joueur?.bande == null) return { played: false, scoreLabel: null };
       const bande = MEOW_BANDES[joueur.bande];
-      const score = meowChatOr(joueur, config);
+      const score = meowScoreCaid(joueur, config);
       return {
         played: joueur.jourActif === meowJourDe(partie, Date.now()),
-        scoreLabel: `${bande.emoji} **${bande.nom}** · 🏅 ${score} pt${score > 1 ? "s" : ""} au Chat d'or`,
+        scoreLabel: `${bande.emoji} **${bande.nom}** · 🏅 ${score} pt${score > 1 ? "s" : ""} (Caïd des coussins)`,
       };
     },
     async detail(state) {

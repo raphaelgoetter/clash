@@ -99,6 +99,27 @@ async function passage(id) {
 
 let date = "2026-10-19";
 for (let jour = 1; jour <= 7; jour++) {
+  if (jour === 3) {
+    aller(date, 8, 30);
+    const p0 = await S.readPartie();
+    const b1 = p0.joueurs.u1.bande;
+    const mate = ids.find((id) => id !== "u1" && p0.joueurs[id].bande === b1);
+    const rival = ids.find((id) => p0.joueurs[id].bande !== b1);
+    await H.handleMessageSubmit("wh-u1", "u1", nom("u1"), "On prend le Canapé à 13h ?");
+    verifier(lastEph("u1"), "message");
+    console.log(`\n--- Message envoyé : ${lastEph("u1").embeds[0].description.split("\n").slice(0, 3).join(" / ")}`);
+    aller(date, 8, 31);
+    await H.handleJouer(`wh-${mate}`, mate, nom(mate));
+    if (!boutons(lastEph(mate), "meow_bande_vue")[0].label.includes("(1)")) throw new Error("nouveau message non signalé");
+    await H.handleBande(`wh-${mate}`, mate, nom(mate));
+    verifier(lastEph(mate), "ma bande");
+    if (!lastEph(mate).embeds[0].description.includes("Canapé à 13h")) throw new Error("message absent pour le coéquipier");
+    await H.handleBande(`wh-${rival}`, rival, nom(rival));
+    if (lastEph(rival).embeds[0].description.includes("Canapé à 13h")) throw new Error("message visible par une autre bande");
+    await H.handleJouer(`wh-${mate}`, mate, nom(mate));
+    if (boutons(lastEph(mate), "meow_bande_vue")[0].label.includes("(")) throw new Error("message toujours signalé après lecture");
+    console.log(`--- Ma bande (coéquipier) : ${lastEph(mate).embeds[0].description.split("\n").find((l) => l.includes("💬")) ?? "plus de nouveau message"}`);
+  }
   for (const [h, actifs] of [[9, 0.7], [14, 0.5], [19, 0.6]]) {
     aller(date, h, 15);
     for (const id of ids) if (Math.random() < actifs) await passage(id);

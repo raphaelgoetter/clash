@@ -14,5 +14,8 @@
   "points_piece": 2,
   "points_rang": [3, 2, 1],
   "delai_combat_minutes": 5,
-  "chat_or": { "coin": 3, "chat": 1 }
+  "caid": { "coin": 3, "chat": 1 },
+  "messages_par_jour": 10,
+  "messages_affiches": 15,
+  "message_max": 200
 }

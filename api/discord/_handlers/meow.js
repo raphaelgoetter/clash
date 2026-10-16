@@ -50,9 +50,15 @@ import {
   jusquauBout,
   retraite,
   pVictoire,
-  chatOr,
+  scoreCaid,
   classementBandes,
   texteJournal,
+  parisParts,
+  posterMessage,
+  messagesBande,
+  messagesRestants,
+  nouveauxMessages,
+  marquerLus,
 } from "../../../backend/services/meowRules.js";
 import { encodeCarte } from "../../../backend/services/meowImage.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "../../../backend/services/discordRoles.js";
@@ -80,6 +86,10 @@ function chats(n) {
   return plural(n, "chat");
 }
 
+function deloges(n) {
+  return `${chats(n)} délogé${n > 1 ? "s" : ""}`;
+}
+
 function nomBande(b) {
   return `${BANDES[b].emoji} ${BANDES[b].nom}`;
 }
@@ -92,6 +102,14 @@ function addDays(date, days) {
 
 function formatDateFr(iso) {
   return new Date(iso).toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "long", timeStyle: "short" });
+}
+
+// « 2 h 15 », « 45 min »
+function delai(ms) {
+  const min = Math.max(1, Math.ceil(ms / 60_000));
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  return `${h} h${min % 60 ? ` ${String(min % 60).padStart(2, "0")}` : ""}`;
 }
 
 function horairesDistribution(config) {
@@ -181,7 +199,7 @@ function formatMancheLine(record, isCurrent) {
   return `Manche ${record.manche} : victoire des **${record.vainqueur}** (${plural(record.points, "pt")}, ${plural(record.nbJoueurs, "joueur")})${isCurrent ? " *(cette manche)*" : ""}`;
 }
 
-function buildFinEmbed(bandes, chatsOr, manches, currentManche) {
+function buildFinEmbed(bandes, caids, manches, currentManche) {
   const [premier, second] = bandes;
   const titre =
     premier.points === second.points && premier.cumul === second.cumul
@@ -195,11 +213,11 @@ function buildFinEmbed(bandes, chatsOr, manches, currentManche) {
       "**Classement des bandes**",
       ...bandes.map((r, i) => `${MEDALS[i]} **${nomBande(r.b)}** : ${plural(r.points, "pt")}`),
       "",
-      "**🏅 Chat d'or**",
-      ...chatsOr
+      "**🏅 Caïd des coussins**",
+      ...caids
         .filter((r) => r.score > 0)
         .slice(0, 10)
-        .map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** ${BANDES[r.bande].emoji} : ${plural(r.score, "pt")} (${plural(r.coinsPris, "coin")} pris, ${chats(r.chatsDeloges)} délogés)`),
+        .map((r, i) => `${MEDALS[i] || `${i + 1}.`} **${r.username}** ${BANDES[r.bande].emoji} : ${plural(r.score, "pt")} (${plural(r.coinsPris, "coin")} pris, ${deloges(r.chatsDeloges)})`),
       ...(manches.length ? ["", "**📊 Manches précédentes**", ...manches.map((m) => formatMancheLine(m, m.manche === currentManche))] : []),
     ]
       .join("\n")
@@ -223,16 +241,17 @@ function buildReglesEmbed(config) {
       "**😼 Squatter**",
       `- Depuis un coin de ta bande avec au moins 2 chats, vers un coin voisin : 1 chat reste garder, les autres y vont. **${config.squats_par_distribution} squats** entre deux distributions.`,
       "- Voisins : tous les coins d'une même pièce, et les coins reliés par une 🐾 sur la carte.",
-      "- **Concours de regards** à chaque manche : jusqu'à 3 dés contre 2, on compare les plus hauts dés, le plus petit perd un chat, **l'égalité profite au défenseur**. Continue, va jusqu'au bout ou bats en retraite.",
+      "- **Crêpage de poils** à chaque manche : jusqu'à 3 dés contre 2, on compare les plus hauts dés, le plus petit perd un chat, **l'égalité profite au défenseur**. Continue, va jusqu'au bout ou bats en retraite.",
       "- Les chats engagés et les coins sont tous ceux de la bande : organisez-vous !",
       "- 🔒 Les **paniers** (anneau doré) sont imprenables. 😴 Pas de squat pendant la sieste (0h à 8h).",
+      `- 💬 **Ma bande** : messagerie réservée à ta bande (${config.messages_par_jour} messages par jour).`,
       "",
       "**🍖 Croquettes**",
       "- Ta bande tient toute une pièce : +1 chat à chaque distribution et +2 au décompte.",
       "",
       "**🏆 Points**",
       `- Décompte à **${config.heure_decompte}h** : 1 par coin tenu, +${config.points_piece} par pièce entière. La 1re bande du jour marque ${config.points_rang[0]} pts, la 2e ${config.points_rang[1]}, la 3e ${config.points_rang[2]}.`,
-      `- 🏅 **Chat d'or** (classement individuel) : ${config.chat_or.coin} pts par coin pris, ${config.chat_or.chat} par chat délogé.`,
+      `- 🏅 **Caïd des coussins** (classement individuel) : ${config.caid.coin} pts par coin pris, ${config.caid.chat} par chat délogé.`,
       `- Fin après le décompte du jour ${config.duree_jours} : la bande qui a le plus de points gagne.`,
     ].join("\n"),
     color: MEOW_COLOR,
@@ -260,7 +279,7 @@ function buildAnnonceComponents(config, partie) {
 }
 
 function buildJourComponents() {
-  return [{ type: 1, components: [bouton("Jouer", "🐾", "meow_jouer", 1), reglesButton(), bouton("Journal", "📜", "meow_journal")] }];
+  return [{ type: 1, components: [bouton("Jouer", "🐾", "meow_jouer", 1), bouton("Ma bande", "💬", "meow_bande"), reglesButton(), bouton("Journal", "📜", "meow_journal")] }];
 }
 
 // ── Messages Discord du salon ────────────────────────────────────────
@@ -362,20 +381,20 @@ async function rafraichirMessage(state, partie) {
 
 // Fin de partie : manche archivée (salon public), message final avec ping.
 async function terminerPartie(state, partie, { dryRun = false } = {}) {
-  const { bandes, chatOr: chatsOr } = await classementsFinaux(partie);
+  const { bandes, caid: caids } = await classementsFinaux(partie);
   let currentManche = null;
   if (!dryRun && state.isPublic) {
     currentManche = await archiveManche({
       vainqueur: BANDES[bandes[0].b].nom,
       points: bandes[0].points,
-      nbJoueurs: chatsOr.length,
+      nbJoueurs: caids.length,
       bandes: bandes.map((r) => ({ bande: BANDES[r.b].id, points: r.points })),
-      ranking: chatsOr.map((r) => ({ discordId: r.discordId, username: r.username, bande: BANDES[r.bande].id, score: r.score })),
+      ranking: caids.map((r) => ({ discordId: r.discordId, username: r.username, bande: BANDES[r.bande].id, score: r.score })),
       resolvedAt: new Date().toISOString(),
     });
   }
   const manches = await listManches({ limit: 10 });
-  const embed = buildFinEmbed(bandes, chatsOr, manches, currentManche);
+  const embed = buildFinEmbed(bandes, caids, manches, currentManche);
   const components = [{ type: 1, components: [reglesButton()] }];
   if (dryRun) return { dryRun: true, final: true, embed };
   const result = await publishAndWriteState(state.channelId, state, {
@@ -481,13 +500,13 @@ const ERREURS = {
   termine: "La partie est terminée.",
   inconnu: "Tu ne participes pas à cette partie.",
   pasTonCoin: "Ce coin n'est plus à ta bande.",
-  verrouille: "Un concours de regards est en cours sur ce coin, réessaie dans un instant.",
+  verrouille: "Un crêpage de poils est en cours sur ce coin, réessaie dans un instant.",
   stockVide: "Tu n'as plus de chat à appeler.",
-  combatEnCours: "Tu as déjà un concours de regards en cours.",
+  combatEnCours: "Tu as déjà un crêpage de poils en cours.",
   sieste: "C'est la sieste : pas de squat avant 8h.",
   plafondSquats: "Tu as fait tes squats : attends la prochaine distribution.",
   squatImpossible: "Ce squat n'est plus possible (la carte a bougé).",
-  pasDeCombat: "Ce concours de regards est déjà terminé.",
+  pasDeCombat: "Ce crêpage de poils est déjà terminé.",
 };
 
 function avertissement(code) {
@@ -502,16 +521,16 @@ function nomAdversaire(def, n) {
 function texteManche(manche, b, def) {
   const adv = def === ERRANTS ? "errant" : BANDES[def].nom;
   const pertes = [manche.pd ? `${manche.pd} ${adv}${manche.pd > 1 && def === ERRANTS ? "s" : ""}` : null, manche.pa ? `${manche.pa} ${BANDES[b].nom}` : null].filter(Boolean);
-  return `🎲 Tes chats : **${manche.da.join("-")}** · En face : **${manche.dd.join("-")}** → ${pertes.join(" et ")} cligne${manche.pa + manche.pd > 1 ? "nt" : ""} des yeux.`;
+  return `🎲 Tes chats : **${manche.da.join("-")}** · En face : **${manche.dd.join("-")}** → ${pertes.join(" et ")} détale${manche.pa + manche.pd > 1 ? "nt" : ""}.`;
 }
 
 function texteFin(fin) {
   if (fin.issue === "victoire") return `🎉 **Coin squatté !** ${chats(fin.a)} s'installe${fin.a > 1 ? "nt" : ""} sur ${nomCoin(fin.vers)}.`;
-  if (fin.issue === "defaite") return `😿 **Échec** : tes chats ont tous cligné des yeux devant ${nomCoin(fin.vers)}.`;
+  if (fin.issue === "defaite") return `😿 **Échec** : tes chats ont tous détalé devant ${nomCoin(fin.vers)}.`;
   return `🏃 **Retraite** : ${chats(fin.a)} rentre${fin.a > 1 ? "nt" : ""} sur ${nomCoin(fin.de)}.`;
 }
 
-// Concours de regards en cours : dernière manche et trois boutons.
+// Crêpage de poils en cours : dernière manche et trois boutons.
 function buildCombatView(config, partie, discordId, { entete = null } = {}) {
   const c = partie.combats[discordId];
   const j = partie.joueurs[discordId];
@@ -526,7 +545,7 @@ function buildCombatView(config, partie, discordId, { entete = null } = {}) {
   return {
     embeds: [
       {
-        title: "👀 Concours de regards",
+        title: "💢 Crêpage de poils",
         description: lignes.join("\n"),
         color: MEOW_COLOR,
         footer: { text: `Sans réponse pendant ${config.delai_combat_minutes} minutes, tes chats battent en retraite.` },
@@ -563,17 +582,23 @@ function buildJouerView(config, partie, discordId, { entete = null, nouveau = fa
   const bd = BANDES[j.bande];
   const sieste = enSieste(now, config);
   const suivante = prochaineDistribution(now, config);
+  const quand = suivante && parisParts(suivante.t).date !== parisParts(now).date ? "demain " : "";
   const restants = squatsRestants(j, config);
   const verrous = coinsVerrouilles(partie);
   const mesCoins = coinsDe(partie, j.bande);
   const pieces = piecesTenues(partie, j.bande);
+  const nouveaux = nouveauxMessages(partie, discordId);
   const lignes = [
     ...(entete ? [entete, ""] : []),
     `${bd.emoji} Tu es dans la bande des **${bd.nom}**.`,
-    `🐱 **${chats(j.stock)}** à appeler (${config.stock_max} au plus) · 😼 Squats : **${restants}/${config.squats_par_distribution}**${suivante ? ` jusqu'à ${suivante.h}h` : ""}`,
+    `🐱 **${chats(j.stock)}** à appeler (${config.stock_max} au plus) · 😼 Squats : **${restants}/${config.squats_par_distribution}**${suivante ? ` jusqu'à ${quand}${suivante.h}h` : ""}`,
+    ...(suivante
+      ? [`⏳ Prochaine distribution ${quand ? "demain " : ""}à **${suivante.h}h** (dans ${delai(suivante.t - now)})${j.stock >= config.stock_max ? " : ta réserve est pleine, appelle tes chats sinon le prochain sera perdu." : "."}`]
+      : []),
     ...(sieste ? [`😴 C'est la sieste jusqu'à ${config.fin_sieste}h : pas de squat, mais tu peux appeler tes chats.`] : []),
     ...(pieces.length ? [`🍖 Croquettes : ta bande tient ${pieces.map((p) => `la ${PIECES[p].nom}`).join(", ")}.`] : []),
-    `🏅 Chat d'or : **${plural(chatOr(j, config), "pt")}** (${plural(j.coinsPris, "coin")} pris, ${chats(j.chatsDeloges)} délogés)`,
+    `🏅 Caïd des coussins : **${plural(scoreCaid(j, config), "pt")}** (${plural(j.coinsPris, "coin")} pris, ${deloges(j.chatsDeloges)})`,
+    ...(nouveaux ? [`💬 **${nouveaux} ${nouveaux > 1 ? "nouveaux messages" : "nouveau message"}** de ta bande.`] : []),
     "",
     `**Coins de ta bande** (⚠️ = menacé)`,
     mesCoins.map((c) => `${nomCoin(c)} ${partie.coins[c].n}${menace(partie, c) > 0 ? " ⚠️" : ""}`).join(" · "),
@@ -633,9 +658,68 @@ function buildJouerView(config, partie, discordId, { entete = null, nouveau = fa
     ],
   });
 
+  components.push({ type: 1, components: [bouton(nouveaux ? `Ma bande (${nouveaux})` : "Ma bande", "💬", "meow_bande_vue", nouveaux ? 3 : 2)] });
+
   return {
     embeds: [{ title: "🐾 Meow", description: lignes.join("\n").slice(0, 4096), color: MEOW_COLOR, footer: { text: "La carte est sur le message du jour." } }],
     components,
+  };
+}
+
+function heureMessage(partie, t) {
+  const { h, min } = parisParts(t);
+  return `J${jourDe(partie, t)} ${h}h${String(min).padStart(2, "0")}`;
+}
+
+// [💬 Ma bande] : derniers messages signés de la bande, bouton Écrire.
+function buildBandeView(config, partie, discordId, { entete = null } = {}) {
+  const j = partie.joueurs[discordId];
+  if (!partie.demarree || j?.bande == null) return { embeds: [{ description: "Les bandes seront formées au lancement de la partie.", color: MEOW_COLOR }] };
+  const bd = BANDES[j.bande];
+  const restants = messagesRestants(partie, discordId, { config });
+  const messages = messagesBande(partie, j.bande).slice(-config.messages_affiches);
+  const lignes = [
+    ...(entete ? [entete, ""] : []),
+    ...(messages.length
+      ? messages.map((m) => `**${partie.joueurs[m.p]?.username ?? "?"}** · ${heureMessage(partie, m.t)} : ${m.txt}`)
+      : ["Aucun message pour l'instant. Organisez-vous !"]),
+  ];
+  return {
+    embeds: [
+      {
+        title: `💬 Bande des ${bd.nom} ${bd.emoji}`,
+        description: lignes.join("\n").slice(0, 4096),
+        color: MEOW_COLOR,
+        footer: { text: `Visible uniquement par ta bande · ${plural(restants, "message")} possible${restants > 1 ? "s" : ""} aujourd'hui.` },
+      },
+    ],
+    components: partie.termine
+      ? []
+      : [{ type: 1, components: [bouton("Écrire", "✍️", "meow_ecrire", 1, restants <= 0), bouton("Jouer", "🐾", "meow_vue")] }],
+  };
+}
+
+// Fenêtre « Écrire » (réponse synchrone type 9, voir le routage).
+export function buildMessageModal() {
+  return {
+    custom_id: "meow_message_modal",
+    title: "Message à ta bande",
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 4,
+            custom_id: "meow_message_input",
+            style: 2,
+            label: "Ton message (visible par ta bande)",
+            placeholder: "Ex. : je prépare 6 chats sur le Carton, on prend le Canapé à 13h ?",
+            required: true,
+            max_length: 200,
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -669,7 +753,8 @@ async function executer(webhookUrl, discordId, username, action, { rafraichir = 
     await patchOriginal(webhookUrl, { content: refus[r.erreur] });
     return;
   }
-  await patchOriginal(webhookUrl, buildJouerView(config, r.partie, discordId, { ...vue, ...(r.resultat || {}), nouveau: r.nouveau }));
+  const builder = vue.ecran === "bande" ? buildBandeView : buildJouerView;
+  await patchOriginal(webhookUrl, builder(config, r.partie, discordId, { ...vue, ...(r.resultat || {}), nouveau: r.nouveau }));
   if (rafraichir || r.resultat?.rafraichir || r.nouveau) await rafraichirMessage(state, r.partie);
 }
 
@@ -747,7 +832,7 @@ export async function handleSquat(webhookUrl, discordId, username, valeur) {
   }
 }
 
-// Boutons du concours de regards.
+// Boutons du crêpage de poils.
 export async function handleCombat(webhookUrl, discordId, username, action) {
   try {
     await executer(webhookUrl, discordId, username, (partie) => {
@@ -761,7 +846,38 @@ export async function handleCombat(webhookUrl, discordId, username, action) {
       return { entete: `${manche}${texteFin(r.fin)}`, rafraichir: true };
     });
   } catch (err) {
-    console.error("[Meow] Échec concours de regards:", err.message);
+    console.error("[Meow] Échec crêpage de poils:", err.message);
+  }
+}
+
+// [💬 Ma bande] (message du jour ou vue Jouer) : messages marqués lus.
+export async function handleBande(webhookUrl, discordId, username) {
+  try {
+    await executer(webhookUrl, discordId, username, (partie) => (marquerLus(partie, discordId), {}), { vue: { ecran: "bande" } });
+  } catch (err) {
+    console.error("[Meow] Échec Ma bande:", err.message);
+  }
+}
+
+// Envoi de la fenêtre « Écrire » ; quota revérifié ici (le bouton grisé
+// n'est qu'une aide visuelle).
+export async function handleMessageSubmit(webhookUrl, discordId, username, texte) {
+  try {
+    await executer(
+      webhookUrl,
+      discordId,
+      username,
+      (partie, config) => {
+        const r = posterMessage(partie, discordId, texte, { config });
+        if (r.erreur === "messageVide") return { entete: "⚠️ Message vide, rien n'a été envoyé." };
+        if (r.erreur === "plafondMessages") return { entete: `⚠️ Tu as envoyé tes ${config.messages_par_jour} messages du jour, reviens demain.` };
+        if (r.erreur) return { entete: avertissement(r.erreur) };
+        return { entete: "📬 Message envoyé à ta bande !" };
+      },
+      { vue: { ecran: "bande" } },
+    );
+  } catch (err) {
+    console.error("[Meow] Échec envoi de message:", err.message);
   }
 }
 
