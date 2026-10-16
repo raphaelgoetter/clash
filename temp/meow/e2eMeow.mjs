@@ -93,7 +93,7 @@ async function passage(id) {
     verifier(e, `squat ${id}`);
     for (let m = 0; m < 30 && boutons(e, "meow_retraite").length; m++) {
       const chance = Number(/(\d+) %/.exec(e.embeds[0].description)?.[1] ?? 0);
-      await H.handleCombat(`wh-${id}`, id, nom(id), chance < 30 ? "retraite" : m % 3 === 2 ? "bout" : "manche");
+      await H.handleCombat(`wh-${id}`, id, nom(id), chance < 30 ? "retraite" : "bout");
       e = lastEph(id);
       verifier(e, `combat ${id}`);
     }

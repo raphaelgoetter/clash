@@ -74,7 +74,6 @@ import {
 
 const MEOW_COLOR = 0xe8812a;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
-const JOURNAL_AFFICHE = 5;
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 function illustrationUrl() {
@@ -198,8 +197,8 @@ function buildJourEmbed(jour, config, partie) {
     "**🏆 Classement des bandes**",
     ...classementLignes(partie),
   ];
-  // Aujourd'hui : bilan des squats et seulement les territoires qui ont
-  // changé de main (les échecs et retraites sont dans le Journal de chacun)
+  // Aujourd'hui : bilan des squats, puis territoires gagnés et perdus par
+  // bande dans la journée (le détail est dans le Journal de chaque bande)
   const squats = partie.journal.filter((e) => e.k === "squat" && e.j === jour);
   if (squats.length) {
     const prises = squats.filter((e) => e.issue === "victoire");
@@ -210,8 +209,11 @@ function buildJourEmbed(jour, config, partie) {
       "",
       "**💥 Aujourd'hui**",
       `😼 ${plural(squats.length, "squat")} : ${bilan.join(", ")}.`,
-      ...prises.slice(-JOURNAL_AFFICHE).map((e) => texteJournal(partie, e)),
-      ...(prises.length > JOURNAL_AFFICHE ? [`… et ${prises.length - JOURNAL_AFFICHE} autre${prises.length - JOURNAL_AFFICHE > 1 ? "s" : ""} plus tôt.`] : []),
+      ...BANDES.map((bd, b) => {
+        const gagnes = prises.filter((e) => e.b === b).length;
+        const perdus = prises.filter((e) => e.def === b).length;
+        return `${bd.emoji} ${bd.nom} : ${plural(gagnes, "territoire")} gagné${gagnes > 1 ? "s" : ""} / ${plural(perdus, "territoire")} perdu${perdus > 1 ? "s" : ""}`;
+      }),
     );
   }
   return {
@@ -286,7 +288,7 @@ function buildReglesEmbed(config) {
       "**😼 Squatter**",
       `- Depuis un territoire de ta bande avec au moins 2 chats, vers un territoire voisin : 1 chat reste garder, les autres y vont. **${config.squats_par_distribution} squats** entre deux distributions.`,
       "- Voisins : tous les territoires d'une même pièce, et ceux reliés par une 🐾 sur la carte.",
-      "- **Crêpage de poils** à chaque manche : jusqu'à 3 dés contre 2, on compare les plus hauts dés, le plus petit perd un chat, **l'égalité profite au défenseur**. Continue, va jusqu'au bout ou bats en retraite.",
+      "- **Crêpage de poils** à chaque manche : jusqu'à 3 dés contre 2, on compare les plus hauts dés, le plus petit perd un chat, **l'égalité profite au défenseur**. Après la 1re manche : finis la baston (les manches s'enchaînent jusqu'au bout) ou bats en retraite.",
       "- Les chats et les territoires sont ceux de toute la bande : organisez-vous !",
       "- 🔒 Les **paniers** (anneau doré) sont imprenables.",
       `- 😴 Pas de squat pendant la sieste (0h à ${config.fin_sieste}h).`,
@@ -864,7 +866,7 @@ function buildCombatView(config, partie, discordId, { entete = null } = {}) {
     `${BANDES[j.bande].emoji} **${chats(c.a)}** (depuis ${nomCoin(c.s)}) contre **${nomAdversaire(c.def, c.d)}** sur ${nomCoin(c.t)}.`,
     ...(derniere ? [texteManche(derniere, j.bande, c.def)] : []),
     "",
-    `Chances de réussite en allant jusqu'au bout : **${Math.round(pVictoire(c.a, c.d) * 100)} %**.`,
+    `Chances de réussite si tu finis la baston : **${Math.round(pVictoire(c.a, c.d) * 100)} %**.`,
   ];
   return {
     embeds: [
@@ -881,8 +883,7 @@ function buildCombatView(config, partie, discordId, { entete = null } = {}) {
       {
         type: 1,
         components: [
-          bouton("Manche suivante", "🎲", "meow_manche", 1),
-          bouton("Jusqu'au bout", "⏩", "meow_bout"),
+          bouton("Finir la baston", "💢", "meow_bout", 1),
           bouton("Battre en retraite", "🏃", "meow_retraite", 4),
         ],
       },
@@ -1391,15 +1392,22 @@ export async function handleJournal(webhookUrl, discordId) {
       });
       return;
     }
-    // Ce que le message du jour ne montre pas : ses propres squats (même
-    // ratés), les attaques contre sa bande, ses croquettes regroupées par
-    // jour ; aujourd'hui et hier seulement (les points sont dans le classement).
+    // Ce qui concerne sa bande (décision du 16/10) : territoires pris par la
+    // bande, territoires perdus, retraites de la bande, croquettes regroupées
+    // par jour ; aujourd'hui et hier seulement.
     const jourCourant = jourDe(partie, horloge(partie));
     const lignesDuJour = (jour) => {
       const evts = partie.journal.filter((e) => e.j === jour);
       const lignes = evts
-        .filter((e) => e.k === "squat" && (e.p === discordId || (e.def === j.bande && e.b !== j.bande)))
-        .map((e) => `${e.p === discordId ? "" : "🛡️ "}${texteJournal(partie, e)}`)
+        .filter(
+          (e) =>
+            e.k === "squat" &&
+            ((e.b === j.bande && (e.issue === "victoire" || e.issue.startsWith("retraite"))) || (e.def === j.bande && e.issue === "victoire")),
+        )
+        .map((e) => {
+          const { h, min } = parisParts(e.t);
+          return `\`${h}h${String(min).padStart(2, "0")}\` ${texteJournal(partie, e)}`;
+        })
         .reverse();
       const croquettes = evts.filter((e) => e.k === "croquettes" && e.b === j.bande);
       if (croquettes.length) {
