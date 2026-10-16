@@ -34,6 +34,7 @@ import {
   BANDES,
   PIECES,
   PIECE_DE,
+  COINS,
   ERRANTS,
   nomCoin,
   jourDe,
@@ -178,7 +179,10 @@ function buildAnnonceEmbed(
 // Points cumulés et territoires tenus en ce moment (ce que rapportera le
 // prochain décompte).
 function classementLignes(partie) {
-  return classementBandes(partie).map((r, i) => `${MEDALS[i]} **${nomBande(r.b)}** : ${plural(r.points, "pt")} (${plural(r.territoires, "territoire")})`);
+  return classementBandes(partie).map(
+    (r, i) =>
+      `${MEDALS[i]} **${nomBande(r.b)}** : ${plural(r.points, "pt")} (${plural(r.territoires, "territoire")})`,
+  );
 }
 
 function bandesLignes(partie) {
@@ -193,7 +197,12 @@ function bandesLignes(partie) {
 
 function buildJourEmbed(jour, config, partie) {
   const lignes = [
-    ...(jour === 1 ? ["Les bandes sont formées ! Chaque bande part de sa pièce, le Salon et le Grenier sont occupés par des chats errants.", ""] : []),
+    ...(jour === 1
+      ? [
+          "Les bandes sont formées ! Chaque bande part de sa pièce, le Salon et le Grenier sont occupés par des chats errants.",
+          "",
+        ]
+      : []),
     "**🏆 Classement des bandes**",
     ...classementLignes(partie),
   ];
@@ -204,7 +213,11 @@ function buildJourEmbed(jour, config, partie) {
     const prises = squats.filter((e) => e.issue === "victoire");
     const rates = squats.filter((e) => e.issue === "defaite").length;
     const retraites = squats.length - prises.length - rates;
-    const bilan = [`${prises.length} réussi${prises.length > 1 ? "s" : ""}`, rates ? `${rates} raté${rates > 1 ? "s" : ""}` : null, retraites ? `${plural(retraites, "retraite")}` : null].filter(Boolean);
+    const bilan = [
+      `${prises.length} réussi${prises.length > 1 ? "s" : ""}`,
+      rates ? `${rates} raté${rates > 1 ? "s" : ""}` : null,
+      retraites ? `${plural(retraites, "retraite")}` : null,
+    ].filter(Boolean);
     lignes.push(
       "",
       "**💥 Aujourd'hui**",
@@ -234,7 +247,8 @@ function formatMancheLine(record, isCurrent) {
 function buildFinEmbed(bandes, caids, manches, currentManche) {
   const [premier, second] = bandes;
   const titre =
-    premier.points === second.points && premier.territoires === second.territoires
+    premier.points === second.points &&
+    premier.territoires === second.territoires
       ? "🤝 Égalité parfaite en tête !"
       : `👑 Les **${nomBande(premier.b)}** remportent la partie avec ${plural(premier.points, "pt")} !`;
   return {
@@ -283,7 +297,7 @@ function buildReglesEmbed(config) {
       `- Distribution à **${horairesDistribution(config)}** : 1 chat pour toi (${config.stock_max} en réserve maximum).`,
       "- **Appeler** : pose tous tes chats de réserve sur un territoire de ta bande.",
       `- **Déplacer** : ${config.deplacements_par_distribution} chat vers un autre territoire de ta bande, dans la même pièce ou par un passage 🐾, entre deux distributions (1 chat reste toujours sur place).`,
-      "- Chats pas appelés à minuit : ils s'installent tout seuls sur le territoire le plus menacé.",
+      "- À minuit, 1 de tes chats pas appelés s'installe tout seul sur le territoire le plus menacé, les autres restent en réserve.",
       "",
       "**😼 Squatter**",
       `- Depuis un territoire de ta bande avec au moins 2 chats, vers un territoire voisin : 1 chat reste garder, les autres y vont. **${config.squats_par_distribution} squats** entre deux distributions.`,
@@ -822,8 +836,10 @@ const ERREURS = {
   sieste: "C'est la sieste : pas de squat avant 8h.",
   plafondSquats: "Tu as fait tes squats : attends la prochaine distribution.",
   squatImpossible: "Ce squat n'est plus possible (la carte a bougé).",
-  plafondDeplacements: "Tu as déjà déplacé un chat : attends la prochaine distribution.",
-  deplacementImpossible: "Ce déplacement n'est plus possible (la carte a bougé).",
+  plafondDeplacements:
+    "Tu as déjà déplacé un chat : attends la prochaine distribution.",
+  deplacementImpossible:
+    "Ce déplacement n'est plus possible (la carte a bougé).",
   pasDeCombat: "Ce crêpage de poils est déjà terminé.",
 };
 
@@ -893,11 +909,19 @@ function buildCombatView(config, partie, discordId, { entete = null } = {}) {
 
 // [🐾 Jouer] : bande, réserve, squats restants, coins de la bande, menus
 // Appeler (toute la réserve), Squatter et Déplacer.
+// Titre de la vue Jouer juste après la fin d'un squat
+const TITRES_ISSUE = {
+  victoire: "🎉 Victoire !",
+  defaite: "😿 Raté",
+  retraite: "🏃 Retraite",
+  retraiteAuto: "🏃 Retraite",
+};
+
 function buildJouerView(
   config,
   partie,
   discordId,
-  { entete = null, nouveau = false } = {},
+  { entete = null, nouveau = false, issue = null } = {},
 ) {
   const j = partie.joueurs[discordId];
   if (!partie.demarree) {
@@ -935,7 +959,7 @@ function buildJouerView(
   const lignes = [
     ...(entete ? [entete, ""] : []),
     `${bd.emoji} Tu es dans la bande des **${bd.nom}**.`,
-    `🐱 **${chats(j.stock)}** à appeler (${config.stock_max} au plus) · 😼 Squats : **${restants}/${config.squats_par_distribution}**${suivante ? ` jusqu'à ${quand}${suivante.h}h` : ""}`,
+    `🐱 **${chats(j.stock)}** à appeler (${config.stock_max} max) · 😼 Squats : **${restants}/${config.squats_par_distribution}**${suivante ? ` jusqu'à ${quand}${suivante.h}h` : ""}`,
     ...(suivante
       ? [
           `⏳ Prochaine distribution ${quand ? "demain " : ""}à **${suivante.h}h** (dans ${delai(suivante.t - now)})${j.stock >= config.stock_max ? " : ta réserve est pleine, appelle tes chats sinon le prochain sera perdu." : "."}`,
@@ -944,6 +968,12 @@ function buildJouerView(
     ...(sieste
       ? [
           `😴 C'est la sieste jusqu'à ${config.fin_sieste}h : pas de squat, mais tu peux appeler tes chats.`,
+        ]
+      : []),
+    // Chat posé tout seul cette nuit (sieste), rappelé le jour même
+    ...(j.nuit?.jour === jourDe(partie, now)
+      ? [
+          `😴 Cette nuit, 1 de tes chats s'est installé tout seul sur **${nomCoin(j.nuit.coin)}**.`,
         ]
       : []),
     ...(pieces.length
@@ -956,14 +986,6 @@ function buildJouerView(
           `💬 **${nouveaux} ${nouveaux > 1 ? "nouveaux messages" : "nouveau message"}** de ta bande.`,
         ]
       : []),
-    "",
-    `**Territoires de ta bande** (⚠️ = menacé)`,
-    mesCoins
-      .map(
-        (c) =>
-          `${nomCoin(c)} ${partie.coins[c].n}${menace(partie, c) > 0 ? " ⚠️" : ""}`,
-      )
-      .join(" · "),
   ];
 
   const components = [];
@@ -976,7 +998,7 @@ function buildJouerView(
           {
             type: 3,
             custom_id: "meow_appel_coin",
-            placeholder: `🐱 Appeler ${j.stock > 1 ? `tes ${j.stock} chats` : "ton chat"} sur…`,
+            placeholder: "🐱 Appeler",
             options: appelables.slice(0, 25).map((c) => ({
               label: `${nomCoin(c)} (${chats(partie.coins[c].n)})`,
               value: c,
@@ -988,21 +1010,17 @@ function buildJouerView(
     }
   }
   const squats = squatsPossibles(partie, j.bande);
-  const raison = sieste
-    ? "😴 Pas de squat pendant la sieste"
-    : restants <= 0
-      ? "😼 Squats faits, attends la prochaine distribution"
-      : !squats.length
-        ? "😼 Aucun squat possible (il faut 2 chats sur un territoire)"
-        : null;
+  // Menus : intitulé court (emoji + verbe), grisé si l'action est impossible
+  // (sieste, quota atteint, rien de possible : expliqué dans les règles).
+  const squatBloque = sieste || restants <= 0 || !squats.length;
   components.push({
     type: 1,
     components: [
       {
         type: 3,
         custom_id: "meow_squat",
-        placeholder: raison ?? "😼 Squatter dans la même pièce ou par un passage 🐾",
-        disabled: Boolean(raison),
+        placeholder: "😼 Squatter",
+        disabled: squatBloque,
         options: (squats.length
           ? squats
           : [{ s: "aucun", t: "aucun", a: 0, d: 0, p: 0 }]
@@ -1022,26 +1040,25 @@ function buildJouerView(
   });
 
   // Déplacer : 1 chat vers un territoire voisin de sa bande
-  const deps = deplacementsPossibles(partie, j.bande);
-  const raisonDep =
-    deplacementsRestants(j, config) <= 0
-      ? "🚚 Déplacement fait, attends la prochaine distribution"
-      : !deps.length
-        ? "🚚 Aucun déplacement possible (il faut 2 chats sur un territoire)"
-        : null;
+  // Ordre de la carte (départ, puis arrivée) : lisible pour un joueur ; le
+  // tri « le plus utile d'abord » de deplacementsPossibles() sert aux PNJ.
+  const rang = (c) => COINS.indexOf(c);
+  const deps = deplacementsPossibles(partie, j.bande).sort((x, y) => rang(x.s) - rang(y.s) || rang(x.t) - rang(y.t));
+  const deplacementBloque =
+    deplacementsRestants(j, config) <= 0 || !deps.length;
   components.push({
     type: 1,
     components: [
       {
         type: 3,
         custom_id: "meow_deplacer",
-        placeholder: raisonDep ?? "🚚 Déplacer un chat dans la même pièce ou par un passage 🐾",
-        disabled: Boolean(raisonDep),
+        placeholder: "🚚 Déplacer",
+        disabled: deplacementBloque,
         options: deps.length
           ? deps.slice(0, 25).map((o) => ({
               label: `${nomCoin(o.s)} (${o.ns}) → ${nomCoin(o.t)} (${o.nt})`,
               value: `${o.s}>${o.t}`,
-              description: o.menace > 0 ? `${nomCoin(o.t)} est menacé` : "1 chat",
+              ...(o.menace > 0 ? { description: `⚠️ ${nomCoin(o.t)} est menacé` } : {}),
             }))
           : [{ label: "Aucun déplacement possible", value: "aucun" }],
       },
@@ -1063,10 +1080,9 @@ function buildJouerView(
   return {
     embeds: [
       {
-        title: "🐾 Meow",
+        title: TITRES_ISSUE[issue] ?? "🐾 Meow",
         description: lignes.join("\n").slice(0, 4096),
         color: MEOW_COLOR,
-        footer: { text: "La carte est sur le message du jour." },
       },
     ],
     components,
@@ -1262,8 +1278,18 @@ export async function handleJouer(webhookUrl, discordId, username) {
 export async function handleAppelCoin(webhookUrl, discordId, username, coin) {
   try {
     await executer(webhookUrl, discordId, username, (partie) => {
-      const r = appeler(partie, discordId, coin, partie.joueurs[discordId]?.stock ?? 0);
-      return r.erreur ? { entete: avertissement(r.erreur) } : { entete: `🐱 ${chats(r.n)} appelé${r.n > 1 ? "s" : ""} sur **${nomCoin(coin)}**.`, rafraichir: true };
+      const r = appeler(
+        partie,
+        discordId,
+        coin,
+        partie.joueurs[discordId]?.stock ?? 0,
+      );
+      return r.erreur
+        ? { entete: avertissement(r.erreur) }
+        : {
+            entete: `🐱 ${chats(r.n)} appelé${r.n > 1 ? "s" : ""} sur **${nomCoin(coin)}**.`,
+            rafraichir: true,
+          };
     });
   } catch (err) {
     console.error("[Meow] Échec appel:", err.message);
@@ -1281,6 +1307,7 @@ export async function handleSquat(webhookUrl, discordId, username, valeur) {
       if (!r.fin) return {};
       return {
         entete: `${texteManche(r.manche, j.bande, r.fin.def)}\n${texteFin(r.fin)}`,
+        issue: r.fin.issue,
         rafraichir: true,
       };
     });
@@ -1295,7 +1322,12 @@ export async function handleDeplacer(webhookUrl, discordId, username, valeur) {
     const [s, t] = String(valeur ?? "").split(">");
     await executer(webhookUrl, discordId, username, (partie, config) => {
       const r = deplacer(partie, discordId, s, t, { config });
-      return r.erreur ? { entete: avertissement(r.erreur) } : { entete: `🚚 1 chat déplacé de **${nomCoin(s)}** vers **${nomCoin(t)}**.`, rafraichir: true };
+      return r.erreur
+        ? { entete: avertissement(r.erreur) }
+        : {
+            entete: `🚚 1 chat déplacé de **${nomCoin(s)}** vers **${nomCoin(t)}**.`,
+            rafraichir: true,
+          };
     });
   } catch (err) {
     console.error("[Meow] Échec déplacement:", err.message);
@@ -1318,7 +1350,7 @@ export async function handleCombat(webhookUrl, discordId, username, action) {
       if (!r.fin) return {};
       const j = partie.joueurs[discordId];
       const manche = r.manche ? `${texteManche(r.manche, j.bande, def)}\n` : "";
-      return { entete: `${manche}${texteFin(r.fin)}`, rafraichir: true };
+      return { entete: `${manche}${texteFin(r.fin)}`, issue: r.fin.issue, rafraichir: true };
     });
   } catch (err) {
     console.error("[Meow] Échec crêpage de poils:", err.message);
@@ -1402,17 +1434,25 @@ export async function handleJournal(webhookUrl, discordId) {
         .filter(
           (e) =>
             e.k === "squat" &&
-            ((e.b === j.bande && (e.issue === "victoire" || e.issue.startsWith("retraite"))) || (e.def === j.bande && e.issue === "victoire")),
+            ((e.b === j.bande &&
+              (e.issue === "victoire" || e.issue.startsWith("retraite"))) ||
+              (e.def === j.bande && e.issue === "victoire")),
         )
         .map((e) => {
           const { h, min } = parisParts(e.t);
           return `\`${h}h${String(min).padStart(2, "0")}\` ${texteJournal(partie, e)}`;
         })
         .reverse();
-      const croquettes = evts.filter((e) => e.k === "croquettes" && e.b === j.bande);
+      const croquettes = evts.filter(
+        (e) => e.k === "croquettes" && e.b === j.bande,
+      );
       if (croquettes.length) {
-        const parPiece = [...new Set(croquettes.map((e) => e.piece))].map((p) => PIECES[p].nom);
-        lignes.push(`🍖 Croquettes : +${croquettes.reduce((t, e) => t + e.n, 0)} (${parPiece.join(", ")})`);
+        const parPiece = [...new Set(croquettes.map((e) => e.piece))].map(
+          (p) => PIECES[p].nom,
+        );
+        lignes.push(
+          `🍖 Croquettes : +${croquettes.reduce((t, e) => t + e.n, 0)} (${parPiece.join(", ")})`,
+        );
       }
       return lignes;
     };
@@ -1420,7 +1460,12 @@ export async function handleJournal(webhookUrl, discordId) {
       .filter((n) => n >= 1)
       .map((n) => ({ n, lignes: lignesDuJour(n) }))
       .filter((b) => b.lignes.length)
-      .map((b) => [`**${b.n === jourCourant ? "Aujourd'hui" : "Hier"}**`, ...b.lignes].join("\n"));
+      .map((b) =>
+        [
+          `**${b.n === jourCourant ? "Aujourd'hui" : "Hier"}**`,
+          ...b.lignes,
+        ].join("\n"),
+      );
     const description = blocs.join("\n\n").slice(0, 4000);
     await patchOriginal(webhookUrl, {
       embeds: [

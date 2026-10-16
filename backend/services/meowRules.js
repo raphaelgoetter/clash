@@ -369,16 +369,19 @@ function decompter(partie, { config, t, jour }) {
   if (jour >= config.duree_jours) partie.termine = true;
 }
 
-// Sieste (0 h) : les chats non appelés s'installent sur le coin le plus
-// menacé de leur bande.
+// Sieste (0 h) : 1 seul chat non appelé par joueur s'installe sur le coin
+// le plus menacé de sa bande, les autres restent en réserve (décision du
+// 16/10, avant : toute la réserve). Noté dans `j.nuit` pour la vue Jouer du
+// lendemain.
 function siester(partie, { t }) {
   const poses = [0, 0, 0];
   for (const j of Object.values(partie.joueurs)) {
     if (j.bande == null || j.stock <= 0) continue;
     const c = coinAuto(partie, j.bande);
-    partie.coins[c].n += j.stock;
-    poses[j.bande] += j.stock;
-    j.stock = 0;
+    partie.coins[c].n += 1;
+    poses[j.bande] += 1;
+    j.stock -= 1;
+    j.nuit = { jour: jourDe(partie, t), coin: c };
   }
   if (poses.some(Boolean)) noter(partie, { t, k: "sieste", poses });
 }

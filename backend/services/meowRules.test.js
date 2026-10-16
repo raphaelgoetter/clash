@@ -184,6 +184,20 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   assert.ok(partie.journal.some((e) => e.k === "sieste"));
 }
 
+{
+  // Sieste : 1 seul chat posé par joueur, les autres restent en réserve
+  const partie = partieDe(12);
+  const id = joueurDe(partie, 1);
+  partie.joueurs[id].stock = 3;
+  const total = () => COINS.filter((c) => partie.coins[c].b === 1).reduce((t, c) => t + partie.coins[c].n, 0);
+  const avant = total();
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 1) });
+  // 13h et 18h : réserve déjà pleine (3) ; minuit : 1 posé
+  assert.strictEqual(partie.joueurs[id].stock, 2);
+  assert.strictEqual(partie.joueurs[id].nuit.jour, 2);
+  assert.ok(total() > avant);
+}
+
 // ── Appeler ───────────────────────────────────────────────────────────
 
 {
