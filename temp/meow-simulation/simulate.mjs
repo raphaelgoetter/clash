@@ -239,10 +239,22 @@ function jouerPartie(cfg, seed) {
 
   const visite = (j, jour) => {
     placerStock(j);
+    // Déplacement (1 chat par distribution) : vers le coin de la bande le plus
+    // menacé, depuis un voisin de la bande qui a au moins 2 chats
+    if (cfg.deplacement && j.strategie === "smart" && !j.depFait) {
+      let best = null;
+      for (const t of carte.ids) {
+        if (own[t] !== j.bande || menace(t) <= 0) continue;
+        for (const src of carte.voisins[t]) if (own[src] === j.bande && chats[src] >= 2 && (!best || menace(t) > best.m)) best = { src, t, m: menace(t) };
+      }
+      if (best) (chats[best.src]--, chats[best.t]++, (j.depFait = true));
+    }
     for (let n = 0; n < cfg.attaquesMax; n++) {
+      if (cfg.squatsParDistribution != null && (j.squatsFaits ?? 0) >= cfg.squatsParDistribution) break;
       const att = meilleureAttaque(j.bande, j.strategie, cfg.seuil);
       if (!att) break;
       const { s, t } = att;
+      j.squatsFaits = (j.squatsFaits ?? 0) + 1;
       const res = combat(chats[s] - 1, chats[t], r);
       if (res.d <= 0) {
         const ancien = own[t];
@@ -284,6 +296,8 @@ function jouerPartie(cfg, seed) {
             if (j.frac >= 1) (gain++, j.frac--);
           }
           j.stock = Math.min(cfg.stockMax, j.stock + gain);
+          j.depFait = false;
+          j.squatsFaits = 0;
         }
         // Croquettes : chats bonus posés dans chaque pièce complète
         for (const b of [0, 1, 2])
@@ -868,4 +882,20 @@ if (scenario === "symfinal") {
   const P = { ...BASE, ...ANTI, score: "rang", equilibrage: true, carte, rechargeHeures: [8, 13, 18], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 } };
   for (const joueurs of [12, 13, 14, 16, 17, 20]) run(`Symétrique, ${joueurs} j.`, { ...P, joueurs });
   run("Symétrique, Roux naïfs (16 j.)", { ...P, joueurs: 16, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
+}
+
+if (scenario === "deplacement") {
+  const carte = construireCarte([["carton", "canape"], ["armoire", "malle"], ["evier", "chapeaux"], ["gamelle", "biblio"], ["tapis", "perron"], ["cabane", "lucarne"]]);
+  const P = { ...BASE, ...ANTI, score: "rang", equilibrage: true, carte, rechargeHeures: [8, 13, 18], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 } };
+  for (const deplacement of [false, true]) for (const joueurs of [12, 16, 20]) run(`${deplacement ? "Avec" : "Sans"} déplacement, ${joueurs} j.`, { ...P, joueurs, deplacement });
+  run("Avec déplacement, Roux naïfs (16 j.)", { ...P, joueurs: 16, deplacement: true, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
+}
+
+if (scenario === "squats") {
+  const carte = construireCarte([["carton", "canape"], ["armoire", "malle"], ["evier", "chapeaux"], ["gamelle", "biblio"], ["tapis", "perron"], ["cabane", "lucarne"]]);
+  const P = { ...BASE, ...ANTI, score: "rang", equilibrage: true, carte, rechargeHeures: [8, 13, 18], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true };
+  for (const sq of [2, 1]) {
+    for (const joueurs of [12, 16, 20]) run(`${sq} squat(s)/distribution, ${joueurs} j.`, { ...P, joueurs, squatsParDistribution: sq });
+    run(`${sq} squat(s)/distribution, Roux naïfs (16 j.)`, { ...P, joueurs: 16, squatsParDistribution: sq, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
+  }
 }

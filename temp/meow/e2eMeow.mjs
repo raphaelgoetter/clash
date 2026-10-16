@@ -82,6 +82,13 @@ async function passage(id) {
     e = lastEph(id);
     verifier(e, `appel ${id}`);
   }
+  const dep = menu(e, "meow_deplacer");
+  if (dep && !dep.disabled) {
+    await H.handleDeplacer(`wh-${id}`, id, nom(id), dep.options[0].value);
+    e = lastEph(id);
+    verifier(e, `déplacement ${id}`);
+    if (!menu(e, "meow_deplacer").disabled) throw new Error("second déplacement possible");
+  }
   for (let k = 0; k < 2; k++) {
     const squat = menu(e, "meow_squat");
     if (!squat || squat.disabled) break;

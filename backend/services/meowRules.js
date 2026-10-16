@@ -178,6 +178,14 @@ export function prochaineDistribution(ms, config) {
   return null;
 }
 
+// ── Horloge de la partie ────────────────────────────────────────────
+// Heure réelle, décalée de `partie.decalage` sur le salon de test seulement
+// (chaque `npm run meow:test` avance la partie d'un jour ou d'une
+// distribution, voir avancerHorloge() dans meow.js).
+export function horloge(partie) {
+  return Date.now() + (partie?.decalage ?? 0);
+}
+
 // ── Partie ──────────────────────────────────────────────────────────
 
 export function creerPartie() {
@@ -240,7 +248,7 @@ export function tailles(partie) {
 // les bandes plutôt que d'en priver une d'un joueur régulier). Puis 2 chats
 // par coin des pièces de départ, 2 chats errants par coin du Salon et du
 // Grenier, et une première distribution immédiate.
-export function demarrer(partie, { config, now = Date.now(), rng = Math.random }) {
+export function demarrer(partie, { config, now = horloge(partie), rng = Math.random }) {
   const ordreBandes = melanger([0, 1, 2], rng);
   const ids = Object.keys(partie.joueurs).sort((a, b) => partie.joueurs[a].arrivee - partie.joueurs[b].arrivee);
   const nbDerniers = ids.length % 3;
@@ -334,6 +342,7 @@ function distribuer(partie, { config, t }) {
     }
     j.stock = Math.min(config.stock_max, j.stock + gain);
     j.squats = 0;
+    j.deplacements = 0;
   }
   for (let b = 0; b < 3; b++) {
     for (const p of piecesTenues(partie, b)) {
@@ -389,7 +398,7 @@ function expirerCombats(partie, { config, now }) {
 
 // Rattrape dans l'ordre tous les événements horaires passés depuis le
 // dernier passage. À appeler avant toute action et toute publication.
-export function rattraper(partie, { config, now = Date.now(), rng = Math.random }) {
+export function rattraper(partie, { config, now = horloge(partie), rng = Math.random }) {
   if (!partie.demarree || partie.termine) return partie;
   expirerCombats(partie, { config, now });
   for (const e of evenementsEntre(partie.curseur, now, config)) {
@@ -425,7 +434,7 @@ function verifierJoueur(partie, discordId) {
 }
 
 // Appeler `n` chats de son stock sur un coin de sa bande.
-export function appeler(partie, discordId, coin, n, { now = Date.now() } = {}) {
+export function appeler(partie, discordId, coin, n, { now = horloge(partie) } = {}) {
   const err = verifierJoueur(partie, discordId);
   if (err) return { erreur: err };
   const j = partie.joueurs[discordId];
@@ -438,6 +447,41 @@ export function appeler(partie, discordId, coin, n, { now = Date.now() } = {}) {
   j.jourActif = jourDe(partie, now);
   noter(partie, { t: now, k: "appel", p: discordId, coin, n: k });
   return { ok: true, n: k };
+}
+
+// Déplacer : 1 chat d'un coin de sa bande vers un coin voisin de sa bande
+// (1 chat reste toujours sur place), `deplacements_par_distribution` fois
+// entre deux distributions (décision du 16/10), à toute heure.
+export function deplacementsRestants(j, config) {
+  return Math.max(0, config.deplacements_par_distribution - (j.deplacements ?? 0));
+}
+
+// Déplacements possibles, les plus utiles d'abord (vers le coin le plus
+// menacé, depuis la plus grosse pile).
+export function deplacementsPossibles(partie, b) {
+  const bloques = coinsVerrouilles(partie);
+  const out = [];
+  for (const s of coinsDe(partie, b)) {
+    if (partie.coins[s].n < 2 || bloques.has(s)) continue;
+    for (const t of VOISINS[s]) {
+      if (partie.coins[t].b !== b || bloques.has(t)) continue;
+      out.push({ s, t, ns: partie.coins[s].n, nt: partie.coins[t].n, menace: menace(partie, t) });
+    }
+  }
+  return out.sort((x, y) => y.menace - x.menace || y.ns - x.ns || x.nt - y.nt);
+}
+
+export function deplacer(partie, discordId, s, t, { config, now = horloge(partie) }) {
+  const err = verifierJoueur(partie, discordId);
+  if (err) return { erreur: err };
+  const j = partie.joueurs[discordId];
+  if (deplacementsRestants(j, config) <= 0) return { erreur: "plafondDeplacements" };
+  if (!deplacementsPossibles(partie, j.bande).some((o) => o.s === s && o.t === t)) return { erreur: "deplacementImpossible" };
+  partie.coins[s].n -= 1;
+  partie.coins[t].n += 1;
+  j.deplacements = (j.deplacements ?? 0) + 1;
+  j.jourActif = jourDe(partie, now);
+  return { ok: true };
 }
 
 // Squats possibles depuis les coins de sa bande : coin de départ avec au
@@ -463,7 +507,7 @@ export function squatsRestants(j, config) {
 
 // Lance un squat : 1 chat reste garder le coin de départ, les autres
 // partent ; première manche jouée aussitôt.
-export function lancerSquat(partie, discordId, s, t, { config, now = Date.now(), rng = Math.random }) {
+export function lancerSquat(partie, discordId, s, t, { config, now = horloge(partie), rng = Math.random }) {
   const err = verifierJoueur(partie, discordId);
   if (err) return { erreur: err };
   const j = partie.joueurs[discordId];
@@ -486,7 +530,7 @@ function lancerDes(n, rng) {
 // Une manche du crêpage de poils : jusqu'à 3 dés contre 2, on compare
 // les plus hauts dés deux à deux, le plus petit perd un chat, l'égalité
 // profite au défenseur (le chat chez lui tient bon).
-export function jouerManche(partie, discordId, { now = Date.now(), rng = Math.random } = {}) {
+export function jouerManche(partie, discordId, { now = horloge(partie), rng = Math.random } = {}) {
   const c = partie.combats[discordId];
   if (!c) return { erreur: "pasDeCombat" };
   const da = lancerDes(Math.min(3, c.a), rng);
@@ -506,7 +550,7 @@ export function jouerManche(partie, discordId, { now = Date.now(), rng = Math.ra
   return { manche };
 }
 
-export function jusquauBout(partie, discordId, { now = Date.now(), rng = Math.random } = {}) {
+export function jusquauBout(partie, discordId, { now = horloge(partie), rng = Math.random } = {}) {
   if (!partie.combats[discordId]) return { erreur: "pasDeCombat" };
   let r;
   do r = jouerManche(partie, discordId, { now, rng });
@@ -514,7 +558,7 @@ export function jusquauBout(partie, discordId, { now = Date.now(), rng = Math.ra
   return r;
 }
 
-export function retraite(partie, discordId, { now = Date.now(), auto = false } = {}) {
+export function retraite(partie, discordId, { now = horloge(partie), auto = false } = {}) {
   if (!partie.combats[discordId]) return { erreur: "pasDeCombat" };
   return { fin: terminerCombat(partie, discordId, auto ? "retraiteAuto" : "retraite", now) };
 }
@@ -555,6 +599,8 @@ export function jouerPnj(partie, id, { config, now, rng = Math.random }) {
       appeler(partie, id, menace(partie, menace0) > 0 ? menace0 : garni, j.stock, { now });
     }
   }
+  const dep = deplacementsPossibles(partie, j.bande)[0];
+  if (dep && dep.menace > 0 && deplacementsRestants(j, config) > 0) deplacer(partie, id, dep.s, dep.t, { config, now });
   if (enSieste(now, config)) return;
   while (squatsRestants(j, config) > 0) {
     const cible = squatsPossibles(partie, j.bande)[0];
@@ -575,7 +621,7 @@ export function messagesBande(partie, b) {
   return partie.messages?.[b] ?? [];
 }
 
-export function messagesRestants(partie, discordId, { config, now = Date.now() }) {
+export function messagesRestants(partie, discordId, { config, now = horloge(partie) }) {
   const j = partie.joueurs[discordId];
   const n = j?.messagesJour?.jour === jourDe(partie, now) ? j.messagesJour.n : 0;
   return Math.max(0, config.messages_par_jour - n);
@@ -588,11 +634,11 @@ export function nouveauxMessages(partie, discordId) {
   return messagesBande(partie, j.bande).filter((m) => m.p !== discordId && m.t > (j.vuMessages ?? 0)).length;
 }
 
-export function marquerLus(partie, discordId, { now = Date.now() } = {}) {
+export function marquerLus(partie, discordId, { now = horloge(partie) } = {}) {
   if (partie.joueurs[discordId]) partie.joueurs[discordId].vuMessages = now;
 }
 
-export function posterMessage(partie, discordId, texte, { config, now = Date.now() }) {
+export function posterMessage(partie, discordId, texte, { config, now = horloge(partie) }) {
   const err = verifierJoueur(partie, discordId);
   if (err) return { erreur: err };
   const txt = String(texte ?? "").replace(/\s+/g, " ").trim().slice(0, config.message_max);

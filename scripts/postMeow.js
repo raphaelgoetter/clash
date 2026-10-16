@@ -17,6 +17,8 @@
 //   node scripts/postMeow.js --sans-pnj       — salon de test sans les joueurs fictifs (PNJ) inscrits au J1
 //   node scripts/postMeow.js --force-close    — ignore la date de clôture des inscriptions (lance la partie si
 //                                               l'effectif minimum est atteint) ; implicite sur le salon de test
+//   node scripts/postMeow.js --distribution   — salon de test : avance jusqu'à la prochaine distribution (8h, 13h,
+//                                               18h) au lieu du lendemain 8h22 (par défaut, un jour par lancement)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
@@ -32,6 +34,9 @@ const FORCE_CLOSE = process.argv.includes("--force-close") || !PUBLIC;
 const FORCE = process.argv.includes("--force") || !PUBLIC;
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 const PNJ = !PUBLIC && !process.argv.includes("--sans-pnj");
+// Salon de test : la partie suit son horloge propre, avancée à chaque
+// lancement (un jour, ou une distribution avec --distribution).
+const AVANCER = PUBLIC ? null : process.argv.includes("--distribution") ? "distribution" : "jour";
 
 // Réutilise les salons du jeu Frame (même principe que les autres jeux
 // spéciaux, voir CONTRIBUTING.md) plutôt que de provisionner un salon dédié.
@@ -44,7 +49,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postMeow(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE, forceClose: FORCE_CLOSE, pnj: PNJ });
+    const result = await postMeow(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE, forceClose: FORCE_CLOSE, pnj: PNJ, avancer: AVANCER });
 
     if (result.skipped) {
       if (result.reason === "dejaPublie") {

@@ -22,7 +22,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { creerPartie, inscrire, desinscrire, demarrer, rattraper, nbInscrits, classementBandes, classementCaid } from "./meowRules.js";
+import { creerPartie, inscrire, desinscrire, demarrer, rattraper, nbInscrits, classementBandes, classementCaid, horloge, parisParts, parisInstant, ajouterJours, prochaineDistribution } from "./meowRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "meow", "meow.json");
@@ -186,6 +186,25 @@ export async function rattraperPartie({ dryRun = false } = {}) {
   }
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadMeowConfig(), readPartie()]);
+    rattraper(partie, { config });
+    await writePartie(partie);
+    return partie;
+  });
+}
+
+// Salon de test uniquement : avance l'horloge de la partie au lendemain
+// 8h22 (`jusqua: "jour"`, comme le cron) ou 5 minutes après la prochaine
+// distribution (`"distribution"`), puis rattrape les événements sautés
+// (distributions, PNJ, décomptes, sieste).
+export async function avancerHorloge(jusqua = "jour") {
+  return withLock(async () => {
+    const [config, partie] = await Promise.all([loadMeowConfig(), readPartie()]);
+    const h = horloge(partie);
+    const cible =
+      jusqua === "distribution"
+        ? prochaineDistribution(h, config).t + 5 * 60_000
+        : parisInstant(ajouterJours(parisParts(h).date, 1), config.distributions[0]) + 22 * 60_000;
+    partie.decalage = (partie.decalage ?? 0) + (cible - h);
     rattraper(partie, { config });
     await writePartie(partie);
     return partie;

@@ -104,7 +104,7 @@ import {
   loadMeowConfig,
   readPartie as readMeowPartie,
 } from "../../../backend/services/meow.js";
-import { BANDES as MEOW_BANDES, jourDe as meowJourDe } from "../../../backend/services/meowRules.js";
+import { BANDES as MEOW_BANDES, jourDe as meowJourDe, horloge as meowHorloge } from "../../../backend/services/meowRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
@@ -557,7 +557,7 @@ const SPECIAL_GAMES = [
       // Caïd des coussins volontairement caché jusqu'à la fin (surprise)
       const bande = MEOW_BANDES[joueur.bande];
       return {
-        played: joueur.jourActif === meowJourDe(partie, Date.now()),
+        played: joueur.jourActif === meowJourDe(partie, meowHorloge(partie)),
         scoreLabel: `${bande.emoji} **${bande.nom}**`,
       };
     },

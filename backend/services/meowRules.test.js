@@ -34,6 +34,8 @@ import {
   nouveauxMessages,
   marquerLus,
   estPnj,
+  deplacer,
+  deplacementsPossibles,
 } from "./meowRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../../data/meow/meow.json", import.meta.url), "utf8"));
@@ -194,6 +196,26 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   assert.strictEqual(partie.joueurs[id].stock, 1);
   assert.deepStrictEqual(appeler(partie, id, "carton", 9, { now: LANCEMENT }), { ok: true, n: 1 });
   assert.strictEqual(appeler(partie, id, "carton", 1).erreur, "stockVide");
+}
+
+// ── Déplacer ──────────────────────────────────────────────────────────
+
+{
+  const partie = partieDe(12);
+  const id = joueurDe(partie, 1); // Chats noirs, Jardin
+  partie.coins.arbre.n = 3;
+  assert.ok(deplacementsPossibles(partie, 1).some((o) => o.s === "arbre" && o.t === "perron"));
+  assert.ok(!deplacementsPossibles(partie, 1).some((o) => o.t === "tapis"), "jamais vers un autre camp");
+  const nuit = parisInstant("2026-10-20", 2);
+  rattraper(partie, { config: CONFIG, now: nuit });
+  const avant = partie.coins.perron.n;
+  assert.ok(deplacer(partie, id, "arbre", "perron", { config: CONFIG, now: nuit }).ok, "permis pendant la sieste");
+  assert.strictEqual(partie.coins.arbre.n, 2);
+  assert.strictEqual(partie.coins.perron.n, avant + 1);
+  assert.strictEqual(deplacer(partie, id, "arbre", "perron", { config: CONFIG, now: nuit }).erreur, "plafondDeplacements");
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 9) });
+  partie.coins.arbre.n = 1;
+  assert.strictEqual(deplacer(partie, id, "arbre", "perron", { config: CONFIG }).erreur, "deplacementImpossible", "1 chat reste sur place");
 }
 
 // ── Squatter ──────────────────────────────────────────────────────────

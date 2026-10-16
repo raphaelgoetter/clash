@@ -25,6 +25,7 @@ import {
   agir,
   desinscrireJoueur,
   rattraperPartie,
+  avancerHorloge,
   classementsFinaux,
   archiveManche,
   listManches,
@@ -44,6 +45,9 @@ import {
   menace,
   squatsPossibles,
   squatsRestants,
+  deplacementsPossibles,
+  deplacementsRestants,
+  deplacer,
   appeler,
   lancerSquat,
   jouerManche,
@@ -59,6 +63,7 @@ import {
   nouveauxMessages,
   marquerLus,
   estPnj,
+  horloge,
 } from "../../../backend/services/meowRules.js";
 import { encodeCarte } from "../../../backend/services/meowImage.js";
 import {
@@ -215,9 +220,7 @@ function buildJourEmbed(jour, config, partie) {
   const lignes =
     jour === 1
       ? [
-          "Les bandes sont formées ! Chaque bande part de sa pièce, le Salon et le Grenier sont occupés par des chats errants.",
-          "",
-          "👉 Trouve ton pseudo dans **Les bandes** ci-dessous, ou clique sur **🐾 Jouer** pour voir ta bande et tes chats.",
+          "Les bandes sont formées ! Chaque bande part de sa pièce, le Salon et le Grenier sont occupés par des chats errants."
         ]
       : gazetteLignes(partie, jour);
   lignes.push("", "**🏆 Classement des bandes**", ...classementLignes(partie));
@@ -304,6 +307,7 @@ function buildReglesEmbed(config) {
       "**🐱 Tes chats**",
       `- Distribution à **${horairesDistribution(config)}** : 1 chat pour toi (${config.stock_max} en réserve maximum).`,
       "- **Appeler** : pose tes chats sur un territoire de ta bande.",
+      `- **Déplacer** : ${config.deplacements_par_distribution} chat vers un territoire voisin de ta bande entre deux distributions (1 chat reste toujours sur place).`,
       "- Chats pas appelés à minuit : ils s'installent tout seuls sur le territoire le plus menacé.",
       "",
       "**😼 Squatter**",
@@ -661,6 +665,7 @@ export async function postMeow(
     force = false,
     forceClose = false,
     pnj = !isPublic,
+    avancer = null,
   } = {},
 ) {
   const config = await loadMeowConfig();
@@ -787,10 +792,15 @@ export async function postMeow(
 
   // 3) Jour suivant : événements rattrapés (décomptes compris), message du
   // jour, ou message de fin après le décompte du dernier jour.
-  const partie = await rattraperPartie({ dryRun });
+  // Salon de test : `avancer` fait sauter l'horloge de la partie (un jour ou
+  // une distribution par lancement) ; le salon public suit l'heure réelle.
+  const partie =
+    avancer && !dryRun && !isPublic
+      ? await avancerHorloge(avancer)
+      : await rattraperPartie({ dryRun });
   if (partie.termine)
     return terminerPartie({ ...state, isPublic, noPing }, partie, { dryRun });
-  const jour = jourDe(partie, Date.now());
+  const jour = jourDe(partie, horloge(partie));
   if (jour === state.jour && !force)
     return { skipped: true, reason: "dejaPublie", jour };
   const embed = buildJourEmbed(jour, config, partie);
@@ -839,6 +849,8 @@ const ERREURS = {
   sieste: "C'est la sieste : pas de squat avant 8h.",
   plafondSquats: "Tu as fait tes squats : attends la prochaine distribution.",
   squatImpossible: "Ce squat n'est plus possible (la carte a bougé).",
+  plafondDeplacements: "Tu as déjà déplacé un chat : attends la prochaine distribution.",
+  deplacementImpossible: "Ce déplacement n'est plus possible (la carte a bougé).",
   pasDeCombat: "Ce crêpage de poils est déjà terminé.",
 };
 
@@ -936,7 +948,7 @@ function buildJouerView(
   if (partie.combats[discordId])
     return buildCombatView(config, partie, discordId, { entete });
 
-  const now = Date.now();
+  const now = horloge(partie);
   const bd = BANDES[j.bande];
   const sieste = enSieste(now, config);
   const suivante = prochaineDistribution(now, config);
@@ -1054,6 +1066,33 @@ function buildJouerView(
                   description: `${chats(o.a)} contre ${nomAdversaire(partie.coins[o.t].b, o.d)} · ${Math.round(o.p * 100)} % de réussite`,
                 },
           ),
+      },
+    ],
+  });
+
+  // Déplacer : 1 chat vers un territoire voisin de sa bande
+  const deps = deplacementsPossibles(partie, j.bande);
+  const raisonDep =
+    deplacementsRestants(j, config) <= 0
+      ? "🚚 Déplacement fait, attends la prochaine distribution"
+      : !deps.length
+        ? "🚚 Aucun déplacement possible (il faut 2 chats sur un territoire)"
+        : null;
+  components.push({
+    type: 1,
+    components: [
+      {
+        type: 3,
+        custom_id: "meow_deplacer",
+        placeholder: raisonDep ?? "🚚 Déplacer un chat vers un territoire voisin…",
+        disabled: Boolean(raisonDep),
+        options: deps.length
+          ? deps.slice(0, 25).map((o) => ({
+              label: `${nomCoin(o.s)} (${o.ns}) → ${nomCoin(o.t)} (${o.nt})`,
+              value: `${o.s}>${o.t}`,
+              description: o.menace > 0 ? `${nomCoin(o.t)} est menacé` : "1 chat",
+            }))
+          : [{ label: "Aucun déplacement possible", value: "aucun" }],
       },
     ],
   });
@@ -1313,6 +1352,19 @@ export async function handleSquat(webhookUrl, discordId, username, valeur) {
   }
 }
 
+// Menu « Déplacer un chat… ».
+export async function handleDeplacer(webhookUrl, discordId, username, valeur) {
+  try {
+    const [s, t] = String(valeur ?? "").split(">");
+    await executer(webhookUrl, discordId, username, (partie, config) => {
+      const r = deplacer(partie, discordId, s, t, { config });
+      return r.erreur ? { entete: avertissement(r.erreur) } : { entete: `🚚 1 chat déplacé de **${nomCoin(s)}** vers **${nomCoin(t)}**.`, rafraichir: true };
+    });
+  } catch (err) {
+    console.error("[Meow] Échec déplacement:", err.message);
+  }
+}
+
 // Boutons du crêpage de poils.
 export async function handleCombat(webhookUrl, discordId, username, action) {
   try {
@@ -1406,7 +1458,7 @@ export async function handleJournal(webhookUrl, discordId) {
     // Ce que le message du jour ne montre pas : ses propres squats (même
     // ratés), les attaques contre sa bande, ses croquettes regroupées par
     // jour ; aujourd'hui et hier seulement (les décomptes sont dans la Gazette).
-    const jourCourant = jourDe(partie, Date.now());
+    const jourCourant = jourDe(partie, horloge(partie));
     const lignesDuJour = (jour) => {
       const evts = partie.journal.filter((e) => e.j === jour);
       const lignes = evts

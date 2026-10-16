@@ -207,6 +207,7 @@
     "quiestce:status": "node scripts/quiEstCeStatus.js",
     "meow:test": "node scripts/postMeow.js",
     "meow:test:dry": "node scripts/postMeow.js --dry-run",
+    "meow:test:distribution": "node scripts/postMeow.js --distribution",
     "meow:public": "node scripts/postMeow.js --public",
     "meow:public:dry": "node scripts/postMeow.js --public --dry-run",
     "meow:reset": "node scripts/resetMeow.js",
