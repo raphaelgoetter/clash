@@ -211,6 +211,15 @@ export async function avancerHorloge(jusqua = "jour") {
   });
 }
 
+// MP des mercenaires envoyés : noté pour ne jamais les renvoyer.
+export async function marquerMercenairesNotifies() {
+  return withLock(async () => {
+    const partie = await readPartie();
+    if (partie.mercenaires) partie.mercenaires.notifie = true;
+    await writePartie(partie);
+  });
+}
+
 export async function classementsFinaux(partie) {
   const config = await loadMeowConfig();
   return { bandes: classementBandes(partie), caid: classementCaid(partie, config) };

@@ -329,7 +329,7 @@ function coinAuto(partie, b) {
 
 // ── Événements horaires ─────────────────────────────────────────────
 
-// Distribution : 1 chat par joueur (stock plafonné), recharge équilibrée
+// Distribution : `chats_par_distribution` chats par joueur (stock plafonné), recharge équilibrée
 // (une petite bande reçoit au total autant qu'une grande, par fractions
 // cumulées), squats remis à zéro, croquettes des pièces complètes.
 function distribuer(partie, { config, t }) {
@@ -337,9 +337,11 @@ function distribuer(partie, { config, t }) {
   const max = Math.max(...ts);
   for (const j of Object.values(partie.joueurs)) {
     if (j.bande == null) continue;
-    let gain = 1;
-    j.frac += max / ts[j.bande] - 1;
-    if (j.frac >= 1 - 1e-9) {
+    // `chats_par_distribution` (2 depuis le 16/10) ; une petite bande cumule
+    // en plus sa part manquante, versée chat par chat
+    let gain = config.chats_par_distribution;
+    j.frac += (max / ts[j.bande] - 1) * config.chats_par_distribution;
+    while (j.frac >= 1 - 1e-9) {
       gain++;
       j.frac -= 1;
     }
@@ -389,6 +391,20 @@ function siester(partie, { t }) {
   if (poses.some(Boolean)) noter(partie, { t, k: "sieste", poses });
 }
 
+// Événement « mercenaires » (décision du 16/10) : à la première
+// distribution du jour `mercenaires.jour` (3), la bande dernière aux points
+// (à égalité, celle qui a le moins de coins) reçoit `par_joueur` (1) chat
+// par joueur (4 pour une bande de 4), posés sur son coin le plus menacé. Peu d'effet sur l'équilibre en
+// simulation, mais un coup de pouce visible pour une bande en difficulté.
+function envoyerMercenaires(partie, { config, t }) {
+  const b = classementBandes(partie).at(-1).b;
+  const n = config.mercenaires.par_joueur * tailles(partie)[b];
+  const coin = coinAuto(partie, b);
+  partie.coins[coin].n += n;
+  partie.mercenaires = { jour: jourDe(partie, t), b, n, coin };
+  noter(partie, { t, k: "mercenaires", b, n, coin });
+}
+
 // Combat abandonné (aucun clic pendant `delai_combat_minutes`) : retraite
 // automatique.
 function expirerCombats(partie, { config, now }) {
@@ -408,6 +424,7 @@ export function rattraper(partie, { config, now = horloge(partie), rng = Math.ra
     const jour = joursEntre(partie.jourDebut, e.date) + 1;
     if (e.type === "distribution") {
       distribuer(partie, { config, t: e.t });
+      if (config.mercenaires && jour === config.mercenaires.jour && !partie.mercenaires) envoyerMercenaires(partie, { config, t: e.t });
       if (partie.pnjActifs) for (const id of Object.keys(partie.joueurs).filter(estPnj)) jouerPnj(partie, id, { config, now: e.t, rng });
     }
     else if (e.type === "decompte") decompter(partie, { config, t: e.t, jour });
@@ -737,6 +754,7 @@ export function texteJournal(partie, e) {
     if (e.issue === "defaite") return `${BANDES[e.b].emoji} ${qui(e.p)} a échoué devant ${vers} (depuis ${de}).`;
     return `${BANDES[e.b].emoji} ${qui(e.p)} a battu en retraite devant ${vers} (depuis ${de})${e.issue === "retraiteAuto" ? " faute de réponse" : ""}.`;
   }
+  if (e.k === "mercenaires") return `⚔️ Des mercenaires rejoignent les ${BANDES[e.b].nom} : +${e.n} chats sur ${nomCoin(e.coin)} !`;
   if (e.k === "croquettes") return `🍖 ${nomBande(e.b)} : croquettes servies dans ${PIECES[e.piece].le} (+${e.n} sur ${nomCoin(e.coin)}).`;
   if (e.k === "appel") return `🐱 ${qui(e.p)} a appelé ${e.n} chat${e.n > 1 ? "s" : ""} sur ${nomCoin(e.coin)}.`;
   if (e.k === "sieste") return `😴 Sieste : ${e.poses.map((n, b) => (n ? `${n} ${BANDES[b].nom}` : null)).filter(Boolean).join(", ")} installés tout seuls.`;

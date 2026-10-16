@@ -26,6 +26,7 @@ import {
   desinscrireJoueur,
   rattraperPartie,
   avancerHorloge,
+  marquerMercenairesNotifies,
   classementsFinaux,
   archiveManche,
   listManches,
@@ -197,7 +198,9 @@ function bandesLignes(partie) {
 }
 
 function buildJourEmbed(jour, config, partie) {
+  const m = partie.mercenaires;
   const lignes = [
+    ...(m?.jour === jour ? [`⚔️ **Des mercenaires rejoignent les ${nomBande(m.b)}** : +${m.n} chats sur ${nomCoin(m.coin)} !`, ""] : []),
     ...(jour === 1
       ? [
           "Les bandes sont formées ! Chaque bande part de sa pièce, le Salon et le Grenier sont occupés par des chats errants.",
@@ -263,7 +266,7 @@ function buildFinEmbed(bandes, caids, manches, currentManche) {
           `${MEDALS[i]} **${nomBande(r.b)}** : ${plural(r.points, "pt")}`,
       ),
       "",
-      "**🏅 Caïd des coussins** (🚩 territoires pris · 💨 chats délogés)",
+      "**🏅 Caïd des coussins**",
       ...caids
         // Tous les joueurs (20 au plus) : chacun voit sa place
         .map(
@@ -283,6 +286,7 @@ function buildFinEmbed(bandes, caids, manches, currentManche) {
       .join("\n")
       .slice(0, 4096),
     color: 0xf1c40f,
+    footer: { text: "Légende : 🚩 territoires pris · 💨 chats délogés" },
     image: { url: illustrationUrl() },
   };
 }
@@ -295,7 +299,7 @@ function buildReglesEmbed(config) {
       `🕐 **Tu peux jouer 3 fois par jour**, à chaque distribution (${horairesDistribution(config)}) : appeler tes chats, ${plural(config.squats_par_distribution, "squat")} et ${plural(config.deplacements_par_distribution, "déplacement")} à chaque fois.`,
       "",
       "**🐱 Tes chats**",
-      `- Distribution à **${horairesDistribution(config)}** : 1 chat pour toi (${config.stock_max} en réserve maximum).`,
+      `- Distribution à **${horairesDistribution(config)}** : ${chats(config.chats_par_distribution)} pour toi (${config.stock_max} en réserve maximum).`,
       "- **Appeler** : pose tous tes chats de réserve sur un territoire de ta bande.",
       `- **Déplacer** : ${config.deplacements_par_distribution} chat vers un autre territoire de ta bande, dans la même pièce ou par un passage 🐾, entre deux distributions (1 chat reste toujours sur place).`,
       "- À minuit, 1 de tes chats pas appelés s'installe tout seul sur le territoire le plus menacé, les autres restent en réserve.",
@@ -311,6 +315,8 @@ function buildReglesEmbed(config) {
       "",
       "**🍖 Croquettes**",
       "- Ta bande tient toute une pièce : +1 chat à chaque distribution, posé tout seul sur le territoire le plus menacé de la pièce.",
+      "",
+      `**⚔️ Mercenaires** : au matin du jour ${config.mercenaires.jour}, la bande dernière reçoit ${plural(config.mercenaires.par_joueur, "chat")} par joueur.`,
       "",
       "**🏆 Points**",
       `- Chaque soir à **${heureDecompte(config)}**, chaque territoire tenu rapporte ${plural(config.points_territoire, "point")} à sa bande.`,
@@ -596,11 +602,7 @@ async function envoyerMp(discordId, embed) {
 // Au lancement, chaque joueur (hors PNJ) reçoit sa bande et ses coéquipiers
 // en MP, avec un lien vers le message du jour. Un MP refusé (MP fermés) ne
 // bloque rien : l'info reste dans le message du jour et la vue Jouer.
-async function envoyerBandesEnMp(partie, channelId, messageId) {
-  const guildId = process.env.DISCORD_GUILD_ID;
-  const lien = guildId
-    ? `https://discord.com/channels/${guildId}/${channelId}/${messageId}`
-    : null;
+async function envoyerBandesEnMp(partie) {
   for (const [id, j] of Object.entries(partie.joueurs)) {
     if (j.bande == null || estPnj(id)) continue;
     const bd = BANDES[j.bande];
@@ -611,9 +613,20 @@ async function envoyerBandesEnMp(partie, channelId, messageId) {
         "",
         "**🐱 Les bandes**",
         ...bandesLignes(partie),
-        "",
-        `Clique sur **🐾 Jouer** pour appeler tes chats, et sur **💬 Ma bande** pour vous organiser${lien ? ` : ${lien}` : "."}`,
       ].join("\n"),
+      color: MEOW_COLOR,
+    });
+  }
+}
+
+// MP aux joueurs (hors PNJ) de la bande qui reçoit les mercenaires.
+async function envoyerMercenairesEnMp(partie) {
+  const m = partie.mercenaires;
+  for (const [id, j] of Object.entries(partie.joueurs)) {
+    if (j.bande !== m.b || estPnj(id)) continue;
+    await envoyerMp(id, {
+      title: "⚔️ Meow : des mercenaires pour ta bande !",
+      description: `Ta bande est dernière : **${m.n} chats mercenaires** arrivent en renfort sur **${nomCoin(m.coin)}**. À vous de jouer !`,
       color: MEOW_COLOR,
     });
   }
@@ -622,7 +635,7 @@ async function envoyerBandesEnMp(partie, channelId, messageId) {
 // ── Publication quotidienne (appelée uniquement par scripts/postMeow.js) ──
 
 // Joueurs fictifs du salon de test, pour remplir les bandes (voir
-// demarrerPartie) ; ils ne jouent jamais.
+// demarrerPartie) ; ils jouent tout seuls à chaque distribution (jouerPnj).
 const PNJ = [
   "Kévina",
   "Josette",
@@ -774,7 +787,7 @@ export async function postMeow(
       isPublic,
       noPing,
     });
-    await envoyerBandesEnMp(partie, channelId, r.message.id);
+    await envoyerBandesEnMp(partie);
     return r;
   }
 
@@ -794,7 +807,7 @@ export async function postMeow(
   const embed = buildJourEmbed(jour, config, partie);
   const components = buildJourComponents();
   if (dryRun) return { dryRun: true, jour, embed, components };
-  return publishAndWriteState(channelId, state, {
+  const r = await publishAndWriteState(channelId, state, {
     phase: "jour",
     jour,
     embed,
@@ -803,6 +816,11 @@ export async function postMeow(
     isPublic,
     noPing,
   });
+  if (partie.mercenaires && !partie.mercenaires.notifie) {
+    await envoyerMercenairesEnMp(partie);
+    await marquerMercenairesNotifies();
+  }
+  return r;
 }
 
 // ── Réponses éphémères ───────────────────────────────────────────────
@@ -1444,6 +1462,7 @@ export async function handleJournal(webhookUrl, discordId) {
           return `\`${h}h${String(min).padStart(2, "0")}\` ${texteJournal(partie, e)}`;
         })
         .reverse();
+      lignes.push(...evts.filter((e) => e.k === "mercenaires" && e.b === j.bande).map((e) => texteJournal(partie, e)));
       const croquettes = evts.filter(
         (e) => e.k === "croquettes" && e.b === j.bande,
       );

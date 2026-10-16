@@ -121,9 +121,9 @@ function joueurDe(partie, b) {
     for (const c of PIECES[bd.depart].coins) assert.strictEqual(partie.coins[c].b, b);
   }
   for (const c of [...PIECES.salon.coins, ...PIECES.grenier.coins]) assert.deepStrictEqual(partie.coins[c], { b: ERRANTS, n: CONFIG.chats_errants });
-  // Première distribution immédiate : 1 chat chacun (2 pour une part des
-  // bandes de 4 : recharge équilibrée), croquettes de la pièce de départ
-  for (const j of Object.values(partie.joueurs)) assert.ok(j.stock >= 1 && j.stock <= 2);
+  // Première distribution immédiate : `chats_par_distribution` chacun (un
+  // de plus pour une part des bandes de 4 : recharge équilibrée)
+  for (const j of Object.values(partie.joueurs)) assert.ok(j.stock >= CONFIG.chats_par_distribution && j.stock <= CONFIG.chats_par_distribution + 1);
   for (let b = 0; b < 3; b++) assert.strictEqual(coinsDe(partie, b).length, 4);
   assert.strictEqual(partie.jourDebut, "2026-10-19");
 }
@@ -178,8 +178,8 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   const id = joueurDe(partie, 0);
   partie.joueurs[id].squats = 2;
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 19) });
-  // 13h, 21h, (sieste : 1 chat posé), 8h, 13h → 3 en stock (plafond)
-  assert.strictEqual(partie.joueurs[id].stock, 3);
+  // 13h, 21h, (sieste : 1 chat posé), 8h, 13h → réserve pleine (plafond)
+  assert.strictEqual(partie.joueurs[id].stock, CONFIG.stock_max);
   assert.strictEqual(partie.joueurs[id].squats, 0);
   assert.ok(partie.journal.some((e) => e.k === "sieste"));
 }
@@ -188,12 +188,12 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   // Sieste : 1 seul chat posé par joueur, les autres restent en réserve
   const partie = partieDe(12);
   const id = joueurDe(partie, 1);
-  partie.joueurs[id].stock = 3;
+  partie.joueurs[id].stock = CONFIG.stock_max;
   const total = () => COINS.filter((c) => partie.coins[c].b === 1).reduce((t, c) => t + partie.coins[c].n, 0);
   const avant = total();
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 1) });
-  // 13h et 21h : réserve déjà pleine (3) ; minuit : 1 posé
-  assert.strictEqual(partie.joueurs[id].stock, 2);
+  // 13h et 21h : réserve déjà pleine ; minuit : 1 posé
+  assert.strictEqual(partie.joueurs[id].stock, CONFIG.stock_max - 1);
   assert.strictEqual(partie.joueurs[id].nuit.jour, 2);
   assert.ok(total() > avant);
 }
@@ -403,6 +403,26 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   assert.ok(squats.length > 10, `les PNJ squattent (${squats.length})`);
   assert.ok(squats.every((e) => estPnj(e.p)));
   assert.ok(Object.values(partie.combats).length === 0, "aucun combat laissé en cours");
+}
+
+// ── Mercenaires (jour 3) ─────────────────────────────────────────────
+
+{
+  const partie = partieDe(12);
+  partie.points = [10, 4, 7]; // les Chats noirs sont derniers
+  // Jour 2 : rien ; jour 3 à 8h : mercenaires pour la bande dernière
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 9) });
+  assert.ok(!partie.mercenaires, "pas avant le jour 3");
+  partie.points = [10 + 99, 4, 7 + 99];
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-21", 9) });
+  assert.strictEqual(partie.mercenaires.b, 1);
+  assert.strictEqual(partie.mercenaires.n, CONFIG.mercenaires.par_joueur * tailles(partie)[1]);
+  const e = partie.journal.find((x) => x.k === "mercenaires");
+  assert.strictEqual(e.j, 3);
+  assert.ok(texteJournal(partie, e).startsWith(`⚔️ Des mercenaires rejoignent les Chats noirs : +${tailles(partie)[1]} chats sur `));
+  // Une seule fois
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-21", 22) });
+  assert.strictEqual(partie.journal.filter((x) => x.k === "mercenaires").length, 1);
 }
 
 // ── Probabilités ──────────────────────────────────────────────────────

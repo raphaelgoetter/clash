@@ -293,10 +293,10 @@ function jouerPartie(cfg, seed) {
       // Recharge par joueur
       if (cfg.rechargeHeures ? cfg.rechargeHeures.includes(h) : tAbs % cfg.recharge === 0) {
         for (const j of joueurs) {
-          let gain = 1;
+          let gain = cfg.gainDistribution ?? 1;
           if (cfg.equilibrage) {
-            j.frac = (j.frac || 0) + tailleMax / tailles[j.bande] - 1;
-            if (j.frac >= 1) (gain++, j.frac--);
+            j.frac = (j.frac || 0) + (tailleMax / tailles[j.bande] - 1) * (cfg.gainDistribution ?? 1);
+            while (j.frac >= 1) (gain++, j.frac--);
           }
           j.stock = Math.min(cfg.stockMax, j.stock + gain);
           j.depFait = false;
@@ -311,6 +311,21 @@ function jouerPartie(cfg, seed) {
               placer(cible, n);
             }
           }
+      }
+      // Événement « mercenaires » : à 8h des jours choisis, la bande dernière
+      // aux points reçoit des chats posés sur son territoire le plus menacé
+      if (cfg.mercenaires && h === 8 && cfg.mercenaires.jours.includes(jour)) {
+        const nbCoins = (b) => carte.ids.filter((id) => own[id] === b).length;
+        const derniere = cfg.mercenaires.cible === "territoires"
+          ? [0, 1, 2].sort((x, y) => nbCoins(x) - nbCoins(y) || points[x] - points[y])[0]
+          : [0, 1, 2].sort((x, y) => points[x] - points[y] || x - y)[0];
+        if (cfg.mercenaires.seuil != null && nbCoins(derniere) > cfg.mercenaires.seuil) { /* pas de bande en difficulté */ } else {
+        const n = cfg.mercenaires.n * (cfg.mercenaires.parJoueur ? tailles[derniere] : 1);
+        const front = frontiere(derniere);
+        const cible = front.length ? front.sort((x, y) => menace(y) - menace(x))[0] : carte.ids.find((id) => own[id] === derniere);
+        if (cible) chats[cible] += n;
+        (stats.mercenaires ??= []).push({ jour, b: derniere });
+        }
       }
       // Sieste : à 0 h, les chats non placés s'installent automatiquement
       if (h === 0) {
@@ -337,6 +352,7 @@ function jouerPartie(cfg, seed) {
           for (const b of [0, 1, 2]) points[b] = duJour[b];
         } else for (const b of [0, 1, 2]) points[b] += duJour[b];
         stats.pointsJ.push([...points]);
+        (stats.coinsJour ??= []).push([0, 1, 2].map((b) => carte.ids.filter((id) => own[id] === b).length));
         if (jour === 3) stats.leaderJ3 = leader();
         if (jour === 3 || jour === 7)
           stats.occupation[jour] = Object.fromEntries(Object.entries(PIECES).map(([p, ids]) => [p, [0, 1, 2].map((b) => ids.filter((id) => own[id] === b).length)]));
@@ -965,4 +981,124 @@ if (scenario === "stock") {
   const carte = construireCarte(PORTES_SYM);
   const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 18], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1 };
   for (const stockMax of [4, 3]) for (const joueurs of [12, 16, 20]) run(`Réserve max ${stockMax}, ${joueurs} j.`, { ...P, joueurs, stockMax });
+}
+
+if (scenario === "gain2") {
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 21], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1 };
+  for (const [nom, d] of [["1 chat, réserve 3 (actuel)", { gainDistribution: 1, stockMax: 3 }], ["2 chats, réserve 3", { gainDistribution: 2, stockMax: 3 }], ["2 chats, réserve 4", { gainDistribution: 2, stockMax: 4 }], ["2 chats, réserve 6", { gainDistribution: 2, stockMax: 6 }]]) {
+    for (const joueurs of [12, 16, 20]) run(`${nom}, ${joueurs} j.`, { ...P, ...d, joueurs });
+    run(`${nom}, Roux naïfs (16 j.)`, { ...P, ...d, joueurs: 16, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
+  }
+}
+
+if (scenario === "blocage") {
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 21], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1, joueurs: 12 };
+  // Bande 1 affaiblie : 1 joueur occasionnel, les autres réguliers (comme la partie de test)
+  const faible = (b, r) => (b === 1 && r() < 0.25 ? "occasionnel" : "regulier");
+  for (const [nom, d] of [["1 chat, réserve 3", { gainDistribution: 1, stockMax: 3 }], ["2 chats, réserve 4", { gainDistribution: 2, stockMax: 4 }]]) {
+    for (const [cas, extra] of [["activité normale", {}], ["Chats noirs affaiblis", { profilForce: faible }]]) {
+      const cfg = { ...P, ...d, ...extra };
+      DES_DEF = 2; memoVictoire.clear();
+      let blocages = 0, joursBloques = 0, bloqueeGagne = 0, victoiresNoirs = 0;
+      for (let i = 0; i < N; i++) {
+        const g = jouerPartie(cfg, 7700 + i);
+        if (g.classement[0] === 1) victoiresNoirs++;
+        const cj = g.stats.coinsJour;
+        let partieBloquee = false;
+        for (let b = 0; b < 3; b++) {
+          let suite = 0, bloquee = false;
+          for (const jour of cj) {
+            if (jour[b] <= 2) { suite++; joursBloques++; } else suite = 0;
+            if (suite >= 2) bloquee = true;
+          }
+          if (bloquee) { blocages++; partieBloquee = true; if (g.classement[0] === b) bloqueeGagne++; }
+        }
+        void partieBloquee;
+      }
+      console.log(`${nom.padEnd(18)} | ${cas.padEnd(22)} | bande bloquée (≤ 2 territoires 2 soirs de suite) : ${Math.round((100 * blocages) / N)} % des parties, ${(joursBloques / N).toFixed(2)} jour-bande bloqué en moyenne, une bande bloquée gagne ${blocages ? Math.round((100 * bloqueeGagne) / blocages) : 0} % du temps | victoires Noirs ${Math.round((100 * victoiresNoirs) / N)} %`);
+    }
+  }
+}
+
+if (scenario === "mercenaires") {
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 21], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1 };
+  const variantes = process.argv[4] === "fin" ? [
+    ["aucun", null],
+    ["J3, +1 par joueur", { jours: [3], n: 1, parJoueur: true }],
+    ["J3, +2 par joueur", { jours: [3], n: 2, parJoueur: true }],
+    ["J3+J6, +1 par joueur", { jours: [3, 6], n: 1, parJoueur: true }],
+    ["J3+J6, +2 par joueur", { jours: [3, 6], n: 2, parJoueur: true }],
+    ["J4, +2 par joueur", { jours: [4], n: 2, parJoueur: true }],
+  ] : [
+    ["aucun", null],
+    ["J3, +3 pour la bande", { jours: [3], n: 3 }],
+    ["J3+J6, +3 pour la bande", { jours: [3, 6], n: 3 }],
+    ["J3, +3 par joueur", { jours: [3], n: 3, parJoueur: true }],
+    ["J3+J6, +3 par joueur", { jours: [3, 6], n: 3, parJoueur: true }],
+  ];
+  const gains = process.argv[4] === "fin" ? [["2 chats/res 4", { gainDistribution: 2, stockMax: 4 }]] : [["1 chat/res 3", { gainDistribution: 1, stockMax: 3 }], ["2 chats/res 4", { gainDistribution: 2, stockMax: 4 }]];
+  for (const [gainNom, gain] of gains) {
+    for (const [nom, merc] of variantes) {
+      let derniereJ2Gagne = 0, n2 = 0, blocages = 0, joursBloques = 0, leaderJ3 = 0, v = [0, 0, 0], ecart = 0;
+      for (const joueurs of [12, 16, 20]) {
+        const cfg = { ...P, ...gain, joueurs, mercenaires: merc };
+        DES_DEF = 2; memoVictoire.clear();
+        for (let i = 0; i < N; i++) {
+          const g = jouerPartie(cfg, 6600 + i);
+          const w = g.classement[0];
+          v[w]++;
+          const pJ2 = g.stats.pointsJ[1];
+          const dJ2 = [0, 1, 2].sort((x, y) => pJ2[x] - pJ2[y] || x - y)[0];
+          n2++; if (w === dJ2) derniereJ2Gagne++;
+          if (g.stats.leaderJ3 === w) leaderJ3++;
+          ecart += (g.points[w] - g.points[g.classement[1]]) / g.points[w];
+          for (let b = 0; b < 3; b++) {
+            let suite = 0, bloquee = false;
+            for (const jour of g.stats.coinsJour) { if (jour[b] <= 2) { suite++; joursBloques++; } else suite = 0; if (suite >= 2) bloquee = true; }
+            if (bloquee) blocages++;
+          }
+        }
+      }
+      const T = 3 * N;
+      console.log(`${gainNom.padEnd(13)} | ${nom.padEnd(24)} | bande dernière au J2 gagne ${String(Math.round((100 * derniereJ2Gagne) / n2)).padStart(2)} % | leader J3 gagne ${Math.round((100 * leaderJ3) / T)} % | blocages ${Math.round((100 * blocages) / T)} % (${(joursBloques / T).toFixed(2)} soir) | écart 1er-2e ${Math.round((100 * ecart) / T)} % | victoires ${v.map((x) => Math.round((100 * x) / T)).join("/")}`);
+    }
+  }
+}
+
+if (scenario === "deblocage") {
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 21], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1, gainDistribution: 2, stockMax: 4 };
+  const T = (o) => ({ cible: "territoires", ...o });
+  const variantes = [
+    ["aucun", null],
+    ["J3, dernière aux points, +2/joueur", { jours: [3], n: 2, parJoueur: true }],
+    ["J3, moins de territoires, +2/joueur", T({ jours: [3], n: 2, parJoueur: true })],
+    ["J3, moins de territoires, +3/joueur", T({ jours: [3], n: 3, parJoueur: true })],
+    ["J3+J5, moins de territoires, +2/joueur", T({ jours: [3, 5], n: 2, parJoueur: true })],
+    ["J3+J5, si ≤ 4 territoires, +3/joueur", T({ jours: [3, 5], n: 3, parJoueur: true, seuil: 4 })],
+    ["J3+J5, si ≤ 4 territoires, +4/joueur", T({ jours: [3, 5], n: 4, parJoueur: true, seuil: 4 })],
+  ];
+  for (const [nom, merc] of variantes) {
+    let moy = 0, soirsBloques = 0, nbBloqueesJ2 = 0, moyBloquee = 0, soirsBloquesB = 0, leader = 0, v = [0, 0, 0];
+    for (const joueurs of [12, 16, 20]) {
+      const cfg = { ...P, joueurs, mercenaires: merc };
+      DES_DEF = 2; memoVictoire.clear();
+      for (let i = 0; i < N; i++) {
+        const g = jouerPartie(cfg, 5500 + i);
+        v[g.classement[0]]++;
+        if (g.stats.leaderJ3 === g.classement[0]) leader++;
+        const cj = g.stats.coinsJour;
+        const b = [0, 1, 2].sort((x, y) => cj[1][x] - cj[1][y])[0];
+        const apres = cj.slice(2).map((j) => j[b]);
+        moy += apres.reduce((t, x) => t + x, 0) / apres.length;
+        soirsBloques += apres.filter((x) => x <= 2).length;
+        if (cj[1][b] <= 3) { nbBloqueesJ2++; moyBloquee += apres.reduce((t, x) => t + x, 0) / apres.length; soirsBloquesB += apres.filter((x) => x <= 2).length; }
+      }
+    }
+    const tot = 3 * N;
+    console.log(`${nom.padEnd(40)} | dernière du J2 : ${(moy / tot).toFixed(1)} terr. J3-J7, ${(soirsBloques / tot).toFixed(2)} soir ≤2 | si ≤3 terr. au J2 (${Math.round((100 * nbBloqueesJ2) / tot)} % des parties) : ${(moyBloquee / Math.max(1, nbBloqueesJ2)).toFixed(1)} terr., ${(soirsBloquesB / Math.max(1, nbBloqueesJ2)).toFixed(2)} soir ≤2 | leader J3 ${Math.round((100 * leader) / tot)} % | victoires ${v.map((x) => Math.round((100 * x) / tot)).join("/")}`);
+  }
 }
