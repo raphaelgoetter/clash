@@ -309,7 +309,7 @@ function buildReglesEmbed(config) {
       `- 💬 **Ma bande** : messagerie réservée à ta bande (${config.messages_par_jour} messages par jour).`,
       "",
       "**🍖 Croquettes**",
-      "- Ta bande tient toute une pièce : +1 chat à chaque distribution.",
+      "- Ta bande tient toute une pièce : +1 chat à chaque distribution, posé tout seul sur le territoire le plus menacé de la pièce.",
       "",
       "**🏆 Points**",
       `- Chaque soir à **${config.heure_decompte}h**, chaque territoire tenu rapporte ${plural(config.points_territoire, "point")} à sa bande.`,
