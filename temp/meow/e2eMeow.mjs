@@ -149,3 +149,5 @@ verifier(lastEph("u1"), "règles");
 console.log(`\n--- Règles : ${lastEph("u1").embeds[0].description.length} caractères`);
 const partie = await S.readPartie();
 console.log(`--- Squats : ${partie.journal.filter((e) => e.k === "squat").length}, décomptes : ${partie.decomptes.length}, terminé : ${partie.termine}`);
+
+// Aperçu du Journal et du bloc Aujourd'hui (jour 4 rejoué)

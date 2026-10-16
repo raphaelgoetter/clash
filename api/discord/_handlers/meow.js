@@ -69,7 +69,7 @@ import {
 
 const MEOW_COLOR = 0xe8812a;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
-const JOURNAL_AFFICHE = 8;
+const JOURNAL_AFFICHE = 5;
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 function illustrationUrl() {
@@ -222,15 +222,22 @@ function buildJourEmbed(jour, config, partie) {
       : gazetteLignes(partie, jour);
   lignes.push("", "**🏆 Classement des bandes**", ...classementLignes(partie));
   lignes.push("", "**🐱 Les bandes**", ...bandesLignes(partie));
-  const faits = partie.journal
-    .filter((e) => e.k === "squat" && e.j === jour)
-    .slice(-JOURNAL_AFFICHE);
-  if (faits.length)
+  // Aujourd'hui : bilan des squats et seulement les territoires qui ont
+  // changé de main (les échecs et retraites sont dans le Journal de chacun)
+  const squats = partie.journal.filter((e) => e.k === "squat" && e.j === jour);
+  if (squats.length) {
+    const prises = squats.filter((e) => e.issue === "victoire");
+    const rates = squats.filter((e) => e.issue === "defaite").length;
+    const retraites = squats.length - prises.length - rates;
+    const bilan = [`${prises.length} réussi${prises.length > 1 ? "s" : ""}`, rates ? `${rates} raté${rates > 1 ? "s" : ""}` : null, retraites ? `${plural(retraites, "retraite")}` : null].filter(Boolean);
     lignes.push(
       "",
       "**💥 Aujourd'hui**",
-      ...faits.map((e) => texteJournal(partie, e)),
+      `😼 ${plural(squats.length, "squat")} : ${bilan.join(", ")}.`,
+      ...prises.slice(-JOURNAL_AFFICHE).map((e) => texteJournal(partie, e)),
+      ...(prises.length > JOURNAL_AFFICHE ? [`… et ${prises.length - JOURNAL_AFFICHE} autre${prises.length - JOURNAL_AFFICHE > 1 ? "s" : ""} plus tôt.`] : []),
     );
+  }
   return {
     title: `🐾 Meow (Jour ${jour}/${config.duree_jours})`,
     description: lignes.join("\n").slice(0, 4096),
@@ -1396,28 +1403,29 @@ export async function handleJournal(webhookUrl, discordId) {
       });
       return;
     }
-    const concerne = (e) =>
-      e.p === discordId ||
-      e.k === "decompte" ||
-      (e.k === "croquettes" && e.b === j.bande) ||
-      (e.k === "squat" && (e.b === j.bande || e.def === j.bande));
-    const jours = new Map();
-    for (const e of partie.journal) {
-      if (!concerne(e) || e.k === "appel") continue;
-      if (!jours.has(e.j)) jours.set(e.j, []);
-      jours.get(e.j).push(texteJournal(partie, e));
-    }
-    let description = "";
-    for (const [jour, lignes] of [...jours.entries()].sort(
-      (a, b) => b[0] - a[0],
-    )) {
-      const bloc = [`**Jour ${jour}**`, ...lignes.reverse(), ""].join("\n");
-      if (description.length + bloc.length > 4000) {
-        description += "*(jours précédents non affichés)*";
-        break;
+    // Ce que le message du jour ne montre pas : ses propres squats (même
+    // ratés), les attaques contre sa bande, ses croquettes regroupées par
+    // jour ; aujourd'hui et hier seulement (les décomptes sont dans la Gazette).
+    const jourCourant = jourDe(partie, Date.now());
+    const lignesDuJour = (jour) => {
+      const evts = partie.journal.filter((e) => e.j === jour);
+      const lignes = evts
+        .filter((e) => e.k === "squat" && (e.p === discordId || (e.def === j.bande && e.b !== j.bande)))
+        .map((e) => `${e.p === discordId ? "" : "🛡️ "}${texteJournal(partie, e)}`)
+        .reverse();
+      const croquettes = evts.filter((e) => e.k === "croquettes" && e.b === j.bande);
+      if (croquettes.length) {
+        const parPiece = [...new Set(croquettes.map((e) => e.piece))].map((p) => PIECES[p].nom);
+        lignes.push(`🍖 Croquettes : +${croquettes.reduce((t, e) => t + e.n, 0)} (${parPiece.join(", ")})`);
       }
-      description += `${bloc}\n`;
-    }
+      return lignes;
+    };
+    const blocs = [jourCourant, jourCourant - 1]
+      .filter((n) => n >= 1)
+      .map((n) => ({ n, lignes: lignesDuJour(n) }))
+      .filter((b) => b.lignes.length)
+      .map((b) => [`**${b.n === jourCourant ? "Aujourd'hui" : "Hier"}**`, ...b.lignes].join("\n"));
+    const description = blocs.join("\n\n").slice(0, 4000);
     await patchOriginal(webhookUrl, {
       embeds: [
         {

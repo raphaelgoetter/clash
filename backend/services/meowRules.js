@@ -673,14 +673,20 @@ function nomBande(b) {
   return b === ERRANTS ? "chats errants" : `${BANDES[b].emoji} ${BANDES[b].nom}`;
 }
 
+// « de Malle », « d'Armoire »
+function elision(mot, nom) {
+  return /^[aeiouyéèêh]/i.test(nom) ? `${mot.slice(0, -1)}'${nom}` : `${mot} ${nom}`;
+}
+
 export function texteJournal(partie, e) {
   const qui = (id) => `**${partie.joueurs[id]?.username ?? "?"}**`;
   if (e.k === "squat") {
     const de = nomCoin(e.de);
     const vers = nomCoin(e.vers);
     const adv = e.def === ERRANTS ? "les chats errants" : `les ${BANDES[e.def].nom}`;
-    if (e.issue === "victoire") return `${BANDES[e.b].emoji} ${qui(e.p)} et ${e.a} ${BANDES[e.b].nom} ont délogé ${adv} de ${vers} (depuis ${de}).`;
-    if (e.issue === "defaite") return `${BANDES[e.b].emoji} ${qui(e.p)} a échoué devant ${vers} : ses ${e.aInit} ${BANDES[e.b].nom} ont tous détalé.`;
+    if (e.issue === "victoire") return `${BANDES[e.b].emoji} ${qui(e.p)} et ${e.a} ${BANDES[e.b].nom} ont délogé ${adv} ${elision("de", vers)} (depuis ${de}).`;
+    if (e.issue === "defaite")
+      return `${BANDES[e.b].emoji} ${qui(e.p)} a échoué devant ${vers} : ${e.aInit > 1 ? `ses ${e.aInit} ${BANDES[e.b].nom} ont tous détalé` : "son chat a détalé"}.`;
     return `${BANDES[e.b].emoji} ${qui(e.p)} a battu en retraite devant ${vers} (${e.a} chat${e.a > 1 ? "s" : ""} rentré${e.a > 1 ? "s" : ""} sur ${de})${e.issue === "retraiteAuto" ? " faute de réponse" : ""}.`;
   }
   if (e.k === "croquettes") return `🍖 ${nomBande(e.b)} : croquettes servies dans ${PIECES[e.piece].le} (+${e.n} sur ${nomCoin(e.coin)}).`;
