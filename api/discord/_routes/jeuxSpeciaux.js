@@ -87,7 +87,6 @@ import {
   handleDesinscrire as handleMeowDesinscrire,
   handleJouer as handleMeowJouer,
   handleAppelCoin as handleMeowAppelCoin,
-  handleAppeler as handleMeowAppeler,
   handleSquat as handleMeowSquat,
   handleDeplacer as handleMeowDeplacer,
   handleCombat as handleMeowCombat,
@@ -762,9 +761,9 @@ export async function routeJeuxSpeciaux(body, res) {
   }
 
   // ── Meow : composants de l'éphémère, édition en place ──
-  // custom_id : meow_appel_coin, meow_squat, meow_deplacer (menus), meow_appeler:<coin>:<n>,
+  // custom_id : meow_appel_coin, meow_squat, meow_deplacer (menus),
   // meow_manche, meow_bout, meow_retraite, meow_vue, meow_bande_vue (boutons)
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^meow_(appel_coin|squat|deplacer|appeler:|manche|bout|retraite|vue|bande_vue)/.test(body.data.custom_id)) {
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^meow_(appel_coin|squat|deplacer|manche|bout|retraite|vue|bande_vue)/.test(body.data.custom_id)) {
     const [action, coin, n] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
@@ -772,7 +771,6 @@ export async function routeJeuxSpeciaux(body, res) {
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (action === "meow_appel_coin") runBackground(() => handleMeowAppelCoin(webhookUrl, discordId, username, value));
-    else if (action === "meow_appeler") runBackground(() => handleMeowAppeler(webhookUrl, discordId, username, coin, n));
     else if (action === "meow_squat") runBackground(() => handleMeowSquat(webhookUrl, discordId, username, value));
     else if (action === "meow_deplacer") runBackground(() => handleMeowDeplacer(webhookUrl, discordId, username, value));
     else if (action === "meow_vue") runBackground(() => handleMeowJouer(webhookUrl, discordId, username));

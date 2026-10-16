@@ -279,7 +279,7 @@ function buildReglesEmbed(config) {
       "",
       "**🐱 Tes chats**",
       `- Distribution à **${horairesDistribution(config)}** : 1 chat pour toi (${config.stock_max} en réserve maximum).`,
-      "- **Appeler** : pose tes chats sur un territoire de ta bande.",
+      "- **Appeler** : pose tous tes chats de réserve sur un territoire de ta bande.",
       `- **Déplacer** : ${config.deplacements_par_distribution} chat vers un autre territoire de ta bande, dans la même pièce ou par un passage 🐾, entre deux distributions (1 chat reste toujours sur place).`,
       "- Chats pas appelés à minuit : ils s'installent tout seuls sur le territoire le plus menacé.",
       "",
@@ -891,13 +891,12 @@ function buildCombatView(config, partie, discordId, { entete = null } = {}) {
 }
 
 // [🐾 Jouer] : bande, réserve, squats restants, coins de la bande, menus
-// Appeler et Squatter. `coinChoisi` : coin choisi dans le menu Appeler,
-// la vue propose alors combien de chats y appeler.
+// Appeler (toute la réserve), Squatter et Déplacer.
 function buildJouerView(
   config,
   partie,
   discordId,
-  { entete = null, nouveau = false, coinChoisi = null } = {},
+  { entete = null, nouveau = false } = {},
 ) {
   const j = partie.joueurs[discordId];
   if (!partie.demarree) {
@@ -967,27 +966,7 @@ function buildJouerView(
   ];
 
   const components = [];
-  if (coinChoisi && j.stock > 0) {
-    const options = [...new Set([1, 2, j.stock])].filter((n) => n <= j.stock);
-    components.push({
-      type: 1,
-      components: [
-        ...options.map((n) =>
-          bouton(
-            n === j.stock && n > 1 ? `Tout (${n})` : `+${n}`,
-            "🐱",
-            `meow_appeler:${coinChoisi}:${n}`,
-            1,
-          ),
-        ),
-        bouton("Annuler", "↩️", "meow_vue"),
-      ],
-    });
-    lignes.push(
-      "",
-      `Combien de chats appeler sur **${nomCoin(coinChoisi)}** ?`,
-    );
-  } else if (j.stock > 0) {
+  if (j.stock > 0) {
     const appelables = mesCoins.filter((c) => !verrous.has(c));
     if (appelables.length) {
       components.push({
@@ -996,7 +975,7 @@ function buildJouerView(
           {
             type: 3,
             custom_id: "meow_appel_coin",
-            placeholder: `🐱 Appeler tes chats sur… (${chats(j.stock)})`,
+            placeholder: `🐱 Appeler ${j.stock > 1 ? `tes ${j.stock} chats` : "ton chat"} sur…`,
             options: appelables.slice(0, 25).map((c) => ({
               label: `${nomCoin(c)} (${chats(partie.coins[c].n)})`,
               value: c,
@@ -1277,27 +1256,13 @@ export async function handleJouer(webhookUrl, discordId, username) {
 // ── Composants de l'éphémère (édition en place) ──────────────────────
 
 // Menu « Appeler tes chats sur… » : choix du nombre ensuite.
+// Menu « Appeler tes chats sur… » : toute la réserve y va (décision du
+// 16/10 : pas de quantité à choisir).
 export async function handleAppelCoin(webhookUrl, discordId, username, coin) {
   try {
-    await executer(webhookUrl, discordId, username, () => ({}), {
-      vue: { coinChoisi: coin },
-    });
-  } catch (err) {
-    console.error("[Meow] Échec choix du coin:", err.message);
-  }
-}
-
-// Boutons « +1 / +2 / Tout ».
-export async function handleAppeler(webhookUrl, discordId, username, coin, n) {
-  try {
     await executer(webhookUrl, discordId, username, (partie) => {
-      const r = appeler(partie, discordId, coin, n);
-      return r.erreur
-        ? { entete: avertissement(r.erreur) }
-        : {
-            entete: `🐱 ${chats(r.n)} appelé${r.n > 1 ? "s" : ""} sur **${nomCoin(coin)}**.`,
-            rafraichir: true,
-          };
+      const r = appeler(partie, discordId, coin, partie.joueurs[discordId]?.stock ?? 0);
+      return r.erreur ? { entete: avertissement(r.erreur) } : { entete: `🐱 ${chats(r.n)} appelé${r.n > 1 ? "s" : ""} sur **${nomCoin(coin)}**.`, rafraichir: true };
     });
   } catch (err) {
     console.error("[Meow] Échec appel:", err.message);

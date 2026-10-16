@@ -76,11 +76,7 @@ async function passage(id) {
     await H.handleAppelCoin(`wh-${id}`, id, nom(id), appel.options[0].value);
     e = lastEph(id);
     verifier(e, `choix coin ${id}`);
-    const tout = boutons(e, "meow_appeler:").at(-1);
-    const [, coin, n] = tout.custom_id.split(":");
-    await H.handleAppeler(`wh-${id}`, id, nom(id), coin, n);
-    e = lastEph(id);
-    verifier(e, `appel ${id}`);
+    if (!/chats? appelés? sur/.test(e.embeds[0].description)) throw new Error("appel non confirmé");
   }
   const dep = menu(e, "meow_deplacer");
   if (dep && !dep.disabled) {

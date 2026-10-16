@@ -960,3 +960,9 @@ if (scenario === "geo2") {
   for (const joueurs of [12, 16, 20]) run(`Géo, sorties aux bouts, ${lignes[0].nom}, ${joueurs} j.`, { ...lignes[0].cfg, joueurs });
   run(`Géo, sorties aux bouts, Roux naïfs (16 j.)`, { ...lignes[0].cfg, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
 }
+
+if (scenario === "stock") {
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 18], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1 };
+  for (const stockMax of [4, 3]) for (const joueurs of [12, 16, 20]) run(`Réserve max ${stockMax}, ${joueurs} j.`, { ...P, joueurs, stockMax });
+}
