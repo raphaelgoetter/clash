@@ -26,10 +26,13 @@ const PIECES = {
 const PORTES_IMAGE = [["carton", "canape"], ["malle", "evier"], ["biblio", "evier"], ["tapis", "perron"]];
 const PORTES_PLUS = [...PORTES_IMAGE, ["carton", "malle"], ["gamelle", "cabane"]];
 
-function construireCarte(portes) {
+// `interieur` : liens géographiques dans les pièces (sinon tous les coins
+// d'une pièce se touchent).
+function construireCarte(portes, interieur = null) {
   const coins = Object.entries(PIECES).flatMap(([piece, ids]) => ids.map((id) => ({ id, piece })));
   const voisins = Object.fromEntries(coins.map((c) => [c.id, new Set()]));
-  for (const ids of Object.values(PIECES)) for (const a of ids) for (const b of ids) if (a !== b) voisins[a].add(b);
+  if (interieur) for (const [a, b] of interieur) (voisins[a].add(b), voisins[b].add(a));
+  else for (const ids of Object.values(PIECES)) for (const a of ids) for (const b of ids) if (a !== b) voisins[a].add(b);
   for (const [a, b] of portes) {
     voisins[a].add(b);
     voisins[b].add(a);
@@ -911,4 +914,49 @@ if (scenario === "bareme") {
     for (const joueurs of [12, 16, 20]) run(`${nom}, ${joueurs} j.`, { ...P, ...d, joueurs });
     run(`${nom}, Roux naïfs (16 j.)`, { ...P, ...d, joueurs: 16, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
   }
+}
+
+const GEO = [
+  ["fenetre", "couette"], ["couette", "armoire"], ["armoire", "carton"],
+  ["malle", "chapeaux"], ["chapeaux", "poutre"], ["poutre", "lucarne"],
+  ["radiateur", "canape"], ["radiateur", "tapis"], ["canape", "tapis"], ["canape", "biblio"], ["tapis", "biblio"],
+  ["evier", "frigo"], ["frigo", "panier"], ["panier", "gamelle"],
+  ["arbre", "perron"], ["perron", "potager"], ["potager", "cabane"],
+];
+const PORTES_SYM = [["carton", "canape"], ["armoire", "malle"], ["evier", "chapeaux"], ["gamelle", "biblio"], ["tapis", "perron"], ["cabane", "lucarne"]];
+
+if (scenario === "geo") {
+  const base = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, rechargeHeures: [8, 13, 18], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1 };
+  const carteGeo = construireCarte(PORTES_SYM, GEO);
+  run("Référence : pièces où tout se touche, 16 j.", { ...base, carte: construireCarte(PORTES_SYM), paniers: ["fenetre", "potager", "frigo"], joueurs: 16 });
+  // Paniers hors passages dans chaque pièce de départ
+  const lignes = [];
+  for (const pc of ["fenetre", "couette"]) for (const pj of ["arbre", "potager"]) for (const pk of ["frigo", "panier"]) {
+    const cfg = { ...base, carte: carteGeo, paniers: [pc, pj, pk], joueurs: 16 };
+    const v = [0, 0, 0];
+    for (let i = 0; i < N; i++) v[jouerPartie(cfg, 8800 + i).classement[0]]++;
+    lignes.push({ cfg, nom: `paniers ${pc}/${pj}/${pk}`, v: v.map((x) => Math.round((100 * x) / N)), ecart: Math.max(...v.map((x) => Math.abs(x / N - 1 / 3))) });
+  }
+  lignes.sort((x, y) => x.ecart - y.ecart);
+  for (const l of lignes) console.log(`${l.v.join("/").padEnd(9)} écart ${Math.round(l.ecart * 100)} | ${l.nom}`);
+  const best = lignes[0].cfg;
+  for (const joueurs of [12, 16, 20]) run(`Géographique, ${lignes[0].nom}, ${joueurs} j.`, { ...best, joueurs });
+  run(`Géographique, ${lignes[0].nom}, Roux naïfs (16 j.)`, { ...best, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
+}
+
+if (scenario === "geo2") {
+  const base = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, rechargeHeures: [8, 13, 18], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1 };
+  const portes = [["fenetre", "radiateur"], ["carton", "malle"], ["evier", "chapeaux"], ["gamelle", "biblio"], ["arbre", "tapis"], ["cabane", "lucarne"]];
+  const carte = construireCarte(portes, GEO);
+  const lignes = [];
+  for (const pc of ["couette", "armoire"]) for (const pj of ["perron", "potager"]) for (const pk of ["frigo", "panier"]) {
+    const cfg = { ...base, carte, paniers: [pc, pj, pk], joueurs: 16 };
+    const v = [0, 0, 0];
+    for (let i = 0; i < N; i++) v[jouerPartie(cfg, 8900 + i).classement[0]]++;
+    lignes.push({ cfg, nom: `paniers ${pc}/${pj}/${pk}`, v: v.map((x) => Math.round((100 * x) / N)), ecart: Math.max(...v.map((x) => Math.abs(x / N - 1 / 3))) });
+  }
+  lignes.sort((x, y) => x.ecart - y.ecart);
+  for (const l of lignes.slice(0, 4)) console.log(`${l.v.join("/").padEnd(9)} écart ${Math.round(l.ecart * 100)} | ${l.nom}`);
+  for (const joueurs of [12, 16, 20]) run(`Géo, sorties aux bouts, ${lignes[0].nom}, ${joueurs} j.`, { ...lignes[0].cfg, joueurs });
+  run(`Géo, sorties aux bouts, Roux naïfs (16 j.)`, { ...lignes[0].cfg, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
 }

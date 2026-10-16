@@ -280,7 +280,7 @@ function buildReglesEmbed(config) {
       "**🐱 Tes chats**",
       `- Distribution à **${horairesDistribution(config)}** : 1 chat pour toi (${config.stock_max} en réserve maximum).`,
       "- **Appeler** : pose tes chats sur un territoire de ta bande.",
-      `- **Déplacer** : ${config.deplacements_par_distribution} chat vers un territoire voisin de ta bande entre deux distributions (1 chat reste toujours sur place).`,
+      `- **Déplacer** : ${config.deplacements_par_distribution} chat vers un autre territoire de ta bande, dans la même pièce ou par un passage 🐾, entre deux distributions (1 chat reste toujours sur place).`,
       "- Chats pas appelés à minuit : ils s'installent tout seuls sur le territoire le plus menacé.",
       "",
       "**😼 Squatter**",
@@ -1021,7 +1021,7 @@ function buildJouerView(
       {
         type: 3,
         custom_id: "meow_squat",
-        placeholder: raison ?? "😼 Squatter un territoire voisin…",
+        placeholder: raison ?? "😼 Squatter dans la même pièce ou par un passage 🐾",
         disabled: Boolean(raison),
         options: (squats.length
           ? squats
@@ -1055,7 +1055,7 @@ function buildJouerView(
       {
         type: 3,
         custom_id: "meow_deplacer",
-        placeholder: raisonDep ?? "🚚 Déplacer un chat vers un territoire voisin…",
+        placeholder: raisonDep ?? "🚚 Déplacer un chat dans la même pièce ou par un passage 🐾",
         disabled: Boolean(raisonDep),
         options: deps.length
           ? deps.slice(0, 25).map((o) => ({
