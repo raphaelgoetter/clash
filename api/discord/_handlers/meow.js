@@ -121,6 +121,11 @@ function delai(ms) {
   return `${h} h${min % 60 ? ` ${String(min % 60).padStart(2, "0")}` : ""}`;
 }
 
+// « minuit » pour un décompte à 24 h (ou 0 h), sinon « 23h »
+function heureDecompte(config) {
+  return config.heure_decompte % 24 === 0 ? "minuit" : `${config.heure_decompte}h`;
+}
+
 function horairesDistribution(config) {
   return config.distributions
     .map((h) => `${h}h`)
@@ -231,7 +236,7 @@ function buildJourEmbed(jour, config, partie) {
     color: MEOW_COLOR,
     image: { url: carteUrl(partie) },
     footer: {
-      text: `Chats distribués à ${horairesDistribution(config)} · Décompte à ${config.heure_decompte}h · Sieste de 0h à ${config.fin_sieste}h (pas de squat).`,
+      text: `Chats distribués à ${horairesDistribution(config)} · Décompte à ${heureDecompte(config)} · Sieste de 0h à ${config.fin_sieste}h (pas de squat).`,
     },
   };
 }
@@ -307,7 +312,7 @@ function buildReglesEmbed(config) {
       "- Ta bande tient toute une pièce : +1 chat à chaque distribution, posé tout seul sur le territoire le plus menacé de la pièce.",
       "",
       "**🏆 Points**",
-      `- Chaque soir à **${config.heure_decompte}h**, chaque territoire tenu rapporte ${plural(config.points_territoire, "point")} à sa bande.`,
+      `- Chaque soir à **${heureDecompte(config)}**, chaque territoire tenu rapporte ${plural(config.points_territoire, "point")} à sa bande.`,
       `- 🏅 **Caïd des coussins** (classement individuel) : ${config.caid.coin} pts par territoire pris, ${config.caid.chat} par chat délogé. Classement révélé à la fin de la partie.`,
       `- Fin après le décompte du jour ${config.duree_jours} : la bande qui a le plus de points gagne.`,
     ].join("\n"),

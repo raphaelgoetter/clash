@@ -98,7 +98,7 @@ function joueurDe(partie, b) {
   const ev = evenementsEntre(parisInstant("2026-10-19", 9), parisInstant("2026-10-20", 9), CONFIG);
   assert.deepStrictEqual(
     ev.map((e) => `${e.date} ${parisParts(e.t).h} ${e.type}`),
-    ["2026-10-19 13 distribution", "2026-10-19 18 distribution", "2026-10-19 23 decompte", "2026-10-20 0 sieste", "2026-10-20 8 distribution"],
+    ["2026-10-19 13 distribution", "2026-10-19 21 distribution", "2026-10-19 0 decompte", "2026-10-20 0 sieste", "2026-10-20 8 distribution"],
   );
 }
 
@@ -178,7 +178,7 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   const id = joueurDe(partie, 0);
   partie.joueurs[id].squats = 2;
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 19) });
-  // 13h, 18h, (sieste : stock posé), 8h, 13h, 18h → 3 en stock, plafond 4
+  // 13h, 21h, (sieste : 1 chat posé), 8h, 13h → 3 en stock (plafond)
   assert.strictEqual(partie.joueurs[id].stock, 3);
   assert.strictEqual(partie.joueurs[id].squats, 0);
   assert.ok(partie.journal.some((e) => e.k === "sieste"));
@@ -192,7 +192,7 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   const total = () => COINS.filter((c) => partie.coins[c].b === 1).reduce((t, c) => t + partie.coins[c].n, 0);
   const avant = total();
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 1) });
-  // 13h et 18h : réserve déjà pleine (3) ; minuit : 1 posé
+  // 13h et 21h : réserve déjà pleine (3) ; minuit : 1 posé
   assert.strictEqual(partie.joueurs[id].stock, 2);
   assert.strictEqual(partie.joueurs[id].nuit.jour, 2);
   assert.ok(total() > avant);
@@ -334,7 +334,7 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   // Roux : Chambre + Salon complets ; Noirs : Jardin ; Chartreux : Cuisine moins la Gamelle
   for (const c of PIECES.salon.coins) partie.coins[c] = { b: 0, n: 2 };
   partie.coins.gamelle = { b: 1, n: 2 };
-  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-19", 23) + 60_000 });
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 0) + 60_000 });
   // 1 point par territoire tenu, pièces entières sans bonus de points
   const d = partie.decomptes.at(-1);
   assert.deepStrictEqual(d.gains, [8, 5, 3]);
@@ -345,7 +345,7 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
 {
   // Ex aequo aux points : départage aux territoires tenus
   const partie = partieDe(12);
-  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-19", 23) + 60_000 });
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 0) + 60_000 });
   assert.deepStrictEqual(partie.decomptes.at(-1).gains, [4, 4, 4]);
   partie.coins.malle = { b: 2, n: 2 };
   assert.strictEqual(classementBandes(partie)[0].b, 2);

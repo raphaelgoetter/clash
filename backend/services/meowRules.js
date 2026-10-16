@@ -153,12 +153,15 @@ export function enSieste(ms, config) {
 }
 
 // Événements horaires strictement après `de` et jusqu'à `a` inclus, dans
-// l'ordre : sieste (0 h), distributions, décompte.
+// l'ordre : sieste (0 h), distributions, décompte. `heure_decompte` peut
+// valoir 24 (minuit, décision du 16/10) : le décompte du jour D tombe alors
+// à 0 h le lendemain, juste avant la sieste du lendemain (même instant,
+// mais généré avec la date D, donc trié avant).
 export function evenementsEntre(de, a, config) {
   const out = [];
   const fin = parisParts(a).date;
   const horaires = [[0, "sieste"], ...config.distributions.map((h) => [h, "distribution"]), [config.heure_decompte, "decompte"]];
-  for (let date = parisParts(de).date; date <= fin; date = ajouterJours(date, 1)) {
+  for (let date = ajouterJours(parisParts(de).date, -1); date <= fin; date = ajouterJours(date, 1)) {
     for (const [h, type] of horaires) {
       const t = parisInstant(date, h);
       if (t > de && t <= a) out.push({ t, type, date });
@@ -365,7 +368,7 @@ function decompter(partie, { config, t, jour }) {
   const gains = coins.map((n) => n * config.points_territoire);
   gains.forEach((g, b) => (partie.points[b] += g));
   partie.decomptes.push({ jour, coins, gains });
-  noter(partie, { t, k: "decompte", jour, gains });
+  noter(partie, { t, k: "decompte", j: jour, jour, gains });
   if (jour >= config.duree_jours) partie.termine = true;
 }
 
@@ -400,7 +403,9 @@ export function rattraper(partie, { config, now = horloge(partie), rng = Math.ra
   if (!partie.demarree || partie.termine) return partie;
   expirerCombats(partie, { config, now });
   for (const e of evenementsEntre(partie.curseur, now, config)) {
-    const jour = jourDe(partie, e.t);
+    // Jour de jeu de l'événement d'après sa date (un décompte de minuit
+    // compte pour la journée qui s'achève)
+    const jour = joursEntre(partie.jourDebut, e.date) + 1;
     if (e.type === "distribution") {
       distribuer(partie, { config, t: e.t });
       if (partie.pnjActifs) for (const id of Object.keys(partie.joueurs).filter(estPnj)) jouerPnj(partie, id, { config, now: e.t, rng });

@@ -18,7 +18,7 @@
 //   node scripts/postMeow.js --force-close    — ignore la date de clôture des inscriptions (lance la partie si
 //                                               l'effectif minimum est atteint) ; implicite sur le salon de test
 //   node scripts/postMeow.js --distribution   — salon de test : avance jusqu'à la prochaine distribution (8h, 13h,
-//                                               18h) au lieu du lendemain 8h22 (par défaut, un jour par lancement)
+//                                               21h) au lieu du lendemain 8h22 (par défaut, un jour par lancement)
 
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
