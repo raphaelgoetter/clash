@@ -126,6 +126,29 @@ function joueurDe(partie, b) {
   assert.strictEqual(partie.jourDebut, "2026-10-19");
 }
 
+// ── Répartition : les derniers inscrits complètent les bandes ─────────
+
+for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [20, [6, 7, 7]]]) {
+  for (let seed = 1; seed <= 20; seed++) {
+    const partie = partieDe(n, { seed });
+    const t = tailles(partie);
+    assert.deepStrictEqual([...t].sort(), attendu, `${n} joueurs`);
+    const derniers = Object.keys(partie.joueurs).sort((a, b) => partie.joueurs[a].arrivee - partie.joueurs[b].arrivee).slice(n - (n % 3));
+    const bandes = derniers.map((id) => partie.joueurs[id].bande);
+    assert.strictEqual(new Set(bandes).size, bandes.length, "derniers inscrits dans des bandes différentes");
+    for (const b of bandes) assert.strictEqual(t[b], Math.max(...t), "derniers inscrits dans les bandes les plus nombreuses");
+  }
+}
+
+{
+  // Numéro d'arrivée unique même après une désinscription
+  const partie = creerPartie();
+  for (const id of ["a", "b", "c"]) inscrire(partie, id, id, { config: CONFIG });
+  desinscrire(partie, "a");
+  inscrire(partie, "d", "d", { config: CONFIG });
+  assert.ok(partie.joueurs.d.arrivee > partie.joueurs.c.arrivee);
+}
+
 // ── Recharge équilibrée ───────────────────────────────────────────────
 
 {

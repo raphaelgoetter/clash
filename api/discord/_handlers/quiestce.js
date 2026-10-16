@@ -402,22 +402,28 @@ async function discordFetch(url, init) {
   });
 }
 
-// Image de la grille jointe au message (`attachment://`), comme le plateau
-// de Bang! : confiée par URL, le proxy de Discord dépasse parfois son délai
-// et affiche le message sans image. Repli sur l'URL si le téléchargement échoue.
-const GRILLE_FILENAME = "grille.png";
+// Image jointe au message (`attachment://`), grille comme illustration,
+// comme le plateau de Bang! : confiée par URL, le proxy de Discord dépasse
+// parfois son délai et affiche le message sans image (constaté sur Meow le
+// 16/10 : illustration perdue à la réédition de l'annonce). Repli sur l'URL
+// si le téléchargement échoue.
+const IMAGES_JOINTES = [
+  { chemin: "/api/quiestce/grille", filename: "grille.png", type: "image/png" },
+  { chemin: "/api/quiestce/illustration", filename: "quiestce.webp", type: "image/webp" },
+];
 
 async function joindreImage(embed) {
   const url = embed?.image?.url;
-  if (!url?.includes("/api/quiestce/grille")) return null;
+  const cible = IMAGES_JOINTES.find((i) => url?.includes(i.chemin));
+  if (!cible) return null;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const buffer = Buffer.from(await res.arrayBuffer());
-    embed.image = { url: `attachment://${GRILLE_FILENAME}` };
-    return buffer;
+    embed.image = { url: `attachment://${cible.filename}` };
+    return { buffer, ...cible };
   } catch (err) {
-    console.warn("[QuiEstCe] Image de la grille non jointe:", err.message);
+    console.warn("[QuiEstCe] Image non jointe:", err.message);
     return null;
   }
 }
@@ -429,13 +435,13 @@ function corpsMessage(payload, image) {
     "payload_json",
     JSON.stringify({
       ...payload,
-      attachments: [{ id: 0, filename: GRILLE_FILENAME }],
+      attachments: [{ id: 0, filename: image.filename }],
     }),
   );
   form.append(
     "files[0]",
-    new Blob([image], { type: "image/png" }),
-    GRILLE_FILENAME,
+    new Blob([image.buffer], { type: image.type }),
+    image.filename,
   );
   return form;
 }

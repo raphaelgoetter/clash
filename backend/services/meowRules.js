@@ -33,12 +33,13 @@ export const BANDES = [
 
 export const ERRANTS = -1;
 
+// `le` / `du` : formes avec article (« tient le Jardin », « part du Jardin »)
 export const PIECES = {
-  chambre: { nom: "Chambre", coins: ["fenetre", "couette", "armoire", "carton"] },
-  grenier: { nom: "Grenier", coins: ["malle", "chapeaux", "poutre", "lucarne"] },
-  salon: { nom: "Salon", coins: ["radiateur", "canape", "tapis", "biblio"] },
-  cuisine: { nom: "Cuisine", coins: ["evier", "frigo", "corbeille", "gamelle"] },
-  jardin: { nom: "Jardin", coins: ["arbre", "perron", "potager", "cabane"] },
+  chambre: { nom: "Chambre", le: "la Chambre", du: "de la Chambre", coins: ["fenetre", "couette", "armoire", "carton"] },
+  grenier: { nom: "Grenier", le: "le Grenier", du: "du Grenier", coins: ["malle", "chapeaux", "poutre", "lucarne"] },
+  salon: { nom: "Salon", le: "le Salon", du: "du Salon", coins: ["radiateur", "canape", "tapis", "biblio"] },
+  cuisine: { nom: "Cuisine", le: "la Cuisine", du: "de la Cuisine", coins: ["evier", "frigo", "corbeille", "gamelle"] },
+  jardin: { nom: "Jardin", le: "le Jardin", du: "du Jardin", coins: ["arbre", "perron", "potager", "cabane"] },
 };
 
 export const NOMS_COINS = {
@@ -204,7 +205,9 @@ export function inscrire(partie, discordId, username, { config }) {
   if (partie.demarree) return { erreur: "inscriptions" };
   if (partie.joueurs[discordId]) return { erreur: "dejaInscrit" };
   if (nbInscrits(partie) >= config.effectif_max) return { erreur: "complet" };
-  partie.joueurs[discordId] = { username, arrivee: nbInscrits(partie) };
+  // Numéro d'arrivée strictement croissant (même après une désinscription)
+  partie.seqInscription = (partie.seqInscription ?? nbInscrits(partie)) + 1;
+  partie.joueurs[discordId] = { username, arrivee: partie.seqInscription };
   return { ok: true };
 }
 
@@ -230,15 +233,23 @@ export function tailles(partie) {
   return t;
 }
 
-// Lancement : bandes tirées au sort (le ou les joueurs en plus vont dans
-// des bandes tirées au sort elles aussi), 2 chats par coin des pièces de
-// départ, 2 chats errants par coin du Salon et du Grenier, puis une
-// première distribution immédiate.
+// Lancement : bandes égales tirées au sort parmi les premiers inscrits ; le
+// ou les 1-2 derniers inscrits (en plus d'un multiple de 3) vont chacun dans
+// une bande différente, tirée au sort (décision du 16/10 : les derniers
+// inscrits seront sans doute les moins actifs, autant qu'ils grossissent
+// les bandes plutôt que d'en priver une d'un joueur régulier). Puis 2 chats
+// par coin des pièces de départ, 2 chats errants par coin du Salon et du
+// Grenier, et une première distribution immédiate.
 export function demarrer(partie, { config, now = Date.now(), rng = Math.random }) {
   const ordreBandes = melanger([0, 1, 2], rng);
-  melanger(Object.keys(partie.joueurs), rng).forEach((id, k) => {
+  const ids = Object.keys(partie.joueurs).sort((a, b) => partie.joueurs[a].arrivee - partie.joueurs[b].arrivee);
+  const nbDerniers = ids.length % 3;
+  const premiers = melanger(ids.slice(0, ids.length - nbDerniers), rng);
+  const derniers = ids.slice(ids.length - nbDerniers);
+  const bandeDe = new Map([...premiers.map((id, k) => [id, k % 3]), ...derniers.map((id, k) => [id, ordreBandes[k]])]);
+  ids.forEach((id) => {
     Object.assign(partie.joueurs[id], {
-      bande: ordreBandes[k % 3],
+      bande: bandeDe.get(id),
       stock: 0,
       frac: 0,
       squats: 0,
@@ -672,7 +683,7 @@ export function texteJournal(partie, e) {
     if (e.issue === "defaite") return `${BANDES[e.b].emoji} ${qui(e.p)} a échoué devant ${vers} : ses ${e.aInit} ${BANDES[e.b].nom} ont tous détalé.`;
     return `${BANDES[e.b].emoji} ${qui(e.p)} a battu en retraite devant ${vers} (${e.a} chat${e.a > 1 ? "s" : ""} rentré${e.a > 1 ? "s" : ""} sur ${de})${e.issue === "retraiteAuto" ? " faute de réponse" : ""}.`;
   }
-  if (e.k === "croquettes") return `🍖 ${nomBande(e.b)} : croquettes servies dans la ${PIECES[e.piece].nom} (+${e.n} sur ${nomCoin(e.coin)}).`;
+  if (e.k === "croquettes") return `🍖 ${nomBande(e.b)} : croquettes servies dans ${PIECES[e.piece].le} (+${e.n} sur ${nomCoin(e.coin)}).`;
   if (e.k === "appel") return `🐱 ${qui(e.p)} a appelé ${e.n} chat${e.n > 1 ? "s" : ""} sur ${nomCoin(e.coin)}.`;
   if (e.k === "sieste") return `😴 Sieste : ${e.poses.map((n, b) => (n ? `${n} ${BANDES[b].nom}` : null)).filter(Boolean).join(", ")} installés tout seuls.`;
   if (e.k === "decompte") return `📊 Décompte du jour ${e.jour} : ${[0, 1, 2].map((b) => `${BANDES[b].emoji} ${e.totaux[b]} (+${e.gains[b]} pts)`).join(" · ")}`;
