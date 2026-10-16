@@ -24,7 +24,7 @@ import {
   jusquauBout,
   retraite,
   pVictoire,
-  totalBande,
+  coinsDe,
   classementBandes,
   classementCaid,
   texteJournal,
@@ -124,7 +124,7 @@ function joueurDe(partie, b) {
   // Première distribution immédiate : 1 chat chacun (2 pour une part des
   // bandes de 4 : recharge équilibrée), croquettes de la pièce de départ
   for (const j of Object.values(partie.joueurs)) assert.ok(j.stock >= 1 && j.stock <= 2);
-  for (let b = 0; b < 3; b++) assert.strictEqual(totalBande(partie, b, CONFIG), 4 + CONFIG.points_piece);
+  for (let b = 0; b < 3; b++) assert.strictEqual(coinsDe(partie, b).length, 4);
   assert.strictEqual(partie.jourDebut, "2026-10-19");
 }
 
@@ -235,7 +235,7 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   assert.strictEqual(partie.coins.carton.n, 1);
   assert.strictEqual(partie.joueurs[id].coinsPris, 1);
   assert.strictEqual(partie.joueurs[id].chatsDeloges, 2);
-  assert.ok(texteJournal(partie, partie.journal.at(-1)).includes("ont délogé les chats errants de Canapé"));
+  assert.ok(texteJournal(partie, partie.journal.at(-1)).includes("a délogé les chats errants de Canapé"));
 }
 
 {
@@ -313,7 +313,7 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   assert.strictEqual(fin.issue, "victoire");
 }
 
-// ── Décompte, points de rang, fin ─────────────────────────────────────
+// ── Décompte, fin ─────────────────────────────────────────────────────
 
 {
   const partie = partieDe(12);
@@ -321,17 +321,20 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   for (const c of PIECES.salon.coins) partie.coins[c] = { b: 0, n: 2 };
   partie.coins.gamelle = { b: 1, n: 2 };
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-19", 23) + 60_000 });
+  // 1 point par territoire tenu, pièces entières sans bonus de points
   const d = partie.decomptes.at(-1);
-  assert.deepStrictEqual(d.totaux, [8 + 2 * CONFIG.points_piece, 5 + CONFIG.points_piece, 3]);
-  assert.deepStrictEqual(d.gains, [3, 2, 1]);
-  assert.deepStrictEqual(partie.points, [3, 2, 1]);
+  assert.deepStrictEqual(d.gains, [8, 5, 3]);
+  assert.deepStrictEqual(partie.points, [8, 5, 3]);
+  assert.strictEqual(texteJournal(partie, partie.journal.find((e) => e.k === "decompte")), "📊 Décompte du jour 1 : 🟠 +8 · ⚫ +5 · 🔵 +3");
 }
 
 {
-  // Ex aequo : même place, mêmes points
+  // Ex aequo aux points : départage aux territoires tenus
   const partie = partieDe(12);
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-19", 23) + 60_000 });
-  assert.deepStrictEqual(partie.decomptes.at(-1).gains, [3, 3, 3]);
+  assert.deepStrictEqual(partie.decomptes.at(-1).gains, [4, 4, 4]);
+  partie.coins.malle = { b: 2, n: 2 };
+  assert.strictEqual(classementBandes(partie)[0].b, 2);
 }
 
 {

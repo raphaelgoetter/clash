@@ -899,3 +899,16 @@ if (scenario === "squats") {
     run(`${sq} squat(s)/distribution, Roux naïfs (16 j.)`, { ...P, joueurs: 16, squatsParDistribution: sq, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
   }
 }
+
+if (scenario === "bareme") {
+  const carte = construireCarte([["carton", "canape"], ["armoire", "malle"], ["evier", "chapeaux"], ["gamelle", "biblio"], ["tapis", "perron"], ["cabane", "lucarne"]]);
+  const P = { ...BASE, ...ANTI, equilibrage: true, carte, rechargeHeures: [8, 13, 18], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1 };
+  for (const [nom, d] of [
+    ["Actuel : rang du soir 3/2/1 (territoires + 2 par pièce)", { score: "rang", pointsPiece: 2 }],
+    ["Cumul : territoires + 2 par pièce chaque soir", { score: "cumul", pointsPiece: 2 }],
+    ["Cumul : 1 pt par territoire chaque soir (pièces = croquettes seulement)", { score: "cumul", pointsPiece: 0 }],
+  ]) {
+    for (const joueurs of [12, 16, 20]) run(`${nom}, ${joueurs} j.`, { ...P, ...d, joueurs });
+    run(`${nom}, Roux naïfs (16 j.)`, { ...P, ...d, joueurs: 16, profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") });
+  }
+}

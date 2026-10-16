@@ -1,11 +1,11 @@
 // ============================================================
 // meow.js — Handlers Discord de Meow (jeu spécial de 7 jours) : trois
 // bandes de chats squattent les coins d'une maison, en temps réel.
-// Un seul message officiel par jour (Gazette des moustaches de la veille,
-// classement des bandes, composition des bandes, faits du jour, carte),
-// réédité après chaque action qui change la carte, avec trois boutons,
-// chacun en éphémère : Jouer (Appeler / Squatter, puis le concours de
-// regards manche par manche), Règles et Journal.
+// Un seul message officiel par jour (classement des bandes et situation
+// actuelle, faits du jour, carte), réédité après chaque action qui change la
+// carte, avec quatre boutons, chacun en éphémère : Jouer (Appeler / Squatter
+// / Déplacer, puis le crêpage de poils manche par manche), Ma bande
+// (messagerie), Règles et Journal.
 // Fenêtre d'inscription (comme Qui est-ce ?) : boutons S'inscrire, Se
 // désinscrire et Règles, rappel quotidien, prolongation si l'effectif
 // minimum n'est pas atteint.
@@ -176,10 +176,10 @@ function buildAnnonceEmbed(
   };
 }
 
+// Points cumulés et territoires tenus en ce moment (ce que rapportera le
+// prochain décompte).
 function classementLignes(partie) {
-  return classementBandes(partie).map(
-    (r, i) => `${MEDALS[i]} **${nomBande(r.b)}** : ${plural(r.points, "pt")}`,
-  );
+  return classementBandes(partie).map((r, i) => `${MEDALS[i]} **${nomBande(r.b)}** : ${plural(r.points, "pt")} (${plural(r.territoires, "territoire")})`);
 }
 
 function bandesLignes(partie) {
@@ -192,39 +192,12 @@ function bandesLignes(partie) {
   });
 }
 
-// Gazette des moustaches : décompte de la veille et bilan des squats.
-function gazetteLignes(partie, jour) {
-  const d = partie.decomptes.find((x) => x.jour === jour - 1);
-  if (!d) return [];
-  const ordre = [0, 1, 2].sort((x, y) => d.totaux[y] - d.totaux[x]);
-  const squats = partie.journal.filter(
-    (e) => e.k === "squat" && e.j === jour - 1,
-  );
-  const reussis = squats.filter((e) => e.issue === "victoire").length;
-  return [
-    "**📰 La Gazette des moustaches**",
-    ...ordre.map((b) => {
-      const n = d.pieces[b].length;
-      const pieces = n
-        ? ` (pièce${n > 1 ? "s" : ""} entière${n > 1 ? "s" : ""} : ${d.pieces[b].map((p) => PIECES[p].nom).join(", ")})`
-        : "";
-      return `${nomBande(b)} : ${plural(d.coins[b], "territoire")}${pieces}, **+${plural(d.gains[b], "pt")}**`;
-    }),
-    squats.length
-      ? `😼 ${plural(squats.length, "squat")} hier, dont ${reussis} réussi${reussis > 1 ? "s" : ""}.`
-      : "😴 Aucun squat hier.",
-  ];
-}
-
 function buildJourEmbed(jour, config, partie) {
-  const lignes =
-    jour === 1
-      ? [
-          "Les bandes sont formées ! Chaque bande part de sa pièce, le Salon et le Grenier sont occupés par des chats errants."
-        ]
-      : gazetteLignes(partie, jour);
-  lignes.push("", "**🏆 Classement des bandes**", ...classementLignes(partie));
-  lignes.push("", "**🐱 Les bandes**", ...bandesLignes(partie));
+  const lignes = [
+    ...(jour === 1 ? ["Les bandes sont formées ! Chaque bande part de sa pièce, le Salon et le Grenier sont occupés par des chats errants.", ""] : []),
+    "**🏆 Classement des bandes**",
+    ...classementLignes(partie),
+  ];
   // Aujourd'hui : bilan des squats et seulement les territoires qui ont
   // changé de main (les échecs et retraites sont dans le Journal de chacun)
   const squats = partie.journal.filter((e) => e.k === "squat" && e.j === jour);
@@ -259,7 +232,7 @@ function formatMancheLine(record, isCurrent) {
 function buildFinEmbed(bandes, caids, manches, currentManche) {
   const [premier, second] = bandes;
   const titre =
-    premier.points === second.points && premier.cumul === second.cumul
+    premier.points === second.points && premier.territoires === second.territoires
       ? "🤝 Égalité parfaite en tête !"
       : `👑 Les **${nomBande(premier.b)}** remportent la partie avec ${plural(premier.points, "pt")} !`;
   return {
@@ -320,10 +293,10 @@ function buildReglesEmbed(config) {
       `- 💬 **Ma bande** : messagerie réservée à ta bande (${config.messages_par_jour} messages par jour).`,
       "",
       "**🍖 Croquettes**",
-      "- Ta bande tient toute une pièce : +1 chat à chaque distribution et +2 au décompte.",
+      "- Ta bande tient toute une pièce : +1 chat à chaque distribution.",
       "",
       "**🏆 Points**",
-      `- Décompte à **${config.heure_decompte}h** : 1 par territoire tenu, +${config.points_piece} par pièce entière. La 1re bande du jour marque ${config.points_rang[0]} pts, la 2e ${config.points_rang[1]}, la 3e ${config.points_rang[2]}.`,
+      `- Chaque soir à **${config.heure_decompte}h**, chaque territoire tenu rapporte ${plural(config.points_territoire, "point")} à sa bande.`,
       `- 🏅 **Caïd des coussins** (classement individuel) : ${config.caid.coin} pts par territoire pris, ${config.caid.chat} par chat délogé. Classement révélé à la fin de la partie.`,
       `- Fin après le décompte du jour ${config.duree_jours} : la bande qui a le plus de points gagne.`,
     ].join("\n"),
@@ -614,15 +587,13 @@ async function envoyerBandesEnMp(partie, channelId, messageId) {
   for (const [id, j] of Object.entries(partie.joueurs)) {
     if (j.bande == null || estPnj(id)) continue;
     const bd = BANDES[j.bande];
-    const equipiers = Object.entries(partie.joueurs)
-      .filter(([autre, x]) => autre !== id && x.bande === j.bande)
-      .map(([, x]) => x.username)
-      .sort((a, b) => a.localeCompare(b));
     await envoyerMp(id, {
       title: `🐾 Meow : tu es chez les ${bd.nom} ${bd.emoji}`,
       description: [
         `Ta bande part ${PIECES[bd.depart].du.replace(PIECES[bd.depart].nom, `**${PIECES[bd.depart].nom}**`)} (panier imprenable : ${nomCoin(bd.panier)}).`,
-        `Tes coéquipiers : ${equipiers.length ? equipiers.join(", ") : "aucun"}.`,
+        "",
+        "**🐱 Les bandes**",
+        ...bandesLignes(partie),
         "",
         `Clique sur **🐾 Jouer** pour appeler tes chats, et sur **💬 Ma bande** pour vous organiser${lien ? ` : ${lien}` : "."}`,
       ].join("\n"),
@@ -1457,7 +1428,7 @@ export async function handleJournal(webhookUrl, discordId) {
     }
     // Ce que le message du jour ne montre pas : ses propres squats (même
     // ratés), les attaques contre sa bande, ses croquettes regroupées par
-    // jour ; aujourd'hui et hier seulement (les décomptes sont dans la Gazette).
+    // jour ; aujourd'hui et hier seulement (les points sont dans le classement).
     const jourCourant = jourDe(partie, horloge(partie));
     const lignesDuJour = (jour) => {
       const evts = partie.journal.filter((e) => e.j === jour);

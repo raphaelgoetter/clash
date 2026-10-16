@@ -356,21 +356,16 @@ function distribuer(partie, { config, t }) {
   }
 }
 
-// Décompte du soir : total = coins tenus + points par pièce complète ;
-// points de rang (3/2/1), les ex aequo prennent les points de la meilleure
-// place commune.
-export function totalBande(partie, b, config) {
-  return coinsDe(partie, b).length + piecesTenues(partie, b).length * config.points_piece;
-}
-
+// Décompte du soir : chaque coin tenu rapporte `points_territoire` (1)
+// point à sa bande (décision du 16/10 : barème en une phrase, remplace le
+// classement du soir 3/2/1 avec +2 par pièce entière, jugé incompréhensible ;
+// les pièces entières ne rapportent plus que des croquettes).
 function decompter(partie, { config, t, jour }) {
-  const totaux = [0, 1, 2].map((b) => totalBande(partie, b, config));
-  const ordre = [0, 1, 2].sort((x, y) => totaux[y] - totaux[x]);
-  const gains = [0, 0, 0];
-  for (const b of ordre) gains[b] = config.points_rang[ordre.findIndex((x) => totaux[x] === totaux[b])] ?? 0;
+  const coins = [0, 1, 2].map((b) => coinsDe(partie, b).length);
+  const gains = coins.map((n) => n * config.points_territoire);
   gains.forEach((g, b) => (partie.points[b] += g));
-  partie.decomptes.push({ jour, totaux, gains, coins: [0, 1, 2].map((b) => coinsDe(partie, b).length), pieces: [0, 1, 2].map((b) => piecesTenues(partie, b)) });
-  noter(partie, { t, k: "decompte", jour, totaux, gains });
+  partie.decomptes.push({ jour, coins, gains });
+  noter(partie, { t, k: "decompte", jour, gains });
   if (jour >= config.duree_jours) partie.termine = true;
 }
 
@@ -699,11 +694,11 @@ export function scoreCaid(j, config) {
   return (j.coinsPris ?? 0) * config.caid.coin + (j.chatsDeloges ?? 0) * config.caid.chat;
 }
 
-// Bandes : points de rang cumulés, puis somme des totaux des décomptes.
+// Bandes : points cumulés, puis territoires tenus à cet instant.
 export function classementBandes(partie) {
   return [0, 1, 2]
-    .map((b) => ({ b, points: partie.points[b], cumul: partie.decomptes.reduce((s, d) => s + d.totaux[b], 0) }))
-    .sort((x, y) => y.points - x.points || y.cumul - x.cumul);
+    .map((b) => ({ b, points: partie.points[b], territoires: coinsDe(partie, b).length }))
+    .sort((x, y) => y.points - x.points || y.territoires - x.territoires);
 }
 
 export function classementCaid(partie, config) {
@@ -730,14 +725,13 @@ export function texteJournal(partie, e) {
     const de = nomCoin(e.de);
     const vers = nomCoin(e.vers);
     const adv = e.def === ERRANTS ? "les chats errants" : `les ${BANDES[e.def].nom}`;
-    if (e.issue === "victoire") return `${BANDES[e.b].emoji} ${qui(e.p)} et ${e.a} ${BANDES[e.b].nom} ont délogé ${adv} ${elision("de", vers)} (depuis ${de}).`;
-    if (e.issue === "defaite")
-      return `${BANDES[e.b].emoji} ${qui(e.p)} a échoué devant ${vers} : ${e.aInit > 1 ? `ses ${e.aInit} ${BANDES[e.b].nom} ont tous détalé` : "son chat a détalé"}.`;
-    return `${BANDES[e.b].emoji} ${qui(e.p)} a battu en retraite devant ${vers} (${e.a} chat${e.a > 1 ? "s" : ""} rentré${e.a > 1 ? "s" : ""} sur ${de})${e.issue === "retraiteAuto" ? " faute de réponse" : ""}.`;
+    if (e.issue === "victoire") return `${BANDES[e.b].emoji} ${qui(e.p)} a délogé ${adv} ${elision("de", vers)} (depuis ${de}).`;
+    if (e.issue === "defaite") return `${BANDES[e.b].emoji} ${qui(e.p)} a échoué devant ${vers} (depuis ${de}).`;
+    return `${BANDES[e.b].emoji} ${qui(e.p)} a battu en retraite devant ${vers} (depuis ${de})${e.issue === "retraiteAuto" ? " faute de réponse" : ""}.`;
   }
   if (e.k === "croquettes") return `🍖 ${nomBande(e.b)} : croquettes servies dans ${PIECES[e.piece].le} (+${e.n} sur ${nomCoin(e.coin)}).`;
   if (e.k === "appel") return `🐱 ${qui(e.p)} a appelé ${e.n} chat${e.n > 1 ? "s" : ""} sur ${nomCoin(e.coin)}.`;
   if (e.k === "sieste") return `😴 Sieste : ${e.poses.map((n, b) => (n ? `${n} ${BANDES[b].nom}` : null)).filter(Boolean).join(", ")} installés tout seuls.`;
-  if (e.k === "decompte") return `📊 Décompte du jour ${e.jour} : ${[0, 1, 2].map((b) => `${BANDES[b].emoji} ${e.totaux[b]} (+${e.gains[b]} pts)`).join(" · ")}`;
+  if (e.k === "decompte") return `📊 Décompte du jour ${e.jour} : ${[0, 1, 2].map((b) => `${BANDES[b].emoji} +${e.gains[b]}`).join(" · ")}`;
   return "";
 }
