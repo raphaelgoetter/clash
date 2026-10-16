@@ -95,10 +95,6 @@ function chats(n) {
   return plural(n, "chat");
 }
 
-function deloges(n) {
-  return `${chats(n)} délogé${n > 1 ? "s" : ""}`;
-}
-
 function nomBande(b) {
   return `${BANDES[b].emoji} ${BANDES[b].nom}`;
 }
@@ -262,13 +258,12 @@ function buildFinEmbed(bandes, caids, manches, currentManche) {
           `${MEDALS[i]} **${nomBande(r.b)}** : ${plural(r.points, "pt")}`,
       ),
       "",
-      "**🏅 Caïd des coussins**",
+      "**🏅 Caïd des coussins** (🚩 territoires pris · 💨 chats délogés)",
       ...caids
-        .filter((r) => r.score > 0)
-        .slice(0, 10)
+        // Tous les joueurs (20 au plus) : chacun voit sa place
         .map(
           (r, i) =>
-            `${MEDALS[i] || `${i + 1}.`} **${r.username}** ${BANDES[r.bande].emoji} : ${plural(r.score, "pt")} (${plural(r.coinsPris, "territoire")} pris, ${deloges(r.chatsDeloges)})`,
+            `${MEDALS[i] || `${i + 1}.`} **${r.username}** ${BANDES[r.bande].emoji} : ${plural(r.score, "pt")} (🚩 ${r.coinsPris} · 💨 ${r.chatsDeloges})`,
         ),
       ...(manches.length
         ? [
