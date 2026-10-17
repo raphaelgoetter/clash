@@ -241,6 +241,7 @@ function jouerPartie(cfg, seed) {
   };
 
   const visite = (j, jour) => {
+    j.presentJour = jour;
     placerStock(j);
     // Déplacement (1 chat par distribution) : vers le coin de la bande le plus
     // menacé, depuis un voisin de la bande qui a au moins 2 chats
@@ -265,6 +266,8 @@ function jouerPartie(cfg, seed) {
         chats[t] = res.a;
         chats[s] = 1;
         stats.conquetes[jour]++;
+        if (cfg.butin) j.stock = Math.min(cfg.stockMax + (cfg.butinHorsPlafond ? 99 : 0), j.stock + cfg.butin);
+        if (cfg.pointsConquete) points[j.bande] += cfg.pointsConquete;
         stats.prises[j.bande][ancien + 1]++;
         // Bon sens : si la source reste exposée, laisser la moitié
         if (j.strategie === "smart" && menace(s) > 0 && res.a > 2) {
@@ -334,7 +337,9 @@ function jouerPartie(cfg, seed) {
           const front = frontiere(j.bande);
           if (!front.length) continue;
           const pire = front.sort((x, y) => menace(y) - menace(x))[0];
-          j.stock = placer(pire, j.stock);
+          // Jeu réel (16/10) : 1 seul chat posé à la sieste, le reste en réserve
+          if (cfg.siesteUnChat) j.stock = placer(pire, 1) + j.stock - 1;
+          else j.stock = placer(pire, j.stock);
         }
       }
       if (h >= 8) for (const j of visitesParHeure[h].sort(() => r() - 0.5)) visite(j, jour);
@@ -351,6 +356,8 @@ function jouerPartie(cfg, seed) {
         } else if (cfg.score === "final") {
           for (const b of [0, 1, 2]) points[b] = duJour[b];
         } else for (const b of [0, 1, 2]) points[b] += duJour[b];
+        if (cfg.pointsPresence) for (const j of joueurs) if (j.presentJour === jour) points[j.bande] += cfg.pointsPresence;
+        if (cfg.ennui) for (const id of carte.ids) if (own[id] >= 0 && chats[id] > cfg.ennui) chats[id] -= 1;
         stats.pointsJ.push([...points]);
         (stats.coinsJour ??= []).push([0, 1, 2].map((b) => carte.ids.filter((id) => own[id] === b).length));
         if (jour === 3) stats.leaderJ3 = leader();
@@ -1100,5 +1107,65 @@ if (scenario === "deblocage") {
     }
     const tot = 3 * N;
     console.log(`${nom.padEnd(40)} | dernière du J2 : ${(moy / tot).toFixed(1)} terr. J3-J7, ${(soirsBloques / tot).toFixed(2)} soir ≤2 | si ≤3 terr. au J2 (${Math.round((100 * nbBloqueesJ2) / tot)} % des parties) : ${(moyBloquee / Math.max(1, nbBloqueesJ2)).toFixed(1)} terr., ${(soirsBloquesB / Math.max(1, nbBloqueesJ2)).toFixed(2)} soir ≤2 | leader J3 ${Math.round((100 * leader) / tot)} % | victoires ${v.map((x) => Math.round((100 * x) / tot)).join("/")}`);
+  }
+}
+
+// Poids stratégie / activité / hasard avec la config implémentée (17/10)
+if (scenario === "poids") {
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 21], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1, gainDistribution: 2, stockMax: Number(process.argv[5]) || 3, mercenaires: { jours: [3], n: 1, parJoueur: true }, siesteUnChat: true, joueurs: Number(process.argv[4]) || 15 };
+  const egal = () => "regulier";
+  const naif = (b) => (b === 0 ? "naif" : "smart");
+  run("Réf. activité normale (mix)", P);
+  run("Tous réguliers (3 visites/j)", { ...P, profilForce: egal });
+  run("Roux naïfs, activité égale", { ...P, profilForce: egal, strategie: naif });
+  run("Roux assidus (5) vs réguliers (3)", { ...P, profilForce: (b) => (b === 0 ? "assidu" : "regulier") });
+  run("Roux occasionnels (1) vs réguliers (3)", { ...P, profilForce: (b) => (b === 0 ? "occasionnel" : "regulier") });
+  run("Roux : 1/3 des joueurs occasionnels", { ...P, profilForce: (b, r) => (b === 0 && r() < 1 / 3 ? "occasionnel" : "regulier") });
+  run("Roux : 1/3 des joueurs abandonnent après J2", { ...P, profilForce: (b, r) => (b === 0 && r() < 1 / 3 ? "abandon" : "regulier") });
+  run("Roux assidus mais naïfs", { ...P, profilForce: (b) => (b === 0 ? "assidu" : "regulier"), strategie: naif });
+  run("Sans hasard (dés), tous réguliers, Roux naïfs", { ...P, profilForce: egal, strategie: naif, combat: "deterministe" });
+}
+
+// Mécaniques qui récompensent l'activité (17/10)
+if (scenario === "actifs") {
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 21], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1, gainDistribution: 2, stockMax: 4, mercenaires: { jours: [3], n: 1, parJoueur: true }, siesteUnChat: true, joueurs: 15 };
+  const quiet = (nom, cfg) => {
+    DES_DEF = 2; DETERMINISTE = false; memoVictoire.clear();
+    let v = 0, leader = 0;
+    for (let i = 0; i < N; i++) { const g = jouerPartie(cfg, 1000 + i); if (g.classement[0] === 0) v++; if (g.stats.leaderJ3 === g.classement[0]) leader++; }
+    return [Math.round((100 * v) / N), Math.round((100 * leader) / N)];
+  };
+  const cas = [
+    ["assidus 5 vs 3", { profilForce: (b) => (b === 0 ? "assidu" : "regulier") }],
+    ["occasionnels 1 vs 3", { profilForce: (b) => (b === 0 ? "occasionnel" : "regulier") }],
+    ["1/3 abandon J2", { profilForce: (b, r) => (b === 0 && r() < 1 / 3 ? "abandon" : "regulier") }],
+    ["naïfs", { profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") }],
+    ["mix normal", {}],
+  ];
+  const variantes = [
+    ["actuel", {}],
+    ["butin +1 chat/coin pris", { butin: 1 }],
+    ["butin +2 chats/coin pris", { butin: 2 }],
+    ["+1 pt par coin pris", { pointsConquete: 1 }],
+    ["+2 pts par coin pris", { pointsConquete: 2 }],
+    ["+1 pt/joueur présent/jour", { pointsPresence: 1 }],
+    ["+2 pts/joueur présent/jour", { pointsPresence: 2 }],
+    ["réserve max 2", { stockMax: 2 }],
+    ["ennui : pile > 5 perd 1 chat/nuit", { ennui: 5 }],
+    ["butin +1 et +1 pt/coin pris", { butin: 1, pointsConquete: 1 }],
+    ["2 squats/distribution", { squatsParDistribution: 2 }],
+  ].filter(([n]) => !process.argv[4] || n === "actuel" || n.startsWith("réserve") || n.startsWith("combo"));
+  if (process.argv[4]) variantes.push(
+    ["réserve max 3", { stockMax: 3 }],
+    ["combo réserve 3 + butin +1", { stockMax: 3, butin: 1 }],
+    ["combo réserve 2, 3 chats/distrib", { stockMax: 3, gainDistribution: 3 }],
+    ["combo réserve 2 + butin +1", { stockMax: 2, butin: 1 }],
+  );
+  console.log("Victoires Roux (%) | " + cas.map(([n]) => n).join(" | ") + " | leader J3 (mix)");
+  for (const [nom, d] of variantes) {
+    const res = cas.map(([, c]) => quiet(nom, { ...P, ...d, ...c }));
+    console.log(nom.padEnd(36) + " | " + res.map(([v]) => String(v).padStart(3)).join(" | ") + " | " + res.at(-1)[1]);
   }
 }
