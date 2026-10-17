@@ -590,6 +590,10 @@ function terminerCombat(partie, discordId, issue, now) {
   if (issue === "victoire") {
     partie.coins[c.t] = { b: j.bande, n: c.a };
     j.coinsPris++;
+    // Exploit de la partie (compte-rendu final) : victoire la moins probable
+    // au lancement. Gardé à part, le journal ne conserve que les dernières entrées.
+    const p = pVictoire(c.aInit, c.dInit);
+    if (!partie.exploit || p < partie.exploit.p) partie.exploit = { p, p_id: discordId, b: j.bande, def: c.def, vers: c.t, aInit: c.aInit, dInit: c.dInit, j: jourDe(partie, now) };
   } else if (issue !== "defaite") {
     partie.coins[c.s].n += c.a;
   }
@@ -731,6 +735,62 @@ export function classementCaid(partie, config) {
     .filter(([, j]) => j.bande != null)
     .map(([discordId, j]) => ({ discordId, username: j.username, bande: j.bande, score: scoreCaid(j, config), coinsPris: j.coinsPris, chatsDeloges: j.chatsDeloges }))
     .sort((x, y) => y.score - x.score || y.coinsPris - x.coinsPris || x.username.localeCompare(y.username));
+}
+
+// ── Compte-rendu final ──────────────────────────────────────────────
+
+const ORDINAUX = ["1res", "2es", "3es"];
+
+function pts(n) {
+  return `${n} pt${n > 1 ? "s" : ""}`;
+}
+
+// 3-4 phrases sur la partie terminée : déroulé de la course (points
+// cumulés soir par soir), record de territoires, exploit le moins probable,
+// effet des mercenaires. Une phrase est omise si la donnée manque.
+export function compteRendu(partie) {
+  const phrases = [];
+  const cumul = [0, 0, 0];
+  const soirs = partie.decomptes.map((d) => {
+    d.gains.forEach((g, b) => (cumul[b] += g));
+    return [...cumul];
+  });
+  const final = classementBandes(partie);
+  const w = final[0].b;
+  const rang = (pts, b) => pts.filter((x) => x > pts[b]).length;
+  if (soirs.length) {
+    const ecart = final[0].points - final[1].points;
+    if (ecart === 0) phrases.push(`Impossible de départager les ${BANDES[w].nom} et les ${BANDES[final[1].b].nom} aux points au bout des ${soirs.length} jours.`);
+    else {
+      const seul = (pts, b) => rang(pts, b) === 0 && pts.filter((x) => x === pts[b]).length === 1;
+      const justesse = ecart <= 3 ? `, avec ${pts(ecart)} d'avance seulement` : "";
+      const dernierJour = soirs.map((pts, k) => (rang(pts, w) === 2 ? k + 1 : 0)).filter(Boolean).at(-1);
+      let depuis = soirs.length;
+      while (depuis > 1 && seul(soirs[depuis - 2], w)) depuis--;
+      if (depuis === 1 && seul(soirs[0], w)) phrases.push(`Les ${BANDES[w].nom} ont mené de bout en bout${justesse}.`);
+      else if (dernierJour) phrases.push(`Encore derniers au soir du Jour ${dernierJour}, les ${BANDES[w].nom} ont renversé la partie${justesse}.`);
+      else phrases.push(`Les ${BANDES[w].nom} ont pris la tête au Jour ${depuis} pour ne plus la lâcher${justesse}.`);
+    }
+    let record = null;
+    partie.decomptes.forEach((d, k) => d.coins.forEach((n, b) => {
+      if (!record || n > record.n) record = { n, b, jour: k + 1 };
+    }));
+    if (record?.n) phrases.push(`Record de la partie : ${record.n} territoires tenus par les ${BANDES[record.b].nom} au soir du Jour ${record.jour}.`);
+  }
+  const e = partie.exploit;
+  if (e && e.p < 0.5) {
+    const adv = e.def === ERRANTS ? "chats errants" : BANDES[e.def].nom;
+    phrases.push(`Plus bel exploit : ${BANDES[e.b].emoji} **${partie.joueurs[e.p_id]?.username ?? "?"}** a délogé ${e.dInit} ${adv} ${elision("de", nomCoin(e.vers))} avec seulement ${e.aInit} chat${e.aInit > 1 ? "s" : ""} (${Math.round(e.p * 100)} % de chances).`);
+  }
+  const m = partie.mercenaires;
+  if (m) {
+    const r = final.findIndex((x) => x.b === m.b);
+    const nom = BANDES[m.b].nom;
+    if (r === 0) phrases.push(`Les mercenaires arrivés au Jour ${m.jour} ont porté les ${nom} jusqu'à la victoire.`);
+    else if (r === 1) phrases.push(`Les mercenaires arrivés au Jour ${m.jour} ont aidé les ${nom} à remonter à la 2e place.`);
+    else phrases.push(`Malgré les mercenaires arrivés au Jour ${m.jour}, les ${nom} finissent ${ORDINAUX[r]}.`);
+  }
+  return phrases.slice(0, 4);
 }
 
 // ── Texte du journal ────────────────────────────────────────────────

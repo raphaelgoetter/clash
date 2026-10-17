@@ -35,6 +35,7 @@ import {
   BANDES,
   PIECES,
   PIECE_DE,
+  compteRendu,
   COINS,
   ERRANTS,
   nomCoin,
@@ -248,7 +249,7 @@ function formatMancheLine(record, isCurrent) {
   return `Manche ${record.manche} : victoire des **${record.vainqueur}** (${plural(record.points, "pt")}, ${plural(record.nbJoueurs, "joueur")})${isCurrent ? " *(cette manche)*" : ""}`;
 }
 
-function buildFinEmbed(bandes, caids, manches, currentManche) {
+function buildFinEmbed(bandes, caids, manches, currentManche, resume = []) {
   const [premier, second] = bandes;
   const titre =
     premier.points === second.points &&
@@ -266,9 +267,10 @@ function buildFinEmbed(bandes, caids, manches, currentManche) {
           `${MEDALS[i]} **${nomBande(r.b)}** : ${plural(r.points, "pt")}`,
       ),
       "",
+      ...(resume.length ? ["**📰 La partie en bref**", resume.join(" "), ""] : []),
       "**🏅 Caïd des coussins**",
       ...caids
-        // Tous les joueurs (20 au plus) : chacun voit sa place
+        .slice(0, 3)
         .map(
           (r, i) =>
             `${MEDALS[i] || `${i + 1}.`} **${r.username}** ${BANDES[r.bande].emoji} : ${plural(r.score, "pt")} (🚩 ${r.coinsPris} · 💨 ${r.chatsDeloges})`,
@@ -562,7 +564,7 @@ async function terminerPartie(state, partie, { dryRun = false } = {}) {
     });
   }
   const manches = await listManches({ limit: 10 });
-  const embed = buildFinEmbed(bandes, caids, manches, currentManche);
+  const embed = buildFinEmbed(bandes, caids, manches, currentManche, compteRendu(partie));
   const components = [{ type: 1, components: [reglesButton()] }];
   if (dryRun) return { dryRun: true, final: true, embed };
   const result = await publishAndWriteState(state.channelId, state, {
