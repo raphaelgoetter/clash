@@ -34,7 +34,12 @@ import {
   parseClashDate,
   MS_PER_DAY,
 } from "../services/analysisService.js";
-import { computeGroupStandings } from "../services/warStandings.js";
+import {
+  computeGroupStandings,
+  countedWarDaysFromCurrentRace,
+  countedWarDaysFromRaceLog,
+  isFullWeek,
+} from "../services/warStandings.js";
 import { computeTopPlayers } from "../services/topplayers.js";
 import { computeUncomplete } from "../services/uncomplete.js";
 import { hasLateArrivalDailyPattern } from "../services/arrivalUtils.js";
@@ -260,12 +265,19 @@ router.get("/:tag/lite", async (req, res) => {
         let lastWarBest = null;
         const races = Array.isArray(raceLog) ? raceLog : (raceLog?.items ?? []);
         const lastWarDecksByTag = new Map();
+        let lastWarMaxDecks = 16;
         if (races.length > 0) {
           const lastRace = races[0];
           const ourStanding = (lastRace.standings ?? []).find(
             (s) => s.clan?.tag?.replace("#", "").toUpperCase() === clanTag,
           );
           const participants = ourStanding?.clan?.participants ?? [];
+          // 12 si la ligne d'arrivée a été franchie au reset du J4, etc.
+          lastWarMaxDecks =
+            countedWarDaysFromRaceLog(
+              ourStanding?.clan,
+              lastRace.createdDate,
+            ) * 4;
 
           participants.forEach((p) => {
             const normalizedTag = `#${String(p.tag ?? "")
@@ -304,6 +316,7 @@ router.get("/:tag/lite", async (req, res) => {
             lastSeen: m.lastSeen,
             expLevel: m.expLevel,
             lastWarDecks: lastWarDecksByTag.get(normalizedTag) ?? 0,
+            lastWarMaxDecks,
           };
         });
 
@@ -331,11 +344,15 @@ router.get("/:tag/lite", async (req, res) => {
               MAX_MEMBERS * 16,
               participants.reduce((s, p) => s + (p.decksUsed ?? 0), 0),
             );
-            const maxDecksElapsed = MAX_MEMBERS * (daysFromThu + 1) * 4;
+            // Ligne d'arrivée franchie : journées suivantes non attendues
+            const countedDays = countedWarDaysFromCurrentRace(currentRace);
+            const maxDecksElapsed =
+              MAX_MEMBERS * Math.min(daysFromThu + 1, countedDays) * 4;
             const maxDecksWeek = MAX_MEMBERS * 16;
             const DAY_LABELS = ["Thu", "Fri", "Sat", "Sun"];
             const days = DAY_LABELS.map((label, i) => ({
               label,
+              notCounted: i >= countedDays,
               isToday: i === daysFromThu,
               isPast: i < daysFromThu,
               isFuture: i > daysFromThu,
@@ -807,13 +824,17 @@ router.get("/:tag/current-war", async (req, res) => {
     const daysFromThu =
       warDayIndexFromPeriodIndex(currentRace.periodIndex) ?? 0;
     const MAX_MEMBERS = 50;
-    const maxDecksElapsed = MAX_MEMBERS * (daysFromThu + 1) * 4;
+    // Ligne d'arrivée franchie : journées suivantes non attendues
+    const countedDays = countedWarDaysFromCurrentRace(currentRace);
+    const maxDecksElapsed =
+      MAX_MEMBERS * Math.min(daysFromThu + 1, countedDays) * 4;
     const maxDecksWeek = MAX_MEMBERS * 16;
     const DAY_LABELS = ["Thu", "Fri", "Sat", "Sun"];
     const days = DAY_LABELS.map((label, index) => {
       const isToday = index === daysFromThu;
       return {
         label,
+        notCounted: index >= countedDays,
         totalCount: isToday ? Math.min(200, Math.max(0, currentDayLive)) : null,
         maxCount: 200,
         isPast: index < daysFromThu,
@@ -1547,6 +1568,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
   let getWarDayName = null;
   let getWarDayKey = null;
   const lastWarDecksByTag = new Map();
+  let lastWarMaxDecks = 16;
 
   if (raceLog && raceLog.length > 0) {
     ({ getSnapshotsForWeeks, getWarDayName, getWarDayKey } =
@@ -1567,6 +1589,9 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       (s) => normalizeTag(s.clan?.tag) === normalizeTag(clanTag),
     );
     const lastParticipants = lastStanding?.clan?.participants ?? [];
+    // 12 si la ligne d'arrivée a été franchie au reset du J4, etc.
+    lastWarMaxDecks =
+      countedWarDaysFromRaceLog(lastStanding?.clan, lastRace?.createdDate) * 4;
     lastParticipants.forEach((p) => {
       const decksUsed = Number.isFinite(p.decksUsed)
         ? Math.max(0, Math.min(16, p.decksUsed))
@@ -1856,7 +1881,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       // grant full scores when the player has either a full 16-deck week
       // in the past or the old rule of ≥2 completed weeks in the clan.
       let prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
-      let hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+      let hasFullWeek = prevWeeks.some(isFullWeek);
       const streakInFamily = wh.streakInFamily ?? wh.streakInCurrentClan;
       const oldRule = streakInFamily >= 2 && wh.completedParticipation >= 2;
       // Strict mapping with Player view : only full week or old rule counts.
@@ -1928,7 +1953,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
             );
 
             prevWeeks = wh.weeks.filter((w) => !w.isCurrent);
-            hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+            hasFullWeek = prevWeeks.some(isFullWeek);
             // old rule : 2 completed weeks in clan
             const oldRuleRefetch =
               wh.streakInCurrentClan >= 2 && wh.completedParticipation >= 2;
@@ -2160,6 +2185,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
         {
           state: currentRace?.state ?? null,
           periodIndex: currentRace?.periodIndex ?? null,
+          countedDays: countedWarDaysFromCurrentRace(currentRace),
         },
         clanTag,
       );
@@ -2240,6 +2266,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       joinDate: m.joinDate ?? null,
       lastSeen: m.lastSeen ?? null,
       lastWarDecks: lastWarDecksByTag.get(normalizeTag(m.tag)) ?? 0,
+      lastWarMaxDecks,
       scoreVersion: SCORE_VERSION,
     };
   });
@@ -2272,6 +2299,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       joinDate: members[idx].joinDate ?? null,
       lastSeen: members[idx].lastSeen ?? null,
       lastWarDecks: lastWarDecksByTag.get(normalizeTag(members[idx].tag)) ?? 0,
+      lastWarMaxDecks,
     };
   });
 
@@ -2377,7 +2405,10 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       // This keeps the UI consistent with the 600/800 max legends even if the
       // current member count is slightly lower (e.g. due to in-progress recruitment).
       const MAX_MEMBERS = 50;
-      const maxDecksElapsed = MAX_MEMBERS * (daysFromThu + 1) * 4; // 600 at day 3
+      // Ligne d'arrivée franchie : journées suivantes non attendues
+      const countedDays = countedWarDaysFromCurrentRace(currentRace);
+      const maxDecksElapsed =
+        MAX_MEMBERS * Math.min(daysFromThu + 1, countedDays) * 4; // 600 at day 3
       const maxDecksWeek = MAX_MEMBERS * 16; // 800 for full week
       totalDecksUsed = Math.min(maxDecksWeek, Math.max(0, totalDecksUsed));
       // Détail par jour : on combine snapshot (source fiable) et une estimation live
@@ -2510,6 +2541,7 @@ export async function buildClanAnalysis(clanTag, options = {}) {
           label,
           totalCount,
           maxCount: 200,
+          notCounted: i >= countedDays,
           isPast: i < daysFromThu,
           isToday: i === daysFromThu,
           isFuture: i > daysFromThu,

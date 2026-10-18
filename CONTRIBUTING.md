@@ -2674,6 +2674,18 @@ le résumé GDC affiche « Non comptabilisés (victoire acquise) » au lieu des 
 delta de decks ni combats/duels manquants ; le bilan hebdo exclut leurs decks de
 « Points moyens / deck » et leurs jours des duels manquants.
 
+**Decks attendus d'une semaine** (`backend/services/warStandings.js`, source de vérité) :
+`countedWarDaysFromRaceLog()` (semaine terminée : `finishTime` vs `createdDate`, qui
+tombe au reset de fin du J4) et `countedWarDaysFromCurrentRace()` (semaine en cours :
+`finishTime` vs `periodIndex`) donnent le nombre de journées comptabilisées (1-4).
+Les semaines de `warHistory` portent `maxDecks` = journées × 4 (16, ou 12 si la ligne
+est franchie au reset du J4). Une semaine est complète si `decksUsed >= maxDecks`
+(`isFullWeek()`) ; `countedWeekDecks()` plafonne les decks au maximum pour les ratios
+points/deck. Appliqué partout : fiche joueur (graphique, tableau, carte GDC en cours,
+score de régularité), page clan (oublis, colonne dernière GDC, GDC en cours),
+`/stats`, `/demote`, `/fail`, `/late`, `/chelem`. Le Colisée n'a pas de `finishTime` :
+toujours 16.
+
 Garde-fou général : un total journalier inférieur à 50 pts par deck joué
 (`MIN_FAME_PER_DECK`) est mathématiquement impossible hors course gagnée et est
 remplacé par « Données indisponibles (valeur incohérente avec les decks joués) ».

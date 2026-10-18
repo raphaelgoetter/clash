@@ -11,8 +11,16 @@ import {
   parseClashDate,
   MS_PER_DAY,
   toPublicSeasonId,
+  toPublicWeekId,
 } from "./dateUtils.js";
 import { filterWarBattles } from "./battleLogUtils.js";
+import {
+  countedWarDaysFromCurrentRace,
+  countedWarDaysFromRaceLog,
+  countedWeekDecks,
+  DECKS_PER_WAR_DAY,
+  isFullWeek,
+} from "./warStandings.js";
 
 const CLAN_RACELOG_CONCURRENCY = 3;
 const CLAN_RACELOG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -124,12 +132,17 @@ export function buildWarHistory(
     for (const standing of race.standings ?? []) {
       const p = standing.clan?.participants?.find((x) => x.tag === normalized);
       if (p) {
+        const countedDays = countedWarDaysFromRaceLog(
+          standing.clan,
+          race.createdDate,
+        );
         weeks.push({
           label: `S${toPublicSeasonId(race.seasonId)}·W${race.sectionIndex + 1}`,
           seasonId: race.seasonId,
           sectionIndex: race.sectionIndex,
           fame: p.fame ?? 0,
           decksUsed: p.decksUsed ?? 0,
+          maxDecks: countedDays * DECKS_PER_WAR_DAY,
           boatAttacks: p.boatAttacks ?? 0,
           clanTag: standing.clan.tag,
           clanName: standing.clan.name ?? standing.clan.tag,
@@ -148,7 +161,7 @@ export function buildWarHistory(
     if (p) {
       const liveWeekId = computeCurrentWeekId(currentRace, raceLog); // ex. "S130W5"
       const liveLabel = liveWeekId
-        ? `${liveWeekId.replace("W", "·W")} (live)`
+        ? `${toPublicWeekId(liveWeekId).replace("W", "·W")} (live)`
         : `S?·W${(currentRace.sectionIndex ?? 0) + 1} (live)`;
       const liveSeasonId = liveWeekId
         ? Number(liveWeekId.match(/^S(\d+)/)?.[1])
@@ -159,6 +172,8 @@ export function buildWarHistory(
         sectionIndex: currentRace.sectionIndex ?? 0,
         fame: p.fame ?? 0,
         decksUsed: p.decksUsed ?? 0,
+        maxDecks:
+          countedWarDaysFromCurrentRace(currentRace) * DECKS_PER_WAR_DAY,
         boatAttacks: p.boatAttacks ?? 0,
         clanTag: currentRace.clan.tag,
         clanName: currentRace.clan.name ?? currentRace.clan.tag,
@@ -195,7 +210,7 @@ export function buildWarHistory(
   for (const w of completedWeeks) {
     const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(
       w.fame,
-      w.decksUsed,
+      countedWeekDecks(w),
       w.boatAttacks,
     );
     totalPvpDecks += wPvp;
@@ -439,7 +454,7 @@ export async function buildFamilyWarHistory(
 }
 
 /**
- * Si la semaine la plus ancienne de prevWeeks a < 16 decks, la marque ignorée
+ * Si la semaine la plus ancienne de prevWeeks est incomplète, la marque ignorée
  * et recalcule les métriques résumées de wh en excluant cette semaine.
  * Mute wh en place. Retourne true si une semaine a été ignorée, false sinon.
  *
@@ -450,7 +465,7 @@ export async function buildFamilyWarHistory(
 export function applyOldestWeekIgnore(wh, prevWeeks) {
   if (prevWeeks.length < 2) return false;
   const oldest = prevWeeks[prevWeeks.length - 1];
-  if ((oldest.decksUsed ?? 0) >= 16) return false;
+  if (isFullWeek(oldest)) return false;
 
   oldest.ignored = true;
 
@@ -468,7 +483,7 @@ export function applyOldestWeekIgnore(wh, prevWeeks) {
   for (const w of kept.filter((w) => !w.isCurrent)) {
     const { wins: wWins, pvpDecks: wPvp } = estimateWinsFromFame(
       w.fame,
-      w.decksUsed,
+      countedWeekDecks(w),
       w.boatAttacks,
     );
     totalPvpDecks += wPvp;

@@ -12,8 +12,19 @@ import {
   MS_PER_DAY,
 } from "./dateUtils.js";
 import { isWarWin } from "./battleLogUtils.js";
+import {
+  countedWeekDecks,
+  isFullWeek,
+  weekMaxDecks,
+} from "./warStandings.js";
 
 // ── Helpers privés ────────────────────────────────────────────
+
+/** "12/16", ou "12/12" si la ligne d'arrivée a été franchie avant le J4. */
+function formatWeekDecks(week) {
+  const max = weekMaxDecks(week);
+  return `${Math.min(week.decksUsed || 0, max)}/${max}`;
+}
 
 function frNum(n) {
   return Number(n ?? 0).toLocaleString("fr-FR");
@@ -144,8 +155,9 @@ export function summarizePointsPerDeckWeeks(weeks, maxWeeks = 3) {
       (w) => !w?.isCurrent && !w?.ignored && typeof w?.decksUsed === "number",
     )
     .slice(0, maxWeeks);
+  // Les decks joués après la ligne d'arrivée ne rapportent aucun point.
   const totalDecks = recentWeeks.reduce(
-    (sum, week) => sum + (week.decksUsed || 0),
+    (sum, week) => sum + countedWeekDecks(week),
     0,
   );
   const totalFame = recentWeeks.reduce(
@@ -165,10 +177,11 @@ function summarizeRegularityWeeks(weeks, maxWeeks = 5) {
 
   const windowWeeks = Array.from({ length: maxWeeks }, (_, index) => ({
     decksUsed: recentWeeks[index]?.decksUsed ?? 0,
+    maxDecks: weekMaxDecks(recentWeeks[index]),
   }));
-  const completedWeeks = windowWeeks.filter(
-    (week) => (week.decksUsed || 0) >= 16,
-  );
+  // Semaine complète = tous les decks comptabilisés (12 si la ligne
+  // d'arrivée a été franchie au reset du J4, etc.).
+  const completedWeeks = windowWeeks.filter(isFullWeek);
   const fullWeekCount = completedWeeks.length;
   const score = maxWeeks > 0 ? (fullWeekCount / maxWeeks) * 10 : 0;
 
@@ -345,7 +358,7 @@ export function computeWarScore(
   );
   const regularite = r(Math.min(25, regularityWindow.score * 2.5));
   const regularityWindowDetail = regularityWindow.windowWeeks
-    .map((week) => `${Math.min(week.decksUsed || 0, 16)}/16`)
+    .map((week) => formatWeekDecks(week))
     .join(" · ");
 
   // 2. Points / deck (0-10) — efficiency of the 3 most recent completed GDC weeks.
@@ -577,7 +590,7 @@ export function computeWarReliabilityFallback(
   const playedWeeksCount = completedHistoryWeeks.length;
   const activiteGDC = r(Math.min(20, (playedWeeksCount / 5) * 20));
   const warHistoryActivityDetail = playedWeekSlots
-    .map((w) => `${w.decksUsed || 0}/16`)
+    .map((w) => `${w.decksUsed || 0}/${weekMaxDecks(w)}`)
     .join(" · ");
 
   // 2. Last Seen replacement (0-7.5) — shown whenever a lastSeen date is available
@@ -601,7 +614,7 @@ export function computeWarReliabilityFallback(
   const regularityWindow = summarizeRegularityWeeks(warHistory?.weeks ?? [], 5);
   const regulariteGDC = r(Math.min(25, regularityWindow.score * 2.5));
   const regulariteGDCDetail = regularityWindow.windowWeeks
-    .map((week) => `${Math.min(week.decksUsed || 0, 16)}/16`)
+    .map((week) => formatWeekDecks(week))
     .join(" · ");
 
   // 3c. Points / deck (0-10) — River Race efficiency on the 3 most recent completed weeks.

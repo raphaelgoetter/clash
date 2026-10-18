@@ -1597,6 +1597,8 @@ function renderPlayerResults(data) {
         const isCurrentRow = !!w.isCurrent;
         const weekIndex = isCurrentRow ? 0 : ++prevIndex;
         const gdcCount = Number(w.decksUsed) || 0;
+        // 16, ou moins si la ligne d'arrivée a été franchie avant le J4
+        const maxDecks = Number.isFinite(w.maxDecks) ? w.maxDecks : 16;
         // Pour les semaines à 0 decks issues du race log, le clan enregistré peut
         // être incorrect (transfert mid-race) → on ne l'affiche pas.
         const clanName = w.transferRisk
@@ -1610,11 +1612,12 @@ function renderPlayerResults(data) {
           clan: clanName,
           clanTag,
           gdc: gdcCount,
+          maxDecks,
           transferRisk: !!w.transferRisk,
           style:
             gdcCount === 0
               ? "empty-week"
-              : gdcCount < 16
+              : gdcCount < maxDecks
                 ? "quasi-empty-week"
                 : gdcCount > 16
                   ? "overfull-week"
@@ -1747,7 +1750,9 @@ function renderPlayerResults(data) {
           </tr>
         `;
           }
-          let badge = rawGdc === 0 ? "❌" : rawGdc < 16 ? "⚠️" : "✅";
+          const maxDecks = r.maxDecks ?? 16;
+          let badge =
+            rawGdc === 0 ? "❌" : rawGdc < maxDecks ? "⚠️" : "✅";
           if (r.isCurrentClan) {
             badge = "";
           } else if (idx === finalRows.length - 1) {
@@ -2054,6 +2059,7 @@ function renderCurrentWarCard(
     days,
     arrivedMidWar,
     arrivedOnDay,
+    countedDays = 4,
   } = warData;
 
   // If we have snapshot data, prefer it for totals/daily counts (because battle log can be incomplete).
@@ -2079,8 +2085,10 @@ function renderCurrentWarCard(
   // per-day snapshot when available.
   const totalDecksUsed = rawTotal;
 
-  const computedMaxElapsed = (daysFromThu + 1) * 4;
-  const computedMaxWeek = 16;
+  // Ligne d'arrivée franchie : les journées suivantes ne sont plus attendues
+  const computedMaxElapsed = Math.min(daysFromThu + 1, countedDays) * 4;
+  const computedMaxWeek = countedDays * 4;
+  const raceWonNote = daysFromThu >= countedDays ? FINISH_LINE_NOTE : "";
 
   const pctFill = Math.min(
     100,
@@ -2154,6 +2162,7 @@ function renderCurrentWarCard(
     .map((d, i) => {
       const cls = d.isFuture ? "future" : d.isToday ? "today" : "past";
       const icon = d.isFuture ? " —" : d.isToday ? " ▶" : "";
+      if (d.notCounted) return notCountedChipHtml(d, cls, icon);
 
       const snapshotVal = snapDays?.[i];
       const liveVal = d.liveCount ?? null;
@@ -2218,7 +2227,7 @@ function renderCurrentWarCard(
     `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
     `</div>` +
     `<div class="war-progress-meta">` +
-    `Jour ${dayNum} de 4` +
+    `Jour ${dayNum} de 4${raceWonNote}` +
     `</div>` +
     `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">Hier à cette heure : ${decksYesterdayAtThisHour} decks</div>` : ""}` +
     `${progressNoteHtml}` +
@@ -2226,6 +2235,13 @@ function renderCurrentWarCard(
     `${sourceHintHtml}` +
     `${dayChipsHtml}` +
     `</div>`;
+}
+
+// Ligne d'arrivée franchie : journée sans aucun point, donc non attendue.
+const FINISH_LINE_NOTE = " (ligne d'arrivée franchie)";
+
+function notCountedChipHtml(d, cls, icon) {
+  return `<span class="war-day-chip ${cls}">${translateWarDayLabel(d.label)}${icon} <span class="chip-snap">non comptabilisé</span></span>`;
 }
 
 // ── Clan war mini-colonne (clan table) ───────────────────────────────
@@ -2375,6 +2391,14 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   card.classList.remove("hidden");
   loadedClanSections.uncomplete = true;
   const players = uncomplete.players.slice().sort((a, b) => a.decks - b.decks);
+  // 12 si la ligne d'arrivée a été franchie au reset du J4, 16 sinon
+  const maxDecks = uncomplete.maxDecks ?? 16;
+  const cardDesc = card.querySelector(".card-desc");
+  if (cardDesc)
+    cardDesc.textContent =
+      maxDecks < 16
+        ? `Liste des joueurs du clan qui n'ont pas complété les ${maxDecks} decks comptabilisés lors de la dernière Guerre de clans (ligne d'arrivée franchie, journées suivantes non comptabilisées)`
+        : "Liste des joueurs du clan qui n'ont pas complété les 16 decks lors de la dernière Guerre de clans";
 
   // show a global warning if any player is still using warlog data (not snapshot)
   // or if snapshots do not cover all 4 GDC days.
@@ -2480,7 +2504,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
   const presentRegular = present.filter((p) => !p.joinedThisWeek);
 
   if (present.length === 0 && departed.length === 0) {
-    listEl.innerHTML = `<li class="text-muted">${"Tout le monde a complété 16 decks 👍"}</li>`;
+    listEl.innerHTML = `<li class="text-muted">Tout le monde a complété ${maxDecks} decks 👍</li>`;
   } else {
     let html = "";
     if (presentRegular.length > 0) {
@@ -2492,7 +2516,7 @@ function renderUncompleteCard(uncomplete, prevWeekId = null) {
       html += presentArrived.map(renderPlayerItem).join("");
     }
     if (present.length === 0) {
-      html = `<li class="text-muted">${"Tous les membres du clan ont complété 16 decks 👍"}</li>`;
+      html = `<li class="text-muted">Tous les membres du clan ont complété ${maxDecks} decks 👍</li>`;
     }
     listEl.innerHTML = html;
   }
@@ -2627,6 +2651,7 @@ function renderClanWarCard(
     .map((d) => {
       const cls = d.isFuture ? "future" : d.isToday ? "today" : "past";
       const icon = d.isFuture ? " —" : d.isToday ? " ▶" : "";
+      if (d.notCounted) return notCountedChipHtml(d, cls, icon);
       let detail = "";
       if (!d.isFuture && d.totalCount !== null) {
         const ratio = d.maxCount > 0 ? d.totalCount / d.maxCount : 0;
@@ -2655,7 +2680,7 @@ function renderClanWarCard(
     `<div class="war-progress-fill ${statusCls}" style="width:${pctFill}%"></div>` +
     `</div>` +
     `<div class="war-progress-meta">` +
-    `Jour ${dayNum} de 4` +
+    `Jour ${dayNum} de 4${days[daysFromThu]?.notCounted ? FINISH_LINE_NOTE : ""}` +
     `</div>` +
     `${daysFromThu > 0 && decksYesterdayAtThisHour != null ? `<div class="war-yesterday-hint">Hier à cette heure : ${decksYesterdayAtThisHour} decks</div>` : ""}` +
     `${snapshotDataInvalid ? `<div class="war-progress-warning">⚠ ${"Certaines données de snapshot historique sont manquantes ou incohérentes ; les totaux peuvent être peu fiables."}</div>` : ""}` +
@@ -3270,15 +3295,19 @@ function renderMembersTable(members) {
         ? ""
         : `<td class="discord-col">${m.discord ? "✅" : "-"}</td>`;
 
+      // 16, ou 12 si la ligne d'arrivée a été franchie au reset du J4
+      const lastWarMaxDecks = Number.isFinite(m.lastWarMaxDecks)
+        ? m.lastWarMaxDecks
+        : 16;
       const lastWarDecks = Number.isFinite(m.lastWarDecks)
         ? Math.max(0, Math.min(16, m.lastWarDecks))
         : 0;
       const lastWarDecksColorClass =
-        lastWarDecks >= 16
+        lastWarDecks >= lastWarMaxDecks
           ? "green"
-          : lastWarDecks >= 12
+          : lastWarDecks >= lastWarMaxDecks - 4
             ? "yellow"
-            : lastWarDecks >= 8
+            : lastWarDecks >= lastWarMaxDecks - 8
               ? "orange"
               : "red";
       const lastWarDecksCell = `<td class="last-war-col"><span class="last-war-decks-badge ${lastWarDecksColorClass}">${lastWarDecks}</span></td>`;

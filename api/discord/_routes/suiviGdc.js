@@ -1426,13 +1426,17 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
         );
         const uncompleteAll = analysis.uncomplete?.players || [];
         const uncomplete = uncompleteAll.filter((p) => p.inClan);
+        // 12 si la ligne d'arrivée a été franchie au reset du J4 (journées
+        // suivantes sans aucun point, donc non attendues), 16 sinon.
+        const maxDecks = analysis.uncomplete?.maxDecks ?? 16;
+        const decksRatio = `${maxDecks}/${maxDecks}`;
 
         if (uncomplete.length === 0) {
           await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `✅ Aucun joueur en fail 16/16 dans ${resolved.name}.`,
+              content: `✅ Aucun joueur en fail ${decksRatio} dans ${resolved.name}.`,
               flags: 64,
             }),
           });
@@ -1474,9 +1478,12 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           });
         }
 
-        const demoteHeader = earlyWinByDay3
-          ? "Joueurs n'ayant pas joué 16/16 decks car il y a eu une victoire anticipée dès le jour 3"
-          : "Joueurs n'ayant pas joué 16/16 decks";
+        const demoteHeader =
+          maxDecks < 16
+            ? `Joueurs n'ayant pas joué ${decksRatio} decks (ligne d'arrivée franchie, journées suivantes non comptabilisées)`
+            : earlyWinByDay3
+              ? "Joueurs n'ayant pas joué 16/16 decks car il y a eu une victoire anticipée dès le jour 3"
+              : "Joueurs n'ayant pas joué 16/16 decks";
         let description = `${demoteHeader}\n${allRows.join("\n")}`;
         // Discord limite les embeds à 4096 caractères pour description
         if (description.length > 4090) {
@@ -1617,14 +1624,22 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           return;
         }
 
+        const { countedWarDaysFromRaceLog } =
+          await import("../../../backend/services/warStandings.js");
+        // Decks attendus par semaine : 16, ou 12 si la ligne d'arrivée a été
+        // franchie au reset du J4 (journées suivantes sans aucun point).
+        let decksPerPlayer = 0;
         const fullSets = weeks.map((w) => {
           const standing = (w.standings || []).find(
             (s) => s.clan?.tag?.toUpperCase() === `#${resolved.tag}`,
           );
           const participants = standing?.clan?.participants ?? [];
+          const maxDecks =
+            countedWarDaysFromRaceLog(standing?.clan, w.createdDate) * 4;
+          decksPerPlayer += maxDecks;
           return new Set(
             participants
-              .filter((p) => (p.decksUsed ?? 0) >= 16)
+              .filter((p) => (p.decksUsed ?? 0) >= maxDecks)
               .map((p) => p.tag.toUpperCase()),
           );
         });
@@ -1664,9 +1679,6 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           .sort((a, b) =>
             a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
           );
-
-        // 16 decks/semaine × nombre de semaines de la saison = decks attendus par joueur
-        const decksPerPlayer = weeks.length * 16;
 
         let description;
         if (players.length === 0) {
@@ -2078,7 +2090,11 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
               const decksLine = recent
                 .map((w) => {
                   const deckCount = Number(w.decksUsed || 0);
-                  const badge = deckUsageBadge(deckCount, Boolean(w.ignored));
+                  const badge = deckUsageBadge(
+                    deckCount,
+                    Boolean(w.ignored),
+                    w.maxDecks,
+                  );
                   return `${badge} ${String(deckCount).padStart(2, " ")}`;
                 })
                 .join("   ");

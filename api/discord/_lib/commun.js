@@ -110,11 +110,13 @@ export function parseBattleTimestamp(value) {
   return null;
 }
 
-export function deckUsageBadge(decksUsed, ignored = false) {
+// maxDecks : 16, ou moins si la ligne d'arrivée a été franchie avant le J4
+// (champ `maxDecks` des semaines de warHistory).
+export function deckUsageBadge(decksUsed, ignored = false, maxDecks = 16) {
   if (ignored) return "⚪";
   if (typeof decksUsed !== "number" || Number.isNaN(decksUsed)) return "❔";
-  if (decksUsed >= 16) return "<:success:1499002702208958577>";
-  if (decksUsed >= 12) return "<:warning:1499002725965500577>";
+  if (decksUsed >= maxDecks) return "<:success:1499002702208958577>";
+  if (decksUsed >= maxDecks - 4) return "<:warning:1499002725965500577>";
   return "<:error:1499002755841265826>";
 }
 

@@ -27,8 +27,91 @@
 // "Colisée" (+100/+50/0/-25/-50/-100).
 // ============================================================
 
+import {
+  MS_PER_DAY,
+  parseClashDate,
+  warDayIndexFromPeriodIndex,
+} from "./dateUtils.js";
+
 /** Ligne d'arrivée de la course de bateau en GDC normale (constatée à l'identique sur plusieurs semaines/clans). */
 export const RACE_FINISH_LINE = 10000;
+
+/** Journées de GDC par semaine et decks par journée. */
+export const WAR_DAYS_PER_WEEK = 4;
+export const DECKS_PER_WAR_DAY = 4;
+export const MAX_DECKS_PER_WEEK = WAR_DAYS_PER_WEEK * DECKS_PER_WAR_DAY;
+
+/**
+ * Retourne le timestamp (ms) de franchissement de la ligne d'arrivée, ou null
+ * si le clan n'a pas fini (l'API renvoie alors "19691231T235959.000Z").
+ */
+export function parseFinishTimeMs(finishTime) {
+  if (!finishTime) return null;
+  const ms = parseClashDate(finishTime)?.getTime();
+  return Number.isFinite(ms) && ms > Date.UTC(2000, 0, 1) ? ms : null;
+}
+
+/**
+ * Nombre de journées comptabilisées (1-4) d'une semaine terminée du
+ * riverracelog. Le bateau n'avançant qu'au reset, la ligne d'arrivée est
+ * franchie au début d'une journée : les journées jouées ensuite ne
+ * rapportent plus aucun point (victoire acquise). `createdDate` correspond
+ * au reset de fin du J4 (à quelques minutes près).
+ *
+ * @param {object} standingClan  standings[].clan (finishTime)
+ * @param {string} createdDate   race.createdDate
+ */
+export function countedWarDaysFromRaceLog(standingClan, createdDate) {
+  const finishMs = parseFinishTimeMs(standingClan?.finishTime);
+  const endMs = parseClashDate(createdDate)?.getTime();
+  if (finishMs == null || !Number.isFinite(endMs)) return WAR_DAYS_PER_WEEK;
+  const daysAfterFinish = Math.round((endMs - finishMs) / MS_PER_DAY);
+  return Math.min(
+    WAR_DAYS_PER_WEEK,
+    Math.max(1, WAR_DAYS_PER_WEEK - daysAfterFinish),
+  );
+}
+
+/**
+ * Decks maximum comptabilisés d'une semaine : 16, ou moins si la ligne
+ * d'arrivée a été franchie avant le J4 (champ `maxDecks` des semaines).
+ */
+export function weekMaxDecks(week) {
+  return Number.isFinite(week?.maxDecks) ? week.maxDecks : MAX_DECKS_PER_WEEK;
+}
+
+/** Vrai si le joueur a joué tous les decks comptabilisés de la semaine. */
+export function isFullWeek(week) {
+  return (week?.decksUsed ?? 0) >= weekMaxDecks(week);
+}
+
+/**
+ * Decks utiles d'une semaine : ceux joués après la ligne d'arrivée ne
+ * rapportent aucun point et faussent les ratios points/deck.
+ */
+export function countedWeekDecks(week) {
+  return Math.min(week?.decksUsed ?? 0, weekMaxDecks(week));
+}
+
+/**
+ * Nombre de journées comptabilisées (1-4) de la semaine en cours
+ * (/currentriverrace). Ligne franchie au reset d'une journée → cette journée
+ * et les suivantes ne comptent plus.
+ *
+ * @param {object} currentRace  /currentriverrace (clan.finishTime, periodIndex)
+ * @param {number} [nowMs]
+ */
+export function countedWarDaysFromCurrentRace(currentRace, nowMs = Date.now()) {
+  const finishMs = parseFinishTimeMs(currentRace?.clan?.finishTime);
+  const dayIndex = warDayIndexFromPeriodIndex(currentRace?.periodIndex);
+  if (finishMs == null || dayIndex == null) return WAR_DAYS_PER_WEEK;
+  // Nombre de resets depuis le franchissement, celui-ci inclus.
+  const resetsSinceFinish = 1 + Math.floor((nowMs - finishMs) / MS_PER_DAY);
+  return Math.min(
+    WAR_DAYS_PER_WEEK,
+    Math.max(1, dayIndex + 1 - resetsSinceFinish),
+  );
+}
 
 const MAX_WEEKLY_DECKS = 800; // 50 membres × 4 decks × 4 jours
 const MAX_FAME_PER_DECK = 200;

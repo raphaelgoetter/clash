@@ -135,7 +135,7 @@ const FR_VERDICTS = {
 function formatDeckHistory(weeks) {
   return weeks
     .map((w) => {
-      const badge = deckUsageBadge(w.decksUsed, w.ignored);
+      const badge = deckUsageBadge(w.decksUsed, w.ignored, w.maxDecks);
       const deck = String(w.decksUsed ?? "-");
       return `${badge} ${deck.padStart(2, " ")}`;
     })

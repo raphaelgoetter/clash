@@ -86,7 +86,11 @@ function getStatsClanPeriodForMember(member, scenarioKey) {
 
 function getStatsClanMetrics(member, scenarioKey) {
   const period = getStatsClanPeriodForMember(member, scenarioKey);
-  const decksUsed = Number(period?.decksUsed);
+  // Decks joués après la ligne d'arrivée : aucun point, exclus du ratio.
+  const decksUsed = Math.min(
+    Number(period?.decksUsed),
+    Number.isFinite(period?.maxDecks) ? period.maxDecks : 16,
+  );
   const fame = Number(period?.fame);
 
   return {
@@ -1027,9 +1031,10 @@ export async function routeClan(body, res) {
               );
               arrivalDayIndex = Math.min(3, Math.max(0, diffDays));
             }
+            // Journées après la ligne d'arrivée : non attendues
             const completedDaysCount = Math.max(
               0,
-              wd.daysFromThu - arrivalDayIndex,
+              Math.min(wd.daysFromThu, wd.countedDays ?? 4) - arrivalDayIndex,
             );
             const completedMax = completedDaysCount * 4;
             const completedUsed = Math.max(

@@ -8,7 +8,12 @@ import {
   isRaceFinishedBeforeDay,
   parseFinishTimeMs,
 } from "../../scripts/notifyWarSummary.js";
-import { computeGroupStandings } from "../../backend/services/warStandings.js";
+import {
+  computeGroupStandings,
+  countedWarDaysFromCurrentRace,
+  countedWarDaysFromRaceLog,
+  isFullWeek,
+} from "../../backend/services/warStandings.js";
 
 const FIXTURE = [
   {
@@ -323,5 +328,39 @@ assert.strictEqual(isRaceFinishedBeforeDay(finishMs, day4), true);
 assert.strictEqual(isRaceFinishedBeforeDay(finishMs, day3), false);
 assert.strictEqual(isRaceFinishedBeforeDay(null, day4), false);
 console.log("isRaceFinishedBeforeDay passed");
+
+// Decks comptabilisés : ligne franchie au reset du J4 → 3 journées (12 decks)
+assert.strictEqual(
+  countedWarDaysFromRaceLog(
+    { finishTime: "20261011T094604.000Z" },
+    "20261012T094647.000Z",
+  ),
+  3,
+);
+assert.strictEqual(
+  countedWarDaysFromRaceLog(
+    { finishTime: "19691231T235959.000Z" },
+    "20261012T094647.000Z",
+  ),
+  4,
+);
+const finishedRace = {
+  periodIndex: 13, // J4 de la semaine 2
+  clan: { finishTime: "20261018T094603.000Z" },
+};
+assert.strictEqual(
+  countedWarDaysFromCurrentRace(
+    finishedRace,
+    Date.parse("2026-10-18T12:16:00.000Z"),
+  ),
+  3,
+);
+assert.strictEqual(
+  countedWarDaysFromCurrentRace({ periodIndex: 13, clan: {} }),
+  4,
+);
+assert.strictEqual(isFullWeek({ decksUsed: 12, maxDecks: 12 }), true);
+assert.strictEqual(isFullWeek({ decksUsed: 12 }), false);
+console.log("countedWarDays passed");
 
 console.log("notifyWarSummary.duels.test.js passed");

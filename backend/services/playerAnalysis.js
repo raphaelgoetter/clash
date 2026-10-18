@@ -30,6 +30,11 @@ import {
   TOUR_REQ,
 } from "./collectionConstants.js";
 import {
+  countedWarDaysFromCurrentRace,
+  DECKS_PER_WAR_DAY,
+  isFullWeek,
+} from "./warStandings.js";
+import {
   filterWarBattles,
   expandDuelRounds,
   categorizeBattleLog,
@@ -261,6 +266,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
       currentRaceMeta = {
         state: currentRace?.state ?? null,
         periodIndex: currentRace?.periodIndex ?? null,
+        countedDays: countedWarDaysFromCurrentRace(currentRace),
       };
       analysis.warHistory = await buildFamilyWarHistory(
         player.tag,
@@ -281,7 +287,7 @@ export async function getPlayerAnalysis(tag, discordLinked = false) {
       const normalizedCurrentClan = player.clan?.tag
         ? player.clan.tag.replace(/^#/, "").toUpperCase()
         : null;
-      const hasFullWeek = prevWeeks.some((w) => (w.decksUsed ?? 0) >= 16);
+      const hasFullWeek = prevWeeks.some(isFullWeek);
       const hasFamilyWeek = prevWeeks.some((w) => {
         const normalized = (w.clanTag ?? "").replace(/^#/, "").toUpperCase();
         return FAMILY_CLAN_TAGS.includes(normalized);
@@ -480,8 +486,9 @@ export function analyzeClanMembers(members) {
  *
  * @param {object[]} battleLog
  * @param {number|null} raceTotalDecks  decksUsed depuis currentriverrace (source fiable), ou null
- * @param {object|null} raceMeta        Métadonnées de course ({ state, periodIndex })
- * @returns {{ days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, isReliableTotal }|null}
+ * @param {object|null} raceMeta        Métadonnées de course ({ state, periodIndex, countedDays? })
+ *                                      ou /currentriverrace brut (clan.finishTime lu directement)
+ * @returns {{ days, totalDecksUsed, maxDecksElapsed, maxDecksWeek, countedDays, isReliableTotal }|null}
  */
 export function buildCurrentWarDays(
   battleLog,
@@ -564,8 +571,14 @@ export function buildCurrentWarDays(
     if (day) day.count++;
   }
 
-  const maxDecksElapsed = (daysFromThu + 1) * 4;
-  const maxDecksWeek = 16;
+  // Ligne d'arrivée franchie : les journées suivantes ne comptent plus
+  // (aucun point crédité), elles ne sont donc plus attendues.
+  const countedDays =
+    raceMeta?.countedDays ?? countedWarDaysFromCurrentRace(raceMeta);
+  for (const [i, day] of days.entries()) day.notCounted = i >= countedDays;
+  const maxDecksElapsed =
+    Math.min(daysFromThu + 1, countedDays) * DECKS_PER_WAR_DAY;
+  const maxDecksWeek = countedDays * DECKS_PER_WAR_DAY;
 
   const isReliableTotal = raceTotalDecks !== null;
   const totalDecksUsed = isReliableTotal
@@ -596,6 +609,7 @@ export function buildCurrentWarDays(
     totalDecksUsed,
     maxDecksElapsed,
     maxDecksWeek,
+    countedDays,
     isReliableTotal,
     daysFromThu,
     warStartMs,

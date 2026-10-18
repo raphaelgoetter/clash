@@ -139,15 +139,18 @@ export function renderWarHistoryChart(weeks = []) {
 
   // Display oldest → newest (left → right)
   const ordered = [...(weeks || [])].reverse();
+  // 16, ou moins si la ligne d'arrivée a été franchie avant le J4
+  const maxDecksOf = (w) => (Number.isFinite(w?.maxDecks) ? w.maxDecks : 16);
   const labels = ordered.map((w) => {
     const deckInfo =
-      typeof w.decksUsed === "number" ? ` (${w.decksUsed}/16)` : "";
+      typeof w.decksUsed === "number" ? ` (${w.decksUsed}/${maxDecksOf(w)})` : "";
     let badge = "";
     if (w.ignored || w.isCurrent) {
       // ignored or live/current weeks are shown in neutral grey and do not get a red failure icon
       badge = "⚪ ";
     } else if (typeof w.decksUsed === "number") {
-      badge = w.decksUsed >= 16 ? "✅" : w.decksUsed >= 12 ? "⚠️" : "❌";
+      const max = maxDecksOf(w);
+      badge = w.decksUsed >= max ? "✅" : w.decksUsed >= max - 4 ? "⚠️" : "❌";
       badge += " ";
     }
     return `${badge}${w.label}${deckInfo}`;
@@ -198,7 +201,7 @@ export function renderWarHistoryChart(weeks = []) {
               const row = ordered[ctx.dataIndex];
               const deckInfo =
                 row && row.decksUsed != null
-                  ? ` — ${row.decksUsed}/16 decks`
+                  ? ` — ${row.decksUsed}/${maxDecksOf(row)} decks`
                   : "";
               const ignoreNote = row && row.ignored ? " (ignorée)" : "";
               return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString("fr-FR")}${deckInfo}${ignoreNote}`;

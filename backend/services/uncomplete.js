@@ -1,15 +1,17 @@
 // ============================================================
 // uncomplete.js — Helper for listing players who did not complete
-// 16 decks in the most recent River Race. Used by the clan analysis route.
+// all counted decks (16, or fewer when the finish line was crossed before
+// day 4) in the most recent River Race. Used by the clan analysis route.
 // ============================================================
 
 import { fetchRaceLog } from './clashApi.js';
 import { filterWarBattles, expandDuelRounds } from './battleLogUtils.js';
 import { warDayKey } from './dateUtils.js';
+import { countedWarDaysFromRaceLog, DECKS_PER_WAR_DAY } from './warStandings.js';
 
 /**
- * Return a list of players in the given clan who recorded fewer than 16
- * decks during the last completed River Race week.
+ * Return a list of players in the given clan who recorded fewer than the
+ * counted decks (`maxDecks`) during the last completed River Race week.
  *
  * @param {string} clanTag  Clan tag (with or without '#')
  * @param {object[]} members  Array of clan member objects as returned by
@@ -18,7 +20,7 @@ import { warDayKey } from './dateUtils.js';
  *                            tags to their raw battle log (used to compute
  *                            per-day deck breakdown). If omitted, only the
  *                            total decks count will be included.
- * @returns {Promise<{ players: {name:string,tag:string,role:string,decks:number,inClan:boolean,daily?:object}[] }>} 
+ * @returns {Promise<{ maxDecks: number, players: {name:string,tag:string,role:string,decks:number,inClan:boolean,daily?:object}[] }>}
  */
 export async function computeUncomplete(clanTag, members, battleLogsByTag = {}, raceLog = null) {
   // utilise le raceLog fourni si disponible, sinon le charge (compatibilité)
@@ -46,9 +48,14 @@ export async function computeUncomplete(clanTag, members, battleLogsByTag = {}, 
     return { players: [] };
   }
 
+  // Ligne d'arrivée franchie avant le J4 : les journées suivantes ne
+  // rapportent aucun point et ne sont donc pas attendues (12 decks, etc.).
+  const maxDecks =
+    countedWarDaysFromRaceLog(standing.clan, lastRace.createdDate) *
+    DECKS_PER_WAR_DAY;
   const participants = standing.clan.participants;
   const uncompletePlayers = participants
-    .filter((p) => (p.decksUsed || 0) < 16)
+    .filter((p) => (p.decksUsed || 0) < maxDecks)
     .map((p) => {
       const member = members.find((m) => m.tag === p.tag);
       const base = {
@@ -83,5 +90,5 @@ export async function computeUncomplete(clanTag, members, battleLogsByTag = {}, 
       lateArrival: true,
     }));
 
-  return { players: [...uncompletePlayers, ...lateArrivals] };
+  return { maxDecks, players: [...uncompletePlayers, ...lateArrivals] };
 }

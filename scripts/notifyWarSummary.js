@@ -34,6 +34,7 @@ import {
 import { loadSnapshots } from "../backend/services/snapshot.js";
 import {
   computeGroupStandings,
+  parseFinishTimeMs,
   RACE_FINISH_LINE,
 } from "../backend/services/warStandings.js";
 import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
@@ -520,16 +521,6 @@ const MIN_FAME_PER_DECK = 50;
 // d'une journée (quelques minutes après le reset) signifie que la course était
 // gagnée avant que la journée ne commence.
 const FINISH_AT_RESET_TOLERANCE_MS = 30 * 60 * 1000;
-
-/**
- * Retourne le timestamp (ms) de franchissement de la ligne d'arrivée, ou null
- * si le clan n'a pas fini (l'API renvoie alors "19691231T235959.000Z").
- */
-function parseFinishTimeMs(finishTime) {
-  if (!finishTime) return null;
-  const ms = parseClashDate(finishTime).getTime();
-  return Number.isFinite(ms) && ms > Date.UTC(2000, 0, 1) ? ms : null;
-}
 
 /**
  * Vrai si la course était déjà gagnée (ligne d'arrivée franchie) avant le
