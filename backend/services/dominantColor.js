@@ -66,6 +66,7 @@ export const HUE_MERGE_DEGREES = 22; // écart de teinte en dessous duquel deux 
 const GREY_LIGHTNESS_MERGE = 0.14; // pour les clusters peu saturés, écart de luminosité (0-1) toléré pour fusionner
 
 export const MAX_TOP1_SHARE = 0.6; // au-delà, la manche est jugée trop facile
+export const MIN_TOP_GAP = 0.05; // en dessous (écart de part entre 1re et 2e couleur), départager à l'œil relève du pile ou face
 export const MIN_HUE_DEGREES = 25; // écart de teinte (0-360°) en dessous duquel deux couleurs sont "la même"
 export const MIN_SATURATION = 0.15; // en dessous, une couleur est jugée grise/neutre (teinte non fiable)
 const FRAME_MIN_ALPHA = 200; // le cadre est un anneau plein ; en dessous, c'est un pixel d'anti-aliasing du bord

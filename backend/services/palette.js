@@ -371,12 +371,21 @@ export function getCorrectLetter(order) {
   return LETTERS[order.indexOf(0)];
 }
 
-// Barème volontairement plat (pas de bonus de rapidité ni de pénalité de
-// tentative comme Zoom) : un seul clic verrouille tout, correct ou non — il
-// n'y a jamais de "tentative incorrecte suivie d'une autre" à pénaliser, et
-// Raphael a préféré la simplicité à un calcul de rapidité après le 1er test.
-export function computeScore(correct) {
-  return correct ? 1 : 0;
+// Rang (0-3) de la couleur choisie dans entry.colors (trié par share
+// décroissant) : 0 = dominante, 3 = la moins présente. -1 si lettre invalide.
+export function getAnswerRank(order, letter) {
+  const idx = LETTERS.indexOf(letter);
+  return idx === -1 ? -1 : order[idx];
+}
+
+// Barème dégressif selon le rang de la couleur choisie (décision de Raphael
+// le 2026-10-18, l'œil humain départageant mal des surfaces proches) :
+// dominante = 4 pts, 2e = 2 pts, 3e = 1 pt, 4e = 0. Toujours un seul clic,
+// sans bonus de rapidité.
+export const RANK_POINTS = [4, 2, 1, 0];
+
+export function computeScore(rank) {
+  return RANK_POINTS[rank] ?? 0;
 }
 
 // ── Réponse à essai unique ─────────────────────────────────────────
@@ -389,12 +398,13 @@ export async function readParticipant(gameId, discordId) {
   return fromJson(raw);
 }
 
-export async function recordAnswer(gameId, discordId, username, letter, correct, score) {
+export async function recordAnswer(gameId, discordId, username, letter, correct, score, rank) {
   const participant = {
     discordId,
     username,
     letter,
     correct,
+    rank,
     score,
     answeredAt: new Date().toISOString(),
   };
@@ -415,7 +425,7 @@ export async function recordAnswer(gameId, discordId, username, letter, correct,
 // n'affecte pas le classement (ZINCRBY 0) mais laisse une trace de
 // participation pour le récap de fin de saison.
 
-export async function archiveAnswer(state, entry, discordId, username, score, answeredAt) {
+export async function archiveAnswer(state, entry, discordId, username, score, answeredAt, rank) {
   const archKey = archivedKey(state.seasonId);
   const field = `${state.gameId}:${discordId}`;
 
@@ -427,6 +437,7 @@ export async function archiveAnswer(state, entry, discordId, username, score, an
     postedAt: state.startedAt,
     discordId,
     pseudo: username,
+    rank,
     score,
     solvedAt: answeredAt,
   };

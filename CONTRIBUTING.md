@@ -1111,6 +1111,8 @@ Validé après une phase de test : depuis la saison 137, Palette tourne **en alt
 
 `backend/services/dominantColor.js` (k-means en espace Lab, cadre décoratif de rareté exclu par comparaison inter-cartes, voir les pièges documentés en commentaire dans ce fichier) et `scripts/generatePaletteCatalog.js` (génère `data/jeux-visuels/palette/palette.json`, télécharge `data/jeux-visuels/palette/images/` et `data/jeux-visuels/palette/highlights/`, applique `data/jeux-visuels/palette/manualOverrides.json` en dernier). Usage ponctuel (`npm run palette:catalog`), jamais dans le flux de manche.
 
+Une carte n'est jouable que si sa couleur dominante fait au plus 60 % (`MAX_TOP1_SHARE`) **et** dépasse la 2e couleur d'au moins 5 points de part (`MIN_TOP_GAP`, `excludedReason: "top1-top2<5%"`, depuis le 2026-10-18 : en dessous, l'œil ne peut pas départager deux surfaces). Ce filtre prime aussi sur `forcePlayable`. ⚠️ Une régénération complète peut retélécharger des images et donc recalculer le masque de cadre de toute leur rareté : les couleurs d'autres cartes peuvent changer. À éviter en cours de saison Palette (la bonne réponse d'une manche en cours pourrait bouger).
+
 ### Les 4 propositions : mélange par manche, pas par carte
 
 Contrairement au reste du jeu (une image = un contenu fixe), Palette doit afficher les 4 couleurs de `entry.colors` dans un ordre mélangé différent à chaque manche (sinon la couleur dominante serait toujours "A"). Discord ne permet aucune couleur personnalisée sur un bouton (5 styles fixes) : les 4 pastilles colorées sont donc dessinées **dans l'image** (voir `backend/services/paletteImage.js`), les boutons Discord ne portent que les lettres A/B/C/D.
@@ -1129,7 +1131,7 @@ Deux répertoires source distincts à ne jamais confondre (même nom de fichier 
 
 ### Barème (Palette)
 
-`computeScore(correct)` (`backend/services/palette.js`) : **1 pt** si correct, **0** sinon — volontairement plat (pas de bonus de rapidité ni de pénalité de tentative comme Zoom), décision explicite après le 1er test réel. Pas de pénalité de tentative possible techniquement : un seul clic verrouille la réponse, correcte ou non, il n'y a jamais de "tentative incorrecte suivie d'une autre" à pénaliser.
+`computeScore(rank)` (`backend/services/palette.js`) : barème dégressif selon le rang de la couleur choisie (`getAnswerRank`, index dans `entry.colors` trié par part décroissante) : dominante = **4 pts**, 2e = **2 pts**, 3e = **1 pt**, 4e = **0** (`RANK_POINTS`, depuis le 2026-10-18 : l'œil départage mal des surfaces proches, une réponse « presque juste » rapporte donc quelque chose). Pas de bonus de rapidité. Le `rank` est stocké dans `palette:participants:<gameId>` et `palette:archived:<seasonId>` ; les archives antérieures (barème 1/0) n'en ont pas, `/palette` retombe alors sur `score > 0` pour savoir si la réponse était la dominante. Pas de pénalité de tentative possible techniquement : un seul clic verrouille la réponse, correcte ou non, il n'y a jamais de "tentative incorrecte suivie d'une autre" à pénaliser.
 
 ### Réponse à essai unique
 
@@ -1146,7 +1148,7 @@ Identique à Zoom dans sa forme (voir [Récapitulatif de fin de saison](#récapi
 | `palette:state`                       | STRING (JSON) | Manche active (`gameId`, `seasonId`, `seasonManche`, ...)     |
 | `palette:order:<gameId>`              | STRING (JSON) | Permutation A→D → index couleur, permanent (anti-spoiler)    |
 | `palette:play_order`                  | STRING (JSON) | Ordre de tirage des cartes jouables, permanent                |
-| `palette:participants:<gameId>`       | HASH          | `discordId → { letter, correct, score, answeredAt }`         |
+| `palette:participants:<gameId>`       | HASH          | `discordId → { letter, correct, rank, score, answeredAt }`   |
 | `palette:season:<seasonId>`           | ZSET          | Classement de saison (score cumulé)                            |
 | `palette:season:<seasonId>:pseudos`   | HASH          | Pseudos figés pour le classement                                |
 | `palette:season:<seasonId>:manche_seq`/`manche_numbers` | STRING/HASH | Numérotation des manches de la saison         |

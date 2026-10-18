@@ -43,7 +43,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { PNG } from "pngjs";
 import { fetchCards } from "../backend/services/clashApi.js";
-import { extractDominantColors, buildFrameMask, buildHighlightOverlay } from "../backend/services/dominantColor.js";
+import { extractDominantColors, buildFrameMask, buildHighlightOverlay, MIN_TOP_GAP } from "../backend/services/dominantColor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
@@ -203,6 +203,14 @@ async function main() {
       playable = false;
       excludedReason = "manual";
     }
+    // Écart trop serré entre les 2 premières couleurs (décision de Raphael le
+    // 2026-10-18) : l'œil humain ne peut pas départager deux surfaces quasi
+    // égales. Prime aussi sur forcePlayable, qui ne servait qu'à corriger de
+    // fausses détections "monochrome".
+    if (playable && colors[0].share - colors[1].share < MIN_TOP_GAP) {
+      playable = false;
+      excludedReason = "top1-top2<5%";
+    }
 
     nextCatalog.push({
       id: card.id,
@@ -237,11 +245,12 @@ async function main() {
   const tooEasyCount = nextCatalog.filter((e) => e.excludedReason === "top1>60%").length;
   const monochromeCount = nextCatalog.filter((e) => e.excludedReason === "monochrome").length;
   const manualCount = nextCatalog.filter((e) => e.excludedReason === "manual").length;
+  const tightGapCount = nextCatalog.filter((e) => e.excludedReason === "top1-top2<5%").length;
 
   console.log("");
   console.log(`Catalogue écrit : ${PALETTE_JSON_PATH}`);
   console.log(`  ${nextCatalog.length} cartes au total, dont ${playableCount} jouables.`);
-  console.log(`  Exclues : ${tooEasyCount} trop faciles, ${monochromeCount} trop monochromes, ${manualCount} manuellement.`);
+  console.log(`  Exclues : ${tooEasyCount} trop faciles, ${monochromeCount} trop monochromes, ${tightGapCount} à écart trop serré, ${manualCount} manuellement.`);
   console.log(`  ${downloaded} téléchargées, ${unchanged} réutilisées, ${pruned.length} retirées, ${skipped} ignorées.`);
   console.log(`  Overrides manuels : ${manualOverrides.forcePlayable.size} forcées jouables, ${manualOverrides.forceExcluded.size} forcées exclues.`);
 }

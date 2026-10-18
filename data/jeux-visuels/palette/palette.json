@@ -29,8 +29,8 @@
       }
     ],
     "correctHex": "#A26948",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "archers",
@@ -128,8 +128,8 @@
       }
     ],
     "correctHex": "#67BF6A",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "balloon",
@@ -161,8 +161,8 @@
       }
     ],
     "correctHex": "#B2D0C6",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "bandit",
@@ -425,8 +425,8 @@
       }
     ],
     "correctHex": "#F3672A",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "bomb-tower",
@@ -458,8 +458,8 @@
       }
     ],
     "correctHex": "#475069",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "bomber",
@@ -788,8 +788,8 @@
       }
     ],
     "correctHex": "#25475A",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "electro-giant",
@@ -1745,8 +1745,8 @@
       }
     ],
     "correctHex": "#9A5032",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "golem",
@@ -1877,8 +1877,8 @@
       }
     ],
     "correctHex": "#FBBF3F",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "hog-rider",
@@ -2009,8 +2009,8 @@
       }
     ],
     "correctHex": "#BAD7F4",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "ice-wizard",
@@ -2735,8 +2735,8 @@
       }
     ],
     "correctHex": "#AA6F5F",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "night-witch",
@@ -2966,8 +2966,8 @@
       }
     ],
     "correctHex": "#EFADF3",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "ram-rider",
@@ -3032,8 +3032,8 @@
       }
     ],
     "correctHex": "#3E3C3C",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "rocket",
@@ -3065,8 +3065,8 @@
       }
     ],
     "correctHex": "#D4E6E2",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "ronin",
@@ -3329,8 +3329,8 @@
       }
     ],
     "correctHex": "#694876",
-    "playable": true,
-    "excludedReason": null
+    "playable": false,
+    "excludedReason": "top1-top2<5%"
   },
   {
     "id": "skeleton-barrel",

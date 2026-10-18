@@ -18,7 +18,7 @@ import {
   readState,
   writeState,
   startNewGame,
-  checkAnswer,
+  getAnswerRank,
   getCorrectLetter,
   computeScore,
   recordAnswer,
@@ -68,7 +68,7 @@ function buildPaletteEmbed({
       "",
       "4 couleurs proposées (A, B, C, D) : laquelle est la **dominante**, c'est-à-dire celle qui recouvre la plus grande surface de l'illustration ?",
       "",
-      "**Barème** : bonne réponse = **1 pt**, mauvaise réponse = 0 pt.",
+      "**Barème** : dominante = **4 pts**, 2e couleur = **2 pts**, 3e = **1 pt**, 4e = 0 pt.",
       "**Un seul essai** : ton premier clic est définitif !",
     ].join("\n"),
     image: {
@@ -364,8 +364,9 @@ export async function handleAnswerButton(
     }
 
     const order = await readRoundOrder(gameId);
-    const correct = checkAnswer(order, letter);
-    const score = computeScore(correct);
+    const rank = getAnswerRank(order, letter);
+    const correct = rank === 0;
+    const score = computeScore(rank);
 
     const { participant, alreadyAnswered } = await recordAnswer(
       gameId,
@@ -374,6 +375,7 @@ export async function handleAnswerButton(
       letter,
       correct,
       score,
+      rank,
     );
     if (alreadyAnswered) {
       await postEphemeral(
@@ -393,11 +395,12 @@ export async function handleAnswerButton(
         username,
         score,
         participant.answeredAt,
+        rank,
       );
     const correctLetter = getCorrectLetter(order);
     const resultLine = correct
-      ? `✅ Bonne réponse ! **+${score} pt**`
-      : `❌ Mauvaise réponse (tu avais choisi **${letter}**, c'était **${correctLetter}**)`;
+      ? `✅ Bonne réponse ! **+${score} pts**`
+      : `${score > 0 ? "🟡" : "❌"} Tu as choisi la ${rank + 1}e couleur (**${letter}**), la dominante était **${correctLetter}** : **+${score} pt${score > 1 ? "s" : ""}**`;
 
     // Détail des 4 couleurs (comme prévu à la conception) : le visuel de
     // l'image ne suffit pas seul à convaincre sur un petit écran mobile, le
@@ -406,7 +409,8 @@ export async function handleAnswerButton(
       ? order.map((colorIdx, i) => {
           const c = entry.colors[colorIdx];
           const marker = colorIdx === 0 ? "🏆" : "";
-          return `**${LETTERS[i]}** ${c.hex} : ${Math.round(c.share * 100)}% ${marker}`;
+          const pts = computeScore(colorIdx);
+          return `**${LETTERS[i]}** ${c.hex} : ${Math.round(c.share * 100)}% (${pts} pt${pts > 1 ? "s" : ""}) ${marker}`;
         })
       : [];
 
@@ -437,6 +441,11 @@ export async function handleAnswerButton(
 // indice à afficher — un joueur a répondu (correct ou non) ou n'a pas
 // encore répondu, point final.
 
+// Rang inconnu = réponse archivée sous l'ancien barème (bonne/mauvaise).
+function wrongColorLine(rank) {
+  return rank != null ? `- Tu as choisi la ${rank + 1}e couleur.` : "- Tu t'es trompé de couleur.";
+}
+
 function buildPaletteStatsEmbed({
   pseudo,
   currentSeasonManche,
@@ -444,6 +453,7 @@ function buildPaletteStatsEmbed({
   currentEntryFr,
   currentAnswered,
   currentCorrect,
+  currentRank,
   currentScore,
   totalAnswered,
   correctCount,
@@ -462,9 +472,9 @@ function buildPaletteStatsEmbed({
     lines.push(
       currentCorrect
         ? "- Tu as trouvé la couleur dominante !"
-        : "- Tu t'es trompé de couleur.",
+        : wrongColorLine(currentRank),
     );
-    lines.push(`- Tu as marqué ${currentScore} pt`);
+    lines.push(`- Tu as marqué ${currentScore} pt${currentScore > 1 ? "s" : ""}`);
   } else {
     lines.push("- Tu n'as pas encore répondu à cette manche");
   }
@@ -483,9 +493,9 @@ function buildPaletteStatsEmbed({
       lines.push(
         m.correct
           ? "- Tu as trouvé la couleur dominante !"
-          : "- Tu t'es trompé de couleur.",
+          : wrongColorLine(m.rank),
       );
-      lines.push(`- Tu as marqué ${m.score} pt`);
+      lines.push(`- Tu as marqué ${m.score} pt${m.score > 1 ? "s" : ""}`);
     } else {
       lines.push("- Tu n'as pas joué cette manche");
     }
@@ -556,7 +566,10 @@ export async function handlePaletteStatsCommand(webhookUrl, discordId, username)
             seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
             label: label ?? result?.answer ?? gameId,
             played: !!result,
-            correct: !!result && result.score > 0,
+            // rank absent des archives antérieures au barème dégressif
+            // (2026-10-18) : on retombe alors sur l'ancien critère score > 0.
+            correct: !!result && (result.rank != null ? result.rank === 0 : result.score > 0),
+            rank: result?.rank ?? null,
             score: result?.score ?? 0,
           };
         }),
@@ -574,6 +587,7 @@ export async function handlePaletteStatsCommand(webhookUrl, discordId, username)
       currentEntryFr: currentEntry?.fr ?? state.gameId,
       currentAnswered,
       currentCorrect,
+      currentRank: participant?.rank ?? null,
       currentScore,
       totalAnswered,
       correctCount,
