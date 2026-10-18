@@ -921,6 +921,8 @@ export async function postMarioClash(
       currentManche = await archiveManche({
         vainqueur: ranking[0]?.username || "Personne",
         positionFinale: ranking[0]?.position || 0,
+        // Compté par le bouton "📊 Stats" de /mini-jeux.
+        nbJoueurs: ranking.length,
         resolvedAt: new Date().toISOString(),
       });
     }

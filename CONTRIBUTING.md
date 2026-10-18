@@ -597,7 +597,7 @@ La fonction Discord est séparée de l’application Express principale pour lim
 | `_routes/joueur.js` | `/stats`, `/combats`, `/matchup-gdc`, `/matchup` (+ détail), `/collection` |
 | `_routes/clan.js` | `/combats-clan`, `/trust-clan`, `/champion-history`, `/compare`, `/top-clans`, `/clan`, `/family`, `/stats-clan` et leurs boutons |
 | `_routes/suiviGdc.js` | `/promote`, `/demote`, `/chelem`, `/fail`, `/late`, `/late-ping`, `/top-players`, `/recap` et leurs boutons |
-| `_routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées, `/mini-jeux`, `/mini-jeux-history`) |
+| `_routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées, `/mini-jeux` [boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `backend/services/miniJeuxStats.js` depuis les archives des jeux], `/mini-jeux-history`) |
 | `_routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
 | `_routes/duels.js` | `/blackjack`, `/bang`, `/gobelet` et leurs boutons de duel |
 

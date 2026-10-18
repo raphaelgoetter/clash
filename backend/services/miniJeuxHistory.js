@@ -122,7 +122,7 @@ const MANCHE_SCORE_GAMES = [
   },
   {
     key: "bang",
-    label: "🔫 Bang!",
+    label: "💣 Bang!",
     fetch: () => listBangManches({ limit: Infinity }),
     scoreField: "score",
   },

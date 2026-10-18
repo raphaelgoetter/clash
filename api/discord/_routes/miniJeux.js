@@ -65,6 +65,7 @@ import {
 import {
   handleMiniJeuxCommand,
   handleMiniJeuxParticipation,
+  handleMiniJeuxStats,
 } from "../_handlers/minijeux.js";
 import {
   handleMiniJeuxHistory,
@@ -549,6 +550,14 @@ export async function routeMiniJeux(body, res) {
     runBackground(() =>
       handleMiniJeuxParticipation(webhookUrl, discordId, username),
     );
+    return;
+  }
+
+  // ── /mini-jeux : bouton "📊 Stats" (message éphémère, stats globales) ──
+  if (body.type === 3 && body.data?.custom_id === "minijeux_stats") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMiniJeuxStats(webhookUrl));
     return;
   }
 

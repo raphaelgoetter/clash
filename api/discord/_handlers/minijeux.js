@@ -108,6 +108,7 @@ import { BANDES as MEOW_BANDES, jourDe as meowJourDe, horloge as meowHorloge } f
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../../backend/services/dateUtils.js";
+import { computeMiniJeuxStats } from "../../../backend/services/miniJeuxStats.js";
 
 const MINIJEUX_COLOR = 0x5865f2;
 const BAR_SEGMENTS = 7;
@@ -376,6 +377,10 @@ const SPECIAL_GAMES = [
     title: "Blackjack",
     style: "Casino",
     readState: readBlackjackState,
+    // Joueurs ayant joué depuis le début de la partie (bouton "📊 Stats").
+    async livePlayerIds() {
+      return Object.keys(await readBlackjackPoints());
+    },
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
       const [hand, points] = await Promise.all([
@@ -448,6 +453,10 @@ const SPECIAL_GAMES = [
     title: "Gobelet",
     style: "Casino",
     readState: readGobeletState,
+    // Joueurs ayant joué depuis le début de la partie (bouton "📊 Stats").
+    async livePlayerIds() {
+      return Object.keys(await readGobeletPoints());
+    },
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
       const [hand, points] = await Promise.all([
@@ -549,6 +558,14 @@ const SPECIAL_GAMES = [
     title: "Meow",
     style: "Stratégie en équipe",
     readState: readMeowState,
+    // Joueurs ayant rejoint une bande (bouton "📊 Stats").
+    async livePlayerIds(state) {
+      if (state.phase === "annonce") return [];
+      const partie = await readMeowPartie();
+      return Object.entries(partie.joueurs)
+        .filter(([, j]) => j.bande != null)
+        .map(([discordId]) => discordId);
+    },
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
       const [config, partie] = await Promise.all([loadMeowConfig(), readMeowPartie()]);
@@ -767,6 +784,12 @@ function buildMiniJeuxComponents() {
           label: "🙋 Ma participation",
           custom_id: "minijeux_participation",
         },
+        {
+          type: 2,
+          style: 2,
+          label: "📊 Stats",
+          custom_id: "minijeux_stats",
+        },
       ],
     },
   ];
@@ -866,6 +889,88 @@ export async function handleMiniJeuxParticipation(webhookUrl, discordId, usernam
     console.error("[MiniJeux] Erreur Ma participation:", err);
     await patchOriginal(webhookUrl, {
       content: "⚠️ Erreur lors de la récupération de ta participation.",
+    });
+  }
+}
+
+// ── Bouton "📊 Stats" (message éphémère, stats globales) ─────────────
+
+// Au-delà, une liste de pseudos devient illisible : on n'affiche que le
+// nombre de joueurs du palier.
+const ASSIDUS_MAX_NAMES = 12;
+
+function formatJoueurs(n) {
+  return `${n} joueur${n > 1 ? "s" : ""}`;
+}
+
+function formatManches(n) {
+  return `${n} manche${n > 1 ? "s" : ""}`;
+}
+
+async function findLiveSpecialPlayers() {
+  const active = await findActiveSpecialGame();
+  if (!active?.game.livePlayerIds) return null;
+  const playerIds = await active.game.livePlayerIds(active.state);
+  return { key: active.game.key, playerIds };
+}
+
+function buildStatsWeeklyBlock(games) {
+  if (!games.length) return null;
+  const lines = games.map(
+    (g, index) =>
+      `${index + 1}. **${g.title}** : ${formatJoueurs(Math.round(g.average))} en moyenne (${g.totalPlayers} au total sur ${formatManches(g.rounds)})`,
+  );
+  return `## Les jeux les plus joués\n${lines.join("\n")}`;
+}
+
+function buildStatsSpecialBlock(parties) {
+  if (!parties.length) return null;
+  const lines = parties.map((p, index) => {
+    const suffix = p.live ? " *(en cours)*" : p.multiple ? ` *(partie ${p.manche})*` : "";
+    return `${index + 1}. **${p.title}** : ${formatJoueurs(p.players)}${suffix}`;
+  });
+  return `## 🎲 Jeux spéciaux\n${lines.join("\n")}`;
+}
+
+function buildStatsAssidusBlock({ totalRounds, tiers }) {
+  if (!tiers.length) return null;
+  const lines = tiers.map(({ played, names }) => {
+    const who = names.length > ASSIDUS_MAX_NAMES ? formatJoueurs(names.length) : names.join(", ");
+    return `**${played}/${totalRounds}** : ${who}`;
+  });
+  return `## 🏅 Les assidus cette saison\n${lines.join("\n")}`;
+}
+
+export async function buildStatsEmbed(now = new Date()) {
+  const live = await findLiveSpecialPlayers();
+  const stats = await computeMiniJeuxStats({ now, live });
+
+  const blocks = [
+    buildStatsWeeklyBlock(stats.weekly),
+    buildStatsSpecialBlock(stats.special),
+    buildStatsAssidusBlock(stats.assidus),
+  ].filter(Boolean);
+
+  const since = stats.firstDate
+    ? ` depuis ${new Date(stats.firstDate).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" })}`
+    : "";
+
+  return {
+    title: "📊 Statistiques des Mini-jeux",
+    description: blocks.join("\n\n") || "Aucune donnée pour le moment.",
+    color: MINIJEUX_COLOR,
+    footer: { text: `${formatJoueurs(stats.totalPlayers)} différents${since}` },
+  };
+}
+
+export async function handleMiniJeuxStats(webhookUrl) {
+  try {
+    const embed = await buildStatsEmbed();
+    await patchOriginal(webhookUrl, { embeds: [embed] });
+  } catch (err) {
+    console.error("[MiniJeux] Erreur Stats:", err);
+    await patchOriginal(webhookUrl, {
+      content: "⚠️ Erreur lors du calcul des statistiques des mini-jeux.",
     });
   }
 }
