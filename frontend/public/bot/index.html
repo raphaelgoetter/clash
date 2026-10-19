@@ -159,100 +159,46 @@
           <div data-layout="duo" data-split="2-1">
             <div>
               <p>
-                Calcule le matchup GDC d’un joueur à partir des decks joués lors
-                de ses combats de guerre récents et des decks adverses
-                rencontrés. Les decks sont regroupés par jour de GDC (J1 à J4).
+                Calcule la difficulté des combats GDC récents d’un joueur, jour
+                par jour (J1 à J4), en comparant son deck à celui de chaque
+                adversaire.
               </p>
               <p>
-                Le matchup est une note en pourcentage qui reflète la difficulté
-                moyenne des combats de guerre du joueur.
-              </p>
-              <p>
-                Le calcul est purement tactique : il compare les 8 cartes de
-                chaque deck (niveaux, évolutions et héros, win conditions,
-                counters), pas les statistiques de compte des joueurs.
-              </p>
-              <p>
-                Barème détaillé (4 étapes additionnées à une base de 50 %,
-                pondérées d’après les résultats de 20 000 combats réels ; le
-                résultat reste toujours entre 5 % et 95 %, car le deck ne décide
-                jamais seul de l’issue) :
-              </p>
-              <ol>
-                <li>
-                  <strong>Écart de niveau</strong> (±48) : 2 % par point d’écart
-                  de niveaux normalisés (rareté incluse) entre les 8 cartes des
-                  deux decks (jusqu’à ±40), plus 4 % par niveau d’écart entre
-                  les win conditions (jusqu’à ±8). C’est de loin le facteur le
-                  plus déterminant.
-                </li>
-                <li>
-                  <strong>Évolutions et héros</strong> (±9) : 3 % par carte
-                  évoluée ou en héros d’écart entre les deux decks.
-                </li>
-                <li>
-                  <strong>Counters directs</strong> (±6) : pénalité selon le
-                  nombre de hard-counters et de soft-counters à la win condition
-                  du deck évalué présents chez l’adversaire (chaque hard-counter
-                  pèse 3 points, chaque soft-counter 1 point), l’absence totale
-                  de counter donnant le maximum.
-                </li>
-                <li>
-                  <strong>Structure du deck</strong> (±10) : quelques règles
-                  d’intégrité dont l’effet a été vérifié sur des combats réels
-                  (deck Bait face à un adversaire sans petit sort, P.E.K.K.A ou
-                  Mini P.E.K.K.A face à une carte à gros dégâts, deck sans sort,
-                  sans anti-air ou sans carte à moins de 3 élixir), plus une
-                  pénalité en échelle pour un deck trop dispersé (plus de 2 win
-                  conditions, plus de 3 sorts ou plus de 2 bâtiments).
-                </li>
-              </ol>
-              <p>
-                Dans le détail d’un match, chaque ligne indique le camp concerné
-                (couronne bleue : toi, rouge : l’adversaire) et son effet sur la
-                difficulté (+ : plus dur pour toi, − : plus facile).
-              </p>
-              <p>
-                Si la win condition d’un deck n’est pas reconnue dans le
-                catalogue de counters, le calcul se rabat sur une liste de
-                cartes à forts dégâts (P.E.K.K.A, Mini P.E.K.K.A, Mega Knight,
-                Boss Bandit) pour éviter de neutraliser le calcul ; si vraiment
-                aucune win condition n’est identifiable d’un des deux côtés,
-                l’étape Counters directs et l’écart de niveau des win
-                conditions sont neutralisés pour ce combat.
-              </p>
-              <p>
-                Certaines win conditions (ex. Balloon) changent de counters
-                selon la carte qui les accompagne dans le deck (Lava Hound,
-                Giant, Freeze/P.E.K.K.A…), détail consultable sur la
-                <a href="/matchup/">page Matchup</a>.
-              </p>
-              <p>
-                Un bouton <strong>ℹ️ Détails</strong> sous la réponse permet de
-                choisir un combat précis et d’afficher le détail complet du
-                calcul (valeur de chaque étape, decks des deux joueurs, win
-                conditions identifiées).
+                Le calcul tient compte surtout des niveaux des cartes, puis des
+                évolutions et héros, des counters à la win condition et de la
+                cohérence du deck. Il ne regarde que les 8 cartes de chaque
+                deck, pas les statistiques des comptes.
               </p>
               <p>Interprétation :</p>
               <ul>
                 <li>
-                  <strong>5%</strong> : matchup très confortable (adversaire
+                  <strong>5%</strong> : combat très confortable (adversaire
                   "facile")
                 </li>
-                <li><strong>50%</strong> : matchup moyen, combat équilibré</li>
+                <li><strong>50%</strong> : combat équilibré</li>
                 <li>
-                  <strong>95%</strong> : matchup très tendu (adversaire
+                  <strong>95%</strong> : combat très tendu (adversaire
                   "difficile")
                 </li>
               </ul>
               <p>
-                <strong>🎯 Performance</strong> : compare les victoires réelles
-                du joueur en GDC aux victoires attendues d’après la difficulté de
-                chaque combat (un combat à 30 % de difficulté vaut 0,7 victoire
-                attendue), sur les combats GDC des 3 dernières semaines. Un écart
-                positif signifie que le joueur gagne plus que ce que ses decks et
-                ses niveaux laissent prévoir. L’écart n’est en gras que s’il
-                dépasse la marge du hasard.
+                Le bouton <strong>ℹ️ Détails</strong> affiche le calcul complet
+                d’un combat au choix.
+              </p>
+              <p>
+                <strong>🎯 Performance</strong> : le joueur gagne-t-il plus ou
+                moins que prévu&#8239;? Chaque combat facile «&#8239;devrait&#8239;»
+                être gagné, chaque combat difficile perdu. La Performance
+                compte les victoires en plus (+) ou en moins (−) par rapport à
+                ce pronostic, sur les combats GDC des 3 dernières semaines.
+              </p>
+              <p>
+                Exemple : 20 combats d’une difficulté moyenne de 50 %, le
+                pronostic est de 10 victoires. Le joueur en gagne 13 : sa
+                Performance est de <strong>+3</strong>. S’il n’en gagne que 8 :
+                <strong>−2</strong>. Un joueur avec de petits niveaux peut donc
+                avoir une très bonne Performance s’il gagne des combats
+                difficiles.
               </p>
               <p>
                 <strong>Quand utiliser cette commande&#8239;:</strong> Pour
