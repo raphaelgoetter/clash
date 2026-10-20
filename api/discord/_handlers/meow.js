@@ -161,6 +161,7 @@ function buildAnnonceEmbed(
       "",
       `📅 **${config.duree_jours} jours de jeu** en équipe (bandes tirées au sort). Effectif requis : **${config.effectif_min} à ${config.effectif_max} joueurs**.`,
       `🐱 Des renforts de chats arrivent à ${horairesDistribution(config)} : passe quand tu veux dans la journée pour en profiter.`,
+      "🤝 Inscris-toi seulement si tu peux jouer régulièrement chaque jour : un chat absent affaiblit toute sa bande.",
       ...(inscrits.length
         ? [
             "",

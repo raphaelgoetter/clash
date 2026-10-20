@@ -270,7 +270,7 @@
     "sound": "cannon-cart.mp3",
     "elixir": 5,
     "hp": 1809,
-    "damage": 212,
+    "damage": 202,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -313,7 +313,7 @@
     "sound": "dart-goblin.mp3",
     "elixir": 3,
     "hp": 261,
-    "damage": 151,
+    "damage": 143,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -527,7 +527,7 @@
     "sound": "flying-machine.mp3",
     "elixir": 4,
     "hp": 614,
-    "damage": 171,
+    "damage": 179,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -1084,7 +1084,7 @@
     "fr": "Gargouille Géante",
     "elixir": 4,
     "hp": 1817,
-    "damage": 189,
+    "damage": 153,
     "range": {
       "kind": "ranged",
       "category": null,
@@ -1452,7 +1452,7 @@
     "sound": "skeleton-barrel.mp3",
     "elixir": 3,
     "hp": 532,
-    "damage": 145,
+    "damage": 163,
     "range": {
       "kind": "melee",
       "category": "short",
