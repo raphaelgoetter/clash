@@ -6,8 +6,9 @@
 // sa cible, ses indices, et trois menus édités en place : question du
 // jour, accusation, objet), Règles et Journal (ce qui concerne le joueur).
 // Fenêtre d'inscription (comme Goblin Hunters) : boutons S'inscrire, Se
-// désinscrire et Règles, rappel quotidien, partie annulée si l'effectif
-// minimum n'est pas atteint à la clôture.
+// désinscrire et Règles, rappel quotidien. À l'heure de clôture (passage
+// horaire du cron ou premier clic), inscriptions bloquées et message
+// remplacé : partie annulée si l'effectif minimum n'est pas atteint.
 //
 // La publication/clôture quotidienne passe uniquement par
 // scripts/postQuiEstCe.js (postQuiEstCe).
@@ -146,12 +147,53 @@ function buildAnnonceEmbed(config, partie, closingAt) {
   };
 }
 
+// Heure de clôture atteinte : plus d'inscription ni de désinscription.
+function inscriptionsCloses(state) {
+  return (
+    state?.phase === "annonce" &&
+    !!state.closingAt &&
+    new Date(state.closingAt) <= new Date()
+  );
+}
+
+// Ouverture des inscriptions (états antérieurs sans `openedAt` : déduite de
+// la clôture).
+function ouvertureInscriptions(state, config) {
+  return (
+    state.openedAt ||
+    addDays(state.closingAt, -config.fenetre_inscription_jours).toISOString()
+  );
+}
+
 // Clôture sous l'effectif minimum : partie annulée (sans prolongation).
-function buildAnnulationEmbed(config, count) {
+function buildAnnulationEmbed(config, count, state) {
   return {
     title: "🕵️ Qui est-ce ? : partie annulée",
-    description: `Seulement **${count}** joueur${count > 1 ? "s" : ""} inscrit${count > 1 ? "s" : ""}, il en fallait au moins **${config.effectif_min}** pour lancer la partie. Rendez-vous à la prochaine !`,
+    description: `🔒 Les inscriptions étaient ouvertes du ${formatDateFr(ouvertureInscriptions(state, config))} au ${formatDateFr(state.closingAt)}, il fallait être au minimum **${config.effectif_min}** participants : seulement **${count}** inscrit${count > 1 ? "s" : ""}. Rendez-vous à la prochaine !`,
     color: QEC_COLOR,
+  };
+}
+
+// Clôture avec l'effectif minimum : inscrits figés, le Jour 1 part au
+// prochain cron du matin (8h20 UTC).
+function buildClotureEmbed(config, partie, state) {
+  const inscrits = Object.values(partie.joueurs)
+    .sort((a, b) => a.arrivee - b.arrivee)
+    .map((j) => j.username);
+  const c = new Date(state.closingAt);
+  const ceMatin = c.getUTCHours() * 60 + c.getUTCMinutes() < 8 * 60 + 20;
+  return {
+    title: "🕵️ Qui est-ce ? : inscriptions closes",
+    description: [
+      `🔒 La partie commence ${ceMatin ? "ce matin" : "demain matin"} : chacun découvrira alors sa carte secrète et sa première cible.`,
+      "",
+      `**✋ Inscrits (${inscrits.length})**`,
+      inscrits.join(" · "),
+    ]
+      .join("\n")
+      .slice(0, 4096),
+    color: QEC_COLOR,
+    image: { url: illustrationUrl() },
   };
 }
 
@@ -475,6 +517,7 @@ async function publishAndWriteState(
     isPublic,
     noPing,
     closingAt = null,
+    openedAt = null,
   },
 ) {
   const image = await joindreImage(embed);
@@ -503,6 +546,7 @@ async function publishAndWriteState(
     isPublic,
     noPing,
     ...(closingAt ? { closingAt } : {}),
+    ...(openedAt ? { openedAt } : {}),
   });
   return { jour, embed, message, termine };
 }
@@ -514,32 +558,70 @@ async function rafraichirMessage(state, partie) {
   try {
     const config = await loadQuiEstCeConfig();
     const annonce = state.phase === "annonce";
-    const embed = annonce
-      ? buildAnnonceEmbed(config, partie, state.closingAt)
-      : await buildTableEmbed(state.jour, config, partie);
-    const image = await joindreImage(embed);
-    const res = await discordFetch(
-      `/channels/${state.channelId}/messages/${state.messageId}`,
-      {
-        method: "PATCH",
-        body: corpsMessage(
-          {
-            embeds: [embed],
-            components: annonce
-              ? buildAnnonceComponents(config, partie)
-              : buildTableComponents(),
-          },
-          image,
-        ),
-      },
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const embed = !annonce
+      ? await buildTableEmbed(state.jour, config, partie)
+      : state.cloture
+        ? buildClotureEmbed(config, partie, state)
+        : buildAnnonceEmbed(config, partie, state.closingAt);
+    const components = !annonce
+      ? buildTableComponents()
+      : state.cloture
+        ? [{ type: 1, components: [reglesButton()] }]
+        : buildAnnonceComponents(config, partie);
+    await editerMessage(state, embed, components);
   } catch (err) {
     console.error(
       "[QuiEstCe] Échec rafraîchissement du message officiel:",
       err.message,
     );
   }
+}
+
+async function editerMessage(state, embed, components) {
+  const image = await joindreImage(embed);
+  const res = await discordFetch(
+    `/channels/${state.channelId}/messages/${state.messageId}`,
+    {
+      method: "PATCH",
+      body: corpsMessage({ embeds: [embed], components }, image),
+    },
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+async function desinscrirePartis() {
+  const partis = await membresPartis(Object.keys((await readPartie()).joueurs));
+  for (const id of partis) await desinscrireJoueur(id);
+  if (partis.length) console.log(`[QuiEstCe] Désinscrits (ont quitté le serveur) : ${partis.join(", ")}`);
+}
+
+// Heure de clôture atteinte (passage horaire du cron, ou premier clic après
+// la clôture) : le message officiel est remplacé sur place. Effectif
+// minimum non atteint (salon public) : partie annulée ; sinon inscriptions
+// closes, le Jour 1 part au cron du matin (postQuiEstCe).
+export async function cloturerInscriptions({ dryRun = false } = {}) {
+  const state = await readState();
+  if (!inscriptionsCloses(state) || state.termine || state.cloture)
+    return { skipped: true };
+  const config = await loadQuiEstCeConfig();
+  if (!dryRun) await desinscrirePartis();
+  const partie = await readPartie();
+  const count = Object.keys(partie.joueurs).length;
+  const annulation = state.isPublic && count < config.effectif_min;
+  const embed = annulation
+    ? buildAnnulationEmbed(config, count, state)
+    : buildClotureEmbed(config, partie, state);
+  if (dryRun) return { dryRun: true, annulation, inscrits: count, embed };
+  await editerMessage(
+    state,
+    embed,
+    annulation ? [] : [{ type: 1, components: [reglesButton()] }],
+  );
+  await writeState({
+    ...state,
+    ...(annulation ? { termine: true } : { cloture: true }),
+  });
+  return { annulation, inscrits: count };
 }
 
 // Fin de partie : manche archivée (salon public), message final avec ping.
@@ -650,6 +732,7 @@ export async function postQuiEstCe(
       isPublic,
       noPing,
       closingAt,
+      openedAt: new Date().toISOString(),
     });
   }
 
@@ -660,11 +743,7 @@ export async function postQuiEstCe(
   // désinscrits. `forceClose` (tests uniquement) : ignore la date de clôture.
   if (state.phase === "annonce") {
     const now = new Date();
-    if (!dryRun) {
-      const partis = await membresPartis(Object.keys((await readPartie()).joueurs));
-      for (const id of partis) await desinscrireJoueur(id);
-      if (partis.length) console.log(`[QuiEstCe] Désinscrits (ont quitté le serveur) : ${partis.join(", ")}`);
-    }
+    if (!dryRun) await desinscrirePartis();
     const partieInscrits = await readPartie();
     const count = Object.keys(partieInscrits.joueurs).length;
     const pnjs = pnj && !isPublic ? tirerPnj(config.effectif_min - count) : [];
@@ -692,10 +771,11 @@ export async function postQuiEstCe(
         isPublic,
         noPing,
         closingAt: state.closingAt,
+        openedAt: state.openedAt,
       });
     }
     if (count + pnjs.length < config.effectif_min) {
-      const embed = buildAnnulationEmbed(config, count);
+      const embed = buildAnnulationEmbed(config, count, state);
       if (dryRun)
         return { dryRun: true, phase: "annonce", annulation: true, embed };
       const r = await publishAndWriteState(channelId, state, {
@@ -1100,9 +1180,11 @@ async function guardActive(webhookUrl, { annonce = false } = {}) {
   if (!ok) {
     await patchOriginal(webhookUrl, {
       content:
-        state?.phase === "annonce"
-          ? "La partie n'a pas encore commencé : inscris-toi avec le bouton *S'inscrire*."
-          : "Aucune partie de Qui est-ce ? en cours.",
+        state?.phase !== "annonce"
+          ? "Aucune partie de Qui est-ce ? en cours."
+          : state.termine
+            ? "🔒 Les inscriptions sont closes : la partie est annulée."
+            : "La partie n'a pas encore commencé : inscris-toi avec le bouton *S'inscrire*.",
     });
     return null;
   }
@@ -1121,6 +1203,16 @@ async function executer(
 ) {
   const state = await guardActive(webhookUrl, { annonce });
   if (!state) return;
+  if (inscription && inscriptionsCloses(state)) {
+    const dejaInscrit = !!(await readPartie()).joueurs[discordId];
+    await patchOriginal(webhookUrl, {
+      content: dejaInscrit
+        ? "🔒 Les inscriptions sont closes : tu es bien inscrit."
+        : "🔒 Les inscriptions sont closes : tu ne participes pas à cette partie. Rendez-vous à la prochaine !",
+    });
+    await cloturerInscriptions();
+    return;
+  }
   const config = await loadQuiEstCeConfig();
   const r = await agir(discordId, username, action, { inscription });
   const refus = {
@@ -1184,6 +1276,14 @@ export async function handleDesinscrire(webhookUrl, discordId) {
         content:
           "🔒 La partie est lancée, il n'est plus possible de se désinscrire.",
       });
+      return;
+    }
+    if (inscriptionsCloses(state)) {
+      await patchOriginal(webhookUrl, {
+        content:
+          "🔒 Les inscriptions sont closes, il n'est plus possible de se désinscrire.",
+      });
+      await cloturerInscriptions();
       return;
     }
     const r = await desinscrireJoueur(discordId);

@@ -13,6 +13,7 @@
 //   node scripts/postMeow.js --public --dry-run
 //   node scripts/postMeow.js --no-ping        — poste sans pinger @MINI JEUX (présentation et fin)
 //   node scripts/postMeow.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
+//   node scripts/postMeow.js --public --cloture — clôture les inscriptions si l'heure est passée (cron horaire)
 //   node scripts/postMeow.js --force          — republie le message du jour même s'il l'a déjà été
 //   node scripts/postMeow.js --sans-pnj       — salon de test sans les joueurs fictifs (PNJ) inscrits au J1
 //   node scripts/postMeow.js --force-close    — ignore la date de clôture des inscriptions (lance la partie si
@@ -23,11 +24,14 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postMeow } from "../api/discord/_handlers/meow.js";
+import { postMeow, cloturerInscriptions } from "../api/discord/_handlers/meow.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
+// Passage horaire du cron : clôture des inscriptions si l'heure est passée
+// (message remplacé, partie annulée sous l'effectif minimum), rien sinon.
+const CLOTURE = process.argv.includes("--cloture");
 // Salon de test : clôture des inscriptions forcée et PNJ pour atteindre
 // l'effectif minimum (voir tirerPnj).
 const FORCE_CLOSE = process.argv.includes("--force-close") || !PUBLIC;
@@ -49,6 +53,13 @@ if (!channelId) {
 
 (async () => {
   try {
+    if (CLOTURE) {
+      const r = await cloturerInscriptions({ dryRun: DRY_RUN });
+      if (r.skipped) console.log("Pas de clôture d'inscriptions à faire.");
+      else if (DRY_RUN) console.log(JSON.stringify(r, null, 2));
+      else console.log(r.annulation ? `Inscriptions closes : partie annulée (${r.inscrits} inscrits).` : `Inscriptions closes (${r.inscrits} inscrits), Jour 1 au prochain cron du matin.`);
+      return;
+    }
     const result = await postMeow(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE, forceClose: FORCE_CLOSE, pnj: PNJ, avancer: AVANCER });
 
     if (result.skipped) {

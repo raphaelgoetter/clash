@@ -130,13 +130,90 @@ function buildInscriptionRappelEmbed(config, count, closingAt) {
   };
 }
 
+// Heure de clôture atteinte : plus d'inscription ni de désinscription.
+function inscriptionsCloses(state) {
+  return (
+    state?.phase === "inscription" &&
+    !!state.closingAt &&
+    new Date(state.closingAt) <= new Date()
+  );
+}
+
+// Ouverture des inscriptions (états antérieurs sans `openedAt` : déduite de
+// la clôture).
+function ouvertureInscriptions(state, config) {
+  return (
+    state.openedAt ||
+    addDays(state.closingAt, -config.fenetre_inscription_jours).toISOString()
+  );
+}
+
 // Clôture sous l'effectif minimum : partie annulée (sans prolongation).
-function buildAnnulationEmbed(config, count) {
+function buildAnnulationEmbed(config, count, state) {
   return {
     title: "👺 Goblin Hunters : partie annulée",
-    description: `Seulement **${count}** joueur${count > 1 ? "s" : ""} inscrit${count > 1 ? "s" : ""}, il en fallait au moins **${config.effectif_min}** pour lancer la partie. Rendez-vous à la prochaine !`,
+    description: `🔒 Les inscriptions étaient ouvertes du ${formatDateFr(ouvertureInscriptions(state, config))} au ${formatDateFr(state.closingAt)}, il fallait être au minimum **${config.effectif_min}** participants : seulement **${count}** inscrit${count > 1 ? "s" : ""}. Rendez-vous à la prochaine !`,
     color: GOBLINHUNTERS_COLOR,
   };
+}
+
+// Clôture avec l'effectif minimum : inscrits figés, le Jour 1 part au
+// prochain cron du matin (8h04 UTC).
+function buildClotureEmbed(config, count, state) {
+  const c = new Date(state.closingAt);
+  const ceMatin = c.getUTCHours() * 60 + c.getUTCMinutes() < 8 * 60 + 4;
+  return {
+    title: "👺 Goblin Hunters : inscriptions closes",
+    description: `🔒 **${count}** joueurs inscrits : la partie commence ${ceMatin ? "ce matin" : "demain matin"}, chacun recevra son rôle en message privé.`,
+    color: GOBLINHUNTERS_COLOR,
+    image: { url: startImageUrl() },
+  };
+}
+
+// Heure de clôture atteinte (passage horaire du cron, ou premier clic après
+// la clôture) : le message d'inscription est remplacé sur place. Effectif
+// minimum non atteint : partie annulée ; sinon inscriptions closes, le
+// Jour 1 part au cron du matin (postGoblinHunters).
+export async function cloturerInscriptions({ dryRun = false } = {}) {
+  const state = await readState();
+  if (!inscriptionsCloses(state) || state.termine || state.cloture)
+    return { skipped: true };
+  const config = await loadGoblinHuntersConfig();
+  if (!dryRun) await desinscrirePartis();
+  const count = await countInscriptions();
+  const annulation = count < config.effectif_min;
+  const embed = annulation
+    ? buildAnnulationEmbed(config, count, state)
+    : buildClotureEmbed(config, count, state);
+  if (dryRun) return { dryRun: true, annulation, inscrits: count, embed };
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components: annulation
+          ? []
+          : [{ type: 1, components: [buildInscriptionComponents()[0].components[2]] }],
+      }),
+    },
+  );
+  if (!res.ok) throw new Error(`Erreur édition salon Discord (${res.status})`);
+  await writeState({
+    ...state,
+    ...(annulation ? { termine: true } : { cloture: true }),
+  });
+  return { annulation, inscrits: count };
+}
+
+async function desinscrirePartis() {
+  const partis = await membresPartis((await listInscriptions()).map((i) => i.discordId));
+  for (const id of partis) await unregisterPlayer(id);
+  if (partis.length) console.log(`[GoblinHunters] Désinscrits (ont quitté le serveur) : ${partis.join(", ")}`);
 }
 
 function buildInscriptionComponents(count = 0) {
@@ -843,7 +920,11 @@ export async function postGoblinHunters(
       components,
       noPing,
       estAnnonce: true,
-      extraState: { phase: "inscription", closingAt },
+      extraState: {
+        phase: "inscription",
+        closingAt,
+        openedAt: new Date().toISOString(),
+      },
     });
   }
 
@@ -852,11 +933,7 @@ export async function postGoblinHunters(
   // quitté le serveur sont d'abord désinscrits.
   if (state.phase === "inscription") {
     const now = new Date();
-    if (!dryRun) {
-      const partis = await membresPartis((await listInscriptions()).map((i) => i.discordId));
-      for (const id of partis) await unregisterPlayer(id);
-      if (partis.length) console.log(`[GoblinHunters] Désinscrits (ont quitté le serveur) : ${partis.join(", ")}`);
-    }
+    if (!dryRun) await desinscrirePartis();
     const count = await countInscriptions();
 
     // --force-close (tests uniquement, jamais câblé dans le workflow GitHub
@@ -881,7 +958,7 @@ export async function postGoblinHunters(
     }
 
     if (count < config.effectif_min) {
-      const embed = buildAnnulationEmbed(config, count);
+      const embed = buildAnnulationEmbed(config, count, state);
       if (dryRun)
         return { dryRun: true, phase: "inscription", annulation: true, embed };
       const r = await publishAndWriteState(channelId, state, {
@@ -1143,6 +1220,8 @@ async function refreshInscriptionMessage(botToken, config) {
     if (
       !state ||
       state.phase !== "inscription" ||
+      state.cloture ||
+      state.termine ||
       !state.channelId ||
       !state.messageId
     )
@@ -1180,6 +1259,8 @@ export async function handleRegisterButton(
   botToken,
 ) {
   try {
+    if (await refuserApresCloture(webhookUrl, discordId, "inscription"))
+      return;
     const config = await loadGoblinHuntersConfig();
     const result = await registerPlayer(
       discordId,
@@ -1203,8 +1284,32 @@ export async function handleRegisterButton(
   }
 }
 
+// Fenêtre d'inscription terminée (heure de clôture passée, partie lancée
+// ou annulée) : refus en éphémère et, si besoin, clôture du message.
+async function refuserApresCloture(webhookUrl, discordId, action) {
+  const state = await readState();
+  if (state?.phase === "inscription" && !state.termine && !inscriptionsCloses(state))
+    return false;
+  const dejaInscrit = (await listInscriptions()).some(
+    (i) => i.discordId === discordId,
+  );
+  const content =
+    state?.phase === "jeu" && !state.termine
+      ? "🔒 La partie est lancée, les inscriptions sont closes."
+      : action === "desinscription"
+      ? "🔒 Les inscriptions sont closes, il n'est plus possible de se désinscrire."
+      : dejaInscrit
+        ? "🔒 Les inscriptions sont closes : tu es bien inscrit(e)."
+        : "🔒 Les inscriptions sont closes : tu ne participes pas à cette partie. Rendez-vous à la prochaine !";
+  await patchOriginal(webhookUrl, { content, embeds: [], components: [] });
+  await cloturerInscriptions();
+  return true;
+}
+
 export async function handleUnregisterButton(webhookUrl, discordId, botToken) {
   try {
+    if (await refuserApresCloture(webhookUrl, discordId, "desinscription"))
+      return;
     const result = await unregisterPlayer(discordId);
     const content =
       result.status === "unregistered"
