@@ -7,8 +7,8 @@
 // / Déplacer, puis le crêpage de poils manche par manche), Ma bande
 // (messagerie), Règles et Journal.
 // Fenêtre d'inscription (comme Qui est-ce ?) : boutons S'inscrire, Se
-// désinscrire et Règles, rappel quotidien, prolongation si l'effectif
-// minimum n'est pas atteint.
+// désinscrire et Règles, rappel quotidien, partie annulée si l'effectif
+// minimum n'est pas atteint à la clôture.
 //
 // La publication quotidienne passe uniquement par scripts/postMeow.js
 // (postMeow). Les événements horaires (distributions, décompte, sieste)
@@ -31,6 +31,7 @@ import {
   archiveManche,
   listManches,
 } from "../../../backend/services/meow.js";
+import { membresPartis } from "../../../backend/services/discordUsers.js";
 import {
   BANDES,
   PIECES,
@@ -137,26 +138,13 @@ function horairesDistribution(config) {
 
 // ── Embeds publics ───────────────────────────────────────────────────
 
-function buildAnnonceEmbed(
-  config,
-  partie,
-  closingAt,
-  { prolongee = false } = {},
-) {
+function buildAnnonceEmbed(config, partie, closingAt) {
   const inscrits = Object.values(partie.joueurs)
     .sort((a, b) => a.arrivee - b.arrivee)
     .map((j) => j.username);
   return {
-    title: prolongee
-      ? "🐾 Meow (inscriptions prolongées)"
-      : "🐾 Meow : pousse-toi, c'est mon coussin !",
+    title: "🐾 Meow : pousse-toi, c'est mon coussin !",
     description: [
-      ...(prolongee
-        ? [
-            `Seulement **${inscrits.length}** joueur${inscrits.length > 1 ? "s" : ""} inscrit${inscrits.length > 1 ? "s" : ""}, il en faut au moins **${config.effectif_min}** pour lancer la partie. Les inscriptions sont prolongées, parles-en autour de toi !`,
-            "",
-          ]
-        : []),
       "Trois bandes de chats se disputent les meilleurs territoires de la maison. Appelle tes chats, squatte les territoires voisins et fais gagner ta bande !",
       "",
       `📅 **${config.duree_jours} jours de jeu** en équipe (bandes tirées au sort). Effectif requis : **${config.effectif_min} à ${config.effectif_max} joueurs**.`,
@@ -175,8 +163,17 @@ function buildAnnonceEmbed(
     color: MEOW_COLOR,
     image: { url: illustrationUrl() },
     footer: {
-      text: `${prolongee ? "Nouvelle clôture" : "Clôture des inscriptions"} : ${formatDateFr(closingAt)}.`,
+      text: `Clôture des inscriptions : ${formatDateFr(closingAt)}.`,
     },
+  };
+}
+
+// Clôture sous l'effectif minimum : partie annulée (sans prolongation).
+function buildAnnulationEmbed(config, count) {
+  return {
+    title: "🐾 Meow : partie annulée",
+    description: `Seulement **${count}** joueur${count > 1 ? "s" : ""} inscrit${count > 1 ? "s" : ""}, il en fallait au moins **${config.effectif_min}** pour lancer la partie. Rendez-vous à la prochaine !`,
+    color: MEOW_COLOR,
   };
 }
 
@@ -474,7 +471,6 @@ async function publishAndWriteState(
     isPublic,
     noPing,
     closingAt = null,
-    prolongee = false,
   },
 ) {
   const image = await joindreImage(embed);
@@ -503,22 +499,19 @@ async function publishAndWriteState(
     isPublic,
     noPing,
     ...(closingAt ? { closingAt } : {}),
-    ...(prolongee ? { prolongee } : {}),
   });
   return { jour, embed, message, termine };
 }
 
 // Réédite le message officiel : liste des inscrits le jour de
 // présentation, sinon le message du jour (carte comprise).
-async function rafraichirMessage(state, partie) {
+export async function rafraichirMessage(state, partie) {
   if (!state?.messageId || state.termine) return;
   try {
     const config = await loadMeowConfig();
     const annonce = state.phase === "annonce";
     const embed = annonce
-      ? buildAnnonceEmbed(config, partie, state.closingAt, {
-          prolongee: state.prolongee,
-        })
+      ? buildAnnonceEmbed(config, partie, state.closingAt)
       : buildJourEmbed(state.jour, config, partie);
     const image = await joindreImage(embed);
     const res = await discordFetch(
@@ -703,12 +696,17 @@ export async function postMeow(
   }
 
   // 2) Fenêtre d'inscription : rappel tant qu'elle n'est pas close (sauf
-  // effectif maximum atteint : lancement anticipé), prolongation de la même
-  // durée si l'effectif minimum n'est pas atteint (PNJ du salon de test
-  // compris), sinon Jour 1. `forceClose` (tests uniquement) : ignore la date
-  // de clôture.
+  // effectif maximum atteint : lancement anticipé), partie annulée si
+  // l'effectif minimum n'est pas atteint (PNJ du salon de test compris),
+  // sinon Jour 1. Les inscrits ayant quitté le serveur sont d'abord
+  // désinscrits. `forceClose` (tests uniquement) : ignore la date de clôture.
   if (state.phase === "annonce") {
     const now = new Date();
+    if (!dryRun) {
+      const partis = await membresPartis(Object.keys((await readPartie()).joueurs));
+      for (const id of partis) await desinscrireJoueur(id);
+      if (partis.length) console.log(`[Meow] Désinscrits (ont quitté le serveur) : ${partis.join(", ")}`);
+    }
     const partieInscrits = await readPartie();
     const count = Object.keys(partieInscrits.joueurs).length;
     const pnjs = pnj && !isPublic ? tirerPnj(config.effectif_min - count) : [];
@@ -717,9 +715,7 @@ export async function postMeow(
       count < config.effectif_max &&
       new Date(state.closingAt) > now
     ) {
-      const embed = buildAnnonceEmbed(config, partieInscrits, state.closingAt, {
-        prolongee: state.prolongee,
-      });
+      const embed = buildAnnonceEmbed(config, partieInscrits, state.closingAt);
       const components = buildAnnonceComponents(config, partieInscrits);
       if (dryRun)
         return {
@@ -738,38 +734,23 @@ export async function postMeow(
         isPublic,
         noPing,
         closingAt: state.closingAt,
-        prolongee: state.prolongee,
       });
     }
     if (count + pnjs.length < config.effectif_min) {
-      const closingAt = addDays(
-        now,
-        config.fenetre_inscription_jours,
-      ).toISOString();
-      const embed = buildAnnonceEmbed(config, partieInscrits, closingAt, {
-        prolongee: true,
-      });
-      const components = buildAnnonceComponents(config, partieInscrits);
+      const embed = buildAnnulationEmbed(config, count);
       if (dryRun)
-        return {
-          dryRun: true,
-          phase: "annonce",
-          prolongation: true,
-          embed,
-          components,
-        };
+        return { dryRun: true, phase: "annonce", annulation: true, embed };
       const r = await publishAndWriteState(channelId, state, {
         phase: "annonce",
         jour: null,
         embed,
-        components,
+        components: [],
         ping: true,
+        termine: true,
         isPublic,
         noPing,
-        closingAt,
-        prolongee: true,
       });
-      return { ...r, prolongation: true };
+      return { ...r, annulation: true };
     }
     if (dryRun)
       return {

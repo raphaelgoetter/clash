@@ -93,7 +93,7 @@ if (!channelId) {
       if (result.final) {
         console.log("  Fin de partie.");
       } else if (result.phase === "inscription") {
-        console.log(result.report ? "  Fenêtre d'inscription prolongée." : "  Fenêtre d'inscription.");
+        console.log(result.annulation ? "  Partie annulée (effectif minimum non atteint)." : "  Fenêtre d'inscription.");
       } else if (result.phase === "lancement") {
         console.log(`  Lancement de la partie (${result.joueursCount} inscrits) :`);
         for (const j of result.joueurs || []) {

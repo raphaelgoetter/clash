@@ -89,3 +89,36 @@ export async function resolveDisplayName(discordId, storedFallback) {
   const live = await resolveDiscordUsername(discordId);
   return live ?? storedFallback ?? "Inconnu";
 }
+
+// Membres ayant quitté le serveur parmi `discordIds` (purge des inscrits des
+// jeux avec inscription). Seul un 404 compte comme départ : une erreur réseau
+// ou un rate limit persistant ne désinscrit jamais personne. Les ids non
+// Discord (PNJ `pnj-N` du salon de test) sont ignorés.
+export async function membresPartis(discordIds) {
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const token = process.env.DISCORD_TOKEN;
+  if (!guildId || !token) return [];
+  const statuts = await Promise.all(
+    discordIds
+      .filter((id) => /^\d+$/.test(id))
+      .map((id) => avecLimite(async () => {
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          try {
+            const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${id}`, {
+              headers: { Authorization: `Bot ${token}` },
+            });
+            if (res.status === 429 && attempt < MAX_ATTEMPTS) {
+              const body = await res.json().catch(() => null);
+              await new Promise((resolve) => setTimeout(resolve, Math.ceil((body?.retry_after ?? 1) * 1000)));
+              continue;
+            }
+            return { id, parti: res.status === 404 };
+          } catch {
+            return { id, parti: false };
+          }
+        }
+        return { id, parti: false };
+      })),
+  );
+  return statuts.filter((s) => s.parti).map((s) => s.id);
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // postQuiEstCe.js
 // Poste manuellement (ou via cron) l'étape suivante de Qui est-ce ? :
-// ouverture des inscriptions, rappel quotidien, prolongation (effectif
+// ouverture des inscriptions, rappel quotidien, annulation (effectif
 // minimum non atteint) ou Jour 1 ; puis chaque jour, clôture du jour actif
 // (primes, classement final au dernier jour) et message du jour suivant (ou
 // message de fin).
@@ -72,8 +72,8 @@ if (!channelId) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    if (result.prolongation) {
-      console.log(`Effectif minimum non atteint : inscriptions prolongées dans ${channelId} (message ${result.message.id}).`);
+    if (result.annulation) {
+      console.log(`Effectif minimum non atteint : partie annulée dans ${channelId} (message ${result.message.id}).`);
       return;
     }
     if (result.final) {

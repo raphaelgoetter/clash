@@ -36,6 +36,7 @@ import {
   listRecentMessages,
   isTooSoonSinceLastClosure,
 } from "../../../backend/services/goblinhunters.js";
+import { membresPartis } from "../../../backend/services/discordUsers.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -108,8 +109,8 @@ function buildAnnonceInscriptionEmbed(config, closingAt) {
   };
 }
 
-// L'image d'inscription est répétée sur les 3 gabarits (annonce/rappel/
-// prolongation), pas seulement l'annonce initiale : le message d'inscription
+// L'image d'inscription est répétée sur les 2 gabarits (annonce/rappel),
+// pas seulement l'annonce initiale : le message d'inscription
 // est PATCHé en place à chaque inscription/désinscription en réutilisant
 // toujours le gabarit "rappel" (voir refreshInscriptionMessage) — sans
 // l'image ici aussi, elle disparaîtrait du message dès le premier clic.
@@ -129,17 +130,12 @@ function buildInscriptionRappelEmbed(config, count, closingAt) {
   };
 }
 
-function buildInscriptionReportEmbed(config, count, closingAt) {
+// Clôture sous l'effectif minimum : partie annulée (sans prolongation).
+function buildAnnulationEmbed(config, count) {
   return {
-    title: "👺 Goblin Hunters : inscriptions prolongées",
-    description: [
-      `Seulement **${count}** joueur(s) inscrit(s), il en faut au moins **${config.effectif_min}** pour lancer la partie.`,
-      "",
-      "Les inscriptions sont prolongées, parles-en autour de toi !",
-    ].join("\n"),
+    title: "👺 Goblin Hunters : partie annulée",
+    description: `Seulement **${count}** joueur${count > 1 ? "s" : ""} inscrit${count > 1 ? "s" : ""}, il en fallait au moins **${config.effectif_min}** pour lancer la partie. Rendez-vous à la prochaine !`,
     color: GOBLINHUNTERS_COLOR,
-    image: { url: startImageUrl() },
-    footer: { text: `Nouvelle clôture : ${formatDateFr(closingAt)}.` },
   };
 }
 
@@ -851,9 +847,16 @@ export async function postGoblinHunters(
     });
   }
 
-  // 2) Phase inscription : rappel, report, ou lancement si la fenêtre est close
+  // 2) Phase inscription : rappel, annulation (effectif minimum non atteint
+  // à la clôture) ou lancement si la fenêtre est close. Les inscrits ayant
+  // quitté le serveur sont d'abord désinscrits.
   if (state.phase === "inscription") {
     const now = new Date();
+    if (!dryRun) {
+      const partis = await membresPartis((await listInscriptions()).map((i) => i.discordId));
+      for (const id of partis) await unregisterPlayer(id);
+      if (partis.length) console.log(`[GoblinHunters] Désinscrits (ont quitté le serveur) : ${partis.join(", ")}`);
+    }
     const count = await countInscriptions();
 
     // --force-close (tests uniquement, jamais câblé dans le workflow GitHub
@@ -878,27 +881,17 @@ export async function postGoblinHunters(
     }
 
     if (count < config.effectif_min) {
-      const closingAt = addDays(
-        now,
-        config.fenetre_inscription_jours,
-      ).toISOString();
-      const embed = buildInscriptionReportEmbed(config, count, closingAt);
-      const components = buildInscriptionComponents(count);
+      const embed = buildAnnulationEmbed(config, count);
       if (dryRun)
-        return {
-          dryRun: true,
-          phase: "inscription",
-          report: true,
-          embed,
-          components,
-        };
-      return publishAndWriteState(channelId, state, {
+        return { dryRun: true, phase: "inscription", annulation: true, embed };
+      const r = await publishAndWriteState(channelId, state, {
         embed,
-        components,
+        components: [],
         noPing,
-        estAnnonce: true,
-        extraState: { closingAt },
+        estAnnonce: false,
+        termine: true,
       });
+      return { ...r, annulation: true };
     }
 
     if (dryRun) {
@@ -1157,7 +1150,7 @@ async function refreshInscriptionMessage(botToken, config) {
     const count = await countInscriptions();
     // Réutilise toujours le gabarit "rappel" (compteur en avant) pour le
     // rafraîchissement live, même si le message actuellement affiché était
-    // l'annonce initiale ou une prolongation — on ne retrace pas quelle
+    // l'annonce initiale — on ne retrace pas quelle
     // variante est postée, et le compteur à jour prime sur le texte exact.
     const embed = buildInscriptionRappelEmbed(config, count, state.closingAt);
     const components = buildInscriptionComponents(count);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // postMeow.js
 // Poste manuellement (ou via cron) l'étape suivante de Meow : ouverture des
-// inscriptions, rappel quotidien, prolongation (effectif minimum non
+// inscriptions, rappel quotidien, annulation (effectif minimum non
 // atteint) ou Jour 1 ; puis chaque matin, rattrapage des événements de la
 // nuit (décompte compris) et message du jour (ou message de fin après le
 // décompte du dernier jour).
@@ -75,8 +75,8 @@ if (!channelId) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    if (result.prolongation) {
-      console.log(`Effectif minimum non atteint : inscriptions prolongées dans ${channelId} (message ${result.message.id}).`);
+    if (result.annulation) {
+      console.log(`Effectif minimum non atteint : partie annulée dans ${channelId} (message ${result.message.id}).`);
       return;
     }
     if (result.final) {

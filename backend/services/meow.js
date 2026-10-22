@@ -27,7 +27,7 @@ import { creerPartie, inscrire, desinscrire, demarrer, rattraper, nbInscrits, cl
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "..", "data", "meow", "meow.json");
 
-// { phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt?, prolongee? }
+// { phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt? }
 const STATE_KEY = "meow:state";
 // voir creerPartie() dans meowRules.js
 const PARTIE_KEY = "meow:partie";
