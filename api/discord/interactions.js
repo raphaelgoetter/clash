@@ -4,15 +4,15 @@
 
 import { createPublicKey, verify } from "node:crypto";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
-import { fetchPlayer } from "../../backend/services/clashApi.js";
+import { fetchPlayer } from "@clash/clash-royale/clashApi.js";
 import { normalizeClashTag } from "./_lib/commun.js";
 import { routeAdmin } from "./_routes/admin.js";
 import { routeJoueur } from "./_routes/joueur.js";
 import { routeClan } from "./_routes/clan.js";
 import { routeSuiviGdc } from "./_routes/suiviGdc.js";
-import { routeMiniJeux } from "./_routes/miniJeux.js";
-import { routeJeuxSpeciaux } from "./_routes/jeuxSpeciaux.js";
-import { routeDuels } from "./_routes/duels.js";
+import { routeMiniJeux } from "../../jeux/discord/routes/miniJeux.js";
+import { routeJeuxSpeciaux } from "../../jeux/discord/routes/jeuxSpeciaux.js";
+import { routeDuels } from "../../jeux/discord/routes/duels.js";
 
 const ROUTES = [
   routeAdmin,

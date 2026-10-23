@@ -10,7 +10,7 @@
 // est toujours reçu en paramètre, jamais importé/rechargé ici.
 // ============================================================
 
-import { normLevel } from "./collectionConstants.js";
+import { normLevel } from "@clash/clash-royale/collectionConstants.js";
 
 export function clampValue(value, min, max) {
   return Math.max(min, Math.min(max, value));

@@ -19,9 +19,9 @@ import {
   toPublicWeekId,
   formatResetTimeParis,
   parseClashDate,
-} from "../../../backend/services/dateUtils.js";
-import { fetchPlayer } from "../../../backend/services/clashApi.js";
-import { getOrSet } from "../../../backend/services/cache.js";
+} from "@clash/clash-royale/dateUtils.js";
+import { fetchPlayer } from "@clash/clash-royale/clashApi.js";
+import { getOrSet } from "@clash/commun/cache.js";
 import { buildWarDecksImage } from "../../../backend/services/warDecksImage.js";
 import {
   summarizeWarDecks,

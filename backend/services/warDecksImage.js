@@ -5,9 +5,9 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
-import { fetchCards } from "./clashApi.js";
-import { getOrSet } from "./cache.js";
-import { CARD_ART_OVERRIDES, cardArtUrl, readCardArt } from "./cardArt.js";
+import { fetchCards } from "@clash/clash-royale/clashApi.js";
+import { getOrSet } from "@clash/commun/cache.js";
+import { CARD_ART_OVERRIDES, cardArtUrl, readCardArt } from "@clash/clash-royale/cardArt.js";
 
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
 const CARD_ICON_CACHE = new Map();
@@ -22,7 +22,7 @@ async function loadCardDefinitions() {
 }
 
 // Illustrations de base à l'ancien design côté API : lues directement sur
-// Blob (voir backend/services/cardArt.js), y compris pour les icônes de
+// Blob (voir packages/clash-royale/cardArt.js), y compris pour les icônes de
 // battle log mémorisées avant la correction (URL d'origine de l'API).
 const BLOB_ICON_PREFIX = "blob:";
 

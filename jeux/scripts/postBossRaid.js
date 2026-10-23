@@ -1,0 +1,107 @@
+#!/usr/bin/env node
+// postBossRaid.js
+// Poste manuellement (ou via cron) le jour de Boss Raid (score attack
+// communautaire contre un Boss Colossal). Clôture d'abord le jour actif
+// (s'il y en a un) : calcule les dégâts, applique l'événement éventuel,
+// vérifie la fin de partie, puis publie le jour suivant (ou le message de
+// fin de Raid).
+//
+// Usage :
+//   node jeux/scripts/postBossRaid.js                — poste sur le salon de test
+//   node jeux/scripts/postBossRaid.js --public        — poste sur le salon public
+//   node jeux/scripts/postBossRaid.js --dry-run       — simulation, sans écrire ni poster
+//   node jeux/scripts/postBossRaid.js --public --dry-run
+//   node jeux/scripts/postBossRaid.js --no-ping       — poste sans pinger @MINI JEUX (jour d'annonce uniquement)
+//   node jeux/scripts/postBossRaid.js --require-active — ne fait rien si aucun Raid n'est déjà lancé (cron)
+//   node jeux/scripts/postBossRaid.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
+
+import dotenv from "dotenv";
+dotenv.config({ path: "./.env" });
+
+import { postBossRaid } from "../discord/handlers/bossraid.js";
+
+const DRY_RUN = process.argv.includes("--dry-run");
+const PUBLIC = process.argv.includes("--public");
+// Réservé au cron quotidien (voir .github/workflows/bossraid.yml) : le jour
+// d'annonce doit toujours être déclenché manuellement (workflow_dispatch), le
+// cron ne fait qu'avancer un Raid déjà en cours.
+const REQUIRE_ACTIVE = process.argv.includes("--require-active");
+// Contourne le garde-fou anti-double-avancée (voir jeux/services/bossraid.js,
+// isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
+// cron en retard après une relance manuelle (le cron ne cible jamais le
+// salon de test). Sur le salon de test, aucun cron ne peut jamais entrer en
+// conflit : le garde-fou n'y sert à rien d'autre qu'à ralentir l'itération
+// manuelle, donc contourné automatiquement.
+const FORCE = process.argv.includes("--force") || !PUBLIC;
+// Ping @MINI JEUX réservé au vrai lancement public (jour d'annonce) — jamais
+// sur le salon de test, même sans --no-ping explicite, pour ne pas déranger
+// le serveur à chaque itération de test pendant le développement du jeu.
+const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
+
+// Réutilise les salons du jeu Frame (même principe qu'Anagram/Tamagoshi/
+// Robinson, voir CONTRIBUTING.md) plutôt que de provisionner de nouveaux
+// salons Discord dédiés à Boss Raid.
+const channelId = PUBLIC
+  ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC
+  : process.env.DISCORD_CHANNEL_FRAME_TEST;
+
+if (!channelId) {
+  console.error(
+    `Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_FRAME_PUBLIC" : "DISCORD_CHANNEL_FRAME_TEST"}`,
+  );
+  process.exit(1);
+}
+
+(async () => {
+  try {
+    const result = await postBossRaid(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE });
+
+    if (result.skipped) {
+      if (result.reason === "tooSoonSinceLastClosure") {
+        console.log(
+          `Jour ouvert trop récemment (${result.publishedAt}) pour être re-clôturé — probable double déclenchement ` +
+            `(cron en retard + relance manuelle, ou double cron). Rien n'est posté. Utilise --force si ce rattrapage est volontaire.`,
+        );
+      } else {
+        console.log("Aucun Raid actif, rien à poster (cron sans lancement manuel préalable).");
+      }
+      return;
+    }
+
+    if (result.wrongChannel) {
+      console.error(
+        `Un Raid est déjà actif sur un AUTRE salon (${result.activeChannelId}) — rien n'est posté ici pour éviter tout mélange. ` +
+          `Si c'était un Raid de test oublié, lance "npm run bossraid:reset" puis relance sur le bon salon.`,
+      );
+      process.exit(1);
+    }
+
+    if (result.termine) {
+      console.log("Raid déjà terminé, rien à poster.");
+      return;
+    }
+
+    if (DRY_RUN) {
+      console.log(`DRY-RUN — (salon ${channelId}) :`);
+      if (result.final) {
+        console.log("  Fin du Raid.");
+      } else if (result.phase === "annonce") {
+        console.log("  Jour d'annonce.");
+      } else {
+        console.log(`  Jour ${result.jour}${result.event ? ` — événement : ${result.event.nom}` : ""}`);
+      }
+      console.log(JSON.stringify({ embeds: [result.embed], components: result.components || [] }, null, 2));
+      return;
+    }
+
+    if (result.final) {
+      console.log(`Fin du Raid postée dans ${channelId} (message ${result.message.id}).`);
+      return;
+    }
+
+    console.log(`Jour ${result.jour ?? "d'annonce"} posté dans ${channelId} (message ${result.message.id}).`);
+  } catch (err) {
+    console.error("Échec de la publication du jour :", err.message);
+    process.exit(1);
+  }
+})();

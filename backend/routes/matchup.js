@@ -6,9 +6,9 @@
 // ============================================================
 
 import { Router } from "express";
-import { fetchCards } from "../services/clashApi.js";
+import { fetchCards } from "@clash/clash-royale/clashApi.js";
 import { getWinConditionsCatalog } from "../services/matchupCatalog.js";
-import { getOrSet } from "../services/cache.js";
+import { getOrSet } from "@clash/commun/cache.js";
 
 const router = Router();
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;

@@ -1,0 +1,13 @@
+{
+  "name": "@clash/commun",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Infrastructure générique partagée (cache, Blob, helpers Discord)",
+  "exports": {
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@vercel/functions": "^3.4.3"
+  }
+}

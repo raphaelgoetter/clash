@@ -5,7 +5,7 @@ permissions:
 
 on:
   # Lundi 18:00 UTC — créneau déjà utilisé par Blind Royale (voir
-  # backend/services/jeuxaveugle.js pour le détail de l'alternance et le
+  # jeux/services/jeuxaveugle.js pour le détail de l'alternance et le
   # choix de ce jour commun). Remplace les deux crons dédiés
   # (.github/workflows/lajustecarte.yml et blindroyale.yml, supprimés) : le
   # script décide lui-même, à chaque déclenchement, quel jeu est actif cette

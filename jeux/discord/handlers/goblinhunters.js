@@ -1,0 +1,1995 @@
+// ============================================================
+// goblinhunters.js — Handlers Discord pour Goblin Hunters (jeu à identité
+// secrète/camps cachés). Embed d'inscription, embed de jour (plateau +
+// bilan), boutons de lieu, select menu de cible, DM de rôle/enquête.
+// La publication/clôture quotidienne passe uniquement par
+// jeux/scripts/postGoblinHunters.js (postGoblinHunters) — les boutons restent
+// gérés par api/discord/interactions.js.
+// ============================================================
+
+import {
+  loadGoblinHuntersConfig,
+  loadNarratifs,
+  readState,
+  writeState,
+  registerPlayer,
+  unregisterPlayer,
+  countInscriptions,
+  recordAction,
+  readPlayerAction,
+  isLieuRepeatAllowed,
+  isActionLocked,
+  previewCloture,
+  closeDayAndAdvance,
+  launchGame,
+  listInscriptions,
+  computeMinorityCount,
+  assignCampsAndRoles,
+  buildInitialRoster,
+  readPlayerIndices,
+  knownEnqueteTargets,
+  revealedTargetsForDay,
+  archiveManche,
+  listManches,
+  hasSentMessageToday,
+  recordMessage,
+  listRecentMessages,
+  isTooSoonSinceLastClosure,
+} from "../../services/goblinhunters.js";
+import { membresPartis } from "@clash/commun/discordUsers.js";
+import {
+  getRoleIdByName,
+  buildRolePingFields,
+  MINI_JEUX_ROLE_NAME,
+} from "@clash/commun/discordRoles.js";
+
+const GOBLINHUNTERS_COLOR = 0x16a34a;
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+
+function boardImageUrl(jour) {
+  return `${TRUST_ROYALE_URL}/api/goblinhunters/image?jour=${jour}&v=${Date.now()}`;
+}
+
+function startImageUrl() {
+  return `${TRUST_ROYALE_URL}/api/goblinhunters/start-image`;
+}
+
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+// Clôture des inscriptions calée sur le cron quotidien du jeu (8h04 UTC),
+// `jours` jours après l'ouverture : c'est ce passage qui annule la partie ou
+// lance le Jour 1.
+function dateCloture(jours) {
+  const d = addDays(new Date(), jours);
+  d.setUTCHours(8, 4, 0, 0);
+  return d.toISOString();
+}
+
+function formatDateFr(iso) {
+  return new Date(iso).toLocaleString("fr-FR", {
+    timeZone: "Europe/Paris",
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
+// ── Texte narratif — pool dans jeux/data/goblinhunters/narratifs.json, sélection
+// déterministe par jour (comme bossraid.js/robinson.js), jamais Math.random().
+
+function pickFlavor(pool, seed) {
+  if (!pool?.length) return "";
+  return pool[((seed % pool.length) + pool.length) % pool.length];
+}
+
+async function buildNarrative(jour, closure) {
+  const narratifs = await loadNarratifs();
+  if (!closure) return pickFlavor(narratifs.intro_cocasse, jour); // Jour 1 : pas de bilan de la veille
+
+  // Pas de ligne narrative "personne n'a péri" : le bilan juste en dessous
+  // le dit déjà ("🕊️ Personne n'a été éliminé.").
+  const lines = [pickFlavor(narratifs.intro_cocasse, jour)];
+  if (closure.deathIdCombat)
+    lines.push(pickFlavor(narratifs.mort_combat, jour + 2));
+  if (closure.eliminationsParVote)
+    lines.push(pickFlavor(narratifs.mort_vote, jour + 3));
+  return lines.join(" ");
+}
+
+// ── Embeds / composants — inscription ────────────────────────────
+
+function buildAnnonceInscriptionEmbed(config, closingAt) {
+  return {
+    title: "👺 Goblin Hunters : les inscriptions sont ouvertes !",
+    description: [
+      "Des Gobelins se sont infiltrés parmi nous, déguisés en villageois. Sauras-tu les démasquer avant qu'ils ne prennent le contrôle du village ?",
+      "",
+      `Un jeu de bluff et de déduction sur **${config.duree_jours} jours**, 1 action par jour. Inscris-toi via le bouton ci-dessous.`,
+      `Effectif requis : **${config.effectif_min} à ${config.effectif_max} joueurs**.`,
+      "",
+      "Merci de t'inscrire uniquement si tu es sûr de pouvoir participer chaque jour au jeu, pour ne pas pénaliser les autres.",
+    ].join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+    image: { url: startImageUrl() },
+    footer: { text: `Clôture des inscriptions : ${formatDateFr(closingAt)}.` },
+  };
+}
+
+// L'image d'inscription est répétée sur les 2 gabarits (annonce/rappel),
+// pas seulement l'annonce initiale : le message d'inscription
+// est PATCHé en place à chaque inscription/désinscription en réutilisant
+// toujours le gabarit "rappel" (voir refreshInscriptionMessage) — sans
+// l'image ici aussi, elle disparaîtrait du message dès le premier clic.
+function buildInscriptionRappelEmbed(config, count, closingAt) {
+  return {
+    title: "👺 Goblin Hunters : inscriptions en cours",
+    description: [
+      `**${count}/${config.effectif_max}** joueurs inscrits pour l'instant (minimum requis : ${config.effectif_min}).`,
+      "",
+      "Inscris-toi via le bouton ci-dessous si ce n'est pas déjà fait !",
+      "",
+      "Merci de t'inscrire uniquement si tu es sûr de pouvoir participer chaque jour au jeu, pour ne pas pénaliser les autres.",
+    ].join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+    image: { url: startImageUrl() },
+    footer: { text: `Clôture des inscriptions : ${formatDateFr(closingAt)}.` },
+  };
+}
+
+// Heure de clôture atteinte : plus d'inscription ni de désinscription.
+function inscriptionsCloses(state) {
+  return (
+    state?.phase === "inscription" &&
+    !!state.closingAt &&
+    new Date(state.closingAt) <= new Date()
+  );
+}
+
+// Ouverture des inscriptions (états antérieurs sans `openedAt` : déduite de
+// la clôture).
+function ouvertureInscriptions(state, config) {
+  return (
+    state.openedAt ||
+    addDays(state.closingAt, -config.fenetre_inscription_jours).toISOString()
+  );
+}
+
+// Clôture sous l'effectif minimum : partie annulée (sans prolongation).
+function buildAnnulationEmbed(config, count, state) {
+  return {
+    title: "👺 Goblin Hunters : partie annulée",
+    description: `🔒 Les inscriptions étaient ouvertes du ${formatDateFr(ouvertureInscriptions(state, config))} au ${formatDateFr(state.closingAt)}, il fallait être au minimum **${config.effectif_min}** participants : seulement **${count}** inscrit${count > 1 ? "s" : ""}. Rendez-vous à la prochaine !`,
+    color: GOBLINHUNTERS_COLOR,
+  };
+}
+
+// Clôture avec l'effectif minimum, affichée seulement entre l'heure de
+// clôture et le passage effectif du cron (retard GitHub) qui lance le Jour 1.
+function buildClotureEmbed(config, count, state) {
+  return {
+    title: "👺 Goblin Hunters : inscriptions closes",
+    description: `🔒 **${count}** joueurs inscrits : la partie va commencer, chacun recevra son rôle en message privé.`,
+    color: GOBLINHUNTERS_COLOR,
+    image: { url: startImageUrl() },
+  };
+}
+
+// Heure de clôture atteinte, premier clic avant le passage (en retard) du
+// cron : le message d'inscription est remplacé sur place. Effectif
+// minimum non atteint : partie annulée ; sinon inscriptions closes, le
+// Jour 1 part au passage du cron (postGoblinHunters).
+export async function cloturerInscriptions({ dryRun = false } = {}) {
+  const state = await readState();
+  if (!inscriptionsCloses(state) || state.termine || state.cloture)
+    return { skipped: true };
+  const config = await loadGoblinHuntersConfig();
+  if (!dryRun) await desinscrirePartis();
+  const count = await countInscriptions();
+  const annulation = count < config.effectif_min;
+  const embed = annulation
+    ? buildAnnulationEmbed(config, count, state)
+    : buildClotureEmbed(config, count, state);
+  if (dryRun) return { dryRun: true, annulation, inscrits: count, embed };
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components: annulation
+          ? []
+          : [{ type: 1, components: [buildInscriptionComponents()[0].components[2]] }],
+      }),
+    },
+  );
+  if (!res.ok) throw new Error(`Erreur édition salon Discord (${res.status})`);
+  await writeState({
+    ...state,
+    ...(annulation ? { termine: true } : { cloture: true }),
+  });
+  return { annulation, inscrits: count };
+}
+
+async function desinscrirePartis() {
+  const partis = await membresPartis((await listInscriptions()).map((i) => i.discordId));
+  for (const id of partis) await unregisterPlayer(id);
+  if (partis.length) console.log(`[GoblinHunters] Désinscrits (ont quitté le serveur) : ${partis.join(", ")}`);
+}
+
+function buildInscriptionComponents(count = 0) {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 3,
+          label: `S'inscrire (${count})`,
+          emoji: { name: "✅" },
+          custom_id: "goblinhunters_register",
+        },
+        {
+          type: 2,
+          style: 4,
+          label: "Se désinscrire",
+          emoji: { name: "✖️" },
+          custom_id: "goblinhunters_unregister",
+        },
+        {
+          type: 2,
+          style: 3,
+          label: "Règles",
+          emoji: { name: "📖" },
+          custom_id: "goblinhunters_regles",
+        },
+      ],
+    },
+  ];
+}
+
+// ── Embeds / composants — jour de jeu ─────────────────────────────
+
+function formatBilanLigne(joueurId, joueursApres, config) {
+  const j = joueursApres.find((p) => p.discordId === joueurId);
+  if (!j) return null;
+  const camp = config.camps[j.camp];
+  return `**${j.username}** était un(e) ${camp.emoji} **${camp.labelSingulier}**.`;
+}
+
+// Lignes du bilan d'une clôture (éliminations, effets de rôles, absents,
+// remplacements) — partagées entre l'embed du jour suivant et l'embed de
+// fin de partie, pour que le dernier jour ne disparaisse pas du récap final.
+function buildBilanLines(closure, joueursApres, config) {
+  const lines = [];
+  const voteLine = closure.eliminationsParVote
+    ? formatBilanLigne(closure.eliminationsParVote, joueursApres, config)
+    : null;
+  const combatLine = closure.deathIdCombat
+    ? formatBilanLigne(closure.deathIdCombat, joueursApres, config)
+    : null;
+  if (voteLine) lines.push(`⚖️ Accusé(e) par le village : ${voteLine}`);
+  if (combatLine) lines.push(`⚔️ Tombé(e) au combat : ${combatLine}`);
+  if (closure.conversionId) {
+    lines.push(
+      "🧟 Un villageois a été tué et converti en Gobelin par le zombie !",
+    );
+  } else if (!voteLine && !combatLine) {
+    lines.push("🕊️ Personne n'a été éliminé.");
+  }
+
+  // Guet-Apens/Explosif : effets déclenchés à la mort d'un rôle spécial,
+  // annoncés publiquement au même titre que le reveal de camp habituel
+  // (même logique de transparence que "Révélation à l'élimination").
+  if (closure.guetApensReveal) {
+    for (const { attackerId, campReporte } of closure.guetApensReveal
+      .attackers) {
+      const attacker = joueursApres.find((p) => p.discordId === attackerId);
+      const camp = config.camps[campReporte];
+      lines.push(
+        `🪤 Piège du Guet-Apens : **${attacker?.username || "?"}** est démasqué(e) : camp ${camp.emoji} **${camp.labelSingulier}** !`,
+      );
+    }
+  }
+  if (closure.explosifRetaliation) {
+    const gobelin = joueursApres.find(
+      (p) => p.discordId === closure.explosifRetaliation.gobelinId,
+    );
+    const target = joueursApres.find(
+      (p) => p.discordId === closure.explosifRetaliation.targetId,
+    );
+    lines.push(
+      `💣 **${gobelin?.username || "?"}** explose en mourant : **${target?.username || "?"}** encaisse ${config.roles.explosif.degats_riposte} dégât.`,
+    );
+  }
+  // Tour de Guet surpeuplée (plus de la moitié des vivants) : aucune
+  // enquête n'a abouti — sans cette ligne, les enquêteurs n'auraient aucune
+  // explication au silence inhabituel de leur DM habituel.
+  if (closure.tourDeGuetSurpeuplee) {
+    lines.push(
+      "🔭 La Tour de Guet était trop encombrée, personne n'a rien pu observer.",
+    );
+  }
+  if (closure.absents?.length) {
+    const noms = closure.absents
+      .map((id) => {
+        const p = joueursApres.find((x) => x.discordId === id);
+        return p?.usernameOrigine || p?.username || "?";
+      })
+      .map((nom) => `**${nom}**`);
+    lines.push(
+      `💤 N'a pas joué (pion placé au Château) : ${noms.join(", ")}`,
+    );
+  }
+  for (const r of closure.remplacements || []) {
+    lines.push(
+      `🔄 ${r.ancienUsername} a quitté le village, **${r.nouveauUsername}** reprend sa place.`,
+    );
+  }
+
+  return lines;
+}
+
+async function buildJourEmbed(jour, joueursApres, config, closure) {
+  const narrative = await buildNarrative(jour, closure);
+  const lines = [narrative, ""];
+
+  if (closure) {
+    lines.push(
+      "**Bilan du jour précédent**",
+      ...buildBilanLines(closure, joueursApres, config),
+      "",
+    );
+  }
+
+  // Le total de Gobelins n'est PAS un secret : il découle mécaniquement de
+  // l'effectif de départ via la table de ratio publique (goblinhunters.json),
+  // donc n'importe quel joueur peut déjà le calculer lui-même — masquer le
+  // compte en vie serait une fausse pudeur, pas un vrai secret (repéré par
+  // l'utilisateur sur un "?" affiché à tort).
+  // Immunisé du jour (tiré à la clôture, voir computeCloture) : public.
+  const immune = closure?.immuneIdSuivant
+    ? joueursApres.find((j) => j.discordId === closure.immuneIdSuivant)
+    : null;
+  if (immune) {
+    lines.push(
+      `🛡️ Aujourd'hui, **${immune.username}** est totalement immunisé(e) (vote et combat) !`,
+      "",
+    );
+  }
+
+  const vivants = joueursApres.filter((j) => j.alive);
+  const chasseursVivants = vivants.filter((j) => j.camp === "chasseur").length;
+  const gobelinsVivants = vivants.filter((j) => j.camp === "gobelin").length;
+  lines.push(
+    `${config.camps.chasseur.emoji} Villageois en vie : **${chasseursVivants}**, ${config.camps.gobelin.emoji} Gobelins en vie : **${gobelinsVivants}**`,
+  );
+
+  // Messages de tension informatifs : préviennent quand une victoire devient
+  // possible DÈS AUJOURD'HUI pour l'un des deux camps (comptes déjà publics,
+  // voir plus haut — ce n'est qu'une mise en avant, pas une fuite d'info).
+  // Un seul Gobelin restant -> les Villageois peuvent gagner par élimination
+  // totale ; les Gobelins à 1 mort près de la parité -> ils peuvent gagner
+  // dès aujourd'hui aussi. Les deux peuvent se produire en même temps en fin
+  // de partie très serrée (ex. 1 Gobelin / 2 Villageois).
+  const narratifs = await loadNarratifs();
+  const chasseursPresDeLaVictoire = gobelinsVivants === 1;
+  const gobelinsPresDeLaParite =
+    gobelinsVivants > 0 && gobelinsVivants === chasseursVivants - 1;
+  if (chasseursPresDeLaVictoire && gobelinsPresDeLaParite) {
+    lines.push(pickFlavor(narratifs.tension_double, jour));
+  } else if (chasseursPresDeLaVictoire) {
+    lines.push(pickFlavor(narratifs.tension_gobelin_dernier, jour));
+  } else if (gobelinsPresDeLaParite) {
+    lines.push(pickFlavor(narratifs.tension_parite_proche, jour));
+  }
+  // Approche du dernier jour : rappel de l'échéance (victoire par défaut des
+  // Villageois si rien ne bouge), indépendant du compte de joueurs. Pool
+  // distinct le dernier jour (« les derniers jours commencent » sonnerait faux).
+  if (Number(jour) === config.duree_jours) {
+    lines.push(pickFlavor(narratifs.tension_dernier_jour, jour));
+  } else if (jour >= config.duree_jours - 1) {
+    lines.push(pickFlavor(narratifs.tension_derniers_jours, jour));
+  }
+
+  if (Number(jour) === 1) {
+    lines.push(
+      "🔒 Vote et combat n'ont aucun effet le Jour 1. Tu peux quand même te rendre au Château ou à l'Arène, mais ça ne servira à rien.",
+    );
+  }
+
+  return {
+    title: `👺 Goblin Hunters (Jour ${jour}/${config.duree_jours})`,
+    description: lines.join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+    image: { url: boardImageUrl(jour) },
+    footer: {
+      text: "Choisis ton lieu du jour avant la clôture de demain (définitif dès validation).",
+    },
+  };
+}
+
+// Château (vote) et Arène (combat) n'ont strictement aucun effet le Jour 1
+// (computeCloture() ignore vote et combat tant que jour === 1, garde-fou
+// existant) — les boutons restent cliquables (un joueur peut vouloir s'y
+// rendre pour sa position, ex. accompagner quelqu'un ou juste par choix),
+// mais handleLieuButton saute l'étape de sélection de cible ce jour-là (voir
+// plus bas) : le lieu est enregistré tel quel, sans cibleId, comme
+// Taverne/Clairière. Décidé avec l'utilisateur après une première version
+// qui désactivait carrément les boutons — trop restrictif, seule l'ACTION
+// doit être nulle, pas le déplacement lui-même.
+const LIEUX_SANS_CIBLE_JOUR1 = new Set(["chateau", "camp_entrainement"]);
+
+// Joueur humain dont la place a été reprise par un bot (voir
+// computeBotActions) : plus aucune action, ni Journal, ni Messagerie.
+function messageRemplace(joueur) {
+  return `🔄 Ta place a été reprise par **${joueur.username}** après plusieurs jours d'absence, tu ne participes plus à cette partie.`;
+}
+
+function buildLieuButtonsRow(jour, config, slot) {
+  return {
+    type: 1,
+    components: Object.entries(config.lieux).map(([lieuId, lieu]) => ({
+      type: 2,
+      style: 2,
+      label: `${lieu.numero}. ${lieu.label}`.slice(0, 80),
+      emoji: { name: lieu.emoji },
+      custom_id: `goblinhunters_lieu:${jour}:${lieuId}:${slot}`,
+    })),
+  };
+}
+
+function buildJourComponents(jour, config) {
+  return [
+    buildLieuButtonsRow(jour, config, "primary"),
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 3,
+          label: "Règles",
+          emoji: { name: "📖" },
+          custom_id: "goblinhunters_regles",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Journal",
+          emoji: { name: "📜" },
+          custom_id: "goblinhunters_journal",
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Messagerie",
+          emoji: { name: "📬" },
+          custom_id: "goblinhunters_messagerie",
+        },
+      ],
+    },
+  ];
+}
+
+// Select de cible — n'affiche que les joueurs vivants dont la position sur
+// le DERNIER plateau connu correspond au lieu choisi (ciblage restreint,
+// décidé avec l'utilisateur), sauf pour le vote du Château qui reste libre
+// sur tout joueur vivant (accusation villageoise, pas une confrontation).
+function buildTargetSelectRow(candidats, jour, lieu, slot) {
+  if (!candidats.length) return null;
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: `goblinhunters_target:${jour}:${lieu}:${slot}`,
+          placeholder: "Choisis une cible",
+          options: candidats.slice(0, 25).map((j) => ({
+            label: j.username.slice(0, 100),
+            value: j.discordId,
+          })),
+        },
+      ],
+    },
+  ];
+}
+
+function buildEclaireurSecondButtonRow(jour) {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 1,
+          label: "🧭 Choisir ma 2ᵉ action",
+          custom_id: `goblinhunters_second:${jour}`,
+        },
+      ],
+    },
+  ];
+}
+
+// Libellé lisible d'une clé de victoire archivée (ex. "chasseurs_survie"),
+// pour l'historique des manches.
+function victoireCourte(victory, config) {
+  const camp = victory?.startsWith("gobelins")
+    ? config.camps.gobelin
+    : config.camps.chasseur;
+  return `${camp.emoji} Victoire des ${camp.label}`;
+}
+
+function buildOutcomeEmbed(
+  victory,
+  joueursApres,
+  config,
+  manches,
+  currentManche,
+  closure,
+  jourClos,
+) {
+  const victoireTexte = {
+    gobelins_parite: `${config.camps.gobelin.emoji} Les **Gobelins** l'emportent : parité atteinte !`,
+    chasseurs_gobelins_elimines: `${config.camps.chasseur.emoji} Les **Villageois** l'emportent : tous les Gobelins ont été démasqués !`,
+    chasseurs_survie: `${config.camps.chasseur.emoji} Les **Villageois** l'emportent : le village a tenu ${config.duree_jours} jours !`,
+  }[victory];
+
+  const reveal = joueursApres
+    .map((j) => {
+      const statutSymbole = j.alive ? "✅" : "☠️";
+      const roleTexte = j.role ? ` (${config.roles[j.role].label})` : "";
+      return `${statutSymbole} ${config.camps[j.camp].emoji} **${j.username}** : ${config.camps[j.camp].labelSingulier}${roleTexte}`;
+    })
+    .join("\n");
+
+  const mancheLines = manches.length
+    ? [
+        "",
+        "**📊 Manches précédentes**",
+        ...manches.map(
+          (m) =>
+            `Manche ${m.manche} : ${victoireCourte(m.victory, config)}${m.manche === currentManche ? " *(cette manche)*" : ""}`,
+        ),
+      ]
+    : [];
+
+  return {
+    title: "🏆 Goblin Hunters : partie terminée !",
+    description: [
+      victoireTexte,
+      "",
+      ...(closure
+        ? [
+            `**Bilan du Jour ${jourClos}**`,
+            ...buildBilanLines(closure, joueursApres, config),
+            "",
+          ]
+        : []),
+      "**Révélation des identités**",
+      reveal,
+      ...mancheLines,
+    ].join("\n"),
+    color: 0xf1c40f,
+    image: { url: `${TRUST_ROYALE_URL}/api/goblinhunters/end-image` },
+  };
+}
+
+// Description en une phrase de ce que fait un rôle spécial — réutilisée dans
+// les Règles ET dans le DM de rôle (sur demande explicite : le DM ne
+// donnait auparavant que le libellé du rôle, jamais ce qu'il fait
+// concrètement). Générée depuis la config plutôt qu'écrite en dur, pour ne
+// jamais désynchroniser d'un futur réglage des chiffres (PV/dégâts/etc.).
+function roleDescription(roleKey, config) {
+  const r = config.roles[roleKey];
+  switch (roleKey) {
+    case "eclaireur":
+      return `permet ${r.actions_par_jour} actions par jour au lieu d'une.`;
+    case "bucheron":
+      return `${r.pv} PV et ${r.degats} dégâts par coup au lieu de ${config.combat.pv_base} PV et ${config.combat.degats_base} dégât.`;
+    case "guet_apens":
+      return "si tu meurs au combat à l'Arène, le camp de qui t'a achevé est révélé publiquement.";
+    case "infiltre":
+      return 'l\'enquête menée sur toi à la Tour de Guet renvoie toujours "Villageois".';
+    case "explosif":
+      return `si tu meurs (vote ou combat), tu infliges automatiquement ${r.degats_riposte} dégât à un Villageois avant de partir (jamais mortel).`;
+    case "zombie":
+      return "le premier Villageois que tu achèves à l'Arène ne meurt pas : il devient Gobelin et perd son rôle (une seule fois par partie).";
+    default:
+      return "";
+  }
+}
+
+// `rolesEnJeu` (optionnel) : rôles attribués dans la partie en cours —
+// évite d'afficher un rôle ajouté à la config après le lancement.
+function buildReglesEmbed(config, rolesEnJeu = null) {
+  const l = config.lieux;
+  const lieu = (key) => `${l[key].emoji} **${l[key].numero}. ${l[key].label}**`;
+  const pvGobelin =
+    config.combat.pv_base + (config.combat.gobelin_pv_bonus ?? 0);
+  const degatsGobelin =
+    config.combat.degats_gobelin ?? config.combat.degats_base;
+  const lines = [
+    "Deux camps s'affrontent en secret : les **Villageois** (majorité) et les **Gobelins** (minorité).",
+    "",
+    "Chaque jour, tu choisis **un seul lieu**. Ton choix est **définitif**, et tu ne peux **pas retourner au même lieu deux jours de suite**. Tout se résout à la clôture, le lendemain matin.",
+    "",
+    `${lieu("chateau")} : tu votes contre un joueur. Celui qui a le plus de voix est éliminé. En cas d'égalité, personne ne l'est.`,
+    `${lieu("camp_entrainement")} : tu attaques un joueur qui était à l'Arène la veille, ou que la Clairière t'a montré la veille (${config.combat.degats_base} dégât, ${degatsGobelin} pour un Gobelin). Sinon, tu frappes un joueur au hasard.`,
+    `${lieu("tour_de_guet")} : tu découvres le camp d'un joueur qui était à la Tour la veille (sinon, un joueur au hasard). Si plus de la moitié des joueurs y vont le même jour, personne n'apprend rien.`,
+    `${lieu("taverne")} : tu es protégé des attaques ce jour, si vous êtes ${config.taverne_seuil_protection} maximum.`,
+    `${lieu("clairiere_mystique")} : tu découvres où sont allés 2 joueurs au hasard la veille. Le jour où tu reçois cette vision, tu peux les attaquer à l'Arène.`,
+    "",
+    pvGobelin === config.combat.pv_base
+      ? `❤️ Tout le monde a ${config.combat.pv_base} PV, mais les Gobelins frappent plus fort. Au plus 1 mort au combat par jour.`
+      : `❤️ Villageois : ${config.combat.pv_base} PV, Gobelins : ${pvGobelin} PV. Au plus 1 mort au combat par jour.`,
+    "🛡️ Chaque jour, un joueur tiré au hasard est immunisé : impossible de l'éliminer, au vote comme au combat.",
+    "☀️ Jour 1 : personne ne peut mourir.",
+    `💤 Absent ${config.absences_avant_remplacement ?? 2} jours de suite ? Un bot reprend ta place. Il ira un jour sur deux au Château pour apporter sa voix au vote majoritaire.`,
+    `🏆 Les Gobelins gagnent s'ils sont aussi nombreux que les Villageois. Les Villageois gagnent s'ils éliminent tous les Gobelins, ou à la fin du Jour ${config.duree_jours}.`,
+    "",
+    "**Rôles spéciaux** (1 exemplaire de chacun) :",
+    ...Object.keys(config.roles)
+      .filter((roleKey) => !rolesEnJeu || rolesEnJeu.has(roleKey))
+      .map(
+      (roleKey) =>
+        `${config.roles[roleKey].emoji} **${config.roles[roleKey].label}** (camp ${config.camps[config.roles[roleKey].camp].label}) : ${roleDescription(roleKey, config)}`,
+    ),
+    "",
+    "📜 **Journal** : ton rôle, tes PV et tes indices.",
+    "📬 **Messagerie** : 1 message anonyme par jour, les 3 derniers restent affichés.",
+  ];
+  return {
+    title: "📖 Règles de Goblin Hunters",
+    description: lines.join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+  };
+}
+
+// ── DM (fetch direct API REST Discord, comme zoom.js/lajustecarte.js) ──
+
+// Gobelin-zombie : le converti apprend son nouveau camp et ses coéquipiers,
+// les autres Gobelins apprennent qui les rejoint.
+async function sendConversionDMs(convertiId, joueursApres, estBot) {
+  const converti = joueursApres.find((j) => j.discordId === convertiId);
+  if (!converti) return;
+  if (!estBot(convertiId)) {
+    await sendGoblinHuntersDM(convertiId, {
+      title: "🧟 Goblin Hunters : tu as été converti(e) !",
+      description: [
+        "Le Gobelin-zombie t'a achevé(e) à l'Arène… mais tu ne meurs pas : **tu es désormais un Gobelin** 👺.",
+        "Tu perds ton ancien rôle. Tu gagnes désormais avec les Gobelins.",
+        otherGobelinsLine(converti, joueursApres),
+      ].join("\n"),
+      color: GOBLINHUNTERS_COLOR,
+    });
+  }
+  for (const g of joueursApres) {
+    if (!g.alive || g.camp !== "gobelin" || g.discordId === convertiId || estBot(g.discordId)) continue;
+    await sendGoblinHuntersDM(g.discordId, {
+      title: "🧟 Goblin Hunters : un nouveau Gobelin",
+      description: `**${converti.username}** a été converti(e) par le zombie et rejoint votre camp.`,
+      color: GOBLINHUNTERS_COLOR,
+    });
+  }
+}
+
+async function sendGoblinHuntersDM(discordId, embed) {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token) return false;
+  try {
+    const dmRes = await fetch(
+      "https://discord.com/api/v10/users/@me/channels",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ recipient_id: discordId }),
+      },
+    );
+    if (!dmRes.ok) return false;
+    const { id: dmChannelId } = await dmRes.json();
+    await fetch(
+      `https://discord.com/api/v10/channels/${dmChannelId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ embeds: [embed] }),
+      },
+    );
+    return true;
+  } catch (err) {
+    console.error("[GoblinHunters] Échec envoi DM:", err.message);
+    return false;
+  }
+}
+
+async function sendRoleDM(joueur, config, joueurs) {
+  const camp = config.camps[joueur.camp];
+  const roleLabel = joueur.role ? config.roles[joueur.role].label : null;
+  const roleLine = joueur.role
+    ? `${config.roles[joueur.role].emoji} **${roleLabel}** : ${roleDescription(joueur.role, config)}`
+    : null;
+  const gobelinsLine = otherGobelinsLine(joueur, joueurs);
+  const embed = {
+    title: "👺 Goblin Hunters : ton rôle secret",
+    description: [
+      `Tu es un(e) ${camp.emoji} **${camp.labelSingulier}**${roleLabel ? ` (rôle spécial : **${roleLabel}**)` : ""}.`,
+      ...(roleLine ? ["", roleLine] : []),
+      ...(gobelinsLine ? ["", gobelinsLine] : []),
+      "",
+      "🤫 Garde ce rôle secret, le jeu n'a d'intérêt que si tu sais bluffer !",
+    ].join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+  };
+  await sendGoblinHuntersDM(joueur.discordId, embed);
+}
+
+async function sendInvestigationDM(investigation, joueursApres, config) {
+  const cible = joueursApres.find((j) => j.discordId === investigation.cibleId);
+  const camp = config.camps[investigation.campReporte];
+  const embed = {
+    title: "🔭 Tour de Guet : résultat de ton enquête",
+    description: `**${cible?.username || "?"}** appartient au camp des ${camp.emoji} **${camp.label}**.`,
+    color: GOBLINHUNTERS_COLOR,
+  };
+  await sendGoblinHuntersDM(investigation.investigatorId, embed);
+}
+
+// Camp(s) des attaquants ayant frappé la victime ce jour-là (tous comptés,
+// comme pour le Guet-Apens), regroupés par camp. Identités jamais révélées.
+function formatAttaquantsCamps(discordId, closure, config) {
+  const attackerIds = [
+    ...new Set(
+      (closure.attacks || [])
+        .filter((a) => a.targetId === discordId)
+        .map((a) => a.attackerId),
+    ),
+  ];
+  const parCamp = new Map();
+  for (const id of attackerIds) {
+    const camp = closure.joueursApres.find((j) => j.discordId === id)?.camp;
+    if (camp) parCamp.set(camp, (parCamp.get(camp) || 0) + 1);
+  }
+  if (!parCamp.size) return "";
+  if (attackerIds.length === 1) {
+    const camp = config.camps[[...parCamp.keys()][0]];
+    return `, sous les coups d'un(e) ${camp.emoji} **${camp.labelSingulier}**`;
+  }
+  const parts = [...parCamp].map(([key, n]) => {
+    const camp = config.camps[key];
+    return `${n} ${camp.emoji} **${n > 1 ? camp.label : camp.labelSingulier}**`;
+  });
+  return `, sous les coups de ${parts.join(" et ")}`;
+}
+
+// DM envoyé au joueur qui vient d'être éliminé (vote ou combat) — sur
+// demande explicite, "description complète de ce qu'il s'est passé". Rappelle
+// son propre camp/rôle (seule trace, l'embed public ne montre que le camp),
+// la cause précise, et les effets de mort déclenchés le concernant (Guet-
+// Apens/Explosif s'il détenait l'un de ces rôles). Au combat, révèle le CAMP
+// du/des attaquant(s) qui l'ont achevé, jamais leur identité ; ne révèle pas
+// non plus qui a voté contre lui — décision de conception : un joueur mort
+// pourrait relayer ces infos aux vivants hors-jeu (voir la simulation
+// d'équilibrage sur l'impact de la communication externe, mémoire projet).
+async function sendEliminationDM(discordId, cause, closure, jourClos, config) {
+  const joueur = closure.joueursApres.find((j) => j.discordId === discordId);
+  if (!joueur) return;
+  const camp = config.camps[joueur.camp];
+  const roleLabel = joueur.role ? ` (${config.roles[joueur.role].label})` : "";
+
+  const lines = [
+    `Tu as été éliminé(e) au **Jour ${jourClos}**.`,
+    `Tu étais un(e) ${camp.emoji} **${camp.labelSingulier}**${roleLabel}.`,
+  ];
+
+  if (cause === "vote") {
+    const votes = closure.voteTally?.[discordId] ?? 0;
+    lines.push(
+      `⚖️ Le village t'a accusé(e) au Château (${votes} vote${votes > 1 ? "s" : ""}).`,
+    );
+  } else {
+    lines.push(
+      `⚔️ Tu es tombé(e) au combat à l'Arène${formatAttaquantsCamps(discordId, closure, config)}.`,
+    );
+  }
+
+  if (closure.guetApensReveal?.guetApensId === discordId) {
+    lines.push(
+      `🪤 Ton piège de Guet-Apens s'est déclenché : ce camp a été révélé publiquement.`,
+    );
+  }
+  if (closure.explosifRetaliation?.gobelinId === discordId) {
+    const cible = closure.joueursApres.find(
+      (j) => j.discordId === closure.explosifRetaliation.targetId,
+    );
+    lines.push(
+      `💣 Tu as explosé en mourant, infligeant ${config.roles.explosif.degats_riposte} dégât à **${cible?.username || "?"}**.`,
+    );
+  }
+
+  lines.push(
+    "",
+    `Tu peux continuer à suivre la partie, mais tu ne peux plus agir. Rendez-vous au bilan final (Jour ${config.duree_jours} au plus tard) !`,
+  );
+
+  const embed = {
+    title: "☠️ Goblin Hunters : tu as été éliminé(e)",
+    description: lines.join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+  };
+  await sendGoblinHuntersDM(discordId, embed);
+}
+
+async function sendClairiereDM(discordId, reveals, config) {
+  if (!reveals?.length) return;
+  const lines = reveals.map(
+    (r) =>
+      `**${r.cibleUsername}** était à ${config.lieux[r.lieu].emoji} ${config.lieux[r.lieu].label} hier.`,
+  );
+  const embed = {
+    title: "🌫️ Clairière : ta vision",
+    description: [
+      ...lines,
+      "",
+      "⚔️ Aujourd'hui, tu peux les attaquer à l'Arène, où qu'ils soient.",
+    ].join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+  };
+  await sendGoblinHuntersDM(discordId, embed);
+}
+
+// ── Publication quotidienne (appelée uniquement par jeux/scripts/postGoblinHunters.js) ──
+
+export async function postGoblinHunters(
+  channelId,
+  {
+    dryRun = false,
+    noPing = false,
+    isPublic = false,
+    requireActiveState = false,
+    forceClose = false,
+    force = false,
+  } = {},
+) {
+  const config = await loadGoblinHuntersConfig();
+  const state = await readState();
+
+  if (state?.termine) return { termine: true };
+
+  // Garde-fou anti-double-avancée : un cron en retard qui se déclencherait
+  // juste après une relance manuelle du même jour clôturerait un jour tout
+  // juste ouvert (même incident/pattern que Robinson, 26/08). Jamais
+  // appliqué en dry-run. `force` permet un rattrapage volontaire en test
+  // (distinct de `forceClose`, qui ignore la date limite d'inscription).
+  if (
+    state &&
+    !dryRun &&
+    !force &&
+    isTooSoonSinceLastClosure(state.publishedAt)
+  ) {
+    return {
+      skipped: true,
+      reason: "tooSoonSinceLastClosure",
+      publishedAt: state.publishedAt,
+    };
+  }
+
+  // Garde-fou : une partie active sur un AUTRE salon ne doit jamais être
+  // reprise ici (même incident/principe que Boss Raid, voir CONTRIBUTING.md).
+  if (state && state.channelId !== channelId) {
+    return { wrongChannel: true, activeChannelId: state.channelId };
+  }
+
+  if (!state && requireActiveState) {
+    return { skipped: true };
+  }
+
+  // 1) Aucun état -> ouverture de la fenêtre d'inscription. Interroge le
+  // vrai compteur (pas 0 en dur) : en production personne n'est encore
+  // inscrit à ce stade, mais le flux de test recommandé seed le faux pool
+  // AVANT d'ouvrir (voir goblinhunters:seed-test-pool, CONTRIBUTING.md).
+  if (!state) {
+    const closingAt = dateCloture(config.fenetre_inscription_jours);
+    const initialCount = await countInscriptions();
+    const embed = buildAnnonceInscriptionEmbed(config, closingAt);
+    const components = buildInscriptionComponents(initialCount);
+
+    if (dryRun) {
+      const pingRoleId = !noPing
+        ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+        : null;
+      return {
+        dryRun: true,
+        phase: "inscription",
+        embed,
+        components,
+        pingRoleId,
+      };
+    }
+
+    return publishAndWriteState(channelId, null, {
+      embed,
+      components,
+      noPing,
+      estAnnonce: true,
+      extraState: {
+        phase: "inscription",
+        closingAt,
+        openedAt: new Date().toISOString(),
+      },
+    });
+  }
+
+  // 2) Phase inscription : rappel, annulation (effectif minimum non atteint
+  // à la clôture) ou lancement si la fenêtre est close. Les inscrits ayant
+  // quitté le serveur sont d'abord désinscrits.
+  if (state.phase === "inscription") {
+    const now = new Date();
+    if (!dryRun) await desinscrirePartis();
+    const count = await countInscriptions();
+
+    // --force-close (tests uniquement, jamais câblé dans le workflow GitHub
+    // Actions) : ignore l'échéance réelle de closingAt pour ce run, sans la
+    // réécrire — évite d'attendre 3 jours pour tester le lancement.
+    // Effectif max atteint : lancement anticipé sans attendre closingAt (pris
+    // en compte seulement au prochain passage du cron, pas au clic
+    // d'inscription — voir countInscriptions()).
+    const effectifMaxAtteint = count >= config.effectif_max;
+    if (!forceClose && !effectifMaxAtteint && new Date(state.closingAt) > now) {
+      const embed = buildInscriptionRappelEmbed(config, count, state.closingAt);
+      const components = buildInscriptionComponents(count);
+      if (dryRun)
+        return { dryRun: true, phase: "inscription", embed, components };
+      return publishAndWriteState(channelId, state, {
+        embed,
+        components,
+        noPing: true,
+        estAnnonce: false,
+        extraState: {},
+      });
+    }
+
+    if (count < config.effectif_min) {
+      const embed = buildAnnulationEmbed(config, count, state);
+      if (dryRun)
+        return { dryRun: true, phase: "inscription", annulation: true, embed };
+      const r = await publishAndWriteState(channelId, state, {
+        embed,
+        components: [],
+        noPing,
+        estAnnonce: false,
+        termine: true,
+      });
+      return { ...r, annulation: true };
+    }
+
+    if (dryRun) {
+      // Aperçu du lancement SANS écrire d'état ni envoyer de DM : reproduit
+      // la même logique que launchGame() (jeux/services/goblinhunters.js)
+      // en lecture seule, pour valider la répartition des camps/rôles avant
+      // le vrai lancement (ex. avec --force-close en test).
+      const inscriptions = await listInscriptions();
+      const playerIds = inscriptions.map((i) => i.discordId);
+      const minorityCount = computeMinorityCount(
+        playerIds.length,
+        config.minority_table,
+      );
+      const assignments = assignCampsAndRoles(playerIds, minorityCount);
+      const joueursPreview = buildInitialRoster(inscriptions, assignments, {
+        pv_base: config.combat.pv_base,
+        gobelinPvBonus: config.combat.gobelin_pv_bonus,
+        bucheronOverride: { pv: config.roles.bucheron.pv },
+      });
+      const embed = await buildJourEmbed(1, joueursPreview, config, null);
+      const components = buildJourComponents(1, config);
+      return {
+        dryRun: true,
+        phase: "lancement",
+        joueursCount: count,
+        embed,
+        components,
+        joueurs: joueursPreview,
+      };
+    }
+
+    const { joueurs } = await launchGame(channelId, config);
+    for (const j of joueurs) {
+      await sendRoleDM(j, config, joueurs);
+    }
+    const embed = await buildJourEmbed(1, joueurs, config, null);
+    const components = buildJourComponents(1, config);
+    // `state` (lu AVANT launchGame) et non un état relu : launchGame()
+    // réécrit l'état sans messageId, le post d'inscription n'était donc
+    // jamais supprimé au lancement.
+    return publishAndWriteState(channelId, state, {
+      embed,
+      components,
+      noPing: true,
+      estAnnonce: true,
+      extraState: {},
+    });
+  }
+
+  // 3) Phase jeu : clôture du jour courant, avance au suivant (ou fin de partie)
+  const jourClos = state.jour;
+  const closure = dryRun
+    ? await previewCloture(jourClos, config)
+    : await closeDayAndAdvance(jourClos, config);
+  const jourSuivant = jourClos + 1;
+
+  if (!dryRun) {
+    // Bots de remplacement : aucun DM (le discordId est celui de l'ancien
+    // joueur humain, qui ne doit plus rien recevoir).
+    const estBot = (id) =>
+      closure.joueursApres.some((j) => j.discordId === id && j.bot);
+    if (closure.eliminationsParVote && !estBot(closure.eliminationsParVote)) {
+      await sendEliminationDM(
+        closure.eliminationsParVote,
+        "vote",
+        closure,
+        jourClos,
+        config,
+      );
+    }
+    if (closure.deathIdCombat && !estBot(closure.deathIdCombat)) {
+      await sendEliminationDM(
+        closure.deathIdCombat,
+        "combat",
+        closure,
+        jourClos,
+        config,
+      );
+    }
+    if (closure.conversionId) {
+      await sendConversionDMs(closure.conversionId, closure.joueursApres, estBot);
+    }
+    for (const investigation of closure.investigations) {
+      if (estBot(investigation.investigatorId)) continue;
+      await sendInvestigationDM(investigation, closure.joueursApres, config);
+    }
+    for (const [discordId, reveals] of Object.entries(
+      closure.clairiereReveals || {},
+    )) {
+      if (estBot(discordId)) continue;
+      await sendClairiereDM(discordId, reveals, config);
+    }
+  }
+
+  const victory =
+    closure.victory ||
+    (jourSuivant > config.duree_jours ? "chasseurs_survie" : null);
+
+  if (victory) {
+    let currentManche = null;
+    if (!dryRun && isPublic) {
+      currentManche = await archiveManche({
+        victory,
+        jourFinal: jourClos,
+        resolvedAt: new Date().toISOString(),
+      });
+    }
+    const manches = await listManches({ limit: 10 });
+    const embed = buildOutcomeEmbed(
+      victory,
+      closure.joueursApres,
+      config,
+      manches,
+      currentManche,
+      closure,
+      jourClos,
+    );
+    if (dryRun) return { dryRun: true, final: true, embed, closure };
+
+    const freshState = await readState();
+    const result = await publishAndWriteState(channelId, freshState, {
+      embed,
+      components: [],
+      noPing,
+      estAnnonce: false,
+      termine: true,
+      extraState: { termine: true },
+    });
+    return { ...result, final: true };
+  }
+
+  const embed = await buildJourEmbed(
+    jourSuivant,
+    closure.joueursApres,
+    config,
+    closure,
+  );
+  const components = buildJourComponents(jourSuivant, config);
+  if (dryRun)
+    return { dryRun: true, jour: jourSuivant, embed, components, closure };
+
+  const freshState = await readState();
+  return publishAndWriteState(channelId, freshState, {
+    embed,
+    components,
+    noPing: true,
+    estAnnonce: false,
+    extraState: {},
+  });
+}
+
+// Supprime l'ancien message (tolérant), poste le nouveau, fusionne l'état
+// déjà écrit par le service (launchGame/closeDayAndAdvance pour la phase
+// "jeu") avec les métadonnées de message. Diffère du publishAndWriteState de
+// bossraid.js (qui écrit tout l'état d'un coup) car l'état ici est bien plus
+// riche (roster complet) et déjà persisté par la couche service — voir
+// jeux/services/goblinhunters.js.
+async function publishAndWriteState(
+  channelId,
+  previousState,
+  { embed, components, noPing, estAnnonce, termine = false, extraState = {} },
+) {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token) throw new Error("DISCORD_TOKEN manquant.");
+
+  if (previousState?.messageId && previousState?.channelId) {
+    try {
+      const delRes = await fetch(
+        `https://discord.com/api/v10/channels/${previousState.channelId}/messages/${previousState.messageId}`,
+        { method: "DELETE", headers: { Authorization: `Bot ${token}` } },
+      );
+      if (!delRes.ok && delRes.status !== 404) {
+        console.warn(
+          `[GoblinHunters] Échec suppression du message de la veille (${delRes.status}), publication quand même.`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        "[GoblinHunters] Erreur réseau à la suppression du message de la veille:",
+        err.message,
+      );
+    }
+  }
+
+  const roleId =
+    (estAnnonce || termine) && !noPing
+      ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
+      : null;
+
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components,
+        ...buildRolePingFields(roleId),
+      }),
+    },
+  );
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
+  }
+  const message = await res.json();
+
+  const base = (await readState()) || {};
+  await writeState({
+    ...base,
+    ...extraState,
+    channelId,
+    messageId: message.id,
+    publishedAt: new Date().toISOString(),
+    termine,
+  });
+
+  return { embed, message, termine };
+}
+
+// ── Édition en place (réponses aux interactions, éphémères) ────────
+
+async function patchOriginal(webhookUrl, payload) {
+  if (!webhookUrl) return;
+  try {
+    await fetch(`${webhookUrl}/messages/@original`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec PATCH:", err.message);
+  }
+}
+
+// ── Boutons d'inscription ───────────────────────────────────────────
+// Réponse éphémère à l'auteur du clic (confirmation) + PATCH direct du
+// message public (token du bot) pour rafraîchir le compteur affiché sur le
+// bouton [✅ S'inscrire (n)] — même découplage que le bouton Princesse de
+// Boss Raid (recordVote en éphémère, compteur public rafraîchi séparément).
+
+async function refreshInscriptionMessage(botToken, config) {
+  if (!botToken) return;
+  try {
+    const state = await readState();
+    if (
+      !state ||
+      state.phase !== "inscription" ||
+      state.cloture ||
+      state.termine ||
+      !state.channelId ||
+      !state.messageId
+    )
+      return;
+    const count = await countInscriptions();
+    // Réutilise toujours le gabarit "rappel" (compteur en avant) pour le
+    // rafraîchissement live, même si le message actuellement affiché était
+    // l'annonce initiale — on ne retrace pas quelle
+    // variante est postée, et le compteur à jour prime sur le texte exact.
+    const embed = buildInscriptionRappelEmbed(config, count, state.closingAt);
+    const components = buildInscriptionComponents(count);
+    await fetch(
+      `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ embeds: [embed], components }),
+      },
+    );
+  } catch (err) {
+    console.error(
+      "[GoblinHunters] Échec rafraîchissement du compteur d'inscription:",
+      err.message,
+    );
+  }
+}
+
+export async function handleRegisterButton(
+  webhookUrl,
+  discordId,
+  username,
+  botToken,
+) {
+  try {
+    if (await refuserApresCloture(webhookUrl, discordId, "inscription"))
+      return;
+    const config = await loadGoblinHuntersConfig();
+    const result = await registerPlayer(
+      discordId,
+      username,
+      config.effectif_max,
+    );
+    const messages = {
+      registered: "✅ Tu es inscrit(e) à Goblin Hunters !",
+      already_registered: "Tu es déjà inscrit(e).",
+      full: `Désolé, l'effectif maximum (${config.effectif_max}) est atteint.`,
+    };
+    await patchOriginal(webhookUrl, {
+      content: messages[result.status],
+      embeds: [],
+      components: [],
+    });
+    if (result.status === "registered")
+      await refreshInscriptionMessage(botToken, config);
+  } catch (err) {
+    console.error("[GoblinHunters] Échec inscription:", err.message);
+  }
+}
+
+// Fenêtre d'inscription terminée (heure de clôture passée, partie lancée
+// ou annulée) : refus en éphémère et, si besoin, clôture du message.
+async function refuserApresCloture(webhookUrl, discordId, action) {
+  const state = await readState();
+  if (state?.phase === "inscription" && !state.termine && !inscriptionsCloses(state))
+    return false;
+  const dejaInscrit = (await listInscriptions()).some(
+    (i) => i.discordId === discordId,
+  );
+  const content =
+    state?.phase === "jeu" && !state.termine
+      ? "🔒 La partie est lancée, les inscriptions sont closes."
+      : action === "desinscription"
+      ? "🔒 Les inscriptions sont closes, il n'est plus possible de se désinscrire."
+      : dejaInscrit
+        ? "🔒 Les inscriptions sont closes : tu es bien inscrit(e)."
+        : "🔒 Les inscriptions sont closes : tu ne participes pas à cette partie. Rendez-vous à la prochaine !";
+  await patchOriginal(webhookUrl, { content, embeds: [], components: [] });
+  await cloturerInscriptions();
+  return true;
+}
+
+export async function handleUnregisterButton(webhookUrl, discordId, botToken) {
+  try {
+    if (await refuserApresCloture(webhookUrl, discordId, "desinscription"))
+      return;
+    const result = await unregisterPlayer(discordId);
+    const content =
+      result.status === "unregistered"
+        ? "✖️ Tu as été désinscrit(e)."
+        : "Tu n'étais pas inscrit(e).";
+    await patchOriginal(webhookUrl, { content, embeds: [], components: [] });
+    if (result.status === "unregistered") {
+      const config = await loadGoblinHuntersConfig();
+      await refreshInscriptionMessage(botToken, config);
+    }
+  } catch (err) {
+    console.error("[GoblinHunters] Échec désinscription:", err.message);
+  }
+}
+
+// ── Boutons de lieu ──────────────────────────────────────────────────
+
+export async function handleLieuButton(
+  webhookUrl,
+  jour,
+  lieu,
+  slot,
+  discordId,
+  username,
+  confirme = false,
+) {
+  try {
+    const state = await readState();
+    const config = await loadGoblinHuntersConfig();
+
+    if (
+      !state ||
+      state.phase !== "jeu" ||
+      state.termine ||
+      String(state.jour) !== String(jour)
+    ) {
+      await patchOriginal(webhookUrl, {
+        content:
+          "La journée a changé entre-temps, regarde le nouveau message !",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    if (joueur?.bot) {
+      await patchOriginal(webhookUrl, {
+        content: messageRemplace(joueur),
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (!joueur || !joueur.alive) {
+      await patchOriginal(webhookUrl, {
+        content: "Tu ne participes pas (ou plus) à cette partie.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (slot === "secondary" && joueur.role !== "eclaireur") {
+      await patchOriginal(webhookUrl, {
+        content: "Seul l'Éclaireur peut soumettre une 2ᵉ action.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (!isLieuRepeatAllowed(joueur.position, lieu, jour)) {
+      await patchOriginal(webhookUrl, {
+        content: `🚫 Tu étais déjà à ${config.lieux[lieu].label} hier : impossible d'y rester 2 jours de suite, choisis un autre lieu.`,
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const existingAction = await readPlayerAction(jour, discordId);
+    if (isActionLocked(existingAction, slot, lieu)) {
+      await patchOriginal(webhookUrl, {
+        content:
+          "🔒 Tu as déjà choisi ton lieu aujourd'hui (définitif dès validation), impossible d'en changer ou de choisir un autre lieu.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    // Nerf Éclaireur : la 2ᵉ action doit cibler un lieu DIFFÉRENT de la 1ère
+    // — sans ça, l'Éclaireur pouvait voter 2x ou attaquer 2x le même jour,
+    // doublant un effet qui n'est censé compter qu'une fois par lieu/jour.
+    if (slot === "secondary" && existingAction?.primary?.lieu === lieu) {
+      await patchOriginal(webhookUrl, {
+        content: `🚫 Tu as déjà choisi ${config.lieux[lieu].label} pour ta 1ère action, ta 2ᵉ action doit viser un lieu différent.`,
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    // Étape de confirmation (anti-missclick) : rien n'est enregistré ni
+    // affiché (noms des cibles compris) avant [✅ Confirmer]. Un lieu déjà
+    // engagé en attente de cible (pending) est rouvert directement.
+    if (!confirme && !existingAction?.[slot]?.pending) {
+      await patchOriginal(webhookUrl, {
+        content: `Tu as choisi ${config.lieux[lieu].emoji} **${config.lieux[lieu].numero}. ${config.lieux[lieu].label}**. Ce choix sera **définitif** pour aujourd'hui.`,
+        embeds: [],
+        components: [
+          {
+            type: 1,
+            components: [
+              {
+                type: 2,
+                style: 3,
+                label: "Confirmer",
+                emoji: { name: "✅" },
+                custom_id: `goblinhunters_lieuok:${jour}:${lieu}:${slot}`,
+              },
+              {
+                type: 2,
+                style: 2,
+                label: "Annuler",
+                emoji: { name: "✖️" },
+                custom_id: "goblinhunters_lieuko",
+              },
+            ],
+          },
+        ],
+      });
+      return;
+    }
+
+    const lieuAction = config.lieux[lieu]?.action;
+    // Château/Arène au Jour 1 : le déplacement reste possible, mais aucune
+    // action réelle (computeCloture() ignore vote et combat tant que
+    // jour === 1) — traité comme Taverne/Clairière ci-dessous, sans étape de
+    // sélection de cible. Décidé avec l'utilisateur : seule l'ACTION doit
+    // être nulle ce jour-là, pas le choix du lieu lui-même.
+    const sansCibleJour1 =
+      Number(jour) === 1 && LIEUX_SANS_CIBLE_JOUR1.has(lieu);
+
+    // Taverne/Clairière : aucune cible nécessaire, action enregistrée
+    // directement (la Clairière révèle 2 joueurs au hasard à la clôture,
+    // voir computeClairiereReveals — pas de choix à faire ici).
+    if (
+      lieuAction === "protection" ||
+      lieuAction === "vision" ||
+      sansCibleJour1
+    ) {
+      await recordAction(jour, discordId, slot, { lieu }, username);
+      const followup =
+        joueur.role === "eclaireur" && slot === "primary"
+          ? buildEclaireurSecondButtonRow(jour)
+          : [];
+      const confirmation = sansCibleJour1
+        ? `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} : aucun effet aujourd'hui (vote et combat désactivés le Jour 1). **Choix définitif pour aujourd'hui.**`
+        : lieuAction === "protection"
+          ? "🍺 Tu te rends à la Taverne (protection si le lieu n'est pas surpeuplé aujourd'hui). **Choix définitif pour aujourd'hui.**"
+          : "🌫️ Tu te rends à la Clairière. Demain, tu sauras où 2 joueurs au hasard sont allés aujourd'hui. **Choix définitif pour aujourd'hui.**";
+      await patchOriginal(webhookUrl, {
+        content: confirmation,
+        embeds: [],
+        components: followup,
+      });
+      return;
+    }
+
+    // Château (vote) : cible libre sur tout joueur vivant (hors soi-même).
+    // Combat/Enquête : cible restreinte au dernier plateau connu — l'Arène
+    // accepte aussi les joueurs repérés par CE joueur à la Clairière la veille.
+    const reperes =
+      lieu === "camp_entrainement"
+        ? revealedTargetsForDay(await readPlayerIndices(discordId), Number(jour) - 1)
+        : new Set();
+    let candidats =
+      lieu === "chateau"
+        ? state.joueurs.filter((j) => j.alive && j.discordId !== discordId)
+        : state.joueurs.filter(
+            (j) =>
+              j.alive &&
+              j.discordId !== discordId &&
+              (j.position === lieu || reperes.has(j.discordId)),
+          );
+    // Immunisé du jour : inutile de voter contre lui ou de l'attaquer.
+    if (state.immuneId && lieu !== "tour_de_guet") {
+      candidats = candidats.filter((j) => j.discordId !== state.immuneId);
+    }
+
+    // Tour de Guet : jamais reproposer une cible dont le camp est déjà connu
+    // (bug repéré en test réel — "displaynone" révélé 2 fois au même joueur).
+    // Le filet de sécurité applique la même exclusion à la clôture, voir
+    // computeInvestigations()/knownEnqueteTargets().
+    if (lieu === "tour_de_guet") {
+      const known = knownEnqueteTargets(await readPlayerIndices(discordId));
+      candidats = candidats.filter((j) => !known.has(j.discordId));
+    }
+
+    if (!candidats.length) {
+      await recordAction(
+        jour,
+        discordId,
+        slot,
+        { lieu, cibleId: null },
+        username,
+      );
+      const followup =
+        joueur.role === "eclaireur" && slot === "primary"
+          ? buildEclaireurSecondButtonRow(jour)
+          : [];
+      // Personne vu ici hier, mais l'action n'est pas perdue pour autant :
+      // le filet de sécurité (fallbackActorsFor, jeux/services/goblinhunters.js)
+      // choisira une cible au hasard à la clôture — cibleId reste null ici,
+      // c'est le tirage à la clôture qui tranche, jamais au clic.
+      await patchOriginal(webhookUrl, {
+        content: `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} : aucune cible possible, tu agiras sur un joueur tiré au hasard à la clôture. **Choix définitif pour aujourd'hui.**`,
+        embeds: [],
+        components: followup,
+      });
+      return;
+    }
+
+    // Lieu verrouillé AVANT d'afficher les noms (voir isActionLocked) :
+    // le Château n'est pas concerné, sa liste couvre tous les vivants et ne
+    // révèle donc aucune position.
+    if (lieu !== "chateau") {
+      await recordAction(
+        jour,
+        discordId,
+        slot,
+        { lieu, cibleId: null, pending: true },
+        username,
+      );
+    }
+
+    const components = buildTargetSelectRow(candidats, jour, lieu, slot);
+    await patchOriginal(webhookUrl, {
+      content:
+        lieu === "chateau"
+          ? `${config.lieux[lieu].emoji} Choisis ta cible à ${config.lieux[lieu].label} :`
+          : `${config.lieux[lieu].emoji} Tu te rends à ${config.lieux[lieu].label} (**lieu définitif**). Choisis ta cible parmi les joueurs ${lieu === "camp_entrainement" ? "présents ici hier ou repérés à la Clairière" : "présents ici hier"}, sinon elle sera tirée au hasard à la clôture :`,
+      embeds: [],
+      components,
+    });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec bouton de lieu:", err.message);
+  }
+}
+
+export async function handleEclaireurSecond(webhookUrl, jour, discordId) {
+  try {
+    const state = await readState();
+    const config = await loadGoblinHuntersConfig();
+    if (
+      !state ||
+      state.phase !== "jeu" ||
+      state.termine ||
+      String(state.jour) !== String(jour)
+    ) {
+      await patchOriginal(webhookUrl, {
+        content: "La journée a changé entre-temps.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    if (!joueur || joueur.role !== "eclaireur") {
+      await patchOriginal(webhookUrl, {
+        content: "Seul l'Éclaireur peut soumettre une 2ᵉ action.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    await patchOriginal(webhookUrl, {
+      content: "🧭 Choisis ta 2ᵉ destination du jour :",
+      embeds: [],
+      components: [buildLieuButtonsRow(jour, config, "secondary")],
+    });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec 2e action Éclaireur:", err.message);
+  }
+}
+
+// ── Select de cible ──────────────────────────────────────────────────
+
+export async function handleTargetSelect(
+  webhookUrl,
+  jour,
+  lieu,
+  slot,
+  discordId,
+  username,
+  selectedValue,
+) {
+  try {
+    const state = await readState();
+    if (
+      !state ||
+      state.phase !== "jeu" ||
+      state.termine ||
+      String(state.jour) !== String(jour)
+    ) {
+      await patchOriginal(webhookUrl, {
+        content: "La journée a changé entre-temps.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const config = await loadGoblinHuntersConfig();
+    const cibleId = selectedValue === "__none__" ? null : selectedValue;
+
+    // Défense en profondeur : réévalue le verrou ici aussi (en plus du
+    // contrôle déjà fait dans handleLieuButton) au cas où le select menu
+    // éphémère aurait été ouvert avant qu'une action ne soit déjà validée
+    // entre-temps (ex. via l'autre slot, ou un double-clic).
+    const existingAction = await readPlayerAction(jour, discordId);
+    if (isActionLocked(existingAction, slot, lieu)) {
+      await patchOriginal(webhookUrl, {
+        content:
+          "🔒 Tu as déjà choisi ton lieu aujourd'hui (définitif dès validation), impossible d'en changer.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    // Le vote du Château passe par le même recordAction() que tout autre
+    // lieu (pas de stockage séparé) — sinon voter n'écrase jamais une
+    // action précédente et inversement, permettant de cumuler les deux le
+    // même jour (bug corrigé, voir computeVoteTally dans goblinhunters.js).
+    await recordAction(jour, discordId, slot, { lieu, cibleId }, username);
+
+    const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    const followup =
+      joueur?.role === "eclaireur" && slot === "primary"
+        ? buildEclaireurSecondButtonRow(jour)
+        : [];
+    const cibleUsername =
+      state.joueurs.find((j) => j.discordId === cibleId)?.username || "?";
+    await patchOriginal(webhookUrl, {
+      content: `${config.lieux[lieu].emoji} Action enregistrée, cible : **${cibleUsername}**. **Choix définitif pour aujourd'hui.**`,
+      embeds: [],
+      components: followup,
+    });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec select de cible:", err.message);
+  }
+}
+
+// ── Bouton [📜 Journal] — ÉPHÉMÈRE ET PERSONNEL, jamais public ─────
+// Contrairement aux autres jeux (Journal = historique public), ici le
+// Journal affiche exclusivement des infos privées au joueur qui clique :
+// son rôle/camp secrets, sa dernière position connue, ses PV, et son carnet
+// d'indices personnel cumulé sur toute la partie (computeIndicesForDay) —
+// seule trace persistante des rencontres passées, le plateau public
+// n'affichant que les positions COURANTES.
+
+// Les Gobelins se connaissent entre eux dès le lancement (décision de
+// design actée — voir mémoire projet) : sans ça, leur seul avantage
+// structurel (savoir qui est dans leur camp) n'existe que sur le papier et
+// jamais en jeu. Liste les autres membres du camp (vivants ET éliminés, le
+// roster étant figé) — `null` si le joueur n'est pas un Gobelin.
+function otherGobelinsLine(joueur, joueurs) {
+  if (joueur.camp !== "gobelin") return null;
+  const autres = joueurs.filter(
+    (j) => j.camp === "gobelin" && j.discordId !== joueur.discordId,
+  );
+  if (!autres.length) return "Tu es le seul Gobelin restant.";
+  const noms = autres.map((j) =>
+    j.alive ? `**${j.username}**` : `**${j.username}** (☠️ éliminé)`,
+  );
+  return `Les autres Gobelins sont : ${noms.join(", ")}.`;
+}
+
+// Joueurs encore en vie (hors soi-même), annotés du camp que le joueur
+// connaît : un Gobelin connaît tous les Gobelins, donc tous les autres sont
+// Villageois ; un Villageois ne connaît que ses résultats d'enquête (le plus
+// récent par cible — l'Infiltré y apparaît Villageois, comme dans le DM).
+function vivantsLine(joueur, joueurs, indices, config) {
+  const campConnu = new Map();
+  if (joueur.camp === "gobelin") {
+    for (const j of joueurs) campConnu.set(j.discordId, j.camp);
+  } else {
+    for (const e of indices) {
+      if (e.type === "enquete") campConnu.set(e.cibleId, e.campReporte);
+    }
+  }
+  const vivants = joueurs.filter(
+    (j) => j.alive && j.discordId !== joueur.discordId,
+  );
+  const noms = vivants.map((j) => {
+    const camp = campConnu.get(j.discordId);
+    return camp ? `${config.camps[camp].emoji} ${j.username}` : j.username;
+  });
+  return `**👥 Encore en vie (${vivants.length})** : ${noms.join(", ")}`;
+}
+
+function formatIndiceLine(entry, config) {
+  const lieu = config.lieux[entry.lieu];
+  if (entry.type === "enquete") {
+    const camp = config.camps[entry.campReporte];
+    return `Jour ${entry.jour} : 🔭 **${entry.cibleUsername}** = ${camp.emoji} ${camp.labelSingulier}`;
+  }
+  if (entry.type === "reveal") {
+    return `Jour ${entry.jour} : 🌫️ **${entry.cibleUsername}** se trouvait à ${lieu.emoji} ${lieu.label}`;
+  }
+  return `Jour ${entry.jour} : ⚔️ **${entry.cibleUsername}** croisé(e) au combat (${lieu.emoji} ${lieu.label})`;
+}
+
+export async function handleJournal(webhookUrl, discordId) {
+  try {
+    const state = await readState();
+    if (!state || state.phase === "inscription") {
+      await patchOriginal(webhookUrl, {
+        content: "Aucune partie Goblin Hunters en cours pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const joueur = state.joueurs.find((j) => j.discordId === discordId);
+    if (joueur?.bot) {
+      await patchOriginal(webhookUrl, {
+        content: messageRemplace(joueur),
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    if (!joueur) {
+      await patchOriginal(webhookUrl, {
+        content: "Tu ne participes pas à cette partie.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    const config = await loadGoblinHuntersConfig();
+    const camp = config.camps[joueur.camp];
+    const roleLabel = joueur.role
+      ? config.roles[joueur.role].label
+      : "aucun (rôle de base)";
+    const lieu = config.lieux[joueur.position];
+    const statut = joueur.alive
+      ? `**${joueur.pv}/${joueur.pvMax} PV**`
+      : `☠️ éliminé(e) (jour ${joueur.campReveleAt})`;
+
+    const gobelinsLine = otherGobelinsLine(joueur, state.joueurs);
+
+    const lines = [
+      `${camp.emoji} **Camp** : ${camp.labelSingulier}`,
+      `**Rôle spécial** : ${roleLabel}`,
+      ...(gobelinsLine ? [gobelinsLine] : []),
+      `**Dernière position connue** : ${lieu.emoji} ${lieu.label}`,
+      `**État** : ${statut}`,
+    ];
+
+    // Choix déjà validé pour AUJOURD'HUI (pas encore appliqué au plateau
+    // public — ça n'arrive qu'à la clôture) : puisque chaque choix est
+    // définitif dès validation (isActionLocked), le rappeler ici évite au
+    // joueur de devoir s'en souvenir lui-même en attendant demain.
+    if (joueur.alive) {
+      const todaysAction = await readPlayerAction(state.jour, discordId);
+      const joueurById = new Map(state.joueurs.map((j) => [j.discordId, j]));
+      const formatChoice = (choice) => {
+        if (!choice) return null;
+        const choiceLieu = config.lieux[choice.lieu];
+        const cibleUsername = choice.cibleId
+          ? joueurById.get(choice.cibleId)?.username
+          : null;
+        return `${choiceLieu.emoji} ${choiceLieu.label}${cibleUsername ? ` → **${cibleUsername}**` : ""}`;
+      };
+      const choix = [
+        formatChoice(todaysAction?.primary),
+        formatChoice(todaysAction?.secondary),
+      ].filter(Boolean);
+      lines.push(
+        `**Choix du Jour ${state.jour}** : ${choix.length ? choix.join(" + ") : "aucun soumis pour l'instant"}`,
+      );
+    }
+
+    const indices = await readPlayerIndices(discordId);
+    lines.push("", vivantsLine(joueur, state.joueurs, indices, config));
+
+    lines.push("", "**🔍 Indices récoltés**");
+    lines.push(
+      ...(indices.length
+        ? indices.map((e) => formatIndiceLine(e, config))
+        : ["Aucun pour l'instant."]),
+    );
+
+    const embed = {
+      title: "📜 Ton Journal (Goblin Hunters)",
+      description: lines.join("\n"),
+      color: GOBLINHUNTERS_COLOR,
+    };
+    await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec Journal:", err.message);
+  }
+}
+
+// ── Bouton [📖 Règles] — éphémère, statique ────────────────────────
+
+export async function handleRegles(webhookUrl) {
+  try {
+    const config = await loadGoblinHuntersConfig();
+    const state = await readState();
+    // Rôles tels qu'attribués au lancement : `roleOrigine` pour un converti
+    // (sinon la disparition de son rôle trahirait la conversion).
+    const rolesEnJeu =
+      state?.phase === "jeu" && state.joueurs?.length
+        ? new Set(
+            state.joueurs.map((j) => j.roleOrigine ?? j.role).filter(Boolean),
+          )
+        : null;
+    const embed = buildReglesEmbed(config, rolesEnJeu);
+    await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec Règles:", err.message);
+  }
+}
+
+// ── Bouton [📬 Messagerie] — mur de messages anonymes, 1/jour/joueur ──────
+// Ni un lieu ni une action de clôture : contrairement au reste du jeu, la
+// Messagerie est LIVE (pas résolue le lendemain via computeCloture) — un
+// message posté apparaît immédiatement pour tout le monde au prochain clic.
+// L'anonymat est structurel côté service (goblinhunters.js ne stocke jamais
+// le discordId de l'auteur avec le contenu), pas juste un masquage ici.
+
+function buildMessagerieEmbed(messages, { inscrit, alive, alreadySent }) {
+  const lines = messages.length
+    ? messages.map((m) => `- Jour ${m.jour} : "${m.content}"`)
+    : ["- Aucun message pour l'instant."];
+  const footer = !inscrit
+    ? "Tu n'es pas inscrit(e) au jeu, tu ne peux pas poster de message."
+    : !alive
+      ? "Tu es éliminé(e), tu ne peux plus poster de message."
+      : alreadySent
+        ? "Tu as déjà envoyé ton message du jour, reviens demain."
+        : "Un message par jour et par joueur (anonyme).";
+  return {
+    title: "📬 Messagerie du village",
+    description: [
+      "Les 3 derniers messages postés :",
+      ...lines,
+      "",
+      footer,
+    ].join("\n"),
+    color: GOBLINHUNTERS_COLOR,
+  };
+}
+
+function buildMessagerieComponents({ alive, alreadySent }) {
+  if (!alive || alreadySent) return [];
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 1,
+          label: "✍️ Écrire un message",
+          custom_id: "goblinhunters_messagerie_write",
+        },
+      ],
+    },
+  ];
+}
+
+// Contenu de la Modal ouverte par le bouton "Écrire un message" — voir
+// anagrams.js pour le mécanisme détaillé (réponse synchrone type:9).
+export function buildMessagerieModal() {
+  return {
+    custom_id: "goblinhunters_messagerie_modal",
+    title: "Message anonyme",
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 4,
+            custom_id: "goblinhunters_messagerie_input",
+            style: 1,
+            label: "Ton message (anonyme, 1/jour)",
+            placeholder: "Ex. : Qui était à la Taverne hier soir ?",
+            required: true,
+            max_length: 200,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export async function handleMessagerie(webhookUrl, discordId) {
+  try {
+    const state = await readState();
+    if (!state || state.phase !== "jeu") {
+      await patchOriginal(webhookUrl, {
+        content: "Aucune partie Goblin Hunters en cours pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const found = state.joueurs.find((j) => j.discordId === discordId);
+    const joueur = found?.bot ? null : found;
+    const alive = joueur?.alive === true;
+    const alreadySent = alive
+      ? await hasSentMessageToday(state.jour, discordId)
+      : false;
+    const messages = await listRecentMessages();
+    const embed = buildMessagerieEmbed(messages, {
+      inscrit: Boolean(joueur),
+      alive,
+      alreadySent,
+    });
+    const components = buildMessagerieComponents({ alive, alreadySent });
+    await patchOriginal(webhookUrl, { embeds: [embed], components });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec Messagerie:", err.message);
+  }
+}
+
+// Soumission de la Modal — le quota (1/jour) est revérifié ici en autorité
+// (le bouton "Écrire" n'est qu'une aide visuelle côté handleMessagerie,
+// jamais la garde réelle), sur le jour COURANT relu depuis l'état, jamais un
+// jour capturé au moment de l'ouverture de la modal (la partie a pu avancer
+// entre-temps si le joueur a mis du temps à écrire).
+export async function handleMessagerieSubmit(
+  webhookUrl,
+  discordId,
+  rawMessage,
+) {
+  try {
+    const content = (rawMessage || "").trim();
+    if (!content) {
+      await patchOriginal(webhookUrl, {
+        content: "Message vide, rien n'a été envoyé.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const state = await readState();
+    const joueur =
+      state?.phase === "jeu"
+        ? state.joueurs.find((j) => j.discordId === discordId)
+        : null;
+    if (!joueur?.alive || joueur.bot) {
+      await patchOriginal(webhookUrl, {
+        content: "Tu ne peux pas envoyer de message pour le moment.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    const result = await recordMessage(state.jour, discordId, content);
+    if (result.status === "already_sent") {
+      await patchOriginal(webhookUrl, {
+        content: "Tu as déjà envoyé ton message du jour, reviens demain.",
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+    await patchOriginal(webhookUrl, {
+      content: "📬 Message envoyé anonymement !",
+      embeds: [],
+      components: [],
+    });
+  } catch (err) {
+    console.error("[GoblinHunters] Échec envoi Messagerie:", err.message);
+  }
+}

@@ -10,8 +10,8 @@ import { loadSnapshots } from "../../../backend/services/snapshot.js";
 import {
   toPublicSeasonId,
   toPublicWeekId,
-} from "../../../backend/services/dateUtils.js";
-import { fetchRaceLog } from "../../../backend/services/clashApi.js";
+} from "@clash/clash-royale/dateUtils.js";
+import { fetchRaceLog } from "@clash/clash-royale/clashApi.js";
 import { loadClanCache } from "../../../backend/services/clanCache.js";
 import {
   runBackground,
@@ -45,7 +45,7 @@ const RECAP_CLANS = {
 // ça couvre au mieux 2 saisons pleines, donc /recap ne propose que -1/-2.
 async function resolveRecapSeasonId(raceLog, currentRace, offset) {
   const { computeCurrentSeasonId } =
-    await import("../../../backend/services/dateUtils.js");
+    await import("@clash/clash-royale/dateUtils.js");
   const currentSeasonId = computeCurrentSeasonId(currentRace, raceLog);
   const seasonCounts = {};
   for (const r of raceLog) {
@@ -96,7 +96,7 @@ async function buildRecapClanSection(
   applyMinDecksFilter,
 ) {
   const { fetchCurrentRace } =
-    await import("../../../backend/services/clashApi.js");
+    await import("@clash/clash-royale/clashApi.js");
 
   const [raceLog, currentRace] = await Promise.all([
     fetchRaceLog(`#${clanTag}`),
@@ -600,7 +600,7 @@ async function buildLateReportPayload(resolved, clanVal) {
   try {
     console.log("[/late] start, clan:", resolved.tag);
     const { fetchCurrentRace, fetchClanMembers } =
-      await import("../../../backend/services/clashApi.js");
+      await import("@clash/clash-royale/clashApi.js");
     console.log("[/late] import OK");
 
     const [race, currentMembers, links] = await withTimeout(
@@ -616,7 +616,7 @@ async function buildLateReportPayload(resolved, clanVal) {
     const participants = race?.clan?.participants ?? [];
 
     const { warResetOffsetMs } =
-      await import("../../../backend/services/dateUtils.js");
+      await import("@clash/clash-royale/dateUtils.js");
     const resetUtcMs = warResetOffsetMs(resolved.tag);
     // Garde calendaire : hors jeu–dim (après reset lundi), jamais en mode GDC
     // même si l'API retourne encore periodType='warDay' transitoirement.
@@ -977,13 +977,13 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
     runBackground(async () => {
       try {
         const { fetchClanMembers } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
         const { computeTopPlayers } =
           await import("../../../backend/services/topplayers.js");
         // fetch clan members to get roles
         const members = await fetchClanMembers(`#${clanTag}`);
         const { fetchRaceLog } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
         const raceLog = await fetchRaceLog(`#${clanTag}`);
         const top = await computeTopPlayers(clanTag, members, [min], raceLog);
         let players = top.playersByQuota[min] || [];
@@ -991,7 +991,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
 
         // Déduire le weekId depuis le raceLog (première entrée = semaine précédente)
         const { computePrevWeekId } =
-          await import("../../../backend/services/dateUtils.js");
+          await import("@clash/clash-royale/dateUtils.js");
         const weekId = computePrevWeekId(raceLog) || "S?";
         const earlyWinByDay3 = await hasProvenEarlyWinByDay3(clanTag, weekId);
 
@@ -1060,7 +1060,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
     runBackground(async () => {
       try {
         const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
 
         const CLANS = [
           { name: "La Resistance", tag: "Y8JUPC9C" },
@@ -1079,7 +1079,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           computeCurrentSeasonId,
           computeCurrentWeekId,
           computePrevWeekId,
-        } = await import("../../../backend/services/dateUtils.js");
+        } = await import("@clash/clash-royale/dateUtils.js");
 
         // Récupère la course en cours pour détecter le rollover de saison (ex. S131→S132)
         let currentRaceRef = null;
@@ -1402,7 +1402,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
     runBackground(async () => {
       try {
         const { fetchRaceLog } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
         const apiUrl = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?includeTopPlayers=false&includeUncomplete=true&fast=true`;
         const apiResp = await fetch(apiUrl);
         if (!apiResp.ok) {
@@ -1418,7 +1418,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
         const analysis = await apiResp.json();
         const raceLog = await fetchRaceLog(`#${resolved.tag}`);
         const { computePrevWeekId } =
-          await import("../../../backend/services/dateUtils.js");
+          await import("@clash/clash-royale/dateUtils.js");
         const weekIdFromLog = computePrevWeekId(raceLog);
         const earlyWinByDay3 = await hasProvenEarlyWinByDay3(
           resolved.tag,
@@ -1556,7 +1556,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
     runBackground(async () => {
       try {
         const { fetchRaceLog, fetchClanMembers, fetchCurrentRace } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
         const [raceLog, currentRace] = await Promise.all([
           fetchRaceLog(`#${resolved.tag}`),
           fetchCurrentRace(`#${resolved.tag}`).catch(() => null),
@@ -1574,7 +1574,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
         }
 
         const { computeCurrentSeasonId } =
-          await import("../../../backend/services/dateUtils.js");
+          await import("@clash/clash-royale/dateUtils.js");
 
         // Saison par défaut = la plus récente saison TERMINÉE dans le log.
         // Si toutes les semaines de la saison courante sont déjà dans le raceLog (>= 4),
@@ -1753,7 +1753,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
 
       try {
         const { fetchCurrentRace, fetchRaceLog, fetchClanMembers } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
         const { getSnapshotsForWeeks, getCurrentWarDayIndex } =
           await import("../../../backend/services/snapshot.js");
         const {
@@ -1761,7 +1761,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           computePrevWeekId,
           warResetOffsetMs,
           parseClashDate,
-        } = await import("../../../backend/services/dateUtils.js");
+        } = await import("@clash/clash-royale/dateUtils.js");
 
         const [race, initialRaceLog, currentMembers] = await Promise.all([
           fetchCurrentRace(`#${resolved.tag}`),
@@ -2259,7 +2259,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
       try {
         console.log("[/late-ping] start, clan:", resolved.tag);
         const { fetchCurrentRace, fetchClanMembers } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
         console.log("[/late-ping] import OK");
 
         const [race, currentMembers, links] = await withTimeout(
@@ -2275,7 +2275,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
         const participants = race?.clan?.participants ?? [];
 
         const { warResetOffsetMs } =
-          await import("../../../backend/services/dateUtils.js");
+          await import("@clash/clash-royale/dateUtils.js");
         const resetUtcMs = warResetOffsetMs(resolved.tag);
         const _gdcDow = new Date(Date.now() - resetUtcMs).getUTCDay();
         const isCalendarWarDay = _gdcDow === 0 || _gdcDow >= 4;

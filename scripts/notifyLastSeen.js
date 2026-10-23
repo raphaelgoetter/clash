@@ -11,8 +11,8 @@ dotenv.config({ path: "./.env" });
 import { fileURLToPath } from "url";
 import fetch from "node-fetch";
 import { Redis } from "@upstash/redis";
-import { parseClashDate, MS_PER_DAY } from "../backend/services/dateUtils.js";
-import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
+import { parseClashDate, MS_PER_DAY } from "@clash/clash-royale/dateUtils.js";
+import { resolveMembersChannelId } from "@clash/commun/discordChannels.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 
 const LOG_KEY = "dedup:lastseen";

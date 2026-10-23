@@ -149,7 +149,7 @@ export async function routeAdmin(body, res) {
     runBackground(async () => {
       try {
         const { fetchPlayer } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
         // Valider tous les tags en parallèle
         const results = await Promise.all(
           tags.map(async (tag) => {
@@ -244,7 +244,7 @@ export async function routeAdmin(body, res) {
     runBackground(async () => {
       try {
         const { fetchClanMembers } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
         const [clanMembers, links] = await Promise.all([
           fetchClanMembers(`#${resolved.tag}`),
           getDiscordLinks(),

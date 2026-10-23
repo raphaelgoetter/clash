@@ -17,13 +17,13 @@ import {
   fetchCurrentRace,
   fetchRaceLog,
   fetchBattleLog,
-} from "../backend/services/clashApi.js";
+} from "@clash/clash-royale/clashApi.js";
 import { recordSnapshot } from "../backend/services/snapshot.js";
 import {
   CLAN_RESET_TIMES,
   computeCurrentWeekId,
   computePrevWeekId,
-} from "../backend/services/dateUtils.js";
+} from "@clash/clash-royale/dateUtils.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PRE_RESET_LEAD_MS = 2 * 60 * 1000; // 2 minutes avant le reset

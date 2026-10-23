@@ -13,7 +13,7 @@
 
 import { Redis } from "@upstash/redis";
 import { listMatchupPerformanceSamples } from "./battleLogUtils.js";
-import { MS_PER_DAY } from "./dateUtils.js";
+import { MS_PER_DAY } from "@clash/clash-royale/dateUtils.js";
 
 const KEY = "matchupPerf:war";
 export const PERFORMANCE_WINDOW_DAYS = 21;

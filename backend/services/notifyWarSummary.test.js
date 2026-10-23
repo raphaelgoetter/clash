@@ -13,7 +13,7 @@ import {
   countedWarDaysFromCurrentRace,
   countedWarDaysFromRaceLog,
   isFullWeek,
-} from "../../backend/services/warStandings.js";
+} from "./warStandings.js";
 
 const FIXTURE = [
   {

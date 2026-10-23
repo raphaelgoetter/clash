@@ -7,7 +7,7 @@
 // lectures dynamiques (fs.readFile avec un nom de fichier venu d'un
 // catalogue JSON, comme dans paletteImage.js/zoomImage.js) forcent le
 // traceur à embarquer le RÉPERTOIRE ENTIER, pas juste le fichier réellement
-// utilisé — data/jeux-visuels/ (Palette + Zoom) pèse à lui seul 38 Mo,
+// utilisé — jeux/data/jeux-visuels/ (Palette + Zoom) pèse à lui seul 38 Mo,
 // réembarqués à CHAQUE déploiement retenu (30j vivant + 30j de récupération
 // après suppression). Cause principale du dépassement de Functions Storage
 // (voir mémoire projet, sept. 2026). Ces fichiers restent versionnés dans
@@ -38,6 +38,7 @@ dotenv.config({ path: "./.env" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "data");
+const JEUX_DATA_DIR = path.resolve(__dirname, "..", "jeux", "data");
 
 const CONTENT_TYPES = {
   ".ttf": "font/ttf",
@@ -49,9 +50,11 @@ const CONTENT_TYPES = {
 };
 
 // Chaque entrée : un fichier précis, ou un dossier entier (tous ses
-// fichiers directs, non récursif — suffisant ici).
+// fichiers directs, non récursif — suffisant ici). Le chemin relatif sert
+// aussi de clé Blob : il ne dépend pas du dossier source (data/ ou
+// jeux/data/), pour que les clés lues au runtime restent inchangées.
 const TARGETS = [
-  { file: "fonts/Inter-Bold.ttf" },
+  { file: "fonts/Inter-Bold.ttf", root: DATA_DIR },
   { file: "goblinhunters/images/board.jpg" },
   { file: "goblinhunters/images/end.webp" },
   { file: "goblinhunters/images/start.webp" },
@@ -66,27 +69,36 @@ const TARGETS = [
   { dir: "jeux-visuels/palette/images" },
   { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },
-  { dir: "card-art" },
+  { dir: "card-art", root: DATA_DIR },
 ];
+
+// Dossier source d'un chemin relatif : data/ pour les assets communs
+// (police, illustrations de cartes), jeux/data/ pour tout le reste.
+const SOURCE_DIRS = new Map();
 
 async function collectFiles() {
   const relPaths = [];
   for (const target of TARGETS) {
+    const root = target.root ?? JEUX_DATA_DIR;
     if (target.file) {
       relPaths.push(target.file);
+      SOURCE_DIRS.set(target.file, root);
       continue;
     }
-    const abs = path.join(DATA_DIR, target.dir);
+    const abs = path.join(root, target.dir);
     const entries = await fs.readdir(abs, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.isFile()) relPaths.push(path.join(target.dir, entry.name));
+      if (!entry.isFile()) continue;
+      const relPath = path.join(target.dir, entry.name);
+      relPaths.push(relPath);
+      SOURCE_DIRS.set(relPath, root);
     }
   }
   return relPaths;
 }
 
 async function uploadOne(relPath, token) {
-  const absPath = path.join(DATA_DIR, relPath);
+  const absPath = path.join(SOURCE_DIRS.get(relPath), relPath);
   const buffer = await fs.readFile(absPath);
   const ext = path.extname(relPath).toLowerCase();
   const contentType = CONTENT_TYPES[ext] || "application/octet-stream";
@@ -119,7 +131,7 @@ async function main() {
   for (const relPath of relPaths) {
     try {
       const blob = await uploadOne(relPath, token);
-      totalBytes += (await fs.stat(path.join(DATA_DIR, relPath))).size;
+      totalBytes += (await fs.stat(path.join(SOURCE_DIRS.get(relPath), relPath))).size;
       ok++;
       if (ok % 25 === 0 || ok === relPaths.length) {
         console.log(`  ${ok}/${relPaths.length}...`);

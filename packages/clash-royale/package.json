@@ -1,0 +1,15 @@
+{
+  "name": "@clash/clash-royale",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Domaine Clash Royale partagé (API officielle, calendrier des saisons, cartes)",
+  "exports": {
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@clash/commun": "*",
+    "@resvg/resvg-js": "^2.3.0",
+    "node-fetch": "^3.3.2"
+  }
+}

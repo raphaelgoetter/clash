@@ -14,7 +14,7 @@ import {
 } from "./charts.js";
 import { renderRaceGroupCard } from "./warGroup.js";
 import { getLeagueName } from "../backend/services/warLeagues.js";
-import { toPublicWeekId } from "../backend/services/dateUtils.js";
+import { toPublicWeekId } from "../packages/clash-royale/dateUtils.js";
 import {
   getBestRankedLeagueLabel,
   isSupremeChampionLeague,

@@ -19,8 +19,8 @@ import {
   searchClans,
   fetchClan,
   fetchClanMembers,
-} from "../backend/services/clashApi.js";
-import { parseClashDate, MS_PER_DAY } from "../backend/services/dateUtils.js";
+} from "@clash/clash-royale/clashApi.js";
+import { parseClashDate, MS_PER_DAY } from "@clash/clash-royale/dateUtils.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_FILE = path.join(__dirname, "..", "data", "discord-clans-fr.json");

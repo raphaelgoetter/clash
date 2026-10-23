@@ -16,7 +16,7 @@ import { Redis } from "@upstash/redis";
 import {
   fetchClanMembers,
   fetchBattleLog,
-} from "../backend/services/clashApi.js";
+} from "@clash/clash-royale/clashApi.js";
 import {
   getBlacklist,
   buildRiskyClanMap,
@@ -26,7 +26,7 @@ import {
 import { getPlayerAnalysis } from "../backend/services/playerAnalysis.js";
 import { getDiscordLinks } from "../backend/services/discordLinks.js";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
-import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
+import { resolveMembersChannelId } from "@clash/commun/discordChannels.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 import { isSupremeChampionLeague } from "../backend/services/rankedLeagues.js";
 

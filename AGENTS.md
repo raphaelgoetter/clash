@@ -42,6 +42,7 @@ Conséquences :
 ## Stack, architecture, saison, scripts
 
 Voir `CONTRIBUTING.md` pour :
+- **Organisation du dépôt** — monorepo : TrustRoyale à la racine, jeux dans `jeux/`, partagé dans `packages/commun` et `packages/clash-royale` (`@clash/*`) ; `jeux/` n'importe jamais `backend/`/`api/`/`scripts/`
 - **Stack technique** — ESM, Express, Vite, Chart.js
 - **Architecture backend** — services, barrels, fonctions clés (`dateUtils`, `warScoring`, …)
 - **Semaine/saison Clash Royale** — `computeCurrentWeekId`, rollover, reset times

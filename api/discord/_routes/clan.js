@@ -366,7 +366,7 @@ async function computeCalendarIsWarPeriod(clanTag, data) {
   // Garde calendaire locale : ne pas se fier à data.isWarPeriod qui peut venir
   // d'un cache statique généré pendant la GDC (lun–mer : false, jeu–dim : true).
   const { warResetOffsetMs } =
-    await import("../../../backend/services/dateUtils.js");
+    await import("@clash/clash-royale/dateUtils.js");
   const dow = new Date(Date.now() - warResetOffsetMs(clanTag)).getUTCDay();
   return (dow === 0 || dow >= 4) && data?.isWarPeriod === true;
 }
@@ -1439,7 +1439,7 @@ export async function routeClan(body, res) {
         const fetchLimit = Math.max(startRank + (TOP_CLANS_WINDOW - 1), 500);
 
         const { fetchClanWarRankings } =
-          await import("../../../backend/services/clashApi.js");
+          await import("@clash/clash-royale/clashApi.js");
 
         // Récupérer le leaderboard GDC France
         const allClans = await fetchClanWarRankings(FRANCE_ID, fetchLimit);

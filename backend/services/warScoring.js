@@ -10,7 +10,7 @@ import {
   warDayKey,
   warResetOffsetMs,
   MS_PER_DAY,
-} from "./dateUtils.js";
+} from "@clash/clash-royale/dateUtils.js";
 import { isWarWin } from "./battleLogUtils.js";
 import {
   countedWeekDecks,

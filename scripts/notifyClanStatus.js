@@ -10,8 +10,8 @@ dotenv.config({ path: "./.env" });
 import { fileURLToPath } from "url";
 import fetch from "node-fetch";
 import { Redis } from "@upstash/redis";
-import { warResetOffsetMs } from "../backend/services/dateUtils.js";
-import { fetchClan } from "../backend/services/clashApi.js";
+import { warResetOffsetMs } from "@clash/clash-royale/dateUtils.js";
+import { fetchClan } from "@clash/clash-royale/clashApi.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 
 const LOG_KEY = "dedup:clanstatus";

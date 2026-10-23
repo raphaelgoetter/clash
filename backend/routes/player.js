@@ -9,7 +9,7 @@ import {
   fetchRaceLog,
   fetchCurrentRace,
   fetchClanMembers,
-} from "../services/clashApi.js";
+} from "@clash/clash-royale/clashApi.js";
 import {
   analyzePlayer,
   buildWarHistory,
@@ -21,7 +21,7 @@ import {
   getPlayerAnalysis,
   warResetOffsetMs,
 } from "../services/analysisService.js";
-import { getOrSet } from "../services/cache.js";
+import { getOrSet } from "@clash/commun/cache.js";
 import { getDiscordLinks } from "../services/discordLinks.js";
 
 // short TTL so we don't keep erroneous scores for long

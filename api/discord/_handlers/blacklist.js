@@ -15,8 +15,8 @@ import {
   setBlacklistEntries,
   removeFromBlacklist,
 } from "../../../backend/services/blacklist.js";
-import { memberHasRolePrefix } from "../../../backend/services/discordRoles.js";
-import { fetchPlayer, fetchBattleLog } from "../../../backend/services/clashApi.js";
+import { memberHasRolePrefix } from "@clash/commun/discordRoles.js";
+import { fetchPlayer, fetchBattleLog } from "@clash/clash-royale/clashApi.js";
 
 const STAFF_ROLE_PREFIX = "STAFF";
 const BLACKLIST_COLOR = 0x2b2d31;

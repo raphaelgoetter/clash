@@ -1,22 +1,7 @@
 // Fonctions et constantes partagées par plusieurs modules de routage des
 // interactions Discord (api/discord/interactions.js et _routes/).
 
-import { waitUntil } from "@vercel/functions";
-
-// Maintient la fonction Vercel active le temps de l'exécution asynchrone.
-export function runBackground(fn) {
-  try {
-    if (typeof waitUntil === "function") {
-      waitUntil(fn());
-    } else {
-      // En environnement non-Vercel (dev), on exécute quand même pour éviter le timeout.
-      fn().catch((err) => console.error("runBackground fallback error:", err));
-    }
-  } catch (err) {
-    console.error("runBackground error:", err);
-    fn().catch((err2) => console.error("runBackground fallback error:", err2));
-  }
-}
+export { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
@@ -27,12 +12,6 @@ export const trustClanUrl = (tag) =>
   `${TRUST_ROYALE_URL}/clan/${String(tag).replace(/^#/, "")}`;
 
 export const FAMILY_CLAN_TAGS = new Set(["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"]);
-
-export function buildDiscordWebhookUrl(body) {
-  const token = body.token || body.interaction?.token;
-  if (!process.env.DISCORD_APP_ID || !token) return null;
-  return `https://discord.com/api/v10/webhooks/${process.env.DISCORD_APP_ID}/${token}`;
-}
 
 export const COLOR_MAP = {
   green: 0x2ecc71,
@@ -66,7 +45,7 @@ export const FR_MONTHS = [
 // Heure de l'observation (Paris) — réutilise le décalage UTC→Paris déjà
 // exposé par dateUtils.js (parisOffsetMs), pas de dépendance au fuseau du runtime.
 export async function formatParisObservationTime(date = new Date()) {
-  const { parisOffsetMs } = await import("../../../backend/services/dateUtils.js");
+  const { parisOffsetMs } = await import("@clash/clash-royale/dateUtils.js");
   const paris = new Date(date.getTime() + parisOffsetMs(date));
   const day = paris.getUTCDate();
   const month = FR_MONTHS[paris.getUTCMonth()];

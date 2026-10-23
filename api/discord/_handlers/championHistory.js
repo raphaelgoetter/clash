@@ -10,8 +10,8 @@ import {
   backfillChampionRegistry,
   resolveClan,
 } from "../../../backend/services/championHistory.js";
-import { fetchRaceLog } from "../../../backend/services/clashApi.js";
-import { toPublicWeekId } from "../../../backend/services/dateUtils.js";
+import { fetchRaceLog } from "@clash/clash-royale/clashApi.js";
+import { toPublicWeekId } from "@clash/clash-royale/dateUtils.js";
 
 const CHAMPION_COLOR = 0x9b59b6;
 

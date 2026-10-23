@@ -24,22 +24,22 @@ import {
   hasWeeklyDonationResetOccurred,
   warDayIndexFromPeriodIndex,
   parseClashDate,
-} from "../backend/services/dateUtils.js";
+} from "@clash/clash-royale/dateUtils.js";
 import {
   fetchRaceLog,
   fetchCurrentRace,
   fetchBattleLog,
   fetchClanMembers,
-} from "../backend/services/clashApi.js";
+} from "@clash/clash-royale/clashApi.js";
 import { loadSnapshots } from "../backend/services/snapshot.js";
 import {
   computeGroupStandings,
   parseFinishTimeMs,
   RACE_FINISH_LINE,
 } from "../backend/services/warStandings.js";
-import { resolveMembersChannelId } from "../backend/services/discordChannels.js";
+import { resolveMembersChannelId } from "@clash/commun/discordChannels.js";
 import { isJoinedThisWar } from "../backend/services/arrivalUtils.js";
-import { getRoleIdByName } from "../backend/services/discordRoles.js";
+import { getRoleIdByName } from "@clash/commun/discordRoles.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 import { getDiscordLinks } from "../backend/services/discordLinks.js";
 

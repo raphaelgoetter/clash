@@ -31,7 +31,7 @@ import {
   MS_PER_DAY,
   parseClashDate,
   warDayIndexFromPeriodIndex,
-} from "./dateUtils.js";
+} from "@clash/clash-royale/dateUtils.js";
 
 /** Ligne d'arrivée de la course de bateau en GDC normale (constatée à l'identique sur plusieurs semaines/clans). */
 export const RACE_FINISH_LINE = 10000;

@@ -4,9 +4,9 @@
 // day 4) in the most recent River Race. Used by the clan analysis route.
 // ============================================================
 
-import { fetchRaceLog } from './clashApi.js';
+import { fetchRaceLog } from '@clash/clash-royale/clashApi.js';
 import { filterWarBattles, expandDuelRounds } from './battleLogUtils.js';
-import { warDayKey } from './dateUtils.js';
+import { warDayKey } from '@clash/clash-royale/dateUtils.js';
 import { countedWarDaysFromRaceLog, DECKS_PER_WAR_DAY } from './warStandings.js';
 
 /**

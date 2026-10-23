@@ -10,13 +10,13 @@ import {
   fetchCurrentRace,
   fetchRaceLog,
   fetchBattleLog,
-} from "../backend/services/clashApi.js";
+} from "@clash/clash-royale/clashApi.js";
 import { recordSnapshot } from "../backend/services/snapshot.js";
 import { recordWarMatchupSamples } from "../backend/services/matchupPerformance.js";
 import {
   computeCurrentWeekId,
   computePrevWeekId,
-} from "../backend/services/dateUtils.js";
+} from "@clash/clash-royale/dateUtils.js";
 
 async function buildBattleLogsByTag(participants = []) {
   const entries = await Promise.all(

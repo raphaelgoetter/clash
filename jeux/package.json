@@ -1,0 +1,20 @@
+{
+  "name": "@clash/jeux",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mini-jeux, jeux spéciaux et duels Discord de la famille Resistance",
+  "exports": {
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@clash/clash-royale": "*",
+    "@clash/commun": "*",
+    "@resvg/resvg-js": "^2.3.0",
+    "@upstash/redis": "^1.38.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0"
+  }
+}

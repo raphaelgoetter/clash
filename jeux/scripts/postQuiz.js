@@ -1,0 +1,109 @@
+#!/usr/bin/env node
+// postQuiz.js
+// Poste manuellement (ou via cron) le jour du Quiz thématique. Sans manche
+// en cours : publie le jour de présentation (jamais le Jour 1 directement).
+// Sinon clôture silencieusement le jour actif et publie le jour suivant
+// (ou l'embed de révélation finale au Jour 8).
+//
+// Usage :
+//   node jeux/scripts/postQuiz.js                — poste sur le salon de test
+//   node jeux/scripts/postQuiz.js --public        — poste sur le salon public
+//   node jeux/scripts/postQuiz.js --dry-run       — simulation, sans écrire ni poster
+//   node jeux/scripts/postQuiz.js --public --dry-run
+//   node jeux/scripts/postQuiz.js --no-ping       — poste sans pinger @MINI-JEUX
+//   node jeux/scripts/postQuiz.js --require-active — ne fait rien si aucune manche n'est déjà lancée (cron)
+//   node jeux/scripts/postQuiz.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
+
+import dotenv from "dotenv";
+dotenv.config({ path: "./.env" });
+
+import { postQuiz } from "../discord/handlers/quiz.js";
+
+const DRY_RUN = process.argv.includes("--dry-run");
+const PUBLIC = process.argv.includes("--public");
+// Réservé au cron quotidien (voir .github/workflows/quiz.yml) : le
+// lancement (jour de présentation, la veille du Jour 1) doit toujours être
+// déclenché manuellement (workflow_dispatch), le cron ne fait qu'avancer une
+// partie déjà lancée (annonce comprise).
+const REQUIRE_ACTIVE = process.argv.includes("--require-active");
+// Contourne le garde-fou anti-double-avancée (voir jeux/services/quiz.js,
+// isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
+// cron en retard après une relance manuelle (le cron ne cible jamais le
+// salon de test). Sur le salon de test, aucun cron ne peut jamais entrer en
+// conflit : le garde-fou n'y sert à rien d'autre qu'à ralentir l'itération
+// manuelle, donc contourné automatiquement.
+const FORCE = process.argv.includes("--force") || !PUBLIC;
+// Ping @MINI-JEUX réservé au salon public — jamais sur le
+// salon de test, même sans --no-ping explicite.
+const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
+
+// Réutilise les salons du jeu Frame (même principe que Tamagoshi/Anagram)
+// plutôt que de provisionner de nouveaux salons Discord dédiés au Quiz.
+const channelId = PUBLIC
+  ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC
+  : process.env.DISCORD_CHANNEL_FRAME_TEST;
+
+if (!channelId) {
+  console.error(
+    `Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_FRAME_PUBLIC" : "DISCORD_CHANNEL_FRAME_TEST"}`,
+  );
+  process.exit(1);
+}
+
+(async () => {
+  try {
+    const result = await postQuiz(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE });
+
+    if (result.skipped) {
+      if (result.reason === "tooSoonSinceLastClosure") {
+        console.log(
+          `Jour ouvert trop récemment (${result.publishedAt}) pour être re-clôturé — probable double déclenchement ` +
+            `(cron en retard + relance manuelle, ou double cron). Rien n'est posté. Utilise --force si ce rattrapage est volontaire.`,
+        );
+      } else {
+        console.log("Aucune manche active, rien à poster (cron sans lancement manuel préalable).");
+      }
+      return;
+    }
+
+    if (result.wrongChannel) {
+      console.error(
+        `Une manche est déjà active sur un AUTRE salon (${result.activeChannelId}) — rien n'est posté ici pour éviter tout mélange. ` +
+          `Si c'était une manche de test oubliée, lance "npm run quiz:reset" puis relance sur le bon salon.`,
+      );
+      process.exit(1);
+    }
+
+    // `result.termine` seul (sans `final`) signifie que la manche était déjà
+    // close par un appel PRÉCÉDENT — rien à reposter. Quand cet appel-ci vient
+    // de poster la révélation, le handler ajoute `final: true` en plus (voir
+    // handlers/quiz.js), à vérifier AVANT ce check générique.
+    if (result.termine && !result.final) {
+      console.log("Quiz déjà terminé, rien à poster.");
+      return;
+    }
+
+    if (DRY_RUN) {
+      console.log(`DRY-RUN — (salon ${channelId}) :`);
+      if (result.phase === "annonce") {
+        console.log("  Jour de présentation (annonce, veille du Jour 1)");
+      } else if (result.final) {
+        console.log("  Révélation finale");
+      } else {
+        console.log(`  Jour ${result.jour}${result.theme ? ` — ${result.theme}` : ""}`);
+      }
+      console.log(JSON.stringify({ embeds: [result.embed], components: result.components || [] }, null, 2));
+      return;
+    }
+
+    if (result.final) {
+      console.log(`Révélation finale postée dans ${channelId} (message ${result.message.id}).`);
+      return;
+    }
+
+    console.log(`${result.jour == null ? "Jour de présentation" : `Jour ${result.jour}`} posté dans ${channelId} (message ${result.message.id}).`);
+  } catch (err) {
+    console.error("Échec de la publication du jour :", err.message);
+    process.exit(1);
+  }
+})();

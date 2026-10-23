@@ -16,7 +16,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getOrSet, invalidate } from "./cache.js";
+import { getOrSet, invalidate } from "@clash/commun/cache.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");

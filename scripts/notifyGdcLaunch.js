@@ -40,8 +40,8 @@
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 
-import { fetchCurrentRace } from "../backend/services/clashApi.js";
-import { formatResetTimeParis } from "../backend/services/dateUtils.js";
+import { fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
+import { formatResetTimeParis } from "@clash/clash-royale/dateUtils.js";
 
 // ── Constants ──────────────────────────────────────────────────
 

@@ -3,15 +3,15 @@
 // GDC, expansion des duels, helpers win/loss et activité quotidienne.
 // ============================================================
 
-import { parseClashDate, MS_PER_DAY, warDayKey } from "./dateUtils.js";
+import { parseClashDate, MS_PER_DAY, warDayKey } from "@clash/clash-royale/dateUtils.js";
 import {
   normLevel,
   countEvolved,
   countHeroes,
-} from "./collectionConstants.js";
+} from "@clash/clash-royale/collectionConstants.js";
 import { computeDeckMatchupScore } from "./matchupEngine.js";
 import { getWinConditionsCatalog } from "./matchupCatalog.js";
-import { cardArtUrl } from "./cardArt.js";
+import { cardArtUrl } from "@clash/clash-royale/cardArt.js";
 
 /**
  * Clan War battle types in the Clash Royale API.

@@ -27,7 +27,7 @@ function getRedis() {
 
 // automaticDeserialization: false → hgetall renvoie un tableau plat
 // [field1, value1, field2, value2, ...] et non un objet (même convention
-// que backend/services/blackjack.js).
+// que jeux/services/blackjack.js).
 function pairsToObject(flat) {
   const obj = {};
   for (let i = 0; i < flat.length; i += 2) {

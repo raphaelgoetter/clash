@@ -5,10 +5,10 @@ dotenv.config({ path: "./.env" });
 import { fileURLToPath } from "url";
 import fetch from "node-fetch";
 import { Redis } from "@upstash/redis";
-import { MS_PER_DAY, parseClashDate } from "../backend/services/dateUtils.js";
+import { MS_PER_DAY, parseClashDate } from "@clash/clash-royale/dateUtils.js";
 import { computeMemberReliability } from "../backend/services/playerAnalysis.js";
-import { fetchClanWarRankings } from "../backend/services/clashApi.js";
-import { getRoleIdByName } from "../backend/services/discordRoles.js";
+import { fetchClanWarRankings } from "@clash/clash-royale/clashApi.js";
+import { getRoleIdByName } from "@clash/commun/discordRoles.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 import { getDiscordLinks } from "../backend/services/discordLinks.js";
 

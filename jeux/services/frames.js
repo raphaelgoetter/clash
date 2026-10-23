@@ -1,0 +1,615 @@
+// ============================================================
+// frames.js — Jeu "Frame" (devine le film à partir d'une image)
+// Couche métier : lecture des frames, état de la partie, scoring,
+// classements.
+//
+// Stockage : Upstash Redis (via @upstash/redis, REST — compatible
+// serverless). Choisi après avoir découvert que Vercel Blob facture
+// chaque put()/list() comme "Advanced Operation" avec un quota gratuit
+// très bas (2 000/mois) — largement dépassé par l'usage normal du jeu
+// (indices, tentatives, résolutions). Upstash offre 500 000 commandes/mois
+// gratuites, et surtout des primitives ATOMIQUES natives (INCR, SADD,
+// HSETNX, ZINCRBY) qui résolvent nativement les problèmes de concurrence
+// qu'on a dû bricoler à la main avec Blob (verrou optimiste, sharding par
+// fichier) — plus besoin de rien de tout ça ici.
+//
+// ⚠️ automaticDeserialization désactivée volontairement : le SDK convertit
+// par défaut toute valeur "numérique" en Number JS, y compris les IDs
+// Discord (17-19 chiffres) qui dépassent Number.MAX_SAFE_INTEGER — ça les
+// corrompt silencieusement (perte de précision). On sérialise/désérialise
+// le JSON nous-mêmes partout ci-dessous pour rester en contrôle exact des
+// types (discordId toujours string).
+// ============================================================
+
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+import { Redis } from "@upstash/redis";
+import { fetchRaceLog, fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
+import { computeCurrentSeasonId, countRemainingWednesdays } from "@clash/clash-royale/dateUtils.js";
+
+// X = manche déjà attribuée + mercredis restants avant la fin de la saison
+// calendaire (countRemainingWednesdays, dateUtils.js). Gère nativement le
+// cas d'un jeu démarré en cours de saison (ex. saison démarrée le 2026-07-06,
+// mais 1ʳᵉ manche postée seulement le 2026-07-15, mercredi suivant) : X
+// reflète alors le nombre réel de manches restantes pour CE jeu, pas le
+// nombre total de mercredis de la saison entière (qui aurait compté aussi
+// les mercredis déjà passés avant le premier post).
+export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
+  return seasonManche + countRemainingWednesdays(now);
+}
+import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
+import { getOrSet } from "@clash/commun/cache.js";
+import { normalizeAnswer } from "@clash/commun/textNormalize.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FRAMES_DIR = path.resolve(__dirname, "..", "data", "frames");
+const FRAMES_JSON_PATH = path.join(FRAMES_DIR, "frames.json");
+const FRAMES_IMAGES_DIR = path.join(FRAMES_DIR, "images");
+
+// Construction paresseuse (pas au chargement du module) : avec les imports
+// ES hoistés, "import ... from frames.js" s'exécute avant le
+// dotenv.config() du script appelant — construire le client ici en top-level
+// figerait des variables d'env pas encore chargées. Voir scripts/*.js qui
+// font tous import dotenv + dotenv.config() puis import frames.js.
+let _redis = null;
+function getRedis() {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+      automaticDeserialization: false,
+    });
+  }
+  return _redis;
+}
+
+function toJson(value) {
+  return JSON.stringify(value);
+}
+
+function fromJson(raw) {
+  if (raw == null) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+// Avec automaticDeserialization désactivée, HGETALL renvoie un tableau
+// plat [champ1, valeur1, champ2, valeur2, ...] et non un objet — vérifié
+// empiriquement (pas documenté explicitement par le SDK).
+function pairsToObject(flat) {
+  const obj = {};
+  for (let i = 0; i < flat.length; i += 2) {
+    obj[flat[i]] = flat[i + 1];
+  }
+  return obj;
+}
+
+async function hgetallRaw(key) {
+  return pairsToObject((await getRedis().hgetall(key)) || []);
+}
+
+async function hgetallJson(key) {
+  const raw = await hgetallRaw(key);
+  const result = {};
+  for (const [field, value] of Object.entries(raw)) {
+    result[field] = fromJson(value);
+  }
+  return result;
+}
+
+const STATE_KEY = "frame:state";
+const HINT_KEYS = ["indice1", "indice2"];
+
+// SET durable, jamais nettoyé (contrairement aux clés scopées par saison) :
+// tous les gameId ayant un jour été postés, toutes saisons confondues. Sert
+// de garde-fou anti-spoiler pour getFrameImageByGameId().
+function postedGamesKey() {
+  return "frame:posted_games";
+}
+
+function participantsKey(gameId) {
+  return `frame:participants:${gameId}`;
+}
+function usernamesKey(gameId) {
+  return `frame:usernames:${gameId}`;
+}
+function hintsKey(gameId, discordId) {
+  return `frame:hints:${gameId}:${discordId}`;
+}
+function attemptsKey(gameId, discordId) {
+  return `frame:attempts:${gameId}:${discordId}`;
+}
+function seasonKey(seasonId) {
+  return `frame:season:${seasonId}`;
+}
+function seasonPseudosKey(seasonId) {
+  return `frame:season:${seasonId}:pseudos`;
+}
+function seasonMancheSeqKey(seasonId) {
+  return `frame:season:${seasonId}:manche_seq`;
+}
+function seasonMancheNumbersKey(seasonId) {
+  return `frame:season:${seasonId}:manche_numbers`;
+}
+function archivedKey(seasonId) {
+  return `frame:archived:${seasonId}`;
+}
+
+// SCAN par motif — uniquement utilisé pour le nettoyage (rare : une fois par
+// semaine au démarrage d'une partie, ou lors d'un reset manuel), jamais sur
+// le chemin critique d'une interaction joueur.
+async function scanKeys(pattern) {
+  const keys = [];
+  let cursor = "0";
+  do {
+    const [next, batch] = await getRedis().scan(cursor, { match: pattern, count: 200 });
+    cursor = next;
+    keys.push(...batch);
+  } while (cursor !== "0");
+  return keys;
+}
+
+async function scanDelete(pattern) {
+  const keys = await scanKeys(pattern);
+  if (keys.length) await getRedis().del(...keys);
+}
+
+// ── Lecture des frames (statique, jamais mutée) ────────────────
+
+let framesCache = null;
+
+export async function loadFrames() {
+  if (framesCache) return framesCache;
+  const txt = await fs.readFile(FRAMES_JSON_PATH, "utf-8");
+  framesCache = JSON.parse(txt);
+  return framesCache;
+}
+
+async function readFrameImageFile(frameEntry) {
+  try {
+    const buffer = await fs.readFile(path.join(FRAMES_IMAGES_DIR, frameEntry.image));
+    return { buffer, filename: frameEntry.image };
+  } catch {
+    return null;
+  }
+}
+
+// Sert uniquement l'image de la partie active — jamais une image future ou
+// passée par nom de fichier, pour ne pas laisser deviner les prochaines
+// semaines via l'URL (jeux/data/frames/images n'est pas exposé statiquement).
+export async function getCurrentFrameImage() {
+  const state = await readState();
+  if (!state) return null;
+  const frames = await loadFrames();
+  const frameEntry = frames[state.currentIndex];
+  if (!frameEntry) return null;
+  return readFrameImageFile(frameEntry);
+}
+
+// Sert l'image d'UNE manche précise, identifiée par son gameId — utilisé
+// pour que les anciens posts Discord continuent d'afficher LEUR image même
+// après que la partie ait avancé (getCurrentFrameImage() sert toujours
+// l'image de la partie ACTIVE, donc un ancien message dont Discord revalide
+// le cache se remettrait sinon à afficher l'image de la manche en cours).
+// Le gameId doit figurer dans postedGamesKey() (rempli par startNewGame()) —
+// jamais un gameId qui n'a encore jamais été posté, pour ne pas laisser
+// deviner l'image d'une semaine future via l'URL.
+export async function getFrameImageByGameId(gameId) {
+  const wasPosted = Number(await getRedis().sismember(postedGamesKey(), gameId));
+  if (!wasPosted) return null;
+  const frames = await loadFrames();
+  const frameEntry = frames.find((f) => path.parse(f.image).name === gameId);
+  if (!frameEntry) return null;
+  return readFrameImageFile(frameEntry);
+}
+
+// Titre du film pour une manche précise — utilisé par le récap de fin de
+// saison pour rappeler la liste des films de la saison écoulée.
+export async function getFrameTitle(gameId) {
+  const frames = await loadFrames();
+  return frames.find((f) => path.parse(f.image).name === gameId)?.titre ?? null;
+}
+
+// ── État de la partie en cours (métadonnées uniquement) ──────────
+
+export async function readState() {
+  return fromJson(await getRedis().get(STATE_KEY));
+}
+
+export async function writeState(state) {
+  await getRedis().set(STATE_KEY, toJson(state));
+}
+
+async function cleanupGameScratchData(gameId) {
+  await getRedis().del(participantsKey(gameId), usernamesKey(gameId));
+  await scanDelete(`frame:hints:${gameId}:*`);
+  await scanDelete(`frame:attempts:${gameId}:*`);
+}
+
+// Remet le jeu à zéro : plus de partie active (la prochaine repart à
+// l'index 0 de frames.json) et historique/scores entièrement effacés.
+export async function resetGame() {
+  await getRedis().del(STATE_KEY);
+  await scanDelete("frame:participants:*");
+  await scanDelete("frame:usernames:*");
+  await scanDelete("frame:hints:*");
+  await scanDelete("frame:attempts:*");
+  await scanDelete("frame:season:*");
+  await scanDelete("frame:archived:*");
+}
+
+// ── Saison Clash Royale en cours ────────────────────────────────
+
+export async function getCurrentSeasonId() {
+  const { value } = await getOrSet(
+    "frames:seasonId",
+    async () => {
+      const clanTag = FAMILY_CLAN_TAGS[0];
+      // Une partie ne démarre qu'une fois par semaine : quelques tentatives
+      // suffisent à absorber un aléa réseau transitoire plutôt que de figer
+      // définitivement un seasonId à null pour toute la partie.
+      for (const delay of [0, 1000, 3000]) {
+        if (delay) await new Promise((r) => setTimeout(r, delay));
+        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
+        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
+        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
+        if (seasonId != null) return seasonId;
+      }
+      return null;
+    },
+    15 * 60 * 1000,
+  );
+  return value;
+}
+
+// ── Sélection de l'image et démarrage d'une partie ──────────────
+
+export function pickNextFrameIndex(state, frames) {
+  const prevIndex = state?.currentIndex ?? -1;
+  return (prevIndex + 1) % frames.length;
+}
+
+// Attribue le numéro de manche relatif à la saison (1, 2, 3...) — idempotent
+// comme archiveSolve() : HSETNX + relecture si la clé existe déjà ou si un
+// appel concurrent a gagné la course, jamais deux numéros pour le même
+// gameId ni de saut dans la séquence.
+async function assignSeasonMancheNumber(seasonId, gameId) {
+  const numbersKey = seasonMancheNumbersKey(seasonId);
+  const existing = await getRedis().hget(numbersKey, gameId);
+  if (existing != null) return Number(existing);
+
+  const seasonManche = Number(await getRedis().incr(seasonMancheSeqKey(seasonId)));
+  const wasSet = Number(await getRedis().hsetnx(numbersKey, gameId, String(seasonManche)));
+  if (!wasSet) {
+    return Number(await getRedis().hget(numbersKey, gameId));
+  }
+  return seasonManche;
+}
+
+export async function startNewGame(channelId) {
+  const frames = await loadFrames();
+  const previousState = await readState();
+  const currentIndex = pickNextFrameIndex(previousState, frames);
+  const frameEntry = frames[currentIndex];
+  const seasonId = await getCurrentSeasonId();
+  const gameId = path.parse(frameEntry.image).name;
+  const now = new Date();
+
+  const seasonManche = await assignSeasonMancheNumber(seasonId, gameId);
+  const seasonMancheTotal = computeSeasonMancheTotal(seasonManche, now);
+
+  const newState = {
+    currentIndex,
+    gameId,
+    seasonId,
+    seasonManche,
+    seasonMancheTotal,
+    startedAt: now.toISOString(),
+    channelId,
+    messageId: null,
+  };
+
+  await writeState(newState);
+  await getRedis().sadd(postedGamesKey(), gameId);
+
+  // Purge la progression (indices/tentatives/participants) de la partie
+  // précédente — données jetables une fois la partie terminée. Les
+  // résultats archivés (frame:season:*, nécessaires au total de la saison)
+  // ne sont eux jamais supprimés ici.
+  if (previousState?.gameId && previousState.gameId !== newState.gameId) {
+    await cleanupGameScratchData(previousState.gameId);
+  }
+
+  return { state: newState, frameEntry };
+}
+
+// ── Garde-fou anti-double-post ────────────────────────────────────
+// GitHub Actions peut retarder significativement un cron planifié : si on
+// relance postFrame() à la main pour rattraper un créneau manqué, il faut
+// éviter que le run planifié, arrivant en retard le même jour, ne fasse
+// avancer la manche une seconde fois. Même pattern que alreadyPostedThisWeek
+// (anagrams.js).
+function todayUtcDateString(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+export async function alreadyPostedThisWeek(now = new Date()) {
+  const state = await readState();
+  if (!state?.startedAt) return false;
+  return todayUtcDateString(new Date(state.startedAt)) === todayUtcDateString(now);
+}
+
+// ── Normalisation et vérification de la réponse ─────────────────
+// normalizeAnswer est partagée avec le jeu Anagram (jeux/services/anagrams.js)
+// — voir textNormalize.js. checkAnswer reste propre à Frame : correspondance
+// par SOUS-CHAÎNE + liste refuse négative (pertinent pour un titre de film où
+// l'utilisateur peut taper juste un extrait) — Anagram utilise une égalité
+// stricte, sémantique différente, donc pas de partage sur cette fonction.
+
+export function checkAnswer(frameEntry, rawAnswer) {
+  const normalized = normalizeAnswer(rawAnswer);
+  if (!normalized) return false;
+
+  const refuse = (frameEntry.refuse || []).map(normalizeAnswer);
+  if (refuse.some((term) => term && normalized.includes(term))) {
+    return false;
+  }
+
+  const accepte = (frameEntry.accepte || []).map(normalizeAnswer);
+  return accepte.some((term) => term && normalized.includes(term));
+}
+
+// ── Scoring ──────────────────────────────────────────────────────
+// Score plancher à 1 (et non 0) : trouver la bonne réponse doit toujours
+// rapporter au moins un point, même après de nombreuses tentatives
+// incorrectes et l'utilisation des indices.
+
+export function computeScore(attemptsIncorrects, hintsUsedCount) {
+  return Math.max(1, 10 - 2 * attemptsIncorrects - 3 * hintsUsedCount);
+}
+
+// ── Progression par joueur ────────────────────────────────────────
+// HSET/SADD/INCR sont des primitives atomiques côté Redis : deux joueurs
+// (ou deux clics rapprochés du même joueur) n'entrent jamais en collision,
+// sans avoir besoin d'aucun verrou ni retry applicatif.
+
+export async function readParticipant(gameId, discordId) {
+  return fromJson(await getRedis().hget(participantsKey(gameId), discordId));
+}
+
+async function touchUsername(gameId, discordId, username) {
+  await getRedis().hset(usernamesKey(gameId), { [discordId]: username });
+}
+
+// Nombre d'indices déjà utilisés par ce joueur.
+async function countHintsUsed(gameId, discordId) {
+  return Number(await getRedis().scard(hintsKey(gameId, discordId))) || 0;
+}
+
+async function countAttempts(gameId, discordId) {
+  const n = await getRedis().get(attemptsKey(gameId, discordId));
+  return Number(n) || 0;
+}
+
+export async function recordAttempt(gameId, discordId, username, isCorrect) {
+  await touchUsername(gameId, discordId, username);
+  if (isCorrect) return null; // la tentative gagnante n'est jamais comptée comme incorrecte
+  await getRedis().incr(attemptsKey(gameId, discordId));
+  return null;
+}
+
+export async function recordHintUsed(gameId, discordId, username, hintKey) {
+  await touchUsername(gameId, discordId, username);
+  const added = Number(await getRedis().sadd(hintsKey(gameId, discordId), hintKey));
+  return { alreadyUsed: added === 0 };
+}
+
+// Idempotent : si déjà résolu, renvoie le résultat existant sans rien
+// réécrire. Sinon calcule le score à partir des compteurs indices/tentatives
+// (déjà atomiques) et écrit le document final.
+export async function markSolved(gameId, discordId, username) {
+  const existing = await readParticipant(gameId, discordId);
+  if (existing?.solved) {
+    return { participant: existing, score: existing.score };
+  }
+
+  const [hintsUsedCount, attemptsCount] = await Promise.all([
+    countHintsUsed(gameId, discordId),
+    countAttempts(gameId, discordId),
+  ]);
+  const score = computeScore(attemptsCount, hintsUsedCount);
+  const participant = {
+    discordId,
+    username,
+    attempts: attemptsCount,
+    solved: true,
+    solvedAt: new Date().toISOString(),
+    score,
+  };
+  await getRedis().hset(participantsKey(gameId), { [discordId]: toJson(participant) });
+  return { participant, score };
+}
+
+// ── Résultats archivés (classement de la saison) ─────────────────
+// ZSET Redis : le score total et le classement sont maintenus par Redis
+// lui-même (ZINCRBY/ZRANGE), pas recalculés côté code à chaque lecture.
+// HSETNX est atomique : si deux appels concurrents archivent la même
+// résolution (double soumission), un seul incrémente réellement le score
+// de saison — pas de double-comptage possible.
+
+export async function archiveSolve(state, frameEntry, discordId, username, score, solvedAt) {
+  const archKey = archivedKey(state.seasonId);
+  const field = `${state.gameId}:${discordId}`;
+
+  const result = {
+    gameId: state.gameId,
+    seasonId: state.seasonId,
+    titre: frameEntry.titre,
+    postedAt: state.startedAt,
+    discordId,
+    pseudo: username,
+    score,
+    solvedAt,
+  };
+
+  const wasSet = Number(await getRedis().hsetnx(archKey, field, toJson(result)));
+  if (!wasSet) {
+    return fromJson(await getRedis().hget(archKey, field)) ?? result; // déjà archivé par un appel concurrent
+  }
+
+  await getRedis().zincrby(seasonKey(state.seasonId), score, discordId);
+  await getRedis().hset(seasonPseudosKey(state.seasonId), { [discordId]: username });
+  return result;
+}
+
+// Tous les résultats archivés d'un joueur pour une saison donnée (une
+// entrée par manche trouvée). Utilisé par /frame pour afficher l'historique
+// personnel — un seul HGETALL (déjà utilisé ailleurs), filtré côté code sur
+// le suffixe ":<discordId>" du champ (`<gameId>:<discordId>`).
+export async function getPlayerSeasonResults(seasonId, discordId) {
+  const all = await hgetallJson(archivedKey(seasonId));
+  return Object.entries(all)
+    .filter(([field]) => field.endsWith(`:${discordId}`))
+    .map(([, result]) => result);
+}
+
+// Tous les résultats archivés, toutes saisons CR confondues — les clés
+// `frame:archived:<seasonId>` ne sont jamais nettoyées automatiquement (voir
+// resetGame()), donc un SCAN suffit à retrouver l'historique complet. Utilisé
+// par /mini-jeux-history pour reconstituer les vainqueurs par saison
+// calendaire mini-jeux (indépendante du seasonId CR), en regroupant ces
+// résultats via leur `solvedAt`/`postedAt`.
+export async function getAllArchivedResults() {
+  const keys = await scanKeys("frame:archived:*");
+  if (keys.length === 0) return [];
+  const hashes = await Promise.all(keys.map((key) => hgetallJson(key)));
+  return hashes.flatMap((hash) => Object.values(hash));
+}
+
+// Tous les gameId des manches postées cette saison (résolues ou non par qui
+// que ce soit) — alimenté par startNewGame(). Permet de lister les manches
+// passées où un joueur n'a pas du tout joué, pas seulement celles où il a
+// un résultat archivé.
+export async function getSeasonManches(seasonId) {
+  const ids = await getRedis().hkeys(seasonMancheNumbersKey(seasonId));
+  return ids || [];
+}
+
+// Numéro de manche attribué (1, 2, 3... relatif à la saison, voir
+// assignSeasonMancheNumber). null si cette manche n'a jamais été démarrée
+// via startNewGame() pour cette saison.
+export async function getSeasonMancheNumber(seasonId, gameId) {
+  const raw = await getRedis().hget(seasonMancheNumbersKey(seasonId), gameId);
+  return raw == null ? null : Number(raw);
+}
+
+// Aperçu en lecture seule du prochain numéro de manche à attribuer, sans
+// muter l'état (INCR) — utilisé par la branche --dry-run de postFrame(), qui
+// ne doit jamais faire avancer la partie.
+export async function previewSeasonManche(seasonId) {
+  const seq = Number(await getRedis().get(seasonMancheSeqKey(seasonId))) || 0;
+  return seq + 1;
+}
+
+// Un joueur a-t-il interagi avec cette manche (indice pris ou tentative),
+// qu'il ait résolu ou non ? frame:usernames est mis à jour à chaque indice/
+// tentative — mais pas si le joueur trouve du premier coup sans indice, où
+// seul markSolved() écrit directement le document participant.
+export async function hasPlayerInteracted(gameId, discordId) {
+  const username = await getRedis().hget(usernamesKey(gameId), discordId);
+  return username != null;
+}
+
+// ── Classements ──────────────────────────────────────────────────
+
+// Classement PAR SCORE (score desc, égalité départagée par solvedAt croissant
+// — le plus rapide gagne le duel). Utilisé pour l'affichage "Votre classement
+// : X/Y" (via findTiedRank). ⚠️ Ne PAS utiliser pour "vous êtes le Xe à avoir
+// trouvé" (voir computeArrivalOrder ci-dessous) : un joueur avec moins de
+// points peut apparaître mieux classé qu'un joueur arrivé après lui mais
+// avec un meilleur score, ce qui rendrait ce numéro d'ordre faux.
+export async function computeGameRanking(gameId) {
+  const all = await hgetallJson(participantsKey(gameId));
+  return Object.values(all)
+    .filter((p) => p?.solved)
+    .map((p) => ({
+      discordId: p.discordId,
+      username: p.username,
+      score: p.score,
+      solvedAt: p.solvedAt,
+    }))
+    .sort((a, b) => b.score - a.score || new Date(a.solvedAt) - new Date(b.solvedAt));
+}
+
+// Ordre chronologique PUR (uniquement solvedAt, jamais le score) — c'est la
+// seule liste valable pour "vous êtes le Xe à avoir trouvé !" dans le DM de
+// fin de manche (voir buildDmText/handleModalSubmit).
+export async function computeArrivalOrder(gameId) {
+  const all = await hgetallJson(participantsKey(gameId));
+  return Object.values(all)
+    .filter((p) => p?.solved)
+    .map((p) => ({
+      discordId: p.discordId,
+      username: p.username,
+      score: p.score,
+      solvedAt: p.solvedAt,
+    }))
+    .sort((a, b) => new Date(a.solvedAt) - new Date(b.solvedAt));
+}
+
+// Tous les joueurs ayant interagi avec la partie mais pas encore résolu —
+// frame:usernames est mis à jour à chaque indice/tentative, donc même un
+// joueur sans document participant (pas encore résolu) y apparaît.
+export async function listGamePlayersInProgress(gameId) {
+  const [participants, usernames] = await Promise.all([
+    hgetallJson(participantsKey(gameId)),
+    hgetallRaw(usernamesKey(gameId)),
+  ]);
+  const solvedIds = new Set(
+    Object.values(participants)
+      .filter((p) => p?.solved)
+      .map((p) => p.discordId),
+  );
+  return Object.entries(usernames)
+    .filter(([discordId]) => !solvedIds.has(discordId))
+    .map(([discordId, username]) => ({ discordId, username }))
+    .sort((a, b) => a.username.localeCompare(b.username));
+}
+
+export async function computeSeasonRanking(seasonId) {
+  const [flat, pseudos] = await Promise.all([
+    getRedis().zrange(seasonKey(seasonId), 0, -1, { rev: true, withScores: true }),
+    hgetallRaw(seasonPseudosKey(seasonId)),
+  ]);
+  const ranking = [];
+  for (let i = 0; i < flat.length; i += 2) {
+    const discordId = String(flat[i]);
+    const totalScore = Number(flat[i + 1]);
+    ranking.push({ discordId, pseudo: pseudos?.[discordId] || discordId, totalScore });
+  }
+  return ranking.sort((a, b) => b.totalScore - a.totalScore || a.pseudo.localeCompare(b.pseudo));
+}
+
+// Position (1-indexée) dans la liste déjà triée passée en paramètre — ne
+// fait aucune hypothèse sur le tri utilisé. Pour "vous êtes le Xe à avoir
+// trouvé", appeler avec computeArrivalOrder() (tri par solvedAt), jamais
+// computeGameRanking() (tri par score).
+export function findRank(sortedList, discordId) {
+  const idx = sortedList.findIndex((e) => e.discordId === discordId);
+  return idx === -1 ? null : idx + 1;
+}
+
+// Classement avec ex-aequo ("1224" : les scores égaux partagent le même
+// rang, le rang suivant saute en conséquence) — pour l'affichage "Votre
+// classement : X/Y" (score), à utiliser avec computeGameRanking()/
+// computeSeasonRanking(), jamais computeArrivalOrder().
+export function findTiedRank(sortedList, discordId, scoreKey) {
+  const entry = sortedList.find((e) => e.discordId === discordId);
+  if (!entry) return null;
+  const score = entry[scoreKey];
+  return sortedList.filter((e) => e[scoreKey] > score).length + 1;
+}

@@ -12,7 +12,7 @@ import {
   fetchPlayer,
   fetchCurrentRace,
   fetchClanWarRankings,
-} from "../services/clashApi.js";
+} from "@clash/clash-royale/clashApi.js";
 import {
   analyzeClanMembers,
   buildWarHistory,
@@ -43,7 +43,7 @@ import {
 import { computeTopPlayers } from "../services/topplayers.js";
 import { computeUncomplete } from "../services/uncomplete.js";
 import { hasLateArrivalDailyPattern } from "../services/arrivalUtils.js";
-import { getOrSet } from "../services/cache.js";
+import { getOrSet } from "@clash/commun/cache.js";
 import { getDiscordLinks } from "../services/discordLinks.js";
 import {
   recordSnapshot,

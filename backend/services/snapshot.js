@@ -17,7 +17,7 @@ import {
   parisOffsetMs,
   warResetOffsetMs,
   warDayIndexFromPeriodIndex,
-} from "./dateUtils.js";
+} from "@clash/clash-royale/dateUtils.js";
 import { hasDuelOnWarDay } from "./battleLogUtils.js";
 
 const RETENTION_DAYS = 60;

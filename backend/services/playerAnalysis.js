@@ -10,14 +10,14 @@ import {
   fetchClanMembers,
   fetchRaceLog,
   fetchCurrentRace,
-} from "./clashApi.js";
+} from "@clash/clash-royale/clashApi.js";
 import {
   parseClashDate,
   warResetOffsetMs,
   warDayKey,
   MS_PER_DAY,
   warDayIndexFromPeriodIndex,
-} from "./dateUtils.js";
+} from "@clash/clash-royale/dateUtils.js";
 import {
   TOTAL_CARDS,
   TOTAL_EVOLUTIONS,
@@ -28,7 +28,7 @@ import {
   countHeroes,
   computeTourLevel,
   TOUR_REQ,
-} from "./collectionConstants.js";
+} from "@clash/clash-royale/collectionConstants.js";
 import {
   countedWarDaysFromCurrentRace,
   DECKS_PER_WAR_DAY,

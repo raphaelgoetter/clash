@@ -3,8 +3,8 @@
 // River Race depuis les logs de course (clan + famille).
 // ============================================================
 
-import { getOrSet } from "./cache.js";
-import { fetchRaceLog } from "./clashApi.js";
+import { getOrSet } from "@clash/commun/cache.js";
+import { fetchRaceLog } from "@clash/clash-royale/clashApi.js";
 import { estimateWinsFromFame } from "./warScoring.js";
 import {
   computeCurrentWeekId,
@@ -12,7 +12,7 @@ import {
   MS_PER_DAY,
   toPublicSeasonId,
   toPublicWeekId,
-} from "./dateUtils.js";
+} from "@clash/clash-royale/dateUtils.js";
 import { filterWarBattles } from "./battleLogUtils.js";
 import {
   countedWarDaysFromCurrentRace,
@@ -21,10 +21,12 @@ import {
   DECKS_PER_WAR_DAY,
   isFullWeek,
 } from "./warStandings.js";
+import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
+
+export { FAMILY_CLAN_TAGS };
 
 const CLAN_RACELOG_CONCURRENCY = 3;
 const CLAN_RACELOG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-export const FAMILY_CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9", "QU9UQJRL"];
 
 // ── Helpers privés ────────────────────────────────────────────
 

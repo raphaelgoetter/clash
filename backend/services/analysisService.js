@@ -11,7 +11,7 @@
 //   - warHistory.js     : buildWarHistory, buildFamilyWarHistory
 //   - playerAnalysis.js : analyzePlayer, getPlayerAnalysis, computeIsNewPlayer
 
-export * from './dateUtils.js';
+export * from '@clash/clash-royale/dateUtils.js';
 export * from './battleLogUtils.js';
 export * from './warScoring.js';
 export * from './warHistory.js';

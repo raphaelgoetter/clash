@@ -2,7 +2,7 @@
 
 import dotenv from "dotenv";
 import fetch from "node-fetch";
-import { warResetOffsetMs } from "../backend/services/dateUtils.js";
+import { warResetOffsetMs } from "@clash/clash-royale/dateUtils.js";
 
 dotenv.config({ path: "./.env" });
 

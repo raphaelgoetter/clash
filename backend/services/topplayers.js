@@ -3,7 +3,7 @@
 // most recent River Race. Used by the clan analysis route.
 // ============================================================
 
-import { fetchRaceLog } from './clashApi.js';
+import { fetchRaceLog } from '@clash/clash-royale/clashApi.js';
 
 /**
  * Return a map of players in the given clan who exceeded various points

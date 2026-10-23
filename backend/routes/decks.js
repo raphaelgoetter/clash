@@ -10,7 +10,7 @@ import {
   fetchClanMembers,
   fetchLocations,
   fetchCards,
-} from "../services/clashApi.js";
+} from "@clash/clash-royale/clashApi.js";
 import {
   filterCompetitiveBattles,
   filterWarBattles,
@@ -18,7 +18,7 @@ import {
   summarizeDecks,
   summarizeWarDecks,
 } from "../services/battleLogUtils.js";
-import { getOrSet } from "../services/cache.js";
+import { getOrSet } from "@clash/commun/cache.js";
 
 const router = Router();
 const PLAYER_DECK_CACHE_TTL = 30 * 1000;

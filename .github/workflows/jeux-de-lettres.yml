@@ -8,7 +8,7 @@ on:
   # à Anagram seul (.github/workflows/anagrams.yml, supprimé). Le script
   # décide lui-même, à chaque déclenchement : (1) quel jeu est actif cette
   # saison Clash Royale (Anagram / Pêle-mêle en alternance, une saison sur
-  # deux — voir backend/services/jeuxdelettres.js), (2) s'il poste réellement
+  # deux — voir jeux/services/jeuxdelettres.js), (2) s'il poste réellement
   # (1 chance sur 2 au premier créneau, garanti au second si rien n'a encore
   # été posté), (3) le récap de fin de saison du jeu qui vient de se
   # terminer, quel qu'il soit. Toujours 2 créneaux seulement (pas plus) :
