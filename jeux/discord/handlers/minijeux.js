@@ -18,6 +18,7 @@
 import * as blindRoyaleSvc from "../../services/blindroyale.js";
 import * as frameSvc from "../../services/frames.js";
 import * as zoomSvc from "../../services/zoom.js";
+import * as zoom2Svc from "../../services/zoom2.js";
 import * as paletteSvc from "../../services/palette.js";
 import * as anagramSvc from "../../services/anagrams.js";
 import * as peleMeleSvc from "../../services/pelemele.js";
@@ -149,6 +150,8 @@ const AVEUGLE_GAMES = {
 const VISUELS_GAMES = {
   zoom: { title: "🔍 Zoom carte", svc: zoomSvc },
   palette: { title: "🎨 Palette", svc: paletteSvc },
+  // Refonte (voir refonte.js) : "Coup d'œil" à partir de décembre 2026.
+  zoom2: { title: "🔍 Zoom logo", svc: zoom2Svc },
 };
 const LETTRES_GAMES = {
   anagram: { title: "🔤 Anagram", svc: anagramSvc },

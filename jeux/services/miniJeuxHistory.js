@@ -19,6 +19,7 @@ import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getConceptResults } from "./concept.js";
 import { getAllArchivedResults as getSynopsisResults } from "./synopsis.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
+import { getAllArchivedResults as getZoom2Results } from "./zoom2.js";
 import { getAllArchivedResults as getPaletteResults } from "./palette.js";
 import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
 import { getAllArchivedResults as getLaJusteCarteResults } from "./lajustecarte.js";
@@ -100,6 +101,7 @@ const SCORE_GAMES = [
     fetch: async () => [
       ...(await tagSubGame(getZoomResults, "Zoom carte")()),
       ...(await tagSubGame(getPaletteResults, "Palette")()),
+      ...(await tagSubGame(getZoom2Results, "Zoom logo")()),
     ],
   },
   {

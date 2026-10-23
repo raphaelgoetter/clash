@@ -1,0 +1,1221 @@
+[
+  {
+    "numero": 1,
+    "answer": "IBM",
+    "accept": [
+      "IBM"
+    ],
+    "image": "ibm.png",
+    "width": 1280,
+    "height": 478,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_logo.svg",
+    "zoomStages": {
+      "stage0": 2.6,
+      "stage1": 1.2
+    }
+  },
+  {
+    "numero": 2,
+    "answer": "TotalEnergies",
+    "accept": [
+      "TotalEnergies",
+      "Total",
+      "Total Energies"
+    ],
+    "image": "totalenergies.png",
+    "width": 1280,
+    "height": 933,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:TotalEnergies_logo.svg"
+  },
+  {
+    "numero": 3,
+    "answer": "LG",
+    "accept": [
+      "LG",
+      "LG Electronics"
+    ],
+    "image": "lg-electronics.png",
+    "width": 1280,
+    "height": 1281,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:LG_symbol.svg",
+    "zoomStages": {
+      "stage0": 3.7,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 4,
+    "answer": "Steam",
+    "accept": [
+      "Steam"
+    ],
+    "image": "steam.png",
+    "width": 1280,
+    "height": 1280,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Steam_icon_logo.svg",
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 2
+    }
+  },
+  {
+    "numero": 5,
+    "answer": "Société générale",
+    "accept": [
+      "Société générale",
+      "SG"
+    ],
+    "image": "societe-generale.png",
+    "width": 1280,
+    "height": 292,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Logo-SG-Soci%C3%A9t%C3%A9-G%C3%A9n%C3%A9rale.svg"
+  },
+  {
+    "numero": 6,
+    "answer": "Bugatti",
+    "accept": [
+      "Bugatti"
+    ],
+    "image": "bugatti.png",
+    "width": 1280,
+    "height": 630,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bugatti_logo.svg",
+    "zoomStages": {
+      "stage0": 3.7,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 7,
+    "answer": "Renault",
+    "accept": [
+      "Renault"
+    ],
+    "image": "renault.png",
+    "width": 1280,
+    "height": 1121,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Renault_2021_Text.svg",
+    "focal": {
+      "x": 0.497,
+      "y": 0.166
+    },
+    "zoomStages": {
+      "stage0": 6.2,
+      "stage1": 2.8
+    }
+  },
+  {
+    "numero": 8,
+    "answer": "Bluetooth",
+    "accept": [
+      "Bluetooth"
+    ],
+    "image": "bluetooth.png",
+    "width": 1280,
+    "height": 1280,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ic_bluetooth_48px.svg",
+    "focal": {
+      "x": 0.503,
+      "y": 0.494
+    },
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 2.2
+    }
+  },
+  {
+    "numero": 9,
+    "answer": "BNP Paribas",
+    "accept": [
+      "BNP Paribas",
+      "BNP"
+    ],
+    "image": "bnp-paribas.png",
+    "width": 1280,
+    "height": 1280,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:BNP_Paribas.svg",
+    "zoomStages": {
+      "stage0": 4.7,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 10,
+    "answer": "New Balance",
+    "accept": [
+      "New Balance",
+      "NB"
+    ],
+    "image": "new-balance.png",
+    "width": 1280,
+    "height": 706,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:New_Balance_logo.svg"
+  },
+  {
+    "numero": 11,
+    "answer": "Toys R Us",
+    "accept": [
+      "Toys R Us",
+      "Toysrus"
+    ],
+    "image": "toys-r-us.png",
+    "width": 1280,
+    "height": 359,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toys_%22R%22_Us_logo_(2007).svg"
+  },
+  {
+    "numero": 12,
+    "answer": "HP",
+    "accept": [
+      "HP",
+      "Hewlett-Packard"
+    ],
+    "image": "hewlett-packard.png",
+    "width": 1280,
+    "height": 1280,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:HP_logo_2012.svg"
+  },
+  {
+    "numero": 13,
+    "answer": "Gucci",
+    "accept": [
+      "Gucci"
+    ],
+    "image": "gucci.png",
+    "width": 1280,
+    "height": 1316,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gucci_logo.svg"
+  },
+  {
+    "numero": 14,
+    "answer": "Atari",
+    "accept": [
+      "Atari"
+    ],
+    "image": "atari.png",
+    "width": 1280,
+    "height": 1408,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_Official_2012_Logo.svg",
+    "zoomStages": {
+      "stage0": 3.9,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 15,
+    "answer": "Duolingo",
+    "accept": [
+      "Duolingo"
+    ],
+    "image": "duolingo.png",
+    "width": 1280,
+    "height": 300,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Duolingo_logo_(2019).svg",
+    "focal": {
+      "x": 0.105,
+      "y": 0.213
+    },
+    "zoomStages": {
+      "stage0": 1.8,
+      "stage1": 1.1
+    }
+  },
+  {
+    "numero": 16,
+    "answer": "Twitch",
+    "accept": [
+      "Twitch"
+    ],
+    "image": "twitch.png",
+    "width": 1280,
+    "height": 1459,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Twitch_icon_2012.svg"
+  },
+  {
+    "numero": 17,
+    "answer": "Porsche",
+    "accept": [
+      "Porsche"
+    ],
+    "image": "porsche.png",
+    "width": 489,
+    "height": 641,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Porsche_hood_emblem.png",
+    "focal": {
+      "x": 0.525,
+      "y": 0.513
+    },
+    "zoomStages": {
+      "stage0": 4.2,
+      "stage1": 2.3
+    }
+  },
+  {
+    "numero": 18,
+    "answer": "DreamWorks",
+    "accept": [
+      "DreamWorks",
+      "Dream Works",
+      "DreamWorks Animation"
+    ],
+    "image": "dreamworks-animation.png",
+    "width": 1280,
+    "height": 115,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:DreamWorks2016.svg",
+    "zoomStages": {
+      "stage0": 1.5,
+      "stage1": 1
+    }
+  },
+  {
+    "numero": 19,
+    "answer": "Unilever",
+    "accept": [
+      "Unilever"
+    ],
+    "image": "unilever.png",
+    "width": 1280,
+    "height": 1417,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Unilever.svg"
+  },
+  {
+    "numero": 20,
+    "answer": "Virgin Megastore",
+    "accept": [
+      "Virgin Megastore",
+      "Virgin"
+    ],
+    "image": "virgin-megastore.png",
+    "width": 297,
+    "height": 335,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Virgin_Megastore_logo.png",
+    "focal": {
+      "x": 0.167,
+      "y": 0.401
+    }
+  },
+  {
+    "numero": 21,
+    "answer": "Sega",
+    "accept": [
+      "Sega"
+    ],
+    "image": "sega.png",
+    "width": 1280,
+    "height": 427,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:SEGA_logo_JPN.svg",
+    "focal": {
+      "x": 0.591,
+      "y": 0.451
+    },
+    "zoomStages": {
+      "stage0": 2.1,
+      "stage1": 1.1
+    }
+  },
+  {
+    "numero": 22,
+    "answer": "Spotify",
+    "accept": [
+      "Spotify"
+    ],
+    "image": "spotify.png",
+    "width": 1280,
+    "height": 1281,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:2024_Spotify_logo_without_text.svg",
+    "zoomStages": {
+      "stage0": 4.3,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 23,
+    "answer": "Bandai Namco",
+    "accept": [
+      "Bandai Namco",
+      "Bandai",
+      "Namco"
+    ],
+    "image": "bandai-namco-entertainment.png",
+    "width": 1280,
+    "height": 293,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bandai_Namco_logo_(2022).svg",
+    "zoomStages": {
+      "stage0": 1.7,
+      "stage1": 1.2
+    }
+  },
+  {
+    "numero": 24,
+    "answer": "Capcom",
+    "accept": [
+      "Capcom"
+    ],
+    "image": "capcom.png",
+    "width": 1280,
+    "height": 235,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Capcom_logo.svg",
+    "zoomStages": {
+      "stage0": 1.8,
+      "stage1": 1
+    }
+  },
+  {
+    "numero": 25,
+    "answer": "Lamborghini",
+    "accept": [
+      "Lamborghini"
+    ],
+    "image": "lamborghini.png",
+    "width": 1280,
+    "height": 1438,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Lamborghini_Logo.svg",
+    "focal": {
+      "x": 0.522,
+      "y": 0.422
+    },
+    "zoomStages": {
+      "stage0": 5.5,
+      "stage1": 2.8
+    }
+  },
+  {
+    "numero": 26,
+    "answer": "Universal",
+    "accept": [
+      "Universal",
+      "Universal Pictures",
+      "Universal Studios"
+    ],
+    "image": "universal-pictures.png",
+    "width": 1280,
+    "height": 786,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Universal_Pictures_2021_(Blue).svg",
+    "zoomStages": {
+      "stage0": 2.8,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 27,
+    "answer": "Dreamcast",
+    "accept": [
+      "Dreamcast",
+      "Sega Dreamcast"
+    ],
+    "image": "dreamcast.png",
+    "width": 1280,
+    "height": 968,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dreamcast_logo.svg"
+  },
+  {
+    "numero": 28,
+    "answer": "Lufthansa",
+    "accept": [
+      "Lufthansa"
+    ],
+    "image": "lufthansa.png",
+    "width": 1280,
+    "height": 1280,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lufthansa_Logo_2018_crane.svg"
+  },
+  {
+    "numero": 29,
+    "answer": "Honda",
+    "accept": [
+      "Honda"
+    ],
+    "image": "honda.png",
+    "width": 1280,
+    "height": 1028,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Honda_Logo.svg",
+    "zoomStages": {
+      "stage0": 2.3,
+      "stage1": 1.3
+    }
+  },
+  {
+    "numero": 30,
+    "answer": "Android",
+    "accept": [
+      "Android"
+    ],
+    "image": "android.png",
+    "width": 1280,
+    "height": 718,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Android_robot_head.svg",
+    "zoomStages": {
+      "stage0": 1.9,
+      "stage1": 1.3
+    }
+  },
+  {
+    "numero": 31,
+    "answer": "Lacoste",
+    "accept": [
+      "Lacoste"
+    ],
+    "image": "lacoste.png",
+    "width": 1280,
+    "height": 227,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Lacoste_logo.svg",
+    "focal": {
+      "x": 0.878,
+      "y": 0.867
+    }
+  },
+  {
+    "numero": 32,
+    "answer": "Deliveroo",
+    "accept": [
+      "Deliveroo"
+    ],
+    "image": "deliveroo.png",
+    "width": 1280,
+    "height": 342,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Deliveroo_logo.svg",
+    "focal": {
+      "x": 0.204,
+      "y": 0.413
+    },
+    "zoomStages": {
+      "stage0": 2.3,
+      "stage1": 1.4
+    }
+  },
+  {
+    "numero": 33,
+    "answer": "Domino's",
+    "accept": [
+      "Domino's",
+      "Dominos",
+      "Domino's Pizza",
+      "Dominos Pizza"
+    ],
+    "image": "domino-s-pizza.png",
+    "width": 1280,
+    "height": 268,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Domino's_2025.svg",
+    "focal": {
+      "x": 0.177,
+      "y": 0.491
+    },
+    "zoomStages": {
+      "stage0": 2.8,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 34,
+    "answer": "Alcatel",
+    "accept": [
+      "Alcatel",
+      "Alcatel-Lucent"
+    ],
+    "image": "alcatel.png",
+    "width": 1280,
+    "height": 330,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Logo_of_Alcatel_(1987).svg",
+    "zoomStages": {
+      "stage0": 3.2,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 35,
+    "answer": "Riot Games",
+    "accept": [
+      "Riot Games",
+      "Riot"
+    ],
+    "image": "riot-games.png",
+    "width": 1280,
+    "height": 360,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Riot_Games_2022.svg",
+    "zoomStages": {
+      "stage0": 2,
+      "stage1": 1.3
+    }
+  },
+  {
+    "numero": 36,
+    "answer": "Linux",
+    "accept": [
+      "Linux",
+      "Tux"
+    ],
+    "image": "linux.png",
+    "width": 1280,
+    "height": 1518,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Tux.svg",
+    "focal": {
+      "x": 0.471,
+      "y": 0.453
+    },
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 2.2
+    }
+  },
+  {
+    "numero": 37,
+    "answer": "ASICS",
+    "accept": [
+      "ASICS"
+    ],
+    "image": "asics.png",
+    "width": 1280,
+    "height": 451,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Asics_Logo.svg",
+    "zoomStages": {
+      "stage0": 2.4,
+      "stage1": 1.5
+    }
+  },
+  {
+    "numero": 38,
+    "answer": "Lexus",
+    "accept": [
+      "Lexus"
+    ],
+    "image": "lexus.png",
+    "width": 1280,
+    "height": 788,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Lexus_division_emblem.svg"
+  },
+  {
+    "numero": 39,
+    "answer": "Discord",
+    "accept": [
+      "Discord"
+    ],
+    "image": "discord.png",
+    "width": 1280,
+    "height": 246,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Discord_logo.svg",
+    "focal": {
+      "x": 0.182,
+      "y": 0.625
+    }
+  },
+  {
+    "numero": 40,
+    "answer": "Louis Vuitton",
+    "accept": [
+      "Louis Vuitton",
+      "Vuitton",
+      "LV"
+    ],
+    "image": "louis-vuitton.png",
+    "width": 1280,
+    "height": 1561,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Louis_Vuitton_logo_and_wordmark.svg",
+    "zoomStages": {
+      "stage0": 2.7,
+      "stage1": 1.6
+    }
+  },
+  {
+    "numero": 41,
+    "answer": "Le Coq sportif",
+    "accept": [
+      "Le Coq sportif",
+      "Coq sportif"
+    ],
+    "image": "le-coq-sportif.png",
+    "width": 1280,
+    "height": 1014,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Le_coq_sportif_logo16.svg",
+    "zoomStages": {
+      "stage0": 2.6,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 42,
+    "answer": "Supercell",
+    "accept": [
+      "Supercell"
+    ],
+    "image": "supercell.png",
+    "width": 1280,
+    "height": 1042,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Supercell-logo.svg"
+  },
+  {
+    "numero": 43,
+    "answer": "Kodak",
+    "accept": [
+      "Kodak"
+    ],
+    "image": "kodak.png",
+    "width": 1280,
+    "height": 1159,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Eastman_Kodak_Company_logo_(2016).svg",
+    "zoomStages": {
+      "stage0": 3,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 44,
+    "answer": "ASUS",
+    "accept": [
+      "ASUS"
+    ],
+    "image": "asus.png",
+    "width": 1280,
+    "height": 270,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Asus_blue_logo.svg",
+    "focal": {
+      "x": 0.376,
+      "y": 0.339
+    },
+    "zoomStages": {
+      "stage0": 1.5,
+      "stage1": 1
+    }
+  },
+  {
+    "numero": 45,
+    "answer": "Paramount",
+    "accept": [
+      "Paramount",
+      "Paramount Pictures"
+    ],
+    "image": "paramount-pictures.png",
+    "width": 1280,
+    "height": 1033,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Paramount_Pictures_2022_(Blue).svg",
+    "focal": {
+      "x": 0.503,
+      "y": 0.528
+    },
+    "zoomStages": {
+      "stage0": 4.4,
+      "stage1": 2.8
+    }
+  },
+  {
+    "numero": 46,
+    "answer": "Rolex",
+    "accept": [
+      "Rolex"
+    ],
+    "image": "rolex.png",
+    "width": 1280,
+    "height": 720,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Logo_da_Rolex.png",
+    "focal": {
+      "x": 0.481,
+      "y": 0.722
+    }
+  },
+  {
+    "numero": 47,
+    "answer": "Subaru",
+    "accept": [
+      "Subaru"
+    ],
+    "image": "subaru.png",
+    "width": 1280,
+    "height": 774,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Subaru_logo_(transparent).svg",
+    "focal": {
+      "x": 0.525,
+      "y": 0.429
+    },
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 1.4
+    }
+  },
+  {
+    "numero": 48,
+    "answer": "Starbucks",
+    "accept": [
+      "Starbucks",
+      "Starbucks Coffee"
+    ],
+    "image": "starbucks.png",
+    "width": 1280,
+    "height": 1296,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Starbucks_Corporation_Logo_2011.svg",
+    "focal": {
+      "x": 0.503,
+      "y": 0.21
+    },
+    "zoomStages": {
+      "stage0": 5.1,
+      "stage1": 2.9
+    }
+  },
+  {
+    "numero": 49,
+    "answer": "Peugeot",
+    "accept": [
+      "Peugeot"
+    ],
+    "image": "peugeot.png",
+    "width": 1280,
+    "height": 1406,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Peugeot_2021_Logo.svg",
+    "focal": {
+      "x": 0.479,
+      "y": 0.459
+    },
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 2.3
+    }
+  },
+  {
+    "numero": 50,
+    "answer": "Plex",
+    "accept": [
+      "Plex"
+    ],
+    "image": "plex.png",
+    "width": 152,
+    "height": 152,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Plex_favicon.png"
+  },
+  {
+    "numero": 51,
+    "answer": "Fujitsu",
+    "accept": [
+      "Fujitsu"
+    ],
+    "image": "fujitsu.png",
+    "width": 1280,
+    "height": 623,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Fujitsu-Logo.svg"
+  },
+  {
+    "numero": 52,
+    "answer": "Crédit agricole",
+    "accept": [
+      "Crédit agricole"
+    ],
+    "image": "credit-agricole.png",
+    "width": 1280,
+    "height": 900,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cr%C3%A9dit_Agricole_2020_logo.svg"
+  },
+  {
+    "numero": 53,
+    "answer": "The North Face",
+    "accept": [
+      "The North Face",
+      "North Face",
+      "TNF"
+    ],
+    "image": "the-north-face.png",
+    "width": 1280,
+    "height": 1280,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:TheNorthFace_logo.svg",
+    "focal": {
+      "x": 0.801,
+      "y": 0.622
+    },
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 2
+    }
+  },
+  {
+    "numero": 54,
+    "answer": "NBA",
+    "accept": [
+      "NBA",
+      "National Basketball Association"
+    ],
+    "image": "national-basketball-association.png",
+    "width": 1280,
+    "height": 2909,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:National_Basketball_Association_logo_2017-present.svg",
+    "focal": {
+      "x": 0.594,
+      "y": 0.457
+    },
+    "zoomStages": {
+      "stage0": 2,
+      "stage1": 1.4
+    }
+  },
+  {
+    "numero": 55,
+    "answer": "Quiksilver",
+    "accept": [
+      "Quiksilver",
+      "Quicksilver"
+    ],
+    "image": "quiksilver.png",
+    "width": 1280,
+    "height": 681,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Quiksilver-brand.svg"
+  },
+  {
+    "numero": 56,
+    "answer": "Philips",
+    "accept": [
+      "Philips"
+    ],
+    "image": "philips.png",
+    "width": 1280,
+    "height": 1630,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Philips_shield_(2013).svg"
+  },
+  {
+    "numero": 57,
+    "answer": "HBO",
+    "accept": [
+      "HBO",
+      "HBO Max"
+    ],
+    "image": "hbo.png",
+    "width": 1280,
+    "height": 528,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:HBO_logo.svg"
+  },
+  {
+    "numero": 58,
+    "answer": "Gameloft",
+    "accept": [
+      "Gameloft"
+    ],
+    "image": "gameloft.png",
+    "width": 1280,
+    "height": 250,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gameloft_Logo.svg",
+    "focal": {
+      "x": 0.282,
+      "y": 0.487
+    },
+    "zoomStages": {
+      "stage0": 1.5,
+      "stage1": 1
+    }
+  },
+  {
+    "numero": 59,
+    "answer": "BlackBerry",
+    "accept": [
+      "BlackBerry",
+      "Black Berry"
+    ],
+    "image": "blackberry.png",
+    "width": 1280,
+    "height": 224,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Blackberry_Logo.svg",
+    "focal": {
+      "x": 0.166,
+      "y": 0.389
+    },
+    "zoomStages": {
+      "stage0": 2.1,
+      "stage1": 1
+    }
+  },
+  {
+    "numero": 60,
+    "answer": "Ducati",
+    "accept": [
+      "Ducati"
+    ],
+    "image": "ducati.png",
+    "width": 1280,
+    "height": 1358,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ducati_red_logo.svg",
+    "zoomStages": {
+      "stage0": 2.6,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 61,
+    "answer": "Reddit",
+    "accept": [
+      "Reddit"
+    ],
+    "image": "reddit.png",
+    "width": 1280,
+    "height": 1140,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Snoo.svg",
+    "focal": {
+      "x": 0.503,
+      "y": 0.421
+    },
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 1.5
+    }
+  },
+  {
+    "numero": 62,
+    "answer": "Kappa",
+    "accept": [
+      "Kappa"
+    ],
+    "image": "kappa.png",
+    "width": 1280,
+    "height": 296,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kappa_logo.svg"
+  },
+  {
+    "numero": 63,
+    "answer": "Calvin Klein",
+    "accept": [
+      "Calvin Klein",
+      "CK"
+    ],
+    "image": "calvin-klein.png",
+    "width": 1280,
+    "height": 1596,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:CK_Calvin_Klein_logo.svg"
+  },
+  {
+    "numero": 64,
+    "answer": "Blizzard",
+    "accept": [
+      "Blizzard",
+      "Blizzard Entertainment"
+    ],
+    "image": "blizzard-entertainment.png",
+    "width": 1280,
+    "height": 667,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Blizzard_Entertainment_Logo_2015.svg",
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 1.6
+    }
+  },
+  {
+    "numero": 65,
+    "answer": "Maserati",
+    "accept": [
+      "Maserati"
+    ],
+    "image": "maserati.png",
+    "width": 1280,
+    "height": 520,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Maserati_logo_2.svg",
+    "zoomStages": {
+      "stage0": 3.2,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 66,
+    "answer": "Versace",
+    "accept": [
+      "Versace"
+    ],
+    "image": "versace.png",
+    "width": 1280,
+    "height": 659,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Versace-3.svg",
+    "zoomStages": {
+      "stage0": 4,
+      "stage1": 1.8
+    }
+  },
+  {
+    "numero": 67,
+    "answer": "Hyundai",
+    "accept": [
+      "Hyundai"
+    ],
+    "image": "hyundai.png",
+    "width": 1280,
+    "height": 653,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hyundai_symbol.svg"
+  },
+  {
+    "numero": 68,
+    "answer": "Xbox",
+    "accept": [
+      "Xbox"
+    ],
+    "image": "xbox.png",
+    "width": 1280,
+    "height": 1255,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Xbox_logo_2012_cropped.svg"
+  },
+  {
+    "numero": 69,
+    "answer": "Subway",
+    "accept": [
+      "Subway"
+    ],
+    "image": "subway.png",
+    "width": 1280,
+    "height": 1654,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Subway_icon.svg"
+  },
+  {
+    "numero": 70,
+    "answer": "Mazda",
+    "accept": [
+      "Mazda"
+    ],
+    "image": "mazda.png",
+    "width": 1280,
+    "height": 1172,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mazda_logo_with_emblem%2C_new.svg"
+  },
+  {
+    "numero": 71,
+    "answer": "Acer",
+    "accept": [
+      "Acer"
+    ],
+    "image": "acer.png",
+    "width": 1280,
+    "height": 309,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Acer_2011.svg",
+    "zoomStages": {
+      "stage0": 1.8,
+      "stage1": 1.1
+    }
+  },
+  {
+    "numero": 72,
+    "answer": "Reebok",
+    "accept": [
+      "Reebok"
+    ],
+    "image": "reebok.png",
+    "width": 1280,
+    "height": 363,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Reebok_red_logo.svg"
+  },
+  {
+    "numero": 73,
+    "answer": "Chanel",
+    "accept": [
+      "Chanel"
+    ],
+    "image": "chanel.png",
+    "width": 1280,
+    "height": 820,
+    "sourceUrl": "https://en.wikipedia.org/wiki/File:Chanel_logo_interlocking_cs.svg",
+    "focal": {
+      "x": 0.519,
+      "y": 0.504
+    }
+  },
+  {
+    "numero": 74,
+    "answer": "Chevrolet",
+    "accept": [
+      "Chevrolet",
+      "Chevy"
+    ],
+    "image": "chevrolet.png",
+    "width": 1280,
+    "height": 598,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Chevrolet_simple_logo.svg",
+    "focal": {
+      "x": 0.354,
+      "y": 0.18
+    },
+    "zoomStages": {
+      "stage0": 1.7,
+      "stage1": 1.1
+    }
+  },
+  {
+    "numero": 75,
+    "answer": "Mini",
+    "accept": [
+      "Mini",
+      "Mini Cooper"
+    ],
+    "image": "mini.png",
+    "width": 1280,
+    "height": 562,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:MINI_logo.svg"
+  },
+  {
+    "numero": 76,
+    "answer": "Tinder",
+    "accept": [
+      "Tinder"
+    ],
+    "image": "tinder.png",
+    "width": 1280,
+    "height": 1698,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Tinder_icon_(2026).svg",
+    "zoomStages": {
+      "stage0": 1.9,
+      "stage1": 1.3
+    }
+  },
+  {
+    "numero": 77,
+    "answer": "Ligue des champions",
+    "accept": [
+      "Ligue des champions",
+      "Champions League",
+      "UEFA Champions League",
+      "Ligue des champions de l'UEFA"
+    ],
+    "image": "ligue-des-champions-de-l-uefa.png",
+    "width": 1280,
+    "height": 566,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:UEFA_Champions_League_Logo_Wordmark.svg"
+  },
+  {
+    "numero": 78,
+    "answer": "Tommy Hilfiger",
+    "accept": [
+      "Tommy Hilfiger"
+    ],
+    "image": "tommy-hilfiger.png",
+    "width": 1280,
+    "height": 854,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Tommy_Hilfiger_logo.svg",
+    "zoomStages": {
+      "stage0": 1.8,
+      "stage1": 1.5
+    }
+  },
+  {
+    "numero": 79,
+    "answer": "Netscape",
+    "accept": [
+      "Netscape",
+      "Netscape Navigator"
+    ],
+    "image": "netscape-navigator.png",
+    "width": 1280,
+    "height": 1280,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Netscape_icon.svg",
+    "focal": {
+      "x": 0.514,
+      "y": 0.471
+    },
+    "zoomStages": {
+      "stage0": 2.9,
+      "stage1": 2.1
+    }
+  },
+  {
+    "numero": 80,
+    "answer": "Warner Bros.",
+    "accept": [
+      "Warner Bros.",
+      "Warner",
+      "Warner Brothers"
+    ],
+    "image": "warner-bros.png",
+    "width": 1280,
+    "height": 1633,
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Warner_Bros._(2019)_logo.svg",
+    "zoomStages": {
+      "stage0": 3.5,
+      "stage1": 2.5
+    }
+  }
+]

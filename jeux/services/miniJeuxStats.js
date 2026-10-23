@@ -25,6 +25,7 @@ import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getConceptResults } from "./concept.js";
 import { getAllArchivedResults as getSynopsisResults } from "./synopsis.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
+import { getAllArchivedResults as getZoom2Results } from "./zoom2.js";
 import { getAllArchivedResults as getPaletteResults } from "./palette.js";
 import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
 import { getAllArchivedResults as getLaJusteCarteResults } from "./lajustecarte.js";
@@ -45,6 +46,7 @@ const WEEKLY_GAMES = [
   { key: "concept", title: "🧩 Concept", fetch: getConceptResults },
   { key: "zoom", title: "🔍 Zoom carte", fetch: getZoomResults },
   { key: "palette", title: "🎨 Palette", fetch: getPaletteResults },
+  { key: "zoom2", title: "🔍 Zoom logo", fetch: getZoom2Results },
   { key: "blindroyale", title: "🎧 Blind Royale", fetch: getBlindRoyaleResults },
   { key: "lajustecarte", title: "🃏 La Juste Carte", fetch: getLaJusteCarteResults },
   { key: "triviageek", title: "🎮 Trivia Geek", fetch: getTriviaGeekResults },

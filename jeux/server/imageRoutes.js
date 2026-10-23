@@ -4,6 +4,7 @@
 import express from "express";
 import { getCurrentFrameImage, getFrameImageByGameId } from "../services/frames.js";
 import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "../services/zoomImage.js";
+import { getZoom2CardImage, getZoom2HintImage, getZoom2RevealImage } from "../services/zoom2Image.js";
 import { getPaletteQuestionImage, getPaletteResultImage } from "../services/paletteImage.js";
 import { getPeleMeleRackImage } from "../services/pelemeleImage.js";
 import {
@@ -63,6 +64,19 @@ router.get("/api/zoom/image", async (req, res) => {
   const { gameId, stage } = req.query;
   if (!gameId) return res.status(400).end();
   const getImage = stage === "hint" ? getZoomHintImage : stage === "reveal" ? getZoomRevealImage : getZoomCardImage;
+  const image = await getImage(String(gameId)).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Zoom logo : mêmes trois étapes que Zoom carte, même garde-fou
+// anti-spoiler (isGamePosted dans services/zoom2.js).
+router.get("/api/zoom2/image", async (req, res) => {
+  const { gameId, stage } = req.query;
+  if (!gameId) return res.status(400).end();
+  const getImage = stage === "hint" ? getZoom2HintImage : stage === "reveal" ? getZoom2RevealImage : getZoom2CardImage;
   const image = await getImage(String(gameId)).catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", "image/png");

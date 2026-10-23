@@ -10,6 +10,7 @@ export class Redis {
   static isFake = true;
   async get(k) { const v = store.get(k); return typeof v === "string" ? v : null; }
   async set(k, v, opts = {}) { if (opts.nx && store.has(k)) return null; store.set(k, v); return "OK"; }
+  async setnx(k, v) { if (store.has(k)) return 0; store.set(k, String(v)); return 1; }
   async del(...ks) { let n = 0; for (const k of ks) n += store.delete(k) | zsets.delete(k) ? 1 : 0; return n; }
   async exists(...ks) { return ks.filter(present).length; }
   async hget(k, f) { return hash(k).get(f) ?? null; }
@@ -23,6 +24,7 @@ export class Redis {
   async expire() { return 1; }
   async sadd(k, ...ms) { if (!store.has(k)) store.set(k, new Set()); const s = store.get(k); const n = s.size; ms.forEach((m) => s.add(String(m))); return s.size - n; }
   async scard(k) { const s = store.get(k); return s instanceof Set ? s.size : 0; }
+  async sismember(k, m) { const s = store.get(k); return s instanceof Set && s.has(String(m)) ? 1 : 0; }
   async incr(k) { const n = Number(store.get(k) || 0) + 1; store.set(k, String(n)); return n; }
   async scan(_c, { match }) { const re = new RegExp("^" + match.replace(/\*/g, ".*") + "$"); return ["0", [...new Set([...store.keys(), ...zsets.keys()])].filter((k) => re.test(k))]; }
   async zincrby(k, inc, m) { const z = zset(k); z.set(String(m), (z.get(String(m)) || 0) + Number(inc)); return z.get(String(m)); }

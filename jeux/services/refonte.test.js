@@ -37,18 +37,20 @@ console.log("✓ nouvelles paires à partir de la saison de bascule");
 assert.strictEqual(getActiveCultureGame(139), "synopsis");
 assert.strictEqual(getActiveBlindGame(139), "triviageek");
 assert.strictEqual(getActiveLetterGame(139), "concept");
-assert.strictEqual(getActiveVisualGame(139), "platpays");
+assert.strictEqual(getActiveVisualGame(139), "zoom2");
+assert.strictEqual(getActiveVisualGame(140), "platpays");
 assert.strictEqual(getActiveCultureGame(140), "frame");
 console.log("✓ calendrier décembre/janvier");
 
 // Jeux prêts : avant la bascule tout passe ; après, seuls ceux de
-// REFONTE_PRETS (Pêle-mêle et Zoom gardent leur id mais ne doivent jamais
-// relancer leur version Clash Royale).
+// REFONTE_PRETS (Pêle-mêle garde son id mais ne doit jamais relancer sa
+// version Clash Royale, Zoom carte n'est plus lancé).
 assert.strictEqual(getWiredGame("visuels", 138, "zoom"), "zoom");
 assert.strictEqual(getWiredGame("visuels", 140, "zoom"), null);
 assert.strictEqual(getWiredGame("lettres", 140, "pelemele"), null);
 assert.strictEqual(getWiredGame("culture", 139, "synopsis"), "synopsis");
-assert.strictEqual(getWiredGame("visuels", 139, "platpays"), null);
+assert.strictEqual(getWiredGame("visuels", 139, "zoom2"), "zoom2");
+assert.strictEqual(getWiredGame("visuels", 140, "platpays"), null);
 assert.strictEqual(getWiredGame("culture", 140, "frame"), "frame");
 console.log("✓ seuls les jeux prêts sont lancés après la bascule");
 

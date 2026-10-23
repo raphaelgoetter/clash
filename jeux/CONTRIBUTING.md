@@ -30,7 +30,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 ## Mini-jeux hebdomadaires : fonctionnement commun
 
-S'applique à Frame, Trivia, Trivia Geek, Concept, Synopsis éclaté, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
+S'applique à Frame, Trivia, Trivia Geek, Concept, Synopsis éclaté, Anagram, Pêle-mêle, Zoom carte, Zoom logo, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
 
 ### Alternance saisonnière (4 groupes)
 
@@ -52,13 +52,13 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | `culture` | 🎬 Ciné-club | `synopsis` (Synopsis éclaté) | `frame` (Trouve le film) |
 | `aveugle` | 🎮 Culture geek | `triviageek` (Trivia Geek) | `intrus` (Intrus de l'inventaire) |
 | `lettres` | 🔤 Jeux de mots | `concept` (Concept) | `pelemele` (Pêle-mêle, nouveau thème) |
-| `visuels` | 📸 Coup d'œil | `platpays` (Plat Pays) | `zoom` (Zoom, nouveau thème) |
+| `visuels` | 📸 Coup d'œil | `zoom2` (Zoom logo) | `platpays` (Plat Pays) |
 
 - Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
-- Pêle-mêle et Zoom gardent leur identifiant (même jeu, nouveau thème) : leurs archives sont rangées par saison, donc jamais mélangées avec celles de la version Clash Royale. Les clés de rotation et d'état (`<jeu>:order`, `<jeu>:state`…) sont à purger au lancement du nouveau thème. Trivia Geek change de groupe, d'où un identifiant distinct (`triviageek`).
-- À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi de relancer la version Clash Royale de Pêle-mêle ou de Zoom.
+- Pêle-mêle garde son identifiant (même jeu, nouveau thème) : ses archives sont rangées par saison, donc jamais mélangées avec celles de la version Clash Royale. Ses clés de rotation et d'état (`pelemele:order`, `pelemele:state`…) sont à purger au lancement du nouveau thème. Trivia Geek change de groupe et Zoom logo remplace Zoom carte pendant que celui-ci tourne encore, d'où des identifiants distincts (`triviageek`, `zoom2`).
+- À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi de relancer la version Clash Royale de Pêle-mêle, ou Zoom carte.
 - Catalogue Trivia Geek : `jeux/data/triviageek/trivia-geek.json`, même format que `trivia-clash.json` (bonne réponse suffixée « √ », parcouru dans l'ordre, ajouts en fin de fichier) plus `numero` (repère humain, 1 = première manche, à garder égal à la position dans le fichier), `titre` (titre humoristique affiché avec la question) et `sourceUrl`. Chaque réponse est vérifiée par une source web avant d'entrer au catalogue.
-- Brancher un nouveau jeu : l'ajouter à `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`, libellé du jeu selon la date pour Pêle-mêle et Zoom).
+- Brancher un nouveau jeu : l'ajouter à `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`, libellé du jeu selon la date pour Pêle-mêle).
 
 Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque passage :
 
@@ -122,7 +122,7 @@ Clés communes (`<p>` = préfixe du jeu) :
 - Routes d'images : `jeux/server/imageRoutes.js` (monté par `backend/server.js`). URL d'embed `https://trustroyale.vercel.app/api/<jeu>/image?gameId=<gameId>&v=<horodatage>`.
 - ⚠️ `gameId` épingle l'image de **cette** manche (sinon les anciens messages affichent la manche en cours quand le proxy Discord revalide son cache). La route refuse tout `gameId` jamais posté (registre `<p>:posted_games` ou équivalent), donc aucune manche future devinable. `v` n'est qu'un cache-buster.
 - Aucun asset de jeu n'est exposé statiquement (rien sous `frontend/public/`).
-- ⚠️ Zoom et Palette (images, surlignages) et la police `data/fonts/Inter-Bold.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- jeux-visuels`.
+- ⚠️ Zoom carte, Zoom logo et Palette (images, surlignages) et la police `data/fonts/Inter-Bold.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- jeux-visuels`.
 - ⚠️ Rendu SVG → PNG par `@resvg/resvg-js` : tout texte exige la police embarquée (`fontFiles` + `loadSystemFonts: false`), sinon il est invisible sur Vercel, sans erreur.
 
 ### Récapitulatif de fin de saison
@@ -355,6 +355,21 @@ Schéma commun avec `zoom:posted_games`, plus `zoom:hint:<gameId>:<discordId>` (
 ### Scripts npm spécifiques
 
 `zoom:catalog` ; `zoom:move` (reposte la manche active dans un autre salon sans l'avancer).
+
+---
+
+## Zoom logo (devine la marque à partir d'un zoom sur son logo)
+
+Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en alternance avec Plat Pays. Service `jeux/services/zoom2.js`, image `jeux/services/zoom2Image.js`, handler `jeux/discord/handlers/zoom2.js` : même mécanique et même barème que Zoom carte (un indice image à -3 pts, réponse stricte normalisée), DM de fin de manche avec le logo entier, score de la manche et total de la saison, sans rang d'arrivée. Récap de fin de saison posté uniquement par `postJeuxVisuels.js` (`skipSeasonRecap` ignoré).
+
+- Catalogue `jeux/data/jeux-visuels/zoom2/zoom2.json` : `numero` (= position), `answer`, `accept`, `image`, `width`/`height` (dimensions réelles du PNG), `sourceUrl` (fichier Commons ou Wikipédia), optionnellement `focal`/`zoomStages`. Parcouru dans l'ordre du fichier, en boucle ; `gameId` = `l` + numéro sur 3 chiffres, opaque car visible dans l'URL d'image et les `custom_id`. Mélangé une fois : ne jamais réordonner, ajouter en fin.
+- Logos : toujours la version graphique (symbole) quand la marque en a une, jamais sa seule version typographique. Le logo Wikidata (`P154`) est souvent le logotype : chercher le symbole sur Commons, ou sur Wikipédia en anglais pour les logos non libres. Pas de marque trop évidente même zoomée (Apple, Nike, McDonald's…).
+- `accept` : nom affiché + variantes courantes (sigle, nom complet, orthographe fréquente), sans prénom seul ni mot courant ; aucune variante redondante une fois normalisée, aucune acceptée pour deux logos (vérifié par `zoom2.test.js`).
+- Recadrage : formule de Zoom carte, mais **fond blanc** (beaucoup de logos sont noirs sur fond transparent) et zooms par défaut `×3,5` (post public) / `×1,8` (indice), point focal `(0.5, 0.45)`. Réglage logo par logo validé visuellement avant l'ajout au catalogue ; la révélation (`stage=reveal`) est le logo entier centré sur fond blanc.
+- Images dans `jeux/data/jeux-visuels/zoom2/images/`, servies depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels`.
+- Redis (`zoom2:*`) : schéma commun avec `zoom2:posted_games` et `zoom2:hint:<gameId>:<discordId>` (flag `SETNX`) ; `zoom2:reset` purge aussi `posted_games`.
+- Boutons `zoom2_hint:`, `zoom2_answer:` (Modal `zoom2_answer_modal:`), route `/api/zoom2/image`. Pas de commande de scores : « Ma participation » de `/mini-jeux`.
+- Scripts : `zoom2:test`, `zoom2:test:dry`, `zoom2:reset`.
 
 ---
 

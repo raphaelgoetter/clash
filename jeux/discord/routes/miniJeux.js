@@ -21,6 +21,11 @@ import {
   handleModalSubmit as handleZoomModalSubmit,
 } from "../handlers/zoom.js";
 import {
+  buildAnswerModal as buildZoom2AnswerModal,
+  handleHintButton as handleZoom2HintButton,
+  handleModalSubmit as handleZoom2ModalSubmit,
+} from "../handlers/zoom2.js";
+import {
   buildAnswerModal as buildJusteCarteAnswerModal,
   handleModalSubmit as handleJusteCarteModalSubmit,
   handleHintButton as handleJusteCarteHintButton,
@@ -358,6 +363,55 @@ export async function routeMiniJeux(body, res) {
         rawAnswer,
       ),
     );
+    return;
+  }
+
+  // ── Jeu Zoom logo : bouton indice ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("zoom2_hint:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleZoom2HintButton(webhookUrl, gameId, discordId, username));
+    return;
+  }
+
+  // ── Jeu Zoom logo : bouton "Répondre" → ouverture de la Modal (synchrone) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("zoom2_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    return res.status(200).json({ type: 9, data: buildZoom2AnswerModal(gameId) });
+  }
+
+  // ── Jeu Zoom logo : soumission de la Modal (body.type 5 = MODAL_SUBMIT) ──
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("zoom2_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleZoom2ModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
     return;
   }
 
