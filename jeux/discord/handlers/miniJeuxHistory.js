@@ -5,19 +5,10 @@
 // ============================================================
 
 import { getSeasonWinnersHistory } from "../../services/miniJeuxHistory.js";
-import { estimatePublicSeasonForDate } from "@clash/clash-royale/dateUtils.js";
+import { libelleMoisAnnee } from "../../services/saison.js";
 
 const MINIJEUX_COLOR = 0x5865f2; // même couleur que /mini-jeux, cohérence visuelle
 const PAGE_SIZE = 6;
-
-const MOIS = [
-  "janvier", "février", "mars", "avril", "mai", "juin",
-  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
-];
-
-function formatSeasonLabel(start) {
-  return `${MOIS[start.getUTCMonth()]} ${start.getUTCFullYear()}`;
-}
 
 // ── Commande ──────────────────────────────────────────────────
 
@@ -77,8 +68,7 @@ function buildHistoryEmbed(seasons, offset) {
 
   const blocks = page.map((season) => {
     const label =
-      `**${formatSeasonLabel(season.start)}**` +
-      ` (Saison ${estimatePublicSeasonForDate(season.start)})`;
+      `**${libelleMoisAnnee(season.start)}**`;
     const lines = season.games.map((g) => {
       const names = g.winners.map((w) => `**${w.name}**`).join(" / ");
       return `${g.label} : 🏆 ${names}`;

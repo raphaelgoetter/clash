@@ -1,6 +1,6 @@
 // ============================================================
 // frames.js — Handlers Discord pour le jeu "Frame" (devine le film), en
-// alternance une saison Clash Royale sur deux avec Trivia sous le nom
+// alternance une saison sur deux avec Trivia sous le nom
 // collectif "Mini-jeux de Culture" (voir jeux/services/jeuxculture.js).
 // Embed, boutons, modal, DM. En production, la publication passe par
 // jeux/scripts/postJeuxCulture.js (orchestrateur de l'alternance, skipSeasonRecap
@@ -37,7 +37,7 @@ import {
   findTiedRank,
   alreadyPostedThisWeek,
 } from "../../services/frames.js";
-import { toPublicSeasonId } from "@clash/clash-royale/dateUtils.js";
+import { nomSaison, deMois } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
@@ -75,7 +75,7 @@ function buildFrameEmbed({
   return {
     title: "🎬 Le jeu du mercredi : Trouve le film !",
     description:
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
+      `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Devine le titre d'un film à partir d'une image.\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
@@ -197,11 +197,11 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
   }
   lines.push(
     "",
-    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`,
   );
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Trouve le film » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Trouve le film » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -517,7 +517,7 @@ function buildDmText({
   seasonScore,
 }) {
   return [
-    `**Trouve le film : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+    `**Trouve le film : ${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
     `🎬 **${titre}** : tu es le ${ordinal(gameRank)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
@@ -660,7 +660,7 @@ function buildFrameStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
   );
   if (currentSolved) {
     lines.push("- Tu as trouvé le nom du film !");
@@ -680,7 +680,7 @@ function buildFrameStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
     );
     if (m.played) {
       lines.push("- Tu as trouvé le nom du film !");
@@ -691,7 +691,7 @@ function buildFrameStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);

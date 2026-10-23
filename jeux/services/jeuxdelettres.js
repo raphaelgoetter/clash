@@ -1,6 +1,6 @@
 // ============================================================
 // jeuxdelettres.js — Tronc commun aux mini-jeux "de lettres" (Anagram,
-// Pêle-mêle), qui alternent désormais une saison Clash Royale sur deux sous
+// Pêle-mêle), qui alternent désormais une saison sur deux sous
 // le nom collectif "Jeux de lettres" : planification hebdomadaire partagée
 // (samedi, 2 créneaux 10h/18h, tirage aléatoire — copié du mécanisme
 // originel d'Anagram, voir jeux/services/anagrams.js), et résolution de
@@ -15,10 +15,9 @@
 // indépendante de celle de chaque jeu — copie volontaire, pas une régression
 // de la convention.
 //
-// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON, la saison technique
-// Clash Royale encore gérée par Anagram au moment de la mise en place de
-// l'alternance (confirmée le 2026-09-19 : saison technique 136, Saison
-// publique 87 via toPublicSeasonId) — décision produit explicite : on
+// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON (136, septembre 2026,
+// voir saison.js), saison encore gérée par Anagram à la mise en place de
+// l'alternance — décision produit explicite : on
 // attend la fin de CETTE saison avant de basculer, jamais une bascule en
 // cours de saison. Parité par rapport à cette référence : écart PAIR (0, 2,
 // 4...) → Anagram, écart IMPAIR (1, 3, 5...) → Pêle-mêle. Donc saison 136 =
@@ -27,10 +26,7 @@
 // ============================================================
 
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId } from "@clash/clash-royale/dateUtils.js";
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
-import { getOrSet } from "@clash/commun/cache.js";
+import { getCurrentSeasonId } from "./saison.js";
 
 let _redis = null;
 function getRedis() {
@@ -44,29 +40,8 @@ function getRedis() {
   return _redis;
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-// Copie assumée (voir en-tête de fichier) — même fonction 100% générique
-// que dans chaque jeu individuel, juste utilisée ici pour la décision
-// d'alternance elle-même (jeux/scripts/postJeuxDeLettres.js), pas pour l'état
-// interne d'un jeu précis.
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "jeuxdelettres:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Planification hebdomadaire ──────────────────────────────────
 // Copie assumée de ANAGRAM_CRON_HOURS/computeWeeklySlotIndex/

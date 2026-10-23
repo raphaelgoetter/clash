@@ -53,7 +53,7 @@ import {
   SOUNDS_DIR,
   ILLUSTRATION_PATH,
 } from "../../services/blindroyale.js";
-import { toPublicSeasonId } from "@clash/clash-royale/dateUtils.js";
+import { nomSaison, deMois } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
@@ -89,7 +89,7 @@ function buildBlindRoyaleEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
   return {
     title: "🎧 Le jeu du lundi : Blind Royale !",
     description:
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
+      `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Un son de carte Clash Royale mystère est joint à ce message ⬇️ Écoute-le autant de fois que tu veux, puis devine de quelle carte il s'agit !\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
@@ -168,10 +168,10 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
   if (manchesPlayed?.length > 0) {
     lines.push("", "**Manches de la saison :**", ...manchesPlayed.map((m) => `Manche ${m.seasonManche} : ${m.label}`));
   }
-  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`);
+  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`);
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Blind Royale » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Blind Royale » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -439,7 +439,7 @@ function ordinal(n) {
 
 function buildDmText({ seasonId, seasonManche, seasonMancheTotal, reponse, score, gameRank, seasonScore, hintUsed }) {
   return [
-    `**Blind Royale : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+    `**Blind Royale : ${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
     `🎧 **${reponse}** : tu es le ${ordinal(gameRank)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**${hintUsed ? " _(indice rareté utilisé : -3 pts)_" : ""}`,
@@ -556,7 +556,7 @@ function buildBlindRoyaleStatsEmbed({
 }) {
   const lines = [];
 
-  lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
+  lines.push(`**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
   if (currentSolved) {
     lines.push("- Tu as trouvé le nom de la carte !");
     lines.push(`- Tu as marqué ${currentScore} points`);
@@ -574,7 +574,7 @@ function buildBlindRoyaleStatsEmbed({
 
   for (const m of pastManches) {
     lines.push("");
-    lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
+    lines.push(`**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
     if (m.played) {
       lines.push("- Tu as trouvé le nom de la carte !");
       lines.push(`- Tu as marqué ${m.score} points`);
@@ -584,7 +584,7 @@ function buildBlindRoyaleStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);

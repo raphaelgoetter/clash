@@ -34,7 +34,7 @@ S'applique à Frame, Trivia, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste
 
 ### Alternance saisonnière (4 groupes)
 
-Chaque groupe fait tourner **un seul jeu par saison Clash Royale**, en alternance. Décision : écart à `ACTIVE_GAME_REFERENCE_SEASON = 136` (saison technique, publique 87) pair → 1er jeu, impair → 2nd jeu.
+Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numérotation des manches »), en alternance. Décision : écart à `ACTIVE_GAME_REFERENCE_SEASON = 136` pair → 1er jeu, impair → 2nd jeu.
 
 | Groupe | Pair / impair | Publication (UTC) | Workflow | Orchestrateur | Service | npm |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -51,7 +51,7 @@ Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque 
 
 `skipSeasonRecap` existe sur Frame, Anagram, Zoom, La Juste Carte et Blind Royale (ignoré par Trivia) : un appel direct (`post<Jeu>.js`) détecte lui-même le changement de saison sur son propre état et poste le récap. Pêle-mêle et Palette n'ont pas ce paramètre : leur récap n'est posté **que** par l'orchestrateur. Les scripts `jeux/scripts/post<Jeu>.js` restent utilisables pour un test ou un rattrapage d'un jeu précis.
 
-`getCurrentSeasonId()` est volontairement **dupliquée** dans chaque service (convention du repo) : `computeCurrentSeasonId(currentRace, raceLog)` (`@clash/clash-royale/dateUtils.js`) sur le premier clan de `FAMILY_CLAN_TAGS`, 3 tentatives (0, 1 s, 3 s), cache mémoire 15 min.
+Chaque service réexporte `getCurrentSeasonId()` depuis `jeux/services/saison.js` (aucun appel à l'API Clash Royale).
 
 ### Salons, ping et variables d'environnement
 
@@ -87,7 +87,9 @@ Clés communes (`<p>` = préfixe du jeu) :
 
 ### Saison et numérotation des manches
 
-- Affichage « **Saison S · Manche N/X** » (post, DM, commande), S = `toPublicSeasonId(seasonId)`.
+- **Une saison = un mois calendaire**, du 1er à minuit au 1er du mois suivant, **heure de Paris**, indépendamment des saisons Clash Royale. Source de vérité : `jeux/services/saison.js` (`seasonIdForDate`, `getCurrentSeasonBounds`, `countRemainingWeekdayOccurrences`/`countRemainingWednesdays`), testée par `saison.test.js`.
+- Identifiant technique : un entier par mois, qui prolonge l'ancienne numérotation (octobre 2026 = 137, novembre = 138…), jamais affiché aux joueurs. Les clés `<jeu>:season:<id>` / `<jeu>:archived:<id>` et l'alternance continuent sans migration. ⚠️ Les archives antérieures à novembre 2026 ont été numérotées selon les saisons Clash Royale (bornes au 1er lundi du mois) : `/mini-jeux-history` regroupe donc les résultats par date réelle, jamais par `seasonId`.
+- Affichage « **Saison d'Octobre · Manche N/X** » (post, DM, commande) via `nomSaison(seasonId)`, « Score de la saison d'Octobre » via `deMois(seasonId)` (élision devant Avril, Août, Octobre) ; `/mini-jeux-history` affiche le mois et l'année (`libelleMoisAnnee`).
 - N relatif à la saison (`assignSeasonMancheNumber()` : `INCR` + `HSETNX`), X = N + nombre d'occurrences restantes du jour de publication avant la fin de la saison (`computeSeasonMancheTotal`, `countRemainingWednesdays`/`countRemainingWeekdayOccurrences`).
 - La progression dans le catalogue (`currentIndex`) est indépendante de la saison et boucle au début une fois épuisée.
 

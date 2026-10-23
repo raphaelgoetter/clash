@@ -1,6 +1,6 @@
 // ============================================================
 // jeuxculture.js — Tronc commun aux mini-jeux "de culture" (Frame, Trivia),
-// qui alternent une saison Clash Royale sur deux sous le nom collectif
+// qui alternent une saison sur deux sous le nom collectif
 // "Mini-jeux de Culture" : résolution de quel jeu est actif pour une saison
 // donnée. Même position que jeuxvisuels.js (pas de planification
 // hebdomadaire à dupliquer ici : Frame a toujours eu un créneau fixe unique,
@@ -25,10 +25,7 @@
 // ============================================================
 
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId } from "@clash/clash-royale/dateUtils.js";
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
-import { getOrSet } from "@clash/commun/cache.js";
+import { getCurrentSeasonId } from "./saison.js";
 
 let _redis = null;
 function getRedis() {
@@ -42,25 +39,8 @@ function getRedis() {
   return _redis;
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "jeuxculture:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Alternance saisonnière ──────────────────────────────────────
 export const ACTIVE_GAME_REFERENCE_SEASON = 136;

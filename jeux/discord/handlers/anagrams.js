@@ -34,7 +34,7 @@ import {
   shouldPostThisSlot,
   findTiedRank,
 } from "../../services/anagrams.js";
-import { toPublicSeasonId } from "@clash/clash-royale/dateUtils.js";
+import { nomSaison, deMois } from "../../services/saison.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -80,7 +80,7 @@ function buildAnagramEmbed({
   return {
     title: "🔤 Le jeu du samedi : Anagramme !",
     description:
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
+      `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Devine le nom de la carte Clash Royale à partir de son anagramme :\n\n" +
       `# ${anagram.toUpperCase()}\n\n` +
       "_(les accents ne comptent pas)_\n\n" +
@@ -185,11 +185,11 @@ function buildSeasonRecapEmbed(
   }
   lines.push(
     "",
-    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`,
   );
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Anagramme » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Anagramme » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -438,7 +438,7 @@ function buildDmText({
   seasonScore,
 }) {
   return [
-    `**Anagramme : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+    `**Anagramme : ${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
     `🃏 **${reponse}** : tu es le ${ordinal(position)} à avoir trouvé !`,
     `Score de cette manche : **${score} pts**`,
@@ -582,7 +582,7 @@ function buildAnagramStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
   );
   if (currentSolved) {
     lines.push(
@@ -602,7 +602,7 @@ function buildAnagramStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
     );
     if (m.played) {
       lines.push("- Tu as trouvé le nom de la carte !");
@@ -613,7 +613,7 @@ function buildAnagramStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);

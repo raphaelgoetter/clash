@@ -16,7 +16,7 @@
 //   (calendaire, cf. getCurrentSeasonBounds), via la date de publication.
 // ============================================================
 
-import { getCurrentSeasonBounds } from "@clash/clash-royale/dateUtils.js";
+import { getCurrentSeasonBounds } from "./saison.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";

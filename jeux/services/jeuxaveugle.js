@@ -1,6 +1,6 @@
 // ============================================================
 // jeuxaveugle.js — Tronc commun aux mini-jeux "à l'aveugle" (La Juste Carte,
-// Blind Royale), qui alternent désormais une saison Clash Royale sur deux
+// Blind Royale), qui alternent désormais une saison sur deux
 // sous le nom collectif "Jeux à l'aveugle" : résolution de quel jeu est
 // actif pour une saison donnée. jeux/scripts/postJeuxAveugle.js est le seul
 // consommateur destiné à la production (cron unique, remplace
@@ -24,11 +24,9 @@
 // bouge tant que Blind Royale est actif. La Juste Carte migrera de dimanche
 // à lundi seulement quand elle reprendra la main (saison 138).
 //
-// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON, la saison technique
-// Clash Royale en cours au moment de la mise en place de l'alternance —
-// même référence que jeuxvisuels.js/jeuxdelettres.js (136, Saison publique
-// 87 via toPublicSeasonId, vérifiée le 2026-09-19 — simple coïncidence de
-// calendrier, pas de lien entre les trois alternances). Décision produit
+// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON (136, septembre 2026,
+// voir saison.js), même référence que jeuxvisuels.js/jeuxdelettres.js, sans
+// lien entre les trois alternances. Décision produit
 // explicite, comme pour les deux autres : chaque jeu termine SA saison en
 // cours avant de céder la main, jamais de bascule en milieu de saison.
 // Parité par rapport à cette référence : écart PAIR (0, 2, 4...) → La Juste
@@ -40,10 +38,7 @@
 // ============================================================
 
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId } from "@clash/clash-royale/dateUtils.js";
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
-import { getOrSet } from "@clash/commun/cache.js";
+import { getCurrentSeasonId } from "./saison.js";
 
 let _redis = null;
 function getRedis() {
@@ -57,29 +52,8 @@ function getRedis() {
   return _redis;
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-// Copie assumée (voir en-tête de fichier) — même fonction 100% générique
-// que dans chaque jeu individuel, juste utilisée ici pour la décision
-// d'alternance elle-même (jeux/scripts/postJeuxAveugle.js), pas pour l'état
-// interne d'un jeu précis.
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "jeuxaveugle:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Alternance saisonnière ──────────────────────────────────────
 export const ACTIVE_GAME_REFERENCE_SEASON = 136;

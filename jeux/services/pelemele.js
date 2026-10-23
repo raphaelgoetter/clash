@@ -44,10 +44,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId, countRemainingWeekdayOccurrences } from "@clash/clash-royale/dateUtils.js";
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
-import { getOrSet } from "@clash/commun/cache.js";
+import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -483,27 +480,8 @@ export async function resetGame() {
   await scanDelete("pelemele:archived:*");
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-// Dupliquée à l'identique depuis lajustecarte.js (seule la clé de cache
-// change) — fonction 100% générique.
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "pelemele:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Ordre de rotation des cartes "seed" (garantissent une solution) ────
 // cardNames.json reste trié alphabétiquement, donc comme La Juste Carte on

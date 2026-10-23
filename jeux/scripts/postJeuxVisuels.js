@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // postJeuxVisuels.js
 // Point d'entrée UNIQUE en production pour les "Jeux visuels" (Zoom carte /
-// Palette, en alternance une saison Clash Royale sur deux — voir
+// Palette, en alternance une saison sur deux — voir
 // jeux/services/jeuxvisuels.js pour le détail de l'alternance). Remplace
 // l'ancien cron dédié à Zoom seul (.github/workflows/zoom.yml) :
 //
@@ -61,7 +61,7 @@ const LABEL_BY_GAME = { zoom: "Zoom carte", palette: "Palette" };
 (async () => {
   try {
     const currentSeasonId = await getCurrentSeasonId();
-    if (currentSeasonId == null) throw new Error("Impossible de déterminer la saison Clash Royale en cours.");
+    if (currentSeasonId == null) throw new Error("Impossible de déterminer la saison en cours.");
     const activeGame = getActiveVisualGame(currentSeasonId);
 
     // Récap de fin de saison — jamais en dry-run (lecture seule stricte,

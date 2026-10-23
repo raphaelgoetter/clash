@@ -32,9 +32,8 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace, fetchCards } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId, countRemainingWeekdayOccurrences } from "@clash/clash-royale/dateUtils.js";
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
+import { fetchCards } from "@clash/clash-royale/clashApi.js";
+import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
 import { getOrSet } from "@clash/commun/cache.js";
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
 
@@ -187,29 +186,8 @@ export async function resetGame() {
   await scanDelete("anagram:archived:*");
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-// Dupliquée à l'identique depuis frames.js (seule la clé de cache change) —
-// fonction 100% générique, pas de valeur à extraire tant qu'un 3e mini-jeu
-// ne justifie pas un module partagé (voir décision équivalente sur
-// normalizeAnswer, qui elle a été extraite car strictement plus simple).
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "anagrams:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Sélection de l'anagramme et démarrage d'une partie ──────────
 
@@ -234,7 +212,7 @@ async function assignSeasonMancheNumber(seasonId, gameId) {
 }
 
 // X = manche déjà attribuée + samedis restants avant la fin de la saison
-// calendaire (countRemainingWeekdayOccurrences, dateUtils.js) — même
+// calendaire (countRemainingWeekdayOccurrences, saison.js) — même
 // principe que Frame (mercredis), voir le commentaire détaillé équivalent
 // dans frames.js pour la justification (gère nativement un démarrage en
 // cours de saison).

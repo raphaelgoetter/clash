@@ -14,7 +14,7 @@
 //   "Proposer un mot" reste donc identique après chaque tentative (pas de
 //   bouton "Reproposer" séparé comme La Juste Carte).
 //
-// Production (2026-09) : alterne avec Anagram, une saison Clash Royale sur
+// Production (2026-09) : alterne avec Anagram, une saison sur
 // deux, sous le nom collectif "Jeux de lettres" — voir
 // jeux/services/jeuxdelettres.js. En production, la publication passe
 // UNIQUEMENT par jeux/scripts/postJeuxDeLettres.js (qui décide quel jeu est actif
@@ -48,7 +48,7 @@ import {
   getAllArchivedResults,
   findTiedRank,
 } from "../../services/pelemele.js";
-import { toPublicSeasonId } from "@clash/clash-royale/dateUtils.js";
+import { nomSaison, deMois } from "../../services/saison.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -74,7 +74,7 @@ function buildPeleMeleEmbed({
   return {
     title: "🔤 Le jeu du samedi : Pêle-mêle !",
     description:
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
+      `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       `Plusieurs cartes Clash Royale se cachent derrière ces ${DRAW_SIZE} lettres. Sauras-tu toutes les retrouver ?\n\n` +
       "🏆 **1 point** par carte trouvée, **5 points** s'il s'agit du mot le plus long.\n" +
       "♾️ Tu as autant d'essais que tu veux !\n\n" +
@@ -177,11 +177,11 @@ function buildSeasonRecapEmbed(
   }
   lines.push(
     "",
-    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`,
   );
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Pêle-mêle » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Pêle-mêle » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -618,7 +618,7 @@ function buildPeleMeleStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
   );
   if (currentFoundWords.length > 0) {
     const progress =
@@ -637,7 +637,7 @@ function buildPeleMeleStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
     );
     if (m.played) {
       lines.push(`- Tu as trouvé : ${m.reponse}`);
@@ -648,7 +648,7 @@ function buildPeleMeleStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);

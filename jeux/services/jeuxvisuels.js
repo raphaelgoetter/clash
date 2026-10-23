@@ -1,6 +1,6 @@
 // ============================================================
 // jeuxvisuels.js — Tronc commun aux mini-jeux "visuels" (Zoom carte,
-// Palette), qui alternent désormais une saison Clash Royale sur deux sous
+// Palette), qui alternent désormais une saison sur deux sous
 // le nom collectif "Jeux visuels" : résolution de quel jeu est actif pour
 // une saison donnée. Contrairement à jeuxdelettres.js, pas de planification
 // hebdomadaire à dupliquer ici : Zoom a toujours eu un créneau fixe unique
@@ -15,11 +15,9 @@
 // jeuxdelettres.js). Ce module en a néanmoins besoin pour SA PROPRE décision
 // (quel jeu est actif), indépendante de celle de chaque jeu.
 //
-// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON, la saison technique
-// Clash Royale en cours au moment de la mise en place de l'alternance
-// (vérifiée le 2026-09-19 : saison technique 136, Saison publique 87 via
-// toPublicSeasonId — la même saison de référence que jeuxdelettres.js,
-// coïncidence de calendrier, pas un lien entre les deux alternances).
+// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON (136, septembre 2026,
+// voir saison.js), même référence que jeuxdelettres.js, sans lien entre les
+// deux alternances.
 // Décision produit explicite : Zoom termine CETTE saison avant de céder la
 // main, jamais une bascule en cours de saison. Parité par rapport à cette
 // référence : écart PAIR (0, 2, 4...) → Zoom, écart IMPAIR (1, 3, 5...) →
@@ -28,10 +26,7 @@
 // ============================================================
 
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId } from "@clash/clash-royale/dateUtils.js";
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
-import { getOrSet } from "@clash/commun/cache.js";
+import { getCurrentSeasonId } from "./saison.js";
 
 let _redis = null;
 function getRedis() {
@@ -45,29 +40,8 @@ function getRedis() {
   return _redis;
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-// Copie assumée (voir en-tête de fichier) — même fonction 100% générique
-// que dans chaque jeu individuel, juste utilisée ici pour la décision
-// d'alternance elle-même (jeux/scripts/postJeuxVisuels.js), pas pour l'état
-// interne d'un jeu précis.
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "jeuxvisuels:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Alternance saisonnière ──────────────────────────────────────
 export const ACTIVE_GAME_REFERENCE_SEASON = 136;

@@ -107,7 +107,7 @@ import {
 import { BANDES as MEOW_BANDES, jourDe as meowJourDe, horloge as meowHorloge } from "../../services/meowRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
-import { getCurrentSeasonBounds } from "@clash/clash-royale/dateUtils.js";
+import { getCurrentSeasonBounds } from "../../services/saison.js";
 import { computeMiniJeuxStats } from "../../services/miniJeuxStats.js";
 
 const MINIJEUX_COLOR = 0x5865f2;
@@ -126,7 +126,7 @@ function channelLink() {
 }
 
 // "Jeux à l'aveugle" (lundi) : Blind Royale et La Juste Carte alternent une
-// saison Clash Royale sur deux (voir jeuxaveugle.js, même fonction utilisée
+// saison sur deux (voir jeuxaveugle.js, même fonction utilisée
 // par jeux/scripts/postJeuxAveugle.js pour la publication) — un seul des deux est
 // actif à la fois, jamais les deux en même temps (même mécanisme que
 // VISUELS_GAMES/LETTRES_GAMES/CULTURE_GAMES ci-dessous).
@@ -136,7 +136,7 @@ const AVEUGLE_GAMES = {
 };
 
 // "Jeux visuels" (vendredi) et "Jeux de lettres" (samedi) alternent chacun
-// entre deux jeux une saison Clash Royale sur deux (voir jeuxvisuels.js /
+// entre deux jeux une saison sur deux (voir jeuxvisuels.js /
 // jeuxdelettres.js, mêmes fonctions utilisées par jeux/scripts/postJeuxVisuels.js
 // et postJeuxDeLettres.js pour la publication) — /mini-jeux doit donc
 // résoudre le jeu réellement actif plutôt que d'en référencer un seul en dur.
@@ -149,16 +149,15 @@ const LETTRES_GAMES = {
   pelemele: { title: "🔤 Pêle-mêle", svc: peleMeleSvc },
 };
 // "Mini-jeux de Culture" (mercredi) : Frame et Trivia alternent une saison
-// Clash Royale sur deux (voir jeuxculture.js), même mécanisme que
+// sur deux (voir jeuxculture.js), même mécanisme que
 // VISUELS_GAMES/LETTRES_GAMES ci-dessus.
 const CULTURE_GAMES = {
   frame: { title: "🎬 Trouve le film !", svc: frameSvc },
   trivia: { title: "🧠 Trivia", svc: triviaSvc },
 };
 
-// getCurrentSeasonId() peut renvoyer null (API Clash Royale indisponible) :
-// on retombe alors sur le jeu "historique" de la paire plutôt que de planter
-// l'embed /mini-jeux.
+// Filet de sécurité si getCurrentSeasonId() renvoyait null : on retombe sur
+// le jeu "historique" de la paire plutôt que de planter l'embed /mini-jeux.
 //
 // ⚠️ L'alternance saisonnière désigne le jeu de la saison EN COURS, pas
 // forcément celui dont une manche tourne : au changement de saison Clash

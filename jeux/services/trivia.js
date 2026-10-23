@@ -1,6 +1,6 @@
 // ============================================================
 // trivia.js — Jeu "Trivia" (QCM de culture Clash Royale, 4 propositions
-// A/B/C/D), en alternance une saison Clash Royale sur deux avec Frame
+// A/B/C/D), en alternance une saison sur deux avec Frame
 // ("Devine le film") sous le nom collectif "Mini-jeux de Culture" (voir
 // jeux/services/jeuxculture.js). Couche métier : état Redis, tirage,
 // scoring, classements. Miroir structurel de palette.js (client Redis
@@ -31,10 +31,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId, countRemainingWeekdayOccurrences } from "@clash/clash-royale/dateUtils.js";
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
-import { getOrSet } from "@clash/commun/cache.js";
+import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
 
 const WEDNESDAY = 3; // même jour de référence que Frame (destiné à alterner avec lui)
 
@@ -188,28 +185,8 @@ export async function resetGame() {
   await scanDelete("trivia:erratum_posted:*");
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-// Dupliquée à l'identique depuis palette.js/frames.js (seule la clé de cache
-// change) — convention du repo, pas de valeur à extraire tant que ça reste
-// quelques copies quasi identiques.
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "trivia:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Ordre de tirage des questions ──────────────────────────────────
 // Contrairement à Palette/Zoom (ordre mélangé une fois puis persistant),
@@ -248,7 +225,7 @@ export async function alreadyPostedThisWeek(now = new Date()) {
   return todayUtcDateString(new Date(state.startedAt)) === todayUtcDateString(now);
 }
 
-// ── Numérotation de manche, scopée à la saison CR ──────────────────
+// ── Numérotation de manche, scopée à la saison ──────────────────
 // Même mécanique que Palette/Zoom (assignSeasonMancheNumber/
 // computeSeasonMancheTotal) pour un affichage "Saison X · Manche X/Y"
 // identique aux autres jeux — dupliquée plutôt qu'importée (convention du

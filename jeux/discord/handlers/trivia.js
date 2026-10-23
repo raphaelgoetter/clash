@@ -37,7 +37,7 @@ import {
   releaseErratumAnnouncement,
   LETTERS,
 } from "../../services/trivia.js";
-import { toPublicSeasonId } from "@clash/clash-royale/dateUtils.js";
+import { nomSaison, deMois } from "../../services/saison.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -67,7 +67,7 @@ function buildTriviaEmbed({
   return {
     title: "🧠 Le jeu du mercredi : Trivia !",
     description: [
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+      `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
       "",
       `# ${entryQuestion}`,
       "",
@@ -140,11 +140,11 @@ function buildSeasonRecapEmbed(
   }
   lines.push(
     "",
-    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`,
   );
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Trivia » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Trivia » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -522,7 +522,7 @@ function buildTriviaStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) · ${currentEntryQuestion} :**`,
+    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) · ${currentEntryQuestion} :**`,
   );
   if (currentAnswered) {
     lines.push(
@@ -543,7 +543,7 @@ function buildTriviaStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} · ${m.label} :**`,
+      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} · ${m.label} :**`,
     );
     if (m.played) {
       lines.push(
@@ -558,7 +558,7 @@ function buildTriviaStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} pt${seasonTotal > 1 ? "s" : ""} cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // postJeuxDeLettres.js
 // Point d'entrée UNIQUE en production pour les "Jeux de lettres" (Anagram /
-// Pêle-mêle, en alternance une saison Clash Royale sur deux — voir
+// Pêle-mêle, en alternance une saison sur deux — voir
 // jeux/services/jeuxdelettres.js pour le détail de l'alternance).
 // Remplace l'ancien cron dédié à Anagram seul (.github/workflows/anagrams.yml) :
 //
@@ -61,7 +61,7 @@ const LABEL_BY_GAME = { anagram: "Anagram", pelemele: "Pêle-mêle" };
 (async () => {
   try {
     const currentSeasonId = await getCurrentSeasonId();
-    if (currentSeasonId == null) throw new Error("Impossible de déterminer la saison Clash Royale en cours.");
+    if (currentSeasonId == null) throw new Error("Impossible de déterminer la saison en cours.");
     const activeGame = getActiveLetterGame(currentSeasonId);
 
     // Récap de fin de saison — jamais en dry-run (lecture seule stricte,

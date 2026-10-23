@@ -27,9 +27,8 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace, fetchCards } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId, countRemainingWeekdayOccurrences } from "@clash/clash-royale/dateUtils.js";
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
+import { fetchCards } from "@clash/clash-royale/clashApi.js";
+import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
 import { getOrSet } from "@clash/commun/cache.js";
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
 
@@ -198,27 +197,8 @@ export async function resetGame() {
   await scanDelete("lajustecarte:archived:*");
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-// Dupliquée à l'identique depuis anagrams.js/frames.js (seule la clé de
-// cache change) — fonction 100% générique.
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "lajustecarte:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Ordre de rotation hebdomadaire ────────────────────────────────
 // cardNames.json reste trié alphabétiquement (contrainte de
@@ -275,7 +255,7 @@ async function assignSeasonMancheNumber(seasonId, gameId) {
 }
 
 // X = manche déjà attribuée + lundis restants avant la fin de la saison
-// calendaire (countRemainingWeekdayOccurrences, dateUtils.js) — même
+// calendaire (countRemainingWeekdayOccurrences, saison.js) — même
 // principe que Frame (mercredis) / Anagram (samedis).
 export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
   return seasonManche + countRemainingWeekdayOccurrences(now, MONDAY);

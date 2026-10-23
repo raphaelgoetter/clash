@@ -38,7 +38,7 @@ import {
   findTiedRank,
   alreadyPostedThisWeek,
 } from "../../services/zoom.js";
-import { toPublicSeasonId } from "@clash/clash-royale/dateUtils.js";
+import { nomSaison, deMois } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
@@ -63,7 +63,7 @@ function buildZoomEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cac
   return {
     title: "🔍 Le jeu du vendredi : Zoom carte !",
     description:
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
+      `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Une carte zoomée à l'extrême. Devine son nom !\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
@@ -145,10 +145,10 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
   if (manchesPlayed?.length > 0) {
     lines.push("", "**Manches de la saison :**", ...manchesPlayed.map((m) => `Manche ${m.seasonManche} : ${m.label}`));
   }
-  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`);
+  lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`);
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Zoom carte » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Zoom carte » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -389,7 +389,7 @@ function ordinal(n) {
 function buildDmEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, answer, score, gameRank, seasonScore }) {
   return {
     description: [
-      `**Zoom carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+      `**Zoom carte : ${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
       "",
       `🔍 **${answer}** : tu es le ${ordinal(gameRank)} à avoir trouvé !`,
       `Score de cette manche : **${score} pts**`,
@@ -500,7 +500,7 @@ function buildZoomStatsEmbed({
 }) {
   const lines = [];
 
-  lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
+  lines.push(`**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
   if (currentSolved) {
     lines.push("- Tu as trouvé le nom de la carte !");
     lines.push(`- Tu as marqué ${currentScore} points`);
@@ -518,7 +518,7 @@ function buildZoomStatsEmbed({
 
   for (const m of pastManches) {
     lines.push("");
-    lines.push(`**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
+    lines.push(`**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
     if (m.played) {
       lines.push("- Tu as trouvé le nom de la carte !");
       lines.push(`- Tu as marqué ${m.score} points`);
@@ -528,7 +528,7 @@ function buildZoomStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);

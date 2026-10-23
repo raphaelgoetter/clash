@@ -48,7 +48,7 @@ import {
   findTiedRank,
   alreadyPostedThisWeek,
 } from "../../services/lajustecarte.js";
-import { toPublicSeasonId } from "@clash/clash-royale/dateUtils.js";
+import { nomSaison, deMois } from "../../services/saison.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -93,7 +93,7 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
   return {
     title: "🃏 Le jeu du lundi : La Juste Carte !",
     description:
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
+      `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Une carte Clash Royale secrète est en jeu ! Propose le nom d'une carte : le jeu te dira, stat par stat, si la carte secrète est plus forte, plus faible ou identique à ta proposition. À chaque proposition, tu as droit à un indice supplémentaire.\n\n" +
       "**Barème :** tu commences avec 10 points, la 1ère proposition est gratuite. À partir de la 2e, chaque proposition coûte 1 point. L'indice «rareté» (bouton) coûte 3 points, une seule fois.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
@@ -229,11 +229,11 @@ function buildSeasonRecapEmbed(
   }
   lines.push(
     "",
-    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`,
   );
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « La Juste Carte » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « La Juste Carte » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -475,7 +475,7 @@ function buildDmText({
   seasonScore,
 }) {
   return [
-    `**La Juste Carte : Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+    `**La Juste Carte : ${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
     "",
     `🃏 C'était bien **${reponse}**, trouvée en ${attempts} proposition${attempts > 1 ? "s" : ""} !`,
     `Score de cette manche : **${score} pts**`,
@@ -736,7 +736,7 @@ function buildJusteCarteStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
+    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
   );
   if (currentSolved) {
     lines.push(
@@ -757,7 +757,7 @@ function buildJusteCarteStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
+      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
     );
     if (m.played) {
       lines.push(
@@ -770,7 +770,7 @@ function buildJusteCarteStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);

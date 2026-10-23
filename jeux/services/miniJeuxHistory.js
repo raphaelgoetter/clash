@@ -5,11 +5,11 @@
 // saison" (contrairement au registre des Champions GDC) : ce module relit à
 // la demande les archives Redis de chaque jeu et les regroupe par saison via
 // la date réelle de chaque résultat (solvedAt/resolvedAt), jamais via le
-// seasonId Clash Royale — qui ne correspond pas aux bornes calendaires de la
-// saison mini-jeux (voir dateUtils.js).
+// seasonId stocké : les archives antérieures à novembre 2026 portent encore
+// l'ancien seasonId calé sur Clash Royale (bornes au 1er lundi du mois).
 // ============================================================
 
-import { getCurrentSeasonBounds } from "@clash/clash-royale/dateUtils.js";
+import { getCurrentSeasonBounds } from "./saison.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
@@ -54,7 +54,7 @@ function tagSubGame(fetchFn, subGame) {
 // fusionne Zoom carte et Palette (voir jeuxvisuels.js), "culture" fusionne
 // Frame et Trivia (voir jeuxculture.js), "aveugle" fusionne Blind Royale et
 // La Juste Carte (voir jeuxaveugle.js) : sous leur alternance respective
-// (une saison Clash Royale sur deux), les deux jeux d'une même paire ne sont
+// (une saison sur deux), les deux jeux d'une même paire ne sont
 // jamais actifs la même saison — leurs résultats archivés se concatènent
 // donc sans jamais se chevaucher, et apparaissent comme UNE seule catégorie
 // plutôt que deux entrées dont l'une serait toujours vide pour une saison

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // postJeuxAveugle.js
 // Point d'entrée UNIQUE en production pour les "Jeux à l'aveugle" (La Juste
-// Carte / Blind Royale, en alternance une saison Clash Royale sur deux —
+// Carte / Blind Royale, en alternance une saison sur deux —
 // voir jeux/services/jeuxaveugle.js pour le détail de l'alternance).
 // Remplace les deux crons dédiés (.github/workflows/lajustecarte.yml et
 // blindroyale.yml, supprimés) :
@@ -62,7 +62,7 @@ const LABEL_BY_GAME = { lajustecarte: "La Juste Carte", blindroyale: "Blind Roya
 (async () => {
   try {
     const currentSeasonId = await getCurrentSeasonId();
-    if (currentSeasonId == null) throw new Error("Impossible de déterminer la saison Clash Royale en cours.");
+    if (currentSeasonId == null) throw new Error("Impossible de déterminer la saison en cours.");
     const activeGame = getActiveBlindGame(currentSeasonId);
 
     // Récap de fin de saison — jamais en dry-run (lecture seule stricte,

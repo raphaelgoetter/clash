@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // postJeuxCulture.js
 // Point d'entrée UNIQUE en production pour les "Mini-jeux de Culture" (Frame
-// / Trivia, en alternance une saison Clash Royale sur deux — voir
+// / Trivia, en alternance une saison sur deux — voir
 // jeux/services/jeuxculture.js pour le détail de l'alternance). Remplace
 // l'ancien cron dédié à Frame seul (.github/workflows/frames.yml) :
 //
@@ -61,7 +61,7 @@ const LABEL_BY_GAME = { frame: "Frame", trivia: "Trivia" };
 (async () => {
   try {
     const currentSeasonId = await getCurrentSeasonId();
-    if (currentSeasonId == null) throw new Error("Impossible de déterminer la saison Clash Royale en cours.");
+    if (currentSeasonId == null) throw new Error("Impossible de déterminer la saison en cours.");
     const activeGame = getActiveCultureGame(currentSeasonId);
 
     // Récap de fin de saison — jamais en dry-run (lecture seule stricte,

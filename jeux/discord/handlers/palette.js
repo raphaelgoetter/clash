@@ -38,7 +38,7 @@ import {
   findTiedRank,
   LETTERS,
 } from "../../services/palette.js";
-import { toPublicSeasonId } from "@clash/clash-royale/dateUtils.js";
+import { nomSaison, deMois } from "../../services/saison.js";
 import { HUE_MERGE_DEGREES } from "../../services/dominantColor.js";
 import {
   getRoleIdByName,
@@ -62,7 +62,7 @@ function buildPaletteEmbed({
   return {
     title: "🎨 Le jeu du vendredi : Palette !",
     description: [
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+      `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
       "",
       `**${entryFr}**`,
       "",
@@ -136,11 +136,11 @@ function buildSeasonRecapEmbed(
   }
   lines.push(
     "",
-    `Bravo à tous ! Rendez-vous juste après pour le lancement de la Saison ${toPublicSeasonId(newSeasonId)}.`,
+    `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`,
   );
 
   return {
-    title: `🏆 Fin de la Saison ${toPublicSeasonId(endedSeasonId)} « Palette » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Palette » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -466,7 +466,7 @@ function buildPaletteStatsEmbed({
   const lines = [];
 
   lines.push(
-    `**Saison ${toPublicSeasonId(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) · ${currentEntryFr} :**`,
+    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) · ${currentEntryFr} :**`,
   );
   if (currentAnswered) {
     lines.push(
@@ -487,7 +487,7 @@ function buildPaletteStatsEmbed({
   for (const m of pastManches) {
     lines.push("");
     lines.push(
-      `**Saison ${toPublicSeasonId(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} · ${m.label} :**`,
+      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} · ${m.label} :**`,
     );
     if (m.played) {
       lines.push(
@@ -502,7 +502,7 @@ function buildPaletteStatsEmbed({
   }
 
   lines.push("");
-  lines.push(`**Score de la saison (S${toPublicSeasonId(seasonId)}) :**`);
+  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
   lines.push(`- Tu as accumulé ${seasonTotal} pt${seasonTotal > 1 ? "s" : ""} cette saison`);
   if (seasonRank != null) {
     lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);

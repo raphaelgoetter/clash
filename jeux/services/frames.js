@@ -25,11 +25,10 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { fetchRaceLog, fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
-import { computeCurrentSeasonId, countRemainingWednesdays } from "@clash/clash-royale/dateUtils.js";
+import { countRemainingWednesdays, getCurrentSeasonId } from "./saison.js";
 
 // X = manche déjà attribuée + mercredis restants avant la fin de la saison
-// calendaire (countRemainingWednesdays, dateUtils.js). Gère nativement le
+// calendaire (countRemainingWednesdays, saison.js). Gère nativement le
 // cas d'un jeu démarré en cours de saison (ex. saison démarrée le 2026-07-06,
 // mais 1ʳᵉ manche postée seulement le 2026-07-15, mercredi suivant) : X
 // reflète alors le nombre réel de manches restantes pour CE jeu, pas le
@@ -38,8 +37,6 @@ import { computeCurrentSeasonId, countRemainingWednesdays } from "@clash/clash-r
 export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
   return seasonManche + countRemainingWednesdays(now);
 }
-import { FAMILY_CLAN_TAGS } from "@clash/clash-royale/famille.js";
-import { getOrSet } from "@clash/commun/cache.js";
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -242,29 +239,8 @@ export async function resetGame() {
   await scanDelete("frame:archived:*");
 }
 
-// ── Saison Clash Royale en cours ────────────────────────────────
-
-export async function getCurrentSeasonId() {
-  const { value } = await getOrSet(
-    "frames:seasonId",
-    async () => {
-      const clanTag = FAMILY_CLAN_TAGS[0];
-      // Une partie ne démarre qu'une fois par semaine : quelques tentatives
-      // suffisent à absorber un aléa réseau transitoire plutôt que de figer
-      // définitivement un seasonId à null pour toute la partie.
-      for (const delay of [0, 1000, 3000]) {
-        if (delay) await new Promise((r) => setTimeout(r, delay));
-        const raceLog = await fetchRaceLog(clanTag).catch(() => null);
-        const currentRace = await fetchCurrentRace(clanTag).catch(() => null);
-        const seasonId = computeCurrentSeasonId(currentRace, raceLog);
-        if (seasonId != null) return seasonId;
-      }
-      return null;
-    },
-    15 * 60 * 1000,
-  );
-  return value;
-}
+// ── Saison en cours (mois calendaire, voir saison.js) ──────────
+export { getCurrentSeasonId };
 
 // ── Sélection de l'image et démarrage d'une partie ──────────────
 
@@ -481,7 +457,7 @@ export async function getPlayerSeasonResults(seasonId, discordId) {
 // `frame:archived:<seasonId>` ne sont jamais nettoyées automatiquement (voir
 // resetGame()), donc un SCAN suffit à retrouver l'historique complet. Utilisé
 // par /mini-jeux-history pour reconstituer les vainqueurs par saison
-// calendaire mini-jeux (indépendante du seasonId CR), en regroupant ces
+// calendaire mini-jeux (voir saison.js), en regroupant ces
 // résultats via leur `solvedAt`/`postedAt`.
 export async function getAllArchivedResults() {
   const keys = await scanKeys("frame:archived:*");
