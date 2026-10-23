@@ -28,8 +28,7 @@
 //   node jeux/scripts/tagCards.js --dry-run  # affiche sans écrire
 //   node jeux/scripts/tagCards.js --force    # recalcule type/family (jamais elixir déjà présent)
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import fs from "fs/promises";
 import path from "path";

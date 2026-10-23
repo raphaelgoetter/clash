@@ -6,8 +6,7 @@
 //
 // Usage : node jeux/scripts/quiEstCeStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { loadQuiEstCeConfig, readState, readPartie } from "../services/quiestce.js";
 import { nomCarte, candidats, classement, texteJournal } from "../services/quiestceRules.js";

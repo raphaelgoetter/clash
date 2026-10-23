@@ -18,8 +18,7 @@
 //   node jeux/scripts/postQuiEstCe.js --force-close    — ignore la date de clôture des inscriptions (lance la partie si
 //                                                  l'effectif minimum est atteint) ; implicite sur le salon de test
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postQuiEstCe } from "../discord/handlers/quiestce.js";
 

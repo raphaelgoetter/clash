@@ -7,9 +7,8 @@
 //
 // Usage : node jeux/scripts/marioClashStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { loadMarioClashConfig, readState, readJoueurs, readActions } from "../services/marioclash.js";
 
 (async () => {

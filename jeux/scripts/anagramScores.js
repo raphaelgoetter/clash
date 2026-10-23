@@ -5,9 +5,8 @@
 //
 // Usage : node jeux/scripts/anagramScores.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import {
   loadAnagrams,
   readState,

@@ -14,8 +14,7 @@
 //   node jeux/scripts/postMarioClash.js --require-active — ne fait rien si aucune course n'est déjà lancée (cron)
 //   node jeux/scripts/postMarioClash.js --force          — ignore le garde-fou anti-double-avancée
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postMarioClash } from "../discord/handlers/marioclash.js";
 

@@ -10,8 +10,7 @@
 //   node jeux/scripts/resetQuiz.js             — reset normal, garde l'archive des manches
 //   node jeux/scripts/resetQuiz.js --manches   — reset complet, efface aussi l'archive des manches
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetQuiz } from "../services/quiz.js";
 

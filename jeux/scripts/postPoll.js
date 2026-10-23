@@ -14,8 +14,7 @@
 //                                               (utile pour itérer sur le salon de test)
 //   node jeux/scripts/postPoll.js --public --dry-run
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postPoll } from "../discord/handlers/poll.js";
 

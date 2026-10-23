@@ -29,8 +29,7 @@
 //   node jeux/scripts/postJeuxCulture.js --force        — ignore le gating jour/anti-double-post
 //   node jeux/scripts/postJeuxCulture.js --no-ping      — poste sans pinger @MINI-JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import {
   getCurrentSeasonId,

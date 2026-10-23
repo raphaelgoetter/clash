@@ -8,9 +8,8 @@
 //
 // Usage : node jeux/scripts/justeCarteOrder.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { loadCatalog, loadPlayOrder, readState } from "../services/lajustecarte.js";
 
 (async () => {

@@ -12,9 +12,8 @@
 //
 // Usage : node jeux/scripts/gobeletDuelWatchdog.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { resetIfStale } from "../services/gobeletDuel.js";
 
 (async () => {

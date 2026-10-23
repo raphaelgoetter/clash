@@ -14,8 +14,7 @@
 //   node jeux/scripts/postJusteCarte.js --public --dry-run
 //   node jeux/scripts/postJusteCarte.js --no-ping       — poste sans pinger @MINI JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postJusteCarte } from "../discord/handlers/lajustecarte.js";
 

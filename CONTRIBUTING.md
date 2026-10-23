@@ -344,6 +344,15 @@ Discord → POST /api/discord/interactions
 
 Fonction Vercel séparée de l'application Express pour limiter le cold start et tenir la fenêtre de réponse Discord (`backend/routes/discord.js` ne fait que renvoyer 404 vers cet endpoint).
 
+Deux applications Discord, deux fonctions Vercel :
+
+| Bot | Endpoint (Interactions Endpoint URL) | Routes servies |
+| --- | --- | --- |
+| TrustRoyale | `api/discord/interactions.js` | TrustRoyale, plus celles des jeux pendant la transition (boutons des messages postés par TrustRoyale) |
+| Jeux | `api/discord/jeux.js` (404 tant que `DISCORD_JEUX_*` n'est pas configuré) | Jeux uniquement, voir `jeux/CONTRIBUTING.md` |
+
+Vérification de signature, lecture du corps brut et liste blanche des serveurs : `@clash/commun/discordInteractions.js`, partagés par les deux endpoints.
+
 ### Organisation des fichiers
 
 `api/discord/interactions.js` ne contient que le routeur : vérification de signature Ed25519, PING, autocomplétion des tags, liste blanche des serveurs (`AUTHORIZED_GUILD_IDS`), puis délégation aux modules de routes, essayés dans l'ordre jusqu'à ce que l'un réponde (`res.headersSent`) : d'abord ceux de TrustRoyale (`api/discord/_routes/`), puis ceux des jeux (`jeux/discord/routes/`, voir `jeux/CONTRIBUTING.md`).
@@ -366,11 +375,11 @@ Fonction Vercel séparée de l'application Express pour limiter le cold start et
 - Utiliser `runBackground()`, jamais `Promise.resolve().then(...)`.
 - Ne pas appeler les services backend lourds depuis un handler : passer par les endpoints HTTP.
 - Vérifier la signature Ed25519 avant de répondre au PING.
-- Après tout ajout ou modification de commande : `node scripts/registerCommands.js`.
+- Après tout ajout ou modification de commande : `node scripts/registerCommands.js` (enregistre les commandes des jeux, `JEUX_COMMANDS`, sur le bot des jeux s'il est configuré).
 
 ### Variables d'environnement
 
-`DISCORD_PUBLIC_KEY`, `DISCORD_APP_ID`, `DISCORD_TOKEN` (requises) ; `AUTHORIZED_GUILD_IDS` (liste blanche des serveurs, vide = tous), `AUTHORIZED_PING_IDS`. Toute nouvelle variable : `api/discord/interactions.js`, `.env.example` et Vercel (voir `AGENTS.md`).
+`DISCORD_PUBLIC_KEY`, `DISCORD_APP_ID`, `DISCORD_TOKEN` (requises) ; `AUTHORIZED_GUILD_IDS` (liste blanche des serveurs, vide = tous), `AUTHORIZED_PING_IDS` ; bot des jeux : `DISCORD_JEUX_APP_ID`, `DISCORD_JEUX_PUBLIC_KEY`, `DISCORD_JEUX_TOKEN` (voir `jeux/CONTRIBUTING.md`). Toute nouvelle variable : point d'entrée concerné, `.env.example` et Vercel (voir `AGENTS.md`).
 
 ---
 

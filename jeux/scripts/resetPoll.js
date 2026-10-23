@@ -5,8 +5,7 @@
 //
 // Usage : node jeux/scripts/resetPoll.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetPoll } from "../discord/handlers/poll.js";
 

@@ -15,8 +15,7 @@
 // (clé "diceEmojis") puis redéploie — la config est statique, jamais lue
 // depuis Discord au runtime.
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import fs from "fs/promises";
 import path from "path";

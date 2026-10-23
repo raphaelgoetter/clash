@@ -17,8 +17,7 @@
 //                                                        d'inscription (2 jours) pour déclencher le lancement immédiatement
 //   node jeux/scripts/postGoblinHunters.js --force         — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postGoblinHunters } from "../discord/handlers/goblinhunters.js";
 

@@ -22,8 +22,7 @@
 //
 // Usage : node jeux/scripts/scatterGoblinHuntersTestPool.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { readState, writeState, recordAction } from "../services/goblinhunters.js";
 

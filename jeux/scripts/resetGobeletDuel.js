@@ -9,8 +9,7 @@
 //
 // Usage : node jeux/scripts/resetGobeletDuel.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetGobeletDuel } from "../services/gobeletDuel.js";
 

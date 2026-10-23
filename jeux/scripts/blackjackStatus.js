@@ -7,9 +7,8 @@
 //
 // Usage : node jeux/scripts/blackjackStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import {
   loadBlackjackConfig,
   readState,

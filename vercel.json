@@ -10,6 +10,9 @@
     },
     "api/discord/interactions.js": {
       "maxDuration": 60
+    },
+    "api/discord/jeux.js": {
+      "maxDuration": 60
     }
   },
   "redirects": [

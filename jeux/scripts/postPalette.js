@@ -15,8 +15,7 @@
 //   node jeux/scripts/postPalette.js --public --dry-run
 //   node jeux/scripts/postPalette.js --no-ping      — poste sans pinger @MINI-JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postPalette } from "../discord/handlers/palette.js";
 

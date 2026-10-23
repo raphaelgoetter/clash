@@ -14,8 +14,7 @@
 //   node jeux/scripts/postGobelet.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node jeux/scripts/postGobelet.js --force          — ignore le garde-fou anti-double-avancée
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postGobelet } from "../discord/handlers/gobelet.js";
 

@@ -8,8 +8,7 @@
 //
 // Usage : node jeux/scripts/quizScores.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { loadQuizConfig, readState, computeMancheDailyScores, QUESTIONS_PAR_MANCHE } from "../services/quiz.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";

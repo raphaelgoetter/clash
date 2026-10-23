@@ -55,7 +55,7 @@ Voir `CONTRIBUTING.md` pour :
 
 Toute nouvelle variable d'environnement doit être :
 
-1. **Ajoutée à `api/discord/interactions.js`** (via `process.env.MA_VAR`) — exécution du bot
+1. **Lue par le point d'entrée concerné** (`api/discord/interactions.js` pour TrustRoyale, `api/discord/jeux.js` / `jeux/env.js` pour les jeux)
 2. **Déclarée dans `.env.example`** (valeur vide ou placeholder) — template pour les devs
 3. **Configurée sur Vercel → Settings → Environment Variables** — production (le `.env` local n'est pas lu sur Vercel)
 

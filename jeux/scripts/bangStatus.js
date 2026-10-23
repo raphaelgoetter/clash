@@ -6,9 +6,8 @@
 //
 // Usage : node jeux/scripts/bangStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { loadBangConfig, readState, readPartie } from "../services/bang.js";
 import { CARTES, nbBombes, texteJournal } from "../services/bangRules.js";
 

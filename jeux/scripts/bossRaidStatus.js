@@ -11,9 +11,8 @@
 //
 // Usage : node jeux/scripts/bossRaidStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import {
   loadBossRaidConfig,
   readState,

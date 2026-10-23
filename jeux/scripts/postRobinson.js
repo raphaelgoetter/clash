@@ -15,8 +15,7 @@
 //   node jeux/scripts/postRobinson.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node jeux/scripts/postRobinson.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postRobinson } from "../discord/handlers/robinson.js";
 

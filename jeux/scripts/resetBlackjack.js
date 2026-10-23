@@ -10,8 +10,7 @@
 //   node jeux/scripts/resetBlackjack.js             — reset normal, garde l'archive des manches
 //   node jeux/scripts/resetBlackjack.js --manches   — reset complet, efface aussi l'archive des manches
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetBlackjack } from "../services/blackjack.js";
 

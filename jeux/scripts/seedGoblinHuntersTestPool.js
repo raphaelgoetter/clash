@@ -11,8 +11,7 @@
 //   node jeux/scripts/seedGoblinHuntersTestPool.js          — inscrit 10 faux joueurs
 //   node jeux/scripts/seedGoblinHuntersTestPool.js 4        — inscrit un nombre différent
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { registerPlayer, loadGoblinHuntersConfig } from "../services/goblinhunters.js";
 

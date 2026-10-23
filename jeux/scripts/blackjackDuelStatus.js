@@ -10,9 +10,8 @@
 //
 // Usage : node jeux/scripts/blackjackDuelStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { readState, listHands, readPoints, buildRanking } from "../services/blackjackDuel.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 

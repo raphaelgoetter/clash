@@ -14,8 +14,7 @@
 //   node jeux/scripts/postFrame.js --no-ping       — poste sans pinger @MINI JEUX
 //   node jeux/scripts/postFrame.js --public --dry-run
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postFrame } from "../discord/handlers/frames.js";
 

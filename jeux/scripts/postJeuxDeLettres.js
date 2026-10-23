@@ -27,8 +27,7 @@
 //   node jeux/scripts/postJeuxDeLettres.js --force        — ignore le gating jour/créneau
 //   node jeux/scripts/postJeuxDeLettres.js --no-ping      — poste sans pinger @MINI JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import {
   getCurrentSeasonId,

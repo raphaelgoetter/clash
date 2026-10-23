@@ -5,8 +5,7 @@
 //
 // Usage : node jeux/scripts/resetJusteCarte.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetGame } from "../services/lajustecarte.js";
 

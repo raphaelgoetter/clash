@@ -5,9 +5,8 @@
 //
 // Usage : node jeux/scripts/frameScores.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import {
   loadFrames,
   readState,

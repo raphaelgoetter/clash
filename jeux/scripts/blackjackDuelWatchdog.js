@@ -7,9 +7,8 @@
 //
 // Usage : node jeux/scripts/blackjackDuelWatchdog.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { resetIfStale } from "../services/blackjackDuel.js";
 
 (async () => {

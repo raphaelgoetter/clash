@@ -15,8 +15,7 @@
 //   node jeux/scripts/postBang.js --force          — ignore le garde-fou anti-double-avancée
 //   node jeux/scripts/postBang.js --sans-pnj       — salon de test sans les 6-7 joueurs fictifs (PNJ) inscrits au J1
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postBang } from "../discord/handlers/bang.js";
 

@@ -14,8 +14,7 @@
 //   node jeux/scripts/postBlackjack.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node jeux/scripts/postBlackjack.js --force          — ignore le garde-fou anti-double-avancée
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postBlackjack } from "../discord/handlers/blackjack.js";
 

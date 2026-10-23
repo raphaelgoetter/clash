@@ -15,8 +15,7 @@
 //   node jeux/scripts/postAnagram.js --public --dry-run
 //   node jeux/scripts/postAnagram.js --no-ping      — poste sans pinger @MINI JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postAnagram } from "../discord/handlers/anagrams.js";
 

@@ -13,9 +13,8 @@
 //
 // Usage : node jeux/scripts/goblinHuntersRecap.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import {
   loadGoblinHuntersConfig,
   readState,

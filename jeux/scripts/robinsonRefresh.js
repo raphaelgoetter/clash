@@ -12,8 +12,7 @@
 //   node jeux/scripts/robinsonRefresh.js            — réédite le message en ligne
 //   node jeux/scripts/robinsonRefresh.js --dry-run  — aperçu console, aucun appel Discord
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { readState, loadRobinsonConfig } from "../services/robinson.js";
 import { refreshPublicMessage } from "../discord/handlers/robinson.js";

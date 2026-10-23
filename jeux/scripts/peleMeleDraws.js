@@ -7,8 +7,7 @@
 //
 // Usage : node jeux/scripts/peleMeleDraws.js [--reveal]
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import {
   refillPreparedDraws,

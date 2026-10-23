@@ -6,9 +6,8 @@
 //
 // Usage : node jeux/scripts/blackjackScores.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { loadBlackjackConfig, readState, readPoints, readUsernames, buildRanking, sumCardsPerPlayer } from "../services/blackjack.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 

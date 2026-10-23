@@ -14,8 +14,7 @@
 //   node jeux/scripts/postQuiz.js --require-active — ne fait rien si aucune manche n'est déjà lancée (cron)
 //   node jeux/scripts/postQuiz.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postQuiz } from "../discord/handlers/quiz.js";
 

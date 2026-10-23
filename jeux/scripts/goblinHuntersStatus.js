@@ -8,9 +8,8 @@
 //
 // Usage : node jeux/scripts/goblinHuntersStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { loadGoblinHuntersConfig, readState, listInscriptions, readActions, readPlayerIndices, revealedTargetsForDay } from "../services/goblinhunters.js";
 
 (async () => {

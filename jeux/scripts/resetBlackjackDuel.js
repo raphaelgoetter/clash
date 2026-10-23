@@ -10,8 +10,7 @@
 //
 // Usage : node jeux/scripts/resetBlackjackDuel.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetBlackjackDuel } from "../services/blackjackDuel.js";
 

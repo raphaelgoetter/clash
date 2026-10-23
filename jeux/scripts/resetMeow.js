@@ -9,8 +9,7 @@
 //   node jeux/scripts/resetMeow.js             — reset normal, garde l'archive des manches
 //   node jeux/scripts/resetMeow.js --manches   — reset complet, efface aussi l'archive des manches
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetMeow } from "../services/meow.js";
 

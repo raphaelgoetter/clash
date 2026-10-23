@@ -6,8 +6,7 @@
 //
 // Usage : node jeux/scripts/pollStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { listIdeas } from "../services/poll.js";
 

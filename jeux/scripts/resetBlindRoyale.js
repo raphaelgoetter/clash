@@ -5,8 +5,7 @@
 //
 // Usage : node jeux/scripts/resetBlindRoyale.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetGame } from "../services/blindroyale.js";
 

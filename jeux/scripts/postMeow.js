@@ -20,8 +20,7 @@
 //   node jeux/scripts/postMeow.js --distribution   — salon de test : avance jusqu'à la prochaine distribution (8h, 13h,
 //                                               21h) au lieu du lendemain 8h22 (par défaut, un jour par lancement)
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postMeow } from "../discord/handlers/meow.js";
 

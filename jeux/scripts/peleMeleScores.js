@@ -5,8 +5,7 @@
 //
 // Usage : node jeux/scripts/peleMeleScores.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import {
   readState,

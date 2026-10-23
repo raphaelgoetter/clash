@@ -2,10 +2,14 @@
 // Utilise waitUntil de @vercel/functions pour maintenir la fonction active
 // après avoir répondu type:5 à Discord (deferred).
 
-import { createPublicKey, verify } from "node:crypto";
 import { getDiscordLinks } from "../../backend/services/discordLinks.js";
 import { fetchPlayer } from "@clash/clash-royale/clashApi.js";
 import { normalizeClashTag } from "./_lib/commun.js";
+import {
+  isAuthorizedGuild,
+  readRawBody,
+  verifyDiscordSignature,
+} from "@clash/commun/discordInteractions.js";
 import { routeAdmin } from "./_routes/admin.js";
 import { routeJoueur } from "./_routes/joueur.js";
 import { routeClan } from "./_routes/clan.js";
@@ -23,33 +27,6 @@ const ROUTES = [
   routeJeuxSpeciaux,
   routeDuels,
 ];
-
-// Vérifie la signature Ed25519 envoyée par Discord.
-function verifyDiscordSignature(signature, timestamp, rawBody) {
-  const publicKeyHex = process.env.DISCORD_PUBLIC_KEY;
-  if (!publicKeyHex || !signature || !timestamp) return false;
-  try {
-    // Encapsule la clé publique brute dans le format SPKI DER attendu par Node.js
-    const spkiPrefix = Buffer.from("302a300506032b6570032100", "hex");
-    const pubKeyDer = Buffer.concat([
-      spkiPrefix,
-      Buffer.from(publicKeyHex, "hex"),
-    ]);
-    const publicKey = createPublicKey({
-      key: pubKeyDer,
-      format: "der",
-      type: "spki",
-    });
-    return verify(
-      null,
-      Buffer.from(timestamp + rawBody),
-      publicKey,
-      Buffer.from(signature, "hex"),
-    );
-  } catch {
-    return false;
-  }
-}
 
 const TAG_AUTOCOMPLETE_COMMANDS = new Set([
   "stats",
@@ -139,18 +116,18 @@ export default async function handler(req, res) {
 
   const timestamp = req.headers["x-signature-timestamp"];
 
-  // Lecture du corps brut (nécessaire pour vérifier la signature)
-  const chunks = [];
-
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-
-  const rawBody = Buffer.concat(chunks).toString("utf8");
+  const rawBody = await readRawBody(req);
 
   // Vérification de signature obligatoire *avant tout*, y compris pour les PINGs.
   // Discord teste explicitement que le endpoint rejette les requêtes sans signature valide.
-  if (!verifyDiscordSignature(signature, timestamp, rawBody)) {
+  if (
+    !verifyDiscordSignature(
+      signature,
+      timestamp,
+      rawBody,
+      process.env.DISCORD_PUBLIC_KEY,
+    )
+  ) {
     return res.status(401).end("invalid request signature");
   }
 
@@ -169,11 +146,6 @@ export default async function handler(req, res) {
 
   // Vérification de la liste blanche des serveurs autorisés.
   // Effectuée en premier, avant tout traitement métier, pour minimiser le temps d'exécution.
-  const authorizedGuilds = (process.env.AUTHORIZED_GUILD_IDS || "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-
   const authorizedPingIds = new Set(
     (process.env.AUTHORIZED_PING_IDS || "")
       .split(",")
@@ -182,10 +154,7 @@ export default async function handler(req, res) {
   );
 
   if (body.type === 4 && TAG_AUTOCOMPLETE_COMMANDS.has(body.data?.name)) {
-    if (
-      authorizedGuilds.length > 0 &&
-      !authorizedGuilds.includes(body.guild_id)
-    ) {
+    if (!isAuthorizedGuild(body.guild_id)) {
       return res.status(200).json({ type: 8, data: { choices: [] } });
     }
 
@@ -194,10 +163,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ type: 8, data: { choices } });
   }
 
-  if (
-    authorizedGuilds.length > 0 &&
-    !authorizedGuilds.includes(body.guild_id)
-  ) {
+  if (!isAuthorizedGuild(body.guild_id)) {
     return res.status(200).json({
       type: 4,
       data: {

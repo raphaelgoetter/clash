@@ -11,8 +11,7 @@
 //   node jeux/scripts/resetBossRaid.js             — reset normal, garde l'archive des manches
 //   node jeux/scripts/resetBossRaid.js --manches   — reset complet, efface aussi l'archive des manches
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetBossRaid } from "../services/bossraid.js";
 

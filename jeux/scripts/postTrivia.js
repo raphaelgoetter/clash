@@ -15,8 +15,7 @@
 //   node jeux/scripts/postTrivia.js --public --dry-run
 //   node jeux/scripts/postTrivia.js --no-ping      — poste sans pinger @MINI-JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postTrivia } from "../discord/handlers/trivia.js";
 

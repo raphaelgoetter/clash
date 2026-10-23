@@ -15,8 +15,7 @@
 //   node jeux/scripts/postPeleMele.js --force        — ignore le garde-fou anti-double-post
 //   node jeux/scripts/postPeleMele.js --no-ping      — poste sans pinger @MINI JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postPeleMele } from "../discord/handlers/pelemele.js";
 

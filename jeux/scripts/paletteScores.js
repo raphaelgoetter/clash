@@ -5,8 +5,7 @@
 //
 // Usage : node jeux/scripts/paletteScores.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import {
   loadPaletteCatalog,

@@ -7,8 +7,7 @@
 //
 // Usage : node jeux/scripts/moveFrameChannel.js <channelId>
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 const channelId = process.argv[2];
 if (!channelId) {

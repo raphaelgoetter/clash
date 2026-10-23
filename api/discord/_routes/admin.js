@@ -47,12 +47,16 @@ export async function routeAdmin(body, res) {
             "**Discord Check**\n" +
             "Commande : `/discord-check clan:N`\n" +
             "Usage : vérifie la présence Discord des membres d'un clan\n\n" +
-            "**Frame**\n" +
-            "Commande : `/frame`\n" +
-            "Usage : affiche tes scores au jeu Frame (devine le film) — manche en cours, historique de la saison, total\n\n" +
-            "**Anagram**\n" +
-            "Commande : `/anagram`\n" +
-            "Usage : affiche tes scores au jeu Anagram (devine la carte) — manche en cours, historique de la saison, total\n\n" +
+            // Commandes des jeux : listées ici tant qu'elles sont servies par
+            // ce bot (sans bot des jeux configuré, cf. registerCommands.js).
+            (process.env.DISCORD_JEUX_APP_ID
+              ? ""
+              : "**Frame**\n" +
+                "Commande : `/frame`\n" +
+                "Usage : affiche tes scores au jeu Frame (devine le film) — manche en cours, historique de la saison, total\n\n" +
+                "**Anagram**\n" +
+                "Commande : `/anagram`\n" +
+                "Usage : affiche tes scores au jeu Anagram (devine la carte) — manche en cours, historique de la saison, total\n\n") +
             "## Commandes clan\n\n" +
             "**Trust Clan**\n" +
             "Commande : `/trust-clan clan:N`\n" +

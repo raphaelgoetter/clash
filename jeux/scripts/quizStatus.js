@@ -7,8 +7,7 @@
 //
 // Usage : node jeux/scripts/quizStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { readState, listVotes, QUESTIONS_PAR_MANCHE } from "../services/quiz.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";

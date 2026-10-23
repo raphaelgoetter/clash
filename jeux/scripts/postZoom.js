@@ -14,8 +14,7 @@
 //   node jeux/scripts/postZoom.js --public --dry-run
 //   node jeux/scripts/postZoom.js --no-ping       — poste sans pinger @MINI JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postZoom } from "../discord/handlers/zoom.js";
 

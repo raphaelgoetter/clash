@@ -6,9 +6,8 @@
 //
 // Usage : node jeux/scripts/gobeletScores.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { loadGobeletConfig, readState, readPoints, buildRanking, readAllUsernames } from "../services/gobelet.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 

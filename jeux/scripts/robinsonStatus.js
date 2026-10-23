@@ -10,8 +10,7 @@
 //
 // Usage : node jeux/scripts/robinsonStatus.js
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import {
   loadRobinsonConfig,

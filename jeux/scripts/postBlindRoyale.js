@@ -14,8 +14,7 @@
 //   node jeux/scripts/postBlindRoyale.js --public --dry-run
 //   node jeux/scripts/postBlindRoyale.js --no-ping       — poste sans pinger @MINI JEUX
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { postBlindRoyale } from "../discord/handlers/blindroyale.js";
 

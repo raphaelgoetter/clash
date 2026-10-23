@@ -9,8 +9,7 @@
 //   node jeux/scripts/resetQuiEstCe.js             — reset normal, garde l'archive des manches
 //   node jeux/scripts/resetQuiEstCe.js --manches   — reset complet, efface aussi l'archive des manches
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
+import "../env.js";
 
 import { resetQuiEstCe } from "../services/quiestce.js";
 

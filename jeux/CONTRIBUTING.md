@@ -10,7 +10,13 @@ Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Anagram, P�
 
 ## Bot Discord : routes des jeux
 
-Les modules de `jeux/discord/routes/` sont appelés par le routeur `api/discord/interactions.js` après ceux de TrustRoyale (architecture commune, `runBackground()` et règles critiques : voir `CONTRIBUTING.md` racine). La logique propre à chaque jeu est dans `jeux/discord/handlers/`.
+Les jeux ont leur propre application Discord (« bot des jeux »), servie par `api/discord/jeux.js` (architecture commune, `runBackground()` et règles critiques : voir `CONTRIBUTING.md` racine). La logique propre à chaque jeu est dans `jeux/discord/handlers/`.
+
+- **Identifiants** : `jeux/env.js`, importé en premier par `api/discord/jeux.js` et par chaque `jeux/scripts/*.js`, charge `./.env` puis substitue `DISCORD_JEUX_TOKEN` / `DISCORD_JEUX_APP_ID` / `DISCORD_JEUX_PUBLIC_KEY` à `DISCORD_TOKEN` / `DISCORD_APP_ID` / `DISCORD_PUBLIC_KEY`. Le code des jeux ne lit que les noms standards et agit donc au nom du bot des jeux. Sans `DISCORD_JEUX_*`, tout reste sur le bot TrustRoyale et `api/discord/jeux.js` répond 404.
+- **Workflows** : chaque workflow de jeu passe `DISCORD_JEUX_TOKEN` et `DISCORD_JEUX_APP_ID` (secrets GitHub) en plus de `DISCORD_TOKEN`.
+- **Commandes** : `JEUX_COMMANDS` dans `scripts/registerCommands.js`, enregistrées sur le bot des jeux.
+- **Transition** : `api/discord/interactions.js` (bot TrustRoyale) route encore `jeux/discord/routes/`, pour les boutons des messages postés par TrustRoyale avant la bascule. ⚠️ Un bot ne peut ni modifier ni supprimer le message d'un autre bot : basculer entre deux jeux spéciaux, jamais pendant une partie.
+- ⚠️ Émojis d'application (`<:nom:id>`) : propres à chaque application ; un émoji du bot TrustRoyale ne s'affiche pas dans un message du bot des jeux.
 
 | Module | Contenu |
 | --- | --- |

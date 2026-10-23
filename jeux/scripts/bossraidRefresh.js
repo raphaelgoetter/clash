@@ -13,9 +13,8 @@
 //   node jeux/scripts/bossraidRefresh.js            — réédite le message en ligne
 //   node jeux/scripts/bossraidRefresh.js --dry-run  — aperçu console, aucun appel Discord
 
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 
+import "../env.js";
 import { readState, loadBossRaidConfig } from "../services/bossraid.js";
 import { refreshPublicMessage } from "../discord/handlers/bossraid.js";
 

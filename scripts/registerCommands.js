@@ -1,6 +1,9 @@
 #!/usr/bin/env node
-// Small utility to register the bot's slash commands with Discord. Run once
-// after setting DISCORD_APP_ID and DISCORD_TOKEN in your environment.
+// Enregistre les commandes slash auprès de Discord (globales, propagation
+// jusqu'à 1 h). Bot TrustRoyale : DISCORD_APP_ID/DISCORD_TOKEN. Si le bot des
+// jeux est configuré (DISCORD_JEUX_APP_ID/DISCORD_JEUX_TOKEN), les commandes
+// des jeux (JEUX_COMMANDS) lui sont enregistrées et retirées de TrustRoyale ;
+// sinon tout reste sur TrustRoyale.
 
 import fetch from "node-fetch";
 import dotenv from "dotenv";
@@ -15,7 +18,28 @@ if (!appId || !token) {
   process.exit(1);
 }
 
-const globalUrl = `https://discord.com/api/v10/applications/${appId}/commands`;
+const jeuxAppId = process.env.DISCORD_JEUX_APP_ID;
+const jeuxToken = process.env.DISCORD_JEUX_TOKEN;
+const botJeuxConfigure = Boolean(jeuxAppId && jeuxToken);
+
+// Commandes servies par jeux/discord/routes/ (bot des jeux).
+const JEUX_COMMANDS = new Set([
+  "frame",
+  "anagram",
+  "pelemele",
+  "zoom",
+  "palette",
+  "trivia",
+  "justecarte",
+  "blindroyale",
+  "mini-jeux",
+  "mini-jeux-history",
+  "bang",
+  "blackjack",
+  "gobelet",
+]);
+
+const commandsUrl = (id) => `https://discord.com/api/v10/applications/${id}/commands`;
 
 const commands = [
   {
@@ -609,30 +633,36 @@ const commands = [
   },
 ];
 
-async function registerAtUrl(url) {
+async function registerAtUrl(url, botToken, list) {
   const res = await fetch(url, {
     method: "PUT",
     headers: {
-      Authorization: `Bot ${token}`,
+      Authorization: `Bot ${botToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(commands),
+    body: JSON.stringify(list),
   });
   const data = await res.json();
   if (!res.ok) {
     console.error(`Failed to register commands at ${url}`, data);
     process.exit(1);
   }
-  console.log(`Commands registered at ${url}:`);
-  console.dir(data, { depth: 2 });
+  console.log(`${data.length} commandes enregistrées : ${data.map((c) => c.name).join(", ")}`);
 }
 
 (async () => {
   try {
-    await registerAtUrl(globalUrl);
-    console.log(
-      "Global command registration done (may take up to 1 hour to propagate).",
-    );
+    if (botJeuxConfigure) {
+      const trust = commands.filter((c) => !JEUX_COMMANDS.has(c.name));
+      const jeux = commands.filter((c) => JEUX_COMMANDS.has(c.name));
+      console.log("Bot TrustRoyale :");
+      await registerAtUrl(commandsUrl(appId), token, trust);
+      console.log("Bot des jeux :");
+      await registerAtUrl(commandsUrl(jeuxAppId), jeuxToken, jeux);
+    } else {
+      await registerAtUrl(commandsUrl(appId), token, commands);
+    }
+    console.log("Enregistrement global terminé (propagation jusqu'à 1 h).");
   } catch (err) {
     console.error("Request failed", err);
     process.exit(1);
