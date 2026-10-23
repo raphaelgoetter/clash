@@ -47,18 +47,35 @@ const HINT_LABELS = {
   indice2: "Réalisation",
 };
 
+// Phrase affichée après la consigne : la variante n'est plus nommée, elle
+// est décrite. Toute nouvelle variante du catalogue s'ajoute ici.
+const VARIANTE_PHRASES = {
+  "Enfant": "On dirait que c'est un enfant qui raconte.",
+  "Djeunz": "On dirait que c'est un ado qui raconte à ses potes.",
+  "Figurant": "On dirait que c'est un personnage secondaire qui raconte.",
+  "Commentaire sportif": "On dirait un commentaire de match en direct.",
+  "Une phrase": "Le tout résumé en une seule phrase.",
+  "Ultra-littéral": "On dirait que quelqu'un raconte uniquement ce qu'il voit à l'écran.",
+  "Leboncoin": "On dirait une annonce Leboncoin.",
+  "Avis 1 étoile": "On dirait un avis client à 1 étoile.",
+  "Recette de cuisine": "On dirait une recette de cuisine.",
+  "Patch notes": "On dirait les notes de mise à jour d'un jeu vidéo.",
+};
+
 // ── Embed / composants du post ────────────────────────────────
 
 function buildSynopsisEmbed({ variante, synopsis, seasonId, seasonManche, seasonMancheTotal }) {
+  const consigne = ["Devine le film (ou la série) caché derrière ce synopsis raté.", VARIANTE_PHRASES[variante]];
   return {
     title: "🎬 Le jeu du mercredi : Synopsis éclaté !",
     description: [
       `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
       "",
-      "Devine le film ou la série caché derrière ce synopsis (très) raté.",
+      consigne.filter(Boolean).join(" "),
       "",
-      `**Version : ${variante}**`,
-      `> ${synopsis}`,
+      // Titre markdown dans la citation : seul moyen d'agrandir le texte
+      // dans un embed Discord.
+      `> ### ${synopsis}`,
       "",
       "**Barème**",
       "- Réponse exacte du 1er coup sans indice : **10 pts**",
