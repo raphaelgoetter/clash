@@ -5,23 +5,24 @@
 // pas de notion "en cours" (essai unique verrouillé) : un joueur a répondu
 // (correct ou non) ou n'a pas encore répondu, point final.
 //
-// Usage : node jeux/scripts/triviaScores.js
+// Usage : node jeux/scripts/triviaScores.js [--geek]   (--geek : Trivia Geek)
 
 import "../env.js";
 
-import {
-  loadTriviaCatalog,
-  resolveTriviaEntry,
-  readState,
-  getGameParticipants,
-  computeSeasonRanking,
-} from "../services/trivia.js";
+import * as triviaSvc from "../services/trivia.js";
+import * as triviaGeekSvc from "../services/triviageek.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
+
+const GEEK = process.argv.includes("--geek");
+const LABEL = GEEK ? "Trivia Geek" : "Trivia";
+const { loadTriviaCatalog, resolveTriviaEntry, readState, getGameParticipants, computeSeasonRanking } = GEEK
+  ? triviaGeekSvc
+  : triviaSvc;
 
 (async () => {
   const state = await readState();
   if (!state) {
-    console.log("Aucune manche Trivia active pour le moment.");
+    console.log(`Aucune manche ${LABEL} active pour le moment.`);
     return;
   }
 
@@ -33,7 +34,7 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
   ]);
 
   console.log(
-    `Jeu Trivia — Manche ${state.seasonManche}/${state.seasonMancheTotal} (${entry?.question ?? state.gameId}) — Saison ${state.seasonId}\n`,
+    `Jeu ${LABEL} — Manche ${state.seasonManche}/${state.seasonMancheTotal} (${entry?.question ?? state.gameId}) — Saison ${state.seasonId}\n`,
   );
 
   const answeredIds = new Set(gameParticipants.map((p) => p.discordId));

@@ -19,6 +19,7 @@
 import { getCurrentSeasonBounds } from "./saison.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
+import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
@@ -42,6 +43,7 @@ const WEEKLY_GAMES = [
   { key: "palette", title: "🎨 Palette", fetch: getPaletteResults },
   { key: "blindroyale", title: "🎧 Blind Royale", fetch: getBlindRoyaleResults },
   { key: "lajustecarte", title: "🃏 La Juste Carte", fetch: getLaJusteCarteResults },
+  { key: "triviageek", title: "🎮 Trivia Geek", fetch: getTriviaGeekResults },
 ];
 
 export const SPECIAL_GAMES = [

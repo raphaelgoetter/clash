@@ -43,6 +43,8 @@ import { alreadyPostedThisWeek as justeCarteAlreadyPostedThisWeek } from "../ser
 import { alreadyPostedThisWeek as blindRoyaleAlreadyPostedThisWeek } from "../services/blindroyale.js";
 import { postJusteCarte, postSeasonRecap as postJusteCarteSeasonRecap } from "../discord/handlers/lajustecarte.js";
 import { postBlindRoyale, postSeasonRecap as postBlindRoyaleSeasonRecap } from "../discord/handlers/blindroyale.js";
+import { alreadyPostedThisWeek as triviaGeekAlreadyPostedThisWeek } from "../services/triviageek.js";
+import { postTriviaGeek, postSeasonRecap as postTriviaGeekSeasonRecap } from "../discord/handlers/triviageek.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
@@ -55,10 +57,18 @@ if (!channelId) {
   process.exit(1);
 }
 
-const ALREADY_POSTED_BY_GAME = { lajustecarte: justeCarteAlreadyPostedThisWeek, blindroyale: blindRoyaleAlreadyPostedThisWeek };
-const POST_BY_GAME = { lajustecarte: postJusteCarte, blindroyale: postBlindRoyale };
-const RECAP_BY_GAME = { lajustecarte: postJusteCarteSeasonRecap, blindroyale: postBlindRoyaleSeasonRecap };
-const LABEL_BY_GAME = { lajustecarte: "La Juste Carte", blindroyale: "Blind Royale" };
+const ALREADY_POSTED_BY_GAME = {
+  lajustecarte: justeCarteAlreadyPostedThisWeek,
+  blindroyale: blindRoyaleAlreadyPostedThisWeek,
+  triviageek: triviaGeekAlreadyPostedThisWeek,
+};
+const POST_BY_GAME = { lajustecarte: postJusteCarte, blindroyale: postBlindRoyale, triviageek: postTriviaGeek };
+const RECAP_BY_GAME = {
+  lajustecarte: postJusteCarteSeasonRecap,
+  blindroyale: postBlindRoyaleSeasonRecap,
+  triviageek: postTriviaGeekSeasonRecap,
+};
+const LABEL_BY_GAME = { lajustecarte: "La Juste Carte", blindroyale: "Blind Royale", triviageek: "Trivia Geek" };
 
 (async () => {
   try {

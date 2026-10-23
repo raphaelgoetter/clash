@@ -40,7 +40,7 @@ export const REFONTE_PAIRS = {
 // n'est jamais lancé à partir de la bascule, même si son identifiant est
 // déjà branché (pelemele, zoom : versions Clash Royale tant que leur
 // refonte n'est pas faite). Frame est déjà hors Clash Royale.
-export const REFONTE_PRETS = new Set(["frame"]);
+export const REFONTE_PRETS = new Set(["frame", "triviageek"]);
 
 const LABELS = {
   culture: { avant: "🎬 Jeux de culture", apres: "🎬 Ciné-club" },

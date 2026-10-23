@@ -14,14 +14,19 @@
 //   node jeux/scripts/postTrivia.js --force        — ignore le garde-fou anti-double-post
 //   node jeux/scripts/postTrivia.js --public --dry-run
 //   node jeux/scripts/postTrivia.js --no-ping      — poste sans pinger @MINI-JEUX
+//   node jeux/scripts/postTrivia.js --geek         — Trivia Geek au lieu de Trivia (cumulable)
 
 import "../env.js";
 
 import { postTrivia } from "../discord/handlers/trivia.js";
+import { postTriviaGeek } from "../discord/handlers/triviageek.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 const FORCE = process.argv.includes("--force");
+const GEEK = process.argv.includes("--geek");
+const post = GEEK ? postTriviaGeek : postTrivia;
+const LABEL = GEEK ? "Trivia Geek" : "Trivia";
 // Jamais de ping sur le salon de test, même sans --no-ping explicite (voir
 // postPalette.js pour le même garde-fou).
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
@@ -39,7 +44,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postTrivia(channelId, { dryRun: DRY_RUN, noPing: NO_PING, force: FORCE });
+    const result = await post(channelId, { dryRun: DRY_RUN, noPing: NO_PING, force: FORCE });
 
     if (DRY_RUN) {
       console.log(`DRY-RUN — prochaine manche (salon ${channelId}) :`);
@@ -55,7 +60,7 @@ if (!channelId) {
 
     console.log(`Manche postée dans ${channelId} — "${result.entry.question}" (message ${result.message.id})`);
   } catch (err) {
-    console.error("Échec de la publication Trivia :", err.message);
+    console.error(`Échec de la publication ${LABEL} :`, err.message);
     process.exit(1);
   }
 })();

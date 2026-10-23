@@ -23,6 +23,7 @@ import * as anagramSvc from "../../services/anagrams.js";
 import * as peleMeleSvc from "../../services/pelemele.js";
 import * as justeCarteSvc from "../../services/lajustecarte.js";
 import * as triviaSvc from "../../services/trivia.js";
+import * as triviaGeekSvc from "../../services/triviageek.js";
 import {
   getCurrentSeasonId as getAveugleSeasonId,
   getActiveBlindGame,
@@ -134,6 +135,8 @@ function channelLink() {
 const AVEUGLE_GAMES = {
   blindroyale: { title: "🎧 Blind Royale", svc: blindRoyaleSvc },
   lajustecarte: { title: "🃏 La Juste Carte", svc: justeCarteSvc },
+  // Refonte (voir refonte.js) : "Culture geek" à partir de décembre 2026.
+  triviageek: { title: "🎮 Trivia Geek", svc: triviaGeekSvc },
 };
 
 // "Jeux visuels" (vendredi) et "Jeux de lettres" (samedi) alternent chacun

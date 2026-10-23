@@ -30,7 +30,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 ## Mini-jeux hebdomadaires : fonctionnement commun
 
-S'applique à Frame, Trivia, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
+S'applique à Frame, Trivia, Trivia Geek, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
 
 ### Alternance saisonnière (4 groupes)
 
@@ -57,6 +57,7 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 - Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
 - Pêle-mêle et Zoom gardent leur identifiant (même jeu, nouveau thème) : leurs archives sont rangées par saison, donc jamais mélangées avec celles de la version Clash Royale. Les clés de rotation et d'état (`<jeu>:order`, `<jeu>:state`…) sont à purger au lancement du nouveau thème. Trivia Geek change de groupe, d'où un identifiant distinct (`triviageek`).
 - À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi de relancer la version Clash Royale de Pêle-mêle ou de Zoom.
+- Catalogue Trivia Geek : `jeux/data/triviageek/trivia-geek.json`, même format que `trivia-clash.json` (bonne réponse suffixée « √ », parcouru dans l'ordre, ajouts en fin de fichier) plus `numero` (repère humain, 1 = première manche, à garder égal à la position dans le fichier), `titre` (titre humoristique affiché avec la question) et `sourceUrl`. Chaque réponse est vérifiée par une source web avant d'entrer au catalogue.
 - Brancher un nouveau jeu : l'ajouter à `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`, libellé du jeu selon la date pour Pêle-mêle et Zoom).
 
 Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque passage :
@@ -182,15 +183,22 @@ Schéma commun, plus `frame:hints:<gameId>:<discordId>` (SET des indices pris). 
 
 ---
 
-## Trivia (QCM de culture Clash Royale)
+## Trivia et Trivia Geek (QCM)
 
-Jeux de culture (en alternance avec Frame). Service `jeux/services/trivia.js`, miroir de Palette (QCM A/B/C/D, essai unique).
+Deux instances du même moteur : service `jeux/services/triviaEngine.js` (`createTriviaService`), handlers `jeux/discord/handlers/triviaEngine.js` (`createTriviaHandlers`). Chaque instance a son préfixe Redis, son catalogue et son jour ; aucune donnée partagée.
 
-- Catalogue `jeux/data/triviaclash/trivia-clash.json` (4 `choices`, bonne réponse suffixée « √ »), parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne pas réordonner le fichier.
-- Ordre des réponses mélangé par manche (`trivia:order:<gameId>`).
-- Barème : **1 pt** bonne réponse, 0 sinon, un seul clic verrouillé (`HSETNX`).
-- Erratum : un champ `erratum` sur une question offre 1 pt à tous les participants de la manche (`grantErratumPoint()`, idempotent) et poste une annonce une seule fois (`trivia:erratum_posted:<gameId>`).
-- Pas de logique de récap interne (`skipSeasonRecap` ignoré).
+| Jeu | Groupe | Préfixe Redis | Catalogue | Jour | Boutons | Scores joueur |
+| --- | --- | --- | --- | --- | --- | --- |
+| 🧠 Trivia (culture Clash Royale) | Jeux de culture, alternance avec Frame | `trivia:` | `jeux/data/triviaclash/trivia-clash.json` | mercredi | `trivia_answer:` | `/trivia` |
+| 🎮 Trivia Geek | Culture geek à partir de la refonte | `triviageek:` | `jeux/data/triviageek/trivia-geek.json` | lundi | `triviageek_answer:` | « Ma participation » de `/mini-jeux` |
+
+- QCM A/B/C/D, essai unique, miroir de Palette. Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
+- Champ optionnel `titre` : affiché en italique au-dessus de la question.
+- Ordre des réponses mélangé par manche (`<préfixe>:order:<gameId>`).
+- Barème : **1 pt** bonne réponse, 0 sinon, un seul clic verrouillé (`HSETNX`). La réponse éphémère révèle la bonne réponse et la source (`source`).
+- Erratum : un champ `erratum` sur une question offre 1 pt à tous les participants de la manche (`grantErratumPoint()`, idempotent) et poste une annonce une seule fois (`<préfixe>:erratum_posted:<gameId>`).
+- Pas de logique de récap interne (`skipSeasonRecap` ignoré) : le récap de fin de saison est posté par l'orchestrateur du groupe.
+- Scripts : `trivia:*` et `triviageek:*` (`test`, `test:dry`, `reset`, `scores`) ; `postTrivia.js`, `resetTrivia.js` et `triviaScores.js` prennent `--geek` pour viser Trivia Geek.
 
 ---
 

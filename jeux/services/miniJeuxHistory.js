@@ -13,6 +13,7 @@ import { getCurrentSeasonBounds } from "./saison.js";
 import { groupLabelForDate } from "./refonte.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
+import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
@@ -103,6 +104,7 @@ const SCORE_GAMES = [
     fetch: async () => [
       ...(await tagSubGame(getBlindRoyaleResults, "Blind Royale")()),
       ...(await tagSubGame(getLaJusteCarteResults, "La Juste Carte")()),
+      ...(await tagSubGame(getTriviaGeekResults, "Trivia Geek")()),
     ],
   },
 ];

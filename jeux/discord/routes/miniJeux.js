@@ -58,6 +58,7 @@ import {
   handleAnswerButton as handleTriviaAnswer,
   handleTriviaStatsCommand,
 } from "../handlers/trivia.js";
+import { handleAnswerButton as handleTriviaGeekAnswer } from "../handlers/triviageek.js";
 import {
   buildIdeaModal as buildPollIdeaModal,
   handleIdeaModalSubmit as handlePollIdeaModalSubmit,
@@ -878,6 +879,25 @@ export async function routeMiniJeux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleTriviaAnswer(webhookUrl, gameId, letter, discordId, username));
+    return;
+  }
+
+  // ── Jeu Trivia Geek : boutons de réponse A/B/C/D (même ACK que Trivia) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("triviageek_answer:")
+  ) {
+    const [, gameId, letter] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleTriviaGeekAnswer(webhookUrl, gameId, letter, discordId, username));
     return;
   }
 
