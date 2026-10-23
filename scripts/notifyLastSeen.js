@@ -14,6 +14,7 @@ import { Redis } from "@upstash/redis";
 import { parseClashDate, MS_PER_DAY } from "@clash/clash-royale/dateUtils.js";
 import { resolveMembersChannelId } from "@clash/commun/discordChannels.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
+import { fetchClanMembers } from "@clash/clash-royale/clashApi.js";
 
 const LOG_KEY = "dedup:lastseen";
 
@@ -212,8 +213,36 @@ export function buildInactiveEmbed(clanTag, clanName, warnings, errors) {
   };
 }
 
-async function readClanCache(tag) {
-  return loadClanCache(tag);
+// lastSeen lu en live : le cache (rafraîchi ~1x/heure) peut dater d'avant
+// la dernière connexion d'un joueur et le signaler inactif à tort.
+// Le cache ne sert qu'à récupérer isNew, et de repli si l'API échoue.
+async function readMembers(clanTag) {
+  const cached = await loadClanCache(clanTag);
+  const cachedMembers = Array.isArray(cached?.members) ? cached.members : [];
+
+  let liveMembers;
+  try {
+    liveMembers = await fetchClanMembers(`#${clanTag}`);
+  } catch (err) {
+    console.warn(
+      `[notifyLastSeen] API indisponible pour #${clanTag}, repli sur le cache: ${err.message}`,
+    );
+    return cachedMembers;
+  }
+
+  const isNewByTag = new Map(
+    cachedMembers.map((member) => [
+      normalizeTag(member.tag),
+      Boolean(member.isNew),
+    ]),
+  );
+  return liveMembers.map((member) => ({
+    tag: member.tag,
+    name: member.name,
+    role: member.role,
+    lastSeen: member.lastSeen,
+    isNew: isNewByTag.get(normalizeTag(member.tag)) ?? false,
+  }));
 }
 
 async function readLog() {
@@ -274,8 +303,7 @@ async function main() {
       continue;
     }
 
-    const cached = await readClanCache(clanTag);
-    const members = Array.isArray(cached?.members) ? cached.members : [];
+    const members = await readMembers(clanTag);
     if (members.length === 0) continue;
 
     const { warnings, errors } = collectInactiveMembers(members, clanTag, now);
