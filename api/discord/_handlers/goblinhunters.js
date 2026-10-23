@@ -60,6 +60,15 @@ function addDays(date, days) {
   return d;
 }
 
+// Clôture des inscriptions calée sur le cron quotidien du jeu (8h04 UTC),
+// `jours` jours après l'ouverture : c'est ce passage qui annule la partie ou
+// lance le Jour 1.
+function dateCloture(jours) {
+  const d = addDays(new Date(), jours);
+  d.setUTCHours(8, 4, 0, 0);
+  return d.toISOString();
+}
+
 function formatDateFr(iso) {
   return new Date(iso).toLocaleString("fr-FR", {
     timeZone: "Europe/Paris",
@@ -157,23 +166,21 @@ function buildAnnulationEmbed(config, count, state) {
   };
 }
 
-// Clôture avec l'effectif minimum : inscrits figés, le Jour 1 part au
-// prochain cron du matin (8h04 UTC).
+// Clôture avec l'effectif minimum, affichée seulement entre l'heure de
+// clôture et le passage effectif du cron (retard GitHub) qui lance le Jour 1.
 function buildClotureEmbed(config, count, state) {
-  const c = new Date(state.closingAt);
-  const ceMatin = c.getUTCHours() * 60 + c.getUTCMinutes() < 8 * 60 + 4;
   return {
     title: "👺 Goblin Hunters : inscriptions closes",
-    description: `🔒 **${count}** joueurs inscrits : la partie commence ${ceMatin ? "ce matin" : "demain matin"}, chacun recevra son rôle en message privé.`,
+    description: `🔒 **${count}** joueurs inscrits : la partie va commencer, chacun recevra son rôle en message privé.`,
     color: GOBLINHUNTERS_COLOR,
     image: { url: startImageUrl() },
   };
 }
 
-// Heure de clôture atteinte (passage horaire du cron, ou premier clic après
-// la clôture) : le message d'inscription est remplacé sur place. Effectif
+// Heure de clôture atteinte, premier clic avant le passage (en retard) du
+// cron : le message d'inscription est remplacé sur place. Effectif
 // minimum non atteint : partie annulée ; sinon inscriptions closes, le
-// Jour 1 part au cron du matin (postGoblinHunters).
+// Jour 1 part au passage du cron (postGoblinHunters).
 export async function cloturerInscriptions({ dryRun = false } = {}) {
   const state = await readState();
   if (!inscriptionsCloses(state) || state.termine || state.cloture)
@@ -894,10 +901,7 @@ export async function postGoblinHunters(
   // inscrit à ce stade, mais le flux de test recommandé seed le faux pool
   // AVANT d'ouvrir (voir goblinhunters:seed-test-pool, CONTRIBUTING.md).
   if (!state) {
-    const closingAt = addDays(
-      new Date(),
-      config.fenetre_inscription_jours,
-    ).toISOString();
+    const closingAt = dateCloture(config.fenetre_inscription_jours);
     const initialCount = await countInscriptions();
     const embed = buildAnnonceInscriptionEmbed(config, closingAt);
     const components = buildInscriptionComponents(initialCount);

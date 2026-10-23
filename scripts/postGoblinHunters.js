@@ -13,7 +13,6 @@
 //   node scripts/postGoblinHunters.js --public --dry-run
 //   node scripts/postGoblinHunters.js --no-ping       — poste sans pinger @MINI JEUX (inscription/lancement/fin uniquement)
 //   node scripts/postGoblinHunters.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
-//   node scripts/postGoblinHunters.js --public --cloture — clôture les inscriptions si l'heure est passée (cron horaire)
 //   node scripts/postGoblinHunters.js --force-close   — TESTS UNIQUEMENT : ignore l'échéance réelle de la fenêtre
 //                                                        d'inscription (2 jours) pour déclencher le lancement immédiatement
 //   node scripts/postGoblinHunters.js --force         — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
@@ -21,7 +20,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { postGoblinHunters, cloturerInscriptions } from "../api/discord/_handlers/goblinhunters.js";
+import { postGoblinHunters } from "../api/discord/_handlers/goblinhunters.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
@@ -29,9 +28,6 @@ const PUBLIC = process.argv.includes("--public");
 // fenêtre d'inscription doit toujours être ouverte manuellement
 // (workflow_dispatch), le cron ne fait qu'avancer une partie déjà en cours.
 const REQUIRE_ACTIVE = process.argv.includes("--require-active");
-// Passage horaire du cron : clôture des inscriptions si l'heure est passée
-// (message remplacé, partie annulée sous l'effectif minimum), rien sinon.
-const CLOTURE = process.argv.includes("--cloture");
 const FORCE_CLOSE = process.argv.includes("--force-close");
 // Contourne le garde-fou anti-double-avancée (voir backend/services/goblinhunters.js,
 // isTooSoonSinceLastClosure) — protège uniquement le salon public contre un
@@ -58,13 +54,6 @@ if (!channelId) {
 
 (async () => {
   try {
-    if (CLOTURE) {
-      const r = await cloturerInscriptions({ dryRun: DRY_RUN });
-      if (r.skipped) console.log("Pas de clôture d'inscriptions à faire.");
-      else if (DRY_RUN) console.log(JSON.stringify(r, null, 2));
-      else console.log(r.annulation ? `Inscriptions closes : partie annulée (${r.inscrits} inscrits).` : `Inscriptions closes (${r.inscrits} inscrits), Jour 1 au prochain cron du matin.`);
-      return;
-    }
     const result = await postGoblinHunters(channelId, {
       dryRun: DRY_RUN,
       noPing: NO_PING,

@@ -6,9 +6,9 @@
 // sa cible, ses indices, et trois menus édités en place : question du
 // jour, accusation, objet), Règles et Journal (ce qui concerne le joueur).
 // Fenêtre d'inscription (comme Goblin Hunters) : boutons S'inscrire, Se
-// désinscrire et Règles, rappel quotidien. À l'heure de clôture (passage
-// horaire du cron ou premier clic), inscriptions bloquées et message
-// remplacé : partie annulée si l'effectif minimum n'est pas atteint.
+// désinscrire et Règles, rappel quotidien. Clôture calée sur le cron du
+// matin (partie annulée si l'effectif minimum n'est pas atteint, sinon
+// Jour 1) ; passé l'heure, les inscriptions sont bloquées au clic.
 //
 // La publication/clôture quotidienne passe uniquement par
 // scripts/postQuiEstCe.js (postQuiEstCe).
@@ -107,6 +107,15 @@ function addDays(date, days) {
   return d;
 }
 
+// Clôture des inscriptions calée sur le cron quotidien du jeu (8h20 UTC),
+// `jours` jours après l'ouverture : c'est ce passage qui annule la partie ou
+// lance le Jour 1.
+function dateCloture(jours) {
+  const d = addDays(new Date(), jours);
+  d.setUTCHours(8, 20, 0, 0);
+  return d.toISOString();
+}
+
 function formatDateFr(iso) {
   return new Date(iso).toLocaleString("fr-FR", {
     timeZone: "Europe/Paris",
@@ -174,18 +183,16 @@ function buildAnnulationEmbed(config, count, state) {
   };
 }
 
-// Clôture avec l'effectif minimum : inscrits figés, le Jour 1 part au
-// prochain cron du matin (8h20 UTC).
+// Clôture avec l'effectif minimum, affichée seulement entre l'heure de
+// clôture et le passage effectif du cron (retard GitHub) qui lance le Jour 1.
 function buildClotureEmbed(config, partie, state) {
   const inscrits = Object.values(partie.joueurs)
     .sort((a, b) => a.arrivee - b.arrivee)
     .map((j) => j.username);
-  const c = new Date(state.closingAt);
-  const ceMatin = c.getUTCHours() * 60 + c.getUTCMinutes() < 8 * 60 + 20;
   return {
     title: "🕵️ Qui est-ce ? : inscriptions closes",
     description: [
-      `🔒 La partie commence ${ceMatin ? "ce matin" : "demain matin"} : chacun découvrira alors sa carte secrète et sa première cible.`,
+      "🔒 La partie va commencer : chacun découvrira alors sa carte secrète et sa première cible.",
       "",
       `**✋ Inscrits (${inscrits.length})**`,
       inscrits.join(" · "),
@@ -595,10 +602,10 @@ async function desinscrirePartis() {
   if (partis.length) console.log(`[QuiEstCe] Désinscrits (ont quitté le serveur) : ${partis.join(", ")}`);
 }
 
-// Heure de clôture atteinte (passage horaire du cron, ou premier clic après
-// la clôture) : le message officiel est remplacé sur place. Effectif
+// Heure de clôture atteinte, premier clic avant le passage (en retard) du
+// cron : le message officiel est remplacé sur place. Effectif
 // minimum non atteint (salon public) : partie annulée ; sinon inscriptions
-// closes, le Jour 1 part au cron du matin (postQuiEstCe).
+// closes, le Jour 1 part au passage du cron (postQuiEstCe).
 export async function cloturerInscriptions({ dryRun = false } = {}) {
   const state = await readState();
   if (!inscriptionsCloses(state) || state.termine || state.cloture)
@@ -716,10 +723,7 @@ export async function postQuiEstCe(
   // 1) Aucun état → ouverture de la fenêtre d'inscription (ping)
   if (!state) {
     const partie = dryRun ? await readPartie() : await initPartie();
-    const closingAt = addDays(
-      new Date(),
-      config.fenetre_inscription_jours,
-    ).toISOString();
+    const closingAt = dateCloture(config.fenetre_inscription_jours);
     const embed = buildAnnonceEmbed(config, partie, closingAt);
     const components = buildAnnonceComponents(config, partie);
     if (dryRun) return { dryRun: true, phase: "annonce", embed, components };
