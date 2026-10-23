@@ -32,14 +32,14 @@
       "id": "canicule",
       "nom": "Grosse Canicule",
       "emoji": "🔥",
-      "description": "Un soleil de plomb écrase l’île aujourd’hui — même les Barbares les plus baraqués du camp renoncent à sortir chercher de l’eau. Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 unité maximum aujourd’hui)."
+      "description": "Un soleil de plomb écrase l’île aujourd’hui — même les Barbares les plus baraqués du camp renoncent à sortir chercher de l’eau. Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (0 à 2 unités aujourd’hui)."
     },
     {
       "jour": 4,
       "id": "ouragan",
       "nom": "Ouragan Monstrueux",
       "emoji": "🌪️",
-      "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit — chaque volontaire ne rapportera qu’une maigre récolte (1 unité maximum aujourd’hui, pour la Pêche comme pour le Bois)."
+      "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit — chaque volontaire ne rapportera qu’une maigre récolte (1 ou 2 unités aujourd’hui, pour la Pêche comme pour le Bois)."
     },
     {
       "jour": 5,
@@ -53,7 +53,7 @@
       "id": "indigestion_royale",
       "nom": "Indigestion Royale",
       "emoji": "🤢",
-      "description": "Le Géant Royal, mal remis d’un festin bien trop généreux, a vomi dans la source d’eau douce de l’île. Le camp devra faire preuve de courage — Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 unité maximum aujourd’hui)."
+      "description": "Le Géant Royal, mal remis d’un festin bien trop généreux, a vomi dans la source d’eau douce de l’île. Le camp devra faire preuve de courage — Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 ou 2 unités aujourd’hui)."
     },
     {
       "jour": 7,

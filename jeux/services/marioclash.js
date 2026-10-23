@@ -17,8 +17,9 @@
 // rapport à l'immunité Étoile du jour doit être déterministe.
 //
 // ⚠️ Ordre de résolution à la clôture (décision explicite, voir
-// CONTRIBUTING.md) : 1) objets déjà actifs (Étoile → immunité du jour)
-// 2) objets appliqués (Accélérateur/Bombe/Banane, puis Carapace bleue) 3) sorts. L'Étoile
+// jeux/CONTRIBUTING.md) : 1) objets déjà actifs (Étoile → immunité du jour)
+// 2) sorts 3) objets appliqués (Accélérateur/Bombe/Banane, puis Carapace
+// bleue) : l'objet, payé, a le dernier mot sur le sort, aléatoire. L'Étoile
 // protège ainsi contre TOUT le reste de la journée : elle RENVOIE les
 // objets adverses (l'attaquant recule) et bloque les sorts (y compris un
 // sort qu'on se lancerait à soi-même).

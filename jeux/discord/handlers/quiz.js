@@ -24,6 +24,7 @@ import {
   archiveManche,
   listManches,
   isTooSoonSinceLastClosure,
+  QUESTIONS_PAR_MANCHE,
 } from "../../services/quiz.js";
 import {
   getRoleIdByName,
@@ -37,7 +38,6 @@ import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
 const QUIZ_COLOR = 0x3498db;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const QCM_LETTERS = ["A", "B", "C", "D", "E"];
-const TOTAL_QUESTIONS = 7;
 
 // Illustration statique fournie dans l'app — chemin relatif déclaré dans
 // jeux/data/quiz/quiz.json (champ `image`, jamais d'URL absolue dedans), même
@@ -69,7 +69,7 @@ function buildAnnonceEmbed() {
   return {
     title: "❓ Quiz : une nouvelle manche se prépare",
     description: [
-      `**${TOTAL_QUESTIONS} questions**, une par jour, sur une thématique révélée demain.`,
+      `**${QUESTIONS_PAR_MANCHE} questions**, une par jour, sur une thématique révélée demain.`,
       "",
       "Un seul vote par question, définitif. Bonnes réponses et classement à la révélation finale.",
     ].join("\n"),
@@ -90,7 +90,7 @@ function buildQuestionEmbed(mancheConfig, question, jour) {
     (label, idx) => `**${QCM_LETTERS[idx]}.** ${label}`,
   );
   return {
-    title: `❓ Quiz : ${mancheConfig.theme} (Jour ${jour}/${TOTAL_QUESTIONS})`,
+    title: `❓ Quiz : ${mancheConfig.theme} (Jour ${jour}/${QUESTIONS_PAR_MANCHE})`,
     description: [
       `# ${question.enonce}`,
       "",
@@ -133,7 +133,7 @@ function formatMancheHistoryLine(record) {
   const winners = record.winners?.length
     ? record.winners.join(", ")
     : "personne";
-  return `Manche ${record.manche} (${record.theme}) : 🏆 ${winners} (${record.maxScore}/${TOTAL_QUESTIONS})`;
+  return `Manche ${record.manche} (${record.theme}) : 🏆 ${winners} (${record.maxScore}/${QUESTIONS_PAR_MANCHE})`;
 }
 
 async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
@@ -161,7 +161,7 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
       ? resolved
           .slice(0, 20)
           .map(
-            (r, i, list) => `${rangExAequo(list, i, "score")}. ${r.username} (${r.score}/${TOTAL_QUESTIONS})`,
+            (r, i, list) => `${rangExAequo(list, i, "score")}. ${r.username} (${r.score}/${QUESTIONS_PAR_MANCHE})`,
           )
       : ["Personne n'a voté cette manche."]),
   ];
@@ -169,7 +169,7 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
   if (winners.length) {
     lines.push(
       "",
-      `🏆 Vainqueur${winners.length > 1 ? "s" : ""} (${maxScore}/${TOTAL_QUESTIONS}) : ${winners.map((w) => w.username).join(", ")}`,
+      `🏆 Vainqueur${winners.length > 1 ? "s" : ""} (${maxScore}/${QUESTIONS_PAR_MANCHE}) : ${winners.map((w) => w.username).join(", ")}`,
     );
   }
 
@@ -392,7 +392,7 @@ export async function postQuiz(
   const jour = state.jour + 1;
   const mancheConfig = config.manches[state.mancheIndex];
 
-  if (jour > TOTAL_QUESTIONS) {
+  if (jour > QUESTIONS_PAR_MANCHE) {
     const ranking = await computeMancheRanking(state.manche, mancheConfig);
     const manchesHistory = await listManches({ limit: 10 });
     const embed = await buildRevealEmbed(

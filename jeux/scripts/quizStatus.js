@@ -10,7 +10,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { readState, listVotes } from "../services/quiz.js";
+import { readState, listVotes, QUESTIONS_PAR_MANCHE } from "../services/quiz.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 
 (async () => {
@@ -28,7 +28,7 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
     return;
   }
 
-  console.log(`Quiz — Manche ${state.manche} « ${state.theme} » — Jour ${state.jour}/7\n`);
+  console.log(`Quiz — Manche ${state.manche} « ${state.theme} » — Jour ${state.jour}/${QUESTIONS_PAR_MANCHE}\n`);
 
   const votes = await listVotes(state.manche, state.jour);
   const usernames = await Promise.all(votes.map((v) => resolveDisplayName(v.discordId, v.username || v.discordId)));

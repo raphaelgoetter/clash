@@ -36,7 +36,7 @@
           "type": "qcm",
           "enonce": "Qui parmi les 4 n'est plus dans la famille depuis plus de 2 ans ?",
           "image": "quizz/quizz-05.webp",
-          "choix": ["Detective Conan", "Kikootz", "Mohamed Light", "Natoux"],
+          "choix": ["Détective Conan", "Kikootz", "Mohamed Light", "Natoux"],
           "bonne_reponse": 0
         },
         {
@@ -63,12 +63,12 @@
           "type": "qcm",
           "enonce": "Sur les 2 rencontres en tournoi amicales face à des clans amis, notre team en a gagné combien ?",
           "image": "quizz/quizz-01.webp",
-          "choix": ["0", "1", "2", "Les 2"],
+          "choix": ["0", "1", "2"],
           "bonne_reponse": 1
         },
         {
           "type": "qcm",
-          "enonce": "Quel nombre de clans la famille Resistance à déjà eu en même temps ?",
+          "enonce": "Quel nombre de clans la famille Resistance a déjà eu en même temps ?",
           "image": "quizz/quizz-02.webp",
           "choix": ["4", "5", "7", "9"],
           "bonne_reponse": 1
@@ -89,7 +89,7 @@
         },
         {
           "type": "qcm",
-          "enonce": "Environ combien de membres ont déjà rejoint le serveur",
+          "enonce": "Environ combien de membres ont déjà rejoint le serveur ?",
           "image": "quizz/quizz-05.webp",
           "choix": ["360", "380", "400", "700"],
           "bonne_reponse": 3

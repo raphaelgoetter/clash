@@ -11,7 +11,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 
-import { loadQuizConfig, readState, computeMancheDailyScores } from "../services/quiz.js";
+import { loadQuizConfig, readState, computeMancheDailyScores, QUESTIONS_PAR_MANCHE } from "../services/quiz.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 
 (async () => {
@@ -28,7 +28,7 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
   const config = await loadQuizConfig();
   const mancheConfig = config.manches[state.mancheIndex];
   console.log(
-    `Quiz — Manche ${state.manche} « ${state.theme} » — Jour ${state.jour}/7${state.termine ? " (terminée)" : ""}\n`,
+    `Quiz — Manche ${state.manche} « ${state.theme} » — Jour ${state.jour}/${QUESTIONS_PAR_MANCHE}${state.termine ? " (terminée)" : ""}\n`,
   );
 
   const scores = await computeMancheDailyScores(state.manche, mancheConfig, state.jour);

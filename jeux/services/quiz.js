@@ -12,7 +12,7 @@
 // corrompt silencieusement. On sérialise/désérialise le JSON nous-mêmes.
 //
 // Schéma de jeux/data/quiz/quiz.json : { manches: [{ id, theme, questions: [
-//   { type: "qcm"|"vrai_faux", enonce, image, choix: [...], bonne_reponse } × 7
+//   { type: "qcm"|"vrai_faux", enonce, image, choix: [...], bonne_reponse } × QUESTIONS_PAR_MANCHE
 // ] }] } — `id` est un slug stable (dossier d'images + debug), `image` un
 // chemin relatif sous frontend/public/images/ (ou null), `bonne_reponse`
 // l'index 0-based dans `choix`.
@@ -107,12 +107,40 @@ function voteUsernamesKey(manche, jour) {
 
 // ── Lecture du contenu (statique, jamais muté) ────────────────────
 
+// Nombre de questions (donc de jours) d'une manche : fixe, car l'annonce
+// l'affiche avant que la thématique soit tirée. Toute manche de quiz.json
+// doit en contenir exactement autant (vérifié au chargement).
+export const QUESTIONS_PAR_MANCHE = 7;
+
 let quizConfigCache = null;
+
+// Lève une erreur si une manche est mal formée (nombre de questions, choix,
+// bonne réponse) : mieux vaut un post qui échoue qu'une manche qui déraille.
+export function validateQuizConfig(config) {
+  for (const manche of config?.manches ?? []) {
+    const questions = manche.questions ?? [];
+    if (questions.length !== QUESTIONS_PAR_MANCHE) {
+      throw new Error(
+        `[quiz] Manche "${manche.id}" : ${questions.length} questions au lieu de ${QUESTIONS_PAR_MANCHE}`,
+      );
+    }
+    questions.forEach((q, i) => {
+      const nbChoix = q.choix?.length ?? 0;
+      if (nbChoix < 2 || nbChoix > 5 || new Set(q.choix).size !== nbChoix) {
+        throw new Error(`[quiz] Manche "${manche.id}", question ${i + 1} : 2 à 5 choix distincts attendus`);
+      }
+      if (!Number.isInteger(q.bonne_reponse) || q.bonne_reponse < 0 || q.bonne_reponse >= nbChoix) {
+        throw new Error(`[quiz] Manche "${manche.id}", question ${i + 1} : bonne_reponse hors des choix`);
+      }
+    });
+  }
+  return config;
+}
 
 export async function loadQuizConfig() {
   if (quizConfigCache) return quizConfigCache;
   const txt = await fs.readFile(QUIZ_JSON_PATH, "utf-8");
-  quizConfigCache = JSON.parse(txt);
+  quizConfigCache = validateQuizConfig(JSON.parse(txt));
   return quizConfigCache;
 }
 
