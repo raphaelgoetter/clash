@@ -42,6 +42,8 @@ import { alreadyPostedThisWeek as frameAlreadyPostedThisWeek } from "../services
 import { alreadyPostedThisWeek as triviaAlreadyPostedThisWeek } from "../services/trivia.js";
 import { postFrame, postSeasonRecap as postFrameSeasonRecap } from "../discord/handlers/frames.js";
 import { postTrivia, postSeasonRecap as postTriviaSeasonRecap } from "../discord/handlers/trivia.js";
+import { alreadyPostedThisWeek as synopsisAlreadyPostedThisWeek } from "../services/synopsis.js";
+import { postSynopsis, postSeasonRecap as postSynopsisSeasonRecap } from "../discord/handlers/synopsis.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
@@ -54,10 +56,18 @@ if (!channelId) {
   process.exit(1);
 }
 
-const ALREADY_POSTED_BY_GAME = { frame: frameAlreadyPostedThisWeek, trivia: triviaAlreadyPostedThisWeek };
-const POST_BY_GAME = { frame: postFrame, trivia: postTrivia };
-const RECAP_BY_GAME = { frame: postFrameSeasonRecap, trivia: postTriviaSeasonRecap };
-const LABEL_BY_GAME = { frame: "Frame", trivia: "Trivia" };
+const ALREADY_POSTED_BY_GAME = {
+  frame: frameAlreadyPostedThisWeek,
+  trivia: triviaAlreadyPostedThisWeek,
+  synopsis: synopsisAlreadyPostedThisWeek,
+};
+const POST_BY_GAME = { frame: postFrame, trivia: postTrivia, synopsis: postSynopsis };
+const RECAP_BY_GAME = {
+  frame: postFrameSeasonRecap,
+  trivia: postTriviaSeasonRecap,
+  synopsis: postSynopsisSeasonRecap,
+};
+const LABEL_BY_GAME = { frame: "Frame", trivia: "Trivia", synopsis: "Synopsis éclaté" };
 
 (async () => {
   try {

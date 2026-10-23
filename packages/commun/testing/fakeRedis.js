@@ -21,6 +21,8 @@ export class Redis {
   async hkeys(k) { const h = store.get(k); return h instanceof Map ? [...h.keys()] : []; }
   async hgetall(k) { const h = store.get(k); return h instanceof Map ? [...h].flat() : []; }
   async expire() { return 1; }
+  async sadd(k, ...ms) { if (!store.has(k)) store.set(k, new Set()); const s = store.get(k); const n = s.size; ms.forEach((m) => s.add(String(m))); return s.size - n; }
+  async scard(k) { const s = store.get(k); return s instanceof Set ? s.size : 0; }
   async incr(k) { const n = Number(store.get(k) || 0) + 1; store.set(k, String(n)); return n; }
   async scan(_c, { match }) { const re = new RegExp("^" + match.replace(/\*/g, ".*") + "$"); return ["0", [...new Set([...store.keys(), ...zsets.keys()])].filter((k) => re.test(k))]; }
   async zincrby(k, inc, m) { const z = zset(k); z.set(String(m), (z.get(String(m)) || 0) + Number(inc)); return z.get(String(m)); }

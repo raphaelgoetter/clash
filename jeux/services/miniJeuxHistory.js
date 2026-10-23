@@ -17,6 +17,7 @@ import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getConceptResults } from "./concept.js";
+import { getAllArchivedResults as getSynopsisResults } from "./synopsis.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
 import { getAllArchivedResults as getPaletteResults } from "./palette.js";
 import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
@@ -81,6 +82,7 @@ const SCORE_GAMES = [
     fetch: async () => [
       ...(await tagSubGame(getFrameResults, "Trouve le film")()),
       ...(await tagSubGame(getTriviaResults, "Trivia")()),
+      ...(await tagSubGame(getSynopsisResults, "Synopsis éclaté")()),
     ],
   },
   {

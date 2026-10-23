@@ -47,7 +47,8 @@ console.log("✓ calendrier décembre/janvier");
 assert.strictEqual(getWiredGame("visuels", 138, "zoom"), "zoom");
 assert.strictEqual(getWiredGame("visuels", 140, "zoom"), null);
 assert.strictEqual(getWiredGame("lettres", 140, "pelemele"), null);
-assert.strictEqual(getWiredGame("culture", 139, "synopsis"), null);
+assert.strictEqual(getWiredGame("culture", 139, "synopsis"), "synopsis");
+assert.strictEqual(getWiredGame("visuels", 139, "platpays"), null);
 assert.strictEqual(getWiredGame("culture", 140, "frame"), "frame");
 console.log("✓ seuls les jeux prêts sont lancés après la bascule");
 

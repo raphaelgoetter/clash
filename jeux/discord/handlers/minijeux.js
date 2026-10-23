@@ -25,6 +25,7 @@ import * as justeCarteSvc from "../../services/lajustecarte.js";
 import * as triviaSvc from "../../services/trivia.js";
 import * as triviaGeekSvc from "../../services/triviageek.js";
 import * as conceptSvc from "../../services/concept.js";
+import * as synopsisSvc from "../../services/synopsis.js";
 import {
   getCurrentSeasonId as getAveugleSeasonId,
   getActiveBlindGame,
@@ -161,6 +162,8 @@ const LETTRES_GAMES = {
 const CULTURE_GAMES = {
   frame: { title: "🎬 Trouve le film !", svc: frameSvc },
   trivia: { title: "🧠 Trivia", svc: triviaSvc },
+  // Refonte (voir refonte.js) : "Ciné-club" à partir de décembre 2026.
+  synopsis: { title: "🎬 Synopsis éclaté", svc: synopsisSvc },
 };
 
 // Filet de sécurité si getCurrentSeasonId() renvoyait null : on retombe sur

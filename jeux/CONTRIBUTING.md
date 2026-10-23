@@ -30,7 +30,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 ## Mini-jeux hebdomadaires : fonctionnement commun
 
-S'applique à Frame, Trivia, Trivia Geek, Concept, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
+S'applique à Frame, Trivia, Trivia Geek, Concept, Synopsis éclaté, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
 
 ### Alternance saisonnière (4 groupes)
 
@@ -213,6 +213,22 @@ Groupe « Jeux de mots » (samedi 18:00 UTC) à partir de la refonte, en alterna
 - Redis (`concept:*`) : `state`, `participants:<gameId>`, `usernames:<gameId>`, `hint:<gameId>:<discordId>`, `attempts:<gameId>:<discordId>` (purgés à la manche suivante), `season:<id>` (+ `pseudos`, `manche_seq`, `manche_numbers`), `archived:<id>`.
 - Boutons `concept_hint:`, `concept_answer:` (Modal `concept_answer_modal:`). Pas de commande de scores : « Ma participation » de `/mini-jeux`.
 - Scripts : `concept:test`, `concept:test:dry`, `concept:reset`.
+
+---
+
+## Synopsis éclaté (devine le film ou la série à partir du pire synopsis)
+
+Groupe « Ciné-club » (mercredi 08:00 UTC) à partir de la refonte, en alternance avec Frame. Service `jeux/services/synopsis.js`, handler `jeux/discord/handlers/synopsis.js`, même parcours que Frame (Modal de réponse, deux indices, DM de fin de manche avec score de la manche et total de la saison, sans rang d'arrivée). Bannière fixe `frontend/public/images/synopsis/synopsis-game.webp`.
+
+- Catalogue `jeux/data/synopsis/synopsis.json` : `numero` (= position), `difficulte` (`intermediaire` ou `difficile`, repère de curation non affiché), `variante` (affichée dans le post), `synopsis`, `indice1` (année de sortie du film ou de première diffusion de la série), `indice2`, `titre` (affiché à la résolution), `accepte`, `refuse?`. Parcouru dans l'ordre du fichier, en boucle ; `gameId` = `s` + numéro sur 3 chiffres. Ne jamais réordonner un catalogue déjà joué, ajouter en fin.
+- `indice2` : réalisateur (premier crédité) pour un film, studio pour un film d'animation (Pixar, DreamWorks, Studio Ghibli), « Série » pour toute série, animée comprise. Libellé affiché : « Réalisation ».
+- Variantes : Ultra-littéral, Une phrase, Leboncoin, Recette de cuisine, Avis 1 étoile, Figurant, Patch notes, Commentaire sportif, Djeunz, Enfant. Une variante imite un format de texte reconnaissable ; pas de variante « Classique ».
+- Règles de contenu : pas de niveau facile (le synopsis passe par un angle détourné, sans l'élément signature de l'œuvre), années, réalisateurs et faits d'intrigue vérifiés par une source web, pas de tiret cadratin. Ordre : jamais deux séries ni deux films d'animation consécutifs, ni la même variante ou le même réalisateur/studio à moins de trois rangs, ni deux intermédiaires de suite. Les doublons d'œuvres avec Frame sont autorisés.
+- Réponse : système de Frame (`checkAnswer` réexporté de `frames.js`) : un terme `accepte` en sous-chaîne de la réponse normalisée, aucun terme `refuse` (suites, autres épisodes). Les termes `accepte` font au moins 4 caractères (« up » validerait « super ») ; le titre complet doit toujours être accepté (vérifié par `synopsis.test.js`).
+- Barème de Frame : `max(1, 10 − 2 × tentatives incorrectes − 3 × indices utilisés)`, score figé à la résolution.
+- Redis (`synopsis:*`) : `state`, `participants:<gameId>`, `usernames:<gameId>`, `hints:<gameId>:<discordId>` (ensemble), `attempts:<gameId>:<discordId>` (purgés à la manche suivante), `season:<id>` (+ `pseudos`, `manche_seq`, `manche_numbers`), `archived:<id>`.
+- Boutons `synopsis_hint1:`, `synopsis_hint2:`, `synopsis_answer:` (Modal `synopsis_answer_modal:`). Pas de commande de scores : « Ma participation » de `/mini-jeux`.
+- Scripts : `synopsis:test`, `synopsis:test:dry`, `synopsis:reset`.
 
 ---
 

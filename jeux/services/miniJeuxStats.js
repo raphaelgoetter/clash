@@ -23,6 +23,7 @@ import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getConceptResults } from "./concept.js";
+import { getAllArchivedResults as getSynopsisResults } from "./synopsis.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
 import { getAllArchivedResults as getPaletteResults } from "./palette.js";
 import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
@@ -38,6 +39,7 @@ import { listManches as listMeowManches } from "./meow.js";
 const WEEKLY_GAMES = [
   { key: "frame", title: "🎬 Trouve le film !", fetch: getFrameResults },
   { key: "trivia", title: "🧠 Trivia", fetch: getTriviaResults },
+  { key: "synopsis", title: "🎬 Synopsis éclaté", fetch: getSynopsisResults },
   { key: "anagram", title: "🔤 Anagram", fetch: getAnagramResults },
   { key: "pelemele", title: "🔤 Pêle-mêle", fetch: getPeleMeleResults },
   { key: "concept", title: "🧩 Concept", fetch: getConceptResults },

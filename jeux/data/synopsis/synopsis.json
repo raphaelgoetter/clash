@@ -1,0 +1,669 @@
+[
+  {
+    "numero": 1,
+    "difficulte": "intermediaire",
+    "variante": "Enfant",
+    "synopsis": "C'est un papa qui a peur de tout, et son fils il se fait attraper par un monsieur avec un masque de plongée, alors le papa il part le chercher super loin avec une dame qui oublie tout, et il y a des tortues qui font du toboggan.",
+    "indice1": "2003",
+    "indice2": "Pixar",
+    "titre": "Finding Nemo (Le Monde de Nemo)",
+    "accepte": ["nemo"],
+    "refuse": ["dory"]
+  },
+  {
+    "numero": 2,
+    "difficulte": "difficile",
+    "variante": "Djeunz",
+    "synopsis": "Wesh, le gars il s'embrouille sur un terrain de basket, sa daronne elle panique et l'envoie chez son oncle blindé. Le majordome il clashe tout le monde et le cousin il danse chelou sur Tom Jones, frère.",
+    "indice1": "1990",
+    "indice2": "Série",
+    "titre": "The Fresh Prince of Bel-Air (Le Prince de Bel-Air)",
+    "accepte": ["bel air", "belair", "fresh prince"]
+  },
+  {
+    "numero": 3,
+    "difficulte": "difficile",
+    "variante": "Figurant",
+    "synopsis": "Je suis une boule de suie. Je porte du charbon toute la journée pour un vieil homme à six bras. Un jour, une humaine a porté un morceau à ma place, et tous mes collègues ont fait semblant d'être écrasés pour qu'elle recommence.",
+    "indice1": "2001",
+    "indice2": "Studio Ghibli",
+    "titre": "Spirited Away (Le Voyage de Chihiro)",
+    "accepte": ["chihiro", "spirited away"]
+  },
+  {
+    "numero": 4,
+    "difficulte": "intermediaire",
+    "variante": "Commentaire sportif",
+    "synopsis": "Vingt-quatre concurrents sur la ligne de départ, et c'est la ruée vers la corne ! La candidate de la région minière mise tout sur le tir à l'arc. Énorme coup de théâtre en finale : elle propose un partage des points avec une poignée de baies, et l'arbitre cède !",
+    "indice1": "2012",
+    "indice2": "Gary Ross",
+    "titre": "The Hunger Games (Hunger Games)",
+    "accepte": ["hunger games"],
+    "refuse": [
+      "embrasement",
+      "catching",
+      "revolte",
+      "mockingjay",
+      "ballade",
+      "ballad"
+    ]
+  },
+  {
+    "numero": 5,
+    "difficulte": "difficile",
+    "variante": "Une phrase",
+    "synopsis": "Deux sœurs d'un quartier défavorisé se perdent de vue : l'aînée finit du côté des forces de l'ordre, la cadette prend l'habitude de faire exploser tout ce que construit la ville d'en haut.",
+    "indice1": "2021",
+    "indice2": "Série",
+    "titre": "Arcane",
+    "accepte": ["arcane"]
+  },
+  {
+    "numero": 6,
+    "difficulte": "intermediaire",
+    "variante": "Djeunz",
+    "synopsis": "Frère, le patron il est trop raciste, mais pour échapper à des tueurs il se déguise en religieux et il finit par danser au milieu de la rue sans rien capter. Karma de fou.",
+    "indice1": "1973",
+    "indice2": "Gérard Oury",
+    "titre": "Les Aventures de Rabbi Jacob",
+    "accepte": ["rabbi jacob"]
+  },
+  {
+    "numero": 7,
+    "difficulte": "difficile",
+    "variante": "Ultra-littéral",
+    "synopsis": "Deux hommes parlent du nom des hamburgers en France avant d'aller au travail. Plus tard, un homme participe à un concours de danse. Un autre lit dans les toilettes, et ça se passe mal.",
+    "indice1": "1994",
+    "indice2": "Quentin Tarantino",
+    "titre": "Pulp Fiction",
+    "accepte": ["pulp fiction"]
+  },
+  {
+    "numero": 8,
+    "difficulte": "intermediaire",
+    "variante": "Leboncoin",
+    "synopsis": "Vends siège en métal, très inconfortable, quelques pointes dépassent. Nombreux anciens propriétaires, aucun ne l'a gardé longtemps. Retrait sur place impossible : le bien a fondu.",
+    "indice1": "2011",
+    "indice2": "Série",
+    "titre": "Game of Thrones",
+    "accepte": ["game of thrones", "trone de fer"]
+  },
+  {
+    "numero": 9,
+    "difficulte": "difficile",
+    "variante": "Avis 1 étoile",
+    "synopsis": "Séjour sur une île de la côte Est pour la fête nationale. Plages maintenues ouvertes malgré les rumeurs, le maire porte une veste à ancres et assure que tout va bien. Notre excursion en bateau de pêche s'est très mal terminée. ⭐",
+    "indice1": "1975",
+    "indice2": "Steven Spielberg",
+    "titre": "Jaws (Les Dents de la mer)",
+    "accepte": ["dents de la mer", "jaws"],
+    "refuse": ["2", "3", "4"]
+  },
+  {
+    "numero": 10,
+    "difficulte": "intermediaire",
+    "variante": "Commentaire sportif",
+    "synopsis": "Et c'est encore une réunion autour de la table qui se termine sans le moindre tir cadré ! Le capitaine breton s'arrache les cheveux, ses deux attaquants ne savent toujours pas de quel côté se trouve le but adverse, et la belle-mère envahit le terrain avec une tarte. Le trophée ? Toujours introuvable, Thierry.",
+    "indice1": "2005",
+    "indice2": "Série",
+    "titre": "Kaamelott",
+    "accepte": ["kaamelott", "kamelott", "kaamelot"]
+  },
+  {
+    "numero": 11,
+    "difficulte": "difficile",
+    "variante": "Leboncoin",
+    "synopsis": "Vends petit marteau de géologue, très usé, et grande affiche d'actrice des années 40. Le mur derrière l'affiche est fourni dans l'état.",
+    "indice1": "1994",
+    "indice2": "Frank Darabont",
+    "titre": "The Shawshank Redemption (Les Évadés)",
+    "accepte": ["evades", "shawshank"]
+  },
+  {
+    "numero": 12,
+    "difficulte": "difficile",
+    "variante": "Une phrase",
+    "synopsis": "Une femme décroche le poste de sa vie à vingt-cinq ans et passe six saisons à veiller à ne surtout rien dire.",
+    "indice1": "2016",
+    "indice2": "Série",
+    "titre": "The Crown",
+    "accepte": ["the crown", "crown"]
+  },
+  {
+    "numero": 13,
+    "difficulte": "intermediaire",
+    "variante": "Avis 1 étoile",
+    "synopsis": "Hôtel de charme installé dans un château. Deux clients en armure se sont lavé le visage dans les toilettes et ont attaqué le facteur. Le propriétaire semblait étrangement apparenté à l'un d'eux. ⭐",
+    "indice1": "1993",
+    "indice2": "Jean-Marie Poiré",
+    "titre": "Les Visiteurs",
+    "accepte": ["visiteurs"],
+    "refuse": ["couloirs", "revolution", "amerique"]
+  },
+  {
+    "numero": 14,
+    "difficulte": "difficile",
+    "variante": "Ultra-littéral",
+    "synopsis": "Un verre d'eau tremble sur le tableau de bord d'une voiture. Un avocat se réfugie dans des toilettes. Plus tard, une fillette regarde trembler une gelée verte dans sa cuillère.",
+    "indice1": "1993",
+    "indice2": "Steven Spielberg",
+    "titre": "Jurassic Park",
+    "accepte": ["jurassic park"],
+    "refuse": ["monde perdu", "lost world", "world", "iii", "3"]
+  },
+  {
+    "numero": 15,
+    "difficulte": "difficile",
+    "variante": "Djeunz",
+    "synopsis": "Wesh, une team de potes part au ski, y'en a un qui drague toutes les meufs et se prend que des vents. Ils se paument en hors-piste et un vieux du coin leur sert une liqueur chelou, frère. Éclatés au sol.",
+    "indice1": "1979",
+    "indice2": "Patrice Leconte",
+    "titre": "Les Bronzés font du ski",
+    "accepte": ["bronzes font du ski", "font du ski"]
+  },
+  {
+    "numero": 16,
+    "difficulte": "intermediaire",
+    "variante": "Une phrase",
+    "synopsis": "Un employé de centrale nucléaire, sans la moindre compétence, conserve son poste depuis plus de trente saisons.",
+    "indice1": "1989",
+    "indice2": "Série",
+    "titre": "The Simpsons (Les Simpson)",
+    "accepte": ["simpson"]
+  },
+  {
+    "numero": 17,
+    "difficulte": "difficile",
+    "variante": "Figurant",
+    "synopsis": "Pendant trois mois, on m'a fait recopier les plans d'un palais parce que l'architecte avait parié sur les délais, et des touristes venus du Nord ont distribué aux ouvriers une boisson qui a réglé tous les problèmes de productivité.",
+    "indice1": "2002",
+    "indice2": "Alain Chabat",
+    "titre": "Astérix & Obélix : Mission Cléopâtre",
+    "accepte": ["mission cleopatre"]
+  },
+  {
+    "numero": 18,
+    "difficulte": "intermediaire",
+    "variante": "Ultra-littéral",
+    "synopsis": "Un policier se réveille seul dans un hôpital. Ensuite, pendant de nombreuses saisons, beaucoup de gens marchent lentement et lui court.",
+    "indice1": "2010",
+    "indice2": "Série",
+    "titre": "The Walking Dead",
+    "accepte": ["walking dead"],
+    "refuse": ["fear"]
+  },
+  {
+    "numero": 19,
+    "difficulte": "difficile",
+    "variante": "Enfant",
+    "synopsis": "C'est un garçon qui cache un monsieur tout fripé dans son placard au milieu des peluches, et le monsieur il boit de la bière à la maison, et c'est le garçon qui est tout bizarre à l'école et qui libère toutes les grenouilles.",
+    "indice1": "1982",
+    "indice2": "Steven Spielberg",
+    "titre": "E.T. the Extra-Terrestrial (E.T. l'extra-terrestre)",
+    "accepte": ["et l extra", "extra terrestre", "extraterrestre"]
+  },
+  {
+    "numero": 20,
+    "difficulte": "difficile",
+    "variante": "Figurant",
+    "synopsis": "Je suis un aviateur anglais. Mon parachute a atterri sur la nacelle d'un peintre, celui d'un collègue au zoo, et c'est ce peintre, avec un chef d'orchestre, qui nous a fait traverser la France occupée jusqu'aux planeurs. En passant par des bains turcs.",
+    "indice1": "1966",
+    "indice2": "Gérard Oury",
+    "titre": "La Grande Vadrouille",
+    "accepte": ["grande vadrouille"]
+  },
+  {
+    "numero": 21,
+    "difficulte": "intermediaire",
+    "variante": "Ultra-littéral",
+    "synopsis": "Un directeur de bureau de poste est muté à mille kilomètres de chez lui. Il arrive en pleurant, il repart en pleurant. Entre les deux, il trempe du fromage dans sa boisson chaude.",
+    "indice1": "2008",
+    "indice2": "Dany Boon",
+    "titre": "Bienvenue chez les Ch'tis",
+    "accepte": ["chtis", "ch tis", "chez les ch"]
+  },
+  {
+    "numero": 22,
+    "difficulte": "difficile",
+    "variante": "Une phrase",
+    "synopsis": "Un vendeur d'assurances finit par trouver suspect que ses proches vantent des marques de produits au beau milieu des conversations, sans raison apparente.",
+    "indice1": "1998",
+    "indice2": "Peter Weir",
+    "titre": "The Truman Show",
+    "accepte": ["truman"]
+  },
+  {
+    "numero": 23,
+    "difficulte": "difficile",
+    "variante": "Figurant",
+    "synopsis": "Je suis le gérant d'un immeuble de New York. Un appartement à loyer bloqué y est sous-loué illégalement depuis des années par la petite-fille de l'ancienne locataire. Les voisins d'en face traversent le couloir pour vider son frigo, et un soir de fête, l'un d'eux s'est retrouvé avec une dinde sur la tête.",
+    "indice1": "1994",
+    "indice2": "Série",
+    "titre": "Friends",
+    "accepte": ["friends"]
+  },
+  {
+    "numero": 24,
+    "difficulte": "intermediaire",
+    "variante": "Avis 1 étoile",
+    "synopsis": "Restaurant parisien prétendument réputé. Mon fils jure avoir vu quelque chose bouger sous une toque. Le critique de la table voisine a pleuré devant un simple plat de légumes. ⭐",
+    "indice1": "2007",
+    "indice2": "Pixar",
+    "titre": "Ratatouille",
+    "accepte": ["ratatouille"]
+  },
+  {
+    "numero": 25,
+    "difficulte": "difficile",
+    "variante": "Ultra-littéral",
+    "synopsis": "Huit personnes portent la même combinaison et passent plusieurs jours dans un grand bâtiment. Des machines y tournent sans interruption. Pendant ce temps, un homme à lunettes reste dans un hangar et téléphone beaucoup.",
+    "indice1": "2017",
+    "indice2": "Série",
+    "titre": "La Casa de papel",
+    "accepte": ["casa de papel", "money heist"]
+  },
+  {
+    "numero": 26,
+    "difficulte": "intermediaire",
+    "variante": "Une phrase",
+    "synopsis": "Une attachée de presse prête à tout pour promouvoir un film d'horreur à Cannes engage un garde du corps qui ne connaît qu'une seule danse.",
+    "indice1": "1994",
+    "indice2": "Alain Berbérian",
+    "titre": "La Cité de la peur",
+    "accepte": ["cite de la peur"]
+  },
+  {
+    "numero": 27,
+    "difficulte": "difficile",
+    "variante": "Recette de cuisine",
+    "synopsis": "Recouvrez intégralement votre plan de travail de film plastique. Prélevez une goutte de sang sur une lamelle de verre, à conserver dans une boîte en bois. Emballez le reste dans des sacs-poubelle et jetez au large depuis votre bateau. Le lendemain, apportez des beignets au bureau.",
+    "indice1": "2006",
+    "indice2": "Série",
+    "titre": "Dexter",
+    "accepte": ["dexter"]
+  },
+  {
+    "numero": 28,
+    "difficulte": "intermediaire",
+    "variante": "Leboncoin",
+    "synopsis": "Loue terrain humide en lisière de forêt, cabane rustique, toilettes au fond du jardin. Libre depuis que le seigneur local, de petite taille, a été avalé tout rond. Cohabitation possible avec une dragonne, se renseigner.",
+    "indice1": "2001",
+    "indice2": "DreamWorks",
+    "titre": "Shrek",
+    "accepte": ["shrek"],
+    "refuse": ["2", "3", "4", "troisieme", "quatre", "chat potte", "puss"]
+  },
+  {
+    "numero": 29,
+    "difficulte": "difficile",
+    "variante": "Une phrase",
+    "synopsis": "Un ancien truand reconverti dans les machines agricoles hérite d'une jeune fille, d'une affaire louche et d'une cuisine où l'on boit un alcool plutôt brutal.",
+    "indice1": "1963",
+    "indice2": "Georges Lautner",
+    "titre": "Les Tontons flingueurs",
+    "accepte": ["tontons flingueurs"]
+  },
+  {
+    "numero": 30,
+    "difficulte": "intermediaire",
+    "variante": "Djeunz",
+    "synopsis": "Frérot, le petit il disparaît en rentrant de sa soirée jeu, et sa daronne elle se met à parler aux guirlandes de Noël. En vrai y'a une meuf qui saigne du nez dès qu'elle force, c'est chaud.",
+    "indice1": "2016",
+    "indice2": "Série",
+    "titre": "Stranger Things",
+    "accepte": ["stranger things"]
+  },
+  {
+    "numero": 31,
+    "difficulte": "difficile",
+    "variante": "Commentaire sportif",
+    "synopsis": "Changement tactique en plein déménagement ! Les deux capitaines sont éjectées du poste de commandement et se perdent dans les archives et les îles s'effondrent une à une ! Il faudra le sacrifice d'un éléphant rose en barbe à papa pour rentrer au vestiaire.",
+    "indice1": "2015",
+    "indice2": "Pixar",
+    "titre": "Inside Out (Vice-Versa)",
+    "accepte": ["vice versa", "viceversa", "inside out"],
+    "refuse": ["2"]
+  },
+  {
+    "numero": 32,
+    "difficulte": "intermediaire",
+    "variante": "Enfant",
+    "synopsis": "C'est une grande fille qui sourit jamais et qui s'habille toujours en noir, et sa meilleure copine c'est une main toute seule, et elle danse trop bizarre au bal de l'école.",
+    "indice1": "2022",
+    "indice2": "Série",
+    "titre": "Wednesday (Mercredi)",
+    "accepte": ["mercredi", "wednesday"]
+  },
+  {
+    "numero": 33,
+    "difficulte": "difficile",
+    "variante": "Avis 1 étoile",
+    "synopsis": "Hôtel en Égypte. Le client de la chambre voisine a hurlé sur le muezzin à l'aube, multiplié les remarques déplacées toute la semaine et s'est même battu avec des poulets. ⭐",
+    "indice1": "2006",
+    "indice2": "Michel Hazanavicius",
+    "titre": "OSS 117 : Le Caire, nid d'espions",
+    "accepte": ["oss 117", "oss117", "nid d espions"],
+    "refuse": ["rio", "afrique"]
+  },
+  {
+    "numero": 34,
+    "difficulte": "intermediaire",
+    "variante": "Leboncoin",
+    "synopsis": "Vends plans de la tuyauterie d'un pénitencier, format tatouage. Porteur actuellement incarcéré de son plein gré. Contact par son frère, même adresse.",
+    "indice1": "2005",
+    "indice2": "Série",
+    "titre": "Prison Break",
+    "accepte": ["prison break"]
+  },
+  {
+    "numero": 35,
+    "difficulte": "difficile",
+    "variante": "Ultra-littéral",
+    "synopsis": "Une serveuse de Montmartre trouve une boîte en métal derrière un mur, la rend à son propriétaire, puis passe le reste du film à éviter de parler à un homme qui collectionne des photos déchirées.",
+    "indice1": "2001",
+    "indice2": "Jean-Pierre Jeunet",
+    "titre": "Le Fabuleux Destin d'Amélie Poulain",
+    "accepte": ["amelie"]
+  },
+  {
+    "numero": 36,
+    "difficulte": "intermediaire",
+    "variante": "Djeunz",
+    "synopsis": "Frérot, une famille de Birmingham ils ont des lames dans leurs casquettes et ils gèrent les paris hippiques, et le grand frère il fume clope sur clope en fixant le vide. Trop stylés les costards.",
+    "indice1": "2013",
+    "indice2": "Série",
+    "titre": "Peaky Blinders",
+    "accepte": ["peaky"]
+  },
+  {
+    "numero": 37,
+    "difficulte": "difficile",
+    "variante": "Avis 1 étoile",
+    "synopsis": "Spectacle d'humour très décevant. L'humoriste riait tout seul aux mauvais moments, et son passage dans une émission de télévision s'est très mal terminé. ⭐",
+    "indice1": "2019",
+    "indice2": "Todd Phillips",
+    "titre": "Joker",
+    "accepte": ["joker"],
+    "refuse": ["folie", "folie a deux"]
+  },
+  {
+    "numero": 38,
+    "difficulte": "intermediaire",
+    "variante": "Patch notes",
+    "synopsis": "v1.0 : ajout de 456 comptes surendettés. Le mini-jeu des billes se joue désormais en duo (prévenez votre partenaire, ou pas). Le pont de verre n'affiche toujours pas les dalles solides : comportement voulu.",
+    "indice1": "2021",
+    "indice2": "Série",
+    "titre": "Squid Game",
+    "accepte": ["squid game"]
+  },
+  {
+    "numero": 39,
+    "difficulte": "difficile",
+    "variante": "Ultra-littéral",
+    "synopsis": "Un homme vend des actions par téléphone. Plus tard, il avale des comprimés très anciens et rampe jusqu'à sa voiture.",
+    "indice1": "2013",
+    "indice2": "Martin Scorsese",
+    "titre": "The Wolf of Wall Street (Le Loup de Wall Street)",
+    "accepte": ["loup de wall street", "wolf of wall street"]
+  },
+  {
+    "numero": 40,
+    "difficulte": "intermediaire",
+    "variante": "Leboncoin",
+    "synopsis": "Particulier fortuné en fauteuil recherche aide à domicile. Aucun diplôme exigé. Sens de l'humour, goût pour Earth, Wind & Fire et absence totale de pitié appréciés.",
+    "indice1": "2011",
+    "indice2": "Olivier Nakache",
+    "titre": "Intouchables",
+    "accepte": ["intouchable"]
+  },
+  {
+    "numero": 41,
+    "difficulte": "difficile",
+    "variante": "Recette de cuisine",
+    "synopsis": "Prenez un réacteur, baissez la puissance beaucoup trop vite et retirez presque toutes les barres de contrôle. Poursuivez quand même le test jusqu'au bout, et appuyez sur le bouton d'arrêt d'urgence en fin de cuisson. Si le thermomètre indique 3,6 : pas terrible, mais pas dramatique.",
+    "indice1": "2019",
+    "indice2": "Série",
+    "titre": "Chernobyl (Tchernobyl)",
+    "accepte": ["chernobyl", "tchernobyl"]
+  },
+  {
+    "numero": 42,
+    "difficulte": "intermediaire",
+    "variante": "Enfant",
+    "synopsis": "C'est deux sœurs qui déménagent à la campagne parce que leur maman est à l'hôpital, et la petite elle tombe dans un trou dans un arbre, et après il y a un bus qui a des pattes et qui sourit.",
+    "indice1": "1988",
+    "indice2": "Studio Ghibli",
+    "titre": "My Neighbor Totoro (Mon voisin Totoro)",
+    "accepte": ["totoro"]
+  },
+  {
+    "numero": 43,
+    "difficulte": "difficile",
+    "variante": "Figurant",
+    "synopsis": "Je suis un singe. J'ai été maudit, on m'a tiré dessus plusieurs fois et je me relève toujours. Mon seul crime : avoir piqué une pièce dans un coffre de pierre.",
+    "indice1": "2003",
+    "indice2": "Gore Verbinski",
+    "titre": "Pirates of the Caribbean : The Curse of the Black Pearl (Pirates des Caraïbes : La Malédiction du Black Pearl)",
+    "accepte": [
+      "pirates des caraibes",
+      "pirates of the caribbean",
+      "black pearl"
+    ],
+    "refuse": [
+      "coffre",
+      "chest",
+      "bout du monde",
+      "end",
+      "fontaine",
+      "tides",
+      "vengeance",
+      "dead men"
+    ]
+  },
+  {
+    "numero": 44,
+    "difficulte": "intermediaire",
+    "variante": "Une phrase",
+    "synopsis": "Des passagers d'un vol passent des saisons entières sur une île à appuyer sur un bouton toutes les 108 minutes, et personne n'a vraiment compris la fin.",
+    "indice1": "2004",
+    "indice2": "Série",
+    "titre": "Lost (Lost : Les Disparus)",
+    "accepte": ["lost"]
+  },
+  {
+    "numero": 45,
+    "difficulte": "difficile",
+    "variante": "Commentaire sportif",
+    "synopsis": "Le petit nouveau entre dans la tranchée, son ailier est tombé, il coupe son assistance de visée ! Le défenseur adverse au casque noir est dans sa roue, il arme… MAIS QUI VOILÀ ? Le contrebandier revient de nulle part ! Tir… DANS LE CONDUIT ! La sphère adverse explose, c'est historique !",
+    "indice1": "1977",
+    "indice2": "George Lucas",
+    "titre": "Star Wars : Un nouvel espoir (La Guerre des étoiles)",
+    "accepte": ["star wars", "guerre des etoiles", "nouvel espoir", "new hope"],
+    "refuse": [
+      "empire",
+      "retour",
+      "return",
+      "menace",
+      "clones",
+      "sith",
+      "reveil",
+      "awakens",
+      "derniers",
+      "last",
+      "ascension",
+      "rise"
+    ]
+  },
+  {
+    "numero": 46,
+    "difficulte": "intermediaire",
+    "variante": "Recette de cuisine",
+    "synopsis": "Prenez un orphelin et laissez-le reposer onze ans sous un escalier. Ajoutez une lettre, puis une autre, puis plusieurs centaines. Enfournez dans un château, saupoudrez d'un chapeau qui parle. Servez chaud, avec une cicatrice.",
+    "indice1": "2001",
+    "indice2": "Chris Columbus",
+    "titre": "Harry Potter and the Philosopher's Stone (Harry Potter à l'école des sorciers)",
+    "accepte": [
+      "harry potter",
+      "ecole des sorciers",
+      "philosopher",
+      "sorcerer"
+    ],
+    "refuse": [
+      "chambre",
+      "prisonnier",
+      "coupe",
+      "ordre",
+      "prince",
+      "reliques",
+      "chamber",
+      "prisoner",
+      "goblet",
+      "order",
+      "hallows"
+    ]
+  },
+  {
+    "numero": 47,
+    "difficulte": "difficile",
+    "variante": "Avis 1 étoile",
+    "synopsis": "Compagnie d'assurance. Mon conseiller a passé son temps à m'expliquer comment contourner les clauses du contrat, puis il a envoyé son chef à travers plusieurs murs. On ne l'a plus jamais revu au bureau. ⭐",
+    "indice1": "2004",
+    "indice2": "Pixar",
+    "titre": "The Incredibles (Les Indestructibles)",
+    "accepte": ["indestructibles", "incredibles"],
+    "refuse": ["2"]
+  },
+  {
+    "numero": 48,
+    "difficulte": "intermediaire",
+    "variante": "Une phrase",
+    "synopsis": "Un homme dérobe un collier au Louvre pour venger son père, en suivant les conseils d'un vieux livre de poche.",
+    "indice1": "2021",
+    "indice2": "Série",
+    "titre": "Lupin",
+    "accepte": ["lupin"]
+  },
+  {
+    "numero": 49,
+    "difficulte": "difficile",
+    "variante": "Patch notes",
+    "synopsis": "v1.0 : carte étendue (cité + Paris). Une arme perdue par un policier pendant une émeute peut désormais être ramassée par un joueur (déconseillé). Le dernier train n'est plus garanti : prévoir de rester toute la nuit.",
+    "indice1": "1995",
+    "indice2": "Mathieu Kassovitz",
+    "titre": "La Haine",
+    "accepte": ["la haine"]
+  },
+  {
+    "numero": 50,
+    "difficulte": "difficile",
+    "variante": "Recette de cuisine",
+    "synopsis": "Prenez un agent rentré de six ans de mission à Damas et retirez-lui délicatement sa fausse identité. Il refuse ? Laissez-la-lui en cachette et faites-la réchauffer avec une universitaire syrienne croisée là-bas. Surveillez la cuisson : ça déborde sur toute la maison.",
+    "indice1": "2015",
+    "indice2": "Série",
+    "titre": "Le Bureau des légendes",
+    "accepte": ["bureau des legendes"]
+  },
+  {
+    "numero": 51,
+    "difficulte": "intermediaire",
+    "variante": "Leboncoin",
+    "synopsis": "Vends maison individuelle, actuellement en vol au-dessus de l'Amérique du Sud. Option ballons incluse. Un scout est resté accroché sous le porche, merci de le récupérer.",
+    "indice1": "2009",
+    "indice2": "Pixar",
+    "titre": "Up (Là-haut)",
+    "accepte": ["la haut"]
+  },
+  {
+    "numero": 52,
+    "difficulte": "difficile",
+    "variante": "Patch notes",
+    "synopsis": "Bug de sauvegarde : la journée du 2 février se recharge en boucle. Contournement trouvé en apprenant le piano, la sculpture sur glace et la gentillesse.",
+    "indice1": "1993",
+    "indice2": "Harold Ramis",
+    "titre": "Groundhog Day (Un jour sans fin)",
+    "accepte": ["jour sans fin", "groundhog"]
+  },
+  {
+    "numero": 53,
+    "difficulte": "difficile",
+    "variante": "Recette de cuisine",
+    "synopsis": "Faites revenir un chef d'entreprise du New Jersey chez une psychiatre. Ajoutez des canards qui quittent la piscine, quelques cigares et beaucoup de capicola. Laissez cuire six saisons, puis coupez brutalement le feu au moment de servir les rondelles d'oignon.",
+    "indice1": "1999",
+    "indice2": "Série",
+    "titre": "The Sopranos (Les Soprano)",
+    "accepte": ["soprano"]
+  },
+  {
+    "numero": 54,
+    "difficulte": "intermediaire",
+    "variante": "Figurant",
+    "synopsis": "Je suis un seau de soldats verts. Nous avons assuré toute la surveillance de l'anniversaire au péril de nos vies, et ce sont un cow-boy et un astronaute qui ont eu droit à toute l'attention.",
+    "indice1": "1995",
+    "indice2": "Pixar",
+    "titre": "Toy Story",
+    "accepte": ["toy story"],
+    "refuse": ["2", "3", "4"]
+  },
+  {
+    "numero": 55,
+    "difficulte": "difficile",
+    "variante": "Patch notes",
+    "synopsis": "v180 : un général peut désormais être rétrogradé esclave sans préavis. Le combat final contre l'empereur reste déséquilibré (le joueur adverse blesse son opposant avant le duel, problème signalé).",
+    "indice1": "2000",
+    "indice2": "Ridley Scott",
+    "titre": "Gladiator",
+    "accepte": ["gladiator", "gladiateur"],
+    "refuse": ["2", "ii"]
+  },
+  {
+    "numero": 56,
+    "difficulte": "intermediaire",
+    "variante": "Commentaire sportif",
+    "synopsis": "Incroyable retournement ! L'équipe locale, privée d'armes à feu, reçoit le renfort de toute la faune de la planète ! Le colonel de l'équipe minière s'extrait de son vaisseau en flammes, en exosquelette, face au grand bleu… et c'est une flèche de la gardienne qui conclut le match !",
+    "indice1": "2009",
+    "indice2": "James Cameron",
+    "titre": "Avatar",
+    "accepte": ["avatar"],
+    "refuse": ["aang", "eau", "water"]
+  },
+  {
+    "numero": 57,
+    "difficulte": "difficile",
+    "variante": "Leboncoin",
+    "synopsis": "Vends maison d'architecte sur les hauteurs de Séoul. Sous-sol non déclaré, déjà occupé. Fortement déconseillé d'y organiser un anniversaire dans le jardin.",
+    "indice1": "2019",
+    "indice2": "Bong Joon-ho",
+    "titre": "Parasite",
+    "accepte": ["parasite"]
+  },
+  {
+    "numero": 58,
+    "difficulte": "intermediaire",
+    "variante": "Recette de cuisine",
+    "synopsis": "Pour quatre convives, dont un con. Faites mariner un éditeur parisien dans un tour de reins. Incorporez un fonctionnaire du ministère des Finances passionné de maquettes en allumettes. Laissez mijoter toute une soirée sans jamais passer à table.",
+    "indice1": "1998",
+    "indice2": "Francis Veber",
+    "titre": "Le Dîner de cons",
+    "accepte": ["diner de cons"]
+  },
+  {
+    "numero": 59,
+    "difficulte": "difficile",
+    "variante": "Patch notes",
+    "synopsis": "v2263 : un chauffeur de taxi est désormais le sauveur de l'humanité. Ajout d'une cantatrice bleue (apparition unique). Certaines pierres s'activent maintenant en soufflant dessus.",
+    "indice1": "1997",
+    "indice2": "Luc Besson",
+    "titre": "Le Cinquième Élément",
+    "accepte": ["cinquieme element", "5e element", "fifth element"]
+  },
+  {
+    "numero": 60,
+    "difficulte": "intermediaire",
+    "variante": "Ultra-littéral",
+    "synopsis": "Un robot empile des cubes de déchets tout seul pendant des siècles en regardant une vieille comédie musicale en boucle. Puis il tombe amoureux d'un autre robot, plus récent.",
+    "indice1": "2008",
+    "indice2": "Pixar",
+    "titre": "WALL-E",
+    "accepte": ["wall e", "walle"]
+  }
+]

@@ -53,6 +53,11 @@ import {
   buildAnswerModal as buildConceptAnswerModal,
 } from "../handlers/concept.js";
 import {
+  handleHintButton as handleSynopsisHintButton,
+  handleModalSubmit as handleSynopsisModalSubmit,
+  buildAnswerModal as buildSynopsisAnswerModal,
+} from "../handlers/synopsis.js";
+import {
   buildIdeaModal as buildPollIdeaModal,
   handleIdeaModalSubmit as handlePollIdeaModalSubmit,
 } from "../handlers/poll.js";
@@ -89,6 +94,57 @@ export async function routeMiniJeux(body, res) {
     runBackground(() =>
       handleFrameHintButton(webhookUrl, gameId, hintKey, discordId, username),
     );
+    return;
+  }
+
+  // ── Jeu Synopsis éclaté : boutons indice (année, réalisation) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("synopsis_hint1:") ||
+      body.data.custom_id.startsWith("synopsis_hint2:"))
+  ) {
+    const [prefix, gameId] = body.data.custom_id.split(":");
+    const hintKey = prefix === "synopsis_hint1" ? "indice1" : "indice2";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleSynopsisHintButton(webhookUrl, gameId, hintKey, discordId, username));
+    return;
+  }
+
+  // ── Jeu Synopsis éclaté : bouton "Répondre" → ouverture de la Modal (synchrone) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("synopsis_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    return res.status(200).json({ type: 9, data: buildSynopsisAnswerModal(gameId) });
+  }
+
+  // ── Jeu Synopsis éclaté : soumission de la Modal (body.type 5 = MODAL_SUBMIT) ──
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("synopsis_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleSynopsisModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
     return;
   }
 
