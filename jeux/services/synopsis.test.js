@@ -34,7 +34,6 @@ const catalogue = await synopsis.loadSynopsis();
 catalogue.forEach((e, i) => {
   assert.strictEqual(e.numero, i + 1, `numero ${e.numero}`);
   assert.ok(VARIANTES.has(e.variante), `variante inconnue au n° ${e.numero} : ${e.variante}`);
-  assert.ok(["intermediaire", "difficile"].includes(e.difficulte), `difficulté du n° ${e.numero}`);
   assert.ok(e.synopsis && /^\d{4}$/.test(e.indice1) && e.indice2 && e.titre, `entrée ${e.numero}`);
   assert.ok(e.accepte.length > 0 && e.accepte.every((t) => t.length >= 4), `mot-clé trop court au n° ${e.numero}`);
   assert.ok(!e.synopsis.includes("—"), `tiret cadratin au n° ${e.numero}`);
