@@ -760,7 +760,7 @@ export async function summarizeRecentBattlesForMatchup(
 }
 
 // Modes 1v1 aux règles standard sur lesquels le %matchup a été calibré
-// (temp/matchup-calibration/) : voie des trophées ("Ladder"), mode Classé
+// (outils/matchup-calibration/) : voie des trophées ("Ladder"), mode Classé
 // ("Ranked1v1*"), GDC 1v1 et duel, amical. Les modes d'événement (élixir x3,
 // Touchdown, draft, 2v2, bateau...) sont exclus : la difficulté n'y prédit
 // pas le résultat de la même façon.

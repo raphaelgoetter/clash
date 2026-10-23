@@ -1,0 +1,33 @@
+name: Tests
+
+permissions:
+  contents: read
+
+on:
+  # Aucun secret : les tests tournent sur le Redis en mémoire
+  # (packages/commun/testing/fakeRedis.js), jamais sur l'Upstash de prod.
+  push:
+    branches: [main]
+  pull_request: {}
+  workflow_dispatch: {}
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          # registerHooks() et les motifs de fichiers de `node --test`
+          # demandent Node 22+ ; 24 = runtime des fonctions Vercel.
+          node-version: "24"
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run tests
+        run: npm test

@@ -17,6 +17,9 @@ dist-ssr
 # Claude Code
 .claude/
 
+# Scripts ponctuels de debug/test (jamais versionnés, cf. AGENTS.md)
+temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

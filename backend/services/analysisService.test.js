@@ -16,6 +16,7 @@ import {
   warResetOffsetMs,
 } from "./analysisService.js";
 import { summarizeDecks } from "./battleLogUtils.js";
+import { CLAN_RESET_TIMES } from "@clash/clash-royale/dateUtils.js";
 
 console.log("Running analysisService computeIsNewPlayer + war-score tests...");
 
@@ -145,18 +146,19 @@ assert.strictEqual(
   "warDayKey should be sunday after 9:40 UTC reset",
 );
 
-const clanBeforeReset = new Date("2026-03-29T09:42:00.000Z"); // avant 09:44 UTC pour LRQP20V9
+// Heure de reset propre au clan, lue dans CLAN_RESET_TIMES (elle est réajustée
+// de temps en temps) : on teste une minute avant et une minute après.
+const clanReset = CLAN_RESET_TIMES.LRQP20V9;
+const clanResetMs = Date.UTC(2026, 2, 29, clanReset.h, clanReset.m);
 assert.strictEqual(
-  warDayKey(clanBeforeReset, "LRQP20V9"),
+  warDayKey(new Date(clanResetMs - 60_000), "LRQP20V9"),
   "2026-03-28",
-  "warDayKey should still be saturday before clan-specific 09:44 UTC reset",
+  "warDayKey should still be saturday just before the clan-specific reset",
 );
-
-const clanAfterReset = new Date("2026-03-29T09:50:00.000Z"); // après 09:44 UTC pour LRQP20V9
 assert.strictEqual(
-  warDayKey(clanAfterReset, "LRQP20V9"),
+  warDayKey(new Date(clanResetMs + 60_000), "LRQP20V9"),
   "2026-03-29",
-  "warDayKey should switch to sunday after clan-specific 09:44 UTC reset",
+  "warDayKey should switch to sunday just after the clan-specific reset",
 );
 
 const duelBattleLog = [
@@ -402,7 +404,8 @@ const displaynoneCaseDecks = await summarizeWarDecksForMatchup(
       battleTime: "20260612T100000.000Z",
       team: [
         {
-          cards: Array.from({ length: 24 }, (_, index) => ({
+          // Un combat PvP n'utilise qu'un deck : l'API renvoie 8 cartes.
+          cards: Array.from({ length: 8 }, (_, index) => ({
             id: String(index + 1),
             name: `C${index + 1}`,
           })),
@@ -851,15 +854,15 @@ assert.strictEqual(
   "summarizeDecks should compute winrate across all combats",
 );
 
-// New Points / Deck behavior (linear 100→180 pts/deck) for all players
+// Points / deck : linéaire de 100 à 180 pts/deck, sur 10 points (barème sur 100)
 const scoreCases = [
   { pointsPerDeck: 0, expected: 0 },
   { pointsPerDeck: 99, expected: 0 },
   { pointsPerDeck: 100, expected: 0 },
-  { pointsPerDeck: 150, expected: 2.5 },
-  { pointsPerDeck: 180, expected: 4 },
-  { pointsPerDeck: 200, expected: 4 },
-  { pointsPerDeck: 250, expected: 4 },
+  { pointsPerDeck: 150, expected: 6.3 },
+  { pointsPerDeck: 180, expected: 10 },
+  { pointsPerDeck: 200, expected: 10 },
+  { pointsPerDeck: 250, expected: 10 },
 ];
 for (const tc of scoreCases) {
   const warScore = computeWarScore(
@@ -880,7 +883,7 @@ for (const tc of scoreCases) {
     false,
   );
   const pointsPerDeckEntry = warScore.breakdown.find(
-    (entry) => entry.label === "Points / Deck",
+    (entry) => entry.label === "Points / deck",
   );
   assert.ok(
     pointsPerDeckEntry,
@@ -912,16 +915,16 @@ const regularityProfile = computeWarScore(
   false,
 );
 const regularityEntry = regularityProfile.breakdown.find(
-  (entry) => entry.label === "Regularity",
+  (entry) => entry.label === "Régularité",
 );
 assert.ok(regularityEntry, "Regularity entry exists for five-week profile");
 assert.strictEqual(
   regularityEntry.score,
-  6,
-  `Five-week profile with 3 full weeks should score 6, got ${regularityEntry.score}`,
+  15,
+  `Five-week profile with 3 full weeks should score 15, got ${regularityEntry.score}`,
 );
 assert.ok(
-  regularityEntry.detail.includes("3/5 full weeks"),
+  regularityEntry.detail.includes("3/5 semaines complètes"),
   `Expected regularity detail to mention 3/5 full weeks, got ${regularityEntry.detail}`,
 );
 console.log("✓ computeWarScore regularity window test passed.");
@@ -948,7 +951,7 @@ const fallbackPointsPerDeck = computeWarReliabilityFallback(
   },
 );
 const fallbackPointsPerDeckEntry = fallbackPointsPerDeck.breakdown.find(
-  (entry) => entry.label === "Points / Deck",
+  (entry) => entry.label === "Points / deck",
 );
 assert.ok(
   fallbackPointsPerDeckEntry,
@@ -956,13 +959,13 @@ assert.ok(
 );
 assert.strictEqual(
   fallbackPointsPerDeckEntry.max,
-  4,
-  `Fallback Points / Deck max should be 4, got ${fallbackPointsPerDeckEntry.max}`,
+  10,
+  `Fallback Points / Deck max should be 10, got ${fallbackPointsPerDeckEntry.max}`,
 );
 assert.strictEqual(
   fallbackPointsPerDeck.maxScore,
-  40,
-  `Fallback maxScore should be 40 when lastSeen is present, got ${fallbackPointsPerDeck.maxScore}`,
+  92.5,
+  `Fallback maxScore should be 92.5 without lastSeen, got ${fallbackPointsPerDeck.maxScore}`,
 );
 assert.ok(
   fallbackPointsPerDeck.summary.includes("Points / deck"),
@@ -1030,16 +1033,16 @@ const stabilityFamilyScore = computeWarScore(
   false,
 );
 const stabilityEntry = stabilityFamilyScore.breakdown.find(
-  (entry) => entry.label === "Stability",
+  (entry) => entry.label === "Stabilité",
 );
 assert.ok(stabilityEntry, "Stability entry exists for family streak test");
 assert.strictEqual(
   stabilityEntry.score,
-  8,
-  `Family streak of 5 should cap stability at 8, got ${stabilityEntry.score}`,
+  20,
+  `Family streak of 5 should cap stability at 20, got ${stabilityEntry.score}`,
 );
 assert.ok(
-  stabilityEntry.detail.includes("in this clan or family"),
+  stabilityEntry.detail.includes("dans le clan ou la famille"),
   `Expected stability detail to mention clan or family, got ${stabilityEntry.detail}`,
 );
 console.log("✓ computeWarScore family stability test passed.");
@@ -1063,7 +1066,7 @@ assert.ok(
   "fallback summary should be present",
 );
 const warActivityEntry = fallback.breakdown.find(
-  (entry) => entry.label === "War Activity",
+  (entry) => entry.label === "Activité de guerre",
 );
 assert.ok(
   warActivityEntry &&
@@ -1092,7 +1095,7 @@ const fallbackWithHistory = computeWarReliabilityFallback(
   },
 );
 assert.ok(
-  fallbackWithHistory.breakdown.some((b) => b.label === "Regularity"),
+  fallbackWithHistory.breakdown.some((b) => b.label === "Régularité"),
   "Fallback with warHistory should expose Regularity",
 );
 assert.ok(
@@ -1100,24 +1103,24 @@ assert.ok(
   "Fallback with warHistory should no longer expose General Activity",
 );
 const fallbackWarActivityEntry = fallbackWithHistory.breakdown.find(
-  (b) => b.label === "War Activity",
+  (b) => b.label === "Activité de guerre",
 );
 assert.strictEqual(
   fallbackWarActivityEntry?.score,
-  1.6,
-  `Expected War Activity to scale from 1/5 recovered weeks, got ${fallbackWarActivityEntry?.score}`,
+  20,
+  `Expected War Activity at max with 5 played weeks, got ${fallbackWarActivityEntry?.score}`,
 );
 const fallbackRegularityEntry = fallbackWithHistory.breakdown.find(
-  (b) => b.label === "Regularity",
+  (b) => b.label === "Régularité",
 );
 assert.strictEqual(
   fallbackRegularityEntry?.score,
-  6,
+  15,
   `Expected Regularity to count only full weeks on a 5-week window, got ${fallbackRegularityEntry?.score}`,
 );
 assert.ok(
-  fallbackRegularityEntry?.detail.includes("3/5 full weeks"),
-  `Expected Regularity detail to mention full weeks, got ${fallbackRegularityEntry?.detail}`,
+  fallbackRegularityEntry?.detail.includes("16/16 · 8/16 · 16/16 · 16/16 · 12/16"),
+  `Expected Regularity detail to list the decks of each week, got ${fallbackRegularityEntry?.detail}`,
 );
 console.log("✓ fallback regularity replacement test passed.");
 
@@ -1132,7 +1135,7 @@ const fallbackNoHistory = computeWarReliabilityFallback(
   null,
 );
 const fallbackWarActivityNoHistory = fallbackNoHistory.breakdown.find(
-  (b) => b.label === "War Activity",
+  (b) => b.label === "Activité de guerre",
 );
 assert.ok(
   fallbackWarActivityNoHistory,
@@ -1144,7 +1147,7 @@ assert.strictEqual(
   `Expected War Activity 0 when no history is recovered, got ${fallbackWarActivityNoHistory?.score}`,
 );
 assert.strictEqual(
-  fallbackNoHistory.breakdown.find((b) => b.label === "Regularity")?.score,
+  fallbackNoHistory.breakdown.find((b) => b.label === "Régularité")?.score,
   0,
   "Expected Regularity 0 when no history is recovered",
 );
@@ -1160,11 +1163,11 @@ const fallbackNoWarWithLastSeen = computeWarReliabilityFallback(
 );
 assert.strictEqual(
   fallbackNoWarWithLastSeen.maxScore,
-  40,
-  `Expected fallback maxScore 40 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
+  100,
+  `Expected fallback maxScore 100 when lastSeen is present, got ${fallbackNoWarWithLastSeen.maxScore}`,
 );
 assert.ok(
-  fallbackNoWarWithLastSeen.breakdown.some((b) => b.label === "Last Seen"),
+  fallbackNoWarWithLastSeen.breakdown.some((b) => b.label === "Vu"),
   "Expected Last Seen entry when lastSeen data is available",
 );
 
@@ -1187,31 +1190,31 @@ const fallbackFiveWeeks = computeWarReliabilityFallback(
   },
 );
 assert.strictEqual(
-  fallbackFiveWeeks.breakdown.find((b) => b.label === "War Activity")?.score,
-  8,
-  "Expected War Activity 8 when five weeks are recovered",
+  fallbackFiveWeeks.breakdown.find((b) => b.label === "Activité de guerre")?.score,
+  20,
+  "Expected War Activity 20 when five weeks are recovered",
 );
 assert.strictEqual(
-  fallbackFiveWeeks.breakdown.find((b) => b.label === "Regularity")?.score,
-  10,
-  "Expected Regularity 10 when five full weeks are recovered",
+  fallbackFiveWeeks.breakdown.find((b) => b.label === "Régularité")?.score,
+  25,
+  "Expected Regularity 25 when five full weeks are recovered",
 );
 assert.strictEqual(
   fallbackFiveWeeks.maxScore,
-  37,
-  `Expected fallback maxScore 37 when no last seen data and Discord is not counted, got ${fallbackFiveWeeks.maxScore}`,
+  92.5,
+  `Expected fallback maxScore 92.5 without last seen data, got ${fallbackFiveWeeks.maxScore}`,
 );
 const cw2Entry = fallbackFiveWeeks.breakdown.find(
-  (b) => b.label === "CW2 badge",
+  (b) => b.label === "Badge CW2",
 );
 assert.ok(cw2Entry, "CW2 badge entry exists for five-week case");
 assert.strictEqual(
   cw2Entry.max,
-  10,
-  `CW2 badge max should be 10, got ${cw2Entry.max}`,
+  25,
+  `CW2 badge max should be 25, got ${cw2Entry.max}`,
 );
 const warActivityEntryAllWar = fallbackFiveWeeks.breakdown.find(
-  (b) => b.label === "War Activity",
+  (b) => b.label === "Activité de guerre",
 );
 assert.ok(
   warActivityEntryAllWar,
@@ -1219,8 +1222,8 @@ assert.ok(
 );
 assert.strictEqual(
   warActivityEntryAllWar.max,
-  8,
-  `War Activity max should be 8, got ${warActivityEntryAllWar.max}`,
+  20,
+  `War Activity max should be 20, got ${warActivityEntryAllWar.max}`,
 );
 console.log("✓ fallback recovered-week scaling tests passed.");
 

@@ -743,7 +743,8 @@ export async function recordSnapshot(
     Boolean(dayEntry.duelsComplete) || hasCompleteDuelCapture;
   dayEntry.periodType = options.periodType ?? dayEntry.periodType ?? null;
 
-  const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600 * 1000;
+  // Rétention relative à la date du snapshot (options.now en test), pas à l'horloge.
+  const cutoff = now.getTime() - RETENTION_DAYS * 24 * 3600 * 1000;
   const filtered = history.filter((w) =>
     w.days.some((d) => d.realDay && new Date(d.realDay).getTime() >= cutoff),
   );

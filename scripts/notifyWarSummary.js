@@ -679,6 +679,7 @@ function buildWeeklyZeroActivityLists(
   memberNames,
   allWeekDays,
   donationBaseline = null,
+  now = new Date(),
 ) {
   const weekDays = Array.isArray(allWeekDays) ? allWeekDays : [];
 
@@ -688,7 +689,7 @@ function buildWeeklyZeroActivityLists(
   // qu'on résume mais la semaine SUIVANTE (qui vient de démarrer) : on ne
   // peut alors plus s'y fier en repli (voir plus bas) — seul le delta
   // totalDonations reste valable.
-  const donationResetOccurred = hasWeeklyDonationResetOccurred();
+  const donationResetOccurred = hasWeeklyDonationResetOccurred(now);
 
   // Calculer les dons hebdo depuis _totalDonationsByTag des snapshots :
   // delta totalDonations(dernier jour) - totalDonations(baseline début de

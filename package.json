@@ -216,7 +216,7 @@
     "meow:public:dry": "node jeux/scripts/postMeow.js --public --dry-run",
     "meow:reset": "node jeux/scripts/resetMeow.js",
     "meow:reset:manches": "node jeux/scripts/resetMeow.js --manches",
-    "test": "node backend/services/analysisService.test.js && node backend/services/matchupEngine.test.js && node backend/services/snapshot.test.js && node backend/services/notifyWarSummary.test.js && node backend/services/notifyLastSeen.test.js && node backend/services/notifyClanStatus.test.js && node packages/clash-royale/dateUtils.test.js && node jeux/services/tamagotchi.test.js && node jeux/services/robinson.test.js && node jeux/services/bossraid.test.js && node jeux/services/goblinhunters.test.js && node jeux/services/blackjack.test.js && node jeux/services/blackjackDuel.test.js && node jeux/services/marioclash.test.js && node jeux/services/gobelet.test.js && node jeux/services/gobeletDuel.test.js && node jeux/services/bangRules.test.js && node jeux/services/quiestceRules.test.js && node jeux/services/meowRules.test.js && node jeux/services/pelemele.test.js && node jeux/services/jeuxdelettres.test.js && node backend/services/championHistory.test.js"
+    "test": "node --import @clash/commun/testing/registerFakeRedis.js --test \"backend/**/*.test.js\" \"jeux/**/*.test.js\" \"packages/**/*.test.js\""
   },
   "dependencies": {
     "@clash/clash-royale": "*",

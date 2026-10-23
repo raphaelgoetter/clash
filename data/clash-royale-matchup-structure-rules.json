@@ -1,6 +1,6 @@
 {
   "_comment": "Règles du layer Structure du deck du calcul de %matchup. Source de vérité unique, éditable à la main, prise en compte par /matchup au prochain lancement (cache 5 min, même mécanisme que clash-royale-matchup-catalog.json). Toute la somme des shifts de ce layer est ensuite bornée à ±layerClamp.",
-  "_auditComment": "Règles et poids issus de l'audit du 06/10/2026 sur ~20 000 combats réels (temp/matchup-calibration/audit.mjs) : seules les règles à effet mesurable sont conservées (split-push, gros tank, soft-counter gros DPS, 0 bâtiment, 1 seule carte anti-air ou <3 élixir, Bait face à 2+ petits sorts et 0 win condition retirées : effet nul ou inverse). Le 07/10/2026, liste antiAirCards complétée (Furnace, Rascals, Goblin Gang…) : l'effet de 0 carte anti-air devient mesurable (−12,6 %, n=75), poids porté de −2 à −4 %.",
+  "_auditComment": "Règles et poids issus de l'audit du 06/10/2026 sur ~20 000 combats réels (outils/matchup-calibration/audit.mjs) : seules les règles à effet mesurable sont conservées (split-push, gros tank, soft-counter gros DPS, 0 bâtiment, 1 seule carte anti-air ou <3 élixir, Bait face à 2+ petits sorts et 0 win condition retirées : effet nul ou inverse). Le 07/10/2026, liste antiAirCards complétée (Furnace, Rascals, Goblin Gang…) : l'effet de 0 carte anti-air devient mesurable (−12,6 %, n=75), poids porté de −2 à −4 %.",
   "cardSets": {
     "smallSpells": [
       "The Log",

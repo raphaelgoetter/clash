@@ -3,7 +3,7 @@
 //
 // Calcul déterministe (sans appel LLM) : 4 layers additifs appliqués à une
 // baseline 50/50, calculant scoreA = avantage du Deck A (0-100). Poids
-// calibrés sur ~20 000 combats réels (cf. temp/matchup-calibration/).
+// calibrés sur ~20 000 combats réels (cf. outils/matchup-calibration/).
 //
 // Fonctions pures et synchrones : le catalogue de win conditions/counters
 // (chargé de façon async et potentiellement mutable, voir matchupCatalog.js)
@@ -135,7 +135,7 @@ export function identifyWinConditions(deckCards, catalog) {
 // ------------------------------------------------------------
 // Calibrage des 4 layers : poids ajustés par régression logistique sur
 // ~20 000 combats réels (Ladder/Ligue/GDC, octobre 2026, scripts dans
-// temp/matchup-calibration/). Chaque point de layer vaut ~1 % de
+// outils/matchup-calibration/). Chaque point de layer vaut ~1 % de
 // probabilité de défaite, d'où une lecture directe en % de difficulté.
 // Constats qui ont guidé la répartition :
 //   - l'écart de niveau est de loin le meilleur prédicteur (~2 %/point,

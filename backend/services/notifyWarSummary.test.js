@@ -74,9 +74,16 @@ const zeroActivityWeeks = [
   { decks: { "#B": 4 } },
 ];
 
+// Le repli sur `donations` n'est valable qu'avant le reset hebdo des dons
+// (dimanche 21h30 UTC) : on fige donc la date du résumé.
+const BEFORE_DONATION_RESET = new Date("2026-10-18T12:00:00.000Z"); // dimanche midi UTC
+const AFTER_DONATION_RESET = new Date("2026-10-19T08:00:00.000Z"); // lundi matin UTC
+
 const zeroActivityLists = buildWeeklyZeroActivityLists(
   zeroActivityFixture,
   zeroActivityWeeks,
+  null,
+  BEFORE_DONATION_RESET,
 );
 
 assert.deepStrictEqual(
@@ -93,6 +100,18 @@ assert.deepStrictEqual(
   zeroActivityLists.zeroBothPlayers.map((player) => player.tag),
   ["#A", "#C"],
   "La liste combinée doit contenir les joueurs avec 0 deck ET 0 don",
+);
+
+const afterResetLists = buildWeeklyZeroActivityLists(
+  zeroActivityFixture,
+  zeroActivityWeeks,
+  null,
+  AFTER_DONATION_RESET,
+);
+assert.deepStrictEqual(
+  afterResetLists.zeroDonationPlayers,
+  [],
+  "Après le reset hebdo, `donations` décrit la semaine suivante : aucun zéro don ne doit être déduit",
 );
 
 // #A a donné 50 cartes lundi-mercredi (avant les 4 jours de guerre) puis plus
@@ -115,7 +134,7 @@ const donationBaselineFixture = {
 const withBaseline = buildWeeklyZeroActivityLists(
   donationMemberNames,
   donationWeekDays,
-  donationBaselineFixture,
+  donationBaselineFixture,  BEFORE_DONATION_RESET,
 );
 assert.deepStrictEqual(
   withBaseline.zeroDonationPlayers.map((player) => player.tag),
@@ -126,7 +145,7 @@ assert.deepStrictEqual(
 const withoutBaseline = buildWeeklyZeroActivityLists(
   donationMemberNames,
   donationWeekDays,
-  null,
+  null,  BEFORE_DONATION_RESET,
 );
 assert.deepStrictEqual(
   withoutBaseline.zeroDonationPlayers.map((player) => player.tag),

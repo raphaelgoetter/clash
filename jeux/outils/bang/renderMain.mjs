@@ -1,0 +1,17 @@
+// Rendu local de l'image d'une main (tapis lu dans data/, pas encore sur Blob).
+// Usage : node jeux/outils/bang/renderMain.mjs <sortie.png>
+import dotenv from "dotenv";
+dotenv.config({ path: "./.env" });
+import fs from "fs";
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (url, opts) => {
+  if (String(url).endsWith("bang/images/bang-table.jpg")) {
+    const buf = fs.readFileSync("jeux/data/bang/images/bang-table.jpg");
+    return { ok: true, arrayBuffer: async () => buf };
+  }
+  return realFetch(url, opts);
+};
+const { getMainImage } = await import("../../services/bangImage.js");
+const img = await getMainImage(process.argv.slice(3).length ? process.argv.slice(3) : ["esprit", "gang", "gang", "moine", "voleuse", "gobelin"]);
+fs.writeFileSync(process.argv[2], img.buffer);
+console.log("ok");

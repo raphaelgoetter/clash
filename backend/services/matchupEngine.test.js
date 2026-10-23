@@ -1,10 +1,10 @@
 import assert from "assert";
 import {
   identifyWinConditions,
-  computeArchetypeLayer,
   computeCounterLayer,
   computeUtilityLayer,
   computeLevelDifferentialLayer,
+  computeEvolutionLayer,
   computeDeckMatchupScore,
 } from "./matchupEngine.js";
 import {
@@ -12,385 +12,391 @@ import {
   getWinConditionsCatalog,
 } from "./matchupCatalog.js";
 
+// Valeurs attendues tirées de CONTRIBUTING.md, section « Matchup GDC »
+// (calibration du 06/10/2026) : base 50, 4 layers additifs, score borné
+// à [5, 95].
+
 console.log("Running matchupEngine tests...");
 
 // ------------------------------------------------------------
 // Catalogue de fixture en mémoire — indépendant du contenu réel de
-// data/clash-royale-matchup-catalog.json (édité à la main par l'utilisateur),
-// pour que ces tests restent stables quels que soient les counters ajoutés.
+// data/clash-royale-matchup-catalog.json et
+// data/clash-royale-matchup-structure-rules.json (édités à la main), pour
+// que ces tests restent stables quels que soient les counters ajoutés. Les
+// règles de structure reprennent la forme et les poids du fichier réel au
+// moment de la calibration.
 // ------------------------------------------------------------
 
-// Règles Layer 3 de fixture — même forme/valeurs que
-// data/clash-royale-matchup-structure-rules.json au moment de l'écriture de
-// ces tests, mais copiées ici pour rester indépendantes d'un fichier édité
-// à la main par l'utilisateur (cf. buildFixtureCatalog ci-dessous).
 function buildFixtureStructureRules() {
   const toSet = (names) => new Set(names.map(normalizeCardName));
   return {
     cardSets: {
-      smallSpells: toSet(["The Log", "Zap", "Arrows", "Barbarian Barrel", "Giant Snowball", "Rage"]),
-      bigSpells: toSet(["Fireball", "Poison", "Lightning", "Rocket", "Void"]),
-      defensiveBuildings: toSet(["Cannon", "Tesla", "Inferno Tower", "Bomb Tower", "Tombstone", "Goblin Cage"]),
-      tankKillers: toSet(["Mini P.E.K.K.A", "P.E.K.K.A", "Hunter", "Mighty Miner", "Inferno Dragon", "Elite Barbarians"]),
-      heavyBeatdownWinConditions: toSet(["Golem", "Giant", "Electro Giant", "Lava Hound"]),
-      splitPushTriggerCards: toSet(["Three Musketeers", "Royal Hogs"]),
+      smallSpells: toSet(["The Log", "Zap", "Arrows", "Barbarian Barrel"]),
+      bigSpells: toSet(["Fireball", "Poison", "Lightning", "Rocket"]),
+      defensiveBuildings: toSet(["Cannon", "Tesla", "Inferno Tower", "Bomb Tower"]),
+      heavyDpsHardCounters: toSet(["Ronin", "P.E.K.K.A", "Mini P.E.K.K.A"]),
+      heavyDpsThreats: toSet(["P.E.K.K.A", "Mini P.E.K.K.A", "Prince", "Mega Knight"]),
+      antiAirCards: toSet(["Musketeer", "Archers", "Tesla", "Inferno Tower"]),
+      lowElixirCards: toSet(["Skeletons", "Zap", "The Log", "Ice Spirit"]),
     },
     crossRules: [
       {
         id: "bait",
         trigger: { type: "archetype", value: "Bait" },
         watch: { cardSets: ["smallSpells"] },
-        thresholds: [
-          { op: "lt", value: 1, shift: 6, label: "{opponent}: 0 petit sort, {self}: Bait" },
-          { op: "gte", value: 2, shift: -6, label: "{opponent}: {count} petits sorts, {self}: Bait" },
-        ],
+        thresholds: [{ op: "lt", value: 1, shift: 8, label: "Bait face à 0 petit sort adverse" }],
       },
       {
-        id: "splitPush",
-        trigger: { type: "cardSet", value: "splitPushTriggerCards" },
-        watch: { cardSets: ["bigSpells"] },
-        thresholds: [
-          { op: "eq", value: 0, shift: 6, label: "{opponent}: 0 gros sort, {self}: {triggerCard} (push)" },
-        ],
-      },
-      {
-        id: "heavyBeatdown",
-        trigger: { type: "cardSet", value: "heavyBeatdownWinConditions" },
-        watch: { cardSets: ["tankKillers", "defensiveBuildings"] },
-        thresholds: [
-          { op: "eq", value: 0, shift: 10, label: "{opponent}: aucun tank killer/bâtiment, {self}: Gros tank" },
-        ],
+        id: "heavyDpsHardCounter",
+        trigger: { type: "cardSet", value: "heavyDpsHardCounters" },
+        watch: { cardSets: ["heavyDpsThreats"] },
+        thresholds: [{ op: "gte", value: 1, shift: 2, label: "{triggerCard} hard-counter {watchCards}" }],
       },
     ],
     dispersionRules: [
-      { id: "winConditions", metric: "winConditionCount", baseline: 2, unitPoints: 3, label: "{self}: {count} WC (dispersion)" },
-      { id: "spells", cardSets: ["smallSpells", "bigSpells"], baseline: 3, unitPoints: 3, label: "{self}: {count} sorts (dispersion)" },
-      { id: "buildings", cardSets: ["defensiveBuildings"], baseline: 2, unitPoints: 3, label: "{self}: {count} bâtiments (dispersion)" },
+      { id: "winConditions", metric: "winConditionCount", baseline: 2, unitPoints: 4, label: "{count} win conditions (dispersion)" },
+      { id: "spells", cardSets: ["smallSpells", "bigSpells"], baseline: 3, unitPoints: 2, label: "{count} sorts (dispersion)" },
+      { id: "buildings", cardSets: ["defensiveBuildings"], baseline: 2, unitPoints: 2, label: "{count} bâtiments (dispersion)" },
     ],
     selfRules: [
-      {
-        id: "noSmallSpell",
-        watch: { cardSets: ["smallSpells"] },
-        thresholds: [
-          { op: "eq", value: 0, shift: -4, label: "{self}: 0 petit sort (fixture)" },
-        ],
-      },
+      { id: "antiAirScarcity", watch: { cardSets: ["antiAirCards"] }, thresholds: [{ op: "eq", value: 0, shift: -4, label: "0 carte anti-air" }] },
+      { id: "noSpell", watch: { cardSets: ["smallSpells", "bigSpells"] }, thresholds: [{ op: "eq", value: 0, shift: -2, label: "0 sort" }] },
+      { id: "lowElixirScarcity", watch: { cardSets: ["lowElixirCards"] }, thresholds: [{ op: "eq", value: 0, shift: -4, label: "0 carte à moins de 3 élixir" }] },
     ],
-    clamp: 15,
+    clamp: 10,
   };
 }
 
-function buildFixtureCatalog(entries) {
-  const winConditionsByName = new Map();
-  for (const entry of entries) {
-    winConditionsByName.set(normalizeCardName(entry.name), entry);
-  }
+function buildFixtureCatalog(entries, pseudoEntries = []) {
+  const byName = (list) =>
+    new Map(list.map((entry) => [normalizeCardName(entry.name), entry]));
   return {
-    winConditionsByName,
+    winConditionsByName: byName(entries),
+    pseudoWinConditionsByName: byName(pseudoEntries),
     normalizeCardName,
     structureRules: buildFixtureStructureRules(),
   };
 }
 
-const catalog = buildFixtureCatalog([
-  {
-    name: "Hog Rider",
-    archetype: "Cycle",
-    hardCounters: ["Cannon", "Tesla"],
-    softCounters: ["Mini P.E.K.K.A", "P.E.K.K.A"],
-  },
-  {
-    name: "Miner",
-    archetype: "Control",
-    hardCounters: ["Knight"],
-    softCounters: ["Skeletons"],
-  },
-  {
-    name: "Golem",
-    archetype: "Beatdown",
-    hardCounters: ["P.E.K.K.A"],
-    softCounters: ["Tesla", "Cannon"],
-  },
-  {
-    name: "P.E.K.K.A",
-    archetype: "Control",
-    hardCounters: ["Inferno Tower"],
-    softCounters: ["Goblins"],
-  },
-  {
-    name: "Goblin Barrel",
-    archetype: "Bait",
-    hardCounters: ["The Log"],
-    softCounters: ["Zap"],
-  },
-  {
-    name: "Three Musketeers",
-    archetype: "Split-Push",
-    hardCounters: ["Fireball"],
-    softCounters: ["Bowler"],
-  },
-]);
+const catalog = buildFixtureCatalog(
+  [
+    { name: "Hog Rider", archetype: "Cycle", hardCounters: ["Cannon", "Tesla"], softCounters: ["Mini P.E.K.K.A", "P.E.K.K.A"] },
+    { name: "Miner", archetype: "Control", hardCounters: ["Knight"], softCounters: ["Skeletons"] },
+    { name: "Golem", archetype: "Beatdown", hardCounters: ["P.E.K.K.A"], softCounters: ["Tesla", "Cannon"] },
+    { name: "P.E.K.K.A", archetype: "Control", hardCounters: ["Inferno Tower"], softCounters: ["Goblins"] },
+    { name: "Goblin Barrel", archetype: "Bait", hardCounters: ["The Log"], softCounters: ["Zap"] },
+  ],
+  [{ name: "Mega Knight", archetype: "Beatdown", hardCounters: ["P.E.K.K.A"], softCounters: [] }],
+);
 
-function card(name, level = 11, rarity = "Common") {
-  return { name, level, rarity };
+function card(name, level = 11, rarity = "common", evolutionLevel = 0) {
+  return { name, level, rarity, evolutionLevel };
 }
 
 function filler(count, offset = 0) {
-  return Array.from({ length: count }, (_, i) =>
-    card(`Filler${i + offset}`),
-  );
+  return Array.from({ length: count }, (_, i) => card(`Filler${i + offset}`));
 }
 
-// computeCounterLayer exige les deux côtés connus (sinon neutre, cf. règle
-// "win condition inconnue" gérée en amont par computeDeckMatchupScore). Dans
-// les tests 1 et 2, le deck A inclut toujours "Skeletons" — l'unique soft
-// counter de Miner dans la fixture — pour que le côté B (Miner) contribue
-// une valeur non nulle et connue (échelle triangulaire, cf. counterShiftFor :
-// 1 soft counter isolé = pénalité -3 depuis la baseline +9 → shift = 6),
-// permettant de vérifier le calcul complet plutôt qu'un côté neutre à 0.
-const miner = catalog.winConditionsByName.get("miner");
+// Deck neutre pour le layer Structure : 1 anti-air, 1 sort, 1 carte < 3
+// élixir, donc aucune carence (selfRules) ni dispersion.
+function cleanDeck(extra = [], offset = 0) {
+  const base = [card("Musketeer"), card("Zap"), card("Skeletons")];
+  return [...base, ...extra, ...filler(8 - base.length - extra.length, offset)];
+}
+
+const wc = (name) => catalog.winConditionsByName.get(normalizeCardName(name));
 
 // ------------------------------------------------------------
-// 1. Win condition connue avec hard counter présent → layer2 = -9
-// (hogRider subit 1 hard counter (Cannon) chez l'adverse : pénalité -14 depuis
-// +15 → shift = 1 ; miner subit 1 soft counter (Skeletons) chez nous :
-// pénalité -5 → shift = 10 ; layer2 = 1 - 10 = -9)
+// 1. Counters directs (±6) : par win condition, +3 moins 3 par
+//    hard-counter et 1 par soft-counter adverse, borné à ±3 ;
+//    layer = moyenne(A) - moyenne(B).
 // ------------------------------------------------------------
 {
-  const hogRider = catalog.winConditionsByName.get("hog rider");
-  const layer2 = computeCounterLayer(
-    [hogRider],
-    [card("Hog Rider"), card("Skeletons"), ...filler(6)],
-    [miner],
-    [card("Cannon"), ...filler(7, 100)],
-    catalog,
-  );
+  // Hog subit 1 hard-counter (Cannon) → 0 ; Miner subit 1 soft (Skeletons) → 2.
   assert.strictEqual(
-    layer2,
-    -9,
-    `Hard counter present should shift to -9, got ${layer2}`,
+    computeCounterLayer(
+      [wc("Hog Rider")],
+      [card("Hog Rider"), card("Skeletons"), ...filler(6)],
+      [wc("Miner")],
+      [card("Miner"), card("Cannon"), ...filler(6, 100)],
+      catalog,
+    ),
+    -2,
+    "1 hard-counter contre 1 soft-counter doit donner -2",
   );
-  console.log("✓ hard counter present → layer2 = -9");
-}
 
-// ------------------------------------------------------------
-// 2. Win condition connue sans aucun counter → layer2 = 5
-// (hogRider ne subit aucun counter → shift = 15 ; miner subit 1 soft counter
-// (Skeletons) chez nous → shift = 10 ; layer2 = 15 - 10 = 5)
-// ------------------------------------------------------------
-{
-  const hogRider = catalog.winConditionsByName.get("hog rider");
-  const layer2 = computeCounterLayer(
-    [hogRider],
-    [card("Hog Rider"), card("Skeletons"), ...filler(6, 50)],
-    [miner],
-    filler(8, 200), // aucune carte ne matche hardCounters/softCounters de Hog Rider
-    catalog,
-  );
+  // Aucun counter côté Hog → 3 ; Miner toujours soft-countered → 2.
   assert.strictEqual(
-    layer2,
-    5,
-    `No counter present should shift to 5, got ${layer2}`,
+    computeCounterLayer(
+      [wc("Hog Rider")],
+      [card("Hog Rider"), card("Skeletons"), ...filler(6)],
+      [wc("Miner")],
+      [card("Miner"), ...filler(7, 100)],
+      catalog,
+    ),
+    1,
+    "Sans counter adverse, la win condition garde sa baseline +3",
   );
-  console.log("✓ no counter present → layer2 = 5");
-}
 
-// ------------------------------------------------------------
-// 3. Win condition inconnue vs deck connu → layer1 === 0 && layer2 === 0
-// ------------------------------------------------------------
-{
-  const unknownDeck = [card("Balloon"), ...filler(7, 300)]; // "Balloon" absent du catalogue de fixture
-  const knownDeck = [card("Hog Rider"), ...filler(7, 400)];
-  const { breakdown } = computeDeckMatchupScore(unknownDeck, knownDeck, catalog);
-  assert.strictEqual(breakdown.layer1, 0, "layer1 should be neutral");
-  assert.strictEqual(breakdown.layer2, 0, "layer2 should be neutral");
-  console.log("✓ unknown win condition → layer1 = layer2 = 0");
-}
+  // 2 hard-counters → 3 - 6 = -3 (borne basse) ; Miner sans counter → 3.
+  assert.strictEqual(
+    computeCounterLayer(
+      [wc("Hog Rider")],
+      [card("Hog Rider"), ...filler(7)],
+      [wc("Miner")],
+      [card("Miner"), card("Cannon"), card("Tesla"), ...filler(5, 100)],
+      catalog,
+    ),
+    -6,
+    "Le layer counters est borné à ±6",
+  );
 
-// ------------------------------------------------------------
-// 4. Deck à double win condition (Hog + Miner) → moyenne Layer 1/2
-// ------------------------------------------------------------
-{
-  const dualDeck = [card("Hog Rider"), card("Miner"), ...filler(6, 500)];
-  const pekkaDeck = [card("P.E.K.K.A"), ...filler(7, 600)];
+  // Double win condition moyennée : Hog soft-countered par P.E.K.K.A → 2,
+  // Miner sans counter → 3, moyenne 2,5 ; P.E.K.K.A sans counter → 3.
+  const dualDeck = [card("Hog Rider"), card("Miner"), ...filler(6)];
+  const pekkaDeck = [card("P.E.K.K.A"), ...filler(7, 100)];
   const winConditionsA = identifyWinConditions(dualDeck, catalog);
-  const winConditionsB = identifyWinConditions(pekkaDeck, catalog);
-  assert.strictEqual(winConditionsA.length, 2, "should identify both Hog Rider and Miner");
-
-  const layer1 = computeArchetypeLayer(winConditionsA, winConditionsB);
-  // Hog Rider (Cycle) vs P.E.K.K.A (Control) → Control a l'avantage sur Cycle → -5
-  // Miner (Control) vs P.E.K.K.A (Control) → pas de règle → 0
-  // moyenne = (-5 + 0) / 2 = -2.5
-  assert.strictEqual(layer1, -2.5, `Expected averaged layer1 = -2.5, got ${layer1}`);
-
-  const layer2 = computeCounterLayer(
-    winConditionsA,
-    dualDeck,
-    winConditionsB,
-    pekkaDeck,
-    catalog,
+  assert.strictEqual(winConditionsA.length, 2, "Hog Rider et Miner doivent être identifiés");
+  assert.strictEqual(
+    computeCounterLayer(
+      winConditionsA,
+      dualDeck,
+      identifyWinConditions(pekkaDeck, catalog),
+      pekkaDeck,
+      catalog,
+    ),
+    -0.5,
+    "Plusieurs win conditions sont moyennées",
   );
-  // Hog Rider vs pekkaDeck : 1 soft counter (P.E.K.K.A) → pénalité -5 → shift = 10
-  // Miner vs pekkaDeck : aucun counter → shift = 15
-  // avgA = (10 + 15) / 2 = 12.5
-  // P.E.K.K.A vs dualDeck : aucun counter → shift = 15 → avgB = 15
-  // layer2 = avgA - avgB = 12.5 - 15 = -2.5
-  assert.strictEqual(layer2, -2.5, `Expected averaged layer2 = -2.5, got ${layer2}`);
-  console.log("✓ dual win condition → layer1/layer2 averaged correctly");
+  console.log("✓ counters : baseline +3, poids 3/1, bornes ±3 et ±6, moyenne");
 }
 
 // ------------------------------------------------------------
-// 5. Écart de niveau extrême → layer4 plafonne à -10 (2%/point), puis
-// "écart exceptionnel" au-delà de 15 points cumulés (paliers de 5,
-// bonus = le seuil : 15→-25, 20→-30, 25→-35, 30→-40).
+// 2. Win conditions inconnues et pseudo win conditions
 // ------------------------------------------------------------
 {
-  const lowDeck = filler(8).map((c) => ({ ...c, level: 1, rarity: "Common" }));
-  const highDeck = filler(8, 100).map((c) => ({
-    ...c,
-    level: 16,
-    rarity: "Legendary",
-  }));
-  const layer4 = computeLevelDifferentialLayer(lowDeck, highDeck);
-  assert.strictEqual(layer4, -40, `Expected exceptional-gap layer4 = -40, got ${layer4}`);
-  console.log("✓ extreme level gap → layer4 exceptional tier at -40");
+  // Aucune win condition d'un côté : counters neutralisés pour le combat.
+  const { breakdown } = computeDeckMatchupScore(
+    [card("Balloon"), ...filler(7)],
+    [card("Hog Rider"), card("Cannon"), ...filler(6, 100)],
+    catalog,
+  );
+  assert.strictEqual(breakdown.counters, 0, "Counters neutres si une win condition est inconnue");
 
-  // Écarts contrôlés (7 cartes neutres niveau 11 + 1 carte qui porte tout
-  // l'écart) pour vérifier précisément chaque palier et ses bornes.
-  const neutral = filler(7).map((c) => ({ ...c, level: 11, rarity: "Common" }));
-  const deckWithGap = (delta) => [
-    ...neutral,
-    { name: "Gap", level: 11 + delta, rarity: "Common" },
-  ];
-  const baseline = [...neutral, { name: "Gap", level: 11, rarity: "Common" }];
-  const gapCases = [
-    [5, -10], // plafond normal atteint (2%/point)
-    [14, -10], // juste avant le premier palier exceptionnel
-    [15, -25], // 10 (normal) + 15 (exceptionnel)
-    [19, -25],
-    [20, -30],
-    [24, -30],
-    [25, -35],
-    [29, -35],
+  // Pseudo win condition utilisée seulement en l'absence de vraie win condition.
+  const pseudoOnly = identifyWinConditions([card("Mega Knight"), ...filler(7)], catalog);
+  assert.deepStrictEqual(
+    pseudoOnly.map((w) => [w.name, w.pseudo]),
+    [["Mega Knight", true]],
+    "Mega Knight doit servir de pseudo win condition",
+  );
+  const realFirst = identifyWinConditions([card("Mega Knight"), card("Hog Rider"), ...filler(6)], catalog);
+  assert.deepStrictEqual(
+    realFirst.map((w) => w.name),
+    ["Hog Rider"],
+    "Une vraie win condition prime sur les pseudo win conditions",
+  );
+  console.log("✓ win condition inconnue → counters neutres ; pseudo win conditions en repli");
+}
+
+// ------------------------------------------------------------
+// 3. Écart de niveau (±40 + ±8) : 2 % par point d'écart de la somme des
+//    niveaux normalisés, puis 4 % par niveau d'écart des win conditions.
+// ------------------------------------------------------------
+{
+  const neutral = filler(7);
+  const withGap = (delta) => [...neutral, card("Gap", 11 + delta)];
+  const baseline = withGap(0);
+  for (const [delta, expected] of [
+    [1, -2],
+    [5, -10],
+    [20, -40],
     [30, -40],
-    [50, -40], // plafonne au dernier palier, pas d'escalade au-delà
-  ];
-  for (const [delta, expected] of gapCases) {
-    const value = computeLevelDifferentialLayer(baseline, deckWithGap(delta));
+  ]) {
     assert.strictEqual(
-      value,
+      computeLevelDifferentialLayer(baseline, withGap(delta)),
       expected,
-      `Gap of ${delta} points should give layer4 = ${expected}, got ${value}`,
+      `Un écart de ${delta} points doit donner ${expected}`,
     );
   }
-  console.log("✓ exceptional-gap tiers (15/20/25/30) match spec at every boundary");
+  assert.strictEqual(
+    computeLevelDifferentialLayer(withGap(5), baseline),
+    10,
+    "Le layer niveau est symétrique",
+  );
+
+  // normLevel : une légendaire niveau 9 vaut une commune niveau 17.
+  assert.strictEqual(
+    computeLevelDifferentialLayer(
+      [...neutral, card("Gap", 9, "legendary")],
+      [...neutral, card("Gap", 17, "common")],
+    ),
+    0,
+    "Le niveau est normalisé par rareté",
+  );
+
+  // Composante win conditions : Hog niveau 13 contre Miner niveau 11 →
+  // cartes (2 points × 2) + win conditions (2 niveaux × 4) = 12.
+  const hogDeck = (level) => [card("Hog Rider", level), ...neutral];
+  const minerDeck = [card("Miner", 11), ...filler(7, 100)];
+  const levelWithWc = (deckA, deckB) =>
+    computeLevelDifferentialLayer(
+      deckA,
+      deckB,
+      identifyWinConditions(deckA, catalog),
+      identifyWinConditions(deckB, catalog),
+      catalog,
+    );
+  assert.strictEqual(levelWithWc(hogDeck(13), minerDeck), 12, "Écart de win condition : 4 % par niveau");
+  assert.strictEqual(levelWithWc(hogDeck(15), minerDeck), 16, "La composante win conditions est bornée à ±8");
+  assert.strictEqual(
+    levelWithWc(hogDeck(13), filler(8, 100)),
+    4,
+    "Sans win condition d'un côté, seule la somme des cartes compte",
+  );
+  console.log("✓ niveau : 2 %/point borné à ±40, win conditions 4 %/niveau bornées à ±8");
 }
 
 // ------------------------------------------------------------
-// 6. Layer 3 isolé : Bait, Three Musketeers, Golem
+// 4. Évolutions et héros (±9) : 3 % par carte d'écart avec evolutionLevel > 0.
 // ------------------------------------------------------------
 {
-  const goblinBarrel = catalog.winConditionsByName.get("goblin barrel");
-
-  // Bait vs 0 petit sort adverse → +6
-  const layer3BaitNoSpell = computeUtilityLayer(
-    [goblinBarrel],
-    [card("Goblin Barrel"), ...filler(7, 700)],
-    [],
-    filler(8, 800),
-    catalog,
-  );
-  assert.strictEqual(layer3BaitNoSpell, 6, "Bait vs 0 small spell should be +6");
-
-  // Bait vs 2+ petits sorts adverses → -6 (crossRule bait) auquel s'ajoute
-  // la carence "0 petit sort" du deck Bait lui-même (fixture selfRule,
-  // cf. buildFixtureStructureRules) → -4, soit -10. Le deck adverse, lui,
-  // a 2 petits sorts (The Log, Zap) donc n'est pas pénalisé pour carence.
-  const layer3BaitTwoSpells = computeUtilityLayer(
-    [goblinBarrel],
-    [card("Goblin Barrel"), ...filler(7, 900)],
-    [],
-    [card("The Log"), card("Zap"), ...filler(6, 1000)],
-    catalog,
-  );
-  assert.strictEqual(
-    layer3BaitTwoSpells,
-    -10,
-    "Bait vs 2+ small spells should be -10 (crossRule -6 + selfRule -4)",
-  );
-
-  // Three Musketeers vs pas de big spell → +6
-  const threeMusketeers = catalog.winConditionsByName.get("three musketeers");
-  const layer3SplitPush = computeUtilityLayer(
-    [threeMusketeers],
-    [card("Three Musketeers"), ...filler(7, 1100)],
-    [],
-    filler(8, 1200),
-    catalog,
-  );
-  assert.strictEqual(
-    layer3SplitPush,
-    6,
-    "Three Musketeers vs no big spell should be +6",
-  );
-
-  // Golem vs pas de tank killer / bâtiment défensif → +10
-  const golem = catalog.winConditionsByName.get("golem");
-  const layer3HeavyBeatdown = computeUtilityLayer(
-    [golem],
-    [card("Golem"), ...filler(7, 1300)],
-    [],
-    filler(8, 1400),
-    catalog,
-  );
-  assert.strictEqual(
-    layer3HeavyBeatdown,
-    10,
-    "Heavy tank vs no tank killer/defensive building should be +10",
-  );
-  console.log("✓ layer3 rules (Bait, split-push, heavy beatdown) match spec");
-
-  // selfRules : carence dans son propre deck (0 petit sort, fixture) → -4,
-  // indépendant du deck adverse (qui en a 1, donc pas de pénalité côté B).
-  const layer3SelfRule = computeUtilityLayer(
-    [],
-    filler(8, 1500),
-    [],
-    [card("Zap"), ...filler(7, 1600)],
-    catalog,
-  );
-  assert.strictEqual(
-    layer3SelfRule,
-    -4,
-    "0 small spell in own deck should self-penalize by -4",
-  );
-  console.log("✓ layer3 selfRules (deck-only carence) match spec");
+  const evolved = (count, level = 1) =>
+    [...Array.from({ length: count }, (_, i) => card(`Evo${i}`, 11, "common", level)), ...filler(8 - count)];
+  assert.strictEqual(computeEvolutionLayer(evolved(2), evolved(0)), 6, "2 évolutions d'écart → +6");
+  assert.strictEqual(computeEvolutionLayer(evolved(1, 2), evolved(0)), 3, "Un héros compte comme une évolution");
+  assert.strictEqual(computeEvolutionLayer(evolved(0), evolved(4)), -9, "Le layer évolutions est borné à ±9");
+  console.log("✓ évolutions : 3 %/carte, héros compris, borné à ±9");
 }
 
 // ------------------------------------------------------------
-// 7. Normalisation des noms : "P.E.K.K.A." et "P.E.K.K.A" doivent matcher
+// 5. Structure du deck (±10) : règles croisées, carences, dispersion.
+// ------------------------------------------------------------
+{
+  const structure = (deckA, deckB) =>
+    computeUtilityLayer(
+      identifyWinConditions(deckA, catalog),
+      deckA,
+      identifyWinConditions(deckB, catalog),
+      deckB,
+      catalog,
+    );
+
+  assert.strictEqual(structure(cleanDeck(), cleanDeck([], 100)), 0, "Deux decks sans carence → 0");
+
+  // Bait (Goblin Barrel) face à 0 petit sort adverse → +8 (l'adversaire a un
+  // gros sort pour ne pas subir la carence « 0 sort »).
+  assert.strictEqual(
+    structure(
+      cleanDeck([card("Goblin Barrel")]),
+      [card("Musketeer"), card("Fireball"), card("Skeletons"), ...filler(5, 100)],
+    ),
+    8,
+    "Bait face à 0 petit sort adverse → +8",
+  );
+
+  // Mini P.E.K.K.A face à un gros DPS adverse (Prince) → +2.
+  assert.strictEqual(
+    structure(cleanDeck([card("Mini P.E.K.K.A")]), cleanDeck([card("Prince")], 100)),
+    2,
+    "Hard-counter de gros DPS → +2",
+  );
+
+  // Carence propre : 0 carte anti-air → -4.
+  assert.strictEqual(
+    structure([card("Zap"), card("Skeletons"), ...filler(6)], cleanDeck([], 100)),
+    -4,
+    "0 carte anti-air → -4",
+  );
+
+  // Dispersion triangulaire : 4 sorts → -2, 5 sorts → -6 (2 × (1 + 2)).
+  const spells = (names) => cleanDeck(names.map((n) => card(n)));
+  assert.strictEqual(structure(spells(["The Log", "Fireball", "Poison"]), cleanDeck([], 100)), -2, "4 sorts → -2");
+  assert.strictEqual(
+    structure(spells(["The Log", "Fireball", "Poison", "Rocket"]), cleanDeck([], 100)),
+    -6,
+    "5 sorts → -6",
+  );
+
+  // 3 win conditions → -4.
+  assert.strictEqual(
+    structure(cleanDeck([card("Hog Rider"), card("Miner"), card("Golem")]), cleanDeck([], 100)),
+    -4,
+    "3 win conditions → -4",
+  );
+
+  // Cumul au-delà de la borne : 0 anti-air (-4), 0 carte < 3 élixir (-4),
+  // 6 sorts (-12) → -20, borné à -10.
+  assert.strictEqual(
+    structure(
+      [card("Fireball"), card("Poison"), card("Rocket"), card("Lightning"), card("Arrows"), card("Barbarian Barrel"), ...filler(2)],
+      cleanDeck([], 100),
+    ),
+    -10,
+    "Le layer structure est borné à ±10",
+  );
+  console.log("✓ structure : Bait, gros DPS, carences, dispersion, borne ±10");
+}
+
+// ------------------------------------------------------------
+// 6. Normalisation des noms : "P.E.K.K.A." et "P.E.K.K.A" doivent matcher
 // ------------------------------------------------------------
 {
   assert.strictEqual(
     normalizeCardName("P.E.K.K.A."),
     normalizeCardName("P.E.K.K.A"),
-    "Trailing dot should not affect normalization",
-  );
-  const winConditionsWithDot = identifyWinConditions(
-    [card("P.E.K.K.A."), ...filler(7, 1500)],
-    catalog,
+    "Le point final ne doit pas changer la normalisation",
   );
   assert.strictEqual(
-    winConditionsWithDot.length,
+    identifyWinConditions([card("P.E.K.K.A."), ...filler(7)], catalog).length,
     1,
-    "P.E.K.K.A. (with trailing dot) should match the catalog entry",
+    "P.E.K.K.A. (avec point final) doit être reconnu",
   );
-  console.log("✓ card name normalization absorbs punctuation differences");
+  console.log("✓ normalisation des noms de cartes");
 }
 
 // ------------------------------------------------------------
-// 8. Test anti-collision : le catalogue réel + les catégories Layer 3
-//    ne doivent contenir aucune collision de clé normalisée.
+// 7. Assemblage : base 50, convention scoreA = avantage du deck A,
+//    symétrie et borne [5, 95].
+// ------------------------------------------------------------
+{
+  const mirror = cleanDeck([card("Hog Rider")]);
+  assert.strictEqual(
+    computeDeckMatchupScore(mirror, cleanDeck([card("Hog Rider")], 100), catalog).scoreA,
+    50,
+    "Deux decks équivalents → 50",
+  );
+
+  // Hog hard-countered par Cannon → 0 ; Miner soft-countered par les
+  // Skeletons du deck A → 2 ; counters = -2, sans carence ni dispersion
+  // → scoreA = 48.
+  const hogDeck = cleanDeck([card("Hog Rider")]);
+  const minerDeck = cleanDeck([card("Miner"), card("Cannon")], 100);
+  const { scoreA, scoreB, breakdown } = computeDeckMatchupScore(hogDeck, minerDeck, catalog);
+  assert.strictEqual(scoreA, 48, `Deck A hard-countered → 48, obtenu ${scoreA}`);
+  assert.strictEqual(scoreB, 52, "scoreB = 100 - scoreA");
+  assert.deepStrictEqual(
+    Object.keys(breakdown).sort(),
+    ["counters", "evolutions", "level", "structure"],
+    "Le breakdown expose les 4 layers",
+  );
+  assert.strictEqual(
+    computeDeckMatchupScore(minerDeck, hogDeck, catalog).scoreA,
+    52,
+    "Inverser les decks inverse le score",
+  );
+
+  // Gros écart de niveau + évolutions : 50 + 40 + 9 dépasse 95.
+  const strong = Array.from({ length: 8 }, (_, i) => card(`Strong${i}`, 16, "legendary", i < 3 ? 1 : 0));
+  const weak = Array.from({ length: 8 }, (_, i) => card(`Weak${i}`, 1));
+  assert.strictEqual(computeDeckMatchupScore(strong, weak, catalog).scoreA, 95, "scoreA est borné à 95");
+  assert.strictEqual(computeDeckMatchupScore(weak, strong, catalog).scoreA, 5, "scoreA est borné à 5");
+  console.log("✓ assemblage : base 50, symétrie, borne [5, 95]");
+}
+
+// ------------------------------------------------------------
+// 8. Données réelles : pas de collision de noms normalisés dans le
+//    catalogue, et borne du layer structure conforme à la doc.
 // ------------------------------------------------------------
 {
   const realCatalog = await getWinConditionsCatalog();
@@ -403,50 +409,9 @@ const miner = catalog.winConditionsByName.get("miner");
     }
     seen.set(key, entry.name);
   }
-  assert.ok(
-    realCatalog.winConditionsByName.size > 0,
-    "real catalog should have loaded at least one win condition",
-  );
-  console.log("✓ no normalization collisions in the real catalog");
-}
-
-// ------------------------------------------------------------
-// 9. Convention de signe interne : scoreA = avantage du Deck A
-//    (l'inversion vers "difficulté" se fait dans battleLogUtils.js,
-//    testée séparément lors de l'intégration).
-// ------------------------------------------------------------
-{
-  // Hog Rider (A) dur-countered par Cannon dans le deck Miner (B) :
-  // layer1 = -5 (Control bat Cycle).
-  // layer2 : hogRider subit 1 hard counter (Cannon) → pénalité -14 → shift = 1 ;
-  // miner ne subit aucun counter (pas de Skeletons ici) → shift = 15 ;
-  // layer2 = 1 - 15 = -14. scoreA = 50 - 5 - 14 = 31.
-  const hogDeck = [card("Hog Rider"), ...filler(7, 1600)];
-  const minerDeckWithCannon = [card("Miner"), card("Cannon"), ...filler(6, 1700)];
-  const { scoreA: disadvantaged } = computeDeckMatchupScore(
-    hogDeck,
-    minerDeckWithCannon,
-    catalog,
-  );
-  assert.strictEqual(
-    disadvantaged,
-    31,
-    `Deck A hard countered should score 31, got ${disadvantaged}`,
-  );
-
-  // Mêmes decks inversés : par symétrie du moteur, scoreA doit devenir
-  // 100 - 31 = 69 (Deck A == ancien Deck B, désormais avantagé).
-  const { scoreA: advantaged } = computeDeckMatchupScore(
-    minerDeckWithCannon,
-    hogDeck,
-    catalog,
-  );
-  assert.strictEqual(
-    advantaged,
-    69,
-    `Swapping the decks should mirror the score to 69, got ${advantaged}`,
-  );
-  console.log("✓ scoreA convention: higher = more advantage for Deck A");
+  assert.ok(realCatalog.winConditionsByName.size > 0, "Le catalogue réel doit contenir des win conditions");
+  assert.strictEqual(realCatalog.structureRules?.clamp, 10, "Le layer structure réel doit être borné à ±10");
+  console.log("✓ catalogue réel : pas de collision, borne structure ±10");
 }
 
 console.log("All matchupEngine tests passed.");

@@ -74,11 +74,18 @@ npm run rules:dry -- --force  # tester le post règles sans poster
 - **ESM obligatoire** : `"type": "module"` — pas de `require()`
 - **CSS** : natif uniquement, pas de styles inline (bloqué par CSP)
 
-## Conventions scripts temporaires
+## Conventions scripts temporaires et outils
 
-- Les scripts de debug/test ad-hoc (CJS, Node) vont dans `/temp`
-- Ne pas laisser de fichiers `findconst*` à la racine du repo
-- Usage local uniquement, pas pour la production
+- Les scripts de debug/test ad-hoc (CJS, Node) vont dans `/temp`, ignoré par git : jamais versionnés
+- Ne pas laisser de fichiers `findconst*` ni `tmp_*` à la racine du repo
+- Un outil réutilisable (simulation d'équilibrage, e2e, calibration) va dans `jeux/outils/` ou `outils/`, jamais dans `temp/`
+- Outils et e2e qui touchent Redis : `node --import @clash/commun/testing/registerFakeRedis.js …` (Redis en mémoire)
+
+## Tests
+
+- `npm test` lance tous les `*.test.js` de `backend/`, `jeux/` et `packages/` via `node --test`, sur Redis en mémoire ; aussi lancé par GitHub Actions (`tests.yml`) à chaque push
+- Un test ne lit jamais l'heure courante ni l'Upstash de prod : passer la date en paramètre (`now`), et refuser de tourner hors du faux Redis (`Redis.isFake`) s'il écrit dans Redis
+- Un test qui échoue après une évolution volontaire du code est mis à jour dans le même changement, d'après `CONTRIBUTING.md`
 
 ## Discord Embed — limites caractères
 

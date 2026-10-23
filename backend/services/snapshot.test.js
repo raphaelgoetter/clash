@@ -11,6 +11,13 @@ import {
   overrideWarSnapshotDaysWithLiveCurrentDay,
 } from "./snapshot.js";
 
+// Ce test écrit dans Redis : il ne doit jamais tourner sur l'Upstash de prod.
+if (!Redis.isFake) {
+  throw new Error(
+    "snapshot.test.js doit être lancé via `npm test` (Redis en mémoire), jamais directement",
+  );
+}
+
 const TEST_TAG = "TESTTAG2";
 
 const redis = new Redis({
@@ -454,8 +461,18 @@ async function main() {
     saturdaySnap.snapshotBackupTime,
     "2026-04-25T10:05:00.000Z",
   );
-  assert.strictEqual(saturdaySnap.snapshotCount, 12);
-  assert.deepStrictEqual(saturdaySnap.decks, {
+  // Cumuls identiques au vendredi : aucun deck joué depuis le reset du samedi.
+  assert.strictEqual(saturdaySnap.snapshotCount, 0);
+  assert.deepStrictEqual(saturdaySnap.decks, {});
+  const previousFridaySnap = noPrimaryWeekSnaps.S131W3[1];
+  assert.strictEqual(
+    previousFridaySnap.snapshotTime,
+    "2026-04-24T14:00:00.000Z",
+    "Le snapshot principal de la veille doit être conservé",
+  );
+  assert.deepStrictEqual(previousFridaySnap.decks, {
+    "#A": 4,
+    "#B": 4,
     "#C": 4,
     "#D": 4,
     "#E": 4,

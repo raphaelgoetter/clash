@@ -1,7 +1,7 @@
 // ============================================================
 // cardArt.js — Illustrations de base que l'API Clash Royale sert encore
 // avec un ancien design (vérifié en jeu et sur RoyaleAPI, cf.
-// temp/compare_card_art.mjs) : remplacées PARTOUT par la version à jour de
+// outils/compare_card_art.mjs) : remplacées PARTOUT par la version à jour de
 // data/card-art/ (copie servie par Blob, cf. scripts/uploadImageAssetsToBlob.js).
 //
 // Trois points d'entrée, pour que tout le projet en profite :

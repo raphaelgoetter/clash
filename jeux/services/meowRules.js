@@ -18,7 +18,7 @@
 // tests.
 //
 // ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
-// Meow), source de vérité. Équilibrage : temp/meow-simulation/simulate.mjs.
+// Meow), source de vérité. Équilibrage : jeux/outils/meow-simulation/simulate.mjs.
 // ============================================================
 
 import { parisOffsetMs } from "@clash/clash-royale/dateUtils.js";
