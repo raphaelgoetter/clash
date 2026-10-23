@@ -11,17 +11,12 @@ on:
   # n'avance qu'une partie déjà lancée à la main (workflow_dispatch). Les
   # événements horaires (distributions, décompte, sieste) n'ont pas besoin
   # de cron : ils sont rattrapés à chaque action.
-  # Passage horaire (minute 52) : clôture des inscriptions dès l'heure
-  # passée (inscriptions bloquées, message remplacé, partie annulée sous
-  # l'effectif minimum) ; ne fait rien hors fenêtre d'inscription.
   schedule:
     - cron: "22 7 * * *"
-    - cron: "52 * * * *"
   workflow_dispatch: {}
 
 jobs:
   post-jour:
-    if: github.event.schedule != '52 * * * *'
     runs-on: ubuntu-latest
     env:
       DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
@@ -43,27 +38,3 @@ jobs:
 
       - name: Poste le jour de Meow (salon public)
         run: npm run meow:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}
-
-  cloture:
-    if: github.event.schedule == '52 * * * *'
-    runs-on: ubuntu-latest
-    env:
-      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
-      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
-      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
-      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install deps
-        run: npm ci
-
-      - name: Clôture les inscriptions si l'heure est passée
-        run: npm run meow:public -- --cloture
