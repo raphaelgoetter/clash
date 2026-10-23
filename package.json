@@ -20,7 +20,6 @@
     "last-seen:dry": "node scripts/notifyLastSeen.js --dry-run",
     "clan-status": "node scripts/notifyClanStatus.js",
     "clan-status:dry": "node scripts/notifyClanStatus.js --dry-run",
-    "ping-test": "node scripts/ping-test.js",
     "war-summary": "node scripts/notifyWarSummary.js",
     "war-summary:dry": "node scripts/notifyWarSummary.js --dry-run",
     "war-exploit": "node scripts/notifyWarExploit.js",
