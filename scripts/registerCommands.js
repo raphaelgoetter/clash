@@ -24,14 +24,6 @@ const botJeuxConfigure = Boolean(jeuxAppId && jeuxToken);
 
 // Commandes servies par jeux/discord/routes/ (bot des jeux).
 const JEUX_COMMANDS = new Set([
-  "frame",
-  "anagram",
-  "pelemele",
-  "zoom",
-  "palette",
-  "trivia",
-  "justecarte",
-  "blindroyale",
   "mini-jeux",
   "mini-jeux-history",
   "bang",
@@ -500,52 +492,6 @@ const commands = [
         ],
       },
     ],
-  },
-  {
-    name: "frame",
-    description: "Affiche vos scores au jeu Frame (devine le film).",
-    options: [],
-  },
-  {
-    name: "anagram",
-    description: "Affiche vos scores au jeu Anagram (devine la carte).",
-    options: [],
-  },
-  {
-    name: "pelemele",
-    description:
-      "Affiche vos scores au jeu Pêle-mêle (retrouvez les cartes cachées dans les lettres).",
-    options: [],
-  },
-  {
-    name: "zoom",
-    description:
-      "Affiche vos scores au jeu Zoom carte (devine les cartes zoomées).",
-    options: [],
-  },
-  {
-    name: "palette",
-    description:
-      "Affiche vos scores au jeu Palette (devine la couleur dominante).",
-    options: [],
-  },
-  {
-    name: "trivia",
-    description:
-      "Affiche vos scores au jeu Trivia (quiz de culture Clash Royale).",
-    options: [],
-  },
-  {
-    name: "justecarte",
-    description:
-      "Affiche vos scores au jeu La Juste Carte (devine la carte par ses stats).",
-    options: [],
-  },
-  {
-    name: "blindroyale",
-    description:
-      "Affiche vos scores au jeu Blind Royale (devine la carte à son son).",
-    options: [],
   },
   {
     name: "mini-jeux",

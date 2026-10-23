@@ -442,17 +442,6 @@ export async function archiveSolve(state, frameEntry, discordId, username, score
   return result;
 }
 
-// Tous les résultats archivés d'un joueur pour une saison donnée (une
-// entrée par manche trouvée). Utilisé par /frame pour afficher l'historique
-// personnel — un seul HGETALL (déjà utilisé ailleurs), filtré côté code sur
-// le suffixe ":<discordId>" du champ (`<gameId>:<discordId>`).
-export async function getPlayerSeasonResults(seasonId, discordId) {
-  const all = await hgetallJson(archivedKey(seasonId));
-  return Object.entries(all)
-    .filter(([field]) => field.endsWith(`:${discordId}`))
-    .map(([, result]) => result);
-}
-
 // Tous les résultats archivés, toutes saisons CR confondues — les clés
 // `frame:archived:<seasonId>` ne sont jamais nettoyées automatiquement (voir
 // resetGame()), donc un SCAN suffit à retrouver l'historique complet. Utilisé

@@ -42,7 +42,6 @@ export const {
   readParticipant,
   recordAnswer,
   archiveAnswer,
-  getPlayerSeasonResults,
   getGameParticipants,
   computeSeasonRanking,
   getAllArchivedResults,

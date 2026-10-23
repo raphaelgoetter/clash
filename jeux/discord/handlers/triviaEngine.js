@@ -8,11 +8,10 @@
 //   name, emoji, color   — nom affiché (« Trivia »), émoji, couleur d'embed
 //   jour                  — jour de publication affiché (« mercredi »)
 //   answerPrefix          — préfixe des custom_id des boutons A/B/C/D
-//   statsRefreshId        — custom_id du bouton « Rafraîchir » des scores
 //   bannerPath            — image fixe du jeu (frontend TrustRoyale), ou null
 // ============================================================
 
-import { nomSaison, deMois } from "../../services/saison.js";
+import { nomSaison } from "../../services/saison.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -25,7 +24,7 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const SEASON_RECAP_MAX_PLAYERS = 20;
 const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
 
-export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPrefix, statsRefreshId, bannerPath }) {
+export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPrefix, bannerPath }) {
   const { LETTERS } = svc;
   const logTag = `[${name}]`;
 
@@ -377,129 +376,5 @@ export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPref
     }
   }
 
-  // ── Commande de scores personnels (/trivia) ─────────────────────────
-  // Modèle « essai unique » : un joueur a répondu (correct ou non) ou n'a
-  // pas encore répondu.
-  function buildStatsEmbed({
-    pseudo,
-    currentSeasonManche,
-    seasonMancheTotal,
-    currentEntryQuestion,
-    currentAnswered,
-    currentCorrect,
-    currentScore,
-    totalAnswered,
-    correctCount,
-    pastManches,
-    seasonId,
-    seasonTotal,
-    seasonRank,
-    seasonRankTotal,
-  }) {
-    const lines = [];
-
-    lines.push(
-      `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) · ${currentEntryQuestion} :**`,
-    );
-    if (currentAnswered) {
-      lines.push(currentCorrect ? "- Tu as trouvé la bonne réponse !" : "- Tu t'es trompé de réponse.");
-      lines.push(`- Tu as marqué ${currentScore} pt`);
-    } else {
-      lines.push("- Tu n'as pas encore répondu à cette manche");
-    }
-    if (totalAnswered > 0) {
-      lines.push(
-        `- ${totalAnswered} joueur${totalAnswered > 1 ? "s" : ""} ${totalAnswered > 1 ? "ont" : "a"} répondu pour le moment, dont ${correctCount} ${correctCount > 1 ? "ont" : "a"} trouvé`,
-      );
-    }
-
-    for (const m of pastManches) {
-      lines.push("");
-      lines.push(`**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} · ${m.label} :**`);
-      if (m.played) {
-        lines.push(m.correct ? "- Tu as trouvé la bonne réponse !" : "- Tu t'es trompé de réponse.");
-        lines.push(`- Tu as marqué ${m.score} pt`);
-      } else {
-        lines.push("- Tu n'as pas joué cette manche");
-      }
-    }
-
-    lines.push("");
-    lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
-    lines.push(`- Tu as accumulé ${seasonTotal} pt${seasonTotal > 1 ? "s" : ""} cette saison`);
-    if (seasonRank != null) {
-      lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
-    }
-
-    return {
-      title: `${emoji}  Scores de ${pseudo}`,
-      description: lines.join("\n"),
-      color,
-    };
-  }
-
-  async function handleStatsCommand(webhookUrl, discordId, username) {
-    try {
-      const state = await svc.readState();
-      if (!state) {
-        await postEphemeral(webhookUrl, `⚠️ Aucune manche ${name} n'a encore été lancée.`);
-        return;
-      }
-
-      const currentEntry = svc.resolveTriviaEntry(await svc.loadTriviaCatalog(), state.gameId);
-
-      const [participant, seasonResults, seasonManches, gameParticipants, seasonRanking] = await Promise.all([
-        svc.readParticipant(state.gameId, discordId),
-        svc.getPlayerSeasonResults(state.seasonId, discordId),
-        svc.getSeasonManches(state.seasonId),
-        svc.getGameParticipants(state.gameId),
-        svc.computeSeasonRanking(state.seasonId),
-      ]);
-
-      const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
-      const pastManches = (
-        await Promise.all(
-          pastGameIds.map(async (gameId) => {
-            const result = seasonResults.find((r) => r.gameId === gameId);
-            const label = await svc.getTriviaRoundLabel(gameId);
-            return {
-              seasonManche: await svc.getSeasonMancheNumber(state.seasonId, gameId),
-              label: label ?? result?.question ?? gameId,
-              played: !!result,
-              correct: !!result && result.score > 0,
-              score: result?.score ?? 0,
-            };
-          }),
-        )
-      )
-        .filter((m) => m.seasonManche != null)
-        .sort((a, b) => b.seasonManche - a.seasonManche);
-
-      const embed = buildStatsEmbed({
-        pseudo: username,
-        currentSeasonManche: state.seasonManche,
-        seasonMancheTotal: state.seasonMancheTotal,
-        currentEntryQuestion: currentEntry?.question ?? state.gameId,
-        currentAnswered: !!participant,
-        currentCorrect: !!participant?.correct,
-        currentScore: participant?.score ?? 0,
-        totalAnswered: gameParticipants.length,
-        correctCount: gameParticipants.filter((p) => p.correct).length,
-        pastManches,
-        seasonId: state.seasonId,
-        seasonTotal: seasonResults.reduce((sum, r) => sum + r.score, 0),
-        seasonRank: seasonResults.length > 0 ? svc.findTiedRank(seasonRanking, discordId, "totalScore") : null,
-        seasonRankTotal: seasonRanking.length,
-      });
-
-      const components = statsRefreshId
-        ? [{ type: 1, components: [{ type: 2, style: 2, label: "🔄 Rafraîchir", custom_id: statsRefreshId }] }]
-        : [];
-      await postEphemeralEmbed(webhookUrl, embed, components);
-    } catch (err) {
-      await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
-    }
-  }
-
-  return { post, postSeasonRecap, handleAnswerButton, handleStatsCommand };
+  return { post, postSeasonRecap, handleAnswerButton };
 }

@@ -429,15 +429,6 @@ export async function archiveAnswer(state, entry, discordId, username, score, an
   return result;
 }
 
-// Résultats archivés d'un joueur pour une saison donnée — pour la commande
-// /palette (scores personnels), comme getPlayerSeasonResults dans zoom.js.
-export async function getPlayerSeasonResults(seasonId, discordId) {
-  const all = await hgetallJson(archivedKey(seasonId));
-  return Object.entries(all)
-    .filter(([field]) => field.endsWith(`:${discordId}`))
-    .map(([, result]) => result);
-}
-
 // Tous les participants d'une manche (correct ou non) — contrairement à
 // computeGameRanking de Zoom (qui ne renvoie que les "solved"), Palette n'a
 // pas cette distinction : chaque participant a répondu une fois, point final.

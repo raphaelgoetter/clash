@@ -163,7 +163,7 @@ export async function loadCatalog() {
 
 // Cartes de jeux/data/cardNames.json qui NE font PAS partie du pool de jeu
 // (aucun des 4 champs de stats) — triées par nom FR, pour affichage aux
-// joueurs (bouton "Cartes non incluses" sur /justecarte).
+// joueurs (bouton "Cartes non incluses").
 export async function getExcludedCards() {
   const all = await loadFullCardList();
   return all.filter((c) => c.damage == null).sort((a, b) => a.fr.localeCompare(b.fr, "fr"));
@@ -532,13 +532,6 @@ export async function archiveSolve(state, entry, discordId, username, score, att
   await getRedis().zincrby(seasonKey(state.seasonId), score, discordId);
   await getRedis().hset(seasonPseudosKey(state.seasonId), { [discordId]: username });
   return result;
-}
-
-export async function getPlayerSeasonResults(seasonId, discordId) {
-  const all = await hgetallJson(archivedKey(seasonId));
-  return Object.entries(all)
-    .filter(([field]) => field.endsWith(`:${discordId}`))
-    .map(([, result]) => result);
 }
 
 // Tous les résultats archivés, toutes saisons CR confondues — voir

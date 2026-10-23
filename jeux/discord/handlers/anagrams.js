@@ -1,9 +1,8 @@
 // ============================================================
 // anagrams.js — Handlers Discord pour le jeu "Anagram" (devine la carte
 // Clash Royale à partir d'une anagramme). Embed, boutons, modal, DM. La
-// publication d'une partie passe uniquement par jeux/scripts/postAnagram.js —
-// seule la commande /anagram (scores personnels du joueur qui l'exécute)
-// est une vraie commande slash. Miroir de jeux/discord/handlers/frames.js.
+// publication d'une partie passe uniquement par jeux/scripts/postAnagram.js.
+// Miroir de jeux/discord/handlers/frames.js.
 // ============================================================
 
 import {
@@ -18,12 +17,8 @@ import {
   recordAttempt,
   markSolved,
   archiveSolve,
-  computeGameRanking,
   computeSeasonRanking,
-  listGamePlayersInProgress,
-  getPlayerSeasonResults,
   getSeasonManches,
-  hasPlayerInteracted,
   getSeasonMancheNumber,
   getAnagramAnswer,
   previewSeasonManche,
@@ -34,7 +29,7 @@ import {
   shouldPostThisSlot,
   findTiedRank,
 } from "../../services/anagrams.js";
-import { nomSaison, deMois } from "../../services/saison.js";
+import { nomSaison } from "../../services/saison.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -87,8 +82,7 @@ function buildAnagramEmbed({
       "**Barème** : tes points dépendent de ton rang d'arrivée :\n" +
       "- 1er à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**...\n\n" +
       "Le classement de la saison est mis à jour après chaque manche, et un MP te sera envoyé pour récapituler tes points et ton classement.\n\n" +
-      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
-      "🤖 Vérifie tes scores avec la commande `/anagram`",
+      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**",
     color: ANAGRAM_COLOR,
     image: { url: anagramImageUrl() },
     footer: {
@@ -556,177 +550,6 @@ export async function handleModalSubmit(
         seasonScore: seasonEntry?.totalScore ?? score,
       }),
     );
-  } catch (err) {
-    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
-  }
-}
-
-// ── Commande /anagram : scores personnels du joueur ────────────────
-
-function buildAnagramStatsEmbed({
-  pseudo,
-  currentSeasonManche,
-  seasonMancheTotal,
-  currentSolved,
-  currentInteracted,
-  currentScore,
-  currentPosition,
-  solvedCount,
-  totalParticipants,
-  pastManches,
-  seasonId,
-  seasonTotal,
-  seasonRank,
-  seasonRankTotal,
-}) {
-  const lines = [];
-
-  lines.push(
-    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
-  );
-  if (currentSolved) {
-    lines.push(
-      `- Tu as trouvé le nom de la carte (${ordinal(currentPosition)} à trouver) !`,
-    );
-    lines.push(`- Tu as marqué ${currentScore} points`);
-  } else if (currentInteracted) {
-    lines.push("- Tu n'as pas encore trouvé le nom de la carte !");
-    lines.push("- Tu n'as pas marqué de points");
-  } else {
-    lines.push("- Tu n'as pas encore commencé cette manche");
-  }
-  lines.push(
-    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment`,
-  );
-
-  for (const m of pastManches) {
-    lines.push("");
-    lines.push(
-      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
-    );
-    if (m.played) {
-      lines.push("- Tu as trouvé le nom de la carte !");
-      lines.push(`- Tu as marqué ${m.score} points`);
-    } else {
-      lines.push("- Tu n'as pas joué cette manche");
-    }
-  }
-
-  lines.push("");
-  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
-  lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
-  if (seasonRank != null) {
-    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
-  }
-
-  return {
-    title: `🔤  Scores de ${pseudo}`,
-    description: lines.join("\n"),
-    color: ANAGRAM_COLOR,
-  };
-}
-
-function buildAnagramStatsComponents() {
-  return [
-    {
-      type: 1,
-      components: [
-        {
-          type: 2,
-          style: 2,
-          label: "🔄 Rafraîchir",
-          custom_id: "anagram_stats_refresh",
-        },
-      ],
-    },
-  ];
-}
-
-export async function handleAnagramStatsCommand(
-  webhookUrl,
-  discordId,
-  username,
-) {
-  try {
-    const state = await readState();
-    if (!state) {
-      await postEphemeral(
-        webhookUrl,
-        "⚠️ Aucune partie Anagram n'a encore été lancée.",
-      );
-      return;
-    }
-
-    const [
-      participant,
-      seasonResults,
-      seasonManches,
-      currentInteracted,
-      gameRanking,
-      inProgress,
-      seasonRanking,
-    ] = await Promise.all([
-      readParticipant(state.gameId, discordId),
-      getPlayerSeasonResults(state.seasonId, discordId),
-      getSeasonManches(state.seasonId),
-      hasPlayerInteracted(state.gameId, discordId),
-      computeGameRanking(state.gameId),
-      listGamePlayersInProgress(state.gameId),
-      computeSeasonRanking(state.seasonId),
-    ]);
-
-    const currentSeasonManche = state.seasonManche;
-    const seasonMancheTotal = state.seasonMancheTotal;
-    const currentSolved = !!participant?.solved;
-    const currentScore = participant?.score ?? 0;
-    const currentPosition = participant?.position ?? null;
-    const solvedCount = gameRanking.length;
-    const totalParticipants = solvedCount + inProgress.length;
-
-    const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank
-      ? findTiedRank(seasonRanking, discordId, "totalScore")
-      : null;
-    const seasonRankTotal = seasonRanking.length;
-
-    const pastGameIds = seasonManches.filter(
-      (gameId) => gameId !== state.gameId,
-    );
-    const pastManches = (
-      await Promise.all(
-        pastGameIds.map(async (gameId) => {
-          const result = seasonResults.find((r) => r.gameId === gameId);
-          return {
-            seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
-            played: !!result,
-            score: result?.score ?? 0,
-          };
-        }),
-      )
-    )
-      .filter((m) => m.seasonManche != null)
-      .sort((a, b) => b.seasonManche - a.seasonManche);
-
-    const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
-
-    const embed = buildAnagramStatsEmbed({
-      pseudo: username,
-      currentSeasonManche,
-      seasonMancheTotal,
-      currentSolved,
-      currentInteracted,
-      currentScore,
-      currentPosition,
-      solvedCount,
-      totalParticipants,
-      pastManches,
-      seasonId: state.seasonId,
-      seasonTotal,
-      seasonRank,
-      seasonRankTotal,
-    });
-
-    await postEphemeralEmbed(webhookUrl, embed, buildAnagramStatsComponents());
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }

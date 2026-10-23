@@ -2,9 +2,8 @@
 // lajustecarte.js — Handlers Discord pour le jeu "La Juste Carte" (devine la
 // carte Clash Royale à partir d'indices comparatifs PV/Portée/Dégâts/Élixir).
 // Embed, boutons, modal, DM. La publication d'une partie passe uniquement
-// par jeux/scripts/postJusteCarte.js — seule la commande /justecarte (scores
-// personnels du joueur qui l'exécute) est une vraie commande slash. Miroir
-// structurel de jeux/discord/handlers/anagrams.js, avec un flux de réponse à
+// par jeux/scripts/postJusteCarte.js.
+// Miroir structurel de jeux/discord/handlers/anagrams.js, avec un flux de réponse à
 // 3 issues (nom inconnu / carte connue mais fausse / trouvée) au lieu de 2 :
 // contrairement à Anagram, ce jeu accepte PLUSIEURS propositions successives
 // par joueur avant résolution — chaque réponse éphémère (sauf victoire)
@@ -13,8 +12,8 @@
 // Pas d'autocomplete sur le nom de carte : les Modals Discord ne le
 // supportent pas (limitation de la plateforme). Une commande slash avec
 // option autocomplete aurait été possible mais jugée trop complexe pour le
-// gain (ajout d'une commande dédiée ou fusion avec /justecarte) — décision
-// explicite de rester sur le flux bouton/Modal, comme les 3 autres jeux.
+// gain — décision explicite de rester sur le flux bouton/Modal, comme les
+// 3 autres jeux.
 // ============================================================
 
 import {
@@ -34,12 +33,8 @@ import {
   hintUsedFor,
   markSolved,
   archiveSolve,
-  computeGameRanking,
   computeSeasonRanking,
-  listGamePlayersInProgress,
-  getPlayerSeasonResults,
   getSeasonManches,
-  hasPlayerInteracted,
   getSeasonMancheNumber,
   getJusteCarteAnswer,
   previewSeasonManche,
@@ -48,7 +43,7 @@ import {
   findTiedRank,
   alreadyPostedThisWeek,
 } from "../../services/lajustecarte.js";
-import { nomSaison, deMois } from "../../services/saison.js";
+import { nomSaison } from "../../services/saison.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -96,8 +91,7 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
       `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Une carte Clash Royale secrète est en jeu ! Propose le nom d'une carte : le jeu te dira, stat par stat, si la carte secrète est plus forte, plus faible ou identique à ta proposition. À chaque proposition, tu as droit à un indice supplémentaire.\n\n" +
       "**Barème :** tu commences avec 10 points, la 1ère proposition est gratuite. À partir de la 2e, chaque proposition coûte 1 point. L'indice «rareté» (bouton) coûte 3 points, une seule fois.\n\n" +
-      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
-      "🤖 Vérifie tes scores avec la commande `/justecarte`",
+      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**",
     color: JUSTECARTE_COLOR,
     // Cache-buster (?v=) — même pattern que frames.js/zoom.js : Discord met
     // en cache l'aperçu d'un embed PAR URL, y compris un échec de fetch
@@ -116,10 +110,8 @@ function buildJusteCarteEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
 // Même ligne que le bouton de réponse (comme zoom.js buildZoomComponents) :
 // les boutons indice et "cartes non incluses" restent toujours visibles et
 // cliquables, sur le post public comme sur chaque réponse éphémère
-// (reproposer/comparaison) — pas besoin de connaître/taper `/justecarte`
-// pour savoir quelles cartes sont absentes du pool. custom_id sans gameId
-// pour ce dernier bouton : la liste ne dépend pas de la manche en cours,
-// même routing/handler réutilisé que le bouton équivalent sur `/justecarte`
+// (reproposer/comparaison). custom_id sans gameId pour
+// ce dernier bouton : la liste ne dépend pas de la manche en cours
 // (handleExcludedListButton).
 function buildGameComponents(gameId, answerLabel) {
   return [
@@ -562,7 +554,7 @@ function buildExcludedCardEmbed(entry, history) {
     title: "🚫 Carte non incluse dans ce jeu",
     description:
       `**${entry.fr}** existe dans Clash Royale, mais ne fait pas partie du pool de La Juste Carte (sort, bâtiment, évolution, troupe de tour, ou stats trop variables/multiples pour une comparaison équitable). Cette tentative n'a pas été comptabilisée.\n\n` +
-      `Vois la liste complète avec le bouton "📋 Cartes non incluses" sur la commande \`/justecarte\`.\n\n` +
+      `Vois la liste complète avec le bouton "📋 Cartes non incluses" ci-dessous.\n\n` +
       formatHistoryLine(history),
     color: JUSTECARTE_COLOR,
   };
@@ -715,96 +707,6 @@ export async function handleHintButton(
   }
 }
 
-// ── Commande /justecarte : scores personnels du joueur ────────────────
-
-function buildJusteCarteStatsEmbed({
-  pseudo,
-  currentSeasonManche,
-  seasonMancheTotal,
-  currentSolved,
-  currentInteracted,
-  currentAttempts,
-  currentScore,
-  solvedCount,
-  totalParticipants,
-  pastManches,
-  seasonId,
-  seasonTotal,
-  seasonRank,
-  seasonRankTotal,
-}) {
-  const lines = [];
-
-  lines.push(
-    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
-  );
-  if (currentSolved) {
-    lines.push(
-      `- Tu as trouvé la carte secrète en ${currentAttempts} proposition${currentAttempts > 1 ? "s" : ""} !`,
-    );
-    lines.push(`- Tu as marqué ${currentScore} points`);
-  } else if (currentInteracted) {
-    lines.push(
-      `- Tu n'as pas encore trouvé la carte secrète (${currentAttempts} proposition${currentAttempts > 1 ? "s" : ""} pour le moment)`,
-    );
-  } else {
-    lines.push("- Tu n'as pas encore commencé cette manche");
-  }
-  lines.push(
-    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment`,
-  );
-
-  for (const m of pastManches) {
-    lines.push("");
-    lines.push(
-      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
-    );
-    if (m.played) {
-      lines.push(
-        `- Tu as trouvé la carte secrète en ${m.attempts} proposition${m.attempts > 1 ? "s" : ""} !`,
-      );
-      lines.push(`- Tu as marqué ${m.score} points`);
-    } else {
-      lines.push("- Tu n'as pas joué cette manche");
-    }
-  }
-
-  lines.push("");
-  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
-  lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
-  if (seasonRank != null) {
-    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
-  }
-
-  return {
-    title: `🃏  Scores de ${pseudo}`,
-    description: lines.join("\n"),
-    color: JUSTECARTE_COLOR,
-  };
-}
-
-function buildJusteCarteStatsComponents() {
-  return [
-    {
-      type: 1,
-      components: [
-        {
-          type: 2,
-          style: 2,
-          label: "🔄 Rafraîchir",
-          custom_id: "lajustecarte_stats_refresh",
-        },
-        {
-          type: 2,
-          style: 2,
-          label: "📋 Cartes non incluses",
-          custom_id: "lajustecarte_excluded_list",
-        },
-      ],
-    },
-  ];
-}
-
 // Liste (dérivée en direct de jeux/data/cardNames.json, jamais périmée) des
 // cartes qui existent dans Clash Royale mais ne font pas partie du pool de
 // jeu — sorts/bâtiments/évolutions/troupes de tour, et quelques troupes à
@@ -821,101 +723,6 @@ export async function handleExcludedListButton(webhookUrl) {
         excluded.map((c) => c.fr).join(", "),
       color: JUSTECARTE_COLOR,
     });
-  } catch (err) {
-    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
-  }
-}
-
-export async function handleJusteCarteStatsCommand(
-  webhookUrl,
-  discordId,
-  username,
-) {
-  try {
-    const state = await readState();
-    if (!state) {
-      await postEphemeral(
-        webhookUrl,
-        "⚠️ Aucune partie La Juste Carte n'a encore été lancée.",
-      );
-      return;
-    }
-
-    const [
-      participant,
-      seasonResults,
-      seasonManches,
-      currentInteracted,
-      gameRanking,
-      inProgress,
-      seasonRanking,
-    ] = await Promise.all([
-      readParticipant(state.gameId, discordId),
-      getPlayerSeasonResults(state.seasonId, discordId),
-      getSeasonManches(state.seasonId),
-      hasPlayerInteracted(state.gameId, discordId),
-      computeGameRanking(state.gameId),
-      listGamePlayersInProgress(state.gameId),
-      computeSeasonRanking(state.seasonId),
-    ]);
-
-    const currentSeasonManche = state.seasonManche;
-    const seasonMancheTotal = state.seasonMancheTotal;
-    const currentSolved = !!participant?.solved;
-    const currentScore = participant?.score ?? 0;
-    const currentAttempts = participant?.attempts ?? 0;
-    const solvedCount = gameRanking.length;
-    const totalParticipants = solvedCount + inProgress.length;
-
-    const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank
-      ? findTiedRank(seasonRanking, discordId, "totalScore")
-      : null;
-    const seasonRankTotal = seasonRanking.length;
-
-    const pastGameIds = seasonManches.filter(
-      (gameId) => gameId !== state.gameId,
-    );
-    const pastManches = (
-      await Promise.all(
-        pastGameIds.map(async (gameId) => {
-          const result = seasonResults.find((r) => r.gameId === gameId);
-          return {
-            seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
-            played: !!result,
-            score: result?.score ?? 0,
-            attempts: result?.attempts ?? 0,
-          };
-        }),
-      )
-    )
-      .filter((m) => m.seasonManche != null)
-      .sort((a, b) => b.seasonManche - a.seasonManche);
-
-    const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
-
-    const embed = buildJusteCarteStatsEmbed({
-      pseudo: username,
-      currentSeasonManche,
-      seasonMancheTotal,
-      currentSolved,
-      currentInteracted,
-      currentAttempts,
-      currentScore,
-      solvedCount,
-      totalParticipants,
-      pastManches,
-      seasonId: state.seasonId,
-      seasonTotal,
-      seasonRank,
-      seasonRankTotal,
-    });
-
-    await postEphemeralEmbed(
-      webhookUrl,
-      embed,
-      buildJusteCarteStatsComponents(),
-    );
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }

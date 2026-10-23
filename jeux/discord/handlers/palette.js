@@ -4,8 +4,7 @@
 // saison sur deux avec Zoom carte (voir jeux/services/jeuxvisuels.js).
 // Allégé par rapport à _handlers/zoom.js : pas de Modal, pas de bouton
 // indice, pas de DM — un seul essai par joueur, verrouillé au premier clic
-// (voir jeux/services/palette.js). Commande `/palette` en miroir de
-// `/zoom` (scores personnels). Pas de
+// (voir jeux/services/palette.js). Pas de
 // `skipSeasonRecap` sur postPalette() (contrairement à Zoom/Anagram) : ce
 // jeu n'a jamais eu de logique de récap interne à suppléer, seul
 // l'orchestrateur (jeux/scripts/postJeuxVisuels.js) déclenche postSeasonRecap —
@@ -33,12 +32,10 @@ import {
   getSeasonManches,
   getSeasonMancheNumber,
   getPaletteRoundLabel,
-  getPlayerSeasonResults,
-  getGameParticipants,
   findTiedRank,
   LETTERS,
 } from "../../services/palette.js";
-import { nomSaison, deMois } from "../../services/saison.js";
+import { nomSaison } from "../../services/saison.js";
 import { HUE_MERGE_DEGREES } from "../../services/dominantColor.js";
 import {
   getRoleIdByName,
@@ -431,175 +428,6 @@ export async function handleAnswerButton(
     });
   } catch (err) {
     console.error("[Palette] Échec traitement de la réponse:", err.message);
-    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
-  }
-}
-
-// ── Commande /palette : scores personnels du joueur ────────────────
-// Miroir de handleZoomStatsCommand (zoom.js), adapté au modèle "essai
-// unique" de Palette : pas de distinction solved/en cours ni de tentatives/
-// indice à afficher — un joueur a répondu (correct ou non) ou n'a pas
-// encore répondu, point final.
-
-// Rang inconnu = réponse archivée sous l'ancien barème (bonne/mauvaise).
-function wrongColorLine(rank) {
-  return rank != null ? `- Tu as choisi la ${rank + 1}e couleur.` : "- Tu t'es trompé de couleur.";
-}
-
-function buildPaletteStatsEmbed({
-  pseudo,
-  currentSeasonManche,
-  seasonMancheTotal,
-  currentEntryFr,
-  currentAnswered,
-  currentCorrect,
-  currentRank,
-  currentScore,
-  totalAnswered,
-  correctCount,
-  pastManches,
-  seasonId,
-  seasonTotal,
-  seasonRank,
-  seasonRankTotal,
-}) {
-  const lines = [];
-
-  lines.push(
-    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) · ${currentEntryFr} :**`,
-  );
-  if (currentAnswered) {
-    lines.push(
-      currentCorrect
-        ? "- Tu as trouvé la couleur dominante !"
-        : wrongColorLine(currentRank),
-    );
-    lines.push(`- Tu as marqué ${currentScore} pt${currentScore > 1 ? "s" : ""}`);
-  } else {
-    lines.push("- Tu n'as pas encore répondu à cette manche");
-  }
-  if (totalAnswered > 0) {
-    lines.push(
-      `- ${totalAnswered} joueur${totalAnswered > 1 ? "s" : ""} ${totalAnswered > 1 ? "ont" : "a"} répondu pour le moment, dont ${correctCount} ${correctCount > 1 ? "ont" : "a"} trouvé`,
-    );
-  }
-
-  for (const m of pastManches) {
-    lines.push("");
-    lines.push(
-      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} · ${m.label} :**`,
-    );
-    if (m.played) {
-      lines.push(
-        m.correct
-          ? "- Tu as trouvé la couleur dominante !"
-          : wrongColorLine(m.rank),
-      );
-      lines.push(`- Tu as marqué ${m.score} pt${m.score > 1 ? "s" : ""}`);
-    } else {
-      lines.push("- Tu n'as pas joué cette manche");
-    }
-  }
-
-  lines.push("");
-  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
-  lines.push(`- Tu as accumulé ${seasonTotal} pt${seasonTotal > 1 ? "s" : ""} cette saison`);
-  if (seasonRank != null) {
-    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
-  }
-
-  return {
-    title: `🎨  Scores de ${pseudo}`,
-    description: lines.join("\n"),
-    color: PALETTE_COLOR,
-  };
-}
-
-function buildPaletteStatsComponents() {
-  return [
-    {
-      type: 1,
-      components: [
-        { type: 2, style: 2, label: "🔄 Rafraîchir", custom_id: "palette_stats_refresh" },
-      ],
-    },
-  ];
-}
-
-export async function handlePaletteStatsCommand(webhookUrl, discordId, username) {
-  try {
-    const state = await readState();
-    if (!state) {
-      await postEphemeral(webhookUrl, "⚠️ Aucune manche Palette n'a encore été lancée.");
-      return;
-    }
-
-    const catalog = await loadPaletteCatalog();
-    const currentEntry = resolvePaletteEntry(catalog, state.gameId);
-
-    const [participant, seasonResults, seasonManches, gameParticipants, seasonRanking] =
-      await Promise.all([
-        readParticipant(state.gameId, discordId),
-        getPlayerSeasonResults(state.seasonId, discordId),
-        getSeasonManches(state.seasonId),
-        getGameParticipants(state.gameId),
-        computeSeasonRanking(state.seasonId),
-      ]);
-
-    const currentAnswered = !!participant;
-    const currentCorrect = !!participant?.correct;
-    const currentScore = participant?.score ?? 0;
-    const totalAnswered = gameParticipants.length;
-    const correctCount = gameParticipants.filter((p) => p.correct).length;
-
-    const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
-    const seasonRankTotal = seasonRanking.length;
-
-    const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
-    const pastManches = (
-      await Promise.all(
-        pastGameIds.map(async (gameId) => {
-          const result = seasonResults.find((r) => r.gameId === gameId);
-          const label = await getPaletteRoundLabel(gameId);
-          return {
-            seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
-            label: label ?? result?.answer ?? gameId,
-            played: !!result,
-            // rank absent des archives antérieures au barème dégressif
-            // (2026-10-18) : on retombe alors sur l'ancien critère score > 0.
-            correct: !!result && (result.rank != null ? result.rank === 0 : result.score > 0),
-            rank: result?.rank ?? null,
-            score: result?.score ?? 0,
-          };
-        }),
-      )
-    )
-      .filter((m) => m.seasonManche != null)
-      .sort((a, b) => b.seasonManche - a.seasonManche);
-
-    const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
-
-    const embed = buildPaletteStatsEmbed({
-      pseudo: username,
-      currentSeasonManche: state.seasonManche,
-      seasonMancheTotal: state.seasonMancheTotal,
-      currentEntryFr: currentEntry?.fr ?? state.gameId,
-      currentAnswered,
-      currentCorrect,
-      currentRank: participant?.rank ?? null,
-      currentScore,
-      totalAnswered,
-      correctCount,
-      pastManches,
-      seasonId: state.seasonId,
-      seasonTotal,
-      seasonRank,
-      seasonRankTotal,
-    });
-
-    await postEphemeralEmbed(webhookUrl, embed, buildPaletteStatsComponents());
-  } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }
 }

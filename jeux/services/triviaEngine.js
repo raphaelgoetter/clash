@@ -350,13 +350,6 @@ export function createTriviaService({ prefix, catalogPath, weekday }) {
     return result;
   }
 
-  async function getPlayerSeasonResults(seasonId, discordId) {
-    const all = await hgetallJson(archivedKey(seasonId));
-    return Object.entries(all)
-      .filter(([field]) => field.endsWith(`:${discordId}`))
-      .map(([, result]) => result);
-  }
-
   async function getGameParticipants(gameId) {
     return Object.values(await hgetallJson(participantsKey(gameId)));
   }
@@ -449,7 +442,6 @@ export function createTriviaService({ prefix, catalogPath, weekday }) {
     readParticipant,
     recordAnswer,
     archiveAnswer,
-    getPlayerSeasonResults,
     getGameParticipants,
     computeSeasonRanking,
     getAllArchivedResults,

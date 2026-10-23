@@ -431,13 +431,6 @@ export async function archiveSolve(state, entry, discordId, username, score, sol
   return result;
 }
 
-export async function getPlayerSeasonResults(seasonId, discordId) {
-  const all = await hgetallJson(archivedKey(seasonId));
-  return Object.entries(all)
-    .filter(([field]) => field.endsWith(`:${discordId}`))
-    .map(([, result]) => result);
-}
-
 // Tous les résultats archivés, toutes saisons CR confondues — voir
 // getAllArchivedResults() de frames.js pour le détail (même patron, utilisé
 // par /mini-jeux-history).

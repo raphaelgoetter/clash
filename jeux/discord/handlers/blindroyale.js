@@ -2,8 +2,7 @@
 // blindroyale.js — Handlers Discord pour le jeu "Blind Royale" (devine la
 // carte Clash Royale à partir du son qu'elle produit). Embed, bouton indice,
 // modal, DM. La publication d'une partie passe uniquement par
-// jeux/scripts/postBlindRoyale.js — seule la commande /blindroyale (scores
-// personnels du joueur qui l'exécute) est une vraie commande slash.
+// jeux/scripts/postBlindRoyale.js.
 //
 // Miroir structurel de zoom.js — même barème (10 pts de départ, -2 pts par
 // mauvaise réponse, -3 pts si indice utilisé), pas de notion de rang/vitesse
@@ -35,14 +34,10 @@ import {
   hintUsedFor,
   markSolved,
   archiveSolve,
-  computeGameRanking,
   computeArrivalOrder,
   findRank,
   computeSeasonRanking,
-  listGamePlayersInProgress,
-  getPlayerSeasonResults,
   getSeasonManches,
-  hasPlayerInteracted,
   getSeasonMancheNumber,
   getBlindRoyaleAnswer,
   previewSeasonManche,
@@ -53,7 +48,7 @@ import {
   SOUNDS_DIR,
   ILLUSTRATION_PATH,
 } from "../../services/blindroyale.js";
-import { nomSaison, deMois } from "../../services/saison.js";
+import { nomSaison } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
@@ -96,8 +91,7 @@ function buildBlindRoyaleEmbed({ seasonId, seasonManche, seasonMancheTotal }) {
       "- Chaque tentative incorrecte : **-2 pts**\n" +
       "- Indice «Rareté» utilisé : **-3 pts**\n\n" +
       "Le classement de la saison est mis à jour après chaque manche, et un MP te sera envoyé pour récapituler tes points et ton classement.\n\n" +
-      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**\n\n" +
-      "🤖 Vérifie tes scores avec la commande `/blindroyale`",
+      "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**",
     color: BLINDROYALE_COLOR,
     image: { url: `attachment://${ILLUSTRATION_FILENAME}` },
     footer: {
@@ -530,150 +524,6 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
         hintUsed,
       }),
     );
-  } catch (err) {
-    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
-  }
-}
-
-// ── Commande /blindroyale : scores personnels du joueur ────────────────
-
-function buildBlindRoyaleStatsEmbed({
-  pseudo,
-  currentSeasonManche,
-  seasonMancheTotal,
-  currentSolved,
-  currentInteracted,
-  currentScore,
-  currentRank,
-  solvedCount,
-  totalParticipants,
-  perfectCount,
-  pastManches,
-  seasonId,
-  seasonTotal,
-  seasonRank,
-  seasonRankTotal,
-}) {
-  const lines = [];
-
-  lines.push(`**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
-  if (currentSolved) {
-    lines.push("- Tu as trouvé le nom de la carte !");
-    lines.push(`- Tu as marqué ${currentScore} points`);
-    lines.push(`- Ton classement : ${currentRank} / ${solvedCount}`);
-  } else if (currentInteracted) {
-    lines.push("- Tu n'as pas encore trouvé le nom de la carte !");
-    lines.push("- Tu n'as pas marqué de points");
-  } else {
-    lines.push("- Tu n'as pas encore commencé cette manche");
-  }
-  lines.push(
-    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment, ` +
-      `et ${perfectCount} joueur${perfectCount > 1 ? "s" : ""} ${perfectCount > 1 ? "ont" : "a"} 10 pts`,
-  );
-
-  for (const m of pastManches) {
-    lines.push("");
-    lines.push(`**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
-    if (m.played) {
-      lines.push("- Tu as trouvé le nom de la carte !");
-      lines.push(`- Tu as marqué ${m.score} points`);
-    } else {
-      lines.push("- Tu n'as pas joué cette manche");
-    }
-  }
-
-  lines.push("");
-  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
-  lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
-  if (seasonRank != null) {
-    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
-  }
-
-  return {
-    title: `🎧  Scores de ${pseudo}`,
-    description: lines.join("\n"),
-    color: BLINDROYALE_COLOR,
-  };
-}
-
-function buildBlindRoyaleStatsComponents() {
-  return [
-    {
-      type: 1,
-      components: [{ type: 2, style: 2, label: "🔄 Rafraîchir", custom_id: "blindroyale_stats_refresh" }],
-    },
-  ];
-}
-
-export async function handleBlindRoyaleStatsCommand(webhookUrl, discordId, username) {
-  try {
-    const state = await readState();
-    if (!state) {
-      await postEphemeral(webhookUrl, "⚠️ Aucune partie Blind Royale n'a encore été lancée.");
-      return;
-    }
-
-    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress, seasonRanking] = await Promise.all([
-      readParticipant(state.gameId, discordId),
-      getPlayerSeasonResults(state.seasonId, discordId),
-      getSeasonManches(state.seasonId),
-      hasPlayerInteracted(state.gameId, discordId),
-      computeGameRanking(state.gameId),
-      listGamePlayersInProgress(state.gameId),
-      computeSeasonRanking(state.seasonId),
-    ]);
-
-    const currentSeasonManche = state.seasonManche;
-    const seasonMancheTotal = state.seasonMancheTotal;
-    const currentSolved = !!participant?.solved;
-    const currentScore = participant?.score ?? 0;
-    const solvedCount = gameRanking.length;
-    const totalParticipants = solvedCount + inProgress.length;
-    const perfectCount = gameRanking.filter((r) => r.score === 10).length;
-    const currentRank = currentSolved ? findTiedRank(gameRanking, discordId, "score") : null;
-
-    const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
-    const seasonRankTotal = seasonRanking.length;
-
-    const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
-    const pastManches = (
-      await Promise.all(
-        pastGameIds.map(async (gameId) => {
-          const result = seasonResults.find((r) => r.gameId === gameId);
-          return {
-            seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
-            played: !!result,
-            score: result?.score ?? 0,
-          };
-        }),
-      )
-    )
-      .filter((m) => m.seasonManche != null)
-      .sort((a, b) => b.seasonManche - a.seasonManche);
-
-    const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
-
-    const embed = buildBlindRoyaleStatsEmbed({
-      pseudo: username,
-      currentSeasonManche,
-      seasonMancheTotal,
-      currentSolved,
-      currentInteracted,
-      currentScore,
-      currentRank,
-      solvedCount,
-      totalParticipants,
-      perfectCount,
-      pastManches,
-      seasonId: state.seasonId,
-      seasonTotal,
-      seasonRank,
-      seasonRankTotal,
-    });
-
-    await postEphemeralEmbed(webhookUrl, embed, buildBlindRoyaleStatsComponents());
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }

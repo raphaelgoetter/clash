@@ -1,8 +1,7 @@
 // ============================================================
 // triviageek.js — Handlers Discord du jeu "Trivia Geek" (QCM de culture
 // geek), groupe "Culture geek" du lundi (voir jeux/services/refonte.js).
-// Instance de triviaEngine.js. Pas de commande de scores : le bouton
-// « Ma participation » de /mini-jeux suffit.
+// Instance de triviaEngine.js.
 // ============================================================
 
 import * as svc from "../../services/triviageek.js";
@@ -14,7 +13,6 @@ const handlers = createTriviaHandlers(svc, {
   color: 0x9b59b6,
   jour: "lundi",
   answerPrefix: "triviageek_answer",
-  statsRefreshId: null,
   // Bannière fixe (frontend/public/images/triviageek/).
   bannerPath: "/images/triviageek/trivia-geek-game.webp",
 });

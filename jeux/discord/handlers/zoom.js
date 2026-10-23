@@ -1,9 +1,8 @@
 // ============================================================
 // zoom.js — Handlers Discord pour le jeu "Zoom carte" (devine une carte
 // zoomée à l'extrême). Embed, bouton indice, modal, DM. La publication
-// d'une partie passe uniquement par jeux/scripts/postZoom.js — seule la commande
-// /zoom (scores personnels du joueur qui l'exécute) est une vraie commande
-// slash. Miroir structurel de jeux/discord/handlers/frames.js, avec deux
+// d'une partie passe uniquement par jeux/scripts/postZoom.js.
+// Miroir structurel de jeux/discord/handlers/frames.js, avec deux
 // différences : un seul palier d'indice (-3 pts, pas 2 comme Frame), et
 // l'indice est une IMAGE (dézoom) plutôt qu'un texte — la réponse au clic
 // est donc un embed éphémère avec image, jamais un simple texte.
@@ -23,13 +22,9 @@ import {
   recordHintUsed,
   markSolved,
   archiveSolve,
-  computeGameRanking,
   computeArrivalOrder,
   computeSeasonRanking,
-  listGamePlayersInProgress,
-  getPlayerSeasonResults,
   getSeasonManches,
-  hasPlayerInteracted,
   getSeasonMancheNumber,
   getZoomRoundLabel,
   previewSeasonManche,
@@ -38,7 +33,7 @@ import {
   findTiedRank,
   alreadyPostedThisWeek,
 } from "../../services/zoom.js";
-import { nomSaison, deMois } from "../../services/saison.js";
+import { nomSaison } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
@@ -69,8 +64,7 @@ function buildZoomEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cac
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +
       "- Indice utilisé : **-3 pts**\n\n" +
-      "**Merci de ne pas spoiler, sinon c'est pas drôle !**\n\n" +
-      "🤖 Vérifie tes scores avec la commande `/zoom`",
+      "**Merci de ne pas spoiler, sinon c'est pas drôle !**",
     // gameId= épingle l'image de CETTE manche précise, même raisonnement que
     // Frame (getFrameImageByGameId) — voir frames.js.
     image: {
@@ -474,150 +468,6 @@ export async function handleModalSubmit(webhookUrl, gameId, discordId, username,
         seasonScore: seasonEntry?.totalScore ?? score,
       }),
     );
-  } catch (err) {
-    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
-  }
-}
-
-// ── Commande /zoom : scores personnels du joueur ────────────────
-
-function buildZoomStatsEmbed({
-  pseudo,
-  currentSeasonManche,
-  seasonMancheTotal,
-  currentSolved,
-  currentInteracted,
-  currentScore,
-  currentRank,
-  solvedCount,
-  totalParticipants,
-  perfectCount,
-  pastManches,
-  seasonId,
-  seasonTotal,
-  seasonRank,
-  seasonRankTotal,
-}) {
-  const lines = [];
-
-  lines.push(`**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`);
-  if (currentSolved) {
-    lines.push("- Tu as trouvé le nom de la carte !");
-    lines.push(`- Tu as marqué ${currentScore} points`);
-    lines.push(`- Ton classement : ${currentRank} / ${solvedCount}`);
-  } else if (currentInteracted) {
-    lines.push("- Tu n'as pas encore trouvé le nom de la carte !");
-    lines.push("- Tu n'as pas marqué de points");
-  } else {
-    lines.push("- Tu n'as pas encore commencé cette manche");
-  }
-  lines.push(
-    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment, ` +
-      `et ${perfectCount} joueur${perfectCount > 1 ? "s" : ""} ${perfectCount > 1 ? "ont" : "a"} 10 pts`,
-  );
-
-  for (const m of pastManches) {
-    lines.push("");
-    lines.push(`**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`);
-    if (m.played) {
-      lines.push("- Tu as trouvé le nom de la carte !");
-      lines.push(`- Tu as marqué ${m.score} points`);
-    } else {
-      lines.push("- Tu n'as pas joué cette manche");
-    }
-  }
-
-  lines.push("");
-  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
-  lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
-  if (seasonRank != null) {
-    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
-  }
-
-  return {
-    title: `🔍  Scores de ${pseudo}`,
-    description: lines.join("\n"),
-    color: ZOOM_COLOR,
-  };
-}
-
-function buildZoomStatsComponents() {
-  return [
-    {
-      type: 1,
-      components: [{ type: 2, style: 2, label: "🔄 Rafraîchir", custom_id: "zoom_stats_refresh" }],
-    },
-  ];
-}
-
-export async function handleZoomStatsCommand(webhookUrl, discordId, username) {
-  try {
-    const state = await readState();
-    if (!state) {
-      await postEphemeral(webhookUrl, "⚠️ Aucune partie Zoom carte n'a encore été lancée.");
-      return;
-    }
-
-    const [participant, seasonResults, seasonManches, currentInteracted, gameRanking, inProgress, seasonRanking] = await Promise.all([
-      readParticipant(state.gameId, discordId),
-      getPlayerSeasonResults(state.seasonId, discordId),
-      getSeasonManches(state.seasonId),
-      hasPlayerInteracted(state.gameId, discordId),
-      computeGameRanking(state.gameId),
-      listGamePlayersInProgress(state.gameId),
-      computeSeasonRanking(state.seasonId),
-    ]);
-
-    const currentSeasonManche = state.seasonManche;
-    const seasonMancheTotal = state.seasonMancheTotal;
-    const currentSolved = !!participant?.solved;
-    const currentScore = participant?.score ?? 0;
-    const solvedCount = gameRanking.length;
-    const totalParticipants = solvedCount + inProgress.length;
-    const perfectCount = gameRanking.filter((r) => r.score === 10).length;
-    const currentRank = currentSolved ? findTiedRank(gameRanking, discordId, "score") : null;
-
-    const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank ? findTiedRank(seasonRanking, discordId, "totalScore") : null;
-    const seasonRankTotal = seasonRanking.length;
-
-    const pastGameIds = seasonManches.filter((gameId) => gameId !== state.gameId);
-    const pastManches = (
-      await Promise.all(
-        pastGameIds.map(async (gameId) => {
-          const result = seasonResults.find((r) => r.gameId === gameId);
-          return {
-            seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
-            played: !!result,
-            score: result?.score ?? 0,
-          };
-        }),
-      )
-    )
-      .filter((m) => m.seasonManche != null)
-      .sort((a, b) => b.seasonManche - a.seasonManche);
-
-    const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
-
-    const embed = buildZoomStatsEmbed({
-      pseudo: username,
-      currentSeasonManche,
-      seasonMancheTotal,
-      currentSolved,
-      currentInteracted,
-      currentScore,
-      currentRank,
-      solvedCount,
-      totalParticipants,
-      perfectCount,
-      pastManches,
-      seasonId: state.seasonId,
-      seasonTotal,
-      seasonRank,
-      seasonRankTotal,
-    });
-
-    await postEphemeralEmbed(webhookUrl, embed, buildZoomStatsComponents());
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }

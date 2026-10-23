@@ -106,7 +106,7 @@ Clés communes (`<p>` = préfixe du jeu) :
 
 - **Une saison = un mois calendaire**, du 1er à minuit au 1er du mois suivant, **heure de Paris**, indépendamment des saisons Clash Royale. Source de vérité : `jeux/services/saison.js` (`seasonIdForDate`, `getCurrentSeasonBounds`, `countRemainingWeekdayOccurrences`/`countRemainingWednesdays`), testée par `saison.test.js`.
 - Identifiant technique : un entier par mois, qui prolonge l'ancienne numérotation (octobre 2026 = 137, novembre = 138…), jamais affiché aux joueurs. Les clés `<jeu>:season:<id>` / `<jeu>:archived:<id>` et l'alternance continuent sans migration. ⚠️ Les archives antérieures à novembre 2026 ont été numérotées selon les saisons Clash Royale (bornes au 1er lundi du mois) : `/mini-jeux-history` regroupe donc les résultats par date réelle, jamais par `seasonId`.
-- Affichage « **Saison d'Octobre · Manche N/X** » (post, DM, commande) via `nomSaison(seasonId)`, « Score de la saison d'Octobre » via `deMois(seasonId)` (élision devant Avril, Août, Octobre) ; `/mini-jeux-history` affiche le mois et l'année (`libelleMoisAnnee`).
+- Affichage « **Saison d'Octobre · Manche N/X** » (post, DM) via `nomSaison(seasonId)` ; `/mini-jeux-history` affiche le mois et l'année (`libelleMoisAnnee`).
 - N relatif à la saison (`assignSeasonMancheNumber()` : `INCR` + `HSETNX`), X = N + nombre d'occurrences restantes du jour de publication avant la fin de la saison (`computeSeasonMancheTotal`, `countRemainingWednesdays`/`countRemainingWeekdayOccurrences`).
 - La progression dans le catalogue (`currentIndex`) est indépendante de la saison et boucle au début une fois épuisée.
 
@@ -115,7 +115,7 @@ Clés communes (`<p>` = préfixe du jeu) :
 - Bot en webhook HTTP uniquement (pas de Gateway ni d'intent `MESSAGE_CONTENT`) : les réponses libres passent par une **Modal** (réponse `type: 9`, `custom_id: <jeu>_answer_modal:<gameId>`). La soumission arrive avec `body.type === 5` (`MODAL_SUBMIT`), à ne pas confondre avec la réponse `type: 5` (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE`).
 - Routage des boutons/modals : `jeux/discord/routes/miniJeux.js` (`routeMiniJeux`, appelé par `api/discord/interactions.js`).
 - Normalisation des réponses : `normalizeAnswer()` (`packages/commun/textNormalize.js` : minuscules, accents et ponctuation retirés).
-- Commande `/<jeu>` (`/frame`, `/trivia`, `/anagram`, `/pelemele`, `/zoom`, `/palette`, `/justecarte`, `/blindroyale`) sans option : réponse éphémère avec manche en cours, manches de la saison où le joueur a marqué, score total et rang de saison ; bouton « 🔄 Rafraîchir » (`<jeu>_stats_refresh`). Relancer `node scripts/registerCommands.js` après toute modification de commande.
+- Scores personnels d'un joueur : bouton « Ma participation » de `/mini-jeux`, aucune commande par jeu.
 
 ### Images servies et anti-spoiler
 
@@ -187,10 +187,10 @@ Schéma commun, plus `frame:hints:<gameId>:<discordId>` (SET des indices pris). 
 
 Deux instances du même moteur : service `jeux/services/triviaEngine.js` (`createTriviaService`), handlers `jeux/discord/handlers/triviaEngine.js` (`createTriviaHandlers`). Chaque instance a son préfixe Redis, son catalogue et son jour ; aucune donnée partagée.
 
-| Jeu | Groupe | Préfixe Redis | Catalogue | Jour | Boutons | Scores joueur |
-| --- | --- | --- | --- | --- | --- | --- |
-| 🧠 Trivia (culture Clash Royale) | Jeux de culture, alternance avec Frame | `trivia:` | `jeux/data/triviaclash/trivia-clash.json` | mercredi | `trivia_answer:` | `/trivia` |
-| 🎮 Trivia Geek | Culture geek à partir de la refonte | `triviageek:` | `jeux/data/triviageek/trivia-geek.json` | lundi | `triviageek_answer:` | « Ma participation » de `/mini-jeux` |
+| Jeu | Groupe | Préfixe Redis | Catalogue | Jour | Boutons |
+| --- | --- | --- | --- | --- | --- |
+| 🧠 Trivia (culture Clash Royale) | Jeux de culture, alternance avec Frame | `trivia:` | `jeux/data/triviaclash/trivia-clash.json` | mercredi | `trivia_answer:` |
+| 🎮 Trivia Geek | Culture geek à partir de la refonte | `triviageek:` | `jeux/data/triviageek/trivia-geek.json` | lundi | `triviageek_answer:` |
 
 - QCM A/B/C/D, essai unique, miroir de Palette. Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
 - Champ optionnel `titre` : affiché en italique au-dessus de la question.
@@ -268,7 +268,6 @@ Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Toute carte du po
 ### Spécificités d'affichage
 
 - Bouton « Journal » (`pelemele_journal`) : cartes trouvées sur la manche en cours (`X/totalValidWords`) et les `JOURNAL_HISTORY_LIMIT` (10) dernières manches de la saison. Pas de DM de fin de manche.
-- `/pelemele` : liste des cartes trouvées, classement par score puis nombre de cartes trouvées.
 - Récap : chaque manche est libellée par son tirage (lettres).
 
 ### Redis (`pelemele:*`)
@@ -337,7 +336,7 @@ QCM à 4 choix (A/B/C/D), **un seul clic par joueur**, sans Modal (même mécani
 
 ### Barème
 
-`computeScore(rank)` = `RANK_POINTS[rank]` avec `RANK_POINTS = [4, 2, 1, 0]` : dominante 4 pts, 2e couleur 2, 3e 1, 4e 0 (`getAnswerRank`, rang dans `entry.colors` trié par part décroissante). Pas de bonus de rapidité ni de pénalité de tentative. `rank` est stocké dans participants et archives ; pour une archive sans `rank`, `/palette` considère « dominante trouvée » si `score > 0`.
+`computeScore(rank)` = `RANK_POINTS[rank]` avec `RANK_POINTS = [4, 2, 1, 0]` : dominante 4 pts, 2e couleur 2, 3e 1, 4e 0 (`getAnswerRank`, rang dans `entry.colors` trié par part décroissante). Pas de bonus de rapidité ni de pénalité de tentative. `rank` est stocké dans participants et archives ; pour une archive sans `rank`, elle compte comme « dominante trouvée » si `score > 0`.
 
 ### Réponse à essai unique
 
@@ -394,7 +393,7 @@ Modal sans autocomplétion (impossible dans une Modal). `resolveGuess()` : égal
 2. **Carte fausse** : ajoutée à l'historique (`RPUSH`), indices et cartes déjà proposées renvoyés, bouton pour reproposer.
 3. **Carte trouvée** : `markSolved()` (idempotent), `archiveSolve()`, embed de victoire avec image. **DM uniquement à la victoire** (`sendJusteCarteDM`).
 
-Bouton « 📋 Cartes non incluses » sur `/justecarte` (`lajustecarte_excluded_list`) : `getExcludedCards()` dérive en direct les cartes de `cardNames.json` sans stats (44 actuellement), triées par nom.
+Bouton « 📋 Cartes non incluses » sur le post et chaque réponse (`lajustecarte_excluded_list`) : `getExcludedCards()` dérive en direct les cartes de `cardNames.json` sans stats (44 actuellement), triées par nom.
 
 ### Données : stats dans `jeux/data/cardNames.json`
 

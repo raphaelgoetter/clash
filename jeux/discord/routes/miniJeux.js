@@ -10,54 +10,42 @@ import {
   buildAnswerModal as buildFrameAnswerModal,
   handleHintButton as handleFrameHintButton,
   handleModalSubmit as handleFrameModalSubmit,
-  handleFrameStatsCommand,
 } from "../handlers/frames.js";
 import {
   buildAnswerModal as buildAnagramAnswerModal,
   handleModalSubmit as handleAnagramModalSubmit,
-  handleAnagramStatsCommand,
 } from "../handlers/anagrams.js";
 import {
   buildAnswerModal as buildZoomAnswerModal,
   handleHintButton as handleZoomHintButton,
   handleModalSubmit as handleZoomModalSubmit,
-  handleZoomStatsCommand,
 } from "../handlers/zoom.js";
 import {
   buildAnswerModal as buildJusteCarteAnswerModal,
   handleModalSubmit as handleJusteCarteModalSubmit,
   handleHintButton as handleJusteCarteHintButton,
   handleExcludedListButton as handleJusteCarteExcludedListButton,
-  handleJusteCarteStatsCommand,
 } from "../handlers/lajustecarte.js";
 import {
   buildAnswerModal as buildPeleMeleAnswerModal,
   handleModalSubmit as handlePeleMeleModalSubmit,
   buildRulesEmbed as buildPeleMeleRulesEmbed,
   handleJournalButton as handlePeleMeleJournalButton,
-  handlePeleMeleStatsCommand,
 } from "../handlers/pelemele.js";
 import {
   buildAnswerModal as buildBlindRoyaleAnswerModal,
   handleHintButton as handleBlindRoyaleHintButton,
   handleModalSubmit as handleBlindRoyaleModalSubmit,
-  handleBlindRoyaleStatsCommand,
 } from "../handlers/blindroyale.js";
 import { handleQuizVote } from "../handlers/quiz.js";
 // En alternance avec Zoom carte sous "Jeux visuels" (voir jeuxvisuels.js) —
 // publication via jeux/scripts/postJeuxVisuels.js (ou jeux/scripts/postPalette.js en
 // direct), jamais depuis ce fichier de routing.
-import {
-  handleAnswerButton as handlePaletteAnswer,
-  handlePaletteStatsCommand,
-} from "../handlers/palette.js";
+import { handleAnswerButton as handlePaletteAnswer } from "../handlers/palette.js";
 // En alternance avec Frame sous "Mini-jeux de Culture" (voir
 // jeuxculture.js) — publication via jeux/scripts/postJeuxCulture.js (ou
 // jeux/scripts/postTrivia.js en direct), jamais depuis ce fichier de routing.
-import {
-  handleAnswerButton as handleTriviaAnswer,
-  handleTriviaStatsCommand,
-} from "../handlers/trivia.js";
+import { handleAnswerButton as handleTriviaAnswer } from "../handlers/trivia.js";
 import { handleAnswerButton as handleTriviaGeekAnswer } from "../handlers/triviageek.js";
 import {
   buildIdeaModal as buildPollIdeaModal,
@@ -75,44 +63,6 @@ import {
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export async function routeMiniJeux(body, res) {
-  // ── Jeu Frame : commande /frame (scores personnels) ──
-  if (body.type === 2 && body.data?.name === "frame") {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleFrameStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
-  // ── Jeu Frame : bouton "Rafraîchir" sur /frame ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "frame_stats_refresh"
-  ) {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
-    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleFrameStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
   // ── Jeu Frame : boutons indices ──
   if (
     body.type === 3 &&
@@ -184,44 +134,6 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu Anagram : commande /anagram (scores personnels) ──
-  if (body.type === 2 && body.data?.name === "anagram") {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleAnagramStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
-  // ── Jeu Anagram : bouton "Rafraîchir" sur /anagram ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "anagram_stats_refresh"
-  ) {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
-    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleAnagramStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
   // ── Jeu Anagram : bouton "Répondre" → ouverture de la Modal ──
   // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
   // peut pas être différée (pas de runBackground ici). Pas de bouton indice
@@ -266,44 +178,6 @@ export async function routeMiniJeux(body, res) {
         username,
         rawAnswer,
       ),
-    );
-    return;
-  }
-
-  // ── Jeu Zoom carte : commande /zoom (scores personnels) ──
-  if (body.type === 2 && body.data?.name === "zoom") {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleZoomStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
-  // ── Jeu Zoom carte : bouton "Rafraîchir" sur /zoom ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "zoom_stats_refresh"
-  ) {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
-    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleZoomStatsCommand(webhookUrl, discordId, username),
     );
     return;
   }
@@ -377,44 +251,6 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu Blind Royale : commande /blindroyale (scores personnels) ──
-  if (body.type === 2 && body.data?.name === "blindroyale") {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleBlindRoyaleStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
-  // ── Jeu Blind Royale : bouton "Rafraîchir" sur /blindroyale ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "blindroyale_stats_refresh"
-  ) {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
-    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleBlindRoyaleStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
   // ── Jeu Blind Royale : bouton indice "Rareté" ──
   if (
     body.type === 3 &&
@@ -478,44 +314,6 @@ export async function routeMiniJeux(body, res) {
         username,
         rawAnswer,
       ),
-    );
-    return;
-  }
-
-  // ── Jeu La Juste Carte : commande /justecarte (scores personnels) ──
-  if (body.type === 2 && body.data?.name === "justecarte") {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleJusteCarteStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
-  // ── Jeu La Juste Carte : bouton "Rafraîchir" sur /justecarte ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "lajustecarte_stats_refresh"
-  ) {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
-    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleJusteCarteStatsCommand(webhookUrl, discordId, username),
     );
     return;
   }
@@ -587,10 +385,9 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu La Juste Carte : bouton "Cartes non incluses" sur /justecarte ──
-  // Nouvelle réponse éphémère séparée (pas une mise à jour du message de
-  // stats en place, contrairement au bouton "Rafraîchir" ci-dessus) — type 5
-  // comme pour une commande initiale.
+  // ── Jeu La Juste Carte : bouton "Cartes non incluses" sur le post ──
+  // Nouvelle réponse éphémère séparée — type 5 comme pour une commande
+  // initiale.
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
@@ -745,42 +542,6 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu Pêle-mêle : commande /pelemele (scores personnels) ──
-  if (body.type === 2 && body.data?.name === "pelemele") {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handlePeleMeleStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
-  // ── Jeu Pêle-mêle : bouton "Rafraîchir" sur /pelemele ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "pelemele_stats_refresh"
-  ) {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handlePeleMeleStatsCommand(webhookUrl, discordId, username),
-    );
-    return;
-  }
-
   // ── Quiz thématique : boutons de vote ──
   if (
     body.type === 3 &&
@@ -826,40 +587,6 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu Palette : commande /palette (scores personnels) ──
-  if (body.type === 2 && body.data?.name === "palette") {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handlePaletteStatsCommand(webhookUrl, discordId, username));
-    return;
-  }
-
-  // ── Jeu Palette : bouton "Rafraîchir" sur /palette ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "palette_stats_refresh"
-  ) {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
-    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handlePaletteStatsCommand(webhookUrl, discordId, username));
-    return;
-  }
-
   // ── Jeu Trivia : boutons de réponse A/B/C/D ──
   if (
     body.type === 3 &&
@@ -898,40 +625,6 @@ export async function routeMiniJeux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleTriviaGeekAnswer(webhookUrl, gameId, letter, discordId, username));
-    return;
-  }
-
-  // ── Jeu Trivia : commande /trivia (scores personnels) ──
-  if (body.type === 2 && body.data?.name === "trivia") {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleTriviaStatsCommand(webhookUrl, discordId, username));
-    return;
-  }
-
-  // ── Jeu Trivia : bouton "Rafraîchir" sur /trivia ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "trivia_stats_refresh"
-  ) {
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 6 = DEFERRED_UPDATE_MESSAGE : met à jour ce même message éphémère
-    // (au lieu d'en créer un nouveau, cf. type 5 pour la commande initiale).
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleTriviaStatsCommand(webhookUrl, discordId, username));
     return;
   }
 

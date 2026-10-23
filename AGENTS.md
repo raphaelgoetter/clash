@@ -134,7 +134,6 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/recap [saison:-1\|-2]` | Bottom 10 La Resistance / top 10 Les Resistants (saison passée) |
 | `/blacklist ajoute tag:#TAG [raison]` / `retire tag:#TAG` / `/blacklist consulte` | Liste Noire (rôle commençant par `STAFF`) |
 | `/bang adversaire:bot\|1v1` | Bang! Duel contre Kévina, le bot (partie privée) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
-| `/frame` | Scores personnels au jeu Frame (devine le film) — manche en cours, historique, total saison |
 
 ## Sous-agents
 

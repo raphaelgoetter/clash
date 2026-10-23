@@ -4,9 +4,7 @@
 // collectif "Mini-jeux de Culture" (voir jeux/services/jeuxculture.js).
 // Embed, boutons, modal, DM. En production, la publication passe par
 // jeux/scripts/postJeuxCulture.js (orchestrateur de l'alternance, skipSeasonRecap
-// true) ; jeux/scripts/postFrame.js reste utile pour tester Frame seul. Seule la
-// commande /frame (scores personnels du joueur qui l'exécute) est une vraie
-// commande slash.
+// true) ; jeux/scripts/postFrame.js reste utile pour tester Frame seul.
 // ============================================================
 
 import {
@@ -22,13 +20,9 @@ import {
   recordHintUsed,
   markSolved,
   archiveSolve,
-  computeGameRanking,
   computeArrivalOrder,
   computeSeasonRanking,
-  listGamePlayersInProgress,
-  getPlayerSeasonResults,
   getSeasonManches,
-  hasPlayerInteracted,
   getSeasonMancheNumber,
   getFrameTitle,
   previewSeasonManche,
@@ -37,7 +31,7 @@ import {
   findTiedRank,
   alreadyPostedThisWeek,
 } from "../../services/frames.js";
-import { nomSaison, deMois } from "../../services/saison.js";
+import { nomSaison } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
@@ -82,8 +76,7 @@ function buildFrameEmbed({
       "- Chaque tentative incorrecte : **-2 pts**\n" +
       "- Chaque indice utilisé : **-3 pts**\n\n" +
       "Le classement de la saison est mis à jour après chaque manche, et un MP te sera envoyé pour récapituler tes points et ton classement.\n\n" +
-      "**Merci de ne pas spoiler, sinon c'est pas drôle !**\n\n" +
-      "🤖 Vérifie tes scores avec la commande `/frame`",
+      "**Merci de ne pas spoiler, sinon c'est pas drôle !**",
     // gameId= épingle l'image de CETTE manche précise, pour que ce post
     // continue d'afficher LA BONNE image même une fois la partie suivante
     // démarrée (sinon la route servirait l'image de la partie active, cf.
@@ -435,19 +428,6 @@ async function postEphemeral(webhookUrl, content) {
   }
 }
 
-async function postEphemeralEmbed(webhookUrl, embed, components = []) {
-  if (!webhookUrl) return;
-  try {
-    await fetch(`${webhookUrl}/messages/@original`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed], components }),
-    });
-  } catch (err) {
-    console.error("[Frame] Échec PATCH réponse éphémère (embed):", err.message);
-  }
-}
-
 // ── Bouton indice ────────────────────────────────────────────
 
 export async function handleHintButton(
@@ -633,178 +613,6 @@ export async function handleModalSubmit(
         seasonScore: seasonEntry?.totalScore ?? score,
       }),
     );
-  } catch (err) {
-    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
-  }
-}
-
-// ── Commande /frame : scores personnels du joueur ────────────────
-
-function buildFrameStatsEmbed({
-  pseudo,
-  currentSeasonManche,
-  seasonMancheTotal,
-  currentSolved,
-  currentInteracted,
-  currentScore,
-  currentRank,
-  solvedCount,
-  totalParticipants,
-  perfectCount,
-  pastManches,
-  seasonId,
-  seasonTotal,
-  seasonRank,
-  seasonRankTotal,
-}) {
-  const lines = [];
-
-  lines.push(
-    `**${nomSaison(seasonId)} · Manche ${currentSeasonManche}/${seasonMancheTotal} (actuelle) :**`,
-  );
-  if (currentSolved) {
-    lines.push("- Tu as trouvé le nom du film !");
-    lines.push(`- Tu as marqué ${currentScore} points`);
-    lines.push(`- Ton classement : ${currentRank} / ${solvedCount}`);
-  } else if (currentInteracted) {
-    lines.push("- Tu n'as pas encore trouvé le nom du film !");
-    lines.push("- Tu n'as pas marqué de points");
-  } else {
-    lines.push("- Tu n'as pas encore commencé cette manche");
-  }
-  lines.push(
-    `- ${solvedCount} joueur${solvedCount > 1 ? "s" : ""} (sur ${totalParticipants}) ${solvedCount > 1 ? "ont" : "a"} trouvé pour le moment, ` +
-      `et ${perfectCount} joueur${perfectCount > 1 ? "s" : ""} ${perfectCount > 1 ? "ont" : "a"} 10 pts`,
-  );
-
-  for (const m of pastManches) {
-    lines.push("");
-    lines.push(
-      `**${nomSaison(seasonId)} · Manche ${m.seasonManche}/${seasonMancheTotal} :**`,
-    );
-    if (m.played) {
-      lines.push("- Tu as trouvé le nom du film !");
-      lines.push(`- Tu as marqué ${m.score} points`);
-    } else {
-      lines.push("- Tu n'as pas joué cette manche");
-    }
-  }
-
-  lines.push("");
-  lines.push(`**Score de la saison ${deMois(seasonId)} :**`);
-  lines.push(`- Tu as accumulé ${seasonTotal} points cette saison`);
-  if (seasonRank != null) {
-    lines.push(`- Ton classement : ${seasonRank} / ${seasonRankTotal}`);
-  }
-
-  return {
-    title: `🎬  Scores de ${pseudo}`,
-    description: lines.join("\n"),
-    color: FRAME_COLOR,
-  };
-}
-
-function buildFrameStatsComponents() {
-  return [
-    {
-      type: 1,
-      components: [
-        {
-          type: 2,
-          style: 2,
-          label: "🔄 Rafraîchir",
-          custom_id: "frame_stats_refresh",
-        },
-      ],
-    },
-  ];
-}
-
-export async function handleFrameStatsCommand(webhookUrl, discordId, username) {
-  try {
-    const state = await readState();
-    if (!state) {
-      await postEphemeral(
-        webhookUrl,
-        "⚠️ Aucune partie Frame n'a encore été lancée.",
-      );
-      return;
-    }
-
-    const [
-      participant,
-      seasonResults,
-      seasonManches,
-      currentInteracted,
-      gameRanking,
-      inProgress,
-      seasonRanking,
-    ] = await Promise.all([
-      readParticipant(state.gameId, discordId),
-      getPlayerSeasonResults(state.seasonId, discordId),
-      getSeasonManches(state.seasonId),
-      hasPlayerInteracted(state.gameId, discordId),
-      computeGameRanking(state.gameId),
-      listGamePlayersInProgress(state.gameId),
-      computeSeasonRanking(state.seasonId),
-    ]);
-
-    const currentSeasonManche = state.seasonManche;
-    const seasonMancheTotal = state.seasonMancheTotal;
-    const currentSolved = !!participant?.solved;
-    const currentScore = participant?.score ?? 0;
-    const solvedCount = gameRanking.length;
-    const totalParticipants = solvedCount + inProgress.length;
-    const perfectCount = gameRanking.filter((r) => r.score === 10).length;
-    const currentRank = currentSolved
-      ? findTiedRank(gameRanking, discordId, "score")
-      : null;
-
-    const hasSeasonRank = seasonResults.length > 0;
-    const seasonRank = hasSeasonRank
-      ? findTiedRank(seasonRanking, discordId, "totalScore")
-      : null;
-    const seasonRankTotal = seasonRanking.length;
-
-    const pastGameIds = seasonManches.filter(
-      (gameId) => gameId !== state.gameId,
-    );
-    const pastManches = (
-      await Promise.all(
-        pastGameIds.map(async (gameId) => {
-          const result = seasonResults.find((r) => r.gameId === gameId);
-          return {
-            seasonManche: await getSeasonMancheNumber(state.seasonId, gameId),
-            played: !!result,
-            score: result?.score ?? 0,
-          };
-        }),
-      )
-    )
-      .filter((m) => m.seasonManche != null)
-      .sort((a, b) => b.seasonManche - a.seasonManche);
-
-    const seasonTotal = seasonResults.reduce((sum, r) => sum + r.score, 0);
-
-    const embed = buildFrameStatsEmbed({
-      pseudo: username,
-      currentSeasonManche,
-      seasonMancheTotal,
-      currentSolved,
-      currentInteracted,
-      currentScore,
-      currentRank,
-      solvedCount,
-      totalParticipants,
-      perfectCount,
-      pastManches,
-      seasonId: state.seasonId,
-      seasonTotal,
-      seasonRank,
-      seasonRankTotal,
-    });
-
-    await postEphemeralEmbed(webhookUrl, embed, buildFrameStatsComponents());
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }
