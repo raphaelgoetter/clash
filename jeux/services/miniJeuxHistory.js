@@ -10,6 +10,7 @@
 // ============================================================
 
 import { getCurrentSeasonBounds } from "./saison.js";
+import { groupLabelForDate } from "./refonte.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
@@ -73,7 +74,8 @@ function tagSubGame(fetchFn, subGame) {
 const SCORE_GAMES = [
   {
     key: "culture",
-    label: "🎬 Jeux de culture",
+    // Libellé selon la saison : ancien nom avant la refonte (voir refonte.js).
+    labelFor: (seasonStart) => groupLabelForDate("culture", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getFrameResults, "Trouve le film")()),
       ...(await tagSubGame(getTriviaResults, "Trivia")()),
@@ -81,7 +83,7 @@ const SCORE_GAMES = [
   },
   {
     key: "lettres",
-    label: "🔤 Jeux de lettres",
+    labelFor: (seasonStart) => groupLabelForDate("lettres", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getAnagramResults, "Anagram")()),
       ...(await tagSubGame(getPeleMeleResults, "Pêle-mêle")()),
@@ -89,7 +91,7 @@ const SCORE_GAMES = [
   },
   {
     key: "visuels",
-    label: "🎨 Jeux visuels",
+    labelFor: (seasonStart) => groupLabelForDate("visuels", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getZoomResults, "Zoom carte")()),
       ...(await tagSubGame(getPaletteResults, "Palette")()),
@@ -97,7 +99,7 @@ const SCORE_GAMES = [
   },
   {
     key: "aveugle",
-    label: "🙈 Jeux à l'aveugle",
+    labelFor: (seasonStart) => groupLabelForDate("aveugle", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getBlindRoyaleResults, "Blind Royale")()),
       ...(await tagSubGame(getLaJusteCarteResults, "La Juste Carte")()),
@@ -164,7 +166,8 @@ function getOrCreateGameEntry(season, game) {
   if (!entry) {
     // subGames : ensemble (ordonné par insertion) des jeux précis vus cette
     // saison pour ce groupe — vide pour les jeux qui n'alternent pas.
-    entry = { label: game.label, totals: new Map(), subGames: new Set() };
+    const label = game.labelFor ? game.labelFor(season.start) : game.label;
+    entry = { label, totals: new Map(), subGames: new Set() };
     season.games.set(game.key, entry);
   }
   return entry;

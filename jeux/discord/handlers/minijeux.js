@@ -108,6 +108,7 @@ import { BANDES as MEOW_BANDES, jourDe as meowJourDe, horloge as meowHorloge } f
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
 import { getCurrentSeasonBounds } from "../../services/saison.js";
+import { getWiredGame } from "../../services/refonte.js";
 import { computeMiniJeuxStats } from "../../services/miniJeuxStats.js";
 
 const MINIJEUX_COLOR = 0x5865f2;
@@ -168,7 +169,11 @@ const CULTURE_GAMES = {
 // signale la relève quand les deux diffèrent).
 async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
   const seasonId = await getSeasonId();
-  const seasonKey = seasonId == null ? fallbackKey : getActiveKey(seasonId);
+  const activeKey = seasonId == null ? fallbackKey : getActiveKey(seasonId);
+  // Refonte : un jeu de la nouvelle paire pas encore prêt (getActiveKey
+  // renvoie null) ou absent de `games` n'est jamais affiché, ni comme jeu en
+  // cours ni comme relève (voir jeux/services/refonte.js).
+  const seasonKey = games[activeKey] ? activeKey : null;
   const states = await Promise.all(
     Object.entries(games).map(async ([key, game]) => ({
       key,
@@ -178,29 +183,29 @@ async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
   const running = states
     .filter(({ state }) => state?.channelId === PUBLIC_CHANNEL_ID)
     .sort((a, b) => String(b.state.startedAt ?? "").localeCompare(String(a.state.startedAt ?? "")))[0];
-  const key = running?.key ?? seasonKey;
+  const key = running?.key ?? seasonKey ?? fallbackKey;
   return {
     ...games[key],
     seasonId,
     state: running?.state ?? null,
-    next: key !== seasonKey ? games[seasonKey] : null,
+    next: seasonKey && key !== seasonKey ? games[seasonKey] : null,
   };
 }
 
 function resolveActiveAveugleGame() {
-  return resolvePairGame(AVEUGLE_GAMES, getAveugleSeasonId, getActiveBlindGame, "lajustecarte");
+  return resolvePairGame(AVEUGLE_GAMES, getAveugleSeasonId, (id) => getWiredGame("aveugle", id, getActiveBlindGame(id)), "lajustecarte");
 }
 
 function resolveActiveVisuelsGame() {
-  return resolvePairGame(VISUELS_GAMES, getVisuelsSeasonId, getActiveVisualGame, "zoom");
+  return resolvePairGame(VISUELS_GAMES, getVisuelsSeasonId, (id) => getWiredGame("visuels", id, getActiveVisualGame(id)), "zoom");
 }
 
 function resolveActiveLettresGame() {
-  return resolvePairGame(LETTRES_GAMES, getLettresSeasonId, getActiveLetterGame, "anagram");
+  return resolvePairGame(LETTRES_GAMES, getLettresSeasonId, (id) => getWiredGame("lettres", id, getActiveLetterGame(id)), "anagram");
 }
 
 function resolveActiveCultureGame() {
-  return resolvePairGame(CULTURE_GAMES, getCultureSeasonId, getActiveCultureGame, "frame");
+  return resolvePairGame(CULTURE_GAMES, getCultureSeasonId, (id) => getWiredGame("culture", id, getActiveCultureGame(id)), "frame");
 }
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"

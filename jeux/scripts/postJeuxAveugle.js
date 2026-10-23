@@ -38,6 +38,7 @@ import {
   getLastKnownSeasonId,
   setLastKnownSeasonId,
 } from "../services/jeuxaveugle.js";
+import { getWiredGame } from "../services/refonte.js";
 import { alreadyPostedThisWeek as justeCarteAlreadyPostedThisWeek } from "../services/lajustecarte.js";
 import { alreadyPostedThisWeek as blindRoyaleAlreadyPostedThisWeek } from "../services/blindroyale.js";
 import { postJusteCarte, postSeasonRecap as postJusteCarteSeasonRecap } from "../discord/handlers/lajustecarte.js";
@@ -72,10 +73,22 @@ const LABEL_BY_GAME = { lajustecarte: "La Juste Carte", blindroyale: "Blind Roya
       const lastKnown = await getLastKnownSeasonId();
       if (lastKnown != null && lastKnown !== currentSeasonId) {
         const endedGame = getActiveBlindGame(lastKnown);
-        console.log(`Changement de saison détecté (${lastKnown} -> ${currentSeasonId}) — récap de fin de saison pour ${LABEL_BY_GAME[endedGame]}.`);
-        await RECAP_BY_GAME[endedGame](channelId, lastKnown, currentSeasonId, { noPing: NO_PING });
+        const recapFn = getWiredGame("aveugle", lastKnown, endedGame) && RECAP_BY_GAME[endedGame];
+        if (recapFn) {
+          console.log(`Changement de saison détecté (${lastKnown} -> ${currentSeasonId}) — récap de fin de saison pour ${LABEL_BY_GAME[endedGame]}.`);
+          await recapFn(channelId, lastKnown, currentSeasonId, { noPing: NO_PING });
+        } else {
+          console.warn(`Changement de saison détecté (${lastKnown} -> ${currentSeasonId}) — pas de récap : jeu « ${endedGame} » pas prêt.`);
+        }
       }
       await setLastKnownSeasonId(currentSeasonId);
+    }
+
+    // Refonte : un jeu de la nouvelle paire pas encore prêt n'est jamais
+    // lancé (voir REFONTE_PRETS, jeux/services/refonte.js) ; le récap
+    // ci-dessus reste posté.
+    if (!getWiredGame("aveugle", currentSeasonId, activeGame) || !POST_BY_GAME[activeGame]) {
+      throw new Error(`jeu « ${activeGame} » actif pour la saison ${currentSeasonId}, mais pas encore prêt.`);
     }
 
     if (!FORCE && !DRY_RUN) {

@@ -43,6 +43,22 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | 🎨 Jeux visuels | Zoom carte / Palette | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml` | `postJeuxVisuels.js` | `jeuxvisuels.js` | `visuels:*` |
 | 🙈 Jeux à l'aveugle | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`) | `jeux-aveugle.yml` | `postJeuxAveugle.js` | `jeuxaveugle.js` | `aveugle:*` |
 
+### Refonte hors Clash Royale (bascule par groupe)
+
+`jeux/services/refonte.js` remplace chaque paire par une nouvelle, sans lien avec Clash Royale, à partir de la saison `REFONTE_SEASON[groupe]` (139 = décembre 2026 pour les 4 groupes). Avant cette saison, l'alternance ci-dessus s'applique sans changement ; à partir d'elle, la parité s'ancre sur la saison de bascule : écart pair → 1er jeu, impair → 2nd. Reporter la bascule d'un groupe = augmenter sa saison dans `REFONTE_SEASON`.
+
+| Groupe (clé technique) | Libellé après bascule | Écart pair (déc. 2026) | Écart impair (janv. 2027) |
+| --- | --- | --- | --- |
+| `culture` | 🎬 Ciné-club | `synopsis` (Synopsis éclaté) | `frame` (Trouve le film) |
+| `aveugle` | 🎮 Culture geek | `triviageek` (Trivia Geek) | `intrus` (Intrus de l'inventaire) |
+| `lettres` | 🔤 Jeux de mots | `emojis` (Emojis) | `pelemele` (Pêle-mêle, nouveau thème) |
+| `visuels` | 📸 Coup d'œil | `platpays` (Plat Pays) | `zoom` (Zoom, nouveau thème) |
+
+- Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
+- Pêle-mêle et Zoom gardent leur identifiant (même jeu, nouveau thème) : leurs archives sont rangées par saison, donc jamais mélangées avec celles de la version Clash Royale. Les clés de rotation et d'état (`<jeu>:order`, `<jeu>:state`…) sont à purger au lancement du nouveau thème. Trivia Geek change de groupe, d'où un identifiant distinct (`triviageek`).
+- À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi de relancer la version Clash Royale de Pêle-mêle ou de Zoom.
+- Brancher un nouveau jeu : l'ajouter à `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`, libellé du jeu selon la date pour Pêle-mêle et Zoom).
+
 Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque passage :
 
 1. Changement de saison détecté via un suivi **partagé** (`<groupe>:last_season_id`, ex. `jeuxvisuels:last_season_id`, `getLastKnownSeasonId`/`setLastKnownSeasonId`) → récap de fin de saison du jeu qui vient de finir. ⚠️ Ce suivi doit rester indépendant de `<jeu>:state` : le jeu qui reprend la main ne verrait sinon la transition que deux saisons plus tard. Jamais en dry-run (aucune écriture Redis).

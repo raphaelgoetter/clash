@@ -26,6 +26,7 @@
 
 import { Redis } from "@upstash/redis";
 import { getCurrentSeasonId } from "./saison.js";
+import { getRefonteGame } from "./refonte.js";
 
 let _redis = null;
 function getRedis() {
@@ -45,8 +46,11 @@ export { getCurrentSeasonId };
 // ── Alternance saisonnière ──────────────────────────────────────
 export const ACTIVE_GAME_REFERENCE_SEASON = 136;
 
-// Fonction pure, testable indépendamment de Redis.
+// Fonction pure, testable indépendamment de Redis. À partir de la saison de
+// bascule du groupe, la nouvelle paire prend le relais (voir refonte.js).
 export function getActiveCultureGame(seasonId) {
+  const refonte = getRefonteGame("culture", seasonId);
+  if (refonte) return refonte;
   const diff = seasonId - ACTIVE_GAME_REFERENCE_SEASON;
   const parity = ((diff % 2) + 2) % 2; // toujours 0 ou 1, même si diff était négatif
   return parity === 0 ? "frame" : "trivia";

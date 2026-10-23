@@ -37,6 +37,7 @@ import {
   getLastKnownSeasonId,
   setLastKnownSeasonId,
 } from "../services/jeuxvisuels.js";
+import { getWiredGame } from "../services/refonte.js";
 import { alreadyPostedThisWeek as zoomAlreadyPostedThisWeek } from "../services/zoom.js";
 import { alreadyPostedThisWeek as paletteAlreadyPostedThisWeek } from "../services/palette.js";
 import { postZoom, postSeasonRecap as postZoomSeasonRecap } from "../discord/handlers/zoom.js";
@@ -71,10 +72,22 @@ const LABEL_BY_GAME = { zoom: "Zoom carte", palette: "Palette" };
       const lastKnown = await getLastKnownSeasonId();
       if (lastKnown != null && lastKnown !== currentSeasonId) {
         const endedGame = getActiveVisualGame(lastKnown);
-        console.log(`Changement de saison détecté (${lastKnown} -> ${currentSeasonId}) — récap de fin de saison pour ${LABEL_BY_GAME[endedGame]}.`);
-        await RECAP_BY_GAME[endedGame](channelId, lastKnown, currentSeasonId, { noPing: NO_PING });
+        const recapFn = getWiredGame("visuels", lastKnown, endedGame) && RECAP_BY_GAME[endedGame];
+        if (recapFn) {
+          console.log(`Changement de saison détecté (${lastKnown} -> ${currentSeasonId}) — récap de fin de saison pour ${LABEL_BY_GAME[endedGame]}.`);
+          await recapFn(channelId, lastKnown, currentSeasonId, { noPing: NO_PING });
+        } else {
+          console.warn(`Changement de saison détecté (${lastKnown} -> ${currentSeasonId}) — pas de récap : jeu « ${endedGame} » pas prêt.`);
+        }
       }
       await setLastKnownSeasonId(currentSeasonId);
+    }
+
+    // Refonte : un jeu de la nouvelle paire pas encore prêt n'est jamais
+    // lancé (voir REFONTE_PRETS, jeux/services/refonte.js) ; le récap
+    // ci-dessus reste posté.
+    if (!getWiredGame("visuels", currentSeasonId, activeGame) || !POST_BY_GAME[activeGame]) {
+      throw new Error(`jeu « ${activeGame} » actif pour la saison ${currentSeasonId}, mais pas encore prêt.`);
     }
 
     if (!FORCE && !DRY_RUN) {
