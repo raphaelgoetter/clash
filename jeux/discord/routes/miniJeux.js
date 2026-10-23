@@ -48,6 +48,11 @@ import { handleAnswerButton as handlePaletteAnswer } from "../handlers/palette.j
 import { handleAnswerButton as handleTriviaAnswer } from "../handlers/trivia.js";
 import { handleAnswerButton as handleTriviaGeekAnswer } from "../handlers/triviageek.js";
 import {
+  handleHintButton as handleConceptHintButton,
+  handleModalSubmit as handleConceptModalSubmit,
+  buildAnswerModal as buildConceptAnswerModal,
+} from "../handlers/concept.js";
+import {
   buildIdeaModal as buildPollIdeaModal,
   handleIdeaModalSubmit as handlePollIdeaModalSubmit,
 } from "../handlers/poll.js";
@@ -84,6 +89,55 @@ export async function routeMiniJeux(body, res) {
     runBackground(() =>
       handleFrameHintButton(webhookUrl, gameId, hintKey, discordId, username),
     );
+    return;
+  }
+
+  // ── Jeu Concept : bouton indice (catégorie) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("concept_hint:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleConceptHintButton(webhookUrl, gameId, discordId, username));
+    return;
+  }
+
+  // ── Jeu Concept : bouton "Répondre" → ouverture de la Modal (synchrone) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("concept_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    return res.status(200).json({ type: 9, data: buildConceptAnswerModal(gameId) });
+  }
+
+  // ── Jeu Concept : soumission de la Modal (body.type 5 = MODAL_SUBMIT) ──
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("concept_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleConceptModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
     return;
   }
 

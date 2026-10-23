@@ -44,7 +44,7 @@ const SATURDAY = 6;
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
 // Doit rester synchronisé avec le cron de .github/workflows/anagrams.yml
 // ("0 10,18 * * 6").
-export const ANAGRAM_CRON_HOURS = [10, 18];
+export const ANAGRAM_CRON_HOURS = [18]; // créneau unique : le tirage ci-dessous poste toujours
 
 // Construction paresseuse (pas au chargement du module) — voir frames.js
 // pour la raison exacte (ordre des imports ES vs dotenv.config()).

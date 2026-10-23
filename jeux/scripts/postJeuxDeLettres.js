@@ -5,9 +5,7 @@
 // jeux/services/jeuxdelettres.js pour le détail de l'alternance).
 // Remplace l'ancien cron dédié à Anagram seul (.github/workflows/anagrams.yml) :
 //
-//   1. Décide UNE SEULE FOIS le jour/créneau (samedi, tirage 10h/18h) —
-//      les deux jeux partagent ce mécanisme (jeux/services/jeuxdelettres.js),
-//      copié à l'identique de l'ancien mécanisme d'Anagram.
+//   1. Vérifie le jour (samedi, créneau unique 18h UTC) et l'anti-double-post.
 //   2. Détecte un changement de saison depuis le dernier passage (suivi
 //      PARTAGÉ, indépendant de l'état interne de chaque jeu — voir
 //      getLastKnownSeasonId/setLastKnownSeasonId) et poste le récap de fin
@@ -15,7 +13,7 @@
 //      suivi partagé, le jeu qui reprend la main ne "verrait" la transition
 //      que 2 saisons plus tard (la prochaine fois que LUI repostera).
 //   3. Délègue la publication de la nouvelle manche au jeu actif de la
-//      saison en cours, avec force:true (le gating jour/créneau a déjà été
+//      saison en cours, avec force:true (le gating jour a déjà été
 //      fait ici) et skipSeasonRecap:true pour Anagram (sinon son propre
 //      mécanisme interne de récap, comparé à SON état à lui, redéclencherait
 //      à tort un récap déjà posté à l'étape 2).
@@ -24,15 +22,13 @@
 //   node jeux/scripts/postJeuxDeLettres.js               — poste sur le salon de test
 //   node jeux/scripts/postJeuxDeLettres.js --public       — poste sur le salon public
 //   node jeux/scripts/postJeuxDeLettres.js --dry-run      — simulation, sans écrire ni poster
-//   node jeux/scripts/postJeuxDeLettres.js --force        — ignore le gating jour/créneau
+//   node jeux/scripts/postJeuxDeLettres.js --force        — ignore le gating jour/anti-double-post
 //   node jeux/scripts/postJeuxDeLettres.js --no-ping      — poste sans pinger @MINI JEUX
 
 import "../env.js";
 
 import {
   getCurrentSeasonId,
-  computeWeeklySlotIndex,
-  shouldPostThisSlot,
   getActiveLetterGame,
   getLastKnownSeasonId,
   setLastKnownSeasonId,
@@ -42,6 +38,8 @@ import { alreadyPostedThisWeek as anagramAlreadyPostedThisWeek } from "../servic
 import { alreadyPostedThisWeek as pelemeleAlreadyPostedThisWeek } from "../services/pelemele.js";
 import { postAnagram, postSeasonRecap as postAnagramSeasonRecap } from "../discord/handlers/anagrams.js";
 import { postPeleMele, postSeasonRecap as postPeleMeleSeasonRecap } from "../discord/handlers/pelemele.js";
+import { alreadyPostedThisWeek as conceptAlreadyPostedThisWeek } from "../services/concept.js";
+import { postConcept, postSeasonRecap as postConceptSeasonRecap } from "../discord/handlers/concept.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
@@ -54,10 +52,18 @@ if (!channelId) {
   process.exit(1);
 }
 
-const ALREADY_POSTED_BY_GAME = { anagram: anagramAlreadyPostedThisWeek, pelemele: pelemeleAlreadyPostedThisWeek };
-const POST_BY_GAME = { anagram: postAnagram, pelemele: postPeleMele };
-const RECAP_BY_GAME = { anagram: postAnagramSeasonRecap, pelemele: postPeleMeleSeasonRecap };
-const LABEL_BY_GAME = { anagram: "Anagram", pelemele: "Pêle-mêle" };
+const ALREADY_POSTED_BY_GAME = {
+  anagram: anagramAlreadyPostedThisWeek,
+  pelemele: pelemeleAlreadyPostedThisWeek,
+  concept: conceptAlreadyPostedThisWeek,
+};
+const POST_BY_GAME = { anagram: postAnagram, pelemele: postPeleMele, concept: postConcept };
+const RECAP_BY_GAME = {
+  anagram: postAnagramSeasonRecap,
+  pelemele: postPeleMeleSeasonRecap,
+  concept: postConceptSeasonRecap,
+};
+const LABEL_BY_GAME = { anagram: "Anagram", pelemele: "Pêle-mêle", concept: "Concept" };
 
 (async () => {
   try {
@@ -98,11 +104,6 @@ const LABEL_BY_GAME = { anagram: "Anagram", pelemele: "Pêle-mêle" };
       }
       if (await ALREADY_POSTED_BY_GAME[activeGame](now)) {
         console.log("Pas de publication cette fois-ci — raison : already-posted-this-week");
-        return;
-      }
-      const slotIndex = computeWeeklySlotIndex(now);
-      if (!shouldPostThisSlot(slotIndex)) {
-        console.log(`Pas de publication cette fois-ci — raison : not-selected-slot-${slotIndex}`);
         return;
       }
     }

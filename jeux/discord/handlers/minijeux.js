@@ -24,6 +24,7 @@ import * as peleMeleSvc from "../../services/pelemele.js";
 import * as justeCarteSvc from "../../services/lajustecarte.js";
 import * as triviaSvc from "../../services/trivia.js";
 import * as triviaGeekSvc from "../../services/triviageek.js";
+import * as conceptSvc from "../../services/concept.js";
 import {
   getCurrentSeasonId as getAveugleSeasonId,
   getActiveBlindGame,
@@ -151,6 +152,8 @@ const VISUELS_GAMES = {
 const LETTRES_GAMES = {
   anagram: { title: "🔤 Anagram", svc: anagramSvc },
   pelemele: { title: "🔤 Pêle-mêle", svc: peleMeleSvc },
+  // Refonte (voir refonte.js) : "Jeux de mots" à partir de décembre 2026.
+  concept: { title: "🧩 Concept", svc: conceptSvc },
 };
 // "Mini-jeux de Culture" (mercredi) : Frame et Trivia alternent une saison
 // sur deux (voir jeuxculture.js), même mécanisme que

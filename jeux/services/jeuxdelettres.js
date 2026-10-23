@@ -1,10 +1,8 @@
 // ============================================================
 // jeuxdelettres.js — Tronc commun aux mini-jeux "de lettres" (Anagram,
 // Pêle-mêle), qui alternent désormais une saison sur deux sous
-// le nom collectif "Jeux de lettres" : planification hebdomadaire partagée
-// (samedi, 2 créneaux 10h/18h, tirage aléatoire — copié du mécanisme
-// originel d'Anagram, voir jeux/services/anagrams.js), et résolution de
-// quel jeu est actif pour une saison donnée. jeux/scripts/postJeuxDeLettres.js
+// le nom collectif "Jeux de lettres" (créneau unique samedi 18h UTC) :
+// résolution de quel jeu est actif pour une saison donnée. jeux/scripts/postJeuxDeLettres.js
 // est le seul consommateur destiné à la production (cron unique).
 //
 // ⚠️ Ne DUPLIQUE PAS getCurrentSeasonId() : chaque jeu (anagrams.js,
@@ -43,27 +41,6 @@ function getRedis() {
 
 // ── Saison en cours (mois calendaire, voir saison.js) ──────────
 export { getCurrentSeasonId };
-
-// ── Planification hebdomadaire ──────────────────────────────────
-// Copie assumée de ANAGRAM_CRON_HOURS/computeWeeklySlotIndex/
-// shouldPostThisSlot (jeux/services/anagrams.js) — voir le commentaire
-// original pour la justification complète (2 créneaux seulement, pas plus,
-// à cause du biais introduit par les retards de déclenchement GitHub
-// Actions). Anagram garde SA propre copie intacte (zéro risque pour le jeu
-// déjà en production) ; ce module a la sienne pour la décision de
-// planification PARTAGÉE (jeux/scripts/postJeuxDeLettres.js).
-export const LETTRES_CRON_HOURS = [10, 18];
-
-export function computeWeeklySlotIndex(now = new Date()) {
-  const hour = now.getUTCHours();
-  const passed = LETTRES_CRON_HOURS.filter((h) => h <= hour).length;
-  return Math.min(LETTRES_CRON_HOURS.length, Math.max(1, passed));
-}
-
-export function shouldPostThisSlot(slotIndex, rng = Math.random) {
-  const remaining = LETTRES_CRON_HOURS.length - slotIndex + 1; // 2,1
-  return rng() < 1 / remaining; // dernier créneau : 1/1, garanti
-}
 
 // ── Alternance saisonnière ──────────────────────────────────────
 export const ACTIVE_GAME_REFERENCE_SEASON = 136;

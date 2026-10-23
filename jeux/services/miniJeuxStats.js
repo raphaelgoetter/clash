@@ -22,6 +22,7 @@ import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
+import { getAllArchivedResults as getConceptResults } from "./concept.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
 import { getAllArchivedResults as getPaletteResults } from "./palette.js";
 import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
@@ -39,6 +40,7 @@ const WEEKLY_GAMES = [
   { key: "trivia", title: "🧠 Trivia", fetch: getTriviaResults },
   { key: "anagram", title: "🔤 Anagram", fetch: getAnagramResults },
   { key: "pelemele", title: "🔤 Pêle-mêle", fetch: getPeleMeleResults },
+  { key: "concept", title: "🧩 Concept", fetch: getConceptResults },
   { key: "zoom", title: "🔍 Zoom carte", fetch: getZoomResults },
   { key: "palette", title: "🎨 Palette", fetch: getPaletteResults },
   { key: "blindroyale", title: "🎧 Blind Royale", fetch: getBlindRoyaleResults },

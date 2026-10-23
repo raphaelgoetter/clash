@@ -36,7 +36,7 @@ console.log("✓ nouvelles paires à partir de la saison de bascule");
 // Décembre 2026 = 1er jeu de chaque nouvelle paire.
 assert.strictEqual(getActiveCultureGame(139), "synopsis");
 assert.strictEqual(getActiveBlindGame(139), "triviageek");
-assert.strictEqual(getActiveLetterGame(139), "emojis");
+assert.strictEqual(getActiveLetterGame(139), "concept");
 assert.strictEqual(getActiveVisualGame(139), "platpays");
 assert.strictEqual(getActiveCultureGame(140), "frame");
 console.log("✓ calendrier décembre/janvier");

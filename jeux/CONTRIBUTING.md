@@ -30,7 +30,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 ## Mini-jeux hebdomadaires : fonctionnement commun
 
-S'applique à Frame, Trivia, Trivia Geek, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
+S'applique à Frame, Trivia, Trivia Geek, Concept, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
 
 ### Alternance saisonnière (4 groupes)
 
@@ -39,7 +39,7 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | Groupe | Pair / impair | Publication (UTC) | Workflow | Orchestrateur | Service | npm |
 | --- | --- | --- | --- | --- | --- | --- |
 | 🎬 Jeux de culture | Frame / Trivia | mercredi 08:00 (`0 8 * * 3`) | `jeux-culture.yml` | `jeux/scripts/postJeuxCulture.js` | `jeuxculture.js` | `culture:*` |
-| 🔤 Jeux de lettres | Anagram / Pêle-mêle | samedi 10:00 ou 18:00 (`0 10,18 * * 6`, créneau aléatoire) | `jeux-de-lettres.yml` | `postJeuxDeLettres.js` | `jeuxdelettres.js` | `lettres:*` |
+| 🔤 Jeux de lettres | Anagram / Pêle-mêle | samedi 18:00 (`0 18 * * 6`) | `jeux-de-lettres.yml` | `postJeuxDeLettres.js` | `jeuxdelettres.js` | `lettres:*` |
 | 🎨 Jeux visuels | Zoom carte / Palette | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml` | `postJeuxVisuels.js` | `jeuxvisuels.js` | `visuels:*` |
 | 🙈 Jeux à l'aveugle | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`) | `jeux-aveugle.yml` | `postJeuxAveugle.js` | `jeuxaveugle.js` | `aveugle:*` |
 
@@ -51,7 +51,7 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | --- | --- | --- | --- |
 | `culture` | 🎬 Ciné-club | `synopsis` (Synopsis éclaté) | `frame` (Trouve le film) |
 | `aveugle` | 🎮 Culture geek | `triviageek` (Trivia Geek) | `intrus` (Intrus de l'inventaire) |
-| `lettres` | 🔤 Jeux de mots | `emojis` (Emojis) | `pelemele` (Pêle-mêle, nouveau thème) |
+| `lettres` | 🔤 Jeux de mots | `concept` (Concept) | `pelemele` (Pêle-mêle, nouveau thème) |
 | `visuels` | 📸 Coup d'œil | `platpays` (Plat Pays) | `zoom` (Zoom, nouveau thème) |
 
 - Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
@@ -63,7 +63,7 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque passage :
 
 1. Changement de saison détecté via un suivi **partagé** (`<groupe>:last_season_id`, ex. `jeuxvisuels:last_season_id`, `getLastKnownSeasonId`/`setLastKnownSeasonId`) → récap de fin de saison du jeu qui vient de finir. ⚠️ Ce suivi doit rester indépendant de `<jeu>:state` : le jeu qui reprend la main ne verrait sinon la transition que deux saisons plus tard. Jamais en dry-run (aucune écriture Redis).
-2. Gating (sauf `--force`/`--dry-run`) : bon jour UTC, puis `alreadyPostedThisWeek()` du jeu actif (date UTC de `<jeu>:state.startedAt` = aujourd'hui), puis pour les lettres le tirage de créneau (`computeWeeklySlotIndex`/`shouldPostThisSlot` : probabilité 1/2 à 10h, garanti à 18h). Les lettres se limitent à 2 créneaux car chaque créneau supplémentaire augmente le risque de retard GitHub et biaise le tirage vers le dernier créneau garanti.
+2. Gating (sauf `--force`/`--dry-run`) : bon jour UTC, puis `alreadyPostedThisWeek()` du jeu actif (date UTC de `<jeu>:state.startedAt` = aujourd'hui).
 3. Délégation à `post<Jeu>(channelId, { force: true, skipSeasonRecap: true, noPing })`.
 
 `skipSeasonRecap` existe sur Frame, Anagram, Zoom, La Juste Carte et Blind Royale (ignoré par Trivia) : un appel direct (`post<Jeu>.js`) détecte lui-même le changement de saison sur son propre état et poste le récap. Pêle-mêle et Palette n'ont pas ce paramètre : leur récap n'est posté **que** par l'orchestrateur. Les scripts `jeux/scripts/post<Jeu>.js` restent utilisables pour un test ou un rattrapage d'un jeu précis.
@@ -199,6 +199,20 @@ Deux instances du même moteur : service `jeux/services/triviaEngine.js` (`creat
 - Erratum : un champ `erratum` sur une question offre 1 pt à tous les participants de la manche (`grantErratumPoint()`, idempotent) et poste une annonce une seule fois (`<préfixe>:erratum_posted:<gameId>`).
 - Pas de logique de récap interne (`skipSeasonRecap` ignoré) : le récap de fin de saison est posté par l'orchestrateur du groupe.
 - Scripts : `trivia:*` et `triviageek:*` (`test`, `test:dry`, `reset`, `scores`) ; `postTrivia.js`, `resetTrivia.js` et `triviaScores.js` prennent `--geek` pour viser Trivia Geek.
+
+---
+
+## Concept (devine le concept caché derrière des emojis)
+
+Groupe « Jeux de mots » (samedi 18:00 UTC) à partir de la refonte, en alternance avec Pêle-mêle. Service `jeux/services/concept.js`, handler `jeux/discord/handlers/concept.js`, même parcours que Frame (Modal de réponse, indice, DM de fin de manche avec score de la manche et total de la saison, sans rang d'arrivée).
+
+- Catalogue `jeux/data/concept/concepts.json` (importé d'UniClaude, `github.com/alsacreations/uniclaude`, puis trié à la main) : `numero`, `emojis`, `categorie` (affichée dans le post), `reponse` (affichée à la résolution), `solution` (réponse « propre » sans parenthèse, base de l'indice, toujours acceptée), `accepte`, `refuse?`, `origine` (id UniClaude ou `null`). Parcouru dans l'ordre du fichier, en boucle ; `gameId` = `c` + numéro sur 3 chiffres. Ne jamais réordonner un catalogue déjà joué, ajouter en fin.
+- Règles de contenu : pas de doublon de réponse, jamais un prénom ou un mot courant seul dans `accepte` (nom complet, ou nom de famille sans ambiguïté), chanson = titre complet, pas de réponse double, uniquement des emojis Unicode 13 au plus (pas de lettres, de symbole non emoji ni de drapeau de subdivision), pas deux catégories identiques consécutives.
+- Réponse : un terme `accepte` doit apparaître **en mots entiers** dans la réponse normalisée (`normalizeConcept` : `normalizeAnswer` + ligatures œ/æ), aucun terme `refuse`.
+- Barème : `max(1, 10 − 2 × tentatives incorrectes − 3 × indice)`. La catégorie est affichée d'office ; le seul indice (éphémère) est le masque de `solution` (`buildMasque` : une case par lettre, ponctuation visible, nombre de lettres par mot). Score figé à la résolution.
+- Redis (`concept:*`) : `state`, `participants:<gameId>`, `usernames:<gameId>`, `hint:<gameId>:<discordId>`, `attempts:<gameId>:<discordId>` (purgés à la manche suivante), `season:<id>` (+ `pseudos`, `manche_seq`, `manche_numbers`), `archived:<id>`.
+- Boutons `concept_hint:`, `concept_answer:` (Modal `concept_answer_modal:`). Pas de commande de scores : « Ma participation » de `/mini-jeux`.
+- Scripts : `concept:test`, `concept:test:dry`, `concept:reset`.
 
 ---
 
