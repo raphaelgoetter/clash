@@ -367,7 +367,7 @@ async function buildFinalEmbed(state, ranking, highScore) {
 
   if (highScore) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
-    lines.push("", `<:topplayers:1493708397407899648> High score : ${name} (${highScore.points} pt${highScore.points > 1 ? "s" : ""})`);
+    lines.push("", `<:topplayers:1563107730397601792> High score : ${name} (${highScore.points} pt${highScore.points > 1 ? "s" : ""})`);
   }
 
   return {
