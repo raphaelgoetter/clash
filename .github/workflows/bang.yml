@@ -6,7 +6,7 @@ permissions:
 on:
   # Créneau réservé : minute 18 (prochaine libre après marioclash=14,
   # gobelet=16 — jamais la même minute que les autres crons de 8h UTC, voir
-  # CONTRIBUTING.md, incident du 27/08). Le cron passe --require-active : il
+  # jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) »). Le cron passe --require-active : il
   # n'avance qu'une partie déjà lancée à la main (workflow_dispatch).
   schedule:
     - cron: "18 8 * * *"

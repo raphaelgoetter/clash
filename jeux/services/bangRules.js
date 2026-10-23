@@ -8,7 +8,7 @@
 // travaille sur une copie fraîchement désérialisée) ; `rng` injectable pour
 // les tests et la simulation.
 //
-// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Bang!), source de vérité.
 // ============================================================
 

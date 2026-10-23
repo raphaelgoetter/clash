@@ -1,19 +1,20 @@
-# ⚔️ TrustRoyale Developer docs
+# ⚔️ TrustRoyale : documentation développeurs
 
-Ce document rassemble la documentation destinée aux développeurs et aux contributeurs.
-La documentation orientée utilisateur final reste dans README.md.
+Documentation développeurs de **TrustRoyale** (analyse de fiabilité GDC Clash Royale) et organisation du monorepo. Ce fichier est la source de vérité des règles métier GDC (formules, barèmes, seuils). La documentation utilisateur reste dans `README.md`.
+
+➡️ Tout ce qui concerne les jeux Discord (mini-jeux hebdomadaires, jeux spéciaux, duels) est dans [`jeux/CONTRIBUTING.md`](jeux/CONTRIBUTING.md).
 
 ---
 
 ## Organisation du dépôt (monorepo)
 
-Le dépôt sépare TrustRoyale (GDC) et les jeux Discord, avec deux packages partagés déclarés en workspaces npm (`package.json` racine) :
+Le dépôt sépare TrustRoyale (GDC) et les jeux Discord, avec deux packages partagés déclarés en workspaces npm (`package.json` racine : `packages/*`, `jeux`) :
 
 | Dossier | Package | Contenu |
 | --- | --- | --- |
 | `backend/`, `api/`, `frontend/`, `scripts/`, `data/` | (racine) | TrustRoyale : analyse GDC, site, commandes et notifications GDC |
 | `jeux/` | `@clash/jeux` | Mini-jeux, jeux spéciaux et duels : `services/`, `discord/handlers/`, `discord/routes/`, `server/imageRoutes.js` (images servies en HTTP), `scripts/`, `data/` |
-| `packages/commun/` | `@clash/commun` | Infrastructure générique : cache mémoire, Blob, helpers Discord (`discordUsers`, `discordRoles`, `discordInteractions`…), `classement`, `textNormalize` |
+| `packages/commun/` | `@clash/commun` | Infrastructure générique : cache mémoire, Blob, helpers Discord (`discordUsers`, `discordRoles`, `discordInteractions`, `discordChannels`…), `classement`, `textNormalize` |
 | `packages/clash-royale/` | `@clash/clash-royale` | Domaine Clash Royale : `clashApi`, `dateUtils` (saisons/semaines), `cardImage`, `cardArt`, `collectionConstants`, `famille` (`FAMILY_CLAN_TAGS`) |
 
 Règles de dépendance :
@@ -28,46 +29,60 @@ Les imports vers un package utilisent le nom du workspace (`import { getOrSet } 
 
 ## Scripts utiles
 
-- `npm run dev` — lance le backend Express sur le port 3000 et le frontend Vite sur le port 5173.
-- `npm run test` — exécute les tests Node présents dans backend/services.
-- `npm run cache` — régénère le cache clan (Redis) via scripts/refreshClanCache.js, servi ensuite par `GET /api/clan/:tag/cache`.
-- `npm run snapshot` — collecte les snapshots quotidiens de guerre via scripts/collectSnapshots.js.
-- `npm run pre-reset-snapshot` — prend un snapshot juste avant le reset pour fiabiliser les calculs journaliers.
-- `npm run notify-members` — détecte les arrivées, départs et changements de rôle puis poste un résumé Discord.
-- `npm run notify-members:dry` — même script en mode dry-run.
-- `npm run notify-members:sim` — dry-run avec données simulées.
-- `npm run war-summary` — publie le résumé quotidien de guerre après le reset.
-- `npm run war-summary:dry` — version dry-run du résumé quotidien.
-- `npm run war-exploit` / `npm run war-exploit:dry` — publie (ou affiche) l'« Exploit du jour » : la victoire GDC (1v1 ou manche de duel, hors bateau) au %matchup le plus élevé de la journée écoulée, un seul combat pour toute la famille, départage par écart de couronnes puis combat le plus tôt. Salon général (`DISCORD_CHANNEL_GENERAL`) par défaut, `--test` (`npm run war-exploit:test`) pour le salon de test des jeux. Anti-doublon Redis `dedup:warexploit`, ignoré en `--test` pour ne pas bloquer le cron. Image des deux decks jointe, même rendu que `/matchup-gdc` (`buildWarDecksImage()`, `backend/services/warDecksImage.js`) ; en dry-run, PNG écrit dans le dossier temporaire du système.
-- `node scripts/registerCommands.js` — enregistre ou met à jour les slash commands Discord.
-- `npm run ping-test` — vérifie rapidement la disponibilité réseau ou les secrets utilisés par les scripts de ping.
-- `npm run rules` — poste le rappel des règles du clan le premier mardi du mois.
-- `npm run rules:dry` — même script en mode dry-run.
-- `npm run frame:test` — poste manuellement une nouvelle partie de Frame sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).
-- `npm run frame:test:dry` — même script en mode dry-run (aperçu console, rien n'est posté ni écrit).
-- `npm run frame:public` — poste sur le salon public "Général" (`DISCORD_CHANNEL_FRAME_PUBLIC`) ; utilisé par le cron `frames.yml`.
-- `npm run frame:public:dry` — équivalent dry-run.
-- `npm run frame:scores` — affiche le classement de la partie Frame en cours (joueur / score de la partie / score total de la saison).
-- `npm run frame:reset` — remet le jeu Frame à zéro : plus de partie active (la prochaine repart à la première image de `frames.json`), historique et scores effacés.
-- `npm run find-discord-clans` — script ponctuel (hors cron) qui liste les clans **français** dont la description mentionne « discord » (hors clans mentionnant « famille »/« family », qui désignent en général une organisation multi-clans plutôt qu'une cible de scouting isolée) et qui comptent entre `MIN_ACTIVE` et `MAX_ACTIVE` joueurs actifs (candidats potentiels de recrutement/scouting). Options : `--max-active=N` (défaut 30), `--min-active=N` (défaut 10) et `--active-days=N` (défaut 2, un membre est considéré actif si `lastSeen` date de moins de N jours). Une poignée de clans passés en revue manuellement sont exclus d'office via `EXCLUDED_CLAN_TAGS` dans le script (faux positifs non pertinents malgré la correspondance sur les critères automatiques). Écrit le résultat dans `data/discord-clans-fr.json` : `{ generatedAt, new: [...], contacted: [...] }`.
-  - `new` — clans à contacter (tag, nom, membres, membres actifs, description).
-  - `contacted` — clans déjà contactés, stats rafraîchies à chaque run indépendamment des critères ci-dessus. Le statut de contact (`status`: `pending`/`rejected`, `note` libre) est tenu à la main dans `data/discord-clans-contacted.json` (clé = tag du clan) ; ajouter une entrée dans ce fichier retire automatiquement le clan de `new` au run suivant.
-  - ⚠️ L'API Clash Royale plafonne chaque requête `/clans` (recherche) à ~640 résultats, quel que soit le nombre réel de clans correspondants — y compris les gros clans identifiés dans le repo (48/38/43 membres), absents d'une recherche `locationId=France` sans autre filtre. Le script contourne cette limite en découpant la recherche par tranches de taille de clan (`minMembers`/`maxMembers`, largeur 2, de 2 à 50 membres) et en fusionnant les résultats dédupliqués — ce qui porte la couverture réelle à ~11 000 clans FR uniques au lieu de 640. Compter ~8 minutes d'exécution (25 requêtes de recherche + un `fetchClan` par clan trouvé + un `fetchClanMembers` par clan retenu sur la description).
+Scripts TrustRoyale (`package.json` racine ; les scripts des jeux sont listés dans `jeux/CONTRIBUTING.md`). Les variantes `:dry` passent `--dry-run` (rien n'est posté ni écrit).
 
-### Notes sur les scripts de snapshots
+| Script npm | Fichier | Rôle |
+| --- | --- | --- |
+| `dev` | | Backend Express :3000 + frontend Vite :5173 |
+| `test` | | `node --test` sur `backend/`, `jeux/`, `packages/` (Redis simulé via `@clash/commun/testing/registerFakeRedis.js`) |
+| `build` / `deploy` | | Build Vite + `vercel --prod` (`prebuild` lance `cache`) ; le déploiement de `main` est de toute façon automatique |
+| `cache` | `scripts/refreshClanCache.js` | Régénère le cache clan (Redis), servi par `GET /api/clan/:tag/cache` |
+| `snapshot` | `scripts/collectSnapshots.js` | Snapshots horaires de guerre + cumul matchup GDC |
+| `pre-reset-snapshot` | `scripts/preResetSnapshot.js` | Snapshot juste avant le reset (fiabilise les totaux journaliers) |
+| `notify-members` (`:dry`, `:sim` = dry-run + données simulées) | `scripts/notifyMemberChanges.js` | Arrivées, départs, changements de rôle |
+| `war-summary` (`:dry`) | `scripts/notifyWarSummary.js` | Résumé quotidien/hebdo de guerre après le reset |
+| `clan-status` (`:dry`) | `scripts/notifyClanStatus.js` | Statut des clans (salon staff) |
+| `war-exploit` (`:dry`, `:test`) | `scripts/notifyWarExploit.js` | « Exploit du jour » (voir ci-dessous) |
+| `last-seen` (`:dry`) | `scripts/notifyLastSeen.js` | Joueurs inactifs |
+| `gdc-launch` (`:dry`) | `scripts/notifyGdcLaunch.js` | Annonce de lancement GDC (jeudi) |
+| `pre-war-summary` (`:dry`) | `scripts/notifyPreWarSummary.js` | Résumé pré-GDC hebdo |
+| `rules` (`:dry`, `:dry:noping`) | `scripts/notifyRules.js` | Rappel des règles, ne poste que le 1er mardi du mois (heure de Paris) |
+| `discord-links:list` / `:set` / `:remove` | `scripts/discordLinks.js` | Administration des liens tag → Discord |
+| `find-discord-clans` | `scripts/findDiscordClans.js` | Scouting ponctuel (voir ci-dessous) |
+| `assets:upload-blob` | `scripts/uploadImageAssetsToBlob.js` | Copie ponctuelle des assets binaires de `data/` vers Vercel Blob |
 
-- Les snapshots sont stockés dans Upstash Redis (une clé `snapshots:<TAG>` par clan), lus/écrits via `loadSnapshots()`/`recordSnapshot()` dans `backend/services/snapshot.js`.
-- Source unique et partagée entre toutes les fonctions/scripts : plus besoin de redéployer pour que les données restent fraîches, et plus de logique de fusion tmp/disque (l'ancien double stockage /tmp + data/snapshots forçait un redéploiement Vercel à chaque cron horaire, ce qui gonflait le Function Storage du projet — cf. incident du 05/09).
+Hors npm : `node scripts/registerCommands.js` (enregistre les slash commands, à relancer après tout ajout/modification de commande) ; `node scripts/deleteGuildCommands.js` (ponctuel, supprime les commandes de guilde en double).
 
-### Logs anti-doublon des scripts de notification
+### Exploit du jour (`notifyWarExploit.js`)
 
-`notifyLastSeen.js`, `notifyWarSummary.js`, `notifyClanStatus.js`, `notifyGdcLaunch.js` et `notifyPreWarSummary.js` stockent chacun leur log anti-doublon (« ai-je déjà posté aujourd'hui/cette semaine ? ») dans Upstash Redis plutôt que dans `data/*.json` (clés `dedup:lastseen`, `dedup:warsummary`, `dedup:clanstatus`, `dedup:gdclaunch`, `dedup:pregdcweekly`). Ces workflows ne font donc plus de `git commit`/`git push` — jusqu'ici, chacun de ces posts quotidiens/hebdo déclenchait un commit sur `main`, donc un redéploiement Vercel complet, ce qui gonflait le Function Storage du projet (même cause que l'incident snapshots du 05/09, cf. ci-dessus).
+- Victoire GDC (1v1 ou manche de duel, hors bateau) au %matchup le plus élevé de la journée écoulée, un seul combat pour toute la famille ; départage par écart de couronnes puis combat le plus tôt.
+- Salon `DISCORD_CHANNEL_GENERAL` ; `--test` poste sur le salon de test des jeux et ignore l'anti-doublon Redis `dedup:warexploit` (pour ne pas bloquer le cron).
+- Image des deux decks jointe, même rendu que `/matchup-gdc` (`buildWarDecksImage()`, `backend/services/warDecksImage.js`) ; en dry-run, PNG écrit dans le dossier temporaire du système.
+
+### Scouting (`findDiscordClans.js`)
+
+- Liste les clans **français** dont la description mentionne « discord » (hors « famille »/« family ») et qui comptent entre `--min-active=N` (défaut 10) et `--max-active=N` (défaut 30) membres actifs (`lastSeen` < `--active-days=N`, défaut 2). `EXCLUDED_CLAN_TAGS` (dans le script) exclut la famille et des faux positifs revus à la main.
+- Sortie : `data/discord-clans-fr.json` = `{ generatedAt, new, contacted }`. Le statut de contact (`status` `pending`/`rejected`, `note`) est tenu à la main dans `data/discord-clans-contacted.json` (clé = tag) ; y ajouter un clan le retire de `new`.
+- ⚠️ La recherche `/clans` de l'API est plafonnée à ~640 résultats : le script découpe par tranches de taille (`minMembers`/`maxMembers`, largeur 2, de 2 à 50) et dédoublonne. Compter ~8 min d'exécution.
+
+### Stockage Redis des scripts (Upstash)
+
+Aucun script planifié ne fait de `git commit`/`push` : ⚠️ chaque commit sur `main` redéploie Vercel et sature le Function Storage. Tout l'état persistant est dans Redis :
+
+| Clé | Contenu | Service / script |
+| --- | --- | --- |
+| `snapshots:<TAG>` | Snapshots de guerre d'un clan | `loadSnapshots()`/`recordSnapshot()`, `backend/services/snapshot.js` |
+| `dedup:lastseen`, `dedup:warsummary`, `dedup:clanstatus`, `dedup:gdclaunch`, `dedup:pregdcweekly`, `dedup:warexploit` | Anti-doublon « déjà posté aujourd'hui/cette semaine » | scripts `notify*.js` correspondants |
+| `dedup:warclinch` | Preuve de victoire J3 (`computeDay3ClinchProof`, utile en Colisée sans `finishTime`) | `notifyWarSummary.js` |
+| `discordlinks` (hash) | Tag Clash → Discord user ID | `backend/services/discordLinks.js` |
+| `blacklist` (hash) | Liste Noire | `backend/services/blacklist.js` |
+| `matchupPerf:war` (hash) | Cumul matchup GDC 3 semaines | `backend/services/matchupPerformance.js` |
 
 ### Liens Discord (`/discord-link`)
 
-Le mapping tag Clash → Discord user ID (`backend/services/discordLinks.js`, `getDiscordLinks()`/`setDiscordLinks()`/`deleteDiscordLinks()`) est stocké dans Upstash Redis (hash `discordlinks`), et non plus dans `data/discord-links.json` via l'API GitHub Contents. L'ancien mécanisme lisait avec un cache de 5 min et écrivait par `sha` (non atomique, deux `/discord-link` concurrents pouvaient se marcher dessus) — la commande `/discord-link` déclenchait en plus un commit sur `main` à chaque lien, donc un redéploiement Vercel complet. L'écriture Redis (`HSET`) est désormais atomique par tag, sans lecture préalable ni commit. Tous les consommateurs (route `/api/player`, `/api/clan`, commandes `/late`, `/late-ping`, `/discord-check`, script `notifyMemberChanges.js`, `notifyWarSummary.js`, `notifyPreWarSummary.js`) passent par ce même service.
-
-Administration manuelle (remplace l'ancienne édition de `data/discord-links.json` + push sur `main`) :
+- `getDiscordLinks()`/`setDiscordLinks()`/`deleteDiscordLinks()` (`backend/services/discordLinks.js`), écriture `HSET` atomique par tag.
+- Tous les consommateurs passent par ce service : routes `/api/player`, `/api/clan`, commandes `/late`, `/late-ping`, `/discord-check`, scripts `notifyMemberChanges.js`, `notifyWarSummary.js`, `notifyPreWarSummary.js`.
+- Administration manuelle :
 
 ```bash
 npm run discord-links:list
@@ -77,75 +92,64 @@ npm run discord-links:remove -- "#TAG" [...]
 
 ### Liste Noire (`/blacklist`)
 
-Stockée dans Upstash Redis (hash `blacklist`, `backend/services/blacklist.js`) : un champ par tag `#TAG`, valeur JSON `{ name, clans, reason, addedBy, addedAt }`. `clans` est l'historique des clans distincts du joueur (plus récent en tête, 5 max), initialisé à l'ajout depuis le journal de combats (25 derniers) puis le clan actuel, et mis à jour à chaque `consulte`. « Dernier clan connu » = premier clan de l'historique différent du clan actuel. Accès réservé aux membres ayant un rôle Discord dont le nom commence par `STAFF` (`memberHasRolePrefix()` dans `discordRoles.js`) ; réponses éphémères.
+- Hash Redis `blacklist` : un champ par `#TAG`, valeur `{ name, clans, reason, addedBy, addedAt }`. `clans` = historique des clans distincts (plus récent en tête, 5 max), initialisé depuis le journal de combats puis le clan actuel, mis à jour à chaque `consulte`. « Dernier clan connu » = premier clan de l'historique différent du clan actuel (`lastKnownClan()`).
+- Accès : rôle Discord commençant par `STAFF` (`memberHasRolePrefix()`, `@clash/commun/discordRoles.js`) ; réponses éphémères. Handler : `api/discord/_handlers/blacklist.js`.
+- `notifyMemberChanges.js`, à l'arrivée d'un joueur : `⚠️ Joueur figurant dans la Liste Noire` si son tag y figure ; `⚠️ Clan à risque (NOM)` si son dernier clan connu apparaît dans l'historique d'un *autre* joueur de la liste (`buildRiskyClanMap()`, clans de la famille exclus). Redis indisponible : notification envoyée sans ces avertissements.
 
-`notifyMemberChanges.js` s'en sert pour les arrivées : `⚠️ Joueur figurant dans la Liste Noire` si le tag y figure, et `⚠️ Clan à risque (NOM)` si le dernier clan connu du nouveau venu (déduit de son journal de combats, `lastKnownClan()`) apparaît dans l'historique de clans d'un *autre* joueur de la Liste Noire (`buildRiskyClanMap()`, clans de la famille exclus). Si Redis est indisponible, la notification part sans ces avertissements.
+### Thread dédié aux notifications d'un clan
 
-### Thread Discord dédié aux notifications automatiques (test clan 2)
+- `resolveMembersChannelId(clanTag, { thread = true })` (`@clash/commun/discordChannels.js`) renvoie `DISCORD_THREAD_MEMBERS_<TAG>` si définie, sinon `DISCORD_CHANNEL_MEMBERS_<TAG>` ; `{ thread: false }` force le salon principal.
+- Utilisé par `notifyWarSummary.js`, `notifyMemberChanges.js`, `notifyLastSeen.js`. Les autres scripts (`notifyPreWarSummary.js`, `notifyGdcLaunch.js`, `notifyRules.js`, `notifyClanStatus.js`) postent toujours dans le salon principal ou staff.
+- Aucun clan n'a de thread configuré aujourd'hui. Pour en activer un : renseigner `DISCORD_THREAD_MEMBERS_<TAG>` dans `.env` et ajouter le secret GitHub Actions du même nom aux workflows `snapshot.yml`, `last-seen.yml`, `war-summary.yml`. Aucun changement de code.
 
-Pour éviter que les posts automatiques parasitent les discussions manuelles du salon d'un clan, certains scripts peuvent poster dans un thread dédié plutôt que dans le salon principal.
+### Planification (GitHub Actions)
 
-Chaque script concerné résout son channel cible via `resolveMembersChannelId(clanTag)` (`packages/commun/discordChannels.js`) plutôt que de lire directement `DISCORD_CHANNEL_MEMBERS_<TAG>`. Par défaut, cette fonction retourne `DISCORD_THREAD_MEMBERS_<TAG>` si elle est définie pour ce clan, sinon retombe sur `DISCORD_CHANNEL_MEMBERS_<TAG>` (comportement historique inchangé). Un appelant peut forcer le salon principal en passant `{ thread: false }`, ce qui ignore `DISCORD_THREAD_MEMBERS_<TAG>` même si elle est définie.
+Horaires en UTC (`.github/workflows/`) ; Paris = UTC+2 en été, UTC+1 en hiver. Workflows des jeux : voir `jeux/CONTRIBUTING.md`.
 
-Scripts concernés : `notifyWarSummary.js` (résumé quotidien/hebdo), `notifyMemberChanges.js` (arrivées/départs/promotions/rétrogradations), `notifyLastSeen.js` (joueurs inactifs).
+| Workflow | Cron (UTC) | Scripts | Salon |
+| --- | --- | --- | --- |
+| `snapshot.yml` | toutes les heures | `snapshot`, `notify-members`, `cache` | membres (arrivées/départs) |
+| `pre-reset-snapshot.yml` | 07:30 ven, sam, dim, lun | `preResetSnapshot.js` | aucun |
+| `war-summary.yml` | 10:05 tous les jours (poste ven à lun) | `notifyWarSummary.js`, `notifyClanStatus.js`, `notifyWarExploit.js` | membres, staff (`DISCORD_CHANNEL_STAFF`), général (`DISCORD_CHANNEL_GENERAL`) |
+| `last-seen.yml` | 10:08 tous les jours | `notifyLastSeen.js` | membres |
+| `gdc-launch.yml` | 10:30 jeudi | `notifyGdcLaunch.js` | membres |
+| `pre-war-summary.yml` | 14:00 mercredi | `pre-war-summary` | membres |
+| `rules.yml` | 14:00 mardi (poste le 1er mardi du mois) | `notifyRules.js` | membres |
 
-Scripts **non concernés** (restent dans le salon principal ou le salon staff) : `notifyPreWarSummary.js`, `notifyGdcLaunch.js`, `notifyRules.js`, `notifyClanStatus.js`.
-
-Le test mené sur le clan 2 (`LRQP20V9`, thread `1523295989044088964`) n'a finalement pas été retenu : ses scripts postent de nouveau dans le salon membres principal. Aucun clan n'a donc actuellement de `DISCORD_THREAD_MEMBERS_<TAG>` renseignée. Pour activer ce mécanisme sur un clan :
-
-1. Renseigner `DISCORD_THREAD_MEMBERS_<TAG>` dans `.env` (local).
-2. Ajouter le secret GitHub Actions du même nom dans les workflows concernés (`snapshot.yml`, `last-seen.yml`, `war-summary.yml`).
-
-Aucun changement de code n'est nécessaire pour étendre le test à un autre clan.
-
-### Planification des scripts automatiques (GitHub Actions)
-
-Tous les horaires ci-dessous sont définis en UTC dans les workflows (`.github/workflows/`). L'heure de Paris correspond à UTC+2 en été (CEST) et UTC+1 en hiver (CET).
-
-| Script                                                  | Workflow                 | Jour(s)                                       | Horaire UTC                  | Horaire Paris (été/hiver) | Salon Discord                         |
-| ------------------------------------------------------- | ------------------------ | --------------------------------------------- | ---------------------------- | ------------------------- | ------------------------------------- |
-| `collectSnapshots.js` (`npm run snapshot`)              | `snapshot.yml`           | Tous les jours                                | Toutes les heures            | —                         | Aucun post (données uniquement)       |
-| `notifyMemberChanges.js` (`npm run notify-members`)     | `snapshot.yml`           | Tous les jours                                | Toutes les heures            | —                         | Salon membres principal               |
-| `refreshClanCache.js` (`npm run cache`)                 | `snapshot.yml`           | Tous les jours                                | Toutes les heures            | —                         | Aucun post (cache statique)           |
-| `preResetSnapshot.js`                                   | `pre-reset-snapshot.yml` | Ven, Sam, Dim, Lun                            | 07:30                        | 09:30 / 08:30             | Aucun post (données uniquement)       |
-| `notifyWarSummary.js`                                   | `war-summary.yml`        | Tous les jours (poste ven/sam/dim/lun)        | 10:05                        | 12:05 / 11:05             | Salon membres principal               |
-| `notifyClanStatus.js`                                   | `war-summary.yml`        | Tous les jours (idem)                         | 10:05                        | 12:05 / 11:05             | Salon staff (`DISCORD_CHANNEL_STAFF`) |
-| `notifyWarExploit.js`                                   | `war-summary.yml`        | Tous les jours (idem)                         | 10:05                        | 12:05 / 11:05             | Salon général (`DISCORD_CHANNEL_GENERAL`) |
-| `notifyLastSeen.js`                                     | `last-seen.yml`          | Tous les jours                                | 10:08                        | 12:08 / 11:08             | Salon membres principal               |
-| `notifyGdcLaunch.js`                                    | `gdc-launch.yml`         | Jeudi                                         | 10:30                        | 12:30 / 11:30             | Salon membres principal               |
-| `notifyPreWarSummary.js` (`npm run pre-war-summary`)    | `pre-war-summary.yml`    | Mercredi                                      | 14:00                        | 16:00 / 15:00             | Salon membres principal               |
-| `notifyRules.js`                                        | `rules.yml`              | Mardi (le script ne poste que le 1er du mois) | 14:00                        | 16:00 / 15:00             | Salon membres principal               |
-| `postFrame.js` (`npm run frame:public`)                 | `frames.yml`             | Mercredi                                      | 08:00                        | 10:00 / 09:00             | Salon "Général"                       |
-| `postAnagram.js` (`npm run anagram:public`)             | `anagrams.yml`           | Samedi                                        | 10:00 ou 18:00 (aléatoire)\* | 12:00-20:00 / 11:00-19:00 | Salon "Général"                       |
-
-\* `anagrams.yml` se déclenche à 10h et 18h UTC (2 créneaux). À chaque déclenchement, un tirage au sort décide de poster ou non : 1 chance sur 2 au premier créneau, garanti au second (18h UTC) si aucun post n'a encore eu lieu cette semaine — voir [Post hebdomadaire à horaire aléatoire](#post-hebdomadaire-à-horaire-aléatoire-samedi-10h-ou-18h-utc) dans la section Jeu Anagram.
+- ⚠️ Les triggers `schedule` de GitHub sont _best-effort_ : retards possibles de 75 à 90 min aux heures chargées (d'où le départ à 07:30 de `pre-reset-snapshot.yml`, qui dort ensuite jusqu'à T−2 min avant chaque reset).
+- ⚠️ Un trigger `schedule` peut se désynchroniser silencieusement (aucun run, alors que `workflow_dispatch` fonctionne) : pousser un commit qui touche le workflow sur la branche par défaut force un resync ([community#185355](https://github.com/orgs/community/discussions/185355)). Une occurrence manquée de `pre-reset-snapshot.yml` est irrécupérable.
 
 ---
 
 ## Référence API backend
 
-| Méthode | Endpoint                  | Description                                                                         |
-| ------- | ------------------------- | ----------------------------------------------------------------------------------- |
-| GET     | /health                   | Vérification simple de disponibilité du backend                                     |
-| GET     | /api/ip                   | Retourne l’IP publique du serveur, utile pour whitelist l’API Clash Royale en local |
-| GET     | /api/debug                | Endpoint de debug des variables d’environnement critiques                           |
-| GET     | /api/player/:tag          | Retourne le profil brut d’un joueur                                                 |
-| GET     | /api/player/:tag/analysis | Retourne l’analyse complète d’un joueur                                             |
-| GET     | /api/clan/:tag            | Retourne le profil brut d’un clan                                                   |
-| GET     | /api/clan/:tag/lite       | Retourne une version allégée d’un clan sans calcul complet de fiabilité             |
-| GET     | /api/clan/:tag/analysis   | Retourne l’analyse complète d’un clan et de ses membres                             |
-| POST    | /api/cache/flush          | Vide le cache mémoire, usage développement                                          |
+| Méthode | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/health` | Disponibilité du backend |
+| GET | `/api/ip` | IP publique du serveur (whitelist API Clash Royale en local) |
+| GET | `/api/debug` | Variables d'environnement critiques |
+| GET | `/api/player/:tag` | Profil brut d'un joueur |
+| GET | `/api/player/:tag/analysis` | Analyse complète d'un joueur (+ `warSnapshotDays`, `warCurrentWeekId`, `warSnapshotTakenAt`, `warResetUtcMinutes` si disponibles) |
+| GET | `/api/player/:tag/battlelog` | Journal de combats |
+| GET | `/api/clan/:tag` | Profil brut d'un clan |
+| GET | `/api/clan/:tag/cache` | Analyse clan pré-calculée (Redis), rendu immédiat de la vue clan |
+| GET | `/api/clan/:tag/lite` | Version allégée sans calcul complet de fiabilité |
+| GET | `/api/clan/:tag/analysis` | Analyse complète du clan et de ses membres (clans `ALLOWED_CLANS` uniquement) |
+| GET | `/api/clan/:tag/current-war`, `/members` | GDC en cours, membres |
+| POST / GET | `/api/clan/:tag/snapshot`, `/snapshot-force`, `/snapshot-debug` | Snapshot à la demande et debug |
+| GET | `/api/decks/player/:tag`, `/player/:tag/war-decks`, `/meta/top-war-decks` | Decks |
+| GET | `/api/matchup/catalog` | Catalogue win conditions (page `/matchup/`) |
+| GET | `/api/card-art/:fichier` | Illustrations de cartes à jour (Blob) |
+| POST | `/api/cache/flush` | Vide le cache mémoire (dev) |
 
-Notes :
+- Les tags gardent le `#` côté appelant, encodé `%23` dans l'URL.
+- Champs de l'API Clash Royale (`currentriverrace`, `periodPoints`, `periodLogs`, `participants`…) : [docs/api-clash-royale.md](docs/api-clash-royale.md).
 
-- Les tags doivent conserver le préfixe # côté appelant, encodé en %23 dans l’URL.
-- L’endpoint /api/clan/:tag/analysis refuse les clans hors liste autorisée.
-- /api/player/:tag/analysis ajoute aussi warSnapshotDays, warCurrentWeekId, warSnapshotTakenAt et warResetUtcMinutes quand les données existent.
-- /api/clan/:tag/analysis peut exposer debugSnapshotInfo avec des scores journaliers explicites : scoreJeudi, scoreVendredi, scoreSamedi, scoreDimanche et dailyScores.
+### Illustrations de cartes à jour (`packages/clash-royale/cardArt.js`)
 
-### API Clash Royale — champs et sources de vérité
+L'API sert encore l'ancien design de certaines cartes (repérées avec `outils/compare_card_art.mjs`). Les PNG à jour de `data/card-art/` (copie sur Blob) remplacent l'ancien design partout : `fetchCards()` réécrit `iconUrls.medium` vers `/api/card-art/<fichier>` (URL d'origine dans `iconUrls.apiMedium`), `battleCardIconUrl()` fait de même, les rendus SVG lisent le fichier sur Blob.
 
-La documentation détaillée des champs retournés par l’API Clash Royale (champs `currentriverrace`, `periodPoints`, `periodLogs`, `participants`, etc.) est dans [docs/api-clash-royale.md](docs/api-clash-royale.md).
+Nouvelle carte périmée : PNG 285×420 dans `data/card-art/`, entrée dans `CARD_ART_OVERRIDES`, puis `npm run assets:upload-blob -- card-art`.
 
 ---
 
@@ -153,449 +157,181 @@ La documentation détaillée des champs retournés par l’API Clash Royale (cha
 
 ### Projection de fin de journée (groupe GDC)
 
-La projection estime les points qu'un clan atteindra à la fin de la journée de guerre.
-
-La variable de plafonnement utilisée ici s'appelle **Engagement**. Elle est calculée au niveau du clan à partir de l'intersection entre le roster du clan et les participants de la guerre en cours qui ont déjà joué au moins un deck cette semaine :
-
-- `activeMembers` = nombre de membres du roster ayant `decksUsed > 0` dans cette semaine de GDC
-- `rosterSize` = taille du clan (`clan.members`)
-- `ratio` = `activeMembers / rosterSize`
-
-Cette approche donne un indicateur plus utile pour la projection, en évitant de compter comme actifs les membres qui sont simplement listés dans la course mais n'ont encore rien joué.
-
-Pour le clan propre, le roster vient du payload de l'analyse. Pour les rivaux, le roster est chargé une fois au moment du calcul du groupe GDC afin de garder une mesure stricte sans dépasser 100 %.
-
-**Formule générale :**
+Source : `backend/routes/clan.js`, bloc `groupWithProjections` (commentaire de référence des champs en tête du bloc).
 
 ```text
-Projection = max(decksToday, targetDecks) × ptsPerDeck
+projectedFame = max(decksToday, targetDecks) × ptsPerDeck
+targetDecks   = min(practicalMaxDecksToday, decksToday + maxDecksByTime)
+practicalMaxDecksToday = min(200, rosterSize × 4)      J1 (warDayIndex 0)
+                         min(200, activeMembers × 4)   J2 à J4
+maxDecksByTime = floor(temps avant reset / 3 min) × 2
 ```
 
-**Calcul de `targetDecks` :**
+- `rosterSize` = taille du roster (`clan.members`) ; `activeMembers` = membres du roster avec `decksUsed > 0` cette semaine (borné à `rosterSize`). Pour les rivaux, le roster est chargé au calcul du groupe.
+- `ptsPerDeck` = `periodPoints / decksToday` (repli : moyenne historique du clan).
+- En Colisée, la projection s'ajoute au total live de la semaine.
 
-`targetDecks` représente la capacité maximale réaliste du clan pour la journée courante, basée sur le roster et l'engagement constaté :
+### `maxReachableFame` et victoire assurée (`isClinchedWin`)
 
-- **J1** (`warDayIndex === 0`) : `min(200, rosterSize × 4)` — on utilise la taille totale du roster car l'engagement n'est pas encore fiable en J1.
-- **J2–J4** (`warDayIndex > 0`) : `min(200, activeMembers × 4)` — on utilise l'engagement constaté : seuls les membres ayant déjà joué au moins un deck dans la semaine sont comptés.
+```text
+remainingDecks   = min(800 − decksSemaine, (200 − decksToday) + joursRestants × 200)
+maxReachableFame = currentFame + remainingDecks × 200
+```
 
-Cette approche simplifiée remplace l'ancienne formule qui combinait historique (moyenne de la semaine passée), pace (extrapolation cadence) et engagement. La donnée d'engagement est plus réactive et évite les décalages avec la semaine réelle. Le pace n'est plus utilisé dans la cible (il reste consultable via les métriques brutes).
-
-### `maxReachableFame` et détection de victoire assurée (`isClinchedWin`)
-
-Le calcul de `maxReachableFame` (borne haute théorique) utilise un plafond **absolu** (`absoluteMaxDecksToday`), différent de `targetDecks` :
-
-- `absoluteMaxDecksToday = 200` — plafond fixe du jeu par clan et par jour, **indépendant du roster**.
-- `remainingDecks = min(800 − decksSemaine, (200 − decksToday) + joursRestants × 200)`
-- `maxReachableFame = currentFame + remainingDecks × 200`
-
-Un clan est marqué `isClinchedWin` quand `currentFame > max(maxReachableFame de tous les rivaux)`, c'est-à-dire quand même le scénario le plus optimiste pour les adversaires ne permet pas de dépasser le clan.
-
-Ne **jamais** borner par `rosterSize × 4` : un clan peut recruter en cours de journée, et les decks des membres partis restent comptés dans `decksToday`. Un clan à 47 membres ayant joué 187 decks peut donc encore en jouer 13, pas 1 (faux « ✅ Victoire » constaté en Colisée le 05/10/2026).
-
-### `decksToday` et `clanWarSummary` — pas de filtre ex-membres
-
-`decksToday` et `clanWarSummary` utilisent les participants bruts de `currentRace.clan.participants`, sans filtre par le roster actuel (`currentMemberTags`). Cela signifie que les decks joués par des membres ayant quitté le clan **pendant le jour de guerre** sont bien comptabilisés.
-
-Conséquence : si 2 membres (8 decks) quittent le clan en cours de J4 mais ont joué leurs 4 decks chacun avant de partir, `decksToday` affichera 198 et non 190 (qui serait le total des seuls membres encore présents).
-
-**Ne pas filtrer** est le comportement correct car :
-
-- ces decks ont réellement contribué au score du clan dans la course
-- l'API Clash Royale continue de les retourner dans `currentRace.clan.participants` même après leur départ
-- `activeMembers` reste basé sur le roster actuel (logique : les partis ne joueront plus), ce qui borne correctement `targetDecks` et `maxReachableFame`
+- `isClinchedWin` : en Colisée, `currentFame > max(maxReachableFame des rivaux)` ; en GDC normale, progression du bateau ≥ 10 000 (ligne d'arrivée constatée, jamais anticipée).
+- ⚠️ Plafond absolu 200 decks/jour, **jamais** `rosterSize × 4` : un clan peut recruter en cours de journée et les decks des partants restent comptés.
+- `decksToday` et `clanWarSummary` utilisent `currentRace.clan.participants` **sans filtre** sur le roster actuel : les decks des membres partis pendant la journée ont réellement compté et l'API les renvoie toujours. `activeMembers`, lui, reste basé sur le roster actuel.
 
 ### Barème des médailles GDC
 
-Les points gagnés/perdus dans les combats de guerre sont utilisés pour estimer les victoires et les défaites à partir des fame du clan.
+| Combat | Victoire | Défaite |
+| --- | --- | --- |
+| PvP | 200 | 100 |
+| Bateau | 125 | 75 |
+| Duel | 250 | 100 |
 
-- **PvP Battle** : victoire = 200 points, défaite = 100 points
-- **Boat Battle** : victoire = 125 points, défaite = 75 points
-- **Duels** : victoire = 250 points, défaite = 100 points
-
-Ces valeurs sont issues du barème de Clan Wars de Clash Royale.
-
-**Remarques :**
-
-- Tous les clans d'un même groupe GDC partagent le même créneau de reset.
-- Code source : `backend/routes/clan.js`, bloc `groupWithProjections`.
+Source : `getWarMatchPoints()` dans `backend/services/battleLogUtils.js`. Tous les clans d'un groupe GDC partagent le même créneau de reset.
 
 ### Matchup GDC
 
-Le matchup GDC mesure la difficulté moyenne des combats d'un joueur sur ses récents combats de guerre.
-Le calcul est purement tactique : il compare les 8 cartes des deux decks réellement joués (win conditions,
-counters, structure, niveaux, évolutions) — pas les statistiques de compte des joueurs (trophées, winrate, collection…,
-ancien algorithme abandonné).
+Difficulté d'un combat calculée **uniquement** à partir des 8 cartes des deux decks joués (pas des statistiques de compte). Moteur commun à `/matchup-gdc` (combats de guerre regroupés par jour, `summarizeWarDecksForMatchup()`) et `/matchup` (6 derniers combats en modes standards GDC/Ladder/Classé/Amical, événements et 2v2 exclus, `summarizeRecentBattlesForMatchup()`). Le calcul (`computeDeckMatchupDetail()`) ne dépend pas du type de combat.
 
-Ce moteur est partagé par deux commandes Discord : `/matchup-gdc` (combats de guerre uniquement, decks
-regroupés par jour de GDC — `summarizeWarDecksForMatchup()`) et `/matchup` (6 derniers combats du joueur
-en modes standards, GDC, Ladder, Classé et Amical, les modes d'événement et le 2v2 étant exclus comme pour la
-calibration, une ligne par combat sans regroupement, via `summarizeRecentBattlesForMatchup()`). Le calcul de difficulté lui-même (`computeDeckMatchupDetail()`)
-est identique dans les deux cas : il ne dépend pas du type de combat.
+- Base `scoreA = 50` (avantage du deck A) + 4 layers additifs ; 1 point ≈ 1 % de probabilité de défaite (régression logistique sur ~20 000 combats). `scoreA` borné à `[5, 95]`.
+- `matchup` (difficulté affichée, 0-1) = `(100 − scoreA) / 100` ; `analysis.matchup.average` = moyenne sur les combats GDC récents (à défaut, derniers combats compétitifs).
+- ⚠️ Toute modification de pondération : relancer la calibration `outils/matchup-calibration/collect.mjs` puis `analyze.mjs` (`audit.mjs` pour valider les règles).
 
-Généralités :
+| Layer (clé `breakdown`) | Borne | Fonction | Règle |
+| --- | --- | --- | --- |
+| `level` | ±40 + ±8 | `computeLevelDifferentialLayer()` | 2 % par point d'écart de la somme des niveaux normalisés (`normLevel()`) des 8 cartes, plafond ±40 ; + 4 % par niveau d'écart du niveau moyen des win conditions, ±8. Facteur le plus prédictif |
+| `evolutions` | ±9 | `computeEvolutionLayer()` | 3 % par carte d'écart avec `evolutionLevel > 0` (évolution et héros comptés pareil) |
+| `counters` | ±6 | `computeCounterLayer()` / `counterShiftFor()` | Par win condition : `+3` − 3 par hard-counter − 1 par soft-counter adverse, borné ±3 ; layer = moyenne(A) − moyenne(B) |
+| `structure` | ±10 (`clamp` du JSON) | `computeUtilityLayer()` | Règles data-driven de `data/clash-royale-matchup-structure-rules.json` : `crossRules` (Bait face à 0 petit sort adverse ; Ronin/P.E.K.K.A/Mini P.E.K.K.A face à un gros DPS), `dispersionRules` (trop de win conditions/sorts/bâtiments), `selfRules` (0 anti-air, 0 sort, 0 carte < 3 élixir). `exclusiveGroup` supporté, inutilisé |
 
-- Le matchup d'un combat est calculé à partir d'une base `scoreA = 50` (avantage du deck A) et de 4 layers
-  additifs, pondérés par régression logistique sur ~20 000 combats réels (Ladder/Ligue/GDC, octobre 2026) :
-  1 point de layer ≈ 1 % de probabilité de défaite. Scripts de calibration (à relancer après toute
-  modification de pondération) : `outils/matchup-calibration/collect.mjs` puis `analyze.mjs`.
-- `scoreA` est borné à `[5, 95]` : un deck seul ne garantit jamais l'issue d'un combat.
-- `matchup` (difficulté affichée, 0-1) = `(100 - scoreA) / 100`.
-- `analysis.matchup.average` est la moyenne des matchups de combat sur les batailles GDC récentes.
-- Si le `battleLog` ne contient aucune bataille de guerre, la moyenne est calculée sur les derniers combats
-  compétitifs disponibles.
-
-#### Layers et pondération
-
-Clés `breakdown`/`reasons` : `level`, `evolutions`, `counters`, `structure` (affichées dans cet ordre dans le
-détail des deux commandes).
-
-1. **Écart de niveau** (±40 + ±8) — `computeLevelDifferentialLayer()` : 2 % par point d'écart de la somme des
-   niveaux normalisés (`normLevel()`) des 8 cartes, plafonné à ±40 (effet mesuré régulier jusqu'à ±20 points),
-   plus 4 % par niveau d'écart du niveau normalisé moyen des win conditions (±8). Facteur de loin le plus
-   prédictif.
-2. **Évolutions et héros** (±9) — `computeEvolutionLayer()` : 3 % par carte d'écart ayant `evolutionLevel > 0`
-   dans le battle log (1 = évolution, 2 = héros, comptés pareil).
-3. **Counters directs** (±6) — `computeCounterLayer()`/`counterShiftFor()` : par win condition, baseline `+3`
-   (aucun counter) moins 3 par hard-counter et 1 par soft-counter trouvés chez l'adversaire, bornée à ±3 ;
-   layer = moyenne(A) - moyenne(B).
-4. **Structure du deck** (±10) — `computeUtilityLayer()` : interpréteur générique de règles entièrement
-   data-driven (`data/clash-royale-matchup-structure-rules.json`, hot-reload sans redéploiement) :
-   `crossRules` (Bait face à 0 petit sort adverse, Ronin/P.E.K.K.A/Mini P.E.K.K.A face à un gros DPS),
-   `dispersionRules` (deck trop dispersé : trop de win conditions/sorts/bâtiments), `selfRules` (carence du
-   deck lui-même : 0 carte anti-air, 0 sort, 0 carte < 3 élixir). Règles et poids validés par l'audit du
-   06/10/2026 (`outils/matchup-calibration/audit.mjs`) : les règles sans effet mesurable ou à effet inverse
-   (split-push, gros tank, soft-counter gros DPS, 0 bâtiment, 1 seule carte anti-air/< 3 élixir, Bait face
-   à 2+ petits sorts, 0 win condition) ont été retirées. Le moteur gère aussi `exclusiveGroup` (règles
-   croisées mutuellement exclusives par camp), inutilisé à ce jour.
-
-Le catalogue de counters a été audité le même jour : en moyenne, un hard-counter listé retire ~2,6 % de
-victoires à la win condition, un soft ~0,6 %, une carte non listée ~0 % (cohérent avec les poids 3/1). Les
-paires individuelles sont trop bruitées pour retirer un counter ; seuls quelques ajouts nets (z ≥ 3 et
-logiques en jeu) ont été faits.
-
-L'ancien layer **Archétype** (Beatdown bat Siege…) a été supprimé : aucun pouvoir prédictif mesuré. Le champ
-`archetype` du catalogue reste utilisé par la règle Bait et la page `/matchup/`.
-
-Si aucune vraie win condition (au sens du catalogue) n'est reconnue dans un deck, le calcul se rabat sur des
-"pseudo win conditions" (cartes à forts dégâts type P.E.K.K.A/Mini P.E.K.K.A/Mega Knight/Boss Bandit,
-moyennées si plusieurs trouvées). Si aucune win condition n'est identifiable d'un des deux côtés, les
-counters et l'écart de niveau des win conditions sont neutralisés pour ce combat.
+- Sans vraie win condition reconnue, repli sur des « pseudo win conditions » (P.E.K.K.A, Mini P.E.K.K.A, Mega Knight, Boss Bandit…, moyennées). Si un des deux camps n'en a aucune, counters et écart de niveau des win conditions sont neutralisés.
+- Le champ `archetype` du catalogue sert uniquement à la règle Bait et à la page `/matchup/` (pas de layer archétype).
 
 #### Performance (victoires réelles vs attendues)
 
-Ligne « 🎯 Performance » de `/matchup` et `/matchup-gdc`, ligne « Performance (3 semaines) » de `/stats`, et colonne
-« 🎯 » de `/stats-clan` (écart seul, cumul Redis sans battle log, « — » sous 4 combats, tri par bouton) :
+Affichée dans `/matchup`, `/matchup-gdc` (« 🎯 Performance »), `/stats` (« Performance (3 semaines) ») et `/stats-clan` (colonne « 🎯 », écart seul, « — » sous 4 combats).
 
-- victoires attendues = somme de `1 - matchup` sur les combats retenus ; écart = victoires réelles - attendues ;
-- combats retenus (`listMatchupPerformanceSamples()`, `backend/services/battleLogUtils.js`) : modes standards
-  sur lesquels le %matchup est calibré uniquement (`Ladder`, `Ranked1v1*`, `CW_Battle_1v1`, `CW_Duel_1v1`,
-  `Friendly`), manches de duel séparées, égalités exclues ;
-- affichage minimal (« 10 win sur 16 combats (6,9 attendues) : +3,1 ») ; l'écart n'est en gras que si
-  |écart| ≥ 2 écarts types (écart type = `√Σ p(1-p)`), sinon il peut venir du seul hasard ; emoji `success`/`error` selon le
-  signe de l'écart ; pas de ligne sous 4 combats (une journée de GDC).
+- Victoires attendues = Σ `(1 − matchup)` ; écart = réelles − attendues. Écart en gras seulement si |écart| ≥ 2 écarts types (`√Σ p(1−p)`) ; emoji `success`/`error` selon le signe ; pas de ligne sous 4 combats.
+- Combats retenus (`listMatchupPerformanceSamples()`, `battleLogUtils.js`) : modes calibrés seulement (`Ladder`, `Ranked1v1*`, `CW_Battle_1v1`, `CW_Duel_1v1`, `Friendly`), manches de duel séparées, égalités exclues.
+- `/matchup` : battle log seul (25 à 40 combats). `/matchup-gdc` et `/stats` : 3 semaines glissantes via le hash `matchupPerf:war` (champ = tag sans `#`, valeur `[{ key, t, p, w }]`, `key` = `battleTime:manche`, difficulté figée à l'enregistrement), alimenté par `collectSnapshots.js` (`recordWarMatchupSamples()`, sans appel API supplémentaire, purge > 21 jours) et complété à la lecture par le battle log courant (`getWarMatchupPerformanceSamples()`).
 
-Fenêtres :
+#### Sources de vérité matchup
 
-- `/matchup` (tous modes) : battle log seul (25 à 40 combats), l'écart reste donc presque toujours dans la
-  marge du hasard ;
-- `/matchup-gdc` et `/stats` (GDC uniquement) : **3 semaines glissantes**. `backend/services/matchupPerformance.js`
-  cumule les combats GDC dans le hash Redis `matchupPerf:war` (champ = tag sans `#`, valeur = JSON
-  `[{ key, t, p, w }]`, `key` = `battleTime:manche` pour le dédoublonnage, difficulté figée au moment de
-  l'enregistrement). Alimenté par le cron horaire `collectSnapshots.js` (`recordWarMatchupSamples()`, mêmes
-  battle logs que le snapshot, aucun appel API en plus, ~2 commandes Redis par clan et par heure, purge des
-  combats de plus de 21 jours à chaque réécriture). À la lecture (`getWarMatchupPerformanceSamples()`), le
-  cumul est complété par le battle log courant (combats joués depuis le dernier passage du cron).
-
-#### Source de vérité
-
-- Moteur pur (synchrone, sans appel LLM) : `backend/services/matchupEngine.js` — `computeDeckMatchupScore()`
-- Catalogue win conditions/counters (+ variantes type LavaLoon) : `data/clash-royale-matchup-catalog.json`,
-  chargé via `backend/services/matchupCatalog.js` (GitHub Contents API + cache 5 min, fallback fichier
-  local en dev)
-- Règles du layer Structure du deck : `data/clash-royale-matchup-structure-rules.json`
-- Intégration battle log : `backend/services/battleLogUtils.js` — `computeBattleMatchup()`,
-  `computeMatchupFromBattleLog()`, `summarizeWarDecksForMatchup()` (GDC), `summarizeRecentBattlesForMatchup()`
-  (tous types)
+- Moteur pur synchrone : `backend/services/matchupEngine.js` (`computeDeckMatchupScore()`).
+- Catalogue win conditions/counters : `data/clash-royale-matchup-catalog.json` ; règles Structure : `data/clash-royale-matchup-structure-rules.json`. Chargés par `backend/services/matchupCatalog.js` depuis l'API GitHub Contents (cache 5 min, donc modifiables sans redéploiement ; fichier local en dev).
+- Intégration battle log : `backend/services/battleLogUtils.js` (`computeBattleMatchup()`, `computeMatchupFromBattleLog()`, `summarizeWarDecksForMatchup()`, `summarizeRecentBattlesForMatchup()`).
 
 ### Niveau de Tour du Roi
 
-Le niveau de Tour du Roi n'est pas un champ livré directement par l'API Clash Royale. Il est reconstruit dans la commande `/collection` à partir du profil du joueur.
+Absent de l'API : reconstruit par `computeTourLevel()` (`packages/clash-royale/collectionConstants.js`) à partir de `player.cards` uniquement (troupes de tour `supportCards` exclues). Utilisé par `/collection` et `backend/services/playerAnalysis.js` ; ne pas dupliquer ce calcul.
 
-- Source de vérité : `packages/clash-royale/collectionConstants.js`
-- Fonction : `computeTourLevel(baseCardsCol)`
-- Entrée : `player.cards` uniquement (les troupes de tour `supportCards` sont exclues)
-- Usage : `/collection` affiche `Niveau ${tourLevel}` et le backend réutilise ce même calcul pour les analyses de joueurs.
+### Coûts d'amélioration des cartes (page `/deck-upgrade`)
 
-Cette fonction doit rester la source de vérité pour connaître rapidement le niveau de tour d'un joueur.
+Plages de niveaux par rareté, cartes et or nécessaires par niveau : `RARITY_CONFIG` (et `GEM_UPGRADES`) dans `frontend/public/deck-upgrade/deck-upgrade.js`. Source : <https://clashroyale.fandom.com/wiki/Cards> (sections « Types of Cards » et « Statistics »).
 
-## Données upgrade cartes (page /deck-upgrade)
+### Cache clan
 
-Source de vérité utilisée pour la page publique `/deck-upgrade` :
+La vue clan lit d'abord `GET /api/clan/:tag/cache` (Redis). Après toute modification de scoring, de verdict, de payload clan ou de logique dépendant des snapshots, relancer `npm run cache`.
 
-- <https://clashroyale.fandom.com/wiki/Cards>
-- sections `Types of Cards` (plages de niveaux par rareté) et `Statistics`
-- date de collecte : 25/05/2026
+### Historique famille
 
-### Niveaux disponibles par rareté
+`buildFamilyWarHistory()` (`backend/services/warHistory.js`) construit l'historique de guerre d'un joueur sur tous les clans de la famille : les semaines passées dans un autre clan de la famille comptent dans `streakInFamily`, et le score n'est pas limité au clan actuel.
 
-| Rareté     | Niveau min | Niveau max |
-| ---------- | ---------- | ---------- |
-| Commune    | 1          | 16         |
-| Rare       | 3          | 16         |
-| Épique     | 6          | 16         |
-| Légendaire | 9          | 16         |
-| Champion   | 11         | 16         |
+---
 
-### Cartes nécessaires pour passer au niveau suivant
+## Score de fiabilité
 
-Les clés ci-dessous représentent le niveau actuel, la valeur représente les cartes nécessaires pour passer au niveau +1.
+Score GDC propre à TrustRoyale, exprimé en pourcentage du maximum du mode actif (`warScore.total`, `warScore.maxScore`, `warScore.pct`). Source : `backend/services/warScoring.js` ; choix du mode dans `backend/services/playerAnalysis.js` et `backend/routes/clan.js`. Affiché par `/stats`, `/trust`, la fiche joueur et la page clan (mêmes libellés).
 
-```js
-const DECK_UPGRADE_COSTS = {
-  common: {
-    1: 2,
-    2: 4,
-    3: 10,
-    4: 20,
-    5: 50,
-    6: 100,
-    7: 200,
-    8: 400,
-    9: 800,
-    10: 1000,
-    11: 1500,
-    12: 2500,
-    13: 3500,
-    14: 5500,
-    15: 7500,
-  },
-  rare: {
-    3: 2,
-    4: 4,
-    5: 10,
-    6: 20,
-    7: 50,
-    8: 100,
-    9: 200,
-    10: 300,
-    11: 400,
-    12: 550,
-    13: 750,
-    14: 1000,
-    15: 1400,
-  },
-  epic: {
-    6: 2,
-    7: 4,
-    8: 10,
-    9: 20,
-    10: 30,
-    11: 50,
-    12: 70,
-    13: 100,
-    14: 130,
-    15: 180,
-  },
-  legendary: {
-    9: 2,
-    10: 4,
-    11: 6,
-    12: 9,
-    13: 12,
-    14: 14,
-    15: 20,
-  },
-  champion: {
-    11: 2,
-    12: 5,
-    13: 8,
-    14: 11,
-    15: 15,
-  },
-};
-```
+- **Mode complet** (`computeWarScore()`) : historique `riverracelog` exploitable (au moins une semaine terminée dans le clan ou la famille ; fenêtre ~10 saisons + semaine courante selon l'API).
+- **Mode fallback** (`computeWarReliabilityFallback()`, `isFallback: true`) : `riverracelog` absent ou insuffisant ; s'appuie sur le `battlelog` (30 derniers combats tous modes, filtrés GDC) et, à défaut de combat GDC, sur les decks live de `currentRace`.
 
-### Note sur le cache clan
+### Barème (sur 100)
 
-La vue clan appelle en priorité `GET /api/clan/:tag/cache` (Redis) pour afficher un rendu immédiat.
-Si vous modifiez un calcul de scoring, une logique de verdict, une structure de payload clan, ou une logique dépendante des snapshots, relancez :
-
-```bash
-npm run cache
-```
-
-### Historique famille et transferts
-
-Le code continue d’utiliser l’historique des clans de la famille pour construire l’historique de guerre d’un joueur.
-La source de vérité est buildFamilyWarHistory() dans backend/services/warHistory.js.
-
-En pratique :
-
-- les semaines passées dans un autre clan autorisé de la famille peuvent être prises en compte dans streakInFamily ;
-- le score n’est pas limité au seul clan actuel quand l’historique famille est disponible ;
-- la notion opérationnelle importante est la continuité dans la famille, pas un ancien flag documentaire de “transfer”.
-
-### Score de fiabilité
-
-Le score de fiabilité de GDC est un pourcentage calculé à partir d’un ensemble de critères pondérés, avec des maxima définis pour chaque critère.
-
-Clash Royale ne fournissant pas directement un score de fiabilité, nous avons défini notre propre algorithme pour évaluer la fiabilité d’un joueur en GDC, basé sur des données objectives et transparentes.
-
-L’API Clash Royale fournit deux sources de données principales pour ce calcul :
-
-- le `riverracelog` du clan. Très complet, il permet de reconstituer l’historique de guerre et d’obtenir des critères précis sur les semaines terminées. C’est la source de vérité principale pour le score complet.
-- le `battlelog` du joueur, qui sert de source de secours quand le `riverracelog` est insuffisant ou indisponible. Cette source est plus limitée (30 derniers combats d'un joueur) et moins spécifique à la GDC, d’où un score de fiabilité en mode fallback.
-
-### Score de fiabilité guerre, mode complet
-
-<!-- markdownlint-disable MD060 -->
-
-Le mode complet est utilisé quand l’historique d'un joueur permet d'exploiter le `riverracelog`. Il faut au minimum une vraie semaine terminée dans le clan ou la famille pour que ce mode s’active. Si l’historique famille est inexistant ou trop faible, on reste en `fallback`.
-
-Quand ces données existent, le score complet privilégie les signaux GDC du profil plutôt qu'une moyenne brute d'activité. La régularité sur les semaines terminées reste la base, et l'efficacité par deck prend le relais dès qu'un historique River Race exploitable est disponible.
-
-En pratique, la fenêtre exploitable est de `~10` saisons terminées + `1` semaine courante, sous réserve de ce que l’API renvoie réellement.
-
-Critères (barème sur 100 points, 87,5 sans dernière connexion ; `computeWarScore()` dans `backend/services/warScoring.js`) :
-
-- Régularité : 25. Sur une fenêtre fixe de 5 semaines, une semaine complète vaut 5 points, sinon 0.
-- Badge CW2 : 20. Cap à 250 victoires CW2.
-- Stabilité : 20. 5 semaines consécutives dans le clan ou la famille donnent le maximum.
-- Dernière connexion : 12,5. Ajoutée seulement si lastSeen est disponible.
-- Points / deck : 10. Efficacité GDC sur les 3 dernières semaines terminées, linéaire de 100 à 180 points / deck.
-- Expérience : 7,5. Basée sur les trophées actuels, plage 4000 à 14000.
-- Discord : 5. Compte Discord lié.
-
-Disclosures front :
-
-- `/stats` et `/trust` affichent ce score complet avec un breakdown détaillé.
-- La page profil joueur réutilise la même logique pour garantir la cohérence avec Discord.
-- La page profil clan expose les mêmes libellés lorsqu’un score individuel est disponible.
-
-### Score de fiabilité guerre, mode fallback
-
-Le mode fallback est utilisé quand le `riverracelog` est insuffisant ou indisponible. Le `battlelog` du joueur reste la source de vérité restante ;
-
-L'API `battlelog` ne fournit que les `30` derniers combats d’un joueur tous types confondus (ladder, challenges, GDC, etc.). Le code tente de filtrer les combats de GDC.
-Quand le `battlelog` est trop court ou trop écrasé par des combats non-GDC, le calcul devient moins fiable et peut retomber sur des approximations.
-
-Critères (barème sur 100 points, 92,5 sans dernière connexion ; `computeWarReliabilityFallback()` dans `backend/services/warScoring.js`) :
-
-- Régularité : 25. Calculée sur 5 semaines fixes, avec une semaine complète valant 5 points et les semaines incomplètes ou manquantes valant 0.
-- Badge CW2 : 25. Cap à 250 victoires CW2.
-- Activité de guerre : 20. Basée uniquement sur le nombre de semaines réellement jouées (au moins un deck), avec maximum atteint à partir de 5 semaines jouées.
-- Points / deck : 10. Efficacité GDC sur les 3 dernières semaines terminées quand l’historique est disponible.
-- Dernière connexion : 7,5. Ajoutée si lastSeen est disponible.
-- Expérience : 7,5. Basée sur les trophées actuels.
-- Discord : 5. Compte Discord lié.
-
-<!-- markdownlint-enable MD060 -->
+| Critère | Complet | Fallback | Règle |
+| --- | --- | --- | --- |
+| Régularité | 25 | 25 | Fenêtre fixe de 5 semaines terminées : 5 pts par semaine complète (`isFullWeek()`), 0 sinon |
+| Badge CW2 | 20 | 25 | Badge `ClanWarWins`, linéaire, plafond 250 victoires |
+| Stabilité | 20 | | 4 pts par semaine consécutive dans le clan ou la famille (`streakInFamily`), max à 5 |
+| Activité de guerre | | 20 | 4 pts par semaine jouée (≥ 1 deck) sur les 5 dernières, max à 5 |
+| Points / deck | 10 | 10 | 3 dernières semaines terminées, linéaire de 100 à 180 pts/deck |
+| Dernière connexion | 12,5 | 7,5 | Seulement si `lastSeen` connu. Complet : ≤ 1 j 12,5 ; ≤ 3 j 7,5 ; ≤ 7 j 2,5 ; sinon 0. Fallback : 7,5 / 5 / 2,5 / 0 |
+| Expérience | 7,5 | 7,5 | Trophées actuels, linéaire de 4 000 à 14 000 |
+| Discord | 5 | 5 | Compte Discord lié |
+| **Max sans `lastSeen`** | 87,5 | 92,5 | |
 
 ### Seuils de verdict
 
-Les deux modes utilisent les mêmes seuils :
+`VERDICT_TIERS` dans `warScoring.js` (mêmes seuils pour les deux modes ; toujours matcher sur `verdictKey`, jamais sur le libellé) :
 
-| Pourcentage du score maximal | Verdict          |
-| ---------------------------- | ---------------- |
-| ≥ 75 %                       | High reliability |
-| 56 à 74 %                    | Low risk         |
-| 31 à 55 %                    | High risk        |
-| 0 à 30 %                     | Extreme risk     |
+| % du max | Libellé | `verdictKey` |
+| --- | --- | --- |
+| ≥ 75 | Très fiable | `highReliability` |
+| 56 à 74 | Risque faible | `lowRisk` |
+| 31 à 55 | Risque élevé | `highRisk` |
+| 0 à 30 | Risque extrême | `extremeRisk` |
 
-### Score d’activité membre, vue clan
+### Score d'activité membre (vue clan)
 
-Ce score léger est utilisé quand on ne dispose pas du calcul complet par joueur.
-La fonction source est `computeMemberReliability()` dans `backend/services/playerAnalysis.js`.
-
-Formule actuelle :
+Estimation légère sans calcul complet (`computeMemberReliability()`, `backend/services/playerAnalysis.js`), pour trier/filtrer la vue clan :
 
 ```text
-score = min(60, trophies / 10000 × 60)
-      + min(40, expLevel / 60 × 40)
+score = min(60, trophies / 10000 × 60) + min(40, expLevel / 60 × 40)
 ```
 
-Notes :
+Seuils propres : ≥ 75 `highReliability`, ≥ 61 `lowRisk`, ≥ 31 `highRisk`, sinon `extremeRisk`.
 
-- `trophies` et `expLevel` sont des `sources de vérité` venant du profil joueur ;
-- le score final est une `estimation` légère ramenée sur `100` et sert surtout à trier/filtrer la vue clan ;
-- les seuils associés dans la vue clan sont : `75+`, `61-74`, `31-60`, `0-30`.
+### Fiabilité d'un clan
+
+Pas de score canonique stocké : la vue clan agrège `members[].reliability` et `members[].verdict` (`GET /api/clan/:tag/analysis`). Seul `notifyPreWarSummary.js` stocke un `scoreClan` dans `dedup:pregdcweekly` pour suivre l'évolution hebdomadaire.
+
+### Statut `isNew` (nouveau joueur)
+
+`computeIsNewPlayer(warHistory, warScore)` (`backend/services/playerAnalysis.js`), unique calcul pour l'API joueur, l'API clan et le bot. Nouveau si :
+
+- aucune semaine terminée avec > 0 deck dans la famille (`totalWeeks === 0`), ou seule la semaine en cours existe ;
+- ou transfert récent dans la famille : `streakInFamily < 2` et `totalWeeks > 1`.
+
+⚠️ `totalWeeks` (`warHistory.js`) ne compte que les semaines familiales terminées avec > 0 deck : toute modification doit rester cohérente avec `computeIsNewPlayer` et être testée dans `backend/services/analysisService.test.js`.
 
 ---
 
 ## Paliers de ligue GDC
 
-### Source de vérité ligue
+Seuils de `clanWarTrophies` définis **une seule fois** dans `backend/services/warLeagues.js` (`WAR_LEAGUE_THRESHOLDS`), importé par le frontend et le bot. ⚠️ Ne jamais les dupliquer.
 
-Les seuils de trophées de guerre (`clanWarTrophies`) déterminant le palier de ligue GDC sont définis **une seule fois** dans :
+| Trophées de guerre | Palier |
+| --- | --- |
+| 0 à 199 / 200 à 399 / 400 à 599 | Bronze 1 / 2 / 3 |
+| 600 à 899 / 900 à 1 199 / 1 200 à 1 499 | Argent 1 / 2 / 3 |
+| 1 500 à 1 999 / 2 000 à 2 499 / 2 500 à 2 999 | Or 1 / 2 / 3 |
+| 3 000 à 3 999 / 4 000 à 4 999 / 5 000 + | Légendaire 1 / 2 / 3 |
 
-```text
-backend/services/warLeagues.js
-```
+`getLeagueName(trophies)` renvoie le libellé français (`getLeagueName(3812)` → `"Légendaire 1"`), `null` si la valeur est absente.
 
-Ce module est importé par le frontend (`frontend/main.js`) et le bot Discord (`api/discord/interactions.js`).
-**Ne jamais dupliquer ces seuils** — toute modification doit se faire uniquement dans `warLeagues.js`.
+### Trophées gagnés/perdus par position
 
-### Tableau des paliers
+| Position | GDC normale : Bronze / Argent / Or et Légendaire | Colisée : Bronze / Argent / Or et Légendaire |
+| --- | --- | --- |
+| 1er | +20 / +20 / +20 | +100 / +100 / +100 |
+| 2e | +10 / +10 / +10 | +50 / +50 / +50 |
+| 3e | 0 / −2 / −5 | 0 / −10 / −25 |
+| 4e | 0 / −4 / −10 | 0 / −20 / −50 |
+| 5e | 0 / −8 / −20 | 0 / −40 / −100 |
 
-| Trophées de guerre | Palier (EN) | Palier (FR)  |
-| ------------------ | ----------- | ------------ |
-| 0 – 199            | Bronze 1    | Bronze 1     |
-| 200 – 399          | Bronze 2    | Bronze 2     |
-| 400 – 599          | Bronze 3    | Bronze 3     |
-| 600 – 899          | Silver 1    | Argent 1     |
-| 900 – 1 199        | Silver 2    | Argent 2     |
-| 1 200 – 1 499      | Silver 3    | Argent 3     |
-| 1 500 – 1 999      | Gold 1      | Or 1         |
-| 2 000 – 2 499      | Gold 2      | Or 2         |
-| 2 500 – 2 999      | Gold 3      | Or 3         |
-| 3 000 – 3 999      | Legendary 1 | Légendaire 1 |
-| 4 000 – 4 999      | Legendary 2 | Légendaire 2 |
-| 5 000 +            | Legendary 3 | Légendaire 3 |
+### Détermination de la position
 
-### API exposée
+Source : `backend/services/warStandings.js` (`computeGroupStandings()`, `computeClanStanding()`, utilisés par `backend/routes/clan.js` et `notifyWarSummary.js`) ; détails API dans `docs/api-clash-royale.md` § « Classement final GDC ».
 
-```js
-import { getLeagueName } from "../../backend/services/warLeagues.js";
-
-getLeagueName(3812, "en"); // → "Legendary 1"
-getLeagueName(3812, "fr"); // → "Légendaire 1"
-```
-
-### Trophées gagnés/perdus par position — GDC normale (River Race)
-
-| Position | Bronze | Argent | Or & Légendaire |
-| -------- | ------ | ------ | --------------- |
-| 1er      | +20    | +20    | +20             |
-| 2e       | +10    | +10    | +10             |
-| 3e       | 0      | -2     | -5              |
-| 4e       | 0      | -4     | -10             |
-| 5e       | 0      | -8     | -20             |
-
-### Trophées gagnés/perdus par position — GDC Colisée (Colosseum)
-
-| Position | Bronze | Argent | Or & Légendaire |
-| -------- | ------ | ------ | --------------- |
-| 1er      | +100   | +100   | +100            |
-| 2e       | +50    | +50    | +50             |
-| 3e       | 0      | -10    | -25             |
-| 4e       | 0      | -20    | -50             |
-| 5e       | 0      | -40    | -100            |
-
-**Comment la position (1er-5e) est déterminée — voir aussi `docs/api-clash-royale.md`
-§ "Classement final GDC" et `backend/services/warStandings.js` :**
-
-- **GDC normale** : par la progression du **bateau** (`clan.fame` / `clans[i].fame`
-  dans `/currentriverrace`, 0-10 000 — ligne d'arrivée à 10 000 = victoire immédiate,
-  sinon classement par position atteinte au reset du J4). Le cumul brut de fame de
-  bataille (`sum(participants[].fame)`) n'entre pas en jeu ici.
-- **Colisée** : par le cumul brut de fame de bataille sur la semaine
-  (`sum(participants[].fame)`, ~80 000-160 000). Pas de course de bateau.
+- **GDC normale** : progression du **bateau** (`clan.fame` / `clans[i].fame` dans `/currentriverrace`, 0-10 000, `RACE_FINISH_LINE = 10000` = victoire immédiate), sinon position atteinte au reset du J4. Le cumul de fame de bataille n'intervient pas.
+- **Colisée** : cumul brut de fame de bataille de la semaine (`sum(participants[].fame)`, ~80 000-160 000). Pas de bateau.
 
 ---
 
 ## Bot Discord
-
-Le bot Discord déclenche les analyses via l’endpoint dédié api/discord/interactions.js.
 
 ### Architecture
 
@@ -606,11 +342,11 @@ Discord → POST /api/discord/interactions
         → POST de suivi sur le webhook Discord
 ```
 
-La fonction Discord est séparée de l’application Express principale pour limiter le cold start et respecter la fenêtre de réponse imposée par Discord.
+Fonction Vercel séparée de l'application Express pour limiter le cold start et tenir la fenêtre de réponse Discord (`backend/routes/discord.js` ne fait que renvoyer 404 vers cet endpoint).
 
 ### Organisation des fichiers
 
-`api/discord/interactions.js` ne contient que le routeur : vérification de signature, PING, autocomplétion des tags, liste blanche des serveurs, puis délégation aux modules de `api/discord/_routes/` et `jeux/discord/routes/` (essayés dans l'ordre jusqu'à ce que l'un d'eux réponde, `res.headersSent`) :
+`api/discord/interactions.js` ne contient que le routeur : vérification de signature Ed25519, PING, autocomplétion des tags, liste blanche des serveurs (`AUTHORIZED_GUILD_IDS`), puis délégation aux modules de routes, essayés dans l'ordre jusqu'à ce que l'un réponde (`res.headersSent`) : d'abord ceux de TrustRoyale (`api/discord/_routes/`), puis ceux des jeux (`jeux/discord/routes/`, voir `jeux/CONTRIBUTING.md`).
 
 | Module | Contenu |
 | --- | --- |
@@ -618,2313 +354,98 @@ La fonction Discord est séparée de l’application Express principale pour lim
 | `_routes/joueur.js` | `/stats`, `/combats`, `/matchup-gdc`, `/matchup` (+ détail), `/collection` |
 | `_routes/clan.js` | `/combats-clan`, `/trust-clan`, `/champion-history`, `/compare`, `/top-clans`, `/clan`, `/family`, `/stats-clan` et leurs boutons |
 | `_routes/suiviGdc.js` | `/promote`, `/demote`, `/chelem`, `/fail`, `/late`, `/late-ping`, `/top-players`, `/recap` et leurs boutons |
-| `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées, `/mini-jeux` [boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux], `/mini-jeux-history`) |
-| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/bang`, `/gobelet` et leurs boutons de duel |
 
-Chaque module expose une fonction `routeXxx(body, res)` qui enchaîne des blocs `if (…) { …; return; }` : un bloc répond à Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend la main sans rien envoyer. Les fonctions utilitaires partagées par plusieurs modules sont dans `api/discord/_lib/commun.js` (`runBackground` et `buildDiscordWebhookUrl` viennent de `@clash/commun/discordInteractions.js`) ; la logique propre à chaque jeu reste dans `jeux/discord/handlers/`. Les dossiers préfixés `_` ne sont pas exposés comme fonctions par Vercel. Les `custom_id` et noms de commandes doivent rester disjoints d'un module à l'autre, puisque l'ordre des modules n'est pas un mécanisme de priorité.
+- Chaque module expose `routeXxx(body, res, ctx)` : une suite de blocs `if (…) { …; return; }` ; un bloc répond s'il reconnaît l'interaction, sinon la fonction rend la main sans rien envoyer.
+- ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints entre modules : l'ordre des modules n'est pas un mécanisme de priorité.
+- Utilitaires partagés : `api/discord/_lib/commun.js` (`runBackground` et `buildDiscordWebhookUrl` viennent de `@clash/commun/discordInteractions.js`) ; handlers volumineux dans `api/discord/_handlers/` (`blacklist.js`, `championHistory.js`). Les dossiers préfixés `_` ne sont pas exposés comme fonctions par Vercel.
+- `/clan` masque les données de fiabilité GDC pour les clans de `NO_WAR_FAMILY_CLAN_TAGS` (`_routes/clan.js`, actuellement `QU9UQJRL`, GDC non obligatoire).
 
-### Règles techniques importantes
+### Règles techniques
 
-- répondre immédiatement avec type: 5 avant tout await ;
-- utiliser runBackground() et jamais Promise.resolve().then(...) directement ;
-- ne jamais appeler directement les services backend lourds depuis un handler Discord, passer par les endpoints HTTP ;
-- vérifier la signature Ed25519 avant de répondre au PING ;
-- après toute modification ou ajout de commande, relancer node scripts/registerCommands.js.
+- Répondre `{ type: 5 }` **avant tout `await`**.
+- Utiliser `runBackground()`, jamais `Promise.resolve().then(...)`.
+- Ne pas appeler les services backend lourds depuis un handler : passer par les endpoints HTTP.
+- Vérifier la signature Ed25519 avant de répondre au PING.
+- Après tout ajout ou modification de commande : `node scripts/registerCommands.js`.
 
-### Variables d’environnement requises
+### Variables d'environnement
 
-```text
-DISCORD_PUBLIC_KEY=
-DISCORD_APP_ID=
-DISCORD_TOKEN=
-```
-
----
-
-## Crons GitHub Actions (jeux quotidiens)
-
-Les 7 jeux à avancée quotidienne (Robinson, Tamagoshi, Boss Raid, Quiz, Goblin Hunters, Blackjack, Jeu du Gobelet) tournent chacun sur leur propre workflow (`.github/workflows/{robinson,tamagotchi,bossraid,quiz,goblinhunters,blackjack,gobelet}.yml`), avec un `schedule` étalé sur la même tranche horaire mais **jamais à la même minute** :
-
-| Jeu            | Cron         |
-| -------------- | ------------ |
-| Boss Raid      | `2 8 * * *` (📦 archivé, cron commenté) |
-| Goblin Hunters | `4 8 * * *`  |
-| Quiz           | `6 8 * * *`  |
-| Robinson       | `8 8 * * *`  |
-| Tamagoshi      | `10 8 * * *` (📦 archivé, cron commenté) |
-| Blackjack      | `12 8 * * *` |
-| Jeu du Gobelet | `16 8 * * *` |
-| Mario Clash    | `14 8 * * *` |
-| Bang!          | `18 8 * * *` |
-| Qui est-ce ?   | `20 8 * * *` |
-| Meow           | `22 7 * * *` (8h22 à Paris en hiver, après la distribution de 8 h) |
-
-⚠️ **Incident du 27/08** : les 5 crons alors existants étaient initialement tous réglés sur `0 8 * * *` (pile 8h00 UTC). GitHub documente explicitement que les triggers `schedule` sont _best-effort_ et que le délai augmente aux heures rondes, justement à cause de la charge — caler plusieurs workflows du même dépôt sur exactement la même minute aggrave mécaniquement ce risque. Résultat concret : le 27/08, aucun des 5 crons ne s'était déclenché plus d'une heure après l'horaire prévu (confirmé via l'API GitHub, `GET /repos/.../actions/workflows/{id}/runs`, aucun run pour la date du jour alors que les runs de la veille existaient bien vers 08h07-08h20 UTC). Étaler les horaires par tranches de 2 minutes ne garantit pas un déclenchement pile à l'heure (toujours best-effort côté GitHub), mais réduit la contention auto-infligée. Blackjack a suivi le même principe à son activation, décalé sur la minute suivante (`12 8 * * *`).
-
-⚠️ **Incident du 27-28/08 (suite)** : le décalage des horaires n'a pas suffi — aucun des 5 crons ne s'est déclenché ni le 27/08 ni le 28/08, alors que d'autres workflows planifiés du même dépôt (`snapshot.yml`, `gdc-launch.yml`, `last-seen.yml`) ont bien tourné sur cette période (avec retard, mais tournés). Ce contre-exemple élimine l'hypothèse d'une panne globale au dépôt ou d'une simple contention de charge. La vraie cause identifiée : un **bug GitHub confirmé par leur équipe** où le trigger `schedule` d'un workflow se désynchronise silencieusement côté serveur (aucune erreur, aucun run, `workflow_dispatch` continue de fonctionner normalement sur le même fichier) — voir [community#185355](https://github.com/orgs/community/discussions/185355), où un employé GitHub (SrRyan) confirme ce mécanisme et donne le correctif officiel : _"Any commit pushed to the default branch will resync the impacted scheduled workflows."_ Un premier commit de resynchronisation a été poussé le 28/08 sur les 5 fichiers concernés — si le prochain cycle (29/08) ne se déclenche toujours pas, retenter un nouveau commit et/ou commenter sur cette discussion GitHub plutôt que de repasser par un ticket support classique (fermé automatiquement sans investigation sur ce palier de compte).
-
-⚠️ **6ᵉ victime confirmée, criticité supérieure : `pre-reset-snapshot.yml`** (`30 7 * * 5,6,0,1`, checké le 28/08 — aucun run depuis le 24/08, alors que le cron ne devait de toute façon pas tourner mar-jeu, donc le 28/08 était sa toute première occasion manquée depuis l'incident). Contrairement aux jeux quotidiens, une occurrence manquée ici est **définitivement irrécupérable** : le script dort jusqu'à T−2 min de chaque reset de clan puis capture l'état via l'API — une fois le reset passé, `msUntilReset < 0` fait sauter silencieusement ce clan (`scripts/preResetSnapshot.js`), sans aucun rattrapage possible après coup, contrairement à `postRobinson()` qui peut toujours être relancé à la main sans perte. Perte actée pour le 28/08 (2 clans GDC concernés). **Vérification manuelle recommandée chaque matin ven-lun avant 09h38 UTC** (T−2 min du premier reset GDC) tant que la résolution du bug GitHub n'est pas confirmée sur ce workflow spécifiquement.
-
-Si un cron manqué doit être rattrapé dans l'immédiat sans attendre la résync GitHub, chaque jeu reste déclenchable manuellement via `workflow_dispatch` (bouton "Run workflow" sur GitHub, ou `gh workflow run <fichier>.yml`) — protégé côté Robinson par le garde-fou anti-double-avancée (`isTooSoonSinceLastClosure()`) qui rend ce rattrapage manuel sans risque même si le cron en retard finit par se déclencher après coup.
-
-### Jour d'annonce obligatoire (12/10/2026)
-
-⚠️ **Tout jeu spécial a au moins un jour de présentation ou d'inscription avant le Jour 1.** Le lancement manuel (`workflow_dispatch`) publie ce jour d'annonce, le cron du lendemain publie le Jour 1 : un jeu ne démarre jamais directement au Jour 1 (incident du 12/10 : le Gobelet a été lancé sans prévenir). Quiz (pas de section dédiée) : l'annonce n'a aucun bouton (le Quiz n'a pas de Règles) et la thématique n'est tirée qu'à l'ouverture du Jour 1 (`nextMancheSeq()`/`setThemeCursor()`), le ping quotidien reste inchangé. Modèle de référence : `postMarioClash()` (`phase: "annonce"`, puis transition vers le Jour 1).
-
-### Historique des Jeux Spéciaux
-
-Ordre chronologique de lancement **public** des jeux collaboratifs à avancée quotidienne (durée = `duree_jours` par manche, voir chaque section dédiée plus bas).
-
-⚠️ Une date ici est celle du **premier run `workflow_dispatch` réel sur GitHub Actions** (le vrai Jour 1 public), vérifiée via `GET /repos/raphaelgoetter/clash/actions/workflows/{id}/runs?event=workflow_dispatch` — **pas** la date du commit qui a ajouté le code du jeu (celle-ci ne reflète que le début du développement/test, souvent plusieurs jours avant le lancement réel ; confondre les deux a produit une première version fausse de cet historique) :
-
-- (2026-07-31) Aventure (10 jours)
-- (2026-08-10) Tamagotchi (10 jours) — 📦 **archivé** le 2026-10-04 (voir [Tamagoshi](#tamagoshi-bébé-dragon-lilith))
-- (2026-08-24) Robinson (10 jours)
-- (2026-08-31) Quiz (7 jours)
-
-**Jeux avec inscription : fenêtre de 2 jours** (`fenetre_inscription_jours: 2`, règle du 16/10/2026 pour Goblin Hunters, Qui est-ce ? et tous les suivants). À la clôture, si l’effectif minimum n’est pas atteint, **la partie est annulée** (décision du 22/10/2026, plus de prolongation) : message « partie annulée » sans boutons, ping MINI-JEUX, `state.termine: true`. À chaque passage du cron pendant les inscriptions, les inscrits ayant **quitté le serveur** (404 sur `GET /guilds/{id}/members/{id}`, `membresPartis()` dans `discordUsers.js`) sont désinscrits.
-
-**Codés mais pas encore lancés publiquement** (existent dans le repo, testés sur le salon de test, mais zéro run `workflow_dispatch` sur leur workflow à ce jour) : Boss Raid (7 jours, 📦 **archivé** le 2026-10-10), Goblin Hunters (7 jours), Blackjack (7 jours), Bang! (7 jours), Qui est-ce ? (7 jours), Meow (7 jours).
-
----
-
-## Sondage public (série de sondages natifs Discord)
-
-Contrairement aux mini-jeux ci-dessus, ce n'est pas un jeu à avancée quotidienne : c'est un sondage ponctuel (une dizaine de questions), posté d'un coup et laissé ouvert le temps que les membres répondent. Chaque question devient un **sondage natif Discord** distinct (objet `poll` de l'API v10) — Discord gère lui-même l'affichage, le vote et le décompte, aucune logique de vote ni bouton/interaction à coder côté `api/discord/interactions.js`.
-
-### Format des questions (`jeux/data/poll/poll.json`)
-
-```json
-{
-  "questions": [
-    { "id": "...", "type": "choice", "question": "...", "answers": ["...", "..."], "allowMultiselect": false, "durationHours": 168 },
-    { "id": "...", "type": "note", "question": "...", "durationHours": 168 }
-  ]
-}
-```
-
-- `type: "choice"` — réponses libres définies dans `answers` (texte, jusqu'à 10 options, décompte natif Discord).
-- `type: "note"` — note de 1 à 5 : les réponses `"1"`..`"5"` sont générées automatiquement, pas de champ `answers`.
-- `type: "freetext"` — pas de sondage natif (Discord ne permet pas de champ libre dans un poll) : posté comme un message avec un bouton "💡 Proposer une idée" qui ouvre une Modal Discord (`custom_id` `poll_idea`/`poll_idea_modal`, routés dans `api/discord/interactions.js`). Réponses stockées dans `poll:ideas` (liste Redis), affichées par `poll:status`.
-- Le sondage natif Discord ne gère qu'**une seule question par message** — pas d'échelle continue ni de suite de questions dans un même poll — d'où le choix d'un message par question plutôt qu'un unique sondage "à tiroirs".
-
-### Stockage — Upstash Redis (`poll:state`, `poll:ideas`)
-
-`poll:state` (pas d'historique multi-sondages) : `{ channelId, startedAt, messages: [{ questionId, question, type, channelId, messageId }] }`. Discord garde les votes lui-même (`poll.results.answer_counts` sur le message) — Redis ne sert qu'à retrouver les messages postés pour `poll:reset`. `poll:ideas` : liste des idées soumises via la question `freetext` (`{ discordId, username, text, submittedAt }`).
-
-### `poll:status` — idées proposées uniquement
-
-`poll:status` n'affiche que les idées soumises via la question `freetext` (`poll:ideas`). Le décompte des votes est déjà visible directement dans le sondage natif Discord.
-
-### Scripts npm
-
-| Commande                  | Effet                                                                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run poll:test`       | Poste les questions sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`, réutilisé — voir règle générale plus haut), aucun ping.                     |
-| `npm run poll:test:dry`   | Aperçu console des objets `poll` qui seraient postés, sans rien écrire ni poster.                                                                   |
-| `npm run poll:test:force` | Si un sondage est déjà actif sur ce salon, supprime les anciens messages puis reposte — utile pour itérer sur le salon de test.                     |
-| `npm run poll:public`     | Poste sur le salon "Annonces" (`DISCORD_CHANNEL_ANNONCES`), avec `@everyone` sur le premier message — à lancer une fois le contenu de `jeux/data/poll/poll.json` finalisé et validé.                |
-| `npm run poll:public:dry` | Équivalent dry-run de `poll:public`.                                                                                                                |
-| `npm run poll:status`     | Affiche les idées soumises — pas le décompte des votes, déjà visible dans Discord.                                                                   |
-| `npm run poll:reset`      | Supprime les messages de sondage postés (best-effort) et efface l'état — repart de zéro pour un prochain `poll:test`/`poll:public`. **Destructif**. |
-
-### Variables d'environnement requises
-
-```text
-DISCORD_CHANNEL_FRAME_TEST=      # salon de test (réutilisé, pas de salon dédié)
-DISCORD_CHANNEL_ANNONCES=        # salon public "Annonces"
-DISCORD_TOKEN=
-KV_REST_API_URL=                 # Upstash Redis
-KV_REST_API_TOKEN=
-```
-
----
-
-## Noms français des cartes (`jeux/data/cardNames.json`)
-
-Source de vérité anglais↔français des noms de cartes Clash Royale, partagée par tous les mini-jeux qui en ont besoin (Anagram, Zoom carte) — évite que chaque jeu retraduise/duplique les mêmes noms avec le risque de divergence que ça implique (constaté : plusieurs noms erronés trouvés dans `anagrams.json` avant la création de ce fichier, dont un vrai bug de `cardKey` qui cassait l'image de révélation).
-
-- Un objet par carte du catalogue officiel (`{ cardKey, rarity, fr }`), `cardKey` étant le nom anglais exact renvoyé par l'API Clash Royale (`fetchCards()`).
-- **Fichier édité à la main** une fois généré — `jeux/scripts/generateCardNames.js` (usage ponctuel) ne fait que compléter les cartes absentes du fichier existant ; il ne touche jamais une entrée déjà présente, corrections manuelles y compris. Résolution pour une carte manquante, par ordre de priorité : liens interlangues du wiki Fandom FR (`clashroyale.fandom.com/fr`, vérifiés dans les deux sens contre le nom anglais authentique de l'API) puis repli sur `jeux/data/anagrams/anagrams.json` si la carte est trop récente pour avoir une page sur le wiki. Toute valeur ajoutée automatiquement reste une proposition à relire, pas une certitude — le wiki peut se tromper (cf. l'exemple `Goblin Cage` ci-dessus).
-- Certaines cartes très récentes n'ont pas de nom trouvé automatiquement (`fr: null` à la génération) — à compléter à la main, voir la liste affichée en fin d'exécution du script.
-- `jeux/scripts/generateZoomCatalog.js` source ses noms français exclusivement d'ici (jamais d'`anagrams.json` directement) et resynchronise `answer`/`accept` à chaque exécution, même sans retélécharger l'image (coût nul). `anagrams.json`, en revanche, n'est pas resynchronisé automatiquement (voir la mise en garde ci-dessous) : une correction dans `cardNames.json` doit être reportée à la main sur `anagrams.json` si elle concerne une carte qui y est présente, en vérifiant que l'anagramme existante reste valide pour les nouvelles lettres (sinon la modifier casse le puzzle — voir `checkAnswer`/le champ `anagram` de chaque entrée).
-- **Champs `type` / `family` (01/10, jeux de draft, à l'origine pour le duel Élixir)** : `type` ∈ `troop` | `flying` | `spell` | `building`, `family` ∈ `goblin` | `skeleton` | `human` | `minion` | `null`. Ajoutés par `jeux/scripts/tagCards.js` (usage ponctuel, `--dry-run` pour prévisualiser) : le type est déduit de l'identifiant officiel (`26…` troupe, `27…` bâtiment, `28…` sort) puis d'une liste de troupes volantes, la famille du nom anglais (goblin / skeleton / minion) puis de listes explicites (squelettes « cachés », humains). Le même script complète `elixir` pour toutes les cartes (sauf le Miroir, coût variable) — sans effet sur La Juste Carte, dont le pool exige aussi `hp`/`damage`/`range`. Mêmes garanties que les autres scripts : un champ déjà présent n'est jamais réécrit (sauf `--force`), les corrections manuelles sont conservées.
-- **Illustrations à jour (`packages/clash-royale/cardArt.js`, généralisé le 08/10)** : l'API Clash Royale sert encore l'ancien design de certaines cartes (Voleuse, Mousquetaire, Méga-gargouille, repérées avec `outils/compare_card_art.mjs`). Les versions à jour sont dans `data/card-art/` (copie sur Blob) et remplacent l'ancien design **partout** : `fetchCards()` réécrit `iconUrls.medium` vers la route publique `/api/card-art/<fichier>` (site, embeds Discord, scripts de catalogue ; URL d'origine gardée dans `iconUrls.apiMedium`), `battleCardIconUrl()` fait de même pour les cartes de battle log (version de base), et les rendus SVG (images de decks GDC, Bang!) lisent le fichier sur Blob. Avant, seules les images de decks GDC en profitaient. Nouvelle carte périmée : PNG 285×420 dans `data/card-art/`, entrée dans `CARD_ART_OVERRIDES`, puis `npm run assets:upload-blob -- card-art`.
-
----
-
-## Jeu Frame (devine le film)
-
-Mini-jeu hebdomadaire indépendant du Clash Royale : chaque mercredi 08:00 UTC, une image tirée d'un film connu est postée sur le salon public, les membres devinent le titre. Pas de commande slash associée — la publication passe uniquement par `jeux/scripts/postFrame.js` (manuel ou cron), les boutons/modal restent gérés par `api/discord/interactions.js`.
-
-### Barème
-
-- Réponse exacte du 1er coup sans indice : **10 pts**
-- Chaque tentative incorrecte : **-2 pts**
-- Chaque indice utilisé : **-3 pts**
-- Score plancher à **0** (jamais négatif). La tentative gagnante elle-même n'est jamais comptée comme incorrecte.
-
-### Réponse via Modal Discord
-
-Le bot ne fonctionne qu'en webhook HTTP (pas de connexion Gateway, pas d'intent `MESSAGE_CONTENT`), donc il ne peut pas lire les messages tapés librement dans un salon. Le bouton "Répondre" ouvre une **Modal** Discord (réponse `type: 9`, `custom_id: frame_answer_modal:<gameId>`) contenant le champ texte ; la soumission arrive en tant qu'interaction entrante `body.type === 5` (`MODAL_SUBMIT`) — à ne pas confondre avec le `type: 5` de _réponse_ (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE`) utilisé ailleurs dans `interactions.js`, deux enums Discord distinctes qui partagent des valeurs numériques.
-
-### Correspondance de la réponse
-
-`checkAnswer()` (`jeux/services/frames.js`) normalise la réponse (minuscule, accents retirés, ponctuation supprimée) puis vérifie qu'elle **contient** un terme de `accepte` et **ne contient aucun** terme de `refuse`. Exemple (`The Dark Knight`, `accepte: ["knight"]`, `refuse: ["rises", "joker"]`) : "dark knight" → accepté ; "the dark knight rises" → refusé (contient aussi "rises").
-
-### Données
-
-- `jeux/data/frames/frames.json` — liste ordonnée des films (`image`, `indice1`, `indice2`, `titre`, `accepte`, `refuse?`), éditée à la main. La partie suivante boucle au début une fois toutes les images épuisées.
-- `jeux/data/frames/images/*.webp` — images des frames, nommées comme le champ `image` de `frames.json`.
-- Ni `frames.json` ni les images ne sont exposés statiquement (rien sous `frontend/public/`) : `frames.json` est lu côté serveur uniquement, et l'image est accessible uniquement via `GET /api/frames/image` (`backend/server.js`) — impossible de deviner l'image d'une semaine future en devinant une URL, quel que soit le nom de fichier essayé.
-- **URL de l'embed** : `${TRUST_ROYALE_URL}/api/frames/image?gameId=<gameId>&v=<horodatage>`. Le paramètre `gameId` épingle l'image de **cette manche précise** (`getFrameImageByGameId()`, gardé par le SET durable `frame:posted_games` — jamais servi pour un `gameId` qui n'a encore jamais été posté, anti-spoiler). ⚠️ Sans ce paramètre (ancien comportement), la route servait toujours l'image de la partie **active** (`getCurrentFrameImage()`) — un bug réel constaté en production : d'anciens messages Discord se remettaient à afficher l'image de la manche EN COURS dès que le proxy d'images de Discord revalidait son cache, plusieurs jours après leur publication. `v=` reste un simple cache-buster pour forcer un fetch frais au moment de la publication, sans rôle anti-spoiler à lui seul.
-- État de la partie, progression par joueur et classements — stockés sur **Upstash Redis** (`@upstash/redis`, REST, voir "Stockage — Upstash Redis" ci-dessous).
-
-### Stockage — Upstash Redis
-
-Le jeu stockait initialement son état sur Vercel Blob (même pattern que `champion-predictions.json`), mais Blob facture chaque `put()`/`list()` comme "Advanced Operation" avec un quota gratuit de seulement 2 000/mois — largement dépassé par l'usage normal du jeu (indices, tentatives, résolutions). Migré vers **Upstash Redis** (intégration Vercel Marketplace, tier gratuit 500 000 commandes/mois) qui offre en plus des primitives **atomiques natives** (`INCR`, `SADD`, `HSETNX`, `ZINCRBY`) réglant nativement les problèmes de concurrence (deux joueurs qui répondent au même instant) sans verrou ni retry applicatif à gérer soi-même.
-
-Schéma des clés (`jeux/services/frames.js`) :
-
-| Clé Redis                                | Type              | Contenu                                                                                                                                                         |
-| ---------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `frame:state`                            | STRING            | Métadonnées de la partie active (JSON) — inclut `seasonManche`/`seasonMancheTotal` (voir ci-dessous)                                                            |
-| `frame:participants:<gameId>`            | HASH              | `discordId → participant` (doc final, écrit seulement à la résolution)                                                                                          |
-| `frame:usernames:<gameId>`               | HASH              | `discordId → pseudo` (mis à jour à chaque indice/tentative)                                                                                                     |
-| `frame:hints:<gameId>:<discordId>`       | SET               | Indices déjà pris (`indice1`, `indice2`)                                                                                                                        |
-| `frame:attempts:<gameId>:<discordId>`    | STRING (compteur) | Nombre de tentatives incorrectes (`INCR` atomique)                                                                                                              |
-| `frame:season:<seasonId>`                | ZSET              | `discordId → score total` de la saison (`ZINCRBY` atomique)                                                                                                     |
-| `frame:season:<seasonId>:pseudos`        | HASH              | `discordId → pseudo` pour l'affichage du classement de saison                                                                                                   |
-| `frame:season:<seasonId>:manche_seq`     | STRING (compteur) | Dernier numéro de manche attribué cette saison (`INCR` atomique)                                                                                                |
-| `frame:season:<seasonId>:manche_numbers` | HASH              | `gameId → numéro de manche` (1, 2, 3... relatif à la saison, attribué par `assignSeasonMancheNumber()` à chaque `startNewGame()`, idempotent via `HSETNX`)      |
-| `frame:posted_games`                     | SET (durable)     | Tous les `gameId` déjà postés, toutes saisons confondues, jamais nettoyé — garde-fou anti-spoiler de `getFrameImageByGameId()`                                  |
-| `frame:archived:<seasonId>`              | HASH              | `<gameId>:<discordId> → résultat` — marqueur d'idempotence (`HSETNX`) évitant un double comptage si `archiveSolve` est appelé deux fois pour la même résolution |
-
-⚠️ **`automaticDeserialization: false` obligatoire** à la construction du client — par défaut le SDK convertit toute valeur "numérique" en `Number` JS, y compris les IDs Discord (17-19 chiffres, au-delà de `Number.MAX_SAFE_INTEGER`), ce qui les corrompt silencieusement. La sérialisation/désérialisation JSON est donc gérée à la main partout (`toJson`/`fromJson`/`hgetallJson`). Autre piège vérifié empiriquement (non documenté) : avec cette option désactivée, `HGETALL` renvoie un tableau plat `[champ1, valeur1, ...]` et non un objet — voir `pairsToObject()`.
-
-⚠️ **Client Redis construit paresseusement** (`getRedis()`, pas au chargement du module) : avec les imports ES hoistés, `import ... from frames.js` s'exécute avant le `dotenv.config()` du script appelant, donc construire le client en haut de fichier figerait des variables d'environnement pas encore chargées dans les scripts (`postFrame.js`, etc.).
-
-Nettoyage : `startNewGame()` supprime la progression (indices/tentatives/participants) de la partie **précédente** à chaque nouvelle partie — données jetables une fois la partie terminée. Les résultats archivés (`frame:season:*`, nécessaires au total de la saison) ne sont eux jamais supprimés automatiquement.
-
-### Scores et classements par saison
-
-Le score total et le classement général affichés en DM ne portent que sur la **saison Clash Royale en cours** (voir [Saison](#saison)), pas un cumul indéfini. `getCurrentSeasonId()` (`jeux/services/frames.js`) réutilise `computeCurrentSeasonId(currentRace, raceLog)` de `dateUtils.js`, avec 3 tentatives (délai croissant) pour absorber un aléa réseau transitoire côté API Clash Royale. Chaque résultat archivé dans `frame:archived:<seasonId>` garde le `seasonId` de la saison où il a été joué ; le classement de saison vit dans un ZSET dédié par `seasonId` (`frame:season:<seasonId>`), donc aucun recalcul ni remise à zéro manuelle n'est nécessaire au changement de saison — chaque nouvelle saison utilise simplement une nouvelle clé.
-
-### Récapitulatif de fin de saison
-
-Quand `postFrame()` détecte que le `seasonId` a changé depuis la dernière partie (comparaison `previousState.seasonId` vs `getCurrentSeasonId()`, avant tout appel à `startNewGame()`), un embed récapitulatif de la saison écoulée est posté dans le salon **avant** le post normal de la nouvelle manche 1 — jamais de DM, uniquement ce post public (`postSeasonRecap()`/`buildSeasonRecapEmbed()`, `jeux/discord/handlers/frames.js`).
-
-Contenu : classement final de `computeSeasonRanking(endedSeasonId)`, félicitations au(x) vainqueur(s) (gestion des ex-aequo — plusieurs co-champions possibles), classement complet avec médailles 🥇🥈🥉 uniquement pour un rang non partagé (`findTiedRank`, sinon numéro simple). Deux règles de troncage explicites : les scores à **0 pt sont exclus**, et la liste est plafonnée à **20 joueurs** (au-delà, note "... et X autres joueurs"). Si personne n'a marqué le moindre point sur la saison écoulée, aucun récap n'est posté.
-
-Prévisualisable sans rien poster via `npm run frame:public:dry` (ou `frame:test:dry`) : si un changement de saison serait détecté, le récap apparaît dans la sortie console avant l'embed de la nouvelle manche.
-
-### Commande `/frame` — scores personnels
-
-Seule commande slash du jeu (tout le reste passe par les boutons/modal du post hebdomadaire ou par des scripts). N'a aucune option : elle affiche à l'appelant (réponse éphémère) sa propre progression, déterminée à partir de son `discordId` — pas de paramètre à saisir.
-
-Contenu affiché (`handleFrameStatsCommand()`, `jeux/discord/handlers/frames.js`) :
-
-- **Manche en cours** : trouvée ou non, score obtenu (ou "pas encore trouvé"/"pas de points").
-- **Manches précédentes de la saison** (`getPlayerSeasonResults()`) : uniquement celles où le joueur a trouvé la réponse — triées de la plus récente à la plus ancienne. Le numéro de manche vient de `getSeasonMancheNumber(seasonId, gameId)` (`frame:season:<seasonId>:manche_numbers`, voir "Stockage — Upstash Redis" ci-dessus).
-- **Score total de la saison** : somme de tous les résultats archivés (`frame:archived:<seasonId>`) du joueur, saison en cours uniquement (voir "Scores et classements par saison" ci-dessus).
-
-L'affichage "Manche N" est partout devenu **"Saison S · Manche N/X"** (post hebdomadaire, DM de fin de manche, `/frame`) : N est relatif à la saison (repart à 1 à chaque nouvelle saison, attribué par `assignSeasonMancheNumber()`), X est le nombre total de manches prévues sur la saison, calculé calendairement (voir [Saison](#saison)). La progression des images dans `frames.json` (`currentIndex`) reste, elle, indépendante et ne redémarre jamais — seule la numérotation affichée aux joueurs est scopée par saison.
-
-À relancer `node scripts/registerCommands.js` après toute modification (nouvelle option, changement de description) — comme pour toute commande.
-
-### Scripts npm
-
-| Commande                   | Effet                                                                                                                                                                                                  |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run frame:test`       | Poste manuellement une nouvelle partie sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`), **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite).           |
-| `npm run frame:test:dry`   | Aperçu console de la prochaine partie, sans écrire d'état ni poster sur Discord.                                                                                                                       |
-| `npm run frame:public`     | Poste sur le salon public "Général" (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `frames.yml`.                                                                                               |
-| `npm run frame:public:dry` | Équivalent dry-run de `frame:public`.                                                                                                                                                                  |
-| `npm run frame:scores`     | Affiche le classement de la partie en cours : joueur, score de la partie, score total de la saison.                                                                                                    |
-| `npm run frame:reset`      | Remet le jeu à zéro : plus de partie active (la suivante repart à `frames.json[0]`), historique et scores effacés. **Destructif** — à éviter une fois de vraies parties jouées, sauf besoin explicite. |
-
-### Variables d'environnement requises
-
-```text
-DISCORD_CHANNEL_FRAME_TEST=      # salon de test personnel
-DISCORD_CHANNEL_FRAME_PUBLIC=    # salon "Général"
-KV_REST_API_URL=                 # Upstash Redis (voir "Stockage — Upstash Redis" ci-dessus)
-KV_REST_API_TOKEN=
-```
-
-⚠️ Le workflow `.github/workflows/frames.yml` (cron `npm run frame:public`) a besoin de `KV_REST_API_URL`/`KV_REST_API_TOKEN` en plus des secrets Discord habituels — ce ne sont **pas** les mêmes que `BLOB_READ_WRITE_TOKEN` (utilisé pour les assets image, pas par Frame). À ajouter dans Settings → Secrets and variables → Actions du dépôt GitHub, avec les mêmes valeurs que dans `.env` local, sinon le post hebdomadaire échoue avec `[Upstash Redis] The 'url'/'token' property is missing`.
-
----
-
-## Jeu Anagram (devine la carte)
-
-Second mini-jeu hebdomadaire indépendant, sur le modèle exact de Frame (Modal Discord, DM de fin de manche, scores par manche/saison, `/anagram` en miroir de `/frame`) — voir [Jeu Frame](#jeu-frame-devine-le-film) pour tous les mécanismes partagés (Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Cette section ne documente que ce qui est **spécifique** à Anagram.
-
-### Barème — score par position d'arrivée
-
-Contrairement à Frame (pénalités par tentative/indice), le score d'Anagram dépend **uniquement du rang d'arrivée**, sans aucun indice ni pénalité de tentative :
-
-- 1er joueur à trouver : **10 pts**, 2e : **9 pts**, 3e : **8 pts**, ... 10e et suivants : **1 pt** (plancher à 1, pas 0 — tout joueur qui trouve la réponse marque au moins 1 point)
-- Un joueur qui ne trouve jamais la réponse : **0 pt** (aucune position ne lui est attribuée, il n'apparaît simplement pas dans le classement de la manche)
-
-La position est attribuée de façon atomique et immuable au moment de la résolution (`assignArrivalPosition()`, `jeux/services/anagrams.js` — même pattern `INCR` + `HSETNX` idempotent que `assignSeasonMancheNumber()` de Frame, scopé par `gameId`). Conséquence importante : **position et score sont structurellement la même donnée** — contrairement à Frame, qui a eu un bug réel car son DM "vous êtes le Xe à avoir trouvé" utilisait par erreur le classement trié par score au lieu de l'ordre d'arrivée (`computeGameRanking` vs `computeArrivalOrder`). Anagram n'a qu'**une seule** fonction de classement par manche (`computeGameRanking()`, triée par `position` croissante) : cette classe de bug ne peut pas s'y reproduire.
-
-### Réponse
-
-Réponse libre uniquement (pas d'indice), insensible à la casse et aux accents (`normalizeAnswer()`, `packages/commun/textNormalize.js` — partagée avec Frame, seule fonction commune aux deux jeux). `checkAnswer()` vérifie une **égalité stricte** normalisée contre `entry.accept` (contrairement à Frame, qui accepte une sous-chaîne) : une correspondance par sous-chaîne accepterait à tort "Barbares" seul pour "Barbares d'élite", ce qui viderait le jeu de son intérêt sur des noms de cartes courts.
-
-### Données (anagrams.json)
-
-- `jeux/data/anagrams/anagrams.json` — liste de 54 anagrammes (`ID`, `anagram`, `answer`, `accept[]`, `cardKey`), éditée à la main. `cardKey` est le nom **anglais** exact de la carte tel que renvoyé par l'API Clash Royale (`fetchCards()`) — ajouté manuellement (aucune localisation FR fournie par l'API), sert uniquement à résoudre l'image de la carte après résolution. La partie suivante boucle au début une fois toutes les entrées épuisées.
-- Pas de route à protéger côté anti-spoiler : l'anagramme est un texte publié en clair dans l'embed (contrairement à l'image de Frame). L'image de carte, elle, n'est révélée qu'après résolution (réponse éphémère de révélation), jamais exposée avant.
-
-### Résolution de l'image de carte
-
-`getCardImageUrl(cardKey)` (`jeux/services/anagrams.js`) réutilise le cache `getOrSet("clashCardDefinitions", () => fetchCards(), 24h)` **volontairement partagé** avec `backend/routes/matchup.js`/`backend/routes/decks.js` (le cache de `cache.js` est en mémoire, par process, pas namespacé par fichier). Si `cardKey` ne correspond à aucune carte de l'API (typo, carte retirée du jeu), dégrade proprement : `console.warn` + pas d'image dans le message de révélation, jamais de plantage.
-
-### Stockage — Upstash Redis (`anagram:*`)
-
-Même stockage que Frame, préfixe `anagram:` au lieu de `frame:`, **aucun partage de données entre les deux jeux**. Différences de schéma :
-
-| Clé Redis                               | Type              | Contenu                                                                   |
-| --------------------------------------- | ----------------- | ------------------------------------------------------------------------- |
-| `anagram:position_seq:<gameId>`         | STRING (compteur) | Dernière position d'arrivée attribuée pour cette manche (`INCR`)          |
-| `anagram:positions:<gameId>`            | HASH              | `discordId → position` (1, 2, 3...), idempotent `HSETNX`                  |
-| `anagram:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives incorrectes — informatif uniquement, n'entre pas dans le score |
-
-Pas d'équivalent à `frame:hints:*` (aucun indice) ni à `frame:posted_games` (aucune route d'image à protéger). Pas de clé Redis dédiée "déjà posté cette semaine" : `alreadyPostedThisWeek()` compare la date de `anagram:state.startedAt` à aujourd'hui — un seul writer (`startNewGame()`), pas de redondance.
-
-### Post hebdomadaire à horaire aléatoire (samedi, 10h ou 18h UTC)
-
-GitHub Actions ne permet pas nativement un cron à plage aléatoire. Le workflow `.github/workflows/anagrams.yml` se déclenche 2 fois le samedi (`cron: "0 10,18 * * 6"`, 10h et 18h UTC). À chaque déclenchement, `postAnagram()` (`jeux/discord/handlers/anagrams.js`) décide de poster ou non :
-
-1. `alreadyPostedThisWeek()` — si un post a déjà eu lieu cette semaine (même date UTC que `anagram:state.startedAt`), on ne repost pas.
-2. `computeWeeklySlotIndex()` — détermine le créneau courant (1 ou 2).
-3. `shouldPostThisSlot(slotIndex)` — tirage au sort, probabilité `1/(créneaux restants)` : 1/2 au premier créneau (10h), **1/1 (garanti) au second créneau (18h)** si aucun post n'a encore eu lieu.
-
-Volontairement limité à 2 créneaux (plutôt que d'en étaler beaucoup sur la journée, comme les 7 créneaux de 7h à 19h utilisés initialement) : GitHub Actions retarde parfois les déclenchements planifiés (cf. commentaire dans `pre-reset-snapshot.yml`), et plus il y a de créneaux dans la journée, plus ce risque cumulé pousse mécaniquement le tirage vers le dernier créneau garanti — biais observé en pratique (posts quasi systématiquement en soirée avec 7 créneaux).
-
-`--force` (`npm run anagram:test`/`anagram:public:force`) bypasse entièrement ce gating — utilisé pour les tests manuels en salon de test et le rattrapage si le cron a raté toute sa fenêtre un samedi donné.
-
-### Commande `/anagram` — scores personnels
-
-Miroir exact de `/frame` (voir [Commande `/frame`](#commande-frame--scores-personnels)) : réponse éphémère, bouton "🔄 Rafraîchir", manche en cours + historique de la saison + score total. Seule différence d'affichage : le classement de la manche en cours n'a pas besoin de `findTiedRank` (les positions sont garanties uniques, `entry.position` est directement le rang) — `findTiedRank` reste utilisé pour le classement de **saison** (ZSET, où des ex-aequo sont possibles sur plusieurs manches cumulées).
-
-### Récapitulatif de fin de saison (Anagram)
-
-Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt).
-
-### Scripts npm (Anagram)
-
-| Commande                       | Effet                                                                                                                                                                                                         |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run anagram:test`         | Poste manuellement une nouvelle partie sur le salon de test, en ignorant le gating hebdomadaire (`--force`), **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
-| `npm run anagram:test:dry`     | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord.                                                                                                 |
-| `npm run anagram:public`       | Poste sur le salon public si le gating hebdomadaire (jour + tirage au sort) le permet — utilisé par le cron `anagrams.yml`.                                                                                   |
-| `npm run anagram:public:dry`   | Équivalent dry-run de `anagram:public`.                                                                                                                                                                       |
-| `npm run anagram:public:force` | Poste sur le salon public en ignorant le gating — rattrapage manuel si le cron a raté toute sa fenêtre.                                                                                                       |
-| `npm run anagram:scores`       | Classement de la partie en cours (position, score partie, score saison) + joueurs n'ayant pas encore joué.                                                                                                    |
-| `npm run anagram:reset`        | Remet le jeu à zéro : plus de partie active, historique et scores effacés. **Destructif**.                                                                                                                    |
-
-### Variables d'environnement requises (Anagram)
-
-Aucune nouvelle variable : Anagram réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `anagram:*` totalement séparé de `frame:*`). Le workflow `.github/workflows/anagrams.yml` réutilise aussi les mêmes secrets GitHub Actions que `frames.yml` (déjà configurés, rien à ajouter).
-
-## Jeu Pêle-mêle (retrouve les cartes cachées dans les lettres)
-
-Mini-jeu hebdomadaire alterné avec Anagram sous le nom collectif "Jeux de lettres" (voir [Alternance avec Anagram](#alternance-avec-anagram--jeux-de-lettres) ci-dessous). Structurellement, c'est un miroir de `lajustecarte.js` plutôt que d'Anagram : une manche est un TIRAGE ouvert de `DRAW_SIZE` (14) lettres, sans "carte secrète" ni notion de résolution collective — n'importe quelle carte du pool qui rentre dans le tirage est une réponse valide, et la manche reste ouverte jusqu'à la suivante (jamais "résolue", simplement remplacée) plutôt que de se terminer sur le premier joueur qui trouve (comme Anagram/Frame). Un joueur peut reproposer autant de fois qu'il veut ; tous ses mots **distincts** trouvés comptent pour son score (`jeux/services/pelemele.js`).
-
-### Tirage des lettres
-
-`DRAW_SIZE` est passé de 12 à 14 en 2026-09 : mesuré par simulation sur le vrai pool qu'à 12 lettres, 53% des tirages n'avaient qu'une seule carte trouvable (la carte "seed"), rendant le jeu trop prévisible ; à 14, ce taux tombe à 36% et le pool éligible grossit de 72 à 94 cartes.
-
-Le tirage garantit **deux** solutions plutôt qu'une : une carte "seed" principale suit une rotation équitable persistée (`loadSeedOrder`/`pickNextIndex`, même principe que La Juste Carte), et une seconde carte compatible est tirée au hasard (`pickCompatibleSecondarySeed`) parmi celles dont les lettres combinées à la première tiennent dans `DRAW_SIZE`. Passer d'1 à 2 solutions garanties fait chuter le taux de tirages "une seule carte trouvable" de 38% à 0% (mesuré par simulation, moyenne de mots trouvables : 2.4 → 3.9). Les lettres des deux mots seed (union, pas somme — une lettre partagée par les deux ne compte qu'une fois) sont complétées jusqu'à 14 par un tirage pondéré aux fréquences du Scrabble français (`FR_LETTER_WEIGHTS`, `weightedRandomLetter`), puis l'ensemble est mélangé (`buildLetterBagFromSeeds`) pour qu'aucun mot seed ne soit devinable par sa position.
-
-Depuis le 2026-10-11, chaque tirage doit offrir **entre 4 et 9 cartes trouvables** (`MIN_VALID_WORDS`/`MAX_VALID_WORDS`) : `generateDraw()` retire seconde carte et lettres de complément jusqu'à tomber dans la fourchette (~2 essais en moyenne, 1000 au maximum, sinon le tirage le plus proche est gardé). Sans cette contrainte, seuls 48,5 % des tirages y tombaient (simulation sur 20 000 tirages). Une carte principale de 13 lettres ou plus ne laisse qu'une lettre libre au plus : son minimum est abaissé à 3 (`validWordsRangeFor`). Cinq cartes sont retirées de la rotation des cartes principales (`filterPrimarySeedPool`), car elles ne dépassent jamais 3 mots trouvables : Bélier de combat, Recrues royales, Électrocuteurs, Gang de gobelins et Fût à squelettes. Elles restent des réponses valides et peuvent toujours sortir comme seconde carte seed.
-
-Les tirages sont **préparés à l'avance** et stockés dans `pelemele:draws` : la file est complétée à `PREPARED_DRAWS_TARGET` (50) tirages après chaque manche (`refillPreparedDraws`), et `startNewGame()` consomme le premier. Chaque entrée stocke la carte principale (`seedCardKey`) plutôt que son index de rotation, insensible aux changements de pool ; le nombre de cartes trouvables est recalculé à la consommation. `npm run pelemele:draws` complète la file et affiche le nombre de cartes trouvables de chaque manche à venir (`--reveal` pour les lettres et les cartes).
-
-`computeValidWordsForDraw()` calcule UNE FOIS à la génération de la manche (`startNewGame`) la liste complète des cartes du pool qui rentrent dans ce tirage précis, et la stocke dans l'état (`totalValidWords`/`maxWordLength`) — jamais recalculée à chaque proposition. Sert à afficher "X cartes valides sur ce tirage" et à déterminer le bonus du mot le plus long.
-
-### Barème (Pêle-mêle)
-
-- **5 points** (`LONGEST_WORD_BONUS`) pour la (ou les, à égalité) carte(s) la (les) plus longue(s) possible sur CE tirage.
-- **+1 point** (`EXTRA_WORD_POINTS`) pour chaque autre carte valide trouvée.
-- Reproposer une carte déjà trouvée (dédoublonnage par forme canonique, `canonicalWordForm`) ne rapporte rien.
-
-Constantes fixes plutôt que proportionnelles à `DRAW_SIZE`/à la longueur du mot — décision explicite pour ne pas avoir à tout recalibrer si `DRAW_SIZE` change à nouveau.
-
-### Pool éligible et validation d'une proposition
-
-Une carte est éligible (`filterEligiblePool`) si son nom FR est connu, qu'il ne contient **aucune apostrophe** (ex. Barbares d'élite — exclues entièrement, pas de repli sur une variante sans apostrophe) et que son nombre de lettres (espaces/accents ignorés) est ≤ `DRAW_SIZE`.
-
-`validateSubmission()` (fonction pure, testable sans I/O) résout une proposition texte en l'une de 4 issues, même stratégie à 3 échecs que `resolveAnyCard` de La Juste Carte :
-
-| Statut         | Signification                                                            |
-| -------------- | ------------------------------------------------------------------------ |
-| `invalid`      | Aucune carte connue ne correspond (vraie faute de frappe)                |
-| `not-eligible` | Carte connue mais hors pool (apostrophe dans le nom, ou trop de lettres) |
-| `impossible`   | Carte du pool, mais ne rentre pas dans CE tirage précis                  |
-| `ok`           | Proposition valide — `length` = score potentiel (voir Barème)            |
-
-### Stockage — Upstash Redis (`pelemele:*`)
-
-Même stockage que La Juste Carte (mêmes pièges `automaticDeserialization`/`HGETALL`, client paresseux — voir `frames.js`), préfixe `pelemele:` dédié, aucun partage avec `anagram:*` malgré l'alternance.
-
-| Clé Redis                                   | Type | Contenu                                                                  |
-| ------------------------------------------- | ---- | ------------------------------------------------------------------------ |
-| `pelemele:participants:<gameId>`            | HASH | `discordId → {foundWords[], score, lastFoundAt}` de la manche en cours   |
-| `pelemele:attempts:<gameId>:<discordId>`    | LIST | Historique des propositions valides (forme canonique), pour le Journal   |
-| `pelemele:season:<seasonId>`                | ZSET | Score cumulé de saison par joueur, incrémenté en continu (`zincrby`)     |
-| `pelemele:archived:<seasonId>`              | HASH | Résultats figés par manche terminée (`finalizeRound`), pour l'historique |
-| `pelemele:season:<seasonId>:manche_numbers` | HASH | `gameId → n° de manche dans la saison`, assigné une seule fois           |
-| `pelemele:draws`                            | LIST | Tirages préparés à l'avance (`{seedCardKey, letters}`), dans l'ordre     |
-
-Contrairement à La Juste Carte (archivage au moment du "solved"), les résultats de TOUS les participants d'une manche sont figés en une fois (`finalizeRound`), au moment où `startNewGame()` la remplace.
-
-### Alternance avec Anagram ("Jeux de lettres")
-
-Depuis la saison technique 137, Pêle-mêle alterne **une saison Clash Royale sur deux** avec Anagram sous le nom collectif "Jeux de lettres" (même principe que l'alternance [Zoom carte/Palette](#jeux-visuels-alternance-zoom-carte-et-palette)) — chaque jeu garde son propre service (`pelemele.js`/`anagrams.js`) et son propre handler Discord, inchangés ; pas de tronc commun de logique de jeu.
-
-`jeux/services/jeuxdelettres.js` porte la décision partagée : `getActiveLetterGame(seasonId)` compare l'écart à `ACTIVE_GAME_REFERENCE_SEASON` (136, la saison qu'Anagram gérait encore au moment de la mise en place de l'alternance, confirmée le 2026-09-19) — écart PAIR → Anagram, écart IMPAIR → Pêle-mêle (donc 136 = Anagram, 137 = Pêle-mêle, 138 = Anagram...). `jeux/scripts/postJeuxDeLettres.js` est le seul point d'entrée en production (cron unique `.github/workflows/jeux-de-lettres.yml`, samedi 10h/18h UTC, même mécanisme de créneau aléatoire qu'Anagram avant l'unification) : à chaque déclenchement il détermine le jeu actif, gère le gating hebdomadaire, délègue à `postPeleMele()`/`postAnagram()`, et déclenche le récap de fin de saison du jeu qui vient de se terminer — quel qu'il soit — via un suivi de saison partagé (`getLastKnownSeasonId`/`setLastKnownSeasonId`), car l'état interne d'un jeu individuel ne "voit" la transition de saison suivante que deux saisons plus tard (trop tard pour un récap posté à temps).
-
-`jeux/scripts/postPeleMele.js` reste utilisable pour forcer un post direct de CE jeu précis (test, rattrapage manuel), en dehors de l'orchestrateur — mais ne déclenche aucun récap de fin de saison lui-même (`postSeasonRecap` n'est appelé QUE par `postJeuxDeLettres.js`, jamais par `postPeleMele()`).
-
-### Bouton "Journal"
-
-Spécifique à Pêle-mêle (pas d'équivalent chez Anagram) : affiche en réponse éphémère les mots trouvés sur la manche EN COURS (avec progression `X/totalValidWords`) et l'historique des `JOURNAL_HISTORY_LIMIT` (10) dernières manches de la saison. Nécessaire ici puisque, contrairement à Anagram, il n'y a pas de DM de fin de manche pour se souvenir de ce qu'on a trouvé — la manche restant ouverte indéfiniment jusqu'à son remplacement.
-
-### Commande `/pelemele` — scores personnels
-
-Miroir structurel de [`/anagram`](#commande-anagram--scores-personnels) (réponse éphémère, bouton "🔄 Rafraîchir", manche en cours + historique de saison + score total + rang), adapté à l'absence de notion de "solved" : la section "manche en cours" liste les mots trouvés au lieu d'un booléen, et le nombre de joueurs "en tête" compte ceux ayant trouvé **au moins un** mot (`computeGameRanking`, trié par score puis nombre de mots trouvés) plutôt qu'un rang d'arrivée unique.
-
-### Récapitulatif de fin de saison (Pêle-mêle)
-
-Même règles de troncage qu'Anagram (20 joueurs max, exclusion des 0 pt, médailles sur ex-aequo via `findTiedRank`) — voir [Alternance avec Anagram](#alternance-avec-anagram--jeux-de-lettres) ci-dessus pour qui le déclenche. Différence d'affichage : la liste des manches de la saison montre le **tirage** (les lettres) de chaque manche plutôt qu'une réponse unique, puisque Pêle-mêle n'a justement pas de réponse unique par manche.
-
-### Scripts npm (Pêle-mêle)
-
-| Commande                                       | Effet                                                                                                                                                            |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run pelemele:test`                        | Poste manuellement une nouvelle manche sur le salon de test, en ignorant le gating hebdomadaire (`--force`).                                                     |
-| `npm run pelemele:test:dry`                    | Aperçu console de la prochaine manche, sans écrire d'état ni poster sur Discord.                                                                                 |
-| `npm run pelemele:public`                      | Poste sur le salon public si le gating hebdomadaire le permet — usage manuel, l'orchestrateur passe par `npm run lettres:public`.                                |
-| `npm run pelemele:public:dry`                  | Équivalent dry-run de `pelemele:public`.                                                                                                                         |
-| `npm run pelemele:reset`                       | Remet le jeu à zéro : plus de manche active, ordre de rotation des cartes seed remélangé, tirages préparés supprimés, historique et scores effacés. **Destructif**.                          |
-| `npm run pelemele:draws`                       | Complète la file des tirages préparés (50) et affiche le nombre de cartes trouvables de chaque manche à venir, sans spoiler (`-- --reveal` pour tout afficher).  |
-| `npm run lettres:test`/`:public` (`:dry` idem) | Point d'entrée de l'orchestrateur (voir [Alternance avec Anagram](#alternance-avec-anagram--jeux-de-lettres)) — décide lui-même s'il poste Anagram ou Pêle-mêle. |
-
-### Variables d'environnement requises (Pêle-mêle)
-
-Aucune nouvelle variable : comme Anagram, Pêle-mêle réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `pelemele:*` totalement séparé). Le workflow `.github/workflows/jeux-de-lettres.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml` (déjà configurés, rien à ajouter).
-
----
-
-## Jeu Zoom carte (devine les cartes zoomées)
-
-Troisième mini-jeu hebdomadaire indépendant, sur le modèle de Frame (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Une manche = une carte de `jeux/data/jeux-visuels/zoom/zoom.json` (base/évoluée/héros mélangées dans le même pool), zoomée à l'extrême sur son icône.
-
-Depuis la saison 137, Zoom carte tourne **en alternance une saison sur deux avec Palette** sous le nom collectif "Jeux visuels" — voir la section dédiée [Jeux visuels](#jeux-visuels-alternance-zoom-carte-et-palette) juste après celle de Palette pour le détail de l'orchestrateur.
-
-> Une version antérieure affichait 2 cartes par manche avec score partiel indépendant ("slots" A/B) — abandonnée après le premier test réel : le roster de 62 cartes est trop petit pour 2 cartes/manche sans épuiser le pool en quelques semaines. Toute trace de `slot`/`entryA`/`entryB` dans du code plus ancien ou des commentaires fait référence à cette version révolue.
-
-### Barème (Zoom carte)
-
-- Réponse exacte du 1er coup sans indice : **10 pts**
-- Chaque tentative incorrecte : **-2 pts**
-- Indice utilisé (un seul palier, contrairement aux 2 indices de Frame) : **-3 pts**
-
-`computeScore(attemptsIncorrects, hintUsed)` (`jeux/services/zoom.js`) est identique à celle de Frame, sauf que `hintUsed` est un booléen (un seul palier) et non un compteur.
-
-### Réponse (Zoom carte)
-
-Modal à 1 champ, validée par `checkAnswer()` — égalité **stricte** normalisée (comme Anagram, pas de sous-chaîne comme Frame) : un nom de carte est court, une correspondance par sous-chaîne accepterait à tort un fragment.
-
-### Sélection de la manche : progression séquentielle sur un fichier mélangé
-
-Même pattern que Frame/Anagram : `pickNextZoomIndex()` (`jeux/services/zoom.js`) avance simplement d'une position dans `jeux/data/jeux-visuels/zoom/zoom.json` (`index+1 % n`) et boucle au début une fois le catalogue épuisé — pas d'état supplémentaire à maintenir en Redis. Le "hasard" ne vient pas d'un tirage effectué au moment de poster, mais du fait que **le fichier lui-même a été mélangé une fois** (un premier essai avait trié `zoom.json` alphabétiquement par `id`, ce qui rendait le jeu totalement prévisible — l'ordre se voyait clairement en test réel). `jeux/scripts/generateZoomCatalog.js` préserve cet ordre à chaque régénération (ne retrie jamais alphabétiquement) et insère les cartes nouvellement ajoutées dans un ordre aléatoire plutôt qu'en bloc à la fin. `resetGame()` ne touche pas au fichier : une nouvelle partie repart simplement au début de son ordre actuel.
-
-### Données (`jeux/data/jeux-visuels/zoom/zoom.json` + `jeux/data/jeux-visuels/zoom/images/`)
-
-Contrairement à Anagram (image CDN résolue à la volée) et comme Frame (image stockée localement), les icônes sont téléchargées **une fois** via `jeux/scripts/generateZoomCatalog.js` (usage ponctuel, hors flux hebdomadaire) plutôt que requêtées à chaque manche :
-
-- Pool de cartes : les `cardKey` uniques de `jeux/data/anagrams/anagrams.json` (même liste que le jeu Anagram, décision explicite — pas encore étendu aux 122 cartes du jeu).
-- Noms français : `jeux/data/cardNames.json` (source de vérité partagée, voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) — **jamais** `anagrams.json` directement, pour ne pas dupliquer une donnée corrigeable à un seul endroit. Resynchronisés à chaque exécution du script, même sans retélécharger l'image.
-- Icônes de base : `fetchCards()` (catalogue générique Clash Royale, universel).
-- Icônes évoluées/héros : `fetchPlayer(tag)` d'un compte de référence — **ces variantes ne sont exposées par l'API QUE sur les cartes que CE joueur a personnellement évoluées** (`evolutionLevel > 0`/`>= 2`), ce n'est pas une métadonnée statique par carte comme l'icône de base. Le script filtre via `countEvolved`/`countHeroes` (`packages/clash-royale/collectionConstants.js`, même logique que la page Collection).
-- `jeux/data/jeux-visuels/zoom/zoom.json` — un objet par variante jouable (`id`, `cardKey`, `variant: "base"|"evolution"|"hero"`, `answer`, `accept`, `image`, `width`/`height`, `sourceUrl`, `fetchedAt`, et optionnellement `focal`/`zoomStages` pour surcharger le crop par défaut sur une carte précise, réglé à la main après une passe de QA visuelle).
-- `jeux/data/jeux-visuels/zoom/images/*.png` — octets téléchargés, jamais exposés statiquement (seule la route `/api/zoom/image` y donne accès, voir ci-dessous).
-- Idempotent et purgé : relancer le script ne re-télécharge que si l'URL source a changé ; toute entrée dont le `cardKey` n'est plus dans le pool source (carte retirée d'`anagrams.json`) est supprimée du catalogue et son image effacée — sûr tant qu'aucune manche n'a encore été postée en production.
-
-### Synthèse d'image (`jeux/services/zoomImage.js`)
-
-Aucune nouvelle dépendance : réutilise `@resvg/resvg-js` (déjà présent, utilisé par `buildWarDecksImage` dans `api/discord/interactions.js`) pour rasteriser un SVG contenant une `<image href="data:...">` en PNG. Contrairement à `buildWarDecksImage` (qui télécharge des icônes distantes à chaque appel), les octets sont lus directement dans `jeux/data/jeux-visuels/zoom/images/` — aucun réseau au moment de servir une manche.
-
-- `getZoomCardImage(gameId)` — image publique de l'embed, zoom extrême (fixe pour toute la durée de la manche : un embed Discord est partagé par tout le salon, il ne peut pas varier par joueur).
-- `getZoomHintImage(gameId)` — crop dézoomé (indice).
-- `getZoomRevealImage(gameId)` — carte entière (juste les octets du fichier source, sans SVG).
-- Formule de crop : point focal normalisé `(fx, fy)` + facteur de zoom `Z`, une `<image>` surdimensionnée est positionnée pour que ce point atterrisse au centre de la cellule cible, `<clipPath>` explicite pour rogner. Valeurs par défaut `(0.5, 0.45)`, `Z=4.5` (zoom extrême) / `Z=2.3` (dézoom indice), surchargeables par carte via `zoom.json`. ⚠️ Ces valeurs ont déjà été revues une fois à la hausse après un premier test réel où le zoom par défaut (`Z=2.75`) rendait la réponse évidente sans même utiliser l'indice — toute nouvelle carte ajoutée au pool mérite une vérification visuelle avant publication.
-
-### Anti-spoiler : bouton indice = message éphémère, jamais une édition du post public
-
-Contrairement à Frame (indice textuel révélé en clair dans un message éphémère), l'indice de Zoom carte est une **image** — cliquer sur "Indice" ne peut pas modifier l'embed public (partagé par tout le salon), il répond donc par un **embed éphémère** avec le crop dézoomé (`GET /api/zoom/image?gameId=...&stage=hint`), jamais un PATCH du message d'origine.
-
-`GET /api/zoom/image` (`backend/server.js`, juste après la route équivalente de Frame) vérifie `isGamePosted(gameId)` (registre Redis `zoom:posted_games`, jamais nettoyé, même garde-fou anti-spoiler que `frame:posted_games`) avant de servir quoi que ce soit — jamais l'image d'une manche future devinée par construction d'id.
-
-⚠️ Limite acceptée : l'URL de l'indice (`?gameId=X&stage=hint`) est reconstructible par quiconque a vu la manche postée, sans cliquer le bouton ni perdre les 3 pts — aucune authentification possible sur une simple requête d'image d'embed (même modèle de confiance que l'URL d'image de Frame).
-
-### Stockage — Upstash Redis (`zoom:*`)
-
-Même stockage que Frame, préfixe `zoom:` :
-
-| Clé Redis                            | Type              | Contenu                                                                                |
-| ------------------------------------ | ----------------- | -------------------------------------------------------------------------------------- |
-| `zoom:state`                         | STRING (JSON)     | État de la manche active (`gameId` + métadonnées de saison)                            |
-| `zoom:hint:<gameId>:<discordId>`     | STRING (flag)     | Indice utilisé (`SETNX`, un seul palier donc pas besoin de `SADD`/`SCARD` comme Frame) |
-| `zoom:attempts:<gameId>:<discordId>` | STRING (compteur) | Tentatives incorrectes                                                                 |
-| `zoom:participants:<gameId>`         | HASH              | `discordId → { solved, solvedAt, score, attempts }`                                    |
-| `zoom:archived:<seasonId>`           | HASH              | Un champ par manche résolue (`<gameId>:<discordId>`)                                   |
-| `zoom:posted_games`                  | SET               | Registre anti-spoiler, jamais nettoyé                                                  |
-
-`gameId` = `id` de l'entrée du catalogue directement (pas de composition, contrairement à l'ancienne version 2-cartes).
-
-### Publication hebdomadaire (vendredi 18h UTC)
-
-`.github/workflows/zoom.yml` (`cron: "0 18 * * 5"`) — horaire fixe comme Frame (contrairement au tirage aléatoire d'Anagram), exécute `npm run zoom:public`.
-
-### Commande `/zoom` — scores personnels
-
-Miroir de `/frame` (voir [Commande `/frame`](#commande-frame--scores-personnels)).
-
-### Récapitulatif de fin de saison (Zoom carte)
-
-Identique à Frame (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt). Le libellé de chaque manche (`getZoomRoundLabel`) est directement `entry.answer`.
-
-`postZoom()` accepte un paramètre `skipSeasonRecap` (défaut `false`) : depuis l'alternance avec Palette, Zoom ne poste plus forcément chaque saison — sans ce flag, une reprise après une saison Palette comparerait l'état interne de Zoom (vieux d'un cycle complet) et redéclencherait à tort un récap déjà posté en temps voulu par l'orchestrateur (voir [Jeux visuels](#jeux-visuels-alternance-zoom-carte-et-palette)). `jeux/scripts/postZoom.js` (appel direct/manuel) laisse `skipSeasonRecap` à `false` — comportement inchangé.
-
-### Scripts npm (Zoom carte)
-
-| Commande                  | Effet                                                                                                                                                         |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run zoom:catalog`    | Génère/complète `jeux/data/jeux-visuels/zoom/zoom.json` et télécharge les icônes manquantes dans `jeux/data/jeux-visuels/zoom/images/`. Usage ponctuel, jamais dans le flux hebdomadaire.         |
-| `npm run zoom:test`       | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite). |
-| `npm run zoom:test:dry`   | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord.                                                 |
-| `npm run zoom:public`     | Poste sur le salon public (avec ping) — utilisé par le cron `zoom.yml`.                                                                                       |
-| `npm run zoom:public:dry` | Équivalent dry-run de `zoom:public`.                                                                                                                          |
-| `npm run zoom:scores`     | Classement de la partie en cours (score partie, score saison) + joueurs n'ayant pas encore joué.                                                              |
-| `npm run zoom:move`       | Reposte la manche active dans un autre salon sans faire avancer la partie.                                                                                    |
-| `npm run zoom:reset`      | Remet le jeu à zéro : plus de partie active (repart au début de `zoom.json`), historique et scores effacés. **Destructif**.                                   |
-
-### Variables d'environnement requises (Zoom carte)
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `zoom:*` totalement séparé). Le workflow `.github/workflows/zoom.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml` (déjà configurés, rien à ajouter).
-
----
-
-## Jeu Palette (devine la couleur dominante d'une carte)
-
-Mini-jeu hebdomadaire QCM à 4 choix (A/B/C/D), une seule tentative par joueur — pas de Modal (contrairement à Frame/Anagram/Zoom/La Juste Carte) : le mécanisme d'interaction est calqué sur le bouton de vote du Quiz thématique (`quiz_vote:`, `jeux/services/quiz.js`/`jeux/discord/handlers/quiz.js`) — ACK éphémère immédiat, jamais d'ouverture de formulaire.
-
-Validé après une phase de test : depuis la saison 137, Palette tourne **en alternance une saison sur deux avec Zoom carte** sous le nom collectif "Jeux visuels" (même principe que l'unification Anagram/Pêle-mêle en "jeux-de-lettres", commit `5473d39a`) — voir la section [Jeux visuels](#jeux-visuels-alternance-zoom-carte-et-palette) juste après pour le détail de l'orchestrateur. `jeux/services/palette.js` a été écrit dès sa conception en parité structurelle stricte avec `zoom.js` (mêmes noms de fonctions, même forme d'état), ce qui a rendu cette unification mécanique.
-
-### Extraction des couleurs et génération du catalogue
-
-`jeux/services/dominantColor.js` (k-means en espace Lab, cadre décoratif de rareté exclu par comparaison inter-cartes, voir les pièges documentés en commentaire dans ce fichier) et `jeux/scripts/generatePaletteCatalog.js` (génère `jeux/data/jeux-visuels/palette/palette.json`, télécharge `jeux/data/jeux-visuels/palette/images/` et `jeux/data/jeux-visuels/palette/highlights/`, applique `jeux/data/jeux-visuels/palette/manualOverrides.json` en dernier). Usage ponctuel (`npm run palette:catalog`), jamais dans le flux de manche.
-
-Une carte n'est jouable que si sa couleur dominante fait au plus 60 % (`MAX_TOP1_SHARE`) **et** dépasse la 2e couleur d'au moins 5 points de part (`MIN_TOP_GAP`, `excludedReason: "top1-top2<5%"`, depuis le 2026-10-18 : en dessous, l'œil ne peut pas départager deux surfaces). Ce filtre prime aussi sur `forcePlayable`. ⚠️ Une régénération complète peut retélécharger des images et donc recalculer le masque de cadre de toute leur rareté : les couleurs d'autres cartes peuvent changer. À éviter en cours de saison Palette (la bonne réponse d'une manche en cours pourrait bouger).
-
-### Les 4 propositions : mélange par manche, pas par carte
-
-Contrairement au reste du jeu (une image = un contenu fixe), Palette doit afficher les 4 couleurs de `entry.colors` dans un ordre mélangé différent à chaque manche (sinon la couleur dominante serait toujours "A"). Discord ne permet aucune couleur personnalisée sur un bouton (5 styles fixes) : les 4 pastilles colorées sont donc dessinées **dans l'image** (voir `jeux/services/paletteImage.js`), les boutons Discord ne portent que les lettres A/B/C/D.
-
-Le mélange est calculé une seule fois à `startNewGame()` (Fisher-Yates) et persisté dans `palette:order:<gameId>` — jamais recalculé, pour rester stable si Discord re-fetch l'URL d'embed ou si un ancien message reste visible après qu'une nouvelle manche a démarré. Cette clé sert aussi de registre anti-spoiler (remplace le SET `posted_games` des autres jeux) : son existence suffit à garantir que la manche a bien été postée.
-
-### Sélection de la carte suivante : `palette.json` n'est PAS mélangé (contrairement à `zoom.json`)
-
-Le fichier généré par `generatePaletteCatalog.js` est trié dans l'ordre de `jeux/data/cardNames.json` (quasi alphabétique) — le reproduire tel quel aurait recréé le piège déjà documenté pour Zoom (voir plus haut : "l'ordre se voyait clairement en test réel"). `palette.js` maintient donc son propre ordre de tirage, mélangé au runtime et persisté dans `palette:play_order` (Redis, pas le fichier), limité au sous-ensemble `playable: true`. Les cartes nouvellement rendues jouables (regénération du catalogue) sont insérées une par une à une position aléatoire, jamais en bloc en fin de liste.
-
-### Synthèse d'image (`jeux/services/paletteImage.js`)
-
-Même technique que `zoomImage.js` : SVG rastérisé en PNG via `@resvg/resvg-js`. Contrairement à Zoom (aucun texte, juste un crop d'image), Palette affiche du texte (lettres, pourcentages) → **police embarquée obligatoire** (`data/fonts/Inter-Bold.ttf`, `loadSystemFonts: false`), même piège que documenté pour Pêle-mêle : resvg n'a aucune police système sur le runtime serverless Vercel, le texte resterait invisible sans lever d'erreur.
-
-Deux répertoires source distincts à ne jamais confondre (même nom de fichier dans les deux) : `jeux/data/jeux-visuels/palette/images/` (carte brute, question) et `jeux/data/jeux-visuels/palette/highlights/` (voile déjà posé sur la couleur dominante, résultat) — donner l'un à la place de l'autre spoilerait la réponse directement dans la question.
-
-### Barème (Palette)
-
-`computeScore(rank)` (`jeux/services/palette.js`) : barème dégressif selon le rang de la couleur choisie (`getAnswerRank`, index dans `entry.colors` trié par part décroissante) : dominante = **4 pts**, 2e = **2 pts**, 3e = **1 pt**, 4e = **0** (`RANK_POINTS`, depuis le 2026-10-18 : l'œil départage mal des surfaces proches, une réponse « presque juste » rapporte donc quelque chose). Pas de bonus de rapidité. Le `rank` est stocké dans `palette:participants:<gameId>` et `palette:archived:<seasonId>` ; les archives antérieures (barème 1/0) n'en ont pas, `/palette` retombe alors sur `score > 0` pour savoir si la réponse était la dominante. Pas de pénalité de tentative possible techniquement : un seul clic verrouille la réponse, correcte ou non, il n'y a jamais de "tentative incorrecte suivie d'une autre" à pénaliser.
-
-### Réponse à essai unique
-
-`recordAnswer()` verrouille via `HSETNX` (pas une lecture-puis-écriture comme `markSolved()` de Zoom) : chaque clic est définitif, correct ou non — un double-clic quasi simultané (double-tap mobile, lag réseau) reste sûr sans race condition. Contrairement à Zoom (qui n'archive que les réponses correctes), `archiveAnswer()` archive **tous** les participants d'une manche — un score de 0 n'affecte pas le classement mais garde une trace de participation.
-
-### Récapitulatif de fin de saison (Palette)
-
-Identique à Zoom dans sa forme (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) mais **pas de `skipSeasonRecap` sur `postPalette()`** (contrairement à Zoom/Anagram) : ce jeu n'a jamais eu de logique de récap interne à suppléer — `postSeasonRecap()` n'est appelée QUE par l'orchestrateur (`jeux/scripts/postJeuxVisuels.js`), jamais depuis `postPalette()` lui-même. Même position que Pêle-mêle avant son unification avec Anagram (`5473d39a`). Le libellé de chaque manche (`getPaletteRoundLabel`) est `entry.fr` (nom français de la carte).
-
-### Stockage — Upstash Redis (`palette:*`)
-
-| Clé Redis                            | Type          | Contenu                                                      |
-| ------------------------------------- | ------------- | -------------------------------------------------------------- |
-| `palette:state`                       | STRING (JSON) | Manche active (`gameId`, `seasonId`, `seasonManche`, ...)     |
-| `palette:order:<gameId>`              | STRING (JSON) | Permutation A→D → index couleur, permanent (anti-spoiler)    |
-| `palette:play_order`                  | STRING (JSON) | Ordre de tirage des cartes jouables, permanent                |
-| `palette:participants:<gameId>`       | HASH          | `discordId → { letter, correct, rank, score, answeredAt }`   |
-| `palette:season:<seasonId>`           | ZSET          | Classement de saison (score cumulé)                            |
-| `palette:season:<seasonId>:pseudos`   | HASH          | Pseudos figés pour le classement                                |
-| `palette:season:<seasonId>:manche_seq`/`manche_numbers` | STRING/HASH | Numérotation des manches de la saison         |
-| `palette:archived:<seasonId>`         | HASH          | Un champ par manche répondue (`<gameId>:<discordId>`)        |
-
-### Commande `/palette` — scores personnels
-
-Miroir de `/zoom` (voir [Commande `/zoom`](#commande-zoom--scores-personnels)), adapté au modèle "essai unique" : pas de distinction solved/en cours ni de tentatives/indice à afficher — un joueur a répondu (correct ou non) ou n'a pas encore répondu à la manche en cours, point final. `handlePaletteStatsCommand` (`jeux/discord/handlers/palette.js`), bouton "🔄 Rafraîchir" (`custom_id: palette_stats_refresh`, réponse `type: 6` pour éditer le même message éphémère).
-
-### Ce qui n'est PAS construit (décision explicite)
-
-Pas de DM de fin de manche, pas de bouton Journal. À réévaluer si l'usage le justifie, sur le modèle de Zoom (DM) ou Pêle-mêle (Journal).
-
-### Scripts npm (Palette)
-
-| Commande                    | Effet                                                                                |
-| ---------------------------- | ---------------------------------------------------------------------------------------- |
-| `npm run palette:catalog`   | Génère/complète `jeux/data/jeux-visuels/palette/palette.json` + images. Usage ponctuel.       |
-| `npm run palette:test`      | Poste une manche sur le salon de test, **sans ping** (`--force` implicite).             |
-| `npm run palette:test:dry`  | Aperçu console, sans écrire ni poster.                                                    |
-| `npm run palette:public`    | Poste sur le salon public (avec ping) — utilisé par l'orchestrateur `visuels:public`.   |
-| `npm run palette:public:dry`| Équivalent dry-run de `palette:public`.                                                  |
-| `npm run palette:reset`     | Remet le jeu à zéro (manche active, participants, classements, archives). **Destructif**. |
-
-### Variables d'environnement (Palette)
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `palette:*` séparé).
-
----
-
-## Jeux visuels (alternance Zoom carte et Palette)
-
-Zoom carte et Palette alternent **une saison Clash Royale sur deux** sous le nom collectif "Jeux visuels" — même principe que l'unification d'Anagram et Pêle-mêle en "jeux-de-lettres" (`5473d39a`) : pas de tronc commun d'affichage ni de logique de jeu fusionnée, chaque jeu garde son propre service (`zoom.js`/`palette.js`) et son propre handler Discord (`_handlers/zoom.js`/`_handlers/palette.js`), inchangés. Contrairement à jeux-de-lettres, les **ressources** (`jeux/data/jeux-visuels/zoom/` et `jeux/data/jeux-visuels/palette/`) sont bien regroupées sous un dossier parent commun — décision explicite pour ce nommage précis.
-
-### Tronc commun (`jeux/services/jeuxvisuels.js`)
-
-- `getCurrentSeasonId()` dupliquée (convention du repo, voir la remarque équivalente dans `jeuxdelettres.js`) — utilisée uniquement pour la décision d'alternance elle-même, pas pour l'état interne d'un jeu précis.
-- `ACTIVE_GAME_REFERENCE_SEASON = 136` — saison technique CR en cours au moment de la mise en place de l'alternance (Saison publique 87, vérifiée le 2026-09-19 — la même saison de référence que `jeuxdelettres.js`, coïncidence de calendrier). Zoom termine cette saison, Palette prend le relais à la 137.
-- `getActiveVisualGame(seasonId)` — fonction pure : écart pair par rapport à la référence → `"zoom"`, impair → `"palette"`.
-- `getLastKnownSeasonId()`/`setLastKnownSeasonId()` — suivi de saison PARTAGÉ (clé `jeuxvisuels:last_season_id`), indépendant de `zoom:state`/`palette:state` : le jeu qui reprend la main après la saison de l'autre ne "verrait" sinon la transition que 2 saisons plus tard.
-
-Contrairement à `jeuxdelettres.js` (Anagram/Pêle-mêle, samedi, 2 créneaux aléatoires — héritage de l'historique 7-créneaux d'Anagram), pas de planification multi-créneaux ici : Zoom a toujours eu un créneau fixe unique (vendredi 18h UTC), simple gating jour dans l'orchestrateur.
-
-### Orchestrateur (`jeux/scripts/postJeuxVisuels.js`)
-
-Seul point d'entrée en production (remplace `.github/workflows/zoom.yml`, désormais `.github/workflows/jeux-visuels.yml`, même cron `"0 18 * * 5"`) :
-
-1. Détecte un changement de saison (`getLastKnownSeasonId` vs saison courante) → poste le récap de fin de saison du jeu qui vient de se terminer (`postZoomSeasonRecap`/`postPaletteSeasonRecap`), quel qu'il soit.
-2. Gating (sauf `--force`/`--dry-run`) : vendredi uniquement, puis `alreadyPostedThisWeek()` du jeu actif.
-3. Délègue au jeu actif (`postZoom`/`postPalette`) avec `force: true, skipSeasonRecap: true` — sans effet pour Palette, qui n'a pas ce paramètre (voir la section Palette ci-dessus).
-
-`jeux/scripts/postZoom.js`/`jeux/scripts/postPalette.js` restent utilisables directement (test/rattrapage manuel d'un jeu précis, hors orchestrateur), comme `postPeleMele.js` pour jeux-de-lettres.
-
-### Historique fusionné (`jeux/services/miniJeuxHistory.js`)
-
-Entrée `"visuels"` (🎨 Jeux visuels) fusionnant `getAllArchivedResults()` de `zoom.js` et `palette.js` — sûr car les deux jeux ne sont jamais actifs la même saison (résultats archivés qui ne se chevauchent jamais), même principe que l'entrée `"lettres"`.
-
-### Variables d'environnement et secrets
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN`. Le workflow `.github/workflows/jeux-visuels.yml` réutilise les mêmes secrets GitHub Actions que `zoom.yml` (déjà configurés, rien à ajouter).
-
----
-
-## Jeu La Juste Carte (devine la carte par ses stats)
-
-Quatrième mini-jeu hebdomadaire indépendant, sur le modèle de Frame/Anagram (voir [Jeu Frame](#jeu-frame-devine-le-film) pour les mécanismes partagés : Modal `type:9`/`MODAL_SUBMIT type:5`, stockage Upstash Redis et ses pièges, gestion de saison CR). Différence structurelle majeure : contrairement aux 3 autres jeux (une seule tentative résout la manche), ici chaque joueur soumet **plusieurs propositions successives** contre une carte secrète — ce n'est pas une course entre joueurs, chacun joue sa propre partie à son rythme.
-
-Pas d'autocomplete sur le nom de carte proposé : les Modals Discord ne le supportent pas (limitation de la plateforme). Une commande slash dédiée avec option autocomplete a été envisagée puis écartée (complexité jugée disproportionnée par rapport au gain) — le joueur tape le nom en clair dans la Modal, `resolveGuess()` tolère accents/casse mais pas les fautes d'orthographe.
-
-Une carte Clash Royale secrète est tirée chaque semaine. Le joueur propose le nom (français) d'une autre carte, et le jeu compare les deux sur 4 stats — PV, Portée, Dégâts, Élixir — en indiquant pour chacune si la **proposition** est plus haute (⬆️), plus basse (⬇️) ou identique (✅) à la carte secrète.
-
-### Barème (La Juste Carte)
-
-- Le joueur commence avec 10 points.
-- La 1ère proposition est **gratuite** (aucune pénalité, quel que soit le résultat).
-- À partir de la 2e proposition, chaque tentative coûte 1 point.
-- Bouton **"💡 Indice : rareté"** (voir plus bas) : coûte 3 points, une seule fois par manche.
-- Un joueur qui trouve marque toujours **au moins 1 point**, même après plus de 10 essais et l'indice utilisé.
-
-`computeScore(attemptNumber, hintUsed)` (`jeux/services/lajustecarte.js`) = `Math.max(1, 11 - attemptNumber - (hintUsed ? 3 : 0))` — une seule formule couvre toutes les règles ci-dessus (la "1ère gratuite" est une conséquence de la formule à `attemptNumber=1`, pas une branche à part).
-
-### Indice "rareté" (bouton, -3 pts)
-
-Sur le même modèle que Zoom (`handleHintButton`, `recordHintUsed`) : bouton toujours visible à côté du bouton de réponse (post public **et** chaque réponse éphémère de reproposition — `buildGameComponents()`), custom_id `lajustecarte_hint:<gameId>`. Cliquer révèle la **rareté** de la carte secrète (Commune/Rare/Épique/Légendaire/Champion) dans un message éphémère, indépendamment du numéro de tentative en cours.
-
-- Idempotent : `recordHintUsed()` utilise `SETNX` sur `lajustecarte:hint:<gameId>:<discordId>` — un 2e clic ré-affiche la rareté gratuitement (`alreadyUsed: true`), aucune pénalité supplémentaire.
-- La pénalité de -3 pts n'est appliquée qu'**à la victoire** (`hintUsedFor()` relu au moment de `markSolved()`, pas mémorisé plus tôt) : peu importe quand l'indice a été pris pendant la manche, seul son usage ou non au moment de trouver compte pour le calcul final.
-- `participant.hintUsed` est stocké sur le résultat archivé, pour traçabilité (pas encore affiché dans `/justecarte`, à ajouter si besoin).
-
-### Réponse — flux à 3 issues (pas 2 comme Anagram)
-
-Modal à 1 champ (pas d'autocomplete possible dans une Modal Discord), résolue par `resolveGuess()` — égalité **stricte** normalisée (`normalizeAnswer`, comme Anagram) contre le nom français de chaque carte du catalogue **éligible**. Trois issues possibles, à distinguer explicitement dans `handleModalSubmit` (`jeux/discord/handlers/lajustecarte.js`) :
-
-1. **Nom non reconnu** — aucun état modifié (ni compteur de tentatives, ni score). Deux sous-cas distingués dans le message renvoyé (`resolveAnyCard()`, qui résout contre la liste COMPLÈTE de `jeux/data/cardNames.json`, y compris les cartes non éligibles) : une vraie faute de frappe ("carte inconnue, vérifie l'orthographe") vs une carte réelle mais absente du pool ("🚫 carte non incluse dans ce jeu", avec pointeur vers le bouton "📋 Cartes non incluses" de `/justecarte`) — évite qu'un joueur qui tape correctement "Gobelin géant" pense à une faute de frappe alors que la carte n'est simplement pas dans le jeu.
-2. **Carte reconnue mais fausse** — la tentative est ajoutée à l'historique du joueur (`recordAttempt`, `RPUSH`), les indices comparatifs débloqués à ce stade sont renvoyés avec le rappel des cartes déjà proposées (`getGuessHistory`) et un bouton pour reproposer.
-3. **Carte trouvée** — `markSolved()` (idempotent) fige le score au numéro de tentative courant, `archiveSolve()` alimente le classement de saison, embed de victoire avec l'image de la carte, DM envoyé (voir plus bas).
-
-### Cartes non incluses — visibles à la demande
-
-`getExcludedCards()` dérive en direct (jamais périmée, pas de liste dupliquée à maintenir) les cartes de `jeux/data/cardNames.json` sans les 4 champs de stats (sorts, bâtiments, évolutions, troupes de tour, et les quelques troupes à stats composites/multiples de `jeux/scripts/generateCardStats.js`) — 45 cartes actuellement. Deux points d'accès :
-
-- Automatiquement dans le message d'erreur quand un joueur propose une de ces cartes (voir ci-dessus).
-- À la demande, bouton **"📋 Cartes non incluses"** sur `/justecarte` (`handleExcludedListButton`) — liste complète, triée alphabétiquement.
-
-### Révélation progressive des indices
-
-| Tentative du joueur | Indices visibles           |
-| ------------------- | -------------------------- |
-| 1ère                | PV, Portée                 |
-| 2e                  | PV, Portée, Élixir         |
-| 3e et suivantes     | PV, Portée, Élixir, Dégâts |
-
-`compareCard(secretEntry, guessEntry, attemptNumber)` (fonction pure) calcule les 4 comparateurs puis ne renvoie que le sous-ensemble débloqué à ce numéro de tentative. Le sens de la flèche décrit la **carte secrète** relativement à la proposition ("PV ⬆️" = la carte secrète a un PV plus élevé que ta proposition) — comparateur `secretValue > guessValue ? "up" : "down"`. Sens inversé une fois en test réel : la lecture "ma proposition est plus haute" prêtait à confusion, l'intuition naturelle est que la flèche pointe vers où se trouve la cible.
-
-Portée : les troupes de mêlée sont comparées sur une catégorie ordinale (`short` < `medium` < `long`), pas sur une valeur chiffrée ; les troupes à distance sur leur portée réelle. Les deux échelles sont fusionnées via un champ `range.rank` précalculé (mêlée = 1/2/3, distance = `3 + valeur`), qui garantit qu'une troupe à distance, même la plus courte, passe toujours devant la troupe de mêlée la plus longue. `compareCard` compare toujours `range.rank`, jamais la catégorie/valeur brute directement.
-
-### Données — stats ajoutées directement dans `jeux/data/cardNames.json`
-
-Contrairement à Zoom (catalogue dérivé séparé), **aucun fichier dédié** : `jeux/scripts/generateCardStats.js` ajoute les champs `elixir`/`hp`/`damage`/`range` directement aux entrées de `jeux/data/cardNames.json` (voir [Noms français des cartes](#noms-français-des-cartes-datacardnamesjson)) qui sont éligibles au jeu — les autres entrées (sorts, bâtiments, évolutions, troupes de tour) restent sans ces champs. Les **champions sont inclus** (seuls les évolutions et les troupes de tour sont exclues de fait, un champion n'est PAS un "héros" au sens de l'énoncé du jeu — décision confirmée explicitement). C'est justement cette présence des 4 champs qui sert de filtre du pool de jeu à l'exécution (`loadCatalog()`), aucun champ `type`/`eligible` séparé à maintenir.
-
-Sources :
-
-- Élixir : `fetchCards()` (API officielle Clash Royale) — la colonne "Cost" du wiki ne sert qu'en garde-fou de cohérence (avertissement console en cas d'écart, jamais stocké).
-- PV/Dégâts/Portée : un seul appel à l'API MediaWiki de `clashroyale.fandom.com/wiki/Cards` (`action=parse&page=Cards&prop=wikitext`), section "Troops" du wikitext uniquement. Ces valeurs y sont déjà au niveau **Tournament Standard** (précisé explicitement dans le texte au-dessus de la table) — aucun calcul de niveau à faire.
-- `damage` = colonne **"Damage"** (dégât par coup), volontairement pas "Damage Per Second" : la colonne DPS vaut `N/A` pour toute carte sans cadence d'attaque régulière (Esprits, Battle Ram, Wall Breakers...) alors que ces cartes ont bien un dégât par coup exploitable — utiliser "Damage" maximise le pool sans rien perdre en équité (toujours une seule valeur par carte).
-
-Exclusions du pool (77 cartes éligibles sur 99 lignes de troupes "de base" au 2026-08, dont 6 champions : Archer Queen, Boss Bandit, Goblinstein, Golden Knight, Little Prince, Skeleton King) :
-
-- Sous-unités générées (liens wiki _piped_, ex. Bush Goblins, Golemite, Lava Pup) — la vraie carte a sa propre ligne, sauf `Rascals` qui n'en a aucune et disparaît donc naturellement du pool.
-- Cartes à stats "composites", variables, ou sans dégât direct — détection générique : si le champ brut PV, Dégâts ou Portée contient un `/` (mode double, ex. Goblin Gang "202/133") ou un `-` (dégât progressif, ex. Inferno Dragon "35-422") → exclue, aucune valeur unique fiable pour une comparaison équitable (Goblin Gang/Giant/Machine, Inferno Dragon, Mighty Miner, Monk, Ram Rider, Spirit Empress, Suspicious Bush — aucune attaque directe —, Three Musketeers). Deux champions (Mighty Miner, Monk) tombent dans cette exclusion pour la même raison technique que les autres cartes, pas parce que ce sont des champions.
-
-Comme `generateCardNames.js` pour `fr` : le script ne fait qu'**ajouter** les 4 champs aux entrées qui n'en ont pas encore, jamais réécrire une entrée déjà complétée (y compris après correction manuelle). Usage ponctuel : `node jeux/scripts/generateCardStats.js` (ou `npm run justecarte:stats`).
-
-### Ordre de rotation hebdomadaire — persisté en Redis, pas dans le fichier
-
-Contrairement à Frame/Anagram/Zoom (l'ordre physique du fichier pilote la progression), `jeux/data/cardNames.json` doit rester trié alphabétiquement (contrainte de `generateCardNames.js`) : la prochaine carte secrète serait donc devinable à l'avance si on s'y fiait. L'ordre de passage est mélangé une fois puis **persisté dans Redis** (`lajustecarte:order`, `loadPlayOrder()`) ; les cartes nouvellement ajoutées par `generateCardStats.js` sont insérées à la suite, mélangées entre elles, sans perturber l'ordre déjà en cours. `pickNextIndex()` avance simplement d'une position dans cet ordre (`index+1 % n`), boucle une fois épuisé.
-
-Cet ordre n'est visible nulle part côté joueur (le fichier reste alphabétique, l'embed public ne révèle jamais la carte à venir) : `npm run justecarte:order` (`jeux/scripts/justeCarteOrder.js`) affiche la rotation complète pour un admin — outil de lecture qui révèle toutes les cartes à venir, jamais exposé aux joueurs (même modèle de confiance que `justecarte:scores`). S'il n'existe pas encore d'ordre (avant la toute première partie), le script en génère un et le persiste, exactement comme le ferait la première publication.
-
-### Stockage — Upstash Redis (`lajustecarte:*`)
-
-| Clé Redis                                    | Type          | Contenu                                                                                                                                                                      |
-| -------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lajustecarte:state`                         | STRING (JSON) | État de la manche active (`gameId` = cardKey de la carte secrète + métadonnées de saison)                                                                                    |
-| `lajustecarte:order`                         | STRING (JSON) | Ordre de rotation mélangé, persisté (voir ci-dessus)                                                                                                                         |
-| `lajustecarte:usernames:<gameId>`            | HASH          | `discordId → pseudo`                                                                                                                                                         |
-| `lajustecarte:attempts:<gameId>:<discordId>` | LIST          | Historique des cartes **valides** proposées (nom FR, dans l'ordre) — sa longueur (`RPUSH`/`LLEN`) sert aussi de compteur de tentatives ; jamais complétée sur un nom inconnu |
-| `lajustecarte:hint:<gameId>:<discordId>`     | STRING (flag) | Indice rareté utilisé (`SETNX`, idempotent)                                                                                                                                  |
-| `lajustecarte:participants:<gameId>`         | HASH          | `discordId → { solved, solvedAt, score, attempts, hintUsed }`                                                                                                                |
-| `lajustecarte:season:<seasonId>`             | ZSET          | Score cumulé de la saison                                                                                                                                                    |
-| `lajustecarte:archived:<seasonId>`           | HASH          | Un champ par manche résolue (`<gameId>:<discordId>`), idempotence                                                                                                            |
-
-Pas d'équivalent à `anagram:positions`/`position_seq` : aucune notion de rang d'arrivée collectif, le score de chaque joueur ne dépend que de son propre numéro de tentative.
-
-### Publication hebdomadaire (dimanche 16h UTC)
-
-`.github/workflows/lajustecarte.yml` (`cron: "0 16 * * 0"`) — horaire fixe comme Frame/Zoom (pas de tirage aléatoire comme Anagram), exécute `npm run justecarte:public`.
-
-### Commande `/justecarte` — scores personnels
-
-Miroir de `/anagram` (voir [Commande `/anagram`](#commande-anagram--scores-personnels) dans la section Anagram), adapté pour afficher le nombre de tentatives au lieu d'un rang d'arrivée.
-
-### Récapitulatif de fin de saison (La Juste Carte)
-
-Identique à Frame/Anagram (voir [Récapitulatif de fin de saison](#récapitulatif-de-fin-de-saison)) : posté juste avant la manche 1 d'une nouvelle saison si `seasonId` a changé, mêmes règles de troncage (20 joueurs max, exclusion des 0 pt).
-
-### DM — uniquement à la victoire
-
-Contrairement à Anagram (DM à chaque manche, puisqu'une seule tentative la résout), un DM à chaque proposition serait intrusif ici vu qu'un joueur peut en soumettre plusieurs de suite : `sendJusteCarteDM` n'est appelé qu'une fois, au moment où le joueur trouve la carte secrète.
-
-### Scripts npm (La Juste Carte)
-
-| Commande                        | Effet                                                                                                                                                                            |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run justecarte:stats`      | Ajoute les stats (elixir/hp/damage/range) aux cartes éligibles de `jeux/data/cardNames.json`. Usage ponctuel, jamais dans le flux hebdomadaire.                                       |
-| `npm run justecarte:test`       | Poste manuellement une nouvelle partie sur le salon de test, **sans ping** (le salon de test ne pingue jamais `@MINI-JEUX`, même sans `--no-ping` explicite, comme `zoom:test`). |
-| `npm run justecarte:test:dry`   | Aperçu console de la prochaine partie (+ récap de saison éventuel), sans écrire d'état ni poster sur Discord.                                                                    |
-| `npm run justecarte:public`     | Poste sur le salon public (avec ping) — appelé par l'orchestrateur `postJeuxAveugle.js` quand La Juste Carte est le jeu actif de la saison (voir [Jeux à l'aveugle](#jeux-à-laveugle-alternance-la-juste-carte-et-blind-royale)), utilisable aussi en direct pour un rattrapage manuel. |
-| `npm run justecarte:public:dry` | Équivalent dry-run de `justecarte:public`.                                                                                                                                       |
-| `npm run justecarte:scores`     | Classement de la partie en cours (tentatives, score partie, score saison) + joueurs n'ayant pas encore joué.                                                                     |
-| `npm run justecarte:order`      | Affiche l'ordre de rotation complet des cartes secrètes à venir. **Outil admin** — révèle toutes les cartes futures, jamais à exposer aux joueurs.                               |
-| `npm run justecarte:reset`      | Remet le jeu à zéro : plus de partie active, ordre de rotation remélangé à la prochaine partie, historique et scores effacés. **Destructif**.                                    |
-
-### Variables d'environnement requises (La Juste Carte)
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (espace de clés `lajustecarte:*` totalement séparé). Le workflow `.github/workflows/jeux-aveugle.yml` réutilise les mêmes secrets GitHub Actions que `frames.yml`/`anagrams.yml`/`zoom.yml` (déjà configurés, rien à ajouter).
-
----
-
-## Jeux à l'aveugle (alternance La Juste Carte et Blind Royale)
-
-La Juste Carte et Blind Royale alternent **une saison Clash Royale sur deux** sous le nom collectif "Jeux à l'aveugle" — même principe que les unifications Anagram/Pêle-mêle ("jeux-de-lettres") et Zoom carte/Palette ("Jeux visuels") : pas de tronc commun d'affichage ni de logique de jeu fusionnée, chaque jeu garde son propre service (`lajustecarte.js`/`blindroyale.js`) et son propre handler Discord (`_handlers/lajustecarte.js`/`_handlers/blindroyale.js`), inchangés.
-
-Blind Royale (créé le 2026-09-04, non détaillé ailleurs dans ce document) est le pendant sonore de La Juste Carte : chaque semaine, un extrait audio de la carte secrète est posté (fichier joint, pas de lien externe) et les joueurs proposent le nom français de la carte via Modal. Barème : 10 pts pour une réponse exacte au 1er coup sans indice, -2 pts par tentative incorrecte, -3 pts pour l'indice "Rareté" (bouton, une seule fois par manche) — mêmes mécanismes de fond (Redis, gestion de saison, récap) que La Juste Carte.
-
-Cas particulier par rapport aux deux alternances précédentes : Palette et Pêle-mêle avaient été conçus dès leur création pour partager le jour du jeu déjà en place (vendredi pour Zoom/Palette, samedi pour Anagram/Pêle-mêle) — ici, La Juste Carte (dimanche 16h UTC) et Blind Royale (lundi 18h UTC) tournaient déjà chacun en prod avec leur propre jour et leur saison en cours au moment de la mise en place. Décision produit explicite (2026-09-21) : jour commun retenu = **lundi 18h UTC** (créneau de Blind Royale).
-
-### Tronc commun (`jeux/services/jeuxaveugle.js`)
-
-- `getCurrentSeasonId()` dupliquée (convention du repo, voir la remarque équivalente dans `jeuxdelettres.js`) — utilisée uniquement pour la décision d'alternance elle-même, pas pour l'état interne d'un jeu précis.
-- `ACTIVE_GAME_REFERENCE_SEASON = 136` — même saison de référence que `jeuxvisuels.js`/`jeuxdelettres.js` (vérifiée le 2026-09-19, simple coïncidence de calendrier). La Juste Carte (le plus ancien des deux, créé le 2026-08-16) termine cette saison, Blind Royale prend le relais à la 137 — déjà sur le bon jour (lundi), donc aucune bascule de jour à ce moment-là. La Juste Carte migrera de dimanche à lundi seulement à la saison 138, quand elle reprendra la main.
-- `getActiveBlindGame(seasonId)` — fonction pure : écart pair par rapport à la référence → `"lajustecarte"`, impair → `"blindroyale"`.
-- `getLastKnownSeasonId()`/`setLastKnownSeasonId()` — suivi de saison PARTAGÉ (clé `jeuxaveugle:last_season_id`), indépendant de `lajustecarte:state`/`blindroyale:state` : le jeu qui reprend la main après la saison de l'autre ne "verrait" sinon la transition que 2 saisons plus tard.
-
-Pas de planification multi-créneaux (contrairement à `jeuxdelettres.js`) : un seul créneau fixe, simple gating jour dans l'orchestrateur — même principe que `jeuxvisuels.js`.
-
-### Orchestrateur (`jeux/scripts/postJeuxAveugle.js`)
-
-Seul point d'entrée en production (remplace `.github/workflows/lajustecarte.yml` et `blindroyale.yml`, supprimés, désormais `.github/workflows/jeux-aveugle.yml`, cron `"0 18 * * 1"`) :
-
-1. Détecte un changement de saison (`getLastKnownSeasonId` vs saison courante) → poste le récap de fin de saison du jeu qui vient de se terminer (`postJusteCarteSeasonRecap`/`postBlindRoyaleSeasonRecap`), quel qu'il soit.
-2. Gating (sauf `--force`/`--dry-run`) : lundi uniquement, puis `alreadyPostedThisWeek()` du jeu actif.
-3. Délègue au jeu actif (`postJusteCarte`/`postBlindRoyale`) avec `force: true, skipSeasonRecap: true` — les deux jeux ont ce paramètre (contrairement à Palette/Pêle-mêle, ils avaient chacun leur propre logique de récap interne avant l'alternance, sur le modèle de Zoom/Anagram).
-
-`jeux/scripts/postJusteCarte.js`/`jeux/scripts/postBlindRoyale.js` restent utilisables directement (test/rattrapage manuel d'un jeu précis, hors orchestrateur).
-
-### Historique fusionné (`jeux/services/miniJeuxHistory.js`)
-
-Pas encore d'entrée fusionnée pour "Jeux à l'aveugle" (contrairement à `"visuels"`/`"lettres"`) — à ajouter si l'usage le justifie, même principe (les deux jeux ne sont jamais actifs la même saison, résultats archivés qui ne se chevauchent jamais).
-
-### Variables d'environnement et secrets
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN`. Le workflow `.github/workflows/jeux-aveugle.yml` réutilise les mêmes secrets GitHub Actions que `lajustecarte.yml`/`blindroyale.yml` (déjà configurés, rien à ajouter).
-
----
-
-## Tamagoshi (bébé dragon "Lilith")
-
-> 📦 **Statut : archivé** (04/10/2026) — pas de relance prévue pour le moment. Le code, les données et l'archive des manches (`tamagotchi:manches`) sont conservés tels quels. Le `schedule` de `.github/workflows/tamagotchi.yml` est commenté (seul `workflow_dispatch` reste disponible) et l'entrée `tamagotchi` de `SPECIAL_GAMES` (`jeux/discord/handlers/minijeux.js`) porte `archived: true`, ce qui l'exclut de `/mini-jeux` même si un état périmé reste dans Redis. **Pour relancer** : décommenter le `schedule`, retirer `archived: true`, puis `npm run tamagotchi:reset` avant le lancement manuel du Jour 1.
-
-Mini-jeu communautaire quotidien indépendant du Clash Royale : Mohamed Light confie son Bébé Dragon "Lilith" à la communauté pendant `tamagotchi.json.duree_jours` jours (7 en Manche 2, était 10 en Manche 1). Les membres doivent maintenir 3 jauges (Estomac 🔥, Énergie ⚡, Moral 🥨, 0-100%) dans la « zone verte » (40-70%) via des votes par bouton, avec un Cron quotidien à 08:00 UTC. Pas de commande slash associée — la publication/suppression passe uniquement par `jeux/scripts/postTamagotchi.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`. Le jeu est rejoué plusieurs fois dans l'année (une **manche** = une partie complète de `duree_jours` jours) ; les mécaniques ci-dessous ont été retravaillées entre la manche 1 (2026-08) et la manche 2 suite au constat que le jeu restait trop facile en répétant une même stratégie tout du long. Rien dans le code ne suppose une durée fixe : `duree_jours` pilote tout (paliers de fin de partie, fenêtre de la Pilule, texte d'intro du Jour 1), seul le calendrier d'événements (`evenements_possibles`) doit être redimensionné à la main si la durée change.
-
-### Déroulement
-
-Un seul message actif à la fois dans le salon dédié. Chaque jour, `postTamagotchi()` (`jeux/discord/handlers/tamagotchi.js`) :
-
-1. Clôture le jour actif (s'il y en a un) : tallie les votes du jour, calcule l'impact pondéré (voir "Résolution du vote" ci-dessous), en déduit les jauges de fin de journée, note la journée (Parfaite/Moyenne/Catastrophe → +1/0/-1 étoile de dressage), met à jour la Confiance et l'action fatiguée du lendemain (voir plus bas), et écrit un bilan dans l'historique interne.
-2. Calcule les jauges d'ouverture du jour suivant (`computeDayOpenGauges()`) : jauges de fin de journée + modificateur de l'éventuel événement programmé ce jour-là (voir "Événements programmés").
-3. Supprime le message Discord de la veille (`DELETE /channels/{id}/messages/{id}`, tolérant un échec) et publie le nouveau jour, avec un bouton par action affichant son compteur de votes en temps réel.
-
-Au dernier jour (`jour > config.duree_jours`), au lieu d'ouvrir un nouveau jour, le message de fin de partie est posté (palier S/B/F selon le total d'étoiles, éventuellement plafonné par la Confiance — voir "Fin de partie") et `tamagotchi:state.termine` passe à `true` — les runs suivants du cron deviennent des no-op silencieux.
-
-### Résolution du vote
-
-Un membre ne peut voter qu'une fois par jour parmi les actions réelles (Nourrir, Sieste, Jouer, Câliner), et **ce vote n'est pas modifiable** : revoter la même action est un no-op, voter une action différente est rejeté (`recordVote()`, `jeux/services/tamagotchi.js`). Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (confirmation ou rejet du vote, `DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`) ; le message public (compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot, découplé de la réponse éphémère.
-
-Bretzel et le bouton Projection (ex-5ᵉ/6ᵉ choix de vote) ont été retirés en Manche 2 : Bretzel s'est avéré redondant une fois la Fatigue en place (jamais utilisé dans une stratégie optimale, vérifié par simulation), et Projection n'apportait qu'une commodité de coordination au prix d'un bouton en plus — `npm run tamagotchi:status` remplit déjà ce rôle côté admin.
-
-L'impact d'une journée est une **moyenne pondérée par part de votes** (`computeDayImpact()`) : chaque action votée contribue à l'impact proportionnellement à sa part des votes exprimés, multipliée par un **facteur de participation** (`min(total_votes / votants_reference, 1)`, `tamagotchi.json.votants_reference`) — en dessous de la référence, l'effet est affaibli proportionnellement (plus de votants = plus d'impact réel, pas seulement un ratio) ; à la référence ou au-delà, l'effet est identique à une simple moyenne pondérée. Sans aucun vote, l'impact est nul (l'événement du jour, s'il y en a un, s'applique quand même).
-
-**Fatigue** (`tamagotchi.json.fatigue.facteur`, `dominantAction()`) : l'action qui a recueilli le plus de votes un jour donné (Câliner incluse) voit son impact réduit de ce facteur le jour suivant (`computeDayImpact(..., fatigue)`) — empêche de répéter indéfiniment la même stratégie gagnante d'un jour sur l'autre. Égalité stricte entre deux actions -> aucune fatiguée ce jour-là. L'action fatiguée du lendemain est persistée dans `tamagotchi:state.actionFatiguee`.
-
-### Câliner et Confiance
-
-**Câliner** (🤗) est une action comme les autres (aucun impact notable sur les 3 jauges hormis un léger coût Estomac), mais c'est la SEULE à faire remonter la **Confiance** (`tamagotchi:state.confiance`, 4ᵉ jauge à sens unique visible dans l'embed, 100 au départ). La Confiance baisse d'elle-même sur les jours Moyenne/Catastrophe (`config.confiance.malus_moyen`/`malus_catastrophe`) et ne peut être compensée par AUCUNE des 3 jauges de gameplay — seul un vote Câliner (`computeCalinerConfianceBonus()`, elle-même soumise à la Fatigue) la fait remonter, au prix d'un vote non dépensé ailleurs. Objectif : rendre certaines conséquences non-compensables par un simple rééquilibrage des jauges le lendemain.
-
-### Bouton Règles du jeu
-
-`[📖 Règles du jeu]` est une action d'information pure, consultable librement sans jamais consommer le vote : elle affiche un rappel des impacts de chaque action, de la zone idéale, de la Fatigue et de la Confiance, généré depuis `tamagotchi.json`.
-
-### Événements programmés
-
-Les événements vivent dans `tamagotchi.json.evenements_possibles`, chacun portant son propre champ `jour` (`eventForDay()` cherche l'entrée dont `jour` correspond, pas un index positionnel — ajouter/déplacer un événement ne demande qu'une édition du JSON). Un événement modifie les jauges une seule fois, en entrée du jour concerné (jamais en sortie du jour précédent, sauf type `actions_modifiees` ci-dessous), donc il n'influence jamais la notation du jour où il a été calculé, seulement les jauges d'ouverture du jour où il s'applique. Un événement peut aussi être un nerf temporaire d'action(s) plutôt qu'un delta de jauges (`actions_modifiees`, ex. Jour 5 en Manche 2 : Nourrir remplit moins bien l'Estomac ce jour-là) — via `applyActionOverrides()`, effectif pendant toute la clôture du jour concerné.
-
-### Fin de partie (dernier jour)
-
-Le total d'étoiles de dressage détermine un premier palier (`computeFinalTier(starTotal, paliers)`) : **S-Tier**, **B-Tier**, **F-Tier** en dessous — annonces narratives, pas de rôle Discord réel créé/attribué. Les seuils S/B sont configurables (`tamagotchi.json.paliers`, ex. Manche 2 sur 7 jours : S≥6, B≥3 — proportionnels aux seuils historiques 8/10 et 4/10 de la Manche 1, pas remis à plat arbitrairement) ; `computeFinalTier()` retombe sur 8/4 par défaut si `paliers` est omis, pour rester rétro-compatible. Ce palier est ensuite **plafonné par la Confiance finale** (`capTierByConfiance()`, seuils dans `tamagotchi.json.confiance.plafond_tier`) : une Confiance trop basse empêche le palier S, une Confiance très basse plafonne même à F, quel que soit le nombre d'étoiles — un mauvais début de manche (jours Moyenne/Catastrophe non compensés par Câliner) laisse une trace qu'aucun bon jour de jauges ne peut effacer. Le récap final indique explicitement quand ce plafonnement a joué.
-
-### Manches (comparaison entre parties) — Tamagoshi
-
-`tamagotchi:manches` (HASH permanent, jamais nettoyé par `resetTamagotchi()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`tamagotchi:manche_seq`, `INCR` atomique) : `archiveManche({ starTotal, tier, resolvedAt })`. À l'écran de fin (dernier jour), l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total d'étoiles toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée _(cette manche)_.
-
-⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postTamagotchi(channelId, { isPublic: true })`, déclenché uniquement par `npm run tamagotchi:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run tamagotchi:test`), même si la partie de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run tamagotchi:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
-
-### Données (tamagotchi.json)
-
-- `jeux/data/tamagotchi/tamagotchi.json` — config statique éditée à la main : `duree_jours`, zones idéales, jauges initiales, `votants_reference`, `fatigue.facteur`, `confiance` (`depart`/`malus_moyen`/`malus_catastrophe`/`plafond_tier`), `paliers` (seuils S/B de fin de partie, voir "Fin de partie" — optionnel, `computeFinalTier()` retombe sur 8/4 si absent), `actions` (impact par jauge de chaque bouton — `pilule` marquée `is_info_action: true` pour être exclue du calcul d'impact ; `caliner` porte en plus `confiance_bonus`) et `evenements_possibles` (chaque entrée porte son propre champ `jour`, pas d'ordre positionnel). Chargée une fois et mise en cache (`loadTamagotchiConfig()`), jamais mutée à l'exécution.
-- `frontend/public/images/tamagotchi/tama-01.webp` à `tama-10.webp` — une illustration par jour, servie en asset statique (même principe que `frontend/public/images/banner1.webp`/`banner2.webp`) et référencée directement par URL (`tamagotchiImageUrl()`, `jeux/discord/handlers/tamagotchi.js`) dans le champ `image` de l'embed. Contrairement au jeu Frame, aucun besoin de masquer l'URL (pas un jeu de devinette) : pas de route API dédiée, juste un fichier public.
-- `jeux/data/tamagotchi/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon météo/horoscope, 3 variantes par état notable de jauge × 3 jauges + Confiance, et des phrases de clôture citant les votants) séparées du code pour être enrichies sans y toucher. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`) : le texte reste identique à chaque ré-affichage du même jour (ex. après un clic de vote) et ne varie qu'd'un jour à l'autre.
-
-### Stockage — Upstash Redis (`tamagotchi:*`)
-
-Même instance et mêmes conventions que Frame/Anagram (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `tamagotchi:*`, totalement séparé des autres jeux. La progression est strictement linéaire (Jour 1 à 10) : un simple compteur entier `jour` dans l'état suffit, pas de table jour→séquence dédiée.
-
-| Clé Redis                          | Type              | Contenu                                                                                                                                                                                                                                                                        |
-| ---------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tamagotchi:state`                 | STRING            | `{ jour, gauges, confiance, actionFatiguee, channelId, messageId, publishedAt, termine, starTotal, lastEvent, lastRating, dayVoters }` — jour actuellement affiché                                                                                                             |
-| `tamagotchi:votes:<jour>`          | HASH              | `discordId → actionId` — jetable, effacé après clôture du jour                                                                                                                                                                                                                 |
-| `tamagotchi:vote_usernames:<jour>` | HASH              | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run tamagotchi:status`) et le texte narratif, jamais utilisé pour la logique de vote                                                                                                                   |
-| `tamagotchi:historique`            | HASH              | `jour → { gaugesAvant, gaugesApres, voteCounts, voters, impact, event, rating, starDelta, starTotalApres, confianceAvant, confianceApres, actionFatiguee, resolvedAt }` — bilans quotidiens de la manche EN COURS, écrasés d'une manche à l'autre (les jours 1-10 se répètent) |
-| `tamagotchi:manches`               | HASH              | `manche → { manche, starTotal, tier, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run tamagotchi:reset`)                                                                                                     |
-| `tamagotchi:manche_seq`            | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run)                                                                                                                                                                |
-| `tamagotchi:pilule_total_used`     | STRING (compteur) | Nombre total d'utilisations réussies de la Pilule sur la manche en cours, plafonné par `actions.pilule.total_cap`                                                                                                                                                              |
-| `tamagotchi:pilule_used:<jour>`    | STRING            | Posée (SETNX) dès la 1ʳᵉ utilisation réussie de la Pilule ce jour-là — au plus 1 réussite/jour                                                                                                                                                                                 |
-
-### Pilule (filet de sécurité rare, Jours `pilule.day_min`-`pilule.day_max`)
-
-Action à part (`is_info_action: true`, exclue de `computeDayImpact()`) : effet **instantané** (rapproche chaque jauge de la moyenne d'au plus `max_step` points dès le clic, `computePiluleDelta()`), pas seulement à la clôture. Ressource partagée et rare : au plus 1 réussite par jour (SETNX, premier arrivé) ET au plus `total_cap` réussites cumulées sur toute la manche (`claimPilule()`). Consomme le vote quotidien du joueur **seulement si l'effet est effectivement appliqué** — si la réclamation échoue (déjà utilisée aujourd'hui / quota épuisé), le vote est libéré (`releaseVote()`) pour qu'il puisse revoter une vraie action, même précédent que `releaseVoteSlot()` dans Robinson.
-
-### Scripts npm (Tamagoshi)
-
-| Commande                           | Effet                                                                                                                                                                                                                                                                     |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run tamagotchi:test`          | Poste manuellement le jour du Tamagoshi sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                              |
-| `npm run tamagotchi:test:dry`      | Aperçu console du prochain jour (ou du message de fin de partie au dernier jour), sans écrire d'état ni poster sur Discord.                                                                                                                                               |
-| `npm run tamagotchi:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `tamagotchi.yml`.                                                                                                                                                                        |
-| `npm run tamagotchi:public:dry`    | Équivalent dry-run de `tamagotchi:public`.                                                                                                                                                                                                                                |
-| `npm run tamagotchi:reset`         | Remet le Tamagoshi à zéro : plus de journée active, votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `tamagotchi:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
-| `npm run tamagotchi:reset:manches` | Identique, mais efface aussi `tamagotchi:manches`/`tamagotchi:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests).                                                                                        |
-| `npm run tamagotchi:status`        | Affiche l'état courant (jauges, Confiance, action fatiguée, étoiles, décompte des votes du jour) ainsi qu'une projection du jour suivant, sans passer par Discord.                                                                                                        |
-
-### Variables d'environnement requises (Tamagoshi)
-
-Aucune nouvelle variable : le Tamagoshi réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` (mêmes salons que Frame/Anagram, décision explicite pour ne pas multiplier les salons) et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `tamagotchi:*` totalement séparé). Le workflow `.github/workflows/tamagotchi.yml` (cron quotidien `npm run tamagotchi:public`) réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter).
-
----
-
-## Robinson (survie insulaire communautaire)
-
-Mini-jeu communautaire quotidien indépendant du Clash Royale : la communauté est naufragée sur une île pendant `duree_jours` (**7**, initialement 10 — durci le 29/08, voir "Refonte du 29/08" plus bas) jours, jusqu'à l'arrivée des secours au Jour `duree_jours + 1`. Les membres votent chaque jour une action (Pêcher, Collecter de l'eau, Récolter du bois, Explorer, Construire le Radeau) pour alimenter 3 stocks de ressources (Nourriture, Eau, Bois) consommés automatiquement chaque nuit. Pas de commande slash associée — la publication/suppression passe uniquement par `jeux/scripts/postRobinson.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
-
-### Déroulement (Robinson)
-
-Le lancement manuel (`workflow_dispatch`) publie un **jour d'annonce** (`phase: "annonce"`, `jour: null`, bouton Règles seul, ping MINI-JEUX), jamais le Jour 1 directement ; le cron du lendemain (`--require-active`, l'annonce compte comme partie active) publie le Jour 1 sans ping (`initEconomy()` appelée à ce moment-là). Le ping de lancement est donc porté par l'annonce, celui de fin de manche est inchangé. Un état sans `phase` (partie lancée avant le 12/10) est traité comme un jour normal.
-
-Un seul message actif à la fois dans le salon dédié. Contrairement au Tamagoshi (où tout l'impact d'une journée est calculé une seule fois, séquentiellement, au cron), **les récoltes et le coût du Radeau sont appliqués en continu pendant la journée**, à chaque clic, avec un retour immédiat au joueur en éphémère (« Tu as pêché 2 poissons ! ») — voir "Résolution du vote et concurrence" ci-dessous pour le détail technique. Seule la **consommation automatique** reste calculée une fois par jour, au cron :
-
-1. `postRobinson()` (`jeux/discord/handlers/robinson.js`) clôture le jour actif : si le Radeau est déjà achevé (voir "Victoire anticipée"), la partie s'arrête là, sans consommation. Sinon, `computeClosure()` (`jeux/services/robinson.js`) calcule `V` = nombre de votants uniques du jour qu'on clôture (`HLEN robinson:votes:<jour>`), mais applique la consommation automatique `-V_veille` Nourriture, `-V_veille` Eau, `-⌈V_veille/2⌉` Bois (plancher 0) — **`V_veille`, pas `V`** : la conso se base sur `getHistoriqueEntry(jour - 1).V`, la mobilisation d'**hier**, jamais sur les votes du jour même. ⚠️ **Décision du 27/08**, corrigeant un vrai souci de jeu collaboratif : baser la conso sur `V` du jour même rend toute baisse de participation "gratuite" (besoin et production rétrécissent ensemble, jamais de vraie pénurie même si plus personne ne vote). En la basant sur `V_veille`, une chute de mobilisation aujourd'hui reste chargée sur la taille de camp d'hier — un vrai coût, pas juste un signal d'alerte cosmétique. Exception unique : le **Jour 1** n'a pas de veille, il garde son propre `V` (comportement historique inchangé). `V` (le vrai décompte du jour qu'on clôture) continue de servir ailleurs sans changement : conditions de l'événement du jour suivant (Poissons Pourris), montant de l'Épave, tirage du Chef Explorateur, champ `V` de l'historique. Seule la consommation change de base. Puis vérification Gobelins si l'événement du jour clos est actif — ce stock est encore **intermédiaire**, pas le stock final.
-2. Si le Jour `duree_jours + 1` est atteint → victoire (secours arrivés), sans jamais passer par l'étape suivante. Sinon, l'événement programmé du jour **suivant** est résolu (voir plus bas) et son bonus/perte éventuel (Poissons Pourris, Épave — les seuls événements qui touchent encore directement les stocks depuis la refonte du 29/08, voir plus bas) est appliqué au stock intermédiaire de l'étape 1 pour obtenir le stock **final**, celui qui sera réellement affiché.
-3. `finalizeDayClosure()` met à jour les compteurs de jours consécutifs à 0 **sur ce stock final** (jamais sur l'intermédiaire de l'étape 1), écrit l'historique et vide les votes du jour clos. Si une ressource est à 0 pour la `ZERO_STREAK_LIMIT`ᵉ journée consécutive (**2**, voir "Refonte du 29/08" plus bas pour l'historique de ce réglage) → défaite immédiate. Sinon, le jour suivant s'ouvre : suppression du message de la veille (`DELETE`, tolérant), publication du nouveau jour.
-
-⚠️ **Incident du 26/08** : avant cette étape 2/3, la défaite était déterminée directement sur le stock intermédiaire de l'étape 1, avant tout bonus/perte du jour suivant. Un événement à bonus pouvait alors remonter à l'affichage un stock qui venait de toucher 0 — mais le "jour à 0" avait déjà été compté dans le streak, invisible pour les joueurs (l'embed n'a jamais montré que 0, seulement la valeur finale positive). Pire : ce streak fantôme restait en mémoire pour les jours suivants, un danger totalement invisible même en re-vérifiant l'affichage. Corrigé en déplaçant le calcul des compteurs (`updateZeroStreaks()`) après application des bonus/pertes du jour suivant — la défaite se base désormais uniquement sur ce que les joueurs voient réellement à l'écran.
-
-`robinson:state.termine` passe à `true` dès qu'une issue (victoire Radeau, victoire par survie, défaite) est atteinte — les runs suivants du cron deviennent des no-op silencieux, même principe que `tamagotchi:state.termine`.
-
-### Résolution du vote et concurrence
-
-Un membre ne peut voter qu'une fois par jour parmi les 5 actions, et **ce vote n'est pas modifiable** une fois qu'il a réellement abouti (comme le Tamagoshi). La réservation du slot de vote utilise `HSETNX` (pas `HGET` puis `HSET`) car le Radeau doit pouvoir **libérer** une réservation ratée : si le stock de Bois est insuffisant au moment du clic, le vote est rejeté _sans consommer le slot_ (`releaseVoteSlot()`), le joueur peut réessayer plus tard dans la journée si le stock remonte — contrairement à un vote posé sur une action différente, qui reste définitif jusqu'au lendemain.
-
-Les stocks de ressources (`robinson:stock:poisson/eau/bois`) et les points de Radeau (`robinson:radeau_points`) vivent dans des **clés Redis numériques séparées, mutées uniquement via `INCRBY`/`DECRBY`** — jamais un blob JSON relu-modifié-réécrit, qui perdrait des mises à jour si deux membres cliquent en même temps (le second `SET` écraserait le premier). Le coût du Radeau (le seul cas pouvant échouer) utilise le pattern « décrémenter puis vérifier, compenser si négatif » (`attemptRaftContribution()`) : sûr sans script Lua, personne d'autre ne lisant le stock de Bois de façon atomiquement sensible entre les deux appels du même flux.
-
-Le clic sur un bouton d'action répond toujours en éphémère à l'auteur (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` puis `PATCH .../messages/@original`, comme le Tamagoshi) avec le résultat exact du tirage ; le message public (stocks, radeau, compteurs de votes) est mis à jour séparément par un `PATCH /channels/{id}/messages/{id}` direct avec le token du bot.
-
-### Tirages et équilibrage
-
-Pêcher/Eau/Bois tirent **0 à 5** unités (~16,7 % chacun, `rollHarvestAmount()`) ; Explorer tire toujours 3 unités d'une seule et même ressource, tirée au hasard parmi les 3 (`rollExplorerYield()`) — jamais une répartition entre plusieurs ressources.
-
-⚠️ Ce barème (0-5, moyenne 2,5 — initialement 0-3) est le résultat d'un équilibrage par **simulation Monte Carlo** (plusieurs milliers de parties simulées avec les vraies fonctions du jeu, plusieurs stratégies de vote testées). Le calcul brut (consommation `V`/`V`/`⌈V/2⌉` vs récolte moyenne par vote dédié) rend le jeu **mathématiquement imperdable-à-l'envers** avec le barème initial 0-3 : couvrir Nourriture _et_ Eau demanderait à elles seules 133 % des votes disponibles. Attention, ce garde-fou est fragile : redescendre à une moyenne de 2 (barème 0-4) fait retomber la survie passive à **1-16 %** pour tout groupe de 8 votants ou plus (confirmé par simulation) — quasiment le même effondrement que le barème 0-3 initial. Ne pas réduire ce barème sans revalider par simulation : le jeu redevient vite ingagnable.
-
-⚠️ Le barème 0-5 place la moyenne de récolte _exactement_ au point d'équilibre statistique avec la consommation (`V`/`V`/`⌈V/2⌉` = 100 % des votes disponibles en moyenne, sans aucune marge) — un design volontairement tendu. Une re-simulation du 24/08 (stratégie de vote réactive au stock affiché dans le Journal, pas un simple ratio théorique figé) avait révélé une survie passive proche de **1-7 % à V=10-20** sur 10 jours, très loin de la fourchette 46-58 % annoncée à l'origine ; deux ajustements avaient alors corrigé le tir (`ZERO_STREAK_LIMIT` porté de 2 à 3 jours, Jour 5/Jour 9 inversés en bonus), remontant la survie à **75 % (V=8) → 61-63 % (V=10-12) → 53 % (V=14) → 35-45 % (V=16-20)**.
-
-### Refonte du 29/08 — durcissement délibéré
-
-Retour de terrain après la première manche publique complète : le Radeau a été achevé sans difficulté (20/20 points) avec une mobilisation confortable, la partie jugée **bien trop facile**. Décision explicite : chaque mauvais vote/chaque baisse de mobilisation doit compromettre le taux de réussite, quitte à rendre le jeu nettement plus punitif qu'avant. Trois changements combinés, tous les trois délibérément dans le sens du durcissement (contrairement aux assouplissements du 24/08 ci-dessus) :
-
-- `duree_jours` : **10 → 7** — calendrier resserré, moins de marge pour absorber un mauvais jour.
-- `ZERO_STREAK_LIMIT` : **3 → 2** — retour au réglage initial d'avant le 24/08, une ressource à 0 deux jours de suite (au lieu de trois) est fatale.
-- Retrait des trois indulgences ajoutées le 24/08 : Colis Royal (Jour 4) et le bonus inconditionnel du Jour 5 sont **supprimés** de `robinson.json` (plus aucun don gratuit de ressources), et Indigestion Royale **repasse en plafond punitif** (0/1 sur l'Eau) au lieu du bonus +2 Eau qu'il accordait depuis le 24/08.
-
-Une première simulation (menée avant l'implémentation effective de ces trois changements, pour valider la décision) avait donné des chiffres bien plus cléments (28,4 % à V=8 jusqu'à 1,0 % à V=20). ⚠️ **Ces chiffres se sont révélés faux une fois le code réellement implémenté et re-simulé** : la simulation de validation réutilisait les vraies fonctions du module, mais AVANT que `harvestCapForEvent()` ne soit effectivement remis à jour pour re-plafonner Indigestion Royale (voir le "aller-retour du 24/08 puis du 29/08" dans "Événements programmés" ci-dessous) — une fois ce plafond réellement en place, une re-simulation fidèle (60 000 parties, reproduisant exactement l'ordre des opérations de `postRobinson()`/`computeClosure()`, y compris le timing exact des bonus/pertes d'un jour sur l'autre) donne des chiffres bien plus sévères : **15,2 % (V=8) → 6,8 % (V=10) → 2,7 % (V=12) → 1,1 % (V=14) → 0,6 % (V=16) → 0,2 % (V=20)**. Leçon retenue : toujours re-simuler sur le code réellement committé, jamais se fier à une simulation de validation menée avant l'implémentation — voir "Refonte du 30/08" ci-dessous pour le calibrage qui corrige ce chiffre et pour la méthodologie de diagnostic (répartition jour × ressource des défaites) qui a permis de l'identifier.
-
-### Refonte du 30/08 — survie passive et Radeau ramenés dans la cible, nouveau rôle Chef Charpentier
-
-Suite logique du 29/08 : demande explicite de ramener la survie passive dans **40-60 % à V=12-16** (bien au-dessus des 1-3 % mesurés une fois le durcissement du 29/08 correctement re-simulé, voir ci-dessus) et la victoire Radeau dans **20-40 % à V=12-16** (mesurée à 0 % sous ce même réglage), tout en passant le Chef Explorateur de "garanti non-nul" à "+1 au tirage".
-
-**Diagnostic (répartition jour × ressource des défaites, V=12-16, 60 000 parties)** : la quasi-totalité des défaites se concentre sur les Jours 4 et 5 —
-
-| Jour:ressource | V=12  | V=14  | V=16  |
-| -------------- | ----- | ----- | ----- |
-| 4:poisson      | 28,1% | 33,7% | 41,7% |
-| 5:poisson      | 33,0% | 29,2% | 23,2% |
-| 4:eau          | 11,3% | 12,0% | 13,3% |
-
-Le Jour 4 (Ouragan, plafond simultané Pêche+Bois) est structurellement intenable : avec seulement l'Eau au tirage normal, le déficit journalier moyen atteint environ **V+3 unités** même avec une allocation de votes parfaite — un déficit qui croît avec V, à l'inverse des bonus dégressifs existants (Épave, Poissons Pourris) qui rétrécissent quand V grandit. Aucun bonus fixe "à l'ancienne" ne peut donc combler ce trou pour les gros groupes sans devenir dérisoire pour les petits, ou l'inverse. Le Jour 5 (Gobelins) hérite ensuite d'un stock de Poisson déjà exsangue, ce qui explique sa deuxième place. Un bonus événementiel classique testé en simulation (don de Poisson dégressif à l'arrivée du Jour 4, formule `max(min, base − V)` comme Épave) confirme ce diagnostic : même généreux (jusqu'à +8 à V=16), il ne suffit jamais à ramener V=14-16 au-dessus de 10 % de survie.
-
-**Solution retenue : adoucir le PALIER de plafond lui-même** (auto-proportionnel à V, contrairement à un bonus fixe) plutôt que d'ajouter un événement de compensation :
-
-- Canicule (Jour 3, Eau) : palier **"modéré"** — tirage `rollModerateCapAmount()`, 0/1/2 uniforme (moyenne 1,0, contre 0,5 avant). Peut encore tomber à 0.
-- Ouragan (Jour 4, Pêche+Bois) et Indigestion Royale (Jour 6, Eau) : palier **"léger"** — tirage `rollMildCapAmount()`, 1/2 uniforme (moyenne 1,5, jamais 0). `rollEventCappedAmount(event)` fait le dispatch par `event.id`.
-- `stocks_initiaux` : Poisson et Eau relevés de **10 → 11** chacun (Bois inchangé à 6) — un tout petit coussin de départ, complément mineur au réglage des paliers.
-
-Avec ces changements (survie passive, sans aucune poursuite du Radeau, 60 000 parties) :
-
-| V (votants) | 8     | 10    | 12    | 14    | 16    | 20    |
-| ----------- | ----- | ----- | ----- | ----- | ----- | ----- |
-| Survie      | 69,7% | 61,8% | 55,0% | 48,6% | 38,2% | 22,8% |
-
-V=12 et V=14 tombent en plein dans la cible 40-60 %, V=16 juste 1,8 point sous la borne basse — jugé suffisamment proche pour ne pas justifier un réglage supplémentaire, à revalider avec des données de jeu réelles.
-
-**Chef Explorateur : "garanti non-nul" → "+1 au tirage"** — demande explicite pour permettre un résultat de **6** (impossible avant). `rollHarvestAmountGuaranteed()` (relance jusqu'à ≥ 1) est supprimée ; le Chef ajoute simplement +1 au tirage qui s'applique déjà ce jour-là, plafonné ou non : un jour normal, 0-5 devient 1-6 (moyenne 3,5 au lieu de 3) ; un jour à palier "léger" (1-2), le Chef obtient 2-3 ; un jour "modéré" (0-2), il obtient 1-3. Le bonus reste réservé aux actions de récolte directes (jamais Explorer, jamais Radeau).
-
-**Nouveau rôle : Chef Charpentier du jour** — la stratégie "détourner une fraction des votes vers le Radeau" s'est avérée invalidée par simulation : dans une économie de survie déjà tendue (marge quasi nulle en moyenne, voir "Tirages et équilibrage" ci-dessus), détourner ne serait-ce que 15-20 % des votes du groupe vers le Radeau fait s'effondrer la survie sans gain net (le total victoires+radeau baisse par rapport à la survie pure). Solution : un second rôle dédié, tiré comme le Chef Explorateur (`pickChefCharpentier()`, parmi les votants réels de la veille, en excluant le Chef Explorateur du tirage si au moins 2 votants distincts existaient) mais uniquement à partir du jour où le Radeau se déverrouille. Si le Charpentier vote Radeau, sa contribution est **gratuite** (`grantFreeRadeauPoints()`, aucun coût en Bois commun, ne peut jamais échouer) et vaut `(tirage récolte normal + 1) × 2` points — 2 à 12, moyenne 7 (`rollCharpentierRadeauPoints()`) — au lieu de la conversion normale 1 Bois = 1 point. Le coût réel reste faible et constant (1 vote sur V, pas une fraction) quel que soit V, contrairement à la stratégie de détournement classique.
-
-Avec le Chef Charpentier actif (poursuite active du Radeau, 60 000 parties) :
-
-| V (votants) | 8     | 10    | 12    | 14    | 16    | 20    |
-| ----------- | ----- | ----- | ----- | ----- | ----- | ----- |
-| Radeau      | 42,1% | 38,2% | 34,4% | 31,1% | 25,4% | 15,8% |
-| Survie      | 21,7% | 19,1% | 16,7% | 14,7% | 11,3% | 6,5%  |
-| Défaite     | 36,2% | 42,7% | 48,9% | 54,1% | 63,4% | 77,7% |
-
-V=12, V=14 et V=16 tombent tous dans la cible 20-40 % de victoire Radeau. À noter : la survie passive "seule" chute dans ce scénario (les runs qui n'auraient pas complété le Radeau à temps mais auraient survécu passivement dans le scénario précédent basculent en défaite ici) — cohérent avec le fait de s'engager activement dans une stratégie plus risquée ; le taux de survie passive qui fait foi pour la cible 40-60 % reste celui du tableau précédent (sans poursuite du Radeau).
-
-### Chef Explorateur du jour
-
-Mécanique ajoutée le 24/08 pour favoriser l'implication et la régularité des votants, indépendante des 6 événements programmés ci-dessous (elle peut se cumuler avec n'importe lequel d'entre eux). À l'ouverture de chaque jour à partir du **Jour 2**, `pickChefExplorateur()` tire au sort un `discordId` parmi les **votants réels de la veille** (`closure.voters`, jamais un non-votant — récompense la régularité, pas le hasard pur) et le stocke dans `robinson:state.chefExplorateurId`. Annoncé dès la publication du jour dans l'embed public (`👑 Chef explorateur du jour : @Untel`), pas seulement révélé après coup. Aucun tirage ni annonce si personne n'a voté la veille (`pickChefExplorateur([])` → `null`).
-
-Depuis le 30/08, le Chef ajoute **+1** au tirage qui s'applique déjà ce jour-là (normal OU plafonné selon l'événement en cours) au lieu de l'ancien "garanti non-nul" — voir "Refonte du 30/08" ci-dessus pour le détail et le raisonnement. Le bonus ne s'applique **ni à Explorer** (qui ne tombe déjà jamais à 0) **ni au Radeau** (qui ne "trouve" pas de ressource par nature, et qui dispose désormais de son propre rôle dédié, le Chef Charpentier) : un Chef Explorateur qui vote Radeau perd simplement le bénéfice de son tirage, décision assumée (voir le message de confirmation éphémère, préfixé `👑 Chef explorateur du jour :` uniquement sur les actions concernées).
-
-Un second rôle, le **Chef Charpentier du jour**, coexiste depuis le 30/08 (voir "Refonte du 30/08" ci-dessus et "Victoire anticipée (Radeau)" plus bas) — tiré séparément, dédié au Radeau, jamais la même personne que le Chef Explorateur sauf cumul inévitable (un seul votant la veille).
-
-### Événements programmés (Robinson)
-
-6 événements (8 avant la refonte du 29/08 — Colis Royal et le bonus du Jour 5 ont été supprimés, voir "Refonte du 29/08" ci-dessus) tirés de `robinson.json.evenements` (`eventForDay(jour, evenements, previousDayVoters)`) modifient le jour concerné, sur un calendrier resserré à 7 jours. `previousDayVoters` (le `V` du jour qui vient de se clôturer) sert de **condition d'activation** (`condition_votants_veille_max` = seuil maximum, Poissons Pourris se déclenche _en-dessous_) et de **paramètre de montant** (événements dégressifs) :
-
-- **Poissons Pourris !** (Jour 2, **conditionnel**) : ne se déclenche **que si** le Jour 1 a réuni **moins de** `condition_votants_veille_max` (**14**) votants — sinon le Jour 2 reste normal. Une partie du stock de Poisson est perdue (`spoilPoisson()`, `DECRBY` plancher 0), montant calculé par `computePoissonsPourrisLoss(V, threshold)` = `max(1, min(threshold − V, 4 + V))`, où `threshold` **doit** être `event.condition_votants_veille_max` (jamais une valeur codée en dur). La courbe grimpe à mesure que la mobilisation baisse, jusqu'à un pic à mi-parcours du seuil (`(threshold−4)/2`), puis **redescend** pour les groupes minuscules (V=2, V=1). Avec la config actuelle (seuil 14) : pic à V=5 (−9), V=9 → −5, V=13 → −1 (juste avant l'exemption à 14).
-- **Grosse Canicule** (Jour 3) : Collecter de l'eau utilise le palier **"modéré"** (`rollModerateCapAmount()`, 0/1/2 uniforme, moyenne 1,0 — voir "Refonte du 30/08" ci-dessus) au lieu du tirage normal.
-- **Ouragan Monstrueux** (Jour 4) : Pêcher et Récolter du bois utilisent le palier **"léger"** (`rollMildCapAmount()`, 1/2 uniforme, moyenne 1,5, jamais 0). Coïncide avec la fenêtre de verrou Radeau "Grosse Houle" (voir "Victoire anticipée" plus bas), cohérence narrative volontaire (la houle du Jour 3 annonce cet ouragan). ⚠️ Initialement plafonné au même palier "dur" que Canicule (0/1) jusqu'au 29/08 : la simulation a montré que ce double plafond concentrait à lui seul 30-40% des défaites à V=12-16 (déficit journalier structurel ≈ V+3, qui croît avec V) — adouci en "léger" le 30/08 (voir "Refonte du 30/08").
-- **Invasion de Gobelins** (Jour 5) : le bouton Explorer est retiré des composants ce jour-là (`isExplorerDisabled()`). À la clôture, **après** la consommation automatique, si le stock de Bois restant est `< 5`, les Gobelins volent 5 Poissons (plancher 0).
-- **Indigestion Royale** (Jour 6, **toujours déclenché**) : plafond pénalisant sur la collecte d'Eau, palier **"léger"** depuis le 30/08 (`rollMildCapAmount()`, 1/2 uniforme, jamais le Bois). ⚠️ **Trois réglages successifs** : à l'origine un plafond "dur" (0/1) punitif ; inversé le 24/08 en petit bonus (`bonus_eau: 2`, offert d'office en plus du tirage) pour remonter le taux de survie sous l'ancien calendrier à 10 jours ; repassé en plafond "dur" le 29/08 dans le cadre du durcissement général (le champ `bonus_eau` retiré de `robinson.json`) ; adouci en palier "léger" le 30/08 pour ramener la survie passive dans la cible 40-60% (voir "Refonte du 30/08" ci-dessus).
-- **Épave échouée** (Jour 7, **toujours déclenché**, dernier jour) : offre un don de **Bois brut** (`bois_base`/`bois_min`, `computeEpaveBoisBonus()`), `max(bois_min, bois_base − V)` — soit 19−V plafonné à 5 minimum, forme dégressive (petit groupe = bonus plus généreux). Un don de Bois, pas de points de Radeau directs (voir "Inversion du 28/08" ci-dessous) — il faut encore de vrais votes Radeau (1 vote = 1 point, `bois_par_point_radeau: 1`) pour le convertir, en concurrence avec les besoins de survie du jour.
-  ⚠️ **Inversion du 28/08** : à l'origine, Épave donnait des points de Radeau **directs** (`max(points_min, points_base − V)`, soit 26−V plafonné à 10), en s'appuyant sur le raisonnement que "convertir du bois en points coûte encore un vote, donc un don de bois seul n'aide pas le goulot d'étranglement réel (le nombre de votes disponibles, pas la ressource)". Ce raisonnement s'est avéré faux en pratique : avec un groupe qui avait déjà 9 points en banque au Jour 5, le don direct rendait la victoire par Radeau **quasi certaine** (jusqu'à +22 points d'un coup) — le Bois n'était PAS le facteur limitant dans une partie qui avait alors une économie plutôt généreuse (stocks_initiaux confortables + bonus Jour 5/Colis Royal, tous deux supprimés depuis), donc le don direct contournait entièrement le vrai frein du jeu. Le don de Bois réintroduit ce frein.
-
-Les dons/pertes de Poissons Pourris et Épave sont appliqués **une seule fois**, au moment de la publication du jour concerné (jamais liés à un vote, jamais répétés sur un reclic) — voir `postRobinson()` dans `jeux/discord/handlers/robinson.js`.
-
-⚠️ Ces 6 événements ne sont **jamais** listés dans l'embed `[📖 Règles du jeu]` (`buildReglesEmbed()`) — volontairement, pour qu'ils restent une surprise en cours de partie. Seul le barème des actions et la condition de défaite y figurent.
-
-### Victoire anticipée (Radeau)
-
-Construire le Radeau coûte `bois_par_point_radeau` (**1**, initialement 2) Bois pour `+1` point de construction ; `points_par_section` (**4**, initialement 5) points forment 1 section, `radeau_sections_max` (5) sections achèvent le Radeau (**20** points au total, initialement 25). La victoire par le Radeau n'est **jamais annoncée en temps réel** au clic qui complète la 5ᵉ section (cohérent avec « aucune publication en dehors du cron » déjà appliqué au Tamagoshi) : elle est détectée et révélée au cron suivant, qui court-circuite alors entièrement la consommation et la vérification de défaite de ce jour-là — y compris si c'est un don d'Épave qui vient de faire franchir le seuil.
-
-⚠️ **Verrou anti-rush narré : "Grosse Houle"** (26/08, `jeux/data/robinson/robinson.json.radeau_verrouille`) : le bouton `[🛶 Radeau]` est masqué des composants (`buildRobinsonComponents()`, `isRadeauDisabled(jour, config.radeau_verrouille)`) pour les Jours **3 et 4** (`jour_debut`/`jour_fin`, lus depuis la config — jamais un seuil codé en dur dans le JS, pour rester ajustable sans redéploiement ; fenêtre recalée de 4-5 à 3-4 lors du passage à 7 jours le 29/08, pour rester au même point relatif du calendrier). Motivation : avec le barème 0-5, un groupe actif accumule vite assez de Bois pour financer les 20 points en une seule journée si tout le monde vote Radeau au même moment (`bois_par_point_radeau: 1`, aucun autre frein) — un "rush" total pouvait donc clore la partie très tôt, avant même la moitié de l'aventure. Contrairement à un simple verrou technique, cette version est **narrée** : une houle annonciatrice de l'Ouragan du Jour 4 (cohérence volontaire avec le calendrier des événements, ce verrou peut **coexister** le même jour avec l'événement normal) explique aux joueurs pourquoi le bouton a disparu, avec un texte dédié affiché dans l'embed du jour (`buildRobinsonEmbed()`). Message dédié aussi côté clic (`handleVoteButton()`, filet de sécurité si un joueur clique sur un message affiché avant la clôture du jour). Comme les 6 événements programmés, ce verrou n'est jamais annoncé à l'avance dans l'embed Règles — volontairement, pour garder la surprise. `radeauVerrouille` peut être `null`/absent pour désactiver le verrou entièrement sans toucher au JS. Les points déjà engrangés avant l'introduction de ce verrou ne sont jamais retirés rétroactivement — seuls les **nouveaux** votes sont bloqués pendant la fenêtre.
-
-⚠️ **Détourner une fraction des votes vers le Radeau ne fonctionne plus depuis le 29/08** : sous ce durcissement (`ZERO_STREAK_LIMIT=2`, sans les bonus retirés), une stratégie classique de diversion (~40 % des votes redirigés vers le Radeau dès l'ouverture du verrou) donnait **0 % de victoire Radeau, tous V testés** — la survie pure absorbe déjà l'essentiel des votes disponibles, en détourner une partie ne fait qu'accélérer la défaite par pénurie, quelle que soit la fraction testée (même 10-15 % reste net-négatif sur le taux de victoire total). C'est un problème structurel de pool de votes partagé, pas un simple réglage de curseur — voir "Refonte du 30/08" ci-dessus pour le diagnostic complet.
-
-**Chef Charpentier du jour (30/08)** résout ce problème en sortant le Radeau du pool de votes partagé : un rôle dédié (tiré comme le Chef Explorateur, voir "Refonte du 30/08" et "Chef Explorateur du jour" ci-dessus), actif uniquement une fois le Radeau déverrouillé, dont la contribution Radeau est **gratuite** (aucun coût en Bois commun) et vaut le double d'un tirage de récolte classique — 2 à 12 points, moyenne 7 (`rollCharpentierRadeauPoints()`). Le coût réel pour le groupe reste minime et constant (1 vote sur V, jamais une fraction), ce qui permet au Radeau de progresser sans jamais entrer en collision avec le budget de survie collectif. Résultat en simulation (60 000 parties, Chef Charpentier actif dès l'ouverture du verrou) : victoire Radeau à **34,4 % (V=12) → 31,1 % (V=14) → 25,4 % (V=16)** — en plein dans la cible 20-40 % demandée. Détail complet (tableau par V, effet sur la survie passive) dans "Refonte du 30/08" ci-dessus.
-
-Pour mémoire, la mécanique d'avant le 29/08 (simulation antérieure au 24/08, stratégie : survie pure jusqu'au Jour 7, puis ~30 % des votes redirigés vers le Radeau après l'Épave, SANS Chef Charpentier qui n'existait pas encore) donnait une victoire par Radeau à **93 %** pour un petit groupe (V=6) et **59-78 %** pour les groupes de 10 à 20 votants, sur l'ancien calendrier à 10 jours. La survie passive est traitée en détail dans "Tirages et équilibrage"/"Refonte du 30/08" ci-dessus.
-
-### Manches (comparaison entre parties) — Robinson
-
-Robinson (comme le Tamagoshi et Boss Raid) est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète est une **manche**. `robinson:manches` (HASH permanent, jamais nettoyé par `resetRobinson()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`robinson:manche_seq`, `INCR` atomique) : `archiveManche({ outcome, jour, radeauPoints, resolvedAt })`.
-
-Robinson n'a pas de score numérique naturel (c'est une survie, pas un score attack) : `computeMancheScore(outcome, jour, dureeJours)` encode donc une hiérarchie explicite pour classer les manches entre elles — toute victoire bat toute défaite ; entre victoires Radeau, plus tôt = meilleur (`1000 + (dureeJours + 1 − jour)`, l'évasion rapide est valorisée) ; les victoires par survie (Jour `dureeJours + 1`, identifiant interne `victoire_jour11` conservé pour compatibilité — voir `outcomeLabel()`) sont toutes à égalité (`500` flat, aucune notion de vitesse, **indépendant de `dureeJours`** donc comparable même entre manches jouées sous des durées de partie différentes) ; entre défaites, plus de jours survécus = meilleur (`jour` brut). À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur la meilleure selon ce score — la manche qui vient de se terminer y apparaît elle-même, marquée _(cette manche)_.
-
-⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postRobinson(channelId, { isPublic: true })`, déclenché uniquement par `npm run robinson:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run robinson:test`), même si la partie de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run robinson:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
-
-### Données (robinson.json)
-
-- `jeux/data/robinson/robinson.json` — config statique éditée à la main : durée (`duree_jours: 7` depuis le 29/08), coûts du Radeau, stocks initiaux (`{ poisson: 11, eau: 11, bois: 6 }` depuis le 30/08, voir "Refonte du 30/08"), `radeau_verrouille`, et `evenements` (6 événements, chacun portant son propre champ `jour` — contrairement à `tamagotchi.json` qui indexe ses événements positionnellement). Chargée une fois et mise en cache (`loadRobinsonConfig()`), jamais mutée à l'exécution.
-- `frontend/public/images/robinson/rob-01.webp` à `rob-10.webp` — une illustration par jour, servie en asset statique (même principe que `tama-01.webp`…`tama-10.webp` du Tamagoshi) et référencée directement par URL (`robinsonImageUrl()`, `jeux/discord/handlers/robinson.js`) dans le champ `image` de l'embed. Avec `duree_jours: 7`, seules `rob-01.webp` à `rob-07.webp` sont actuellement utilisées (`rob-08/09/10.webp` restent en réserve, inutilisées, même situation que Boss Raid — voir plus bas) ; l'embed de fin de partie (victoire Radeau, victoire par survie, défaite) réutilise systématiquement l'illustration du dernier jour joué (`robinsonImageUrl(config.duree_jours)`, jamais un nom de fichier codé en dur).
-
-### Stockage — Upstash Redis (`robinson:*`)
-
-Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `robinson:*`, totalement séparé.
-
-| Clé Redis                                   | Type              | Contenu                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `robinson:state`                            | STRING            | `{ jour, channelId, messageId, publishedAt, termine, event, chefExplorateurId, chefCharpentierId, zeroStreaks }` — jour actuellement affiché, muté uniquement au cron                                                                                                                                                                                   |
-| `robinson:stock:poisson` / `:eau` / `:bois` | STRING (compteur) | Stocks courants — mutés en continu via `INCRBY`/`DECRBY`, jamais un `GET` puis recalcul                                                                                                                                                                                                                                                                 |
-| `robinson:radeau_points`                    | STRING (compteur) | Points de construction cumulés du Radeau                                                                                                                                                                                                                                                                                                                |
-| `robinson:votes:<jour>`                     | HASH              | `discordId → actionId` — jetable, effacé après clôture du jour                                                                                                                                                                                                                                                                                          |
-| `robinson:vote_details:<jour>`              | HASH              | `discordId → { actionId, amount\|yields\|pointsAdded, at }` — résultat exact du tirage, pour réafficher le même résultat sur un reclic idempotent sans re-tirer                                                                                                                                                                                         |
-| `robinson:vote_usernames:<jour>`            | HASH              | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run robinson:status`), jamais utilisé pour la logique de vote                                                                                                                                                                                                                   |
-| `robinson:historique`                       | HASH              | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal de Bord, effacé par `resetRobinson()`. `radeauVotes` (ajouté le 25/08) absent sur les entrées antérieures, affiché de façon tolérante par `formatHistoriqueLine()` |
-| `robinson:manches`                          | HASH              | `manche → { manche, outcome, jour, radeauPoints, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run robinson:reset`)                                                                                                                                                                    |
-| `robinson:manche_seq`                       | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run)                                                                                                                                                                                                                                         |
-
-Le bouton `[📜 Journal de Bord]` (`handleJournal()`) affiche aussi, depuis le 26/08, le total de points de Radeau (`robinson:radeau_points`, invisible autrement dans le Journal) et les compteurs de jours consécutifs à 0 par ressource (`state.zeroStreaks`, jamais montrés ailleurs) — uniquement si au moins une ressource est déjà en streak, pour ne pas polluer l'affichage en temps normal.
-
-### Scripts npm (Robinson)
-
-| Commande                         | Effet                                                                                                                                                                                                                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run robinson:test`          | Poste manuellement le jour de Robinson sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                            |
-| `npm run robinson:test:dry`      | Aperçu console du prochain jour (ou du message de fin de partie), sans écrire d'état ni poster sur Discord.                                                                                                                                                            |
-| `npm run robinson:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `robinson.yml`.                                                                                                                                                                       |
-| `npm run robinson:public:dry`    | Équivalent dry-run de `robinson:public`.                                                                                                                                                                                                                               |
-| `npm run robinson:reset`         | Remet Robinson à zéro : plus de jour actif, stocks/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `robinson:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
-| `npm run robinson:reset:manches` | Identique, mais efface aussi `robinson:manches`/`robinson:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests).                                                                                         |
-| `npm run robinson:status`        | Affiche l'état courant (stocks, radeau, décompte des votes du jour) sans passer par Discord.                                                                                                                                                                           |
-
-### Variables d'environnement requises (Robinson)
-
-Aucune nouvelle variable : Robinson réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `robinson:*` totalement séparé). Le workflow `.github/workflows/robinson.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter). Comme pour le Tamagoshi, le `schedule` du cron reste **commenté** (seul `workflow_dispatch` actif) tant que le jeu est en phase de test — à réactiver une fois validé.
-
----
-
-## Boss Raid (score attack communautaire, jeu de combinaison stratégique)
-
-> 📦 **Statut : archivé** (10/10/2026) — pas de relance prévue pour le moment. Le code, les données et l'archive des manches (`bossraid:manches`) sont conservés tels quels. Le `schedule` de `.github/workflows/bossraid.yml` est commenté (seul `workflow_dispatch` reste disponible) et l'entrée `bossraid` de `SPECIAL_GAMES` (`jeux/discord/handlers/minijeux.js`) porte `archived: true`, ce qui l'exclut de `/mini-jeux` même si un état périmé reste dans Redis. **Pour relancer** : décommenter le `schedule`, retirer `archived: true`, puis `npm run bossraid:reset` avant le lancement manuel du jour d'annonce.
-
-Mini-jeu communautaire quotidien indépendant du Clash Royale : le clan affronte un Boss Colossal invulnérable pendant 7 jours de combat (`duree_jours` dans `boss_raid.json`, précédés d'un jour d'annonce), avec pour objectif d'accumuler le maximum de dégâts cumulés. Chaque membre vote un rôle par jour (Chevalier, Voleuse, Sorcier, Archères, Princesse) ; **aucun tirage n'a lieu au clic**, et le vote est **définitif** dès qu'il est posé (comme Robinson/Tamagotchi/Quiz — voir "Résolution du vote" ci-dessous). Pas de commande slash associée — la publication/suppression passe uniquement par `jeux/scripts/postBossRaid.js` (manuel ou cron), les boutons restent gérés par `api/discord/interactions.js`.
-
-⚠️ **Refonte du 06/09** : le jeu était à l'origine un score attack avec RNG (plages de dégâts, débuff Voleuse à 25% de chance, Ultimes/All-In, régénération nocturne progressive). Retour utilisateur : trop aléatoire, pas assez stratégique — l'objectif devient de **trouver, jour après jour, la meilleure combinaison de rôles possible pour l'événement du jour**. Conséquence directe sur toute la logique (voir ci-dessous) : plus un seul tirage aléatoire nulle part dans le jeu, `computeCloture()` ne prend même plus de `rng` en paramètre.
-
-### Déroulement (Boss Raid)
-
-Un seul message actif à la fois dans le salon dédié, en 3 phases :
-
-1. **Jour d'annonce** (`bossraid:state.phase === "annonce"`) : premier `postBossRaid()`, publie le lore + la posture de base du Boss, ping `@MINI-JEUX`. Boutons `[📖 Règles & Rôles]` + `[📚 Tuto complet]` visibles — aucun vote possible. Le Tuto (`buildTutoEmbed()`) détaille le calcul des dégâts/notes (contrairement aux Règles, condensées) ; il disparaît dès le Jour 1 (`buildComponents()` ne l'ajoute que si `phase === "annonce"`), pour ne pas surcharger le message une fois les règles assimilées. Mêmes principes que Règles pour les événements : jamais listés, seule la Princesse les révèle un jour à l'avance.
-2. **Transition vers le Jour 1/7** : deuxième `postBossRaid()`, détecte `phase === "annonce"` et publie directement le Jour 1 avec les 5 boutons de vote, sans clôture (rien n'a pu être voté avant) ni ping.
-3. **Clôture quotidienne** (jours suivants) : `postBossRaid()` clôture le jour actif (`closeDayAndAdvance()`), calcule les dégâts et compare à la meilleure combinaison possible, publie le bilan + le jour suivant (jamais de ping). Au-delà du Jour 7 (`jourSuivant > duree_jours`), publie l'embed de fin de Raid (score total, aucun composant), ping `@MINI-JEUX`, et passe `termine: true` — les runs suivants du cron deviennent des no-op silencieux, même principe que les autres jeux.
-
-### Aucune posture persistante — chaque jour repart de zéro
-
-⚠️ Différence structurelle majeure avec l'ancienne version : Défense et Résistance du Boss ne persistent **jamais** d'un jour à l'autre. Chaque jour reprend inconditionnellement à `boss_stats_base` (5/10 chacune), modulé uniquement par l'événement du jour éventuel (`resolveDayParams(jour, config)`, pure fonction de `(jour, config)`, aucun état). Ça élimine tout besoin de régénération nocturne (l'ancien mécanisme compensait justement l'absence d'autre source de hausse sur 7 jours) et simplifie radicalement `bossraid:state` : plus de `bossStats` du tout, l'état ne retient que le score cumulé.
-
-Conséquence : le débuff Défense de la Voleuse (voir plus bas) n'a d'effet que **le jour même** — il ne s'agit plus d'affaiblir le Boss pour le lendemain, mais de fragiliser sa Défense en cours de journée pour booster les Archères qui votent en même temps qu'elle.
-
-### Résolution du vote — vote définitif, calcul unique à la clôture
-
-Le vote est **définitif dès qu'il est posé** (revu le 08/09, à la demande de Raphael — précédemment modifiable jusqu'au cron, jugé incohérent avec le reste des jeux) : `recordVote()` fait un `HSETNX` sur `bossraid:votes:<jour>`, exactement comme Robinson — aucune notion de « slot réservé » à libérer, mais un premier vote pose définitivement le rôle. Revoter le **même** rôle renvoie `{ status: "already_recorded" }` (no-op) ; revoter un **autre** rôle renvoie `{ status: "rejected", existing }` sans jamais modifier `bossraid:votes:<jour>`. Toute la logique de dégâts/protection/événements reste calculée **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`jeux/services/bossraid.js`) — entièrement déterministe, sans I/O ni aléatoire.
-
-Le clic sur un bouton de vote (sauf Princesse) répond en `type: 6` (`DEFERRED_UPDATE_MESSAGE`) : au premier vote (`"recorded"`), il édite le message public **en place** ; sur un revote (`"rejected"`/`"already_recorded"`), le message public n'est **jamais** retouché, seul l'auteur du clic est prévenu via un followup éphémère (`postFollowup()`, comme le rejet Chevalier). Le bouton **Princesse** est la seule exception à la réponse `type: 6` : il répond en éphémère (`type: 5`) avec une **projection live** des dégâts du jour en cours et un **indice de note de combinaison** (SS/S/A/B/C/D, voir plus bas), calculés par `previewCloture()` (écriture Redis nulle) — la même fonction qu'appelle `postBossRaid.js --dry-run`, garantissant que la projection Princesse et la simulation dry-run ne divergent jamais. Le vote Princesse compte pleinement dans les calculs (dégâts fixes + candidate à la combinaison optimale, voir "Princesse" plus haut) malgré sa réponse éphémère ; comme il est désormais lui aussi verrouillé, un clic répété affiche à nouveau la projection (relecture gratuite) mais ne re-déclenche le `PATCH` du compteur public que sur le tout premier vote (`status === "recorded"`) — sur un rejet (déjà voté un autre rôle), aucune projection n'est montrée, seulement le rappel que le vote est fixé.
-
-### Contrainte Chevalier — pas 2 jours de suite
-
-`bossraid:dernier_role` (HASH `discordId → roleId`) retient le dernier rôle **finalisé** de chaque membre, muté **uniquement au cron** (jamais pendant la fenêtre de vote). Au clic sur `[🛡️ Chevalier]`, `isChevalierVoteAllowed(dernierRole)` compare au rôle du jour **précédemment clos** — pas au choix courant du même jour, donc un membre peut changer d'avis plusieurs fois le même jour sans pénalité, seule la limite inter-jours compte. En cas de refus, l'ack `type: 6` reste sans PATCH (message public inchangé) et un message de suivi **éphémère séparé** (`postFollowup()`, `POST {webhookUrl}` + `flags: 64`) explique le refus à l'auteur du clic — le vote n'est jamais enregistré.
-
-### Rôles — dégâts fixes, aucun aléatoire
-
-Contrairement à l'ancienne version (plages de dégâts, débuff Voleuse à 25% de chance), **tous les dégâts sont des nombres fixes** dans `boss_raid.json` :
-
-- **🛡️ Chevalier** — 0 dégât. Protège jusqu'à `protection_slots` (2 par défaut) unités à distance (Sorcier/Archères) contre le malus de non-protection. Compte quand même dans la combinaison (coût d'opportunité réel).
-- **🗡️ Voleuse** — `degats` fixes (20) + réduit la Défense effective du Boss de `debuff_defense_par_vote` (1) point **par vote Voleuse**, plafonné à 0, pour le calcul des dégâts Archères **du jour même** (voir `computeDefenseEffective()`). Jamais réduite par la protection Chevalier (elle n'est pas une unité à distance).
-- **🔮 Sorcier** — `degats` de base (140, supérieur aux 80 des Archères — sans soutien type Voleuse sur sa propre stat, il compense par un potentiel brut plus élevé), réduits par la Résistance du Boss (10%/point, `applyStatReduction()`). Non protégé : malus `malusMultiplier` (0.5 par défaut, peut être modifié par l'événement du jour — ex. 0.3 lors de Bouclier Instable).
-- **🏹 Archères** — `degats` de base (80), réduits par la Défense **effective** du Boss (après débuff Voleuse). Même malus de non-protection que le Sorcier.
-- **👑 Princesse** — `degats` fixes (25), **jamais réduits** : insensible à la Défense, à la Résistance, au malus de non-protection et à `sorcierMultiplier`/`archeresMultiplier` (qui ne la concernent pas) — voir "Princesse" ci-dessous pour le détail du calibrage. Son seul levier événementiel dédié est `princesseMultiplier` (défaut 1, voir "Princesse — exception du Jour 3" plus bas), volontairement séparé des multiplicateurs Sorcier/Archères pour ne jamais l'affecter par accident. Contrairement à l'ancien Espion (0 dégât, totalement hors-combo), elle compte pleinement dans la combinaison et dans son dénominateur.
-
-⚠️ **Équilibrage du 06/09** : à 100 dégâts de base, le Sorcier était totalement absent de la combinaison optimale dès qu'il y avait assez de votants pour rentabiliser l'investissement Voleuse (Défense à 0 → Archères protégées à 80 dégâts pleins, largement supérieur au Sorcier bloqué à 50 protégé, Résistance 5 jamais affaiblie par aucun mécanisme). Passé à 140 (`computeBestCombo` vérifié sur les 7 jours × plusieurs tailles de groupe) : le Sorcier redevient l'optimum sur petits/moyens groupes (où « gâcher » des votes en Voleuse pour activer les Archères n'est pas rentable), tandis que la combinaison Voleuse+Archères reprend le dessus à grand N (où le débuff Défense est vite plafonné et profite à un grand nombre d'Archères). Aucun changement de mécanique, un seul nombre modifié dans `boss_raid.json`.
-
-⚠️ **Princesse (06/09, ter)** : à l'origine un pur rôle d'info (0 dégât, hors-combo, comme l'ancien Espion). Retour utilisateur : lui donner un vrai dégât fixe, insensible à la protection/Défense/Résistance, pour la rendre utile en combat. Piège structurel découvert par simulation : contrairement à tous les autres rôles, elle n'a **aucun coût d'investissement** (pas de Chevalier à dimensionner, pas de Voleuse à sacrifier) — la moindre valeur qui dépasse le pire rôle protégé du jour la rend donc **strictement dominante à TOUT N** (`bestCombo` bascule intégralement sur elle, 0 Chevalier, quel que soit le nombre de votants), écrasant instantanément la variété entre les jours. Testé à 40 (dominante sur 4 des 6 jours à événement) puis 30 (dominante sur 1 jour, Rage du Boss) avant de converger sur **25** : reste sous la valeur protégée de tous les rôles sur leurs bons jours, mais dépasse la valeur d'un Sorcier/Archères non protégé en surplus (capacité de Chevalier déjà saturée) — un simple filler occasionnel (1-2 votes), jamais une réponse dominante, vérifié de N=5 à N=50.
-
-⚠️ **Princesse — exception assumée du Jour 3 (08-10/09)** : demande explicite de faire de la Princesse le cœur d'un événement. Ajout du champ `princesse_multiplier` (défaut 1, comme `sorcierMultiplier`/`archeresMultiplier`), lu par `resolveDayParams()` et appliqué UNIQUEMENT dans `computeComboDamage()` (`princesseTotal = princesseCount * degats * princesseMultiplier`) — le reste du moteur reste inchangé. Réintroduit délibérément, pour ce seul jour, le comportement « strictement dominante » identifié et évité ci-dessus : à `princesse_multiplier: 3` (75 dégâts effectifs) combiné à un Sorcier neutralisé (`sorcier_multiplier: 0`) et une Archères affaiblie (`archeres_multiplier: 0.8`), la Princesse se prend systématiquement au plafond (10 votes) quel que soit N — vérifié stable à N=15 et N=18 (`1🛡️ 2-5🗡️ 2🏹 10👑`). Tentative initiale (08/09) : ne jamais mentionner le bonus, ni dans la description ni dans la réponse au vote — devenu trop illisible en pratique (le message éphémère affichait encore la valeur de BASE, 25, jamais la vraie valeur multipliée, un bug pur et simple) puis jugé indevinable même une fois corrigé. Revenu (10/09) sur une annonce en clair aux DEUX endroits : la description de l'événement (« La Princesse, elle, voit ses dégâts triplés ! ») ET la réponse éphémère du vote (`⚔️ Ton vote ajoute **75** dégâts (dégâts triplés aujourd'hui).`, calculée dynamiquement via `dayParams.princesseMultiplier`, jamais la base figée). Les autres effets (Sorcier neutralisé, Archères affaiblies) restent uniquement décrits en clair dans la description, jamais dans les Règles/Tuto — seule la Princesse bénéficie de cette double annonce, pour rester cohérente avec son rôle d'info déjà central dans le jeu.
-
-### La combinaison optimale — cœur du jeu
-
-Le vote se résume à répartir N votants (les 5 rôles d'action — Chevalier/Voleuse/Sorcier/Archères/Princesse) sur ces 5 rôles. À nombre de votants et événement du jour fixés, il existe toujours une répartition qui maximise les dégâts totaux : `computeBestCombo(totalVotesAction, dayParams, config)` la trouve par **recherche exhaustive** (force brute sur les 5 compteurs, O(N⁴/24) combinaisons — jusqu'à quelques centaines de milliers d'itérations pour un clan de 8 à 50 votants, encore négligeable, pas besoin d'heuristique plus fine).
-
-Pour évaluer une combinaison hypothétique (juste des compteurs, aucun votant réel), la protection Chevalier est allouée de façon **optimale** entre Sorcier et Archères (`allocateOptimalProtection()`, priorité au rôle dont protéger rapporte le plus) — à distinguer de la clôture **réelle**, qui protège les votants par ordre d'arrivée (`computeProtection()`, inchangé, voir plus bas). `computeComboDamage()` reste la SEULE formule de dégâts, appelée par les deux chemins avec des comptes de protégés différents — jamais deux formules de dégâts distinctes.
-
-Le **score de combinaison** compare les dégâts réels du jour à ce plafond théorique :
-
-| Ratio réel/optimal | Note |
-| ------------------- | ---- |
-| ≥ 98%                | SS   |
-| ≥ 90%                | S    |
-| ≥ 80%                | A    |
-| ≥ 60%                | B    |
-| ≥ 50%                | C    |
-| < 50%                | D    |
-
-(`gradeForRatio()`, seuils arbitraires mais isolés dans une seule fonction, tunables sans toucher au reste du moteur.) Un **score cumulé** (`cumulativeScore()`) compare le cumul réel au cumul du plafond théorique jour par jour — pas une moyenne des lettres quotidiennes, qui pondérerait injustement un jour à faible participation comme un jour à forte participation.
-
-### Rôles identiques limités à 10 — diversifier au-delà d'un certain N
-
-Règle complémentaire (06/09) : au-delà de `MAX_VOTES_PAR_ROLE` (10) votes pour un MÊME rôle un même jour, les votes supplémentaires (11e et suivants) **n'ont plus aucun effet** — ni dégât, ni capacité de protection (Chevalier), ni débuff Défense (Voleuse). Conséquence directe : un plafond dur sur les dégâts théoriques atteignables, **5 rôles × 10 = 50 votes utiles au maximum par jour** — au-delà, tout vote supplémentaire est strictement gâché quel que soit le rôle choisi (vérifié par simulation : `computeBestCombo` plafonne bien à N=50 quelle que soit la config, N=60/80 donnant rigoureusement le même total).
-
-Le compteur affiché sur les boutons de vote et dans le bilan (`formatCombo()`) reste le compte **RÉEL**, jamais tronqué — seul l'EFFET des votes excédentaires est neutralisé, au plus près du calcul :
-
-- `computeDefenseEffective()` plafonne `nbVoleuses` en interne (un 11e vote Voleuse ne réduit pas plus la Défense).
-- `computeComboDamage()` plafonne chaque compte (`voleuse`/`princesse`/`sorcier`/`archeres`) en interne AVANT de calculer les totaux — mais `protectedSorcier`/`protectedArcheres` doivent déjà avoir été calculés sur cette même population plafonnée par l'appelant, sous peine de décompte de non-protégés négatif.
-- `evaluateCandidateCombo()` (recherche hypothétique) plafonne Chevalier/Sorcier/Archères **avant** d'appeler `allocateOptimalProtection()`, pour la même raison.
-- `computeCloture()` (clôture RÉELLE) va plus loin : `selectEffectiveVoters()` sélectionne, PAR RÔLE, les `MAX_VOTES_PAR_ROLE` premiers votants RÉELS de Sorcier/Archères (départagés par `vote_at` croissant — même précédent que la protection Chevalier), et seuls ceux-là entrent dans la liste des `distants` soumise à `computeProtection()`. Un 11e Sorcier/Archères ne consomme donc aucun slot de protection et ne compte jamais parmi les non-protégés — il n'existe simplement plus pour le calcul, quel que soit l'ordre de répartition des slots ensuite.
-
-### Ultime — bonus/malus de dégâts basé sur la PERFORMANCE (pas sur le vote)
-
-⚠️ Le terme « Ultime » réapparaît (retour utilisateur du 06/09) mais désigne désormais un mécanisme totalement différent de l'ancien All-In déclenché par un rôle majoritaire : un bonus/malus de dégâts pour la journée ENTIÈRE, basé sur le **score de combinaison** des 1-2 jours précédents (`resolveUltimateMultiplier(jour)`, qui lit `bossraid:historique[jour-1]`/`[jour-2]`, déjà figés et immuables) :
-
-- Score **S ou SS** hier → **+10%** de dégâts aujourd'hui.
-- Score **S ou SS** hier **ET** avant-hier (2 jours de suite) → **+30%** (remplace le +10%, ne s'additionne pas).
-- Score **C ou D** hier → **-10%** de dégâts aujourd'hui.
-- Score **A/B** hier, ou pas encore 1-2 jours d'historique (Jour 1/2) → neutre, aucun effet.
-
-`computeUltimateMultiplier(gradeYesterday, gradeDayBefore)` est une fonction pure (seuils/pourcentages isolés, tunables sans toucher au reste). Le multiplicateur retourné est appliqué **uniformément** à tout le dégât du jour dans `computeCloture()` (dégâts réels ET plafond théorique, au même facteur) — ⚠️ appliquer le multiplicateur aux DEUX côtés du ratio n'est pas un détail : ça garantit que la note du jour reste une mesure pure de la qualité de la combinaison choisie, jamais influencée par la performance des jours passés (un facteur commun au numérateur et au dénominateur s'annule mathématiquement dans le ratio). Seuls les totaux affichés (`totalDamageDuJour`, `bestDamage`, cumul) profitent ou pâtissent du multiplicateur — jamais `score`.
-
-Affiché dans l'embed quotidien (une des 3 phrases ci-dessus, calculée à l'affichage via `resolveUltimateMultiplier(jour)` — le résultat ne peut pas changer pendant la journée puisqu'il ne dépend que de jours déjà clos) et dans le Journal (suffixe `⚡+10%`/`⚡+30%`/`⚡-10%` sur chaque ligne d'historique, `formatUltimateSuffix()`).
-
-### Protection Chevalier — ordre en cas de pénurie de slots (clôture réelle)
-
-Chaque Chevalier protège jusqu'à `protectionSlots` unités à distance (Sorcier/Archères), potentiellement réduit par l'événement du jour (`protection_slots_override`). Si le nombre de distants dépasse la capacité, les slots vont aux votants dont le vote a été posé le **plus tôt** ce jour-là (`computeProtection()`, tri par `bossraid:vote_at:<jour>` croissant) — un vrai ordre d'arrivée, `vote_at` n'étant écrit qu'une seule fois maintenant que le vote est verrouillé. Non protégé : malus du jour (`malusMultiplier`, 0.5 par défaut, jusqu'à 0.3 lors de Bouclier Instable) ; protégé : jamais de malus, quel que soit l'événement.
-
-### Événements du Boss — un par jour, jamais le Jour 1
-
-Chaque jour de combat à partir du Jour 2 impose un événement différent (`activeEventForDay(jour, evenements)`, lookup exact, un jour donne toujours le même événement) qui force une réadaptation de la combinaison optimale — le Jour 1 reste volontairement « normal » (aucun événement), le temps de découvrir les rôles de base :
-
-- **🧱 Muraille Renforcée** (Jour 2) : Défense ET Résistance forcées à 9/10 (`defense_override` + `resistance_override`) — Archères ET Sorcier deviennent tous les deux peu rentables protégés à sec, pousse vers un lourd investissement Voleuse pour rouvrir la brèche aux Archères (seule voie qui reste rentable).
-- **🌫️ Brouillard Occultant** (Jour 3, remplace Frappe Léthale le 08/09) : Sorcier neutralisé (`sorcier_multiplier: 0`), Archères légèrement affaiblies (`archeres_multiplier: 0.8`), et Princesse boostée x3 (`princesse_multiplier: 3`, 75 dégâts effectifs — **annoncé en clair dans la description depuis le 10/09**, voir "Princesse — exception assumée du Jour 3" ci-dessus) — combo optimale stable à `1🛡️ 2-5🗡️ 2🏹 10👑`, Princesse toujours au plafond.
-- **🪞 Miroir de Mana** (Jour 4) : dégâts Sorcier réduits de 50% supplémentaires (`sorcier_multiplier: 0.5`) — pousse à délaisser le Sorcier au profit des Archères (et des Voleuses qui les soutiennent).
-- **🩸 Point Faible** (Jour 5) : Résistance forcée à 1/10 (`resistance_override`) — le Sorcier devient soudain extrêmement rentable, journée volontairement redondante avec le Jour 1 (même famille de combinaison) mais démultipliée en valeur — un jour « récompense » plutôt qu'un nouveau casse-tête.
-- **🌀 Bouclier Instable** (Jour 6) : protection réduite à 1 unité/Chevalier ET malus de non-protection alourdi à -70% (`protection_slots_override: 1` + `malus_multiplier_override: 0.3`, au lieu de -50%) — la protection devient à la fois plus rare ET plus précieuse, change fortement le ratio Chevalier:distants qui reste rentable.
-- **🔥 Rage du Boss** (Jour 7, dernier jour) : le débuff Défense de la Voleuse est neutralisé ET la Résistance grimpe à 8/10 (`voleuse_debuff_disabled: true` + `resistance_override: 8`) — Voleuse ET Sorcier hors-jeu simultanément, ne laisse que les Archères protégées comme option rentable pour le dernier assaut.
-
-⚠️ **Équilibrage du 06/09 (bis)** : après le passage du Sorcier à 140 dégâts, `computeBestCombo()` donnait la même combinaison (`5🛡️ 10🔮` à N=15) sur 5 des 7 jours — les 3 événements qui ne touchaient QUE la Défense/la protection des Archères (Muraille, Frappe Léthale, Rage) étaient devenus invisibles pour un optimum qui n'utilisait plus ces leviers. Chaque événement combine désormais AU MOINS un effet qui affecte réellement le Sorcier (Résistance, ou un malus qui s'applique aussi à sa propre protection) — vérifié par simulation à N=5/10/15/20/30/50 : sur les 7 jours, un seul doublon de combinaison subsiste (Jour 1 ↔ Jour 5, volontaire — Point Faible est conçu comme une redite amplifiée du Jour 1, pas un nouveau puzzle).
-
-⚠️ Ces événements ne sont **jamais** listés dans l'embed `[📖 Règles & Rôles]` — volontairement, pour qu'ils restent une surprise. Seul le bouton **Princesse** révèle en exclusivité, en éphémère, l'événement prévu pour le **lendemain** (`activeEventForDay(jour + 1, ...)`), jamais celui du jour même. Chaque effet est un simple champ générique dans `effects` (`defense_override`, `resistance_override`, `protection_slots_override`, `malus_multiplier_override`, `sorcier_multiplier`, `archeres_multiplier`, `princesse_multiplier`, `voleuse_debuff_disabled`), fusionné sur la base par `resolveDayParams()` — ajouter un futur événement ne demande qu'une entrée JSON, jamais de nouveau code (à l'exception de `princesse_multiplier` lui-même, ajouté le 08/09 avec son point d'application dédié dans `computeComboDamage()`, voir "Princesse — exception assumée du Jour 3"). Rien n'empêche de combiner plusieurs effets sur un même événement (voir ci-dessus) : `resolveDayParams()` les fusionne tous sans limite.
-
-### Interface (embed)
-
-Titre `⚔️ Boss Raid — Jour X/7` (ou `— Kiki le P.E.K.K.A. approche…` au jour d'annonce). **Bilan de la veille** affiché uniquement après une clôture réelle — absent du premier post de combat (Jour 1) et des ré-affichages suite à un simple clic de vote (`renderCombatPayload()` ne repasse jamais `closure`, pour ne pas ressasser le bilan à chaque vote) :
-
-```
-Hier, la meilleure combinaison était :
-- 3🛡️ 5🗡️ 4🔮 2🏹 1👑 (dégâts 600pts)
-Votre combinaison était :
-- 1🛡️ 2🗡️ 8🔮 3🏹 1👑 (dégâts 300pts)
-- score : B
-```
-
-Ce bloc (`buildBilanLines()`) est **partagé** entre l'embed quotidien et le bouton `[📜 Journal]` — jamais deux formats différents pour la même information. Défense/Résistance du jour affichées en texte simple (`**5/10**`), plus de barres `🟥`/`⬜` (la valeur suffit, inutile de l'illustrer). Ligne permanente `⚔️ Dégâts cumulés : **N** — 🏆 Score cumulé : **G**` en bas d'embed (remplace l'ancien `🏆 Dégâts cumulés (7 jours) : N`). Composants : row 1 = 5 boutons de vote (`{emoji} {label} (n)`, un seul par rôle, masquée hors phase combat) ; row 2 = `[📖 Règles & Rôles]` + `[📜 Journal]`.
-
-### Rôle dominant de la veille (narratif)
-
-Les dégâts étant désormais fixes par rôle, distinguer les « combattants les plus offensifs » individuellement n'a plus de sens (deux votants du même rôle infligent exactement les mêmes dégâts). Le narratif (`jeux/data/bossraid/narratifs.json`, pool `role_dominant`) cite à la place le **rôle** ayant porté le plus de dégâts hier (`pickDominantRole()`, sur `closure.breakdown`), avec un placeholder `{role}` plutôt que `{noms}/{premier}`.
-
-### Manches (comparaison entre parties) — Boss Raid
-
-Boss Raid (comme Robinson et le Tamagoshi) est destiné à être rejoué plusieurs fois dans l'année — chaque Raid complet est une **manche**. `bossraid:manches` (HASH permanent, jamais nettoyé par `resetBossRaid()`) archive le bilan de chaque manche terminée, indexé par un numéro strictement croissant (`bossraid:manche_seq`, `INCR` atomique) : `archiveManche({ totalDegatsCumules, scoreFinal, resolvedAt })`. Score comparatif naturel (contrairement à Robinson) : le total de dégâts cumulés, plus haut = meilleur. À l'écran de fin, l'embed liste les 10 dernières manches (`listManches()`) avec un 🏆 sur le meilleur total toutes manches confondues — la manche qui vient de se terminer y apparaît elle-même, marquée _(cette manche)_.
-
-⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postBossRaid(channelId, { isPublic: true })`, déclenché uniquement par `npm run bossraid:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test (`npm run bossraid:test`), même si le Raid de test va jusqu'au bout. Convention volontaire : les scripts npm servent toujours à tester, seul `--public` (donc en pratique le workflow GitHub, cron ou `workflow_dispatch`) représente une manche réelle. Ça évite de polluer l'archive avec des parties de test sans avoir à y penser à chaque reset — `npm run bossraid:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel (ex. `--public` lancé par erreur), mais ne devrait normalement jamais être nécessaire.
-
-### Données (boss_raid.json)
-
-`jeux/data/bossraid/boss_raid.json` — config statique éditée à la main : `duree_jours`, `boss_stats_base` (posture de RÉFÉRENCE reprise identique chaque jour, plus une valeur "initiale" à laquelle on ne reviendrait jamais), `roles.<id>` (label, emoji, `degats` fixes, `protection_slots`/`debuff_defense_par_vote` selon le rôle) et `evenements_boss` (un événement par `jour`, jours 2 à `duree_jours`, chacun avec un objet `effects` générique — voir "Événements du Boss" plus haut). Chargée une fois et mise en cache (`loadBossRaidConfig()`), jamais mutée à l'exécution. Tous les nombres (dégâts, débuffs, seuils d'événements) sont volontairement isolés dans ce fichier : un rééquilibrage ne touche jamais au code.
-
-`frontend/public/images/boss/boss-01.webp` à `boss-10.webp` — une illustration par jour de combat, servie en asset statique (même principe que `rob-01.webp`…`rob-10.webp` de Robinson) et référencée directement par URL (`bossRaidImageUrl()`, `jeux/discord/handlers/bossraid.js`) dans le champ `image` de l'embed. Affichée uniquement à partir du Jour 1 (jamais au jour d'annonce, qui n'a pas d'illustration dédiée). Avec `duree_jours: 7`, seules `boss-01.webp` à `boss-07.webp` sont actuellement utilisées (`boss-08/09/10.webp` restent en réserve, inutilisées) ; l'embed de fin de Raid réutilise systématiquement l'illustration du dernier jour joué (`bossRaidImageUrl(config.duree_jours)`).
-
-`jeux/data/bossraid/narratifs.json` — pools de variantes de texte (une intro "lore inutile" façon ambiance de camp, 2 variantes par état notable de Défense/Résistance, et des phrases citant le rôle dominant de la veille) séparées du code pour être enrichies sans y toucher. Même principe que `jeux/data/robinson/narratifs.json`/`jeux/data/tamagotchi/narratifs.json`, y compris la règle **"normal" = aucune ligne** : un état ordinaire (Défense/Résistance 4-6/10) n'a volontairement aucun pool de texte associé, la ligne est simplement omise plutôt que de meubler avec une phrase creuse — seuls les états notables (`_bas` ≤3, `_haut` ≥7) ont du texte. Sélection déterministe par jour (`pickFlavor()`, indexé sur `jour`, jamais `Math.random()`).
-
-### Stockage — Upstash Redis (`bossraid:*`)
-
-Même instance et mêmes conventions que les autres jeux. Espace de clés `bossraid:*`, totalement séparé.
-
-| Clé Redis                        | Type              | Contenu                                                                                                                                                                                                                                                                   |
-| --------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bossraid:state`                 | STRING            | `{ phase, jour, channelId, messageId, publishedAt, termine, totalDegatsCumules, totalDegatsOptimalCumules }` — muté uniquement au cron. Plus de `bossStats` : la posture du jour est toujours recalculée à la volée par `resolveDayParams(jour, config)`, jamais persistée. |
-| `bossraid:dernier_role`          | HASH              | `discordId → roleId` — dernier rôle finalisé, muté uniquement au cron                                                                                                                                                                                                     |
-| `bossraid:votes:<jour>`          | HASH              | `discordId → roleId` — écrasable, jetable, effacé après clôture du jour                                                                                                                                                                                                   |
-| `bossraid:vote_at:<jour>`        | HASH              | `discordId → ISO timestamp` — horodatage de la dernière mise à jour du vote, sert à l'ordre de protection Chevalier                                                                                                                                                       |
-| `bossraid:vote_usernames:<jour>` | HASH              | `discordId → pseudo` — jetable, uniquement pour l'affichage admin (`npm run bossraid:status`)                                                                                                                                                                             |
-| `bossraid:historique`            | HASH              | `jour → { event, dayParams, voteCounts, totalVotes, actionCounts, protection, ultimateMultiplier, totalDamageDuJour, breakdown, bestCombo, bestDamage, score, totalDegatsApres, totalDegatsOptimalApres, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le bouton Journal (et `resolveUltimateMultiplier()` des jours suivants), effacé par `resetBossRaid()` |
-| `bossraid:manches`               | HASH              | `manche → { manche, totalDegatsCumules, scoreFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé (persiste entre les manches, y compris après `npm run bossraid:reset`)                                                                               |
-| `bossraid:manche_seq`            | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de Raid réel (jamais en dry-run)                                                                                                                                                               |
-
-### Scripts npm (Boss Raid)
-
-| Commande                         | Effet                                                                                                                                                                                                                                                                            |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run bossraid:test`          | Poste manuellement le jour de Boss Raid sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                                     |
-| `npm run bossraid:test:dry`      | Aperçu console du prochain jour (ou du message de fin de Raid), sans écrire d'état ni poster sur Discord.                                                                                                                                                                        |
-| `npm run bossraid:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `bossraid.yml`.                                                                                                                                                                                 |
-| `npm run bossraid:public:dry`    | Équivalent dry-run de `bossraid:public`.                                                                                                                                                                                                                                         |
-| `npm run bossraid:reset`         | Remet Boss Raid à zéro : plus de partie active, votes/dernier rôle/historique de la manche en cours effacés. **Destructif** — préserve toujours `bossraid:manches` (l'archive des manches passées, qui ne s'alimente de toute façon qu'en `--public`, voir "Manches" plus haut). |
-| `npm run bossraid:reset:manches` | Identique, mais efface aussi `bossraid:manches`/`bossraid:manche_seq`. **Destructif**, à réserver au filet de sécurité (ex. un `--public` lancé par erreur pendant les tests).                                                                                                   |
-| `npm run bossraid:status`        | Affiche l'état courant (posture du jour, score cumulé, décompte des votes, projection combinaison réelle vs meilleure combinaison) sans passer par Discord.                                                                                                                     |
-
-### Variables d'environnement requises (Boss Raid)
-
-Aucune nouvelle variable : Boss Raid réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `bossraid:*` totalement séparé). Le workflow `.github/workflows/bossraid.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter). Comme pour les autres jeux en phase de test, le `schedule` du cron reste **commenté** (seul `workflow_dispatch` actif) — à réactiver une fois le jeu validé.
-
----
-
-## Blackjack — bats le Croupier
-
-Mini-jeu communautaire quotidien indépendant du Clash Royale : chaque membre affronte le Croupier en solo pendant `duree_jours` (**7**) jours — 1 point de victoire par jour gagné, classement cumulé révélé au Jour 8. Pas de commande slash associée — la publication/suppression quotidienne passe uniquement par `jeux/scripts/postBlackjack.js` (`postBlackjack()`), les boutons restent gérés par `api/discord/interactions.js`.
-
-### Déroulement (Blackjack)
-
-Un seul message actif à la fois dans le salon dédié. Le lancement manuel (`workflow_dispatch`) publie un **jour d'annonce** (`phase: "annonce"`, `jour: null`, bouton Règles seul, ping MINI-JEUX), jamais le Jour 1 directement ; le cron du lendemain (`--require-active`, l'annonce compte comme partie active) publie le Jour 1 (remise à zéro des points à ce moment-là, ping comme chaque jour), puis ne fait qu'avancer la partie — tant qu'aucun lancement manuel n'a eu lieu, il ne se passe rien. Un état sans `phase` (partie lancée avant le 12/10) est traité comme un jour normal. `postBlackjack()` clôture d'abord le jour actif (résout toutes les mains face au score du Croupier de ce jour-là, attribue les points), puis publie le jour suivant ou, au-delà du Jour 7, l'embed de révélation finale (classement, `termine: true` — les runs suivants du cron deviennent des no-op silencieux).
-
-Deux garde-fous partagés avec les autres jeux : `isTooSoonSinceLastClosure()` (même pattern que Robinson/Quiz, incident du 27/08) empêche un cron en retard de re-clôturer un jour rouvert entretemps à la main — contournable avec `--force`, appliqué automatiquement sur le salon de test (aucun cron n'y pointe jamais) ; et un refus explicite si une partie est déjà active sur un **autre** salon (`state.channelId !== channelId`), pour ne jamais la reprendre par erreur (incident réel du 23/08/2026 sur Quiz).
-
-### Score du Croupier — révélé immédiatement, jamais de saut
-
-Contrairement à une vraie main de Croupier simulée carte par carte, `dealerPlay()` tire un simple entier aléatoire dans `croupier.min`-`croupier.max` (**16-21** par défaut, `blackjack.json`) et l'habille d'une main à 2 cartes cohérente pour l'affichage (`buildHandForScore()`, purement cosmétique). Décision explicite (29/08, retour utilisateur) : l'ancienne simulation "tire jusqu'à 17" pouvait sauter, ce qui battait le Croupier trop souvent d'office et sans intérêt. Le score à battre est affiché dès l'ouverture du jour (`## 🎩 Score à battre aujourd'hui : N`) — les joueurs savent exactement leur objectif avant même de cliquer sur **Jouer**, avec un avertissement dédié si le Croupier tire 21 pile (aucune victoire possible ce jour-là, seule l'égalité l'est).
-
-### Sabot virtuel par joueur
-
-Chaque tirage (`drawCard()`) pioche un rang uniforme parmi les 13 (probabilité 4/52 = 1/13, identique à un vrai deck de 52 cartes) plutôt que de puiser dans un deck partagé qui s'épuiserait. Décision explicite : un deck unique partagé imposerait un ordre de tirage arbitraire entre joueurs concurrents, sans bénéfice pour un jeu où chacun affronte le Croupier seul, indépendamment des autres.
-
-### Main du joueur — Jouer / Piocher / Arrêter, tout en éphémère
-
-Une main par jour, définitive. 🃏 **Jouer** distribue 2 cartes (`stand` automatique sur un 21 naturel) ; 🎴 **Piocher** ajoute une carte (répétable) ; 🛑 **Arrêter** fige le score. Dépasser 21 = main perdue immédiatement (`bust`). Contrairement à Tamagoshi/Robinson, **rien n'est jamais repatché sur le message public** : tout se joue en éphémère (réponse privée au joueur via `patchOriginal()`/webhook), la main de chacun reste secrète jusqu'au bilan du lendemain — pas de compteur public à maintenir. Le résultat (gagné/perdu/égalité) est révélé au joueur dès que sa main est figée, sans attendre la clôture : le score du Croupier est déjà public depuis l'ouverture du jour, donc inutile de le faire deviner.
-
-Une main encore `en_cours` à la clôture (joueur qui n'a jamais cliqué Arrêter) est figée sur son score courant plutôt qu'ignorée (`resolveDay()`) — un joueur qui a commencé sa main mérite d'être jugé sur ce qu'il a, pas exclu du classement.
-
-### Interface (embed) et rendu des cartes
-
-Titre `🃏 Blackjack (Jour X/7)`. Rang+couleur affichés en titre Markdown (`# A♠️ K♥️`) plutôt qu'en glyphes Unicode de cartes à jouer (bloc U+1F0A0-1F0DF) — essayés puis abandonnés (29/08, retour utilisateur avec capture d'écran) : sans artwork couleur chez Discord, ils restent minuscules même sous un titre H1, contrairement aux emoji standard qui s'agrandissent normalement. Le bilan de la veille (`formatResultsSection()`) reste un **résumé**, pas une liste exhaustive (29/08, retour utilisateur) : avec beaucoup de joueurs, détailler chaque main rendrait le message public illisible — seuls les gagnants sont nommés, chacun retrouve le détail de sa propre main dans le bouton Journal. Deux illustrations statiques (`jeux/data/blackjack/images/`, suffixe `?v=` pour forcer Discord à refaire un fetch après remplacement de fichier) : `blackjack-start.webp` pour le Jour 1 et la révélation finale, `blackjack-game.webp` pour les jours intermédiaires.
-
-Composants : `[🃏 Jouer]` (vert), `[📜 Journal]`, `[📖 Règles]`. Le bouton **Journal** (lecture seule) affiche la main du jour du joueur, le classement cumulé et les 10 derniers jours de l'historique — accessible à tout moment, sans limite de clics.
-
-**Départage des ex-æquo au classement** (16/09, retour utilisateur — beaucoup d'ex-æquo au fil des jours, non départagés) : `buildRanking(points, usernames, cardsDrawn)` trie par points décroissants puis, à points égaux, par nombre de cartes piochées croissant (moins de cartes piochées = mieux classé). `sumCardsPerPlayer()` cumule les cartes de tous les jours déjà résolus (`blackjack:historique`) — le jour actif, pas encore clôturé, n'est pas compté, comme les points eux-mêmes. Le critère de départage n'est jamais affiché dans les embeds (juste utilisé pour l'ordre), mais apparaît dans les tableaux `blackjack:status`/`blackjack:scores` (colonne `Cartes`) pour vérification. `blackjackDuel.js` réutilise `buildRanking()` sans ce 3ᵉ argument (aucun historique dans le duel) — les ex-æquo y gardent l'ordre d'origine, non départagé.
-
-**Rangs ex aequo dans les classements affichés** (10/10) : deux joueurs à égalité partagent le même rang (classement « 1, 2, 2, 4 »), via `rangExAequo()` (`packages/commun/classement.js`) — Gobelet, Gobelet Duel, Blackjack, Blackjack Duel, Quiz, Mario Clash (même jour d'arrivée et même case). Le Blackjack ne considère deux joueurs ex aequo qu'à points **et** cartes piochées égaux (départage ci-dessus). Les récaps de saison (Trivia, Frame, Pêle-mêle, etc.) faisaient déjà de même via `findTiedRank()`. Bang! garde un ordre strict (départage par Bravoure puis ordre d'inscription).
-
-### Manches (comparaison entre parties) — Blackjack
-
-Comme Tamagoshi/Robinson/Boss Raid, Blackjack est destiné à être rejoué plusieurs fois dans l'année — chaque partie complète de 7 jours est une **manche**. `blackjack:manches` (HASH permanent, jamais nettoyé par `resetBlackjack()`) archive le classement final de chaque manche terminée, indexé par un numéro strictement croissant (`blackjack:manche_seq`, `INCR` atomique) : `archiveManche({ ranking, winners, maxPoints, resolvedAt })`. L'embed de révélation finale liste les vainqueurs des manches précédentes.
-
-⚠️ L'archivage n'a lieu que pour une **vraie publication sur le salon public** (`postBlackjack(channelId, { isPublic: true })`, déclenché uniquement par `npm run blackjack:public`/le workflow GitHub) — jamais en dry-run, ni sur le salon de test, même si la partie de test va jusqu'au bout. Convention volontaire, identique aux autres jeux : seul `--public` représente une manche réelle. `npm run blackjack:reset:manches` (`--manches`) reste disponible comme filet de sécurité manuel, mais ne devrait normalement jamais être nécessaire.
-
-### Données (blackjack.json)
-
-`jeux/data/blackjack/blackjack.json` — config statique éditée à la main : `duree_jours` (7) et `croupier.min`/`croupier.max` (16-21, plage du score aléatoire du Croupier). Chargée une fois et mise en cache (`loadBlackjackConfig()`), jamais mutée à l'exécution.
-
-### Stockage — Upstash Redis (`blackjack:*`)
-
-Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`, sérialisation JSON manuelle). Espace de clés `blackjack:*`, totalement séparé.
-
-| Clé Redis               | Type              | Contenu                                                                                                                                      |
-| ----------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blackjack:state`       | STRING            | `{ jour, dealer, channelId, messageId, publishedAt, termine }` — muté uniquement au cron                                                     |
-| `blackjack:points`      | HASH              | `discordId → points` — cumul de la manche en cours (`HINCRBY`), remis à zéro à chaque nouveau Jour 1                                         |
-| `blackjack:usernames`   | HASH              | `discordId → pseudo` — repli d'affichage uniquement, jamais la source de vérité du pseudo actuel                                             |
-| `blackjack:hand:<jour>` | HASH              | `discordId → { cards, score, status, username }` — main du jour, une entrée par joueur ayant cliqué Jouer                                    |
-| `blackjack:historique`  | HASH              | `jour → { jour, dealer, results, resolvedAt }` — bilans quotidiens de la manche EN COURS, alimente le Journal, effacé par `resetBlackjack()` |
-| `blackjack:manches`     | HASH              | `manche → { manche, ranking, winners, maxPoints, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé                                |
-| `blackjack:manche_seq`  | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run)                              |
-
-### Scripts npm (Blackjack)
-
-| Commande                          | Effet                                                                                                                                                       |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run blackjack:test`          | Poste manuellement le jour de Blackjack sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                |
-| `npm run blackjack:test:dry`      | Aperçu console du prochain jour (ou de la révélation finale), sans écrire d'état ni poster sur Discord.                                                     |
-| `npm run blackjack:public`        | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `blackjack.yml`.                                                           |
-| `npm run blackjack:public:dry`    | Équivalent dry-run de `blackjack:public`.                                                                                                                   |
-| `npm run blackjack:reset`         | Remet Blackjack à zéro : plus de jour actif, points/mains/historique de la manche en cours effacés. **Destructif** — préserve toujours `blackjack:manches`. |
-| `npm run blackjack:reset:manches` | Identique, mais efface aussi `blackjack:manches`/`blackjack:manche_seq`. **Destructif**, à réserver au filet de sécurité.                                   |
-| `npm run blackjack:status`        | Affiche l'état courant (mains du jour, classement cumulé) et une projection de la clôture si elle avait lieu maintenant, sans passer par Discord.           |
-| `npm run blackjack:scores`        | Affiche uniquement le classement cumulé de la manche en cours (ou terminée), accessible sans attendre la révélation finale.                                 |
-
-### Variables d'environnement requises (Blackjack)
-
-Aucune nouvelle variable : Blackjack réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `blackjack:*` totalement séparé). Le workflow `.github/workflows/blackjack.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter). Le jeu ayant été validé sur le salon de test, le `schedule` du cron (`12 8 * * *`) est actif.
-
-## Jeu du Gobelet — dés façon Yahtzee
-
-Mini-jeu communautaire quotidien indépendant du Clash Royale, sur le même squelette que Blackjack (7 jours, classement cumulé) mais sans adversaire : chaque jour, chaque membre lance 5 dés, peut en conserver 0 à 5 et relancer les autres deux fois de suite (3 tirages au total), puis la meilleure combinaison possible sur le résultat final lui rapporte des points. Pas de commande slash associée — la publication/suppression quotidienne passe uniquement par `jeux/scripts/postGobelet.js` (`postGobelet()`), les boutons restent gérés par `api/discord/interactions.js`.
-
-### Déroulement (Jeu du Gobelet)
-
-Un seul message actif à la fois dans le salon dédié. Le lancement manuel (`workflow_dispatch`) publie un **jour d'annonce** (`phase: "annonce"`, `jour: null`, bouton Règles seul, ping MINI-JEUX), jamais le Jour 1 directement ; le cron du lendemain (`--require-active`) publie le Jour 1 (reset des points et combinaisons utilisées à ce moment-là), puis ne fait qu'avancer la partie. Un état sans `phase` (partie lancée avant le 12/10) est traité comme un jour normal. `postGobelet()` clôture d'abord le jour actif (résout toutes les mains, attribue les points), puis publie le jour suivant ou, au-delà du Jour 7, l'embed de révélation finale (`termine: true`).
-
-Mêmes garde-fous que Blackjack : `isTooSoonSinceLastClosure()` (copie propre dans `gobelet.js`, pas d'import — chaque jeu à cron du dépôt a sa propre copie) et refus si une partie est déjà active sur un autre salon.
-
-### Barème — une combinaison différente par jour/manche (26/09)
-
-`computeBestCombination(dice, used)` liste toutes les catégories présentes dans les dés (`listMatchingCombinations()`), écarte celles que le joueur a **déjà réalisées** lors des jours/manches précédents de la partie (`used`), et retient la plus valorisée parmi celles qui restent. Égalité de points : `CATEGORY_PRIORITY` départage l'étiquette. S'il ne reste rien : le **Joker** s'il est encore libre (voir plus bas), sinon "Aucune combinaison", **0 pt**. S'applique au jeu spécial et à Gobelet Duel.
-
-Règle d'unicité (retour utilisateur, 26/09) : chaque combinaison ne rapporte des points **qu'une seule fois par partie** — le joueur doit varier ses combinaisons (12 catégories + le Joker pour 7 jours ou 5/10 manches). Les combinaisons déjà réalisées ne sont plus proposées (ex. 6-6-6-6-6 avec Gobelet déjà fait → Somme ≥ 28 en tête de liste). Les petites combinaisons (Double quelconque, Brelan) servent précisément de repli pour éviter le 0.
-
-🎯 **Choix de la combinaison (12/10, retour joueur, jeu spécial et Gobelet Duel)** : à la fin d'une main (3ᵉ tirage ou Valider), `listChoices(dice, used)` liste les combinaisons libres présentes dans les dés **plus le Joker s'il est libre**, de la plus payante à la moins payante. Dès qu'il y a au moins 2 choix, `finishHand()` met la main en statut `"choix"` et le joueur choisit dans un **select** (`gobelet_choix:<jour>` / `gobeletduel_choix:<manche>`, validé par `pickChoice()`) ; avec 0 ou 1 choix, la main est figée directement comme avant. But : pouvoir garder une grosse combinaison pour un autre jour, ou consommer volontairement le Joker. Jeu spécial : une main encore en `"choix"` à la clôture est résolue comme une main en cours (`computeBestCombination()`, donc la plus payante hors Joker). Duel : la manche attend le choix (`isMancheReady()` exige `"termine"`).
-
-🃏 **Joker (27/09, la « Chance » du Yahtzee)** : vaut la **somme** des 5 dés (5 à 30 pts ; la moitié de la somme jusqu'au 02/10, relevée à la somme entière par choix de l'utilisateur : le Joker peut battre les petites combinaisons, c'est assumé), une seule fois par partie, retenu **automatiquement** uniquement si aucune autre combinaison n'est libre (sinon il serait consommé dès la 1ʳᵉ manche) ; depuis le 12/10, le joueur peut aussi le choisir volontairement dans le select de fin de main. Ajouté avec le Juste total parce qu'en 10 manches les joueurs finissaient souvent sur "Aucune combinaison" (Somme ≤ 7, Somme ≥ 28 et Gobelet étant quasi inaccessibles). Le bouton Valider l'ignore (`allowJoker: false`, option retenue par l'utilisateur) : il ne s'applique qu'à la fin des 3 tirages ou à la clôture d'une main en cours — impossible de le griller par erreur dès le 1ᵉʳ tirage. Hors de `COMBINATIONS` (valeur variable), constante `JOKER`.
-
-⚠️ **"Aucune combinaison" vaut 0 pt** (auparavant la somme des dés) : une main sans motif ne doit pas rapporter plus qu'une combinaison répétée. Elle n'est jamais "consommée" (`withUsedCategory()`).
-
-⚠️ **Motifs "au moins N dés identiques"** : Double quelconque, Brelan et Carré acceptent plus de N dés (un Carré contient aussi un Brelan et un Double) — nécessaire pour qu'un joueur ayant déjà réalisé Carré puisse marquer Brelan avec les mêmes dés. Le Full reste strict (exactement 3 + 2).
-
-Combinaisons réalisées stockées dans `gobelet:used` / `gobeletduel:used` (hash `discordId` → tableau JSON), mises à jour **uniquement à la résolution** du jour (`postGobelet()`) ou de la manche (`resolveManche()`), remises à zéro avec la partie. Affichées dans la main éphémère du joueur (« 🚫 Déjà réalisées : … »).
-
-`COMBINATIONS` (`jeux/services/gobelet.js`, ordre croissant de valeur) est la source unique du calcul et de l'affichage des règles (`formatBaremeLines()`).
-
-| Résultat | Condition | Points |
-| -------- | --------- | ------ |
-| Aucune combinaison | rien de libre, Joker déjà utilisé | 0 |
-| Joker | rien d'autre de libre, ou choisi dans le select | somme des 5 dés |
-| Double quelconque | au moins 2 dés identiques | 10 |
-| Brelan | au moins 3 dés identiques | 20 |
-| Pairs | 5 dés pairs | 25 |
-| Impairs | 5 dés impairs | 25 |
-| Juste total | somme exacte de 21 | 25 |
-| Carré | au moins 4 dés identiques | 30 |
-| Petite Suite | 4 valeurs consécutives parmi les 5 dés (1-2-3-4, 2-3-4-5 ou 3-4-5-6, doublons/5ᵉ dé libres) | 30 |
-| Full | exactement 3 + 2 | 40 |
-| Somme ≤ 7 | somme ≤ 7 | 45 |
-| Somme ≥ 28 | somme ≥ 28 | 45 |
-| Grande Suite | 5 valeurs distinctes consécutives (1-2-3-4-5 ou 2-3-4-5-6) | 50 |
-| Gobelet | 5 dés identiques | 60 |
-
-⚠️ **Petite Suite révisée le 16/09** (retour utilisateur, deux passes) : à l'origine "exactement 1,2,3,4,5" (5 dés), c'est maintenant la règle classique du Yahtzee — 4 valeurs consécutives présentes parmi les 5 dés, le 5ᵉ dé étant libre — puis sa valeur est passée de 25 à 30 pts.
-
-### Main du joueur — Jouer / sélection des dés / Relancer, tout en éphémère
-
-Une main par jour, définitive. 🎲 **Jouer** lance 5 dés (1ᵉʳ tirage). Chaque dé a son propre bouton togglable (🔒 gardé / 🎲 sera relancé, ou la vraie face de dé si `diceEmojis` est configuré — voir ci-dessous) ; cliquer dessus **ne consomme pas de tirage**, juste une mise à jour du message éphémère. 🔁 **Relancer** relance tous les dés non conservés et consomme un tirage — possible 2 fois (3 tirages au total), après quoi le joueur choisit sa combinaison dans un select s'il y en a plusieurs possibles (voir « Choix de la combinaison »), sinon elle est figée directement et affichée avec les points gagnés.
-
-La sélection "à garder" **persiste d'un tirage à l'autre** (retour utilisateur, 16/09) : après une relance, les dés déjà cochés 🔒 le restent automatiquement — seuls les dés qui viennent d'être relancés repartent "non gardés" par défaut. Le joueur n'a donc qu'à ajuster sa sélection (décocher un dé qu'il ne veut plus garder, cocher un nouveau bon résultat) plutôt que de tout recocher à chaque tirage.
-
-👍 **Valider** (ajouté le 16/09, retour utilisateur) apparaît en plus de Relancer dès que les dés COURANTS forment déjà une combinaison **encore libre** (hors Joker), y compris dès le 1ᵉʳ tirage ; son libellé ne nomme volontairement pas la combinaison (essayé le 26/09 puis retiré : ça mâchait le travail du joueur) — permet de figer une bonne main immédiatement sans attendre les 2 relances obligatoires. Un clic sur un bouton devenu obsolète (dés changés entretemps par une relance) est ignoré silencieusement : la main n'est jamais figée sans combinaison, le message est simplement repeint avec l'état réel.
-
-Une main encore `en_cours` à la clôture (joueur qui n'a pas fini ses 2 relances) est figée sur les dés courants plutôt qu'ignorée (`resolveJour()`).
-
-### Emojis personnalisés pour les faces de dé
-
-Les boutons de sélection peuvent afficher la vraie face de chaque dé (au lieu des emoji génériques 🔒/🎲) via des **emoji d'application Discord** uploadés une fois avec `npm run gobelet:emojis` (`jeux/scripts/uploadGobeletEmojis.js`, upload `jeux/data/gobelet/images/dice-1.png` à `dice-6.png`). Les 6 IDs retournés se collent dans `jeux/data/gobelet/gobelet.json` (clé `diceEmojis`) — tant que cette config n'est pas renseignée (`null`), le jeu fonctionne normalement avec les emoji génériques.
-
-### Interface (embed)
-
-Titre `🎲 Jeu du Gobelet (Jour X/7)`. Dés affichés en titre Markdown avec des emoji "keycap" (`1️⃣`-`6️⃣`, ex. `# 3️⃣ 5️⃣ 6️⃣ 2️⃣ 4️⃣`) plutôt que les glyphes Unicode de dés (U+2680-2685) — même raison que le choix rang+couleur de Blackjack : les keycaps sont de vrais emoji couleur qui s'agrandissent sous un titre H1, contrairement aux glyphes texte qui resteraient minuscules. Deux illustrations statiques (`jeux/data/gobelet/images/`, dupliquées dans `frontend/public/images/gobelet/` pour être servies, suffixe `?v=`) : `gobelet.webp` pour le Jour 1 et la révélation finale, `dices.webp` pour les jours intermédiaires.
-
-Composants : `[🎲 Jouer]` (vert), `[📜 Journal]`, `[📖 Règles]`.
-
-### Mentions spéciales (Jeu du Gobelet)
-
-Comme Mario Clash : la liste `trophees` de `jeux/data/gobelet/gobelet.json` (`{ emoji, label, username }`, saisie à la main, ex. « Trophée du missclick ») s'affiche en « 🎖️ Mentions spéciales » dans la révélation finale. À vider pour la partie suivante.
-
-### Manches (comparaison entre parties) — Jeu du Gobelet
-
-Même principe que Blackjack : `gobelet:manches` (HASH permanent) archive le classement final de chaque manche terminée (`archiveManche()`), jamais nettoyé sauf `--manches`. Archivage uniquement sur une vraie publication publique (`isPublic: true`).
-
-### Données (gobelet.json)
-
-`jeux/data/gobelet/gobelet.json` — config statique : `duree_jours` (7) et `diceEmojis` (map valeur 1-6 → ID d'emoji d'application, voir ci-dessus). Chargée une fois et mise en cache (`loadGobeletConfig()`).
-
-### Stockage — Upstash Redis (`gobelet:*`)
-
-| Clé Redis | Type | Contenu |
-| --------- | ---- | ------- |
-| `gobelet:state` | STRING | `{ jour, channelId, messageId, publishedAt, termine }` |
-| `gobelet:points` | HASH | `discordId → points` cumulés (`HINCRBY`), remis à zéro à chaque nouveau Jour 1 |
-| `gobelet:usernames` | HASH | `discordId → pseudo`, repli d'affichage |
-| `gobelet:hand:<jour>` | HASH | `discordId → { dice, tirage, status, category, points, username }` |
-| `gobelet:kept:<jour>:<discordId>` | HASH | `"0".."4" → "1"/"0"` — dés conservés de la main en cours, un champ par dé (voir ci-dessous) |
-| `gobelet:historique` | HASH | `jour → { jour, results, resolvedAt }`, effacé par `resetGobelet()` |
-| `gobelet:manches` | HASH | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé |
-| `gobelet:manche_seq` | STRING (compteur) | Numéro de la prochaine manche à archiver |
-
-⚠️ **Dés conservés isolés du reste de la main** (bug corrigé le 16/09) : stocker `kept` comme tableau dans le même blob JSON que `dice`/`tirage`/etc. provoquait une race condition — deux clics quasi simultanés sur des dés DIFFÉRENTS (lecture-puis-écriture de LA MAIN ENTIÈRE à chaque clic) pouvaient s'écraser mutuellement, perdant silencieusement des dés cochés "à garder" avant même la relance. `gobelet:kept:<jour>:<discordId>` isole chaque dé dans son propre champ de hash (`readKept`/`setKeptField`/`resetKept`) : deux `HSET` sur des champs distincts n'entrent jamais en conflit, même simultanés. Même correctif appliqué à `gobeletduel:kept:<manche>:<discordId>` côté duel.
-
-### Scripts npm (Jeu du Gobelet)
-
-| Commande | Effet |
-| -------- | ----- |
-| `npm run gobelet:test` | Poste manuellement le jour du Gobelet sur le salon de test. |
-| `npm run gobelet:test:dry` | Aperçu console du prochain jour (ou de la révélation finale), sans écrire ni poster. |
-| `npm run gobelet:public` | Poste sur le salon public — utilisé par le cron `gobelet.yml`. |
-| `npm run gobelet:public:dry` | Équivalent dry-run. |
-| `npm run gobelet:reset` | Remet le Gobelet à zéro (préserve `gobelet:manches`). **Destructif**. |
-| `npm run gobelet:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
-| `npm run gobelet:status` | État courant sans Discord. |
-| `npm run gobelet:scores` | Classement cumulé seul. |
-| `npm run gobelet:emojis` | Upload one-shot des 6 faces de dé comme emoji d'application (voir ci-dessus). |
-
-### Variables d'environnement requises (Jeu du Gobelet)
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, `DISCORD_APP_ID`/`DISCORD_TOKEN` (upload emoji). Le `schedule` du cron (`16 8 * * *`) est actif dans `.github/workflows/gobelet.yml`, comme Blackjack.
-
-## Bang! — dernier joueur en vie en 7 jours
-
-Jeu spécial **100 % asynchrone** inspiré d'[Exploding Kittens](https://fr.wikipedia.org/wiki/Exploding_Kittens) : une pioche commune truffée de **Gobelins explosifs**, des cartes d'action pour piéger les autres, et un objectif, être le dernier joueur en vie. Pas d'ordre de passage : chacun joue quand il veut, chaque action est résolue tout de suite. **Remplace le Draft Royale et le duel `/draft`** (supprimés le 08/10 : complexes et peu intéressants d'après les tests). Code : `jeux/services/bangRules.js` (règles pures, testées par `bangRules.test.js`), `jeux/services/bang.js` (Redis), `jeux/services/bangImage.js` (images), `jeux/discord/handlers/bang.js` (Discord), `jeux/scripts/postBang.js`. Config : `jeux/data/bang/bang.json`.
-
-### Cartes (Bang!)
-
-Chaque carte est illustrée par une vraie carte Clash Royale (`CARTES` dans `bangRules.js`).
-
-| Carte | Carte CR | Effet |
-| ----- | -------- | ----- |
-| 💥 Gobelin explosif | Goblin Demolisher | Piochée : l'Esprit de guérison du joueur est sacrifié, sinon il explose (éliminé, sa main est défaussée, ce Gobelin explosif quitte le jeu). |
-| 💚 Esprit de guérison | Heal Spirit | Sauve du Gobelin explosif, puis le joueur le cache dans la pioche (tout en haut, 2e, 3e, milieu, fond ou au hasard). Chacun en reçoit un au départ. |
-| 🙏 Moine | Monk | Joué à l'avance, **secret** (absent du journal). La prochaine attaque ciblée contre le joueur (Gang, Malédiction, Voleuse) est bloquée et son effet s'applique à l'attaquant. Actif **jusqu'à la clôture du jour** seulement (décision du 08/10), un seul à la fois, un renvoi ne se renvoie pas. |
-| 🛢️ Fût à gobelins | Goblin Barrel | Esquive : annule une pioche due (Gang), sinon **termine le tour sans piocher**. Ne vise personne (décision du 14/10 : ne vole plus 1 Bravoure à un joueur). |
-| 🧿 Malédiction | Goblin Curse | La prochaine carte piochée par la cible (hors Gobelin explosif) devient un simple Gobelin. Une seule subie par jour (voir plus bas) ; les Malédictions non consommées restent actives les jours suivants. |
-| 👊 Gang de gobelins | Goblin Gang | La cible doit piocher `gang_pioches` (2) cartes (pioches dues, sans Bravoure). **Reçu avant son tour** : le minimum du menu de pioche passe à 2 (« 2 cartes », imposé ; « 3 cartes », +1 Bravoure). **Reçu après son tour** : les pioches dues se font d'un seul clic sur Piocher, sans choix ni Bravoure, et le joueur peut rejouer des cartes (Fût…) tant qu'elles ne sont pas faites. Cumulable (au-delà de `pioches_par_jour`, une seule option). |
-| 🎯 Gobelin à sarbacane | Dart Goblin | Montre au joueur les 3 premières cartes de la pioche (dans son éphémère). |
-| 🦹 Voleuse | Bandit | Vole une carte au hasard dans la main de la cible. |
-| 👺 Gobelin | Goblins | Sans pouvoir (dilue la main face à la Voleuse). |
-
-### Déroulement (Bang!)
-
-- **Présentation** (1er post, ping MINI-JEUX), puis **Jour 1** : pioche vide, elle se remplit avec les joueurs.
-- **Inscription** au premier clic sur un bouton, jusqu'au jour `inscription_jours` (2). Le joueur reçoit un Esprit de guérison et `main_depart` (2) cartes de son paquet ; le reste de son paquet est mélangé dans la pioche (`paquet_par_joueur`, taux fractionnaires : 0,5 = un exemplaire tous les deux joueurs), avec `bombes_par_joueur` (1,5) Gobelins explosifs par joueur **à partir du deuxième** (`ajouterJoueur()`).
-- **Tour** (décision du 14/10, comme Bang! Duel) : le joueur joue ses cartes **d'abord**, puis **pioche 1 à `pioches_par_jour` (3) cartes d'un coup**, ce qui **termine son tour** jusqu'à la clôture (`joueur.tourFait` ; `jouer()` renvoie alors `tourFini`, sauf pioches dues d'un Gang reçu ensuite). Le nombre de cartes se choisit dans un menu (`choixPioche()` : de `max(1, dette)` à `pioches_par_jour`, borné par la taille de la pioche), puis `piocherClic(…, { nb })` le convertit en pioches dues (`dette = nb`, `bonus = nb - min`, `pioches = nb`). Arrêt sur un Gobelin explosif désamorcé : les cartes restantes sont piochées automatiquement dès qu'il est caché. Remplace les 3 pioches volontaires une par une, sans fin de tour (on pouvait piocher puis jouer, ou s'arrêter après avoir vu chaque carte). Jouer une carte est gratuit, dans la limite de `cartes_par_jour` (3) cartes par jour (`joueur.jouees`, remis à zéro par `cloturer()` ; décision du 08/10 : sans effet sur le jeu normal, en moyenne 1,1 carte par connexion et 6 % des connexions à 3 cartes ou plus en simulation, mais empêche les rafales d'attaques sur une même cible, jusqu'à 7 sans plafond, avec `jeux/outils/bang/simulateLimite.mjs`). Le joueur n'est jamais obligé de jouer la carte piochée.
-- **Une attaque subie par jour** (décision du 14/10) : un joueur ne peut être victime que d'**un seul Gang, d'une seule Voleuse et d'une seule Malédiction par jour** (`UNIQUES`, `joueur.subies`, remis à zéro par `cloturer()`), quel que soit l'attaquant ; un attaquant peut en revanche jouer deux fois la même attaque sur des cibles différentes. `jouer()` renvoie `dejaSubie` (la carte reste en main) et le menu des cibles n'affiche que les joueurs encore attaquables (`ciblesPossibles()`). Une attaque renvoyée par un Moine compte pour l'attaquant, qui la subit (le joueur protégé, lui, n'a rien subi). Évite l'acharnement : deux Gangs faisaient 4 cartes imposées.
-- **Clôture quotidienne** (`cloturer()`, cron) dans un ordre aléatoire : un Gobelin explosif pas encore caché l'est au hasard, les Moines non utilisés disparaissent ; chaque survivant qui n'a ni pioché ni joué de Fût ce jour-là **pioche automatiquement** (décision du 08/10 : sans contrainte, ne jamais piocher garantirait la survie), soit **`pioches_auto` (2) cartes** (pénalité de passivité, décision du 09/10), ou ses pioches dues (Gang) si elles sont plus nombreuses. Les pioches automatiques ne rapportent pas de Bravoure.
-- **🔥 Bravoure** (décision du 09/10, remplace l'Élixir : piocher coûtait 1 Élixir et les survivants étaient classés à l'Élixir restant, ce qui récompensait la passivité) : `bravoure.pioche` (1) par carte piochée au-delà du minimum du tour (1 carte : 0 ; 2 cartes : +1 ; 3 cartes : +2 ; minimum relevé à 2 par un Gang reçu avant le tour), accordée carte par carte sur les `bonus` dernières pioches du tour (jamais pour une carte non piochée, pioche vide), `bravoure.attaque` (1) par attaque aboutie (Gang, Malédiction, Voleuse, y compris sur une main vide ; en cas de renvoi par un Moine, c'est le joueur protégé qui la gagne). Le Fût n'en rapporte ni n'en vole. Stockée dans `joueur.bravoure`.
-- **Fin** : dès qu'il ne reste qu'un joueur (en cours de journée : message final posté par l'action qui élimine l'avant-dernier, résultat figé une seule fois par `figerResultat()`), sinon à la clôture du jour `duree_jours` (7).
-- **Classement** (`classement()`) : survivants d'abord (décision du 09/10 : la survie prime), par **Bravoure** (décision du 08/10 : inutile d'éliminer tout le monde), puis Esprits de guérison en main, nombre de cartes, ordre d'arrivée ; puis éliminés du dernier au premier. **Score = nombre de joueurs classés derrière** (cumulé dans l'historique de saison des mini-jeux).
-
-**Équilibrage** (`jeux/outils/bang/simulateBang.mjs`, 09/10, bots heuristiques, 75 % de joueurs actifs par jour, 2/3 inscrits au J1, profils tirés au hasard : passif = jamais de pioche volontaire, prudent = 1, hardi = 2, audacieux = 3 par jour) : avec 1,5 Gobelin explosif, **4 Gobelins** (2 auparavant : ils diluent les Gobelins explosifs pour compenser les pioches volontaires) et 0,5 Esprit de guérison par joueur, 9 joueurs → 30 % de parties finies avant le J7, 2,6 survivants sinon ; 12 joueurs → 11 %, 3,2 survivants ; 15 joueurs → 5 %, 3,7 survivants ; 18 joueurs → 1 %, 4,5 survivants. Victoires à 15 joueurs (cible habituelle 15-18) : passif 4 %, prudent 24 %, hardi 42 %, audacieux 30 %. À 15-18 joueurs, 3 Gobelins donnent 14 % / 6 % de fins avant le J7 et 3,1 / 3,7 survivants ; 5 Gobelins, 1 % / 0 % et 4,3 / 5,3 survivants. Variantes écartées : 2 Gobelins (39 % de fins avant le J7 à 12 joueurs, prudent dominant) ; classement « Bravoure + bonus de survie » pour tous, éliminés compris (profils actifs à égalité, mais un éliminé peut gagner). **Secousses supprimées** le 09/10 (cartes ordinaires retirées de la pioche aux J6-J7) : jeu déjà assez meurtrier avec les pioches volontaires.
-
-### Interface (Bang!)
-
-- **Message officiel** (un par jour, réédité en direct après chaque action, `rafraichirTable()`, image : plateau d'avancement) : texte d'intro au J1, puis **bilan de la veille** (« 📰 Hier dans l'Arène » : explosions, sauvetages par un Esprit, nombre d'attaques et de renvois par un Moine, nombre de pioches automatiques ; compteurs `partie.jour`, archivés dans `partie.veille` par `cloturer()`), taille de la pioche et nombre de Gobelins explosifs, survivants (nombre de cartes en main), joueurs éliminés. Seuls les **faits cruciaux du jour** y figurent (« 💥 Aujourd'hui » : explosions, dernier joueur en vie ; décision du 08/10, le détail des actions encombrait le message à 20 joueurs). Boutons **Piocher**, **Jouer une carte**, **Journal**, **Règles**, chacun en éphémère (décision du 08/10 : plus de bouton « Mon deck », les cartes sont montrées par « Jouer une carte »). L'image du plateau est **jointe au message** (`joindreImage()`, `attachment://plateau.png`, décision du 09/10) : confiée par URL, le proxy de Discord la récupérait depuis sa région (cache CDN Vercel régional, rendu à froid) et dépassait parfois son délai, l'image apparaissant ou disparaissant d'une édition à l'autre. Chaque envoi liste la seule pièce jointe à garder (`attachments`), y compris au repli sur l'URL : sinon l'ancien plateau resterait affiché hors de l'embed.
-- **Piocher** (`buildPiocheView()`) : tour en cours, menu **« Combien de cartes piocher ? »** (`bang_nbpioche`, « 1 carte », « 2 cartes » +1 Bravoure, « 3 cartes » +2 Bravoure ; option minimale « Imposé par le Gang de gobelins » après un Gang), puis les cartes piochées (image et effet, `EFFETS`) et « Ton tour est terminé » ; tour terminé avec des pioches dues (Gang reçu après le tour) : le bouton les pioche directement, bouton personnel **« Piocher (N) »** ensuite si besoin ; Gobelin explosif désamorcé : menu « Où cacher le Gobelin explosif ? » ; explosion : fin de partie pour le joueur.
-- **Jouer une carte** (`buildJouerView()`) : résultat de la dernière carte jouée, alertes (Gang, Malédiction, Moine actif), Bravoure, deck (texte et image des cartes seules, en grand), menu des cartes jouables avec le rappel de l'effet de chacune, puis menu des cibles (Gang, Malédiction, Voleuse ; Fût joué directement) et bouton Annuler.
-- **Journal** (`handleJournal()`) : **ce qui concerne le joueur**, regroupé par jour, du plus récent au plus ancien : événements publics où il est acteur ou cible, et notes privées (cartes piochées, pioches automatiques, Sarbacane, Moine joué, Gobelin explosif caché, carte volée ou dérobée). Journal stocké dans `partie.journal` : `{ j, k, s, v, c, ids, … }` pour un événement public (jour, type, auteur, cible, crucial, joueurs concernés), **rédigé à l'affichage** par `texteJournal()` : à la deuxième personne quand l'action concerne le lecteur (« 🦹 Ta Voleuse dérobe une carte à **Jean-Mi** ! », « 🦹 La Voleuse de **X** te dérobe une carte ! »), à la troisième sur le message officiel ; `{ j, t, p }` pour une note privée (déjà rédigée) ; 1000 entrées au plus ; `numeroJour` avancé par `cloturer()`.
-- Les mains restent secrètes ; seul le Moine joué n'apparaît pas dans le journal.
-
-### Images (Bang!)
-
-- `/api/bang/main?c=id1|id2|…` : main d'un joueur, les cartes seules en grand (200 px, 5 par ligne, fond transparent), une carte par groupe avec badge `×N`, sans goutte d'élixir (rendu sans état, `cardImage.js` pour le dessin des cartes). Les images de Bang! sont mises en cache CDN (`s-maxage`).
-- `/api/bang/table?d=…` : **plateau d'avancement** du message officiel (jour et fin de partie), sur le tapis `bang-table.jpg` (⚠️ en **JPEG** : resvg ne décode pas le WebP embarqué) : jour et nombre de joueurs en vie en bandeau, pioche à gauche (pile dont la hauteur suit le nombre de cartes, Gobelins explosifs restants), joueurs à droite (pseudos longs sur deux lignes, coupés à un espace, « _ » ou « - », puis tronqués ; **avatar** sur anneau doré avec le nombre de cartes en main, avatar gris barré pour les joueurs éliminés). État encodé dans l'URL (`encodeTable()`, base64url d'un JSON compact, ~450 caractères à 20 joueurs) : l'URL change à chaque action, ce qui contourne le cache d'images de Discord. Rendu local : `node jeux/outils/bang/renderTable.mjs <sortie.png> [joueurs] [éliminés]`.
-- **Avatars** (décision du 08/10, à la place des couronnes) : 12 créatures du style [Clay de DiceBear](https://www.dicebear.com/styles/clay/), licence **CC0** (domaine public, aucune attribution requise), téléchargées une fois dans `jeux/data/bang/avatars/clay-01…12.png` (256 px) et servies par Blob. Attribuées selon l'ordre d'arrivée, décalé au hasard à chaque partie (`partie.decalageAvatars`) : tous différents jusqu'à 12 joueurs, puis répétés.
-- `/api/bang/illustration` : `bang-launch.webp` (illustration dédiée, 1200×675), message de présentation seulement.
-
-Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob -- bang` après modification.
-
-### Stockage — Upstash Redis (`bang:*`)
-
-| Clé Redis | Type | Contenu |
-| --------- | ---- | ------- |
-| `bang:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing }` |
-| `bang:partie` | STRING | `{ pioche, joueurs, journal, numeroJour, elimines, termine, jour, veille }` (`jour`/`veille` : bilans du jour en cours et de la veille) ; joueur : `{ username, main, bravoure, pioches, bonus, subies, vivant, moine, maudit, dette, tourFait, jouees, enAttente, arrivee, rangElimination }`. Lue et réécrite sous verrou à chaque action. |
-| `bang:resultat` | STRING | Classement final (écrit une seule fois) |
-| `bang:lock` | STRING | Verrou des actions (10 s) |
-| `bang:manches` / `bang:manche_seq` | HASH / compteur | Archive `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }` des parties publiques, jamais nettoyée sauf `--manches` |
-
-### Scripts npm (Bang!)
-
-| Commande | Effet |
-| -------- | ----- |
-| `npm run bang:test` | Poste manuellement le jour sur le salon de test. Au passage au J1, inscrit 6 ou 7 **PNJ** (joueurs fictifs `pnj-N`, pseudos Kévina, Josette…) pour voir le jeu avec du monde : ils ne jouent pas, mais la clôture pioche pour eux (ils peuvent exploser) et ils servent de cibles. `-- --sans-pnj` pour s'en passer. Jamais sur le salon public. |
-| `npm run bang:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
-| `npm run bang:public` | Poste sur le salon public (cron `bang.yml`). |
-| `npm run bang:public:dry` | Équivalent dry-run. |
-| `npm run bang:reset` | Remet la partie à zéro (préserve l'archive des manches). **Destructif**. |
-| `npm run bang:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
-| `npm run bang:status` | Vue organisateur sans Discord (pioche, mains, effets en cours). |
-
-Test de bout en bout local (Redis et Discord simulés) : `node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/bang/e2eBang.mjs [joueurs]`.
-
-### Variables d'environnement requises (Bang!)
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (images). Le `schedule` du cron (`18 8 * * *`) est actif dans `.github/workflows/bang.yml` : avec `--require-active`, il n'avance qu'une partie déjà lancée à la main (`workflow_dispatch`).
-
-## Qui est-ce ? — démasquer les cartes secrètes en 7 jours
-
-Jeu spécial **100 % asynchrone** inspiré du jeu de société Qui est-ce ? (idée proposée par un membre, conçue le 11/10, refondue le 12/10) : chaque joueur reçoit en secret une carte d'une grille commune, et chasse les cartes des autres en posant **une question par jour** à propos de sa cible (qu'il choisit, le meneur étant proposé), puis en l'accusant. Score = **3 par carte découverte + bonus d'efficacité + jours joués sans être démasqué − 2 par démasquage** (barème du 13/10) ; chaque jour, un **objet gratuit** tiré au hasard, **offensif** (contre sa cible) ou **défensif** (contre son chasseur). **Refonte du 12/10** (le jeu ne prenait pas) : prime et Or supprimés, objets réorganisés en offensifs et défensifs, 4 questions par jour au lieu de 3 ; cible d'abord tirée au sort, puis de nouveau choisie (meneur présélectionné) le même jour. Code : `jeux/services/quiestceRules.js` (règles pures, testées par `quiestceRules.test.js`), `jeux/services/quiestce.js` (Redis), `jeux/services/quiestceImage.js` (grille), `jeux/discord/handlers/quiestce.js` (Discord), `jeux/scripts/postQuiEstCe.js`. Config : `jeux/data/quiestce/quiestce.json`.
-
-### Grille et questions (Qui est-ce ?)
-
-- **Grille** (`tirerGrille()`) : `taille_grille` (30) cartes tirées de `jeux/data/cardNames.json` (au moins une par joueur ; 18 joueurs au plus). **Une seule carte par profil de réponses** (sinon deux cartes « jumelles » seraient indiscernables, même après les 6 questions), au moins 4 sorts, 2 bâtiments, 3 troupes aériennes et 1 ou 2 champions.
-- **Troupes sans PV ni portée dans `cardNames.json`** (valeurs doubles ou variables, exclues volontairement de La Juste Carte par `jeux/scripts/generateCardStats.js`) : complétées pour Qui est-ce ? seulement par la table `complements` de `quiestce.json` (`completerCartes()`, PV et type de portée relevés le 11/10 sur la table des troupes du wiki Clash Royale, niveau Tournament Standard ; décision du 11/10 : `cardNames.json` non modifié pour ne pas faire entrer ces cartes dans La Juste Carte) : Gobelin géant, Machine gobeline, Dragon de l'enfer, Maître Mineur, Moine, Cavabélier, Buisson suspicieux, Trois mousquetaires (unité principale quand une sous-unité diffère). Ronin, aux valeurs simples (1779 PV, 371 dégâts, mêlée moyenne), a été ajouté directement à `cardNames.json` (il entre donc aussi dans La Juste Carte).
-- **Cartes écartées** (`carteEligible()`) : le Miroir (coût inconnu) et 3 troupes à réponse ambiguë, laissées hors grille (décision du 11/10) : Gang de gobelins (gobelins en mêlée, lanciers à distance), Fripons (Fripon 1832 PV en mêlée, Fripones 261 PV à distance), Impératrice spirituelle (portée selon la forme).
-- **6 questions ouvertes en tranches** (`QUESTIONS`, décision du 11/10 : avec les valeurs exactes, « Élixir ? » était la meilleure première question dans 83 % des cas ; en tranches, Rareté 66 %, Élixir 21 %, PV 9 %, Famille 4 %) :
-
-| Question | Réponses |
-| -------- | -------- |
-| 💎 Rareté | commune, rare, épique, légendaire ou champion (regroupés) |
-| 💧 Élixir | 1 ou 2, 3, 4, 5 ou plus |
-| 🧩 Type | troupe terrestre, troupe aérienne, sort, bâtiment |
-| 🏹 Portée | mêlée, distance ; « sans objet » pour un sort ou un bâtiment |
-| 👪 Famille | humain, gobelin, squelette, gargouille, aucune |
-| ❤️ Points de vie | moins de 500, 500 à 1500, plus de 1500 ; « sans objet » pour un sort ou un bâtiment |
-
-- **Pool du jour** (`pool`, fixé à l'avance, décision du 11/10, plus lisible qu'un stock disputé ou des événements) : **3 questions de base par jour**, chacune 3 ou 4 fois dans la semaine (J1 Rareté/Élixir/Type, J2 Portée/Famille/PV, J3 Rareté/Type/PV, J4 Élixir/Portée/Famille, J5 Rareté/Élixir/Portée, J6 Type/Famille/PV, J7 Rareté/Élixir/PV), **plus une 4e débloquée par la Loupe** (`pool_loupe`, différente des 3 de base : J1 Famille, J2 Élixir, J3 Portée, J4 Type, J5 PV, J6 Rareté, J7 Famille ; décision du 12/10 : 4 questions d'emblée rendaient la Loupe inutile). Une question déjà connue sur la cible n'est plus proposée ; si celles du jour le sont toutes, **choix libre** parmi les autres (`questionsPossibles()`).
-
-### Déroulement (Qui est-ce ?)
-
-- **Fenêtre d'inscription** (décision du 11/10, même fonctionnement que Goblin Hunters ; `state.phase === "annonce"`, `state.closingAt`) : le 1er post ouvre les inscriptions pour `fenetre_inscription_jours` (2) jours (ping MINI-JEUX), boutons **S'inscrire (N/18)**, **Se désinscrire** et Règles ; liste des inscrits rééditée dans le message à chaque clic. Effectif `effectif_min` (10) à `effectif_max` (18) : au-delà, inscription refusée (`inscrire()`). Chaque passage du cron reposte le message (rappel, sans ping) tant que la fenêtre n'est pas close ; **effectif maximum atteint** : lancement anticipé au passage suivant ; à la clôture, **moins de 10 inscrits** : **partie annulée** (règle commune aux jeux avec inscription, ping), sinon Jour 1. Inscrits ayant quitté le serveur désinscrits à chaque passage du cron. Désinscription possible jusqu'au lancement (`desinscrire()`). **Aucune arrivée après le lancement** (roster figé). **Clôture calée sur le cron du matin** (décision du 22/10, comme Meow et Goblin Hunters, `dateCloture()` : 8h20 UTC) : ce passage annule la partie ou lance le Jour 1 ; dès `closingAt` passé, inscriptions et désinscriptions sont refusées, et un clic avant le passage du cron remplace le message sur place (`cloturerInscriptions()`).
-- **Jour 1** (`demarrer()`) : grille tirée, une carte secrète unique par inscrit, **première cible attribuée en cercle** (décision du 11/10 : chacun chasse le suivant d'un ordre tiré au sort, donc un seul chasseur par cible, sans paire qui se chasse mutuellement).
-- **Choix de la cible** (`choisirCible()`, décision du 12/10) : après chaque démasquage, le chasseur choisit sa prochaine cible parmi `ciblesDisponibles()` : au plus `chasseurs_max` (2) chasseurs par cible, **jamais un joueur qu'on a déjà démasqué** (on connaît sa carte : une re-chasse serait une accusation gratuite). La liste est triée du meneur au dernier (points, puis cartes découvertes) et **le meneur disponible est présélectionné** (bouton « 🎯 Viser X (N pts) », menu « Ou choisis une autre cible » avec points et nombre de chasseurs). Essai d'un tirage au sort le même jour, abandonné après simulation (`jeux/outils/quiestce-sim/sim-v2.mjs`, `CHOIX=1`) : avec le choix, le meneur devient la cible naturelle (le démasquer lui retire un point), d'où un rattrapage sans règle dédiée (gagnant à 2,3 pts au lieu de 3,2, joueur optimal démasqué 2,8 fois au lieu de 2,35, toujours 14 % de victoires), un Déguisement plus utile (8,8 % de victoires contre 5,5 % sans) et un Miroir un peu moins inutile (on peut viser le chasseur sur lequel on a appris quelque chose) ; de vrais joueurs y ajouteront la vengeance.
-- **Indice de départ** (`assignerCible()`, décision du 11/10) : à chaque nouvelle cible, le chasseur reçoit une caractéristique de sa carte **tirée au hasard** parmi celles encore inconnues (après les renseignements du Miroir), **de préférence hors des questions du jour, question Loupe comprise** (sinon l'indice retirait une des questions proposées). Sans lui, une cible demandait presque toujours 3 jours (16 % en 2 jours, 50 % en 3, 33 % en 4 ou plus, jamais en 1) ; avec lui, 16 % en 1 jour, 46 % en 2, 27 % en 3, 11 % en 4 ou plus (`jeux/outils/quiestce-sim/accelerateurs.mjs`, pool de 3 questions). Écartés le 11/10 : grille de 24 cartes (gain marginal), « une question **ou** une accusation » par jour (jeu plus lent), accusation ratée renvoyant un indice (cibles uniformément démasquées en 2 jours).
-- **Chaque jour** : `questions_par_jour` (1) question sur sa cible (toutes cibles confondues : une question posée sur la cible précédente compte), puis au plus une accusation, parmi les cartes encore possibles.
-- **Accusation juste** : une **carte découverte** (`points_carte`, **+3 points** depuis le 13/10, +1 avant), plus un **bonus d'efficacité** (`bonus_efficacite`, décision du 12/10) selon le nombre d'indices connus au moment du démasquage, indice de départ compris : **+3 avec 1 indice, +2 avec 2, +1 avec 3**, rien au-delà ; la cible perd `malus_demasque` points (**2** depuis le 13/10, 1 avant) ; le chasseur choisit sa prochaine cible.
-- **Survie** (`bonus_survie_jour`, décisions des 12 et 13/10) : **+1 à chaque clôture** pour tout joueur qui **a joué ce jour-là** (`actifJour` : question, accusation, objet ou choix de cible) et n'a pas été démasqué (`demasqueJour`). Un démasquage coûte donc 3 points ce jour-là (-2 et la survie perdue). Un inscrit absent ne marque rien et peut finir en négatif (choix assumé). Remplace un « bonus d'intouchable » (+2 si jamais démasqué) écarté par simulation : seuls 2 à 3 % des joueurs finissaient sans avoir été démasqué. Le démasquage est **public** (qui a démasqué qui), la carte reste **secrète** (connue du seul chasseur, révélée à tous à la fin). Le joueur démasqué garde sa carte (il peut être démasqué à nouveau par un autre chasseur ; chaque fois compte dans le départage).
-- **Accusation ratée** : la carte est barrée de sa fiche, comptée dans le départage (note privée uniquement : rendre l'erreur publique dévoilerait une information sur la cible).
-- **Fiche d'enquête** : les cartes incompatibles avec les réponses connues sont barrées, ainsi que sa propre carte et les **cartes déjà découvertes** (`cartesConnues`, carte du joueur au moment où on l'a démasqué ; chaque carte n'appartient qu'à un joueur, `candidats()`).
-- **Fin** : à la clôture du jour `duree_jours` (7). **Classement** (`classement()`, décisions des 12 et 13/10) : **points** (`points()` : `pointsCartes` + bonus d'efficacité + jours de survie − `malus`, cumulés au fil des démasquages avec le barème en vigueur ; une partie antérieure sans ces champs compte 1 par carte et −1 par démasquage), puis le plus de cartes découvertes, puis le moins d'accusations ratées, puis le premier à avoir atteint son total (`seqScore`), puis l'arrivée. Classement final affiché aux seuls points (« 🥇 Kévina : 9 pts ») ; le classement quotidien et l'enquête donnent le détail. Score de manche = points (cumulés dans l'historique de saison des mini-jeux).
-- **Barème du 13/10** (`jeux/outils/quiestce-sim/bareme.mjs`, 1500 parties de 10-18 bots dont 15 % d'absents, mêmes parties pour chaque barème) : l'ancien barème (1 par carte, survie pour tous, −1) donnait un classement trop serré, la survie faisant l'essentiel des points (sur la partie de test, 11 pts au gagnant contre 7 pour un PNJ passif). Avec **3 par carte, survie seulement les jours joués, −2 par démasquage** : écart 1er-3e 6,2 pts au lieu de 3,8, 1er-médian 13,3 au lieu de 7,6, égalité de points en tête 11 % au lieu de 17 %, scores distincts 78 % au lieu de 58 %, absents à −1,1 pt au lieu de +4,9 ; taux de victoire par profil inchangés (optimal 18 %, prudent 4 %). Écartés : 2 par carte (écarts moindres), sans survie (scores proches de zéro), survie pour tous (absents à +3,9).
-- **Variété des scores** (`jeux/outils/quiestce-sim/sim-v2.mjs`, 12/10) : sans bonus, 39 % de parties avec une égalité de points en tête, écart-type 1,1 pt, 34 % de scores distincts ; avec efficacité +3/+2/+1 et survie : 17 % d'égalités en tête, écart-type 2,9 pt, 57 % de scores distincts, 3,6 pts entre le 1er et le 3e, gagnant ≈ 14 pts. Le bonus d'efficacité récompense le pari (victoires optimal 16 %, prudent 3 %, occasionnel 0,4 %).
-
-### Objets (Qui est-ce ?)
-
-**Un objet gratuit par jour** (décision du 12/10, remplace l'Or) : tiré au hasard à la **première action du jour** du joueur (`debutAction()`, objets également probables, `tirage_objets`), gardé en réserve jusqu'à `inventaire_max` (3, au-delà aucun objet n'est reçu ce jour-là). **Un seul objet utilisé par jour.** Deux familles (décision du 12/10) :
-
-| Objet | Famille | Effet |
-| ----- | ------- | ----- |
-| 🔍 Loupe | ⚔️ offensif | Débloque la 4e question du jour (`pool_loupe`) : toujours une seule question, mais au choix parmi 4. Inutilisable une fois la question du jour posée. |
-| 🎯 Double accusation | ⚔️ offensif | Deux accusations aujourd'hui **sur la cible actuelle** (`doubleCible`, `accusationsRestantes()`), même si une accusation a déjà été faite plus tôt dans la journée sur une cible précédente (décision du 12/10 : avec un quota journalier commun, un démasquage réussi avant de l'activer ne laissait qu'une accusation sur la nouvelle cible). |
-| 🧨 Désamorçage | ⚔️ offensif | Coupe le Brouillard ou le Miroir actif de sa cible ; sinon détruit un objet défensif au hasard dans sa réserve (rien si elle n'en a pas). La cible est prévenue. |
-| 🌫️ Brouillard | 🛡️ défensif | Public : jusqu'à la clôture, toute question posée sur la carte du joueur reste **sans réponse** (la question est perdue pour le chasseur) et **aucune accusation n'est possible** contre lui (option `brouillard_bloque_accusation`, décision du 12/10 ; gain modeste en simulation : 0,09 démasquage évité par partie au lieu de 0,06). Signalé par 🌫️ dans le tableau de chasse et dans l'enquête du chasseur (menu d'accusation masqué). |
-| 🎭 Déguisement | 🛡️ défensif | La carte du joueur est échangée contre une **carte libre** de la grille (`cartesLibres()` : ni attribuée ni déjà découverte par un chasseur) ; les indices de ses chasseurs et les renseignements du Miroir sur lui sont effacés (annoncé publiquement). |
-| 🪞 Miroir | 🛡️ défensif | Secret, jusqu'à la clôture : la prochaine question posée sur le joueur lui révèle la même caractéristique de la carte de son chasseur (le chasseur reçoit quand même sa réponse). Gardé dans `renseignements` et ajouté à l'enquête si ce chasseur devient sa cible. |
-
-**Équilibrage** (`jeux/outils/quiestce-sim/sim-v2.mjs` avec `CHOIX=1 BROUILLARD_FORT=1`, 12/10, avec les vraies règles, 1500 parties à 10-18 joueurs, bots optimal/prudent/occasionnel ; A/B : chaque joueur a le droit d'utiliser chaque type d'objet une fois sur deux) : gagnant ≈ 2,2 pts, 2,2 cartes découvertes par joueur en moyenne, 17 % d'égalités en tête sur points et découvertes ; victoires optimal 15 %, prudent 5 %, occasionnel 0,5 %. **Déguisement** le plus utile (8,8 % de victoires contre 5,5 % sans, 0,24 démasquage évité par partie) ; Brouillard (7,9 % / 6,4 %), Désamorçage (7,8 % / 6,5 %), Miroir (7,6 % / 6,7 %), Double accusation (7,4 % / 6,9 %) et Loupe (7,3 % / 7,0 %) ont un effet modeste. Avant que la Loupe ne devienne la 4e question au choix, elle donnait une question de plus et doublait les victoires de ses utilisateurs quand elle était tirée 2 fois plus souvent que les autres.
-
-**Retirés le 12/10** : Projecteur et Changement de cible (ni offensifs contre sa cible ni défensifs), Vol de piste (doublon de la Loupe), Non ! (trop proche du Brouillard). **Écartés le 11/10** (version avec Or et prime) : Se cacher payant, Brouillage d'un rival, Usurpation. **Rejetés à la conception** : Mensonge (trop de hasard), Dénonciation, Leurre, Contre-enquête, question bonus après un démasquage.
-
-### Interface (Qui est-ce ?)
-
-- **Message officiel** (un par jour, réédité en direct après chaque action, `rafraichirMessage()`) : intro au J1, puis **bilan de la veille** (« 📰 Hier » : démasquages, nombre de Désamorçages, de Déguisements, de Brouillards, d'accusations ratées ; `partie.jour` archivé dans `partie.veille`), **classement** (joueurs ayant découvert une carte ou été démasqués, « 2 pts (3 cartes découvertes, 1× démasqué) »), **tableau de chasse** lu côté chasseur (« **Chasseur** → cible (N ❓) », 🌫️ pour une cible sous Brouillard, puis les joueurs en attente d'une cible et ceux que personne ne chasse), faits du jour (démasquages, Déguisements). Image : la grille publique, **jointe au message** (`attachment://grille.png`, même raison que le plateau de Bang!). Boutons **Jouer** (ouvre l'enquête), **Règles**, **Journal**, chacun en éphémère (décision du 11/10 : pas de bouton en double). Tout se joue dans l'éphémère d'enquête, par **trois menus** : question du jour, accusation, objet (décision du 12/10 : plus de vue Objets séparée ni de bouton de navigation). Les boutons du message officiel, communs à tous, ne peuvent pas être grisés par joueur.
-- **Enquêter** (`buildEnqueteView()`, allégé le 12/10) : annonce de la journée (🎁 objet du jour reçu), carte secrète, points (cartes découvertes, fois démasqué), objets défensifs actifs, **chasseurs du joueur et nombre de questions déjà posées sur lui** (« 🕵️ Ton chasseur, X, a déjà posé 2 questions sur toi. »), rival éventuel sur la même cible, Brouillard de la cible, « Ce que tu sais sur X » (indices et leur source : question, indice de départ, Miroir), compteur de la question du jour, menu de la question, menu(s) d'accusation (25 cartes par menu, masqués sous Brouillard), **menu « 🎒 Utiliser un objet »** (objets de la réserve : effet, ou 🔒 et la raison s'il est inutilisable ; grisé si aucun n'est utilisable, absent si la réserve est vide), fiche d'enquête en image ; sans cible : bouton « Viser » le meneur disponible et menu des autres cibles. Retirés : réserve d'objets en texte (dans le menu), ligne de la cible (dans le titre des indices), nombre de cartes encore possibles (visible sur la fiche).
-- **Journal** : ce qui concerne le joueur (objets utilisés, réponses obtenues, accusations, démasquages, nouvelles cibles, Désamorçage, Miroir déclenché, Déguisement d'une cible), regroupé par jour. `{ j, k, s, v, c, ids, … }` rédigé par `texteJournal()`, `{ j, t, p }` pour une note privée.
-- **Fin** : classement final avec, pour chaque joueur, ses points et **ses cartes secrètes** (« 🥇 X : 11 pts (Gardes, Golem de glace) », toutes les cartes tenues dans l'ordre, Déguisements compris, `anciennesCartes`), manches précédentes ; image du lancement (`illustrationUrl()`) au lieu de la grille (décision du 13/10).
-
-### Images (Qui est-ce ?)
-
-- `/api/quiestce/grille?d=…` : grille de la partie (6 colonnes, illustrations officielles via `cardImage.js`, nom sous chaque carte), publique ou fiche d'enquête (cartes barrées grisées avec une croix rouge). État encodé dans l'URL (`encodeGrille()` : index des cartes dans `cardNames.json` et masque des cartes barrées, ~180 caractères à 30 cartes) : rendu sans état, cache CDN (`s-maxage`). Rendu local : `node jeux/outils/quiestce/renderGrille.mjs <sortie.png>`.
-- `/api/quiestce/illustration` : `quiestce-launch.webp` (illustration dédiée, 1200×675, goblin détective devant une grille façon Qui est-ce ?), message de présentation seulement, **jointe au message** (`attachment://`, comme la grille, depuis le 16/10 : confiée par URL, elle disparaissait parfois à la réédition de l'annonce). Servie depuis Vercel Blob : relancer `npm run assets:upload-blob -- quiestce` après modification.
-
-### Stockage — Upstash Redis (`quiestce:*`)
-
-| Clé Redis | Type | Contenu |
-| --------- | ---- | ------- |
-| `quiestce:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, openedAt, cloture }` (`phase` : `annonce` pendant la fenêtre d'inscription, puis `jour`) |
-| `quiestce:partie` | STRING | `{ demarree, grille, cartes, joueurs, journal, numeroJour, seq, termine, jour, veille }` (`cartes` : nom et profil de réponses de chaque carte de la grille) ; joueur : `{ username, arrivee, carte, cible, enquete: { infos, ordre, sources, posees, eliminees }, demasques, cartesConnues, nbDemasque, bonus (efficacité cumulée), survie, demasqueJour, erreurs, seqScore, objets (réserve), renseignements (Miroir), questionsJour, loupe, accusationsJour, accusationsCible, doubleCible, objetJour, objetRecuJour, brouillard, miroir }`. Lue et réécrite sous verrou à chaque action. |
-| `quiestce:resultat` | STRING | Classement final |
-| `quiestce:lock` | STRING | Verrou des actions (10 s) |
-| `quiestce:manches` / `quiestce:manche_seq` | HASH / compteur | Archive `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }` des parties publiques, jamais nettoyée sauf `--manches` |
-
-### Scripts npm (Qui est-ce ?)
-
-| Commande | Effet |
-| -------- | ----- |
-| `npm run quiestce:test` | Poste manuellement l'étape suivante sur le salon de test : 1er lancement = ouverture des inscriptions, 2e = **Jour 1 immédiatement** (clôture des inscriptions forcée sur le salon de test, comme `--force`), puis un jour par lancement. Au lancement, inscrit des **PNJ** (joueurs fictifs `pnj-N`, pseudos Kévina, Josette… : 6 ou 7, ou plus pour atteindre l'effectif minimum de 10) : ils ont une carte et une cible mais ne jouent jamais, ils servent de cibles. `-- --sans-pnj` pour s'en passer (partie annulée si moins de 10 inscrits). Jamais sur le salon public. |
-| `npm run quiestce:test:dry` | Aperçu console du prochain jour, sans écrire ni poster. |
-| `npm run quiestce:public` | Poste sur le salon public (cron `quiestce.yml`). |
-| `npm run quiestce:public:dry` | Équivalent dry-run. |
-| `npm run quiestce:reset` | Remet la partie à zéro (préserve l'archive des manches). **Destructif**. |
-| `npm run quiestce:reset:manches` | Identique, efface aussi l'archive des manches. **Destructif**. |
-| `npm run quiestce:status` | Vue organisateur sans Discord (cartes secrètes, cibles, indices, cartes découvertes, objets en réserve). |
-
-Test de bout en bout local (Redis et Discord simulés) : `node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/quiestce/e2eQuiEstCe.mjs [joueurs]`.
-
-### Variables d'environnement requises (Qui est-ce ?)
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (police). Le `schedule` du cron (`20 8 * * *`) est actif dans `.github/workflows/quiestce.yml` : avec `--require-active`, il n'avance qu'une partie déjà lancée à la main (`workflow_dispatch`).
-
-## Meow — trois bandes de chats squattent la maison en 7 jours
-
-Jeu spécial **en équipe et en temps réel** (conçu le 16/10/2026) : un **Risk simplifié** au thème non guerrier. Trois bandes de chats (🟠 **Roux**, ⚫ **Chats noirs**, 🔵 **Chartreux**) se disputent les 20 coins d'une maison. Chaque joueur reçoit des chats trois fois par jour, les **appelle** sur les coins de sa bande et **squatte** les coins voisins (crêpage de poils : dés du Risk, manche par manche). Chaque soir, chaque territoire tenu rapporte 1 point à sa bande. Objectif de conception : une interaction répétée dans la journée (revenir après chaque distribution), de la stratégie collective et des échanges entre joueurs, sans que le volume de clics décide (les chats disponibles sont limités pour tous). Code : `jeux/services/meowRules.js` (règles pures, testées par `meowRules.test.js`), `jeux/services/meow.js` (Redis), `jeux/services/meowImage.js` (carte), `jeux/discord/handlers/meow.js` (Discord), `jeux/scripts/postMeow.js`. Config : `jeux/data/meow/meow.json`. Équilibrage : `jeux/outils/meow-simulation/simulate.mjs <parties> <scénario>`.
-
-### Carte (Meow)
-
-- **Vocabulaire** (décision du 16/10) : les joueurs voient des **territoires** ; le code et cette section parlent de **coins** (`COINS`, `partie.coins`), même chose.
-- **5 pièces de 4 coins** (`PIECES`) : Chambre (Fenêtre, Couette, Armoire, Carton), Grenier (Malle, Chapeaux, Poutre, Lucarne), Salon (Radiateur, Canapé, Tapis, Bibliothèque), Cuisine (Évier, Frigo, Corbeille, Gamelle), Jardin (Arbre, Perron, Potager, Cabane). Le coin « Panier » de la cuisine a été renommé **Corbeille** pour ne pas le confondre avec les paniers imprenables.
-- **Voisinage** (`VOISINS`) : dans une pièce, tous les coins se touchent ; entre pièces, seulement par les **6 passages** (`PASSAGES`, 🐾 sur la carte) : Carton ↔ Canapé, Armoire ↔ Malle, Évier ↔ Chapeaux, Gamelle ↔ Bibliothèque (la vraie porte de l'image), Tapis ↔ Perron, Cabane ↔ Lucarne (gouttière le long du mur extérieur).
-- **Carte symétrique** (décision du 16/10, idée de Raphael complétée par simulation) : chaque pièce de départ a **deux sorties sur deux coins distincts**, l'une vers le Salon, l'autre vers le Grenier (les deux pièces neutres), et **aucune bande ne touche une autre bande au départ**. Les cartes précédentes (passages de l'image, Carton ↔ Malle, Radiateur ↔ Arbre, Gamelle ↔ Cabane…) avantageaient la bande dont les sorties partaient de coins distincts : une pièce dont toutes les sorties partent d'un seul coin est enfermée dès que ce coin tombe.
-- **Départs** (`BANDES`) : Roux dans la Chambre, Chats noirs dans le Jardin, Chartreux dans la Cuisine, **2 chats par coin** (`chats_depart`) ; Salon et Grenier occupés par **2 chats errants par coin** (`chats_errants`), qui ne squattent ni ne reçoivent jamais de chats.
-- **Paniers imprenables** (`PANIERS`, anneau doré et cadenas sur la carte) : Fenêtre (Roux), Potager (Noirs), Frigo (Chartreux), hors passages. Jamais squattables : une bande n'est **jamais éliminée** et garde toujours un coin d'où repartir (en simulation, sans paniers, une bande était éliminée dans 96 % des parties et le leader du jour 3 gagnait 82 % du temps). Conséquence assumée (décision du 16/10) : seule la bande d'origine peut tenir sa pièce de départ entière ; les autres peuvent seulement l'en priver en y occupant un coin.
-
-### Déroulement (Meow)
-
-- **Fenêtre d'inscription** de **2 jours** (`fenetre_inscription_jours`, règle commune aux jeux avec inscription), même fonctionnement que Qui est-ce ? (`state.phase === "annonce"`, rappel quotidien, lancement anticipé à `effectif_max`, partie annulée sous `effectif_min`). Effectif **14 à 22 joueurs** (décision du 22/10, 12 à 20 auparavant). **Clôture calée sur le cron du matin** (décision du 22/10, `dateCloture()`) : `closingAt` = jour d'ouverture + `fenetre_inscription_jours`, à l'heure du cron (7h22 UTC), sans cron supplémentaire ; ce passage annule la partie (« Les inscriptions étaient ouvertes du … au …, il fallait être au minimum 14 participants », dates de `state.openedAt`/`closingAt`) ou lance le Jour 1. Dès `closingAt` passé, S'inscrire et Se désinscrire sont refusés ; un clic avant le passage du cron (retard GitHub) remplace le message sur place (`cloturerInscriptions()` : annulation, ou « inscriptions closes », `state.cloture`).
-- **Lancement** (`demarrer()`) : bandes **égales tirées au sort parmi les premiers inscrits** ; les **1 ou 2 derniers inscrits** (au-delà d'un multiple de 3, ordre `arrivee`, strictement croissant même après une désinscription) vont **chacun dans une bande différente**, tirée au sort (décision du 16/10, idée de Raphael : 7/7/6 → les 2 derniers inscrits sont dans les deux bandes de 7 ; supposés moins actifs, ils complètent les bandes sans priver l'une d'elles d'un joueur régulier ; la recharge équilibrée donne de toute façon autant de chats à chaque bande). Une **première distribution** a lieu aussitôt. Chaque joueur (hors PNJ) reçoit **en MP** sa bande, sa pièce de départ, son panier et **la composition des trois bandes** (« 🐱 Les bandes », retirée du message du jour), (`envoyerBandesEnMp()`, décision du 16/10 ; un MP refusé ne bloque rien, l'info reste dans la vue Jouer).
-- **Temps réel paresseux** (`rattraper()`) : aucun cron horaire. Les événements de la journée (heure de Paris, `evenementsEntre()`) sont rattrapés **dans l'ordre** au début de chaque action et de chaque publication : sieste (0 h), distributions (`distributions` : **8 h, 13 h, 21 h**, décision du 16/10 : 1 chat toutes les 3 h jour et nuit jugé trop, 3e distribution passée de 18 h à 21 h le même jour), décompte (`heure_decompte` : **minuit**, valeur 24, 23 h jusqu'au 16/10 : le décompte du jour D tombe à 0 h le lendemain, compte pour le jour D et passe avant la sieste ; jour d'un événement calculé d'après sa date, `evenementsEntre()`). Le décompte d'un soir sans aucune action est donc fait au premier clic suivant ou au cron du matin, sur l'état de la carte à minuit (rien ne change entre-temps).
-- **Distribution** : **`chats_par_distribution` (2) chats par joueur**, réserve plafonnée à `stock_max` = **3** (décision du 16/10, après 1 chat et réserve 3 : carte plus vivante. Simulation, 800 parties de 12 à 20 joueurs : environ +20 % de chats par territoire, +35 % de conquêtes, équilibre inchangé ; une bande bloquée le reste un peu plus longtemps, 0,9 soir par partie au lieu de 0,5. Réserve ramenée de 4 à 3 le 17/10 pour récompenser les bandes actives : avec 4, une bande jouant 5 fois par jour gagnait 27 % contre des bandes à 3 visites, 35 % avec 3, et une bande à 1 visite par jour passe de 30 % à 18 % ; scénario `actifs` de `jeux/outils/meow-simulation/simulate.mjs`), compteur de squats remis à zéro, croquettes. **Recharge équilibrée** : une petite bande reçoit au total autant de chats qu'une grande (chaque joueur cumule `taille max / taille de sa bande − 1` chat par distribution et reçoit un chat de plus à chaque unité ; indispensable : sans elle, à 4/3/3 la bande de 4 gagnait 74 % des parties).
-- **Appeler** (`appeler()`) : **toute sa réserve** va sur le coin choisi, sans quantité à choisir (décision du 16/10 : le choix « +1 / +2 / Tout » en deux étapes n'était pas compris) ; permis à toute heure, sieste comprise.
-- **Déplacer** (`deplacer()`, décision du 16/10, d'abord écarté puis demandé en partie de test : des chats restaient coincés à l'arrière) : **1 seul chat** d'un coin de sa bande vers un coin **voisin de sa bande** (1 chat reste toujours sur place), **1 fois entre deux distributions** (`deplacements_par_distribution`), à toute heure. Menu « 🚚 Déplacer un chat dans la même pièce ou par un passage 🐾 » (libellé du 16/10 : « vers un territoire voisin » laissait croire à un voisinage géographique ; un voisinage géographique dans les pièces a été simulé le même jour et écarté, Roux à 21-28 % de victoires même en déplaçant 3 passages) (`deplacementsPossibles()` : vers le coin le plus menacé d'abord). Simulation (1000 parties, 12 à 20 joueurs) : équilibre inchangé (30 à 36 % par bande), conquêtes quasi identiques (−2 %), la stratégie pèse un peu plus (bande naïve 20 % au lieu de 24 %).
-- **Sieste** (0 h à `fin_sieste` = 8 h) : **aucun squat**. À 0 h, juste après le décompte, **1 seul chat** encore en réserve par joueur **s'installe tout seul** sur le coin le plus menacé de la bande, les autres restent en réserve (décision du 16/10, avant : toute la réserve ; la vue Jouer du lendemain l'indique : « 😴 Cette nuit, 1 de tes chats s'est installé tout seul sur Perron. », `j.nuit`) (`menace()` : plus forte pile adverse voisine moins 1, moins les chats présents ; errants exclus). Un absent ne perd donc jamais ses chats, mais ne fait que défendre.
-- **Squatter** (`lancerSquat()`) : depuis un coin de sa bande d'au moins 2 chats vers un coin voisin d'une autre bande ou errant (jamais un panier) ; **1 chat reste garder** le coin de départ, tous les autres partent. **1 squat par joueur entre deux distributions** (`squats_par_distribution`, 2 à la conception puis 1 le 16/10 pour ralentir la carte ; un squat compte dès son lancement, même suivi d'une retraite). Simulation à 16 joueurs : environ 16 conquêtes par jour au lieu de 19 (−15 % seulement : la plupart des joueurs ne passent qu'une fois entre deux distributions), équilibre inchangé (30 à 37 % par bande). Les chats d'un coin appartiennent à la bande : n'importe quel membre peut les engager (coordination voulue, via la messagerie de bande ci-dessous).
-- **Crêpage de poils** (`jouerManche()`, nommé « crêpage de poils » jusqu'au 16/10) : à chaque manche, l'attaquant lance jusqu'à 3 dés, le défenseur jusqu'à 2 ; on compare les plus hauts dés deux à deux, le plus petit perd un chat, **l'égalité profite au défenseur**. La première manche est jouée au lancement ; ensuite deux choix (décision du 16/10, « Manche suivante » retiré) : **Finir la baston** (`jusquauBout()`, les manches s'enchaînent jusqu'au bout) ou **Battre en retraite** (`retraite()`, les survivants rentrent sur le coin de départ). Victoire : les survivants s'installent sur le coin pris. Pendant un combat, les **deux coins sont verrouillés** (ni appel ni squat). Sans clic pendant `delai_combat_minutes` (5), **retraite automatique** (le jeton d'un éphémère Discord expire au bout de 15 minutes). 
-- **⚔️ Mercenaires** (`envoyerMercenaires()`, décision du 16/10) : une seule fois, à la première distribution du jour `mercenaires.jour` (**3**), la bande **dernière aux points** (à égalité, celle qui a le moins de coins) reçoit **`mercenaires.par_joueur` (1) chat par joueur** : +4 pour une bande de 4, +5 pour une bande de 5… (décision du 16/10 ; 3 par joueur, soit 12 pour une bande de 4, changeait trop la donne), posés sur son coin le plus menacé (`partie.mercenaires`). Annoncé en tête du message du jour (« ⚔️ Des mercenaires rejoignent les Chats noirs : +4 chats sur Perron ! »), dans le Journal de la bande et par MP à ses joueurs (hors PNJ, une seule fois : `notifie`). Simulation (1000 parties, 12 à 20 joueurs, `jeux/outils/meow-simulation/simulate.mjs <n> deblocage`) : effet très faible à ce dosage (même à 3 par joueur : 7,3 territoires du J3 au J7 au lieu de 6,8), équilibre inchangé ; voulu surtout pour le moral d'une bande distancée (pas un rattrapage aux points). Un 2e événement au J5 ou J6 n'apportait rien.
-- **Croquettes** : à chaque distribution, une bande qui tient **une pièce entière** reçoit `croquettes` (+1) chat (seul avantage d'une pièce entière depuis le 16/10), posé sur le coin le plus menacé de la pièce (même règle que la sieste : une seule logique pour tout l'automatique).
-- **Décompte** (`decompter()`, minuit) : **chaque coin tenu rapporte 1 point à sa bande** (`points_territoire`), cumulé sur la partie. Décision du 16/10 : barème en une phrase, remplace le classement du soir (1re bande 3 points, 2e 2, 3e 1, sur un total coins + 2 par pièce entière), jugé incompréhensible à l'affichage. Simulation (1000 parties, 12 à 20 joueurs) : 31 à 37 % de victoires par bande, leader du jour 3 vainqueur dans 41 à 44 % des parties (42 à 48 % avant), bande naïve 14 % (18 % avant) : plus simple et pas moins équilibré. Les pièces entières ne rapportent plus que des croquettes.
-- **Fin** : après le décompte du jour `duree_jours` (7), plus aucune action. Classement des bandes aux points, puis aux territoires tenus à la fin (`classementBandes()`).
-- **🏅 Caïd des coussins** (classement individuel, décision du 16/10, nommé « Caïd des coussins » à la conception ; la victoire reste collective) : `caid.coin` (3) points par coin pris + `caid.chat` (1) par chat adverse délogé (`scoreCaid()`). **Gardé secret jusqu'à la fin** (décision du 16/10 : surprise) : n'apparaît ni dans la vue Jouer ni dans `/mini-jeux`, seulement dans le message de fin.
-
-### Équilibrage (Meow)
-
-Simulateur `jeux/outils/meow-simulation/simulate.mjs` (bots « malins » et « naïfs », profils assidu 30 %, régulier 40 %, occasionnel 20 %, abandon après le jour 2 10 %), 1000 parties par réglage, effectifs de 12 à 20 joueurs. ⚠️ **Biais corrigé le 16/10** : les bots tranchaient leurs égalités par l'ordre des coins, ce qui avantageait certaines positions ; toutes les comparaisons de départs antérieures à la correction (`bruit: true` dans `BASE`) étaient faussées. Résultats retenus (carte symétrique, 3 distributions par jour) : victoires de chaque bande entre **32 et 36 %** de 12 à 20 joueurs (bandes inégales comprises) ; une bande de bots naïfs ne gagne plus que 24 % des parties (la stratégie compte) ; une bande entièrement assidue ne gagne pas plus que les autres (cliquer plus ne fait pas gagner). Rejetés : 3 dés en défense (piles qui gonflent, ou carte figée avec un plafond par coin), plafond de chats par coin, bonus de départ par bande (inutiles sur la carte symétrique), départ des Chats noirs au Jardin sur l'ancienne carte.
-
-### Interface (Meow)
-
-- **Message officiel** (un par jour, réédité après chaque appel et chaque fin de squat, `rafraichirMessage()`) : au J1 une phrase d'introduction, puis **🏆 Classement des bandes** (points cumulés, et entre parenthèses les territoires tenus en ce moment, donc les points du prochain décompte : « 42 pts (8 territoires) » ; la Gazette des moustaches, qui redisait le décompte de la veille et le nombre de squats, a été retirée le 16/10) (la composition des bandes est dans le MP de lancement, décision du 16/10), **💥 Aujourd'hui** (bilan des squats du jour, réussis/ratés/retraites, puis seulement les **5 derniers territoires qui ont changé de main** et « … et N autres plus tôt » ; décision du 16/10 pour éviter les doublons avec le Journal et un message qui s'allonge), carte jointe. Boutons **Jouer**, **Ma bande**, **Règles**, **Journal**.
-- **Jouer** (`buildJouerView()`, éphémère sans image : la carte est sur le message du jour) : bande, réserve de chats, squats restants jusqu'à la prochaine distribution, **compte à rebours** (« ⏳ Prochaine distribution à 13h (dans 2 h 15) », « demain » après 21h, avertissement quand la réserve est pleine : le chat suivant serait perdu), sieste, croquettes ; menu **Appeler** (« 🐱 Appeler tes 3 chats sur… », toute la réserve d'un coup), menu **Squatter** (chaque option : « Carton → Canapé · 4 chats contre 2 chats errants · 79 % de réussite », `pVictoire()` en jouant jusqu'au bout ; menu grisé avec la raison pendant la sieste, sans squat restant ou sans squat possible) et menu **Déplacer** (« Arbre (3) → Perron (2) », grisé une fois le déplacement fait). Pendant un combat : vue **Crêpage de poils** (dés de la 1re manche, chances si l'on finit la baston, 2 boutons). **Intitulés des menus réduits à l'emoji et au verbe** (décision du 16/10) : « 🐱 Appeler », « 😼 Squatter », « 🚚 Déplacer », grisés quand l'action est impossible (sieste, quota atteint, rien de possible), les précisions étant dans les Règles. Plus de liste des territoires de la bande ni de pied de page « La carte est sur le message du jour » (décision du 16/10). Juste après la fin d'un squat, la vue s'intitule **« 🎉 Victoire ! »**, **« 😿 Raté »** ou **« 🏃 Retraite »** (`TITRES_ISSUE`).
-- **💬 Ma bande** (décision du 16/10, adaptée de la Messagerie anonyme de Goblin Hunters) : messagerie **signée et réservée à la bande** (`posterMessage()`, `messagesBande()`), live. Bouton sur le message du jour (nouvel éphémère) et dans la vue Jouer (édition en place, libellé « Ma bande (N) » en vert quand `nouveauxMessages()` > 0, ligne « 💬 N nouveaux messages de ta bande »). Vue : les `messages_affiches` (15) derniers messages (« **Pseudo** · J3 14h32 : texte »), bouton **Écrire** → fenêtre Discord (`type: 9`, 200 caractères, `message_max`), envoi en `MODAL_SUBMIT` (type 6 si ouverte depuis l'éphémère, la vue est rééditée en place). **`messages_par_jour` (10) messages par joueur et par jour de jeu**, quota revérifié à l'envoi (le bouton grisé n'est qu'une aide). Espaces et retours à la ligne compactés. Ouvrir la vue marque les messages comme lus (`marquerLus()`). 30 messages gardés par bande. Pas de ping.
-- **Journal** (décision du 16/10) : **aujourd'hui et hier seulement**, uniquement ce qui concerne sa bande : territoires pris par la bande, territoires perdus, retraites de la bande (pas les échecs ni les attaques repoussées), du plus récent au plus ancien avec l'heure (« `13h05` … » : la ligne la plus haute sur un territoire explique sa couleur actuelle), et les croquettes regroupées en une ligne par jour.
-- **Fin** : classement des bandes, **📰 La partie en bref** (`compteRendu()`, 17/10 : 4 phrases au plus, chacune omise si la donnée manque : déroulé de la course d'après les points cumulés soir par soir (« mené de bout en bout », « encore derniers au soir du Jour N… ont renversé la partie » ou « pris la tête au Jour N », « avec N pts d'avance seulement » à 3 pts ou moins) ; record de territoires tenus à un décompte ; plus bel exploit, la victoire de squat la moins probable au lancement si moins de 50 % (`partie.exploit`, tenu à part car le journal ne garde que 400 entrées) ; effet des mercenaires sur le classement final), **3 premiers** du Caïd des coussins (17/10, avant : tous les joueurs ; le classement complet reste archivé dans la manche), manches précédentes, illustration de présentation.
-- **Ping** `@MINI-JEUX` : ouverture des inscriptions, annulation et fin seulement (comme Qui est-ce ?).
-
-### Images (Meow)
-
-- `/api/meow/carte?d=…` : carte de la maison en **JPEG** (`jpeg-js`, pur JS, qualité 80, ~180 Ko au lieu de 1,2 Mo en PNG, décision du 16/10 ; `sharp` écarté : ~30 Mo de binaires par déploiement, voir Functions Storage), rendu sans état à partir de l'état encodé dans l'URL (`encodeCarte()` : par coin, bande `r`/`n`/`c`/`e` et nombre de chats sur 2 chiffres, 60 caractères). Fond `meow-map.jpg` (1000×667, volontairement compressé), pastilles aux couleurs des bandes (gris pour les errants), paniers dorés, passages en pointillés avec une patte. Positions des pastilles dans `POSITIONS` (`meowImage.js`, à recalibrer si le fond change). ~75 ms de rendu.
-- `/api/meow/illustration` : `meow-launch.webp` (présentation et fin de partie), **jointe au message** comme la carte (confiée par URL, elle disparaissait à la réédition de l'annonce, constaté le 16/10).
-- ⚠️ **Pas de cache dans Vercel Blob** pour les cartes (chaque écriture est une opération avancée, quota ~2 000/mois) : la carte est jointe au message (`attachment://`) et Discord la garde.
-- Assets servis depuis Vercel Blob : relancer `npm run assets:upload-blob -- meow` après modification.
-
-### Stockage — Upstash Redis (`meow:*`)
-
-| Clé Redis | Type | Contenu |
-| --------- | ---- | ------- |
-| `meow:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, openedAt, cloture }` (`phase` : `annonce` pendant la fenêtre d'inscription, puis `jour`) |
-| `meow:partie` | STRING | `{ demarree, termine, joueurs, coins, combats, messages, points, decomptes, journal, exploit, jourDebut, debut, curseur, seqInscription, pnjActifs }` (`messages` : 3 listes, une par bande, de `{ p, t, txt }`) ; joueur : `{ username, arrivee, bande, stock, frac, squats, deplacements, coinsPris, chatsDeloges, jourActif, messagesJour: { jour, n }, vuMessages }` ; coin : `{ b, n }` (`b` = -1 pour les errants) ; `curseur` : instant du dernier rattrapage |
-| `meow:lock` | STRING | Verrou des actions (10 s) |
-| `meow:manches` / `meow:manche_seq` | HASH / compteur | Archive `{ manche, vainqueur, points, nbJoueurs, bandes, ranking, resolvedAt }` des parties publiques, jamais nettoyée sauf `--manches` |
-
-Meow n'est pas compté dans le classement de saison des mini-jeux (`miniJeuxHistory.js`) : c'est un jeu d'équipe.
-
-### Scripts npm (Meow)
-
-| Commande | Effet |
-| -------- | ----- |
-| `npm run meow:test` | Poste l'étape suivante sur le salon de test : 1er lancement = ouverture des inscriptions, 2e = **Jour 1 immédiatement** (clôture forcée), avec des **PNJ** pour atteindre l'effectif minimum (au moins 6 ou 7), qui **jouent tout seuls à chaque distribution** (`jouerPnj()`, `partie.pnjActifs`, jamais en public : tous leurs chats sur le coin le plus menacé, sinon le plus garni, puis leurs squats tant qu'une cible offre au moins 60 % de réussite, joués jusqu'au bout), puis **un jour par lancement** : sur le salon de test, la partie suit sa propre horloge (`horloge()` = heure réelle + `partie.decalage`), avancée au lendemain 8h22 à chaque lancement (`avancerHorloge()`), événements sautés rattrapés (distributions, PNJ, décompte, sieste) ; le salon public suit toujours l'heure réelle (`--force` implicite). |
-| `npm run meow:test:distribution` | Salon de test : avance seulement jusqu'à la prochaine distribution (8h05, 13h05, 21h05), pour tester les squats et déplacements d'une même journée. |
-| `npm run meow:test:dry` | Aperçu console, sans écrire ni poster. |
-| `npm run meow:public` | Poste sur le salon public (cron `meow.yml`) ; ne republie jamais deux fois le même jour sans `--force`. |
-| `npm run meow:public:dry` | Équivalent dry-run. |
-| `npm run meow:reset` | Remet la partie à zéro (garde l'archive des manches). |
-| `npm run meow:reset:manches` | Idem, archive comprise. |
-
-Test de bout en bout local (Redis et Discord simulés, horloge avancée à la main) : `node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/meow/e2eMeow.mjs [joueurs]`. Rendu local de la carte : `node jeux/outils/meow/renderCarte.mjs <sortie.jpg>`.
-
-### Variables d'environnement requises (Meow)
-
-Aucune nouvelle variable : réutilise `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN` (fond, police, illustration). Cron `22 7 * * *` (`.github/workflows/meow.yml`, 8h22 à Paris en hiver, 9h22 en été, après la distribution de 8 h) : avec `--require-active`, il n'avance qu'une partie déjà lancée à la main (`workflow_dispatch`).
-
-## Blackjack Duel (duel à la demande, 1-3 joueurs)
-
-Développé en parallèle du jeu spécial Blackjack, lancé à la demande via `/blackjack joueurs:<1-3> manches:<5|10>` (rôle MINI-JEUX requis pour **lancer** — vérifié en arrière-plan après un defer éphémère, car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3s d'accusé de réception Discord ; rejoindre une partie déjà lancée n'exige pas le rôle). Contrairement au jeu spécial : lobby FERMÉ (inscriptions via le bouton Jouer jusqu'à ce que tous les sièges soient pris — verrouillage définitif), avancement piloté par les actions des joueurs (pas de cron), aucun historique persistant, message public réédité en place à chaque avancée de manche (jamais supprimé/reposté, contrairement au jeu spécial).
-
-Réutilise par import direct les fonctions PURES du jeu spécial (`drawCard`, `computeHandValue`, `dealerPlay`, `resolveDay`, `buildRanking`, `pointsForResult`, `isDealerRevealed`) mais duplique volontairement le rendu texte (`formatCard`, etc.) — pas de dépendance croisée entre les deux jeux.
-
-Une manche se résout dès que **tous les sièges sont occupés** et que chaque joueur a terminé sa main (`isMancheReady()` appelée par `checkAndResolveManche()`, verrou `HSETNX` sur `blackjackduel:resolving` — même idiome que `assignSeasonMancheNumber` dans anagrams.js/frames.js/zoom.js). Stockage Redis dédié `blackjackduel:*`, totalement séparé de `blackjack:*`. Un joueur seul sur 2-3 places qui termine sa main attend donc ses adversaires (message « ⏳ En attente de N joueur(s) supplémentaire(s) ») : auparavant, la manche se résolvait immédiatement et verrouillait le roster, rendant la partie injoignable (bug corrigé le 26/09, s'applique aussi à Gobelet Duel). Si personne ne vient, relancer `/blackjack` ou `/gobelet` après 1h d'inactivité remplace la partie abandonnée (`startGame()` ignore une partie inactive depuis `STALE_HOURS`, aucun cron). Gobelet Duel clôt en plus la partie de façon paresseuse : à la moindre interaction (boutons, `/gobelet`), `expireIfStale()` marque une partie inactive depuis 1h comme terminée (`expired: true`) et le message public est repeint en « Partie terminée » avec le classement figé (toujours sans cron).
-
-Nettoyage 100% manuel (retour utilisateur explicite, 12/09 : "je ne souhaite absolument pas de cron/action pour cela") — aucun workflow GitHub Actions ne les appelle : `npm run blackjackduel:status` pour décider, `npm run blackjackduel:watchdog` (respecte le seuil de 1h d'inactivité, `resetIfStale()`) ou `npm run blackjackduel:reset` (inconditionnel).
-
-## Gobelet Duel (duel à la demande, 1-3 joueurs)
-
-Équivalent du duel Blackjack pour le Jeu du Gobelet — mêmes principes structurels (lobby fermé, avancement par les actions des joueurs, pas d'historique persistant, message public réédité en place, nettoyage 100% manuel), lancé via `/gobelet joueurs:<1-3> manches:<5|10>`.
-
-Réutilise par import direct les fonctions pures du jeu spécial (`rollDice`, `rerollKept`, `computeBestCombination`, `resolveJour`, `buildRanking`) — même principe que Blackjack Duel vis-à-vis de Blackjack. Le rendu texte des dés reste dupliqué (`_handlers/gobeletDuel.js`), tout comme le mécanisme de sélection des dés (Jouer/toggle/Relancer). Les emoji personnalisés (`diceEmojis`) sont en revanche relus directement depuis `jeux/data/gobelet/gobelet.json` via `loadGobeletConfig()` — lecture de config statique sans état, aucun risque de couplage.
-
-**High score (27/09, Gobelet Duel et Blackjack Duel)** : le récap de fin de partie affiche « <:topplayers:…> High score : Pseudo (N pts) », meilleur score final de tous les temps **par format** (5 ou 10 manches, totaux non comparables). Stocké dans `gobeletduel:highscore` / `blackjackduel:highscore` (hash `totalManches` → `{ discordId, username, points, at }`), mis à jour à la fin de partie (`updateHighScore()`, record strictement battu : une égalité ne détrône pas le détenteur), **jamais effacé** par la remise à zéro d'une partie.
-
-**Combinaisons des adversaires (duel uniquement, 26/09)** : la main éphémère de chaque joueur liste aussi les combinaisons déjà réalisées par ses adversaires (« 👀 Pseudo : … », `readOpponentsUsed()`, pseudo stocké dans `gobeletduel:usernames`), pour ajouter un aspect tactique. Volontairement absent du jeu spécial, où les joueurs sont trop nombreux.
-
-Stockage Redis dédié `gobeletduel:*`. Scripts npm : `npm run gobeletduel:status`, `npm run gobeletduel:watchdog`, `npm run gobeletduel:reset` — mêmes garanties que Blackjack Duel (aucun workflow GitHub Actions ne les appelle).
-
-## Bang! Duel (duel à la demande contre Kévina, le bot)
-
-Adaptation d'Exploding Kittens Duel avec le principe de Bang! (décisions du 09/10), lancée via `/bang` (option obligatoire `adversaire` : `bot` = Kévina ou `1v1`, comme `/blackjack` ; 10/10 ; rôle MINI-JEUX requis, vérifié en arrière-plan après un defer éphémère, comme `/blackjack`). Partie **privée** : un seul message éphémère, édité en place à chaque action. Une partie par joueur (plusieurs joueurs en même temps), Fin de partie contre Kévina : résultat publié dans le salon en message **public** (`messageFinalSolo()`, le `channel_id` vient du clic), avec un **récit** de 3 moments forts au plus, plus une ligne d'explosions évitées (`recit()`, 13-14/10, remplace le déroulé tour par tour) : moments forts classés par priorité puis affichés dans l'ordre chronologique, coup fatal en tête (Gobelin explosif caché par l'adversaire ou par le perdant lui-même, suivi par l'`index` noté au journal et perdu après une Tornade ; Gang, ou Gang renvoyé par un Moine ; rien si l'explosion n'a ni piège ni Gang, la ligne de résultat le dit déjà), puis Esprit de guérison volé, Gang renvoyé par un Moine, piège adverse évité grâce à un Esprit, Gang volé puis renvoyé aussitôt, Voleuse renvoyée, Gobelin explosif repéré par une Sarbacane (`vu` noté au journal) et esquivé ; explosions évitées toujours affichées, regroupées en une ligne ; match nul : bilan explosions évitées et Gangs envoyés ; même récit dans le récapitulatif final du 1v1). `/bang` contre Kévina lance toujours une nouvelle partie (remplace celle en cours ; pas de bouton Abandonner, retiré le 10/10). **Jeu libre** : aucun score conservé. Mode **1v1** contre un autre joueur via `/bang` 1v1 (voir plus bas). Code : `jeux/services/bangDuelRules.js` (règles pures et Bot, testées par `bangDuelRules.test.js`), `jeux/services/bangDuel.js` (Redis), `jeux/discord/handlers/bangDuel.js` (Discord). Config : `jeux/data/bang/duel.json`. Cartes et images de main partagées avec Bang! (`CARTES` de `bangRules.js`, où la **🌪️ Tornade** (Tornado) est réservée au Duel ; `/api/bang/main`).
-
-- **Mise en place** : paquet fixe `paquet` (6 Gobelins, 10 avant le 10/10, 3 Fûts, 3 Sarbacanes, 2 Gangs, 2 Voleuses, 2 Moines, 2 Tornades) mélangé ; chacun reçoit un Esprit de guérison et `main_depart` (4) cartes ; le reste forme la pioche avec `esprits_pioche` (2) Esprits et `bombes` (2) Gobelins explosifs (16 cartes).
-- **Tours** : le joueur commence toujours, puis le Bot joue aussitôt (un tour = joueur puis Bot). `tours_max` (10) tours au plus : **match nul** si personne n'a explosé. Règle fixe du début à la fin (pas de secousse, décision du 09/10).
-- **À son tour** : jusqu'à `cartes_par_tour` (3) cartes jouées **d'abord**, puis **la pioche termine le tour** : une seule carte, ou les `gang_pioches` (2) pioches dues d'un Gang, faites d'un seul clic (`piocherClic()`, arrêt sur un Gobelin explosif désamorcé le temps de le cacher, puis les pioches restantes s'enchaînent automatiquement, sans nouveau clic). Pas de bouton « Finir mon tour » (décision du 10/10 : le combo Sarbacane + pioches multiples était trop avantageux). Un Gobelin explosif désamorcé termine le tour une fois caché (sauf pioche due restante). Pioche vide : le bouton devient « Passer ». `dette` = pioches restantes du tour (1, ou 2 après un Gang).
-- **Cartes** : 💥 Gobelin explosif (Esprit sacrifié puis bombe cachée au choix, positions de Bang! ; sinon défaite) ; 🎯 Sarbacane (3 premières cartes) ; 🛢️ Fût (esquive une pioche : celle du tour, ce qui le termine sans piocher, ou une des pioches dues d'un Gang) ; 👊 Gang (**termine le tour sans piocher**, l'adversaire devra piocher `gang_pioches` (2) fois, sans cumul) ; 🦹 Voleuse (**une carte au hasard** de la main adverse, décision du 10/10 : choisir revenait à prendre l'Esprit de guérison, trop fort ; jamais d'action demandée à l'adversaire pendant le tour de l'autre) ; 🙏 Moine (secret, actif **jusqu'à la prochaine attaque reçue**, renvoie Gang ou Voleuse ; Voleuse renvoyée : carte au hasard) ; 🌪️ Tornade (mélange la pioche) ; 👺 Gobelin (**reste inutile**, pas de paire). Ni « Non ! » (réaction hors tour), ni Malédiction.
-- **Une attaque subie par tour** (décision du 14/10, comme Bang!) : un joueur ne peut subir qu'un seul Gang et une seule Voleuse par tour (`UNIQUES_DUEL`, `joueur.subies`, remis à zéro par `finirTour()`) ; `jouer()` renvoie `dejaSubie` et la carte disparaît du menu. En pratique : une seule Voleuse par tour contre l'adversaire ; une attaque renvoyée par un Moine est subie par l'attaquant, qui peut donc encore la jouer contre l'adversaire.
-- **Bot** (`jouerBot()`, stratège) : Moine d'avance, Voleuse dès que possible (carte au hasard), Sarbacane avant de piocher, esquive (Gang, Tornade, Fût) si un Gobelin explosif est vu ou soupçonné en haut (l'adversaire vient d'en cacher un), Gobelin explosif désamorcé caché en haut une fois sur deux, sinon au hasard (s'il lui reste une pioche due d'un Gang : toujours au hasard **hors sommet**, `placer(…, { eviterSommet })`, sinon il la repiochait aussitôt). Son tour est raconté au joueur sans dévoiler ses cartes piochées, son Moine ni l'emplacement de ses bombes.
-- **Inactivité** : la clé `bangduel:<discordId>` expire 1 h après la dernière action (partie abandonnée). Verrou `bangduel:lock:<discordId>`.
-- **1v1** (`/bang adversaire:1v1`, 10/10) : mêmes règles et même moteur (sièges `joueur` = celui qui commence, `bot` = l'autre, `sieges` → discordId), principe des autres Duels. **Une seule partie à la fois** (`bangduel:pvp`, verrou `bangduel:lock:pvp`). Message public dans le salon (bouton **Jouer**) : le premier autre joueur qui clique relève le défi (rejoindre n'exige pas le rôle MINI-JEUX), un 3ᵉ est refusé ; le joueur qui commence est **tiré au sort**. Chaque joueur a sa vue éphémère (Jouer l'ouvre) ; son webhook est mémorisé pour la rééditer après chaque action adverse (jeton valable 15 min, au-delà **Jouer** rouvre une vue à jour). Le joueur en attente voit le tour adverse en direct (`debutTour` = début du tour dans le journal), puis son récit à son tour (`resume[siège]`). **Délai** : `delai_tour_minutes` (5) par tour, dépassé = défaite, vérifié paresseusement à la prochaine interaction (pas de cron, `verifierDelai()`). Fin (explosion, nul, délai ; pas de bouton Abandonner) : récapitulatif dans un nouveau message public, l'ancien est supprimé (comme Gobelet Duel). Un lobby sans adversaire depuis le délai (ou relancé par son lanceur) et une partie au délai dépassé sont remplacés par un nouveau `/bang` 1v1. Test de bout en bout : `jeux/outils/bang/e2ePvp.mjs` (refuse de tourner si un vrai 1v1 est en cours).
-
-**Équilibrage** (`jeux/outils/bang/simulateDuel.mjs`, vraies règles, 20 000 parties, pioche unique et 6 Gobelins depuis le 10/10) : Voleuse au hasard (10/10) : stratège contre stratège, 53 % pour le joueur qui commence, 46 % pour le Bot, 1 % de nuls, tour moyen de fin 6,1 (avec le choix de la carte : 56 / 43 %, 5,7). Avant : stratège contre stratège, 55 % pour le joueur qui commence, 44 % pour le Bot, 1 % de nuls, 62 % des parties atteignent le tour 5 (fin moyenne au tour 5,5) ; naïf contre le Bot stratège : 18 % de victoires. Pioche unique avec 10 Gobelins : 14 % de nuls (trop de parties sans explosion), d'où le retrait de 4 Gobelins. Avant le 10/10 (jusqu'à 3 pioches par tour) : 54 % pour le joueur qui commence, 3 % de nuls. Test de bout en bout du handler : `jeux/outils/bang/e2eDuel.mjs`.
-
-## Jeu Goblin Hunters (identité secrète, camps cachés)
-
-Mini-jeu à identité secrète façon Shadow Hunters/Loups-Garous, adapté au rythme asynchrone quotidien du bot : deux camps s'affrontent en secret, les **Villageois** (majorité) et les **Gobelins infiltrés** (minorité, ratio ~2/5 arrondi selon l'effectif — voir "Rééquilibrage" plus bas), sur une partie de **7 jours maximum**. Modèle de référence = **Boss Raid**, pas Robinson : rien n'est appliqué en direct pendant la journée (positions/PV/votes/actions) — tout se résout **une seule fois à la clôture**, dans la fonction pure `computeCloture()` (`jeux/services/goblinhunters.js`). Pas de commande slash associée — la publication/clôture passe uniquement par `jeux/scripts/postGoblinHunters.js` (manuel ou cron), les boutons et le select menu restent gérés par `api/discord/interactions.js`.
-
-### Déroulement (Goblin Hunters)
-
-Un seul message actif à la fois dans le salon dédié, en 3 phases :
-
-1. **Fenêtre d'inscription** (`goblinhunters:state.phase === "inscription"`) : `postGoblinHunters()` ouvre l'inscription (`[✅ S'inscrire]`/`[✖️ Se désinscrire]`), ping `@MINI-JEUX`. Rappel quotidien avec le décompte des inscrits tant que la fenêtre (`fenetre_inscription_jours`, 2 jours) n'est pas close. À la clôture : si moins de `effectif_min` (10) inscrits, la partie est **annulée** (règle commune aux jeux avec inscription, `termine: true`, ping) ; sinon la partie est lancée (`launchGame()`) — roster figé, camps/rôles attribués, DM de rôle envoyé à chacun, inscriptions vidées. **Clôture calée sur le cron du matin** (décision du 22/10, comme Meow et Qui est-ce ?, `dateCloture()` : 8h04 UTC) : ce passage annule la partie ou la lance ; dès `closingAt` passé, inscriptions et désinscriptions sont refusées (`refuserApresCloture()`, aussi hors phase d'inscription), et un clic avant le passage du cron remplace le message sur place (`cloturerInscriptions()`).
-2. **Jour de jeu** (jours 1 à 10) : chaque joueur vivant choisit un lieu (bouton éphémère), qui détermine son action — vote au Château, combat à l'Arène, enquête à la Tour de Guet, protection à la Taverne, révélation de position à la Clairière. **Définitif dès validation** (`isActionLocked()`, aucun changement d'avis possible sur aucun lieu — voir plus bas), enregistré via `recordAction()` en `HSET` (écrasable seulement tant qu'aucune valeur n'a encore été écrite pour ce slot). Rien n'est publié publiquement en cours de journée.
-3. **Clôture quotidienne** : `postGoblinHunters()` clôture le jour actif (`closeDayAndAdvance()`), résout vote + combat + enquêtes + nouvelles positions, envoie les DM d'enquête, publie le bilan + le jour suivant (jamais de ping). Si une condition de victoire est atteinte ou que J10 est dépassé, publie l'embed de fin de partie (révélation complète des camps/rôles), ping `@MINI-JEUX`, et passe `termine: true` — les runs suivants deviennent des no-op silencieux, même principe que les autres jeux.
-
-### Ciblage — restreint au dernier plateau connu, sauf le vote
-
-La cible d'un **combat** (Arène, seul lieu de combat depuis la refonte de la Clairière — voir plus bas) ou d'une **enquête** (Tour de Guet) doit être positionnée au lieu choisi sur le **dernier plateau connu** (`joueursAvant`, figé depuis la clôture précédente) — le select menu ne propose que ces cibles valides, `computeAttacksFromActions()`/`computeInvestigations()` re-filtrent quand même par défense. Le **vote du Château** reste volontairement libre sur tout joueur vivant (accusation villageoise publique, pas une confrontation physique), et la **Clairière** n'a aucune notion de ciblage — elle tire 2 joueurs au hasard, sans co-location requise. Au Jour 1, la Tour de Guet n'a encore aucune cible sur le plateau (tout le monde démarre au Château) — le filet de sécurité prend le relais comme n'importe quel autre jour (voir "Filet de sécurité" plus bas). Château et Arène, eux, sautent carrément l'étape de cible ce jour-là — voir "Jour 1 — Château/Arène accessibles mais sans effet" ci-dessous.
-
-### Jour 1 — Château/Arène accessibles mais sans effet (2026-08-26, sur demande explicite)
-
-Vote et combat sont ignorés par `computeCloture()` tant que `jour === 1` (garde-fou déjà en place, voir "Plafond anti-snowball" plus bas) — mais rien n'empêchait un joueur de s'y rendre et de choisir une cible qui ne servirait jamais à rien, repéré comme source de confusion en test réel. Première version testée : désactiver carrément les boutons Château/Arène (`disabled: true`) le Jour 1 — **rejetée par l'utilisateur** ("on doit pouvoir se rendre à l'arène ou rester au château Jour 1, mais l'action sur place est nulle") : seule l'**action** doit être nulle, pas le **déplacement**, un joueur peut vouloir s'y rendre par choix (accompagner quelqu'un, observer, etc.).
-
-Implémenté dans `handleLieuButton()` (`jeux/discord/handlers/goblinhunters.js`) : `LIEUX_SANS_CIBLE_JOUR1` (`chateau`, `camp_entrainement`) — au Jour 1, ces deux lieux rejoignent la branche "aucune cible nécessaire" déjà utilisée par Taverne/Clairière (`recordAction(jour, discordId, slot, { lieu })`, pas de select menu), avec une confirmation dédiée précisant qu'il n'y a aucun effet aujourd'hui. Les boutons restent cliquables normalement (aucun `disabled`). `buildJourEmbed()` ajoute une ligne informative sur l'embed du Jour 1 pour prévenir avant le clic.
-
-### Nerf Éclaireur — 2ᵉ action sur un lieu DIFFÉRENT de la 1ère (2026-08-26, bug repéré en test réel)
-
-L'Éclaireur (2 actions/jour) pouvait jusqu'ici soumettre `primary` et `secondary` sur le **même** lieu — voter 2 fois au Château (2 votes au lieu d'1, doublant son poids dans `computeVoteTally()`) ou attaquer 2 fois à l'Arène (2 attaques au lieu d'1, doublant ses dégâts effectifs le même jour). Ni l'un ni l'autre n'était l'intention du rôle : le bonus est censé être "2 lieux/actions différents", pas "2x le même effet". Corrigé dans `handleLieuButton()` : quand `slot === "secondary"`, si `existingAction.primary.lieu === lieu` demandé, le clic est refusé avec un message explicite — vérifié après le verrou d'action définitive (`isActionLocked`) puisque `existingAction` est déjà chargé à ce stade, aucun appel Redis supplémentaire.
-
-### DM d'élimination — description complète envoyée au joueur qui vient de mourir (2026-08-26, sur demande explicite)
-
-Jusqu'ici, un joueur éliminé (vote ou combat) l'apprenait seulement en relisant le bilan public du jour suivant (qui ne montre que son camp, pas de détail personnel) — aucun MP dédié, contrairement aux résultats d'enquête/Clairière qui sont déjà envoyés en DM. `sendEliminationDM(discordId, cause, closure, jourClos, config)` (`jeux/discord/handlers/goblinhunters.js`), appelée dans `postGoblinHunters()` juste après `closeDayAndAdvance()` (même bloc que `sendInvestigationDM`/`sendClairiereDM`, `!dryRun` uniquement), pour `closure.eliminationsParVote` et `closure.deathIdCombat` chacun s'ils sont non nuls (jusqu'à 2 DM le même jour si vote **et** combat ont eu lieu, cas différents joueurs par construction). Contenu : jour de l'élimination, camp/rôle du joueur (seule trace personnalisée en dehors du DM de rôle initial, plusieurs jours plus tôt), cause précise (vote avec le nombre de votes reçus, ou combat), et les effets de mort le concernant s'il détenait Guet-Apens (reveal déjà public, juste rappelé) ou Explosif (cible de la riposte).
-
-⚠️ Ne révèle **pas** qui a voté contre lui, ni l'identité de son attaquant au combat — décision de conception délibérée, pas un oubli : un joueur éliminé pourrait sinon relayer cette info aux vivants hors-jeu (voir la simulation d'équilibrage sur l'impact de la communication externe, mémoire projet `goblinhunters_game_design.md`) alors que lui-même n'a plus aucun enjeu à rester discret. Vérifié par test isolé du formatage (3 scénarios : vote simple, combat avec Guet-Apens, vote avec Explosif) via `fetch` mocké, sans toucher au Redis réel (partie en cours au moment de l'implémentation).
-
-**Camp de l'attaquant (2026-09-28, sur demande explicite)** : au combat, le DM précise désormais le **camp** du/des attaquant(s) ayant frappé la victime ce jour-là (`formatAttaquantsCamps()`, regroupés par camp, ex. « sous les coups d'un(e) 👺 **Gobelin** » ou « sous les coups de 2 👺 **Gobelins** et 1 🗡️ **Villageois** »). Même périmètre que le Guet-Apens (tous les attaquants de la cible dans `closure.attacks`) ; pour un Guet-Apens, la ligne 🪤 se contente de rappeler que ce camp a été rendu public. Compromis accepté : un mort peut relayer « tué par un Gobelin » hors-jeu, mais pas de nom.
-
-### Vote du Château — même stockage que les autres lieux (bug corrigé)
-
-⚠️ Une première version stockait le vote d'accusation dans une clé Redis séparée (`goblinhunters:votes:<jour>`, via `recordVoteChateau()`) — repéré en test réel : un joueur pouvait voter au Château **puis** soumettre une action normale (ou l'inverse) le même jour, les deux stockages ne s'écrasant jamais l'un l'autre, en violation directe de la règle 1 action/jour. Corrigé en supprimant ce stockage séparé : voter est maintenant juste `recordAction(jour, discordId, slot, {lieu:"chateau", cibleId})`, exactement comme n'importe quel autre lieu, dans le même hash `goblinhunters:actions:<jour>`. `computeVoteTally(actionsRaw)` extrait le vote de la structure unifiée (`extractVote()`, regarde `primary` puis `secondary`) plutôt que de lire une source dédiée. Repère utile pour la suite : si un nouveau type d'action venait à être ajouté, il doit lui aussi passer par `recordAction()`/le hash `actions`, jamais par un stockage parallèle — c'est cette duplication qui avait causé le bug.
-
-### Action définitive — aucun changement d'avis possible, sur aucun lieu
-
-⚠️ Portée élargie suite à un retour en test réel : une première version ne verrouillait QUE le vote du Château (les 4 autres lieux restaient "modifiables jusqu'à la clôture, dernier clic gagne"). L'utilisateur a signalé pouvoir enchaîner Taverne → Clairière → Tour de Guet sans jamais être bloqué, et a confirmé vouloir la règle **sur tous les lieux**, pas seulement le vote — chaque choix est un engagement pour la journée, jamais un brouillon.
-
-`isActionLocked(existingAction, slot)` (`jeux/services/goblinhunters.js`) vérifie simplement si `existingAction?.[slot]` est déjà rempli — si oui, tout nouveau choix sur ce slot est refusé, quel que soit le lieu visé (changer de cible, changer de lieu, ou même retenter le même lieu). Ça marche parce que `recordAction()` n'écrit **jamais** d'état partiel : le clic initial sur un lieu à cible ne persiste rien tant que la cible n'est pas choisie (ou qu'un filet de sécurité ne s'est pas déclenché), donc la simple présence d'une entrée pour ce slot suffit à prouver qu'un choix a déjà été finalisé — pas besoin de vérifier le lieu ni la cible comme dans la version Château-only. Vérifié au clic dans `handleLieuButton` (avant même d'afficher le select de cible) et re-vérifié en défense dans `handleTargetSelect` — même esprit que `isLieuRepeatAllowed()`, mais `recordAction()` lui-même reste "bête" (n'écrit jamais de garde), toute la logique vit côté appelant. Le verrou est spécifique au `slot` : le primary verrouillé n'empêche pas l'Éclaireur de soumettre un secondary sur un lieu différent.
-
-**Exception Arène/Tour de Guet (`pending`)** : le select de cible de ces deux lieux liste les noms des joueurs présents à ce lieu la veille. Comme rien n'était persisté avant le choix de la cible, un joueur pouvait ouvrir le menu, lire les noms puis choisir un autre lieu — lecture nominative gratuite des positions, qui court-circuitait la Clairière (plateau public anonyme). Désormais `handleLieuButton()` enregistre le lieu dès l'ouverture du select (`recordAction(..., { lieu, cibleId: null, pending: true })`). `isActionLocked(existingAction, slot, lieu)` laisse passer uniquement un slot `pending` sur le **même** lieu (rouvrir le menu, choisir la cible) ; tout autre lieu est refusé. Sans cible choisie avant la clôture, le filet de sécurité (`fallbackActorsFor`) tire une cible au hasard. Le Château n'est pas concerné (sa liste couvre tous les vivants, aucune position révélée).
-
-### Quorum de vote — 2 votants minimum (bug corrigé)
-
-⚠️ Repéré en revue avec l'utilisateur : `resolveVoteElimination()` ne vérifiait à l'origine que « une seule cible au score maximum ? » — avec un seul votant, son unique vote _est_ mécaniquement le score maximum, donc il gagnait. Un joueur seul au Château pouvait exécuter n'importe qui unilatéralement. Corrigé par un quorum minimum (`config.vote_quorum_min`, 2 par défaut) : si le total de votes castés ce jour-là (toutes cibles confondues) est sous ce seuil, `resolveVoteElimination()` renvoie `null` avant même de regarder qui a le plus de voix.
-
-### Clairière — révélation de position, pas un combat (refonte)
-
-⚠️ Design initial insatisfaisant, repéré par l'utilisateur : la Clairière faisait exactement la même chose que l'Arène (mêmes dégâts, même ciblage), avec pour seule différence d'ignorer la protection Taverne — un avantage marginal, sans vraie contrepartie, qui ne justifiait pas un lieu à part. Refondue en pur renseignement : `computeClairiereReveals(actionsRaw, joueursApres, rng)` révèle, à la clôture, la position COURANTE de 2 joueurs vivants tirés au hasard (jamais soi-même, jamais un joueur déjà éliminé ce jour-là) — **aucune cible à choisir**, aucune restriction de co-location (ce n'est pas une confrontation, `lieuAction === "vision"` traité comme la Taverne : action enregistrée directement au clic). Résultat livré en DM (`sendClairiereDM`) et ajouté au carnet d'indices personnel (voir section Journal). Conséquence directe : le **Arène est désormais le seul lieu de combat** du jeu — plus de redondance entre les deux lieux.
-
-⚠️ Le DM (plutôt que le message éphémère du clic) n'est pas un choix arbitraire : la révélation ne se calcule qu'à la **clôture** (le lendemain), une fois toutes les actions du jour connues — impossible de l'inclure dans la réponse éphémère du clic, dont le token webhook Discord expire bien avant que le résultat n'existe (~15 min, contre potentiellement 24h avant la clôture suivante). Même contrainte, même solution que pour les résultats d'enquête (`sendInvestigationDM`).
-
-### Filet de sécurité Arène / Tour de Guet — cible aléatoire si personne d'éligible
-
-⚠️ Problème structurel repéré par l'utilisateur, distinct de celui de la Clairière : avec seulement 3 lieux "sûrs" (Château/Taverne/Clairière) et la règle anti-camping qui n'interdit que de répéter le lieu de la **veille**, un joueur peut alterner indéfiniment entre ces 3 lieux sans jamais visiter l'Arène ni la Tour de Guet. Or ces deux lieux n'apportaient jamais rien tant que personne d'autre n'y était déjà allé — s'exposer en premier n'avait donc aucune contrepartie, et une population de joueurs "rationnels" pouvait les laisser morts toute la partie.
-
-Corrigé par un filet de sécurité identique sur les deux lieux (`fallbackActorsFor()`, `jeux/services/goblinhunters.js`) : si un joueur a choisi ce lieu mais n'a résolu aucune interaction (personne d'éligible n'était là hier, OU sa cible a été éliminée par le vote à la même clôture), il agit quand même sur un joueur vivant tiré au hasard — jamais un coup pour rien. `computeAttacksFromActions()`/`computeInvestigations()` prennent désormais un `rng` optionnel pour ce tirage.
-
-⚠️ **Piège évité** : `computeIndicesForDay()` ne recalcule plus `computeAttacksFromActions()` en interne — elle reçoit désormais `result.attacks` directement depuis `computeCloture()` (le MÊME tirage `rng` que celui qui a servi à appliquer les dégâts). Un second appel indépendant avec un `rng` par défaut différent aurait pu tirer une cible différente de celle réellement touchée, désynchronisant le carnet d'indices personnel de ce qui s'est vraiment passé — vérifié par un test bout en bout (combat réel + indices comparés).
-
-⚠️ **Doublon corrigé (2026-08-26, bug repéré en test réel)** : le tirage aléatoire du filet de sécurité de la Tour de Guet pouvait retomber sur une cible **déjà connue** de cet enquêteur (son camp lui avait déjà été révélé une enquête précédente) — un joueur a reçu 2 fois le même résultat ("X appartient au camp des Gobelins") en DM. Le combat n'a pas ce problème (une attaque ne révèle jamais de camp, réattaquer la même cible n'est pas une info gaspillée), donc seule `computeInvestigations()` est concernée.
-
-Corrigé à deux niveaux, défense en profondeur :
-
-- **Côté service** (`computeInvestigations()`, `jeux/services/goblinhunters.js`) : nouveau paramètre `knownTargetsByInvestigator` (`{discordId: Set<cibleId>}`), dérivé du carnet d'indices de chaque joueur vivant via `knownEnqueteTargets(indices)` (nouvelle fonction pure — filtre `type: "enquete"`, collecte les `cibleId`). Exclut ces cibles à la fois du résultat délibéré (si la cible choisie sur le plateau est déjà connue, le résultat est écarté et l'enquêteur bascule sur le filet de sécurité) et du tirage aléatoire lui-même (`pickRandomTarget()` accepte désormais un 4ᵉ paramètre optionnel `extraExcludeIds`, jamais utilisé côté combat). `loadCloture()` construit cette map via `loadKnownTargetsByInvestigator()` (N lectures `readPlayerIndices()`, une par joueur vivant — négligeable, le cron ne tourne qu'une fois/jour).
-- **Côté handler** (`handleLieuButton()`) : le select menu de la Tour de Guet filtre lui aussi les cibles déjà connues (`knownEnqueteTargets(await readPlayerIndices(discordId))`) — évite de proposer un choix inutile au clic, la vérification côté service n'est qu'un filet de défense, pas la seule garde.
-
-Vérifié par 3 nouveaux tests unitaires (`knownEnqueteTargets()` isolée, filet de sécurité qui saute systématiquement une cible connue sur plusieurs graines de `rng`, résultat délibéré déjà connu écarté au profit du filet de sécurité).
-
-### Plafond anti-snowball — 1 mort par combat maximum par jour
-
-Sans plafond, plusieurs Gobelins attaquant le même jour pourraient éliminer plusieurs Villageois d'un coup et faire s'effondrer la partie en 2-3 jours. `resolveCombat()` calcule les PV bruts de toutes les cibles touchées, mais si **plusieurs** deviennent mortelles le même jour, seule celle ayant reçu le **plus de dégâts** meurt réellement (égalité → tirage au sort) — les autres sont plafonnées à **1 PV minimum**, pas éliminées. Le vote du Château suit une règle différente et volontairement plus douce, décidée avec l'utilisateur : en cas d'égalité entre plusieurs cibles, **personne** n'est éliminé (`resolveVoteElimination()`, pas de tirage au sort). Jusqu'à 2 morts par jour-cycle au total (1 vote + 1 combat), plafonds indépendants — même enchaînement que le classique jour/nuit du genre. **Jour 1** : aucune élimination possible, ni vote ni combat (garde-fou explicite dans `computeCloture()`).
-
-### Rôles et combat
-
-1 exemplaire de chaque rôle spécial par camp, quel que soit l'effectif (`assignCampsAndRoles()`) — 3 côté Villageois, 2 côté Gobelins :
-
-- **Éclaireur** (Villageois) — 2 actions/jour au lieu d'une.
-- **Bûcheron** (Villageois) — 1 PV/2 dégâts fixes au lieu de 2 PV/1 dégât — glass cannon.
-- **Guet-Apens** (Villageois) — s'il meurt au combat à l'Arène, le camp de son ou ses attaquant(s) est révélé publiquement.
-- **Infiltré** (Gobelin) — l'enquête menée sur lui à la Tour de Guet renvoie toujours `"chasseur"`, faux positif classique du genre.
-- **Gobelin explosif** (Gobelin) — à sa mort (vote OU combat), inflige `config.roles.explosif.degats_riposte` (1 par défaut) à un Villageois, jamais mortel.
-
-Les Gobelins connaissent l'identité des autres Gobelins dès la distribution des rôles (structurel, pas un rôle dédié — voir `otherGobelinsLine()` ci-dessus). Combat **déterministe** (pas de RNG comme Boss Raid) : dégâts fixes selon le rôle de l'attaquant, seul le départage d'un plafond anti-snowball est aléatoire.
-
-⚠️ Bouton `[📖 Règles]` en style `3` (vert/Success) depuis le 2026-08-26, sur demande explicite pour le distinguer visuellement des autres boutons (tous en style `2`/gris) — présent à la fois sur l'embed d'inscription (`buildInscriptionComponents()`) et sur l'embed de jour (`buildJourComponents()`), les deux mis à jour pour rester cohérents.
-
-Les 5 rôles spéciaux sont listés explicitement dans `buildReglesEmbed()` (bouton `[📖 Règles]`) **et** décrits en détail dans le DM de rôle (`sendRoleDM()`, sur demande explicite de l'utilisateur — le DM ne donnait auparavant que le libellé, jamais ce que le rôle fait concrètement). Les deux passent désormais par `roleDescription(roleKey, config)`, une fonction partagée générée depuis la config plutôt qu'écrite en dur deux fois — évite toute désynchronisation si les chiffres (PV/dégâts/etc.) changent un jour. Un oubli initial (avant `roleDescription()`) avait omis les rôles des Règles, repéré par l'utilisateur sur une vraie partie en test.
-
-**Guet-Apens et Gobelin explosif** (2026-08-25, ajoutés sur demande explicite après une simulation Monte-Carlo d'équilibrage à 14 joueurs — voir mémoire projet `goblinhunters_game_design.md`) : deux rôles volontairement simples et symétriques (un par camp), qui ne changent aucun chiffre de combat/vote existant — seulement des effets déclenchés à la mort, pour ne pas rejouer sur l'équilibre déjà mesuré. `resolveGuetApensReveal({ deathIdCombat, attacks, joueursAvant })` et `resolveExplosifRetaliation({ eliminationsParVote, deathIdCombat, actionsRaw, attacks, joueursAvant, rng })` sont deux fonctions pures dans `jeux/services/goblinhunters.js`, appelées dans `computeCloture()` juste après la résolution du combat, testées isolément dans `goblinhunters.test.js`. Les deux réutilisent `attacks` du MÊME appel que la résolution des PV (même contrainte que `computeIndicesForDay`, voir plus haut) — jamais recalculé séparément.
-
-- La riposte de l'Explosif est **volontairement plafonnée à ne jamais tuer** (`Math.max(pv - degats_riposte, 1)`), décision explicite avec l'utilisateur (option retenue face à l'alternative "elle pourrait provoquer une 2e mort le même jour") — appliquée en aval du combat classique plutôt qu'injectée dans `resolveCombat()`, donc jamais en conflit avec son propre plafond anti-snowball (1 mort/jour). Cible : l'attaquant qui l'a achevé au combat (uniquement s'il est Villageois — pas de riposte sur un tir ami Gobelin via le filet de sécurité), ou un votant Villageois tiré au hasard s'il est éliminé au vote (pas d'attaquant unique dans ce cas).
-- Le Guet-Apens ne se déclenche qu'au combat (l'Arène implique un attaquant identifiable), jamais au vote (pas d'attaquant unique dans un vote collectif). S'il est ciblé par plusieurs attaques le même jour, tous les attaquants sont révélés (pas seulement celui qui a porté le coup fatal).
-- Les deux effets sont annoncés **publiquement** dans le bilan du jour (`buildJourEmbed()`), au même titre que le reveal de camp habituel à l'élimination — pas de DM privé, pas de nouvel indice dans le carnet Journal.
-
-⚠️ **Bug de design trouvé après coup (2026-08-25)** : "les Gobelins se connaissent entre eux" était une décision actée dès la conception, mais jamais traduite en code — `sendRoleDM()` n'envoyait que le camp/rôle du joueur lui-même, sans jamais lister ses coéquipiers. Repéré par l'utilisateur sur une simulation d'équilibrage (une simulation Monte-Carlo supposant les Gobelins coordonnés donnait un tout autre résultat que le jeu réellement codé, où ils étaient en réalité aussi isolés que les Villageois). Corrigé : `otherGobelinsLine(joueur, joueurs)` (helper partagé) liste les autres membres du camp Gobelin — vivants **et** éliminés, marqués `☠️` — dans le DM de rôle (`sendRoleDM`, à l'appel de `launchGame()`) et dans le Journal personnel (`handleJournal`, relit `state.joueurs` à chaque clic donc reste à jour si un Gobelin meurt en cours de partie). Renvoie `null` pour un Villageois (aucune ligne ajoutée).
-
-⚠️ Le nombre total de Gobelins n'est **pas un secret** : il découle mécaniquement de l'effectif de départ via `minority_table` (config publique, table 8→3…16→7, ratio ~2/5 depuis le rééquilibrage — voir "Rééquilibrage" plus bas) — n'importe quel joueur peut donc déjà le calculer lui-même. L'embed de jour affiche en conséquence le vrai décompte de Gobelins vivants (`👺 Gobelins en vie : **N**`), pas un `?` — un premier jet affichait `?` par réflexe "mystère façon Loups-Garous", incohérent avec le fait que le total de départ est public dès l'inscription. Seul reste secret : **qui** est Gobelin.
-
-### Rééquilibrage 10j→7j (2026-08-26, sur demande explicite après tests réels)
-
-Retour de terrain : le jeu semblait trop long sur 10 jours. Plutôt que deviner, **3 simulations Monte-Carlo successives** (script ponctuel non versionné, réutilisant les vraies fonctions pures du moteur avec des bots heuristiques, 4000-5000 parties/scénario) ont guidé chaque décision — voir mémoire projet `goblinhunters_game_design.md` pour le détail chiffré complet.
-
-1. **10j→7j seul, aggrave le déséquilibre** : réduire la durée à 7 jours sans rien d'autre a fait chuter le taux de victoire Gobelins (déjà minoritaire) de ~17,9% à ~6,6% dans le scénario réaliste — moins de temps pour rattraper un écart de départ favorise mécaniquement le camp majoritaire qui gagne par défaut. Objectif fixé par l'utilisateur : ramener le taux de victoire Gobelins entre **40 et 60%** malgré la durée réduite.
-2. **Piste écartée — condition de victoire assouplie ("quasi-parité")** : simulée et chiffrée (~58,6% avec minorité relevée), mais rejetée par l'utilisateur ("trop complexe à comprendre") — abandonnée au profit de leviers purement numériques.
-3. **Piste écartée — parité de départ + victoire par élimination totale** : simulée sur demande, révèle un problème structurel indépendant de l'équilibrage — avec un rythme de mort plafonné à ~2/jour (1 vote + 1 combat) et 7 têtes à éliminer par camp au lieu de départager une parité, la partie ne se résout quasiment jamais dans un délai jouable (~100% non résolu à 7j, encore ~94% à 10j ; il faudrait ~25-30 jours pour converger de façon fiable). Abandonnée.
-4. **Retenu — 3 leviers numériques combinés**, aucune nouvelle règle à expliquer :
-   - `minority_table` relevée de ~1/3 à ~2/5 (ex. 14 joueurs : 5→6 Gobelins). Levier de loin le plus efficace mesuré (un Gobelin de plus pèse bien plus qu'un rôle spécial en plus).
-   - ⚠️ **Piège découvert en simulant** : une minorité fixée à exactement N/2 (parité stricte dès l'assignation) fait gagner les Gobelins à **100%** dès la fin du Jour 1 — la condition de victoire par parité (`checkVictory()`) est trivialement remplie avant la moindre élimination, puisque personne ne peut mourir le Jour 1. Vérifié qu'aucune valeur de la table révisée n'atteint N/2 (voir table ci-dessous).
-   - `combat.pv_base` : 3→2 PV pour les Villageois (combat plus rapide, cohérent avec une partie plus courte).
-   - Nouveau `combat.gobelin_pv_bonus: 1` — les Gobelins ont 1 PV de plus que les Villageois (3 PV), avantage décidé avec l'utilisateur pour compenser leur infériorité numérique. Implémenté dans `buildInitialRoster()` (`jeux/services/goblinhunters.js`) : s'applique à **tous** les Gobelins quel que soit leur rôle (Infiltré/Explosif compris), jamais au Bûcheron dont l'override de rôle reste prioritaire (de toute façon toujours camp Villageois). Testé unitairement (bonus appliqué/absent, override Bûcheron prioritaire).
-   - Résultat mesuré : ~50-51% Gobelins dans les scénarios réalistes (coordonnés vs isolés/communicants), ~21% si personne ne coordonne rien — dans la fourchette cible, robuste sur les 2 niveaux de communication testés.
-5. **Effet de bord du Bûcheron repéré et corrigé** : à PV=2, ses 2 dégâts fixes tueraient n'importe quelle cible fraîche en un seul coup, garanti par la priorité du plafond anti-snowball (2 dégâts = le maximum possible dans cette config, gagne toujours le départage) — un pur avantage sans plus aucune contrepartie, contrairement à l'esprit "glass cannon" du rôle. Recalé à **1 PV** (au lieu de 2) pour préserver le même écart relatif qu'avant (`pv_base − 1`), un simple coup normal (1 dégât) suffit désormais aussi à l'achever.
-
-Nouvelle table `minority_table` (8→3, 9→4, 10→4, 11→5, 12→5, 13→6, 14→6, 15→6, 16→7) — vérifié programmatiquement qu'aucun effectif ne tombe sur N/2 (piège du point 4) et que les 5 rôles spéciaux (2 Gobelins/3 Villageois) tiennent toujours à l'effectif plancher (8 → 3 Gobelins/5 Villageois).
-
-### Taverne — protection sous seuil uniquement
-
-`computeTavernProtection()` : la protection ne tient que **sous** `taverne_seuil_protection` (3 par défaut, `jeux/data/goblinhunters/goblinhunters.json`) — au-dessus, surpeuplée, elle ne protège plus personne ce jour-là. Garde-fou décidé avec l'utilisateur contre le camping massif de la Taverne (sinon le camp majoritaire n'a aucune raison d'en bouger et la partie stagne jusqu'à J10). S'y rendre consomme l'action du jour comme n'importe quel autre lieu — aucun état supplémentaire à faire vivre sur la durée.
-
-### Tour de Guet surpeuplée — inefficace au-delà de la moitié des vivants (2026-08-26, sur demande explicite)
-
-Même principe que la Taverne ci-dessus, appliqué à la Tour de Guet : constat de l'utilisateur que le Jour 1 pousse mécaniquement **tout le monde** vers la Tour (seul lieu avec une vraie valeur ce jour-là — Château/Arène sans effet, le filet de sécurité de `computeInvestigations()` garantit toujours un résultat même sans cible éligible sur le plateau), ce qui viderait l'Arène et la Clairière de tout intérêt dès le Jour 2 si le réflexe se répète.
-
-`computeTourDeGuetOccupants(actionsRaw)` (compte les joueurs ayant choisi ce lieu aujourd'hui, `primary` ou `secondary`) + `isTourDeGuetOvercrowded(occupantsCount, aliveCount, ratio)` (`config.tour_de_guet_seuil_ratio`, 0.5 par défaut — **strictement plus de** la moitié des vivants, pas "à partir de"). Si surpeuplée, `computeCloture()` court-circuite entièrement `computeInvestigations()` pour ce jour (`investigations: []`) — personne n'obtient de résultat, ni via une cible délibérée ni via le filet de sécurité. L'action reste quand même définitive (verrouillée dès le clic comme n'importe quel autre lieu) : se rendre à la Tour un jour surpeuplé consomme l'action pour rien, c'est le prix à payer pour avoir suivi le mouvement.
-
-Annoncé publiquement dans le bilan du jour (`buildJourEmbed()`, "🔭 La Tour de Guet était trop encombrée hier...") — sans cette ligne, les enquêteurs n'auraient aucune explication au silence inhabituel de leur DM d'enquête habituel. Mentionné aussi dans `buildReglesEmbed()`. Testé unitairement (`isTourDeGuetOvercrowded()` isolée sur plusieurs ratios/effectifs, `computeCloture()` bout en bout avec 5/8 vivants à la Tour → `investigations: []`, et 4/8 exactement à la moitié → enquêtes normales, confirmant que "la moitié pile" ne déclenche PAS la règle).
-
-### Anti-camping — interdit de rester au même lieu 2 jours de suite
-
-`isLieuRepeatAllowed(previousPosition, lieu, jour)` : refuse au clic (avant tout enregistrement) de choisir le même lieu que celui occupé la veille, à partir du Jour 2 (le Jour 1 est exclu — la position de spawn initiale au Château ne compte pas comme un choix actif). Même principe que `isChevalierVoteAllowed()` de Bossraid : un garde-fou vérifié au clic dans `handleLieuButton`, pas une contrainte de résolution à la clôture. Motivation : sans cette règle, rester au Château en continu offrait une **immunité totale et gratuite** au combat — le ciblage étant restreint au dernier lieu connu (voir "Ciblage — restreint au dernier plateau connu" plus haut), un joueur qui ne quitte jamais le Château ne peut structurellement jamais être attaqué, contrairement à la Taverne qui au moins plafonne sa protection sous un seuil. Ne s'applique qu'au choix actif d'un lieu : un joueur passif (pass automatique, retombe au Château) n'est jamais bloqué par cette règle puisqu'il ne clique sur rien.
-
-**Gobelins : 2 dégâts, 2 PV + immunité du jour** (2026-09-26, sur simulation à 15 joueurs — voir mémoire projet) : pour casser la routine Tour/Château sans nouvelle règle complexe, le bonus Gobelin passe des PV aux dégâts (`combat.gobelin_pv_bonus: 0`, `combat.degats_gobelin: 2`, appliqué dans `computeAttacksFromActions()` selon le camp de l'attaquant, le Bûcheron gardant sa propre valeur). Un coup gobelin tue un Villageois en pleine santé : le combat devient une vraie menace et la Taverne une vraie protection (simulé : ~46 % de victoires Gobelins contre des Villageois qui restent en routine, ~35 % s'ils se protègent). **Immunité** : `computeCloture()` tire `immuneIdSuivant` parmi les survivants (rien en cas de victoire), `closeDayAndAdvance()` l'écrit dans `state.immuneId`, `buildJourEmbed()` l'annonce publiquement (« 🛡️ Aujourd'hui, X est totalement immunisé(e) »). À la clôture suivante, `computeCloture({ immuneId })` retire ses voix du décompte, l'ajoute aux protégés (comme la Taverne) et l'exclut des cibles de la riposte de l'Explosif. Le handler l'exclut aussi des menus de cible du Château et de l'Arène (pas de la Tour : l'enquête reste possible). Aucun immunisé le Jour 1 (aucune mort possible de toute façon).
-
-**Clairière -> Arène** (2026-09-27, « piste B ») : un joueur révélé par la Clairière à la clôture de la veille est ciblable à l'Arène par ce voyant, où qu'il se trouve. `resolveEligibleAttacks()` accepte `ciblesRevelees` ; `computeCloture({ revealsVeille })` le transmet via `computeAttacksFromActions()` ; `loadIndicesContext()` le dérive du carnet d'indices (`revealedTargetsForDay(indices, jour - 1)`, entrées `type: "reveal"`) en même temps que les enquêtes déjà connues (une seule lecture des carnets). Côté handler, le menu de cible de l'Arène ajoute ces joueurs aux présents de la veille, et le DM de Clairière le rappelle. Donne au Gobelin-zombie (et à tous) un vrai moyen de viser plutôt que de frapper au hasard.
-
-**Confirmation du lieu (anti-missclick)** (2026-09-27) : un clic sur un lieu n'enregistre plus rien — `handleLieuButton()` (après toutes les gardes) répond d'abord par un message éphémère « Tu as choisi … Ce choix sera définitif » avec [✅ Confirmer] (`goblinhunters_lieuok:<jour>:<lieu>:<slot>`, rappelle `handleLieuButton(..., confirme = true)` en éditant le message en place, `type: 6`) et [✖️ Annuler] (`goblinhunters_lieuko`, réponse directe `type: 7`). Les noms des cibles (Arène/Tour) ne s'affichent qu'après confirmation, le verrou `pending` est posé à ce moment-là. Un lieu déjà `pending` est rouvert sans nouvelle confirmation.
-
-**Gobelin-zombie** (2026-09-27, 3ᵉ rôle Gobelin via `assignCampsAndRoles()`, en plus de l'Infiltré et de l'Explosif — simulé à ~48-51 % de victoires Gobelins avec des Villageois réalistes) : dans `computeCloture()`, juste après `resolveCombat()`, si la mort du jour au combat est un Villageois achevé par une attaque du Zombie vivant, et qu'aucun joueur n'a encore été converti (`converti`), il ne meurt pas : `camp: "gobelin"`, `role: null` (Bûcheron/Éclaireur/Guet-Apens perdent leur pouvoir), `roleOrigine` conservé, PV remis au max d'un Gobelin, `converti: jour`. `deathIdCombat` repasse à `null` (pas de reveal Guet-Apens ni de riposte). Une seule conversion par partie. Public : « 🧟 Hier, un villageois a été tué et converti en Gobelin par le zombie ! » (à la place de « 🕊️ Personne n'a été éliminé. ») ; DM au converti (nouveau camp + coéquipiers) et aux autres Gobelins (`sendConversionDMs`). Le bouton Règles ne liste que les rôles attribués dans la partie en cours (`roleOrigine ?? role`, sinon la disparition d'un rôle trahirait la conversion).
-
-**Bots de remplacement** (2026-09-27) : un joueur vivant absent `absences_avant_remplacement` (2) jours de suite est repris par un bot de `bots_remplacants` (« Kévina », « Georgette ») — même `discordId`/camp/rôle/PV/position, seuls `bot`, `username` (« Kévina (bot) ») et `usernameOrigine` changent : les comptes par camp ne bougent pas, rien n'est révélé. Compteur `absencesConsecutives` mis à jour dans `computeCloture()` (amorcé par `absentsVeille` = historique de la veille pour les parties antérieures), annonce publique « 🔄 X a quitté le village, Kévina (bot) reprend sa place. » (`remplacements`, historisé). Comportement du bot (`computeBotActions()`, neutre, ignore son camp) : au Château, il ajoute sa voix au meneur du vote seulement s'il y a une majorité claire (meneur unique, quorum atteint sans lui) ; le lendemain (anti-camping), Clairière. Aucun DM aux bots ; l'ancien joueur humain est bloqué (lieux, Journal, Messagerie) avec un message explicite. Plus de bot disponible -> le joueur reste simplement absent.
-
-**Absents affichés dans le bilan** : `computeCloture()` renvoie `absents` (vivants sans action `primary` ce jour — une action Arène/Tour `pending` compte comme jouée), historisé et affiché publiquement par `buildJourEmbed()` (« 💤 N'a pas joué (pion placé au Château) : … »). Explique les pions du Château qui n'ont pas voté ; ne révèle aucun camp.
-
-### Journal personnel — éphémère et privé, jamais un historique public
-
-Contrairement au bouton Journal des autres jeux (Robinson, Boss Raid — historique public des jours passés), celui de Goblin Hunters est **exclusivement personnel** : il affiche, uniquement au joueur qui clique, son camp/rôle secrets, la liste des autres Gobelins si le joueur en est un (`otherGobelinsLine()`, voir "Rôles et combat" ci-dessus), sa dernière position connue, ses PV, le **choix déjà validé pour le jour en cours** (voir ci-dessous), la **liste des joueurs encore en vie** annotée du camp qu'il connaît (`vivantsLine()` : un Gobelin voit 👺/🗡️ pour tous, puisqu'il connaît tous les Gobelins ; un Villageois ne voit que les camps issus de ses enquêtes, résultat le plus récent par cible, donc l'Infiltré en 🗡️), et un **carnet d'indices** cumulé sur toute la partie. Motivation : le plateau public ne montre que les positions COURANTES (régénéré à chaque clôture, aucun historique) — sans ce carnet privé, un joueur perdrait toute trace de ses rencontres passées dès le lendemain.
-
-**Choix du jour en cours** (ajouté sur demande explicite, retour en test réel) : puisque chaque action est **définitive dès validation** (`isActionLocked()`) mais n'est appliquée au plateau public qu'à la clôture du lendemain, un joueur n'avait aucun moyen de se rappeler ce qu'il venait de choisir en attendant. `handleJournal()` lit désormais aussi `readPlayerAction(state.jour, discordId)` — l'action de la journée EN COURS, pas encore résolue — et l'affiche (`🌫️ Clairière`, `⚔️ Arène → **Cible**`, etc., primary et secondary pour l'Éclaireur). Uniquement affiché si le joueur est vivant ; absent s'il n'a encore rien soumis aujourd'hui.
-
-Trois sources alimentent le carnet à chaque clôture (`computeIndicesForDay()`, `jeux/services/goblinhunters.js`), distinguées par un champ `type` (formatage différent côté `formatIndiceLine()`) :
-
-- `type: "enquete"` (Tour de Guet) : révèle le camp de la cible (`campReporte`), y compris le faux positif de l'Infiltré.
-- `type: "combat"` (Arène) : révèle seulement le **lieu de l'affrontement** (`campReporte: null`) — une attaque ne renseigne jamais sur le camp.
-- `type: "reveal"` (Clairière) : révèle la **position courante** de la cible (`lieu` = où elle se trouve, pas où l'interaction a eu lieu — il n'y en a pas), sans jamais de camp non plus. Seule source qui ne nécessite aucune co-location (voir `computeClairiereReveals()`).
-
-Stocké dans `goblinhunters:indices` (HASH permanent `discordId → JSON[]`, un tableau qui grandit à chaque clôture via `appendIndices()`), effacé par `resetGoblinHunters()` comme le reste de la manche en cours. `readPlayerIndices(discordId)` lit le carnet d'un seul joueur sans charger celui des autres. Le routage dans `interactions.js` passe désormais `discordId` à `handleJournal()` (auparavant appelé sans argument, contenu générique).
-
-### Messagerie — mur de messages anonymes, 1/jour/joueur (2026-08-26, sur demande explicite)
-
-Bouton `[📬 Messagerie]` sur l'embed de jour (3e bouton de la ligne Règles/Journal). Contrairement au reste du jeu, **c'est du live, pas résolu à la clôture** : un message posté est visible immédiatement au prochain clic de n'importe qui, pas seulement le lendemain.
-
-- **Lecture** : affiche les 3 derniers messages postés, dans l'ordre chronologique (plus ancien en premier, même convention que le carnet d'indices du Journal), chacun annoté `Jour N` mais **jamais l'auteur**. Ouverte à tout le monde (participant ou non), même principe que le bouton Règles.
-- **Écriture** : un 2e bouton `[✍️ Écrire un message]` n'apparaît que si le joueur est vivant et n'a pas encore posté aujourd'hui — clique dessus → ouvre une **Modal** Discord (texte libre, 200 caractères max, `type: 9` en réponse synchrone, même mécanisme que le bouton "Répondre" d'Anagram, voir `anagrams.js`) → soumission (`MODAL_SUBMIT`, `body.type === 5`, à ne pas confondre avec le type de réponse `5` DEFERRED) → message enregistré et confirmation éphémère.
-- **Anonymat structurel, pas juste un masquage à l'affichage** : `recordMessage()`/`listRecentMessages()` (`jeux/services/goblinhunters.js`) ne stockent JAMAIS le `discordId` de l'auteur avec le contenu du message (`goblinhunters:messages`) — impossible de le faire fuiter même en lisant le contenu brut de cette clé. Le quota quotidien (1/jour/joueur) vit dans une structure **séparée** (`goblinhunters:messages_sent:<jour>`, HASH `discordId → "1"`), jamais croisée avec le contenu des messages.
-- **Bornage à 3 messages** : `RPUSH` + `LTRIM(-3, -1)` à chaque envoi — pas de structure de purge séparée à maintenir, la LIST Redis se borne elle-même.
-- **Le quota est revérifié à l'écriture**, jamais fait confiance au seul fait que le bouton "Écrire" soit visible (l'affichage n'est qu'une aide UX, pas la garde réelle) — et sur le **jour courant relu depuis l'état**, jamais un jour capturé au moment de l'ouverture de la Modal (la partie a pu avancer si le joueur a mis du temps à écrire).
-- Nettoyé par `resetGoblinHunters()` comme le reste de la manche en cours (`goblinhunters:messages` + tous les `goblinhunters:messages_sent:*`).
-- Mentionnée dans `buildReglesEmbed()` (bouton `[📖 Règles]`), une ligne courte cohérente avec le style condensé du reste des Règles.
-
-⚠️ Fonctions I/O (`hasSentMessageToday`, `recordMessage`, `listRecentMessages`) volontairement non couvertes par `goblinhunters.test.js`, cohérent avec le reste du fichier : seules les fonctions **pures** (aucun accès Redis) y sont testées, jamais les wrappers I/O (`recordAction`, `registerPlayer`, etc. ne le sont pas non plus). Vérifié à la place par relecture de code + test isolé du rendu de l'embed (les 3 états : vide/rempli, vivant/éliminé, déjà envoyé/pas encore) et de la Modal exportée (`buildMessagerieModal()`), sans toucher au Redis réel — une partie était en cours au moment de l'implémentation, écrire un message de test dans `goblinhunters:messages` l'aurait fait apparaître pour de vrais joueurs.
-
-### Image du plateau
-
-`jeux/services/goblinhuntersImage.js` — même technique que `zoomImage.js` : `jeux/data/goblinhunters/images/board.jpg` encodé en `data:image/jpeg;base64,...`, injecté dans un `<image href="...">` de fond, rastérisé en PNG via `@resvg/resvg-js`. ⚠️ **JPEG, ni WebP ni AVIF** : l'asset original livré était un `.webp` ; un premier test avait semblé le valider (aucune exception levée), mais une vérification **visuelle** du rendu a révélé que resvg/usvg ignore silencieusement un `<image>` WebP OU AVIF embarqué en data URI — jamais d'erreur, juste un fond absent. Seuls PNG/JPEG/GIF sont réellement décodés. Le PNG converti (~2,3 Mo) était bien trop lourd pour un asset de repo ; le JPEG (converti puis recompressé manuellement, ~273 Ko actuellement) reste sans artefact visible perceptible, c'est le format retenu. `board.webp` (asset original) est conservé pour archive uniquement, jamais utilisé au rendu — toujours vérifier **visuellement** un rendu resvg avant de le considérer fonctionnel, l'absence d'exception ne garantit rien. Chaque joueur **vivant** apparaît en pastille positionnée sur son lieu courant (couleur neutre unique, **sans initiale** et **jamais** colorée par camp — ça fuiterait le secret ou l'identité), les joueurs **éliminés** apparaissent en bande grisée en bas de l'image avec la couleur de leur camp révélé (jamais le rôle précis). Servie par la route Express `GET /api/goblinhunters/image?jour=` (`backend/server.js`), référencée par URL dans l'embed — jamais un attachment Discord, même principe que Frame/Zoom. Le rendu reflète toujours l'état **courant** de la partie (pas un instantané historique par jour) : l'ancien message est supprimé avant chaque repost, `jour` ne sert qu'à invalider le cache Discord. Les coordonnées de chaque lieu (`LIEU_ANCHORS`) sont calibrées à l'œil sur l'aperçu généré — à affiner par itération visuelle si besoin, comme l'historique de réglage documenté dans `zoomImage.js`. Chaque lieu porte une pastille numérotée (`numero` dans `goblinhunters.json`, 1 = Château … 5 = Clairière), dessinée au-dessus de son ancre (`buildLieuBadgesSvg`) et reprise dans les libellés des boutons (`1. Château`) et le texte des règles — permet de désigner un lieu par son numéro dans les discussions.
-
-### Image de fin de partie
-
-`getEndImage()` (`jeux/services/goblinhuntersImage.js`) sert `jeux/data/goblinhunters/images/end.webp` **tel quel** — pas de composition SVG/resvg ici, juste une lecture de fichier mise en cache mémoire. ⚠️ Pas de conflit avec la limitation resvg documentée ci-dessus (PNG/JPEG/GIF uniquement pour un `<image>` embarqué) : cette contrainte ne concerne QUE resvg qui rastérise un SVG, pas un fichier servi directement — Discord décode nativement le WebP dans un embed, aucun souci. Route dédiée `GET /api/goblinhunters/end-image` (`backend/server.js`), sans paramètre (un seul fichier, inchangé toute la manche, pas de cache-busting nécessaire). Référencée dans `buildOutcomeEmbed()`.
-
-La liste "Révélation des identités" précise, pour chaque joueur : un symbole vivant/mort (✅/☠️, distinct du camp/rôle) et le rôle spécial le cas échéant (`(Éclaireur)`/`(Bûcheron)`/`(Infiltré)`) — les deux ajoutés sur demande explicite, absents de la version initiale qui ne montrait que le camp.
-
-### Image d'inscription
-
-Même principe que l'image de fin de partie : `getStartImage()` (`jeux/services/goblinhuntersImage.js`) sert `jeux/data/goblinhunters/images/start.webp` **tel quel** (aucune composition resvg), route dédiée `GET /api/goblinhunters/start-image` (`backend/server.js`), sans paramètre. Référencée sur les **3** gabarits d'inscription (`buildAnnonceInscriptionEmbed()`, `buildInscriptionRappelEmbed()`, `buildInscriptionReportEmbed()`), pas seulement l'annonce initiale — le message d'inscription est PATCHé en place à chaque inscription/désinscription en réutilisant toujours le gabarit "rappel" (`refreshInscriptionMessage()`, compteur live sur le bouton) ; sans l'image sur les 3 gabarits, elle disparaîtrait du message dès le premier clic S'inscrire/Se désinscrire.
-
-### Messages de tension — victoire imminente
-
-`buildJourEmbed()` ajoute une ligne narrative supplémentaire quand une victoire devient possible **dès la clôture du jour affiché**, en plus du "Villageois/Gobelins en vie" déjà public :
-
-- **1 seul Gobelin en vie** (`gobelinsVivants === 1`) → pool `tension_gobelin_dernier` (les Villageois peuvent gagner par élimination totale).
-- **Gobelins à 1 mort de la parité** (`gobelinsVivants === chasseursVivants - 1`, avec au moins 1 Gobelin vivant) → pool `tension_parite_proche`.
-- **Les deux à la fois** (fin de partie très serrée, ex. 1 Gobelin / 2 Villageois) → pool dédié `tension_double`, plutôt que de choisir arbitrairement l'un des deux messages précédents.
-- **Approche du Jour 10** (`jour >= config.duree_jours - 1`, donc les 2 derniers jours) → pool `tension_derniers_jours`, indépendant du compte de joueurs, rappelle l'échéance de victoire par défaut des Villageois.
-
-Ce ne sont jamais des fuites d'info : les comptes par camp sont déjà publics (voir plus haut), ces messages ne font que les mettre en avant narrativement. Sélection déterministe par jour (`pickFlavor()`), textes dans `jeux/data/goblinhunters/narratifs.json`.
-
-### Stockage — Upstash Redis (`goblinhunters:*`)
-
-Même instance et mêmes conventions que les autres jeux (`automaticDeserialization: false`). Espace de clés `goblinhunters:*`, totalement séparé.
-
-| Clé Redis                            | Type              | Contenu                                                                                                                                                                                                                                                                                                                                             |
-| ------------------------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `goblinhunters:state`                | STRING            | `{ phase, jour, channelId, messageId, publishedAt, termine, closingAt?, openedAt?, cloture?, joueurs? }` — `joueurs` = roster complet (camp, rôle, PV, position, vivant, camp révélé) une fois la partie lancée                                                                                                                                                          |
-| `goblinhunters:inscriptions`         | HASH              | `discordId → { username, registeredAt }` — vidée au lancement de la partie                                                                                                                                                                                                                                                                          |
-| `goblinhunters:actions:<jour>`       | HASH              | `discordId → { primary: {lieu, cibleId}, secondary? }` — écrasable, jetable, effacé après clôture du jour. Le vote d'accusation du Château **n'a pas de clé séparée** : voter est juste `{lieu:"chateau", cibleId}` dans cette même structure (`computeVoteTally()` l'en extrait) — voir "Vote du Château" plus bas pour l'incident que ça corrige. |
-| `goblinhunters:historique`           | HASH              | `jour → { eliminationsParVote, deathIdCombat, investigations, voteTally, victory, resolvedAt }` — bilans quotidiens de la manche EN COURS, effacé par `resetGoblinHunters()`                                                                                                                                                                        |
-| `goblinhunters:manches`              | HASH              | `manche → { manche, victory, jourFinal, resolvedAt }` — un bilan par manche TERMINÉE, jamais nettoyé                                                                                                                                                                                                                                                |
-| `goblinhunters:manche_seq`           | STRING (compteur) | Numéro de la prochaine manche à archiver, incrémenté (`INCR`) à chaque fin de partie réelle (jamais en dry-run)                                                                                                                                                                                                                                     |
-| `goblinhunters:messages`             | LIST              | Les 3 derniers messages anonymes (`{ content, jour }`, jamais de `discordId`), `RPUSH` + `LTRIM(-3,-1)` à chaque envoi                                                                                                                                                                                                                              |
-| `goblinhunters:messages_sent:<jour>` | HASH              | `discordId → "1"` — quota 1 message/jour/joueur, séparé du contenu pour ne jamais pouvoir croiser auteur/message                                                                                                                                                                                                                                    |
-
-### Scripts npm (Goblin Hunters)
-
-| Commande                                  | Effet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run goblinhunters:test`              | Poste manuellement l'étape courante sur le salon de test (`DISCORD_CHANNEL_FRAME_TEST`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `npm run goblinhunters:test:dry`          | Aperçu console de la prochaine étape, sans écrire d'état ni poster sur Discord. Pendant la phase inscription, affiche aussi la répartition camps/rôles qu'un lancement produirait (sans l'appliquer).                                                                                                                                                                                                                                                                                                                                                                         |
-| `npm run goblinhunters:test:force-close`  | ⚠️ **TESTS UNIQUEMENT**, jamais câblé dans `goblinhunters.yml` — ignore l'échéance réelle de la fenêtre d'inscription (2 jours) pour déclencher immédiatement le lancement dès l'effectif minimum atteint. Combinable avec `--dry-run` pour prévisualiser sans lancer pour de vrai.                                                                                                                                                                                                                                                                                           |
-| `npm run goblinhunters:seed-test-pool`    | ⚠️ **TESTS UNIQUEMENT** — inscrit un faux pool de 8 joueurs (IDs `test_fake_1`…`test_fake_8`, tout l'effectif minimum) pour pouvoir tester entièrement seul dans le salon de test, sans second testeur. Les DM de rôle échouent proprement pour ces faux comptes au lancement (catch déjà en place), sans incidence sur le reste. Accepte un nombre différent en argument (`node jeux/scripts/seedGoblinHuntersTestPool.js 4`).                                                                                                                                                    |
-| `npm run goblinhunters:scatter-test-pool` | ⚠️ **TESTS UNIQUEMENT**, à lancer une fois la partie démarrée (`goblinhunters:test:force-close`) — répartit les faux joueurs sur les 5 lieux (round-robin déterministe) au lieu de les laisser tous groupés au Château, où le pass automatique les ramènerait sinon indéfiniment (aucun ne clique jamais de bouton). Effet immédiat sur `state.joueurs[].position` **et** persistant (soumet une action "reste ici" en leur nom pour le jour en cours) — à relancer chaque jour de test pour qu'ils restent en place plutôt que de retomber au Château à la clôture suivante. |
-| `npm run goblinhunters:public`            | Poste sur le salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) — utilisé par le cron `goblinhunters.yml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `npm run goblinhunters:public:dry`        | Équivalent dry-run de `goblinhunters:public`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `npm run goblinhunters:reset`             | Remet Goblin Hunters à zéro : plus de partie active, inscriptions/actions/votes/historique de la manche en cours effacés. **Destructif** — préserve toujours `goblinhunters:manches`.                                                                                                                                                                                                                                                                                                                                                                                         |
-| `npm run goblinhunters:reset:manches`     | Identique, mais efface aussi `goblinhunters:manches`/`goblinhunters:manche_seq`. **Destructif**, à réserver au filet de sécurité.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `npm run goblinhunters:status`            | Affiche l'état courant (phase, roster complet avec camps/rôles/PV/positions, progression des actions du jour) sans passer par Discord. ⚠️ **Sortie admin uniquement** — spoile les camps/rôles, ne jamais la partager avec les joueurs en cours de partie.                                                                                                                                                                                                                                                                                                                    |
-
-### Tester une partie complète (Goblin Hunters)
-
-1. `npm run goblinhunters:seed-test-pool` — inscrit 8 faux joueurs (effectif minimum atteint, aucun second testeur nécessaire).
-2. `npm run goblinhunters:test` — ouvre la fenêtre d'inscription sur le salon de test.
-3. `npm run goblinhunters:test:force-close` — clôture immédiatement les inscriptions et lance la partie (les DM de rôle échouent silencieusement pour les faux comptes, sans incidence).
-4. `npm run goblinhunters:scatter-test-pool` — répartit les faux joueurs sur les 5 lieux (sinon ils restent tous groupés au Château, aucune cible co-localisée disponible pour tester le combat/l'enquête). À **relancer chaque jour de test** (avant l'étape 5) pour qu'ils restent à leur place plutôt que de retomber au Château au pass automatique.
-5. Chaque jour : clique un bouton de lieu (+ cible si besoin) dans le salon de test, puis `npm run goblinhunters:test` clôture le jour et publie le suivant. Pas de contrainte d'horaire une fois la partie lancée, contrairement à la fenêtre d'inscription.
-6. `npm run goblinhunters:reset` une fois le test terminé.
-
-### Déroulement en production (Goblin Hunters)
-
-Même principe que les autres jeux collaboratifs : seule l'ouverture de la fenêtre d'inscription est déclenchée à la main (`workflow_dispatch` sur `goblinhunters.yml`, ou `npm run goblinhunters:public`) — tout le reste (rappels quotidiens pendant l'inscription, lancement une fois l'effectif atteint et la fenêtre close, clôture de chaque jour de jeu) est pris en charge automatiquement par le cron de 08:00 UTC (`--require-active`, ne fait jamais rien tant qu'aucune fenêtre d'inscription n'a été ouverte manuellement) — voir `Déroulement (Goblin Hunters)` plus haut et `.github/workflows/goblinhunters.yml`, calqué sur `bossraid.yml`.
-
-### Variables d'environnement requises (Goblin Hunters)
-
-Aucune nouvelle variable : Goblin Hunters réutilise `DISCORD_CHANNEL_FRAME_TEST`/`DISCORD_CHANNEL_FRAME_PUBLIC` et `KV_REST_API_URL`/`KV_REST_API_TOKEN` (même instance Upstash Redis, espace de clés `goblinhunters:*` totalement séparé). Le workflow `.github/workflows/goblinhunters.yml` réutilise les mêmes secrets GitHub Actions que les autres jeux (déjà configurés, rien à ajouter).
+`DISCORD_PUBLIC_KEY`, `DISCORD_APP_ID`, `DISCORD_TOKEN` (requises) ; `AUTHORIZED_GUILD_IDS` (liste blanche des serveurs, vide = tous), `AUTHORIZED_PING_IDS`. Toute nouvelle variable : `api/discord/interactions.js`, `.env.example` et Vercel (voir `AGENTS.md`).
 
 ---
 
 ## Détection des arrivées en cours de GDC
 
-### Contexte
+Objectif : ne pas pénaliser dans les listes d'échec les membres arrivés pendant la semaine de GDC.
 
-Plusieurs commandes Discord doivent distinguer les membres « installés » (présents toute la semaine de GDC) des membres « arrivés en cours de GDC » (nouveaux recruits, transferts). Les nouveaux arrivants ne doivent pas être pénalisés dans les listes de fail.
+- `streakInCurrentClan` (`buildWarHistory()`, `backend/services/warHistory.js`) : nombre de semaines **terminées** consécutives dans le clan actuel (semaine en cours exclue). Exposé côté clan sous `arrivalStreakInCurrentClan` / `arrivalTotalWeeks`.
+- `isJoinedThisWar(streakInCurrentClan, day1Decks = null, totalDecks = null, maxDecks = 16)` (`backend/services/arrivalUtils.js`) :
 
-### Source : `streakInCurrentClan`
+| `streakInCurrentClan` | Autres paramètres | Résultat |
+| --- | --- | --- |
+| `null` | | installé |
+| `0` | `day1Decks > 0` | installé (a pu jouer dès le J1) |
+| `0` | sinon | arrivé en cours de GDC |
+| `1` | `day1Decks === 0` | arrivé (a raté le J1, 16/16 impossible) |
+| `1` | `day1Decks` inconnu | arrivé si `totalDecks < maxDecks` (ou `totalDecks` inconnu) |
+| `1` avec `day1Decks ≥ 1`, ou `≥ 2` | | installé |
 
-Le service `buildWarHistory()` dans `backend/services/warHistory.js` parcourt le race log du clan (de la semaine la plus récente à la plus ancienne) et calcule `streakInCurrentClan` : le nombre de **semaines complètes consécutives** où le joueur était présent dans le clan actuel. La semaine en cours est exclue car incomplète.
+- `hasLateArrivalDailyPattern(daily)` (même fichier) : arrivé si les 2 premiers jours au moins sont sans donnée de snapshot (cas d'un départ puis retour dans la semaine, que le streak masque).
 
-### Fonction utilitaire : `isJoinedThisWar()`
-
-**Fichier :** `backend/services/arrivalUtils.js`
-
-```js
-isJoinedThisWar(streakInCurrentClan, (day1Decks = null));
-```
-
-| `streakInCurrentClan` | `day1Decks`   | Résultat                                                               |
-| --------------------- | ------------- | ---------------------------------------------------------------------- |
-| `0`                   | _ignoré_      | ✅ Arrivé en cours de GDC (0 semaine complète)                         |
-| `1`                   | `null` ou `0` | ✅ Arrivé en début de GDC (1 semaine complète, mais pas de deck au J1) |
-| `1`                   | `>= 1`        | ❌ Membre installé (a joué au J1, peut faire 16/16)                    |
-| `>= 2`                | _ignoré_      | ❌ Membre installé                                                     |
-
-### Commandes utilisatrices
-
-| Commande  | Fichier                                 | Usage                                                                          |
-| --------- | --------------------------------------- | ------------------------------------------------------------------------------ |
-| `/demote` | `api/discord/_routes/suiviGdc.js`       | Sépare les arrivés en cours de GDC des réguliers dans la liste des fails 16/16 |
-| `/fail`   | `api/discord/_routes/suiviGdc.js`       | Exclut les arrivés en cours de GDC de la liste des fails journaliers           |
+| Usage | Règle |
+| --- | --- |
+| `notifyWarSummary.js` (résumé quotidien) | `isJoinedThisWar()` pour ne pas compter les arrivants comme manquants |
+| `/demote` | Sépare arrivés et réguliers via `joinedThisWeek`, calculé dans `backend/routes/clan.js` : `lateArrival` ou streak 0 ou (streak 1 et pas de donnée J1) ou `hasLateArrivalDailyPattern()` |
+| `/fail` | N'exclut pas les arrivants : ils sont listés et annotés 🆕 si `arrivalTotalWeeks ≤ 1` |
 
 ---
 
 ## Glossaire
 
-### Full mode
+### Temps et périodes
 
-Mode principal de calcul du score de fiabilité joueur.
-Il est utilisé quand l’historique River Race permet de construire une warHistory suffisamment fiable.
-
-Où le trouver :
-
-- calcul dans backend/services/warScoring.js via computeWarScore() ;
-- décision d’utiliser ce mode dans backend/services/playerAnalysis.js et backend/routes/clan.js.
-
-Comment savoir si ce mode est actif :
-
-- côté joueur, analysis.warScore existe sans isFallback ;
-- côté clan, le membre a un warScore calculé depuis l’historique et non depuis le fallback.
-
-### Fallback mode
-
-Mode dégradé utilisé quand l’historique River Race est absent, insuffisant ou non exploitable.
-Le calcul se base surtout sur le battle log, quelques métadonnées joueur et éventuellement les decks live de currentRace.
-
-Où le trouver :
-
-- calcul dans backend/services/warScoring.js via computeWarReliabilityFallback() ;
-- sélection du mode dans backend/services/playerAnalysis.js et backend/routes/clan.js.
-
-Comment le reconnaître :
-
-- le payload contient isFallback: true dans le score calculé.
-
-### Reset times
-
-Heures officielles de reset GDC par clan, exprimées en UTC.
-Elles servent à déterminer le vrai changement de journée de guerre.
-
-Où trouver la valeur :
-
-- packages/clash-royale/dateUtils.js, constante CLAN_RESET_TIMES.
-
-Comment l’utiliser :
-
-- ne pas recalculer à la main ;
-- toujours passer par warResetOffsetMs(clanTag) pour obtenir l’offset en millisecondes.
-
-### Saison
-
-Cycle Clash Royale d’environ un mois, commençant le premier lundi du mois après le reset de guerre.
-Une saison contient 3 à 5 semaines de guerre.
-
-Où trouver ou calculer la valeur :
-
-- `seasonId` est une `source de vérité` fournie par l’API sur `raceLog[0]` ;
-- `sectionIndex` est une `source de vérité` fournie par l’API et commence à `0` ;
-- le `weekId` courant se calcule avec `computeCurrentWeekId(currentRace, raceLog)` dans `packages/clash-royale/dateUtils.js` ;
-- le `seasonId` courant se calcule avec `computeCurrentSeasonId(currentRace, raceLog)` dans `packages/clash-royale/dateUtils.js`.
-- le nombre de manches du jeu Frame sur la saison en cours (X dans "Manche N/X") se calcule par **calcul purement calendaire**, indépendant de l'API Clash Royale : `getCurrentSeasonBounds(now)` détermine les bornes `[premier lundi du mois, premier lundi du mois suivant)`, et `computeSeasonMancheTotal(now)` compte les mercredis dans cet intervalle — les deux dans `packages/clash-royale/dateUtils.js`. Risque résiduel accepté : si Supercell décale une transition de saison par rapport à cette règle documentée, le calcul divergerait de la réalité jusqu'à correction manuelle.
-
-### Jours de GDC
-
-Les jours de guerre actifs de la semaine, du jeudi au dimanche.
-Le code raisonne en journée GDC et non en simple journée civile UTC.
-
-Où le trouver ou le calculer :
-
-- `warDayKey()` dans `packages/clash-royale/dateUtils.js` est un `calcul fiable` à partir d’un timestamp et d’un `reset` de clan ;
-- `buildCurrentWarDays()` dans `backend/services/playerAnalysis.js` est un `calcul fiable` des jours actifs de la semaine courante ;
-- `getEndedWarDay()` dans `scripts/notifyWarSummary.js` est un `calcul fiable` du jour de guerre qui vient de se terminer.
-
-### Jours de Colisée
-
-Journées où la course est en période Colosseum au lieu du warDay classique.
-Le traitement des points y reste cumulatif à l’échelle de la semaine — mais c'est
-vrai aussi en GDC normale (`participants[].fame` ne se remet jamais à zéro entre
-J1 et J4, dans les deux types de semaine). Ce qui **change vraiment** entre les
-deux, c'est la métrique qui détermine le vainqueur : voir
-`docs/api-clash-royale.md` § "Classement final GDC" et `backend/services/warStandings.js`
-(nouveau module qui centralise ce calcul, utilisé par `backend/routes/clan.js` et
-`scripts/notifyWarSummary.js`).
-
-Où le trouver :
-
-- `periodType` est une `source de vérité` renvoyée par l’API de guerre ;
-- la logique de résumé dans `scripts/notifyWarSummary.js` est un `calcul fiable` pour convertir ce contexte en résumé quotidien ;
-- `computeGroupStandings()` / `computeClanStanding()` dans `backend/services/warStandings.js` sont le `calcul fiable` du classement/de la victoire assurée, pour les deux types de semaine.
-
-Comment les reconnaître :
-
-- un jour est Colisée si `periodType === "colosseum"`.
+| Terme | Définition | Où trouver la valeur |
+| --- | --- | --- |
+| Reset times | Heure UTC de reset GDC propre à chaque clan (09:45, 09:51, 09:50) | `CLAN_RESET_TIMES`, `packages/clash-royale/dateUtils.js`. ⚠️ Ne jamais recalculer : passer par `warResetOffsetMs(clanTag)` |
+| Saison | Cycle d'environ un mois commençant le premier lundi du mois après le reset ; 3 à 5 semaines de guerre | `seasonId` (API, `raceLog[0]`), `sectionIndex` (API, base 0) ; courants via `computeCurrentSeasonId()` / `computeCurrentWeekId(currentRace, raceLog)` ; numéro public = `toPublicSeasonId()` / `toPublicWeekId()` (`dateUtils.js`) |
+| Jours de GDC | Jeudi à dimanche, raisonnés en journée GDC (reset du clan), pas en journée civile UTC | `warDayKey()` (`dateUtils.js`), `buildCurrentWarDays()` (`playerAnalysis.js`), `getEndedWarDay()` (`scripts/notifyWarSummary.js`) |
+| `periodType` | Type de période renvoyé par l'API | `"warDay"` = GDC normale, `"colosseum"` = Colisée |
+| Jours de Colisée | Semaine où `periodType === "colosseum"` : le vainqueur se décide sur la fame cumulée, pas sur le bateau | Voir « Détermination de la position » |
 
 ### Journées jouées après la ligne d'arrivée (GDC normale)
 
-Une fois la ligne d'arrivée franchie (`clan.finishTime` ≠ `19691231T235959.000Z`,
-dans `currentriverrace` ou `riverracelog` → `standings[].clan`), l'API continue de
-compter les `decksUsed` mais **ne crédite plus aucun point** (`participants[].fame`
-figé). Vu le 11/10/2026 : ligne franchie 1 min après le reset du J4, puis 123 decks
-joués pour +200 pts seulement.
-
-Le bateau n'avançant qu'au reset, une `finishTime` à moins de 30 min du début d'une
-journée signifie que la course était gagnée avant cette journée
-(`isRaceFinishedBeforeDay()` dans `scripts/notifyWarSummary.js`). Pour ces journées,
-le résumé GDC affiche « Non comptabilisés (victoire acquise) » au lieu des points, sans
-delta de decks ni combats/duels manquants ; le bilan hebdo exclut leurs decks de
-« Points moyens / deck » et leurs jours des duels manquants.
-
-**Decks attendus d'une semaine** (`backend/services/warStandings.js`, source de vérité) :
-`countedWarDaysFromRaceLog()` (semaine terminée : `finishTime` vs `createdDate`, qui
-tombe au reset de fin du J4) et `countedWarDaysFromCurrentRace()` (semaine en cours :
-`finishTime` vs `periodIndex`) donnent le nombre de journées comptabilisées (1-4).
-Les semaines de `warHistory` portent `maxDecks` = journées × 4 (16, ou 12 si la ligne
-est franchie au reset du J4). Une semaine est complète si `decksUsed >= maxDecks`
-(`isFullWeek()`) ; `countedWeekDecks()` plafonne les decks au maximum pour les ratios
-points/deck. Appliqué partout : fiche joueur (graphique, tableau, carte GDC en cours,
-score de régularité), page clan (oublis, colonne dernière GDC, GDC en cours),
-`/stats`, `/demote`, `/fail`, `/late`, `/chelem`. Le Colisée n'a pas de `finishTime` :
-toujours 16.
-
-Garde-fou général : un total journalier inférieur à 50 pts par deck joué
-(`MIN_FAME_PER_DECK`) est mathématiquement impossible hors course gagnée et est
-remplacé par « Données indisponibles (valeur incohérente avec les decks joués) ».
-La moyenne hebdo « Points moyens / deck » est masquée sous ce même seuil.
-
-La preuve de victoire J3 (`computeDay3ClinchProof`, utile surtout en Colisée où il
-n'y a pas de `finishTime`) est stockée dans Redis (`dedup:warclinch`) : l'ancien
-fichier `data/war-clinch-log.json` n'était jamais persisté entre deux runs GitHub
-Actions.
-
-### Clans autorisés
-
-Liste fermée des clans de la famille pour lesquels l’analyse complète de clan est autorisée.
-
-Où trouver la valeur :
-
-- `ALLOWED_CLANS` est la `source de vérité` dans `backend/routes/clan.js`.
-
-Valeurs actuelles :
-
-- `Y8JUPC9C`
-- `LRQP20V9`
-- `QU9UQJRL`
-
-> Note : la famille comporte désormais aussi le clan **La Treve** (`QUV220GJ`) pour les résumés `/family` et la vue collective, mais il n'est pas inclus dans `ALLOWED_CLANS` car il ne reçoit pas l'analyse complète de clan.
-
-### Famille
-
-Ensemble des clans autorisés considérés comme un même périmètre métier pour l’historique et certaines règles de continuité.
-
-Où trouver la valeur :
-
-- `FAMILY_CLAN_TAGS` est une `source de vérité` dans `backend/services/warHistory.js` ;
-- `backend/routes/clan.js` réutilise `ALLOWED_CLANS` pour la même famille métier.
-
-### Score de fiabilité (joueur)
-
-Score principal affiché pour un joueur, exprimé en pourcentage du maximum du mode actif.
-Il provient soit du full mode, soit du fallback mode.
-
-Où trouver la valeur :
-
-- `warScore.total` est un `calcul fiable` ;
-- `warScore.maxScore` est un `calcul fiable` selon les critères disponibles ;
-- `warScore.pct` est un `calcul fiable` dérivé des deux précédents ;
-- l’endpoint `GET /api/player/:tag/analysis` est la `source de vérité` de l’API pour ce score.
-
-### Score de fiabilité (clan)
-
-Il n’existe pas aujourd’hui de score unique canonique pour un clan entier.
-La vue clan s’appuie surtout sur les scores de fiabilité de ses membres et sur leurs verdicts.
-
-Où trouver les données utiles :
-
-- l’endpoint `GET /api/clan/:tag/analysis` est la `source de vérité` ;
-- `members[].reliability` et `members[].verdict` sont des `calculs fiables` par membre ;
-- `membersRaw` contient des données plus brutes, utiles pour le debug ;
-- il n’existe pas de champ canonique `scoreClan` calculé une seule fois et stocké comme vérité métier.
-- pour le résumé pré-GDC hebdo, le script stocke néanmoins un champ `scoreClan` dans le log anti-doublon (Upstash Redis, clé `dedup:pregdcweekly`) afin de suivre l’évolution semaine après semaine.
-
-Comment l’interpréter :
-
-- la “fiabilité du clan” est une `estimation` agrégée à partir de la distribution des membres, pas une formule unique stockée dans un champ dédié.
-
-### Statut `isNew` (Nouveau joueur)
-
-Indique si un joueur est considéré comme "nouveau" dans la famille TrustRoyale. Un joueur est nouveau si **aucune semaine de GDC complétée avec > 0 decks** n'a été trouvée dans l'un des 3 clans familiaux (`FAMILY_CLAN_TAGS`).
-
-**Algorithme** (dans `computeIsNewPlayer`, `playerAnalysis.js:397`) :
-
-1. `hasCompletedWarWeeks` = `totalWeeks > 0` (compte les semaines terminées avec > 0 decks dans un clan familial)
-2. `isNewClanArrivee` = `streak < 2` ET `totalWeeks > 1` (joueur transféré entre clans de la famille, pas encore installé)
-3. Est "nouveau" si : `isNewClanArrivee` **ou** (`hasCompletedWarWeeks === false` **ou** seule la semaine en cours existe)
-
-**Source de vérité** :
-
-- `playerAnalysis.js:computeIsNewPlayer` — unique fonction de calcul, utilisée par les routes joueur et clan
-- Même logique utilisée dans l'API (`/api/player/:tag/analysis` et `/api/clan/:tag/analysis`) et le bot Discord
-
-⚠️ **Régression** : `totalWeeks` (depuis `warHistory.js`) ne compte que les semaines familiales (> 0 decks, non-current). Toute modification de `totalWeeks` doit vérifier que `computeIsNewPlayer` reste cohérent. Toute modification de `computeIsNewPlayer` doit être testée via `analysisService.test.js`.
-
-### Snapshot
-
-Capture persistée de l’état de guerre à un instant donné, utilisée pour reconstituer les deltas journaliers de decks et de points.
-
-Où trouver la valeur :
-
-- `backend/services/snapshot.js` est la logique de lecture/écriture ;
-- Upstash Redis (clé `snapshots:<TAG>`) est l'unique stockage ;
-- `scripts/collectSnapshots.js` et `scripts/preResetSnapshot.js` produisent ces snapshots.
-
-Champs utiles :
-
-- `snapshotTime` est une `source de vérité` si présente dans le snapshot ;
-- `snapshotBackupTime` est une `source de vérité` de secours ;
-- `decks` est une `source de vérité` du snapshot ;
-- `_cumul` et `_cumulFame` sont des `calculs fiables` persistés pour comparer les jours ;
-- les versions `pre-reset` servent de `source de vérité` de secours pour la journée précédant le reset.
-
-### Decks cumul
-
-Total cumulé de decks joués depuis le début de la semaine de guerre pour un joueur ou un clan.
-
-Où trouver la valeur :
-
-- `currentRace.clan.participants[].decksUsed` est la `source de vérité` live ;
-- `_cumul` dans les snapshots est une `source de vérité` persistée pour la semaine courante ;
-- `decksUsed` dans `warHistory.weeks[]` est un `calcul fiable` basé sur le `riverracelog`.
-
-### Decks journaliers
-
-Nombre de decks joués pendant une seule journée GDC.
-
-Comment le calculer :
-
-- `decks` dans un snapshot journalier est une `source de vérité` si le snapshot est disponible ;
-- le delta entre deux cumuls consécutifs est un `calcul fiable` à partir de la source de vérité ;
-- `buildCurrentWarDays()` et `warSnapshotDays` servent de `calcul fiable` de reconstitution pour la vue joueur.
-
-### Decks journaliers live
-
-Decks joués pendant le jour courant, par joueur.
-
-Où trouver la valeur :
-
-- `currentRace.clan.participants[].decksUsedToday` est la `source de vérité` pour le jour courant, disponible pour tous les clans du groupe (`currentRace.clans[i].participants[].decksUsedToday`) sans appel supplémentaire.
-- `currentRace.clan.participants[].decksUsed` est la `source de vérité` pour le cumul hebdomadaire.
-- la semaine live construite dans `buildWarHistory()` avec `isCurrent: true` est un `calcul fiable` d’assemblage.
-
-### Points (fame) cumul
-
-Total de points accumulés depuis le début de la semaine de guerre.
-
-Où trouver la valeur :
-
-- `currentRace.clan.participants[].fame` est la `source de vérité` live ;
-- `_cumulFame` dans les snapshots est une `source de vérité` persistée ;
-- `warHistory.weeks[].fame` est un `calcul fiable` d’historique.
-
-### Points (fame) journaliers
-
-Points gagnés pendant une seule journée GDC.
-
-Où trouver la valeur :
-
-- `currentRace.clan.periodPoints` (et `currentRace.clans[i].periodPoints`) est la `source de vérité` pour le **jour courant** — disponible sans calcul pour tous les clans du groupe dans un seul appel API.
-- `currentRace.periodLogs[i].items[j].pointsEarned` est la `source de vérité` pour les **jours terminés** (J1, J2, J3 disponibles pendant J4 ; disparaît après le reset hebdomadaire du lundi).
-- `computeDailyFame(dayEntry, prevDayEntry)` reste un `calcul fiable` de secours (delta `_cumulFame` snapshot) quand `periodLogs` n’est pas disponible (J4 après reset, ou appel échoué).
-- `debugSnapshotInfo` expose des valeurs journalières déjà calculées pour le debug.
-
-Structure de `periodLogs` :
-
-```json
-{
-  "periodLogs": [
-    {
-      "periodIndex": 3,
-      "items": [
-        {
-          "clan": { "tag": "#LRQP20V9" },
-          "pointsEarned": 30500,
-          "progressStartOfDay": 0,
-          "progressEndOfDay": 3323,
-          "endOfDayRank": 0,
-          "progressEarned": 3000,
-          "numOfDefensesRemaining": 13,
-          "progressEarnedFromDefenses": 323
-        }
-      ]
-    }
-  ]
-}
-```
-
-`periodLogs` contient 1 entrée par jour de guerre **terminé** (J1→J3 visibles le J4). L’ordre est chronologique : J1 = `[0]`, J2 = `[1]`, J3 = `[2]`. À utiliser via `periodLogs[WAR_DAY_NUMBER[warDay] - 1]`.
-
-⚠ **Ne pas confondre `pointsEarned` et `progressEarned`** :
-
-- `pointsEarned` = fame de bataille (ex : 30 500) — c’est la valeur à utiliser.
-- `progressEarned` = points de classement CR (ex : 3 000) — non pertinent pour les résumés de guerre.
-
-### Points (fame) live
-
-Valeur instantanée observée sur l’API pendant la journée courante.
-
-Où trouver la valeur :
-
-- `currentRace.clan.periodPoints` est la `source de vérité` pour le **jour courant** (tous les clans du groupe via `currentRace.clans[i].periodPoints`). Remplace tout calcul delta snapshot pour la journée en cours.
-- `currentRace.clan.participants[].decksUsedToday` est la `source de vérité` pour les decks du jour courant, par joueur.
-
-⚠ **À ne pas utiliser pour les pts du jour** :
-
-- `currentRace.clan.fame` (et `currentRace.clans[i].fame`) = **score de progression de classement** (environ 3 000–10 000), **pas** les points de bataille. C’est l’équivalent de `progressEndOfDay` du dernier jour terminé. Ne jamais l’utiliser comme proxy des points de guerre du clan.
-- `sum(currentRace.clan.participants[].fame)` = cumul hebdomadaire des points de bataille depuis J1 — à utiliser pour `currentFame` (total semaine), pas pour les pts du jour.
-
-Comment l’interpréter :
-
-- en `warDay` : `periodPoints` donne directement les pts du jour, pour tous les clans du groupe.
-- en `colosseum` : `periodPoints` reste la source de vérité pour le jour courant.
-
-### `periodType`
-
-Indique le type de période fournie par l’API de guerre.
-
-Où trouver la valeur :
-
-- `periodType` est une `source de vérité` issue de l’API Clash Royale.
-
-Comment l’utiliser :
-
-- `periodType === "warDay"` indique une journée de guerre classique ;
-- `periodType === "colosseum"` indique une journée de Colisée ;
-- les calculs de résumé s’appuient dessus pour décider si la fame doit être cumulée ou soustraite.
+- Une fois la ligne franchie (`clan.finishTime` ≠ `19691231T235959.000Z`, dans `currentriverrace` ou `riverracelog` → `standings[].clan`), l'API compte encore les `decksUsed` mais **ne crédite plus aucun point** (`participants[].fame` figé).
+- Le bateau n'avançant qu'au reset, une `finishTime` à moins de 30 min du début d'une journée signifie que la course était gagnée avant elle (`isRaceFinishedBeforeDay()`, `notifyWarSummary.js`) : le résumé affiche « Non comptabilisés (victoire acquise) » sans delta de decks ni combats manquants ; le bilan hebdo exclut ces decks de « Points moyens / deck » et ces jours des duels manquants.
+- **Decks attendus d'une semaine** (`backend/services/warStandings.js`) : `countedWarDaysFromRaceLog()` (semaine terminée, `finishTime` vs `createdDate`) et `countedWarDaysFromCurrentRace()` (semaine en cours, `finishTime` vs `periodIndex`) donnent 1 à 4 journées comptées ; `maxDecks` = journées × 4 (16, ou 12 si la ligne est franchie au reset du J4) ; semaine complète si `decksUsed >= maxDecks` (`isFullWeek()`) ; `countedWeekDecks()` plafonne pour les ratios points/deck. Appliqué partout (fiche joueur, page clan, `/stats`, `/demote`, `/fail`, `/late`, `/chelem`). Colisée : pas de `finishTime`, toujours 16.
+- Garde-fou : un total journalier < 50 pts par deck joué (`MIN_FAME_PER_DECK`) est impossible hors course gagnée et s'affiche « Données indisponibles (valeur incohérente avec les decks joués) » ; la moyenne hebdo « Points moyens / deck » est masquée sous ce seuil.
+
+### Clans
+
+| Terme | Définition | Où trouver la valeur |
+| --- | --- | --- |
+| Clans autorisés | Clans recevant l'analyse complète : `Y8JUPC9C` (La Resistance), `LRQP20V9` (Les Resistants), `QU9UQJRL` (Les Revoltes) | `ALLOWED_CLANS`, `backend/routes/clan.js` |
+| Famille | Même liste, périmètre de l'historique et de la continuité | `FAMILY_CLAN_TAGS`, `packages/clash-royale/famille.js` (réexporté par `warHistory.js`). La Treve (`QUV220GJ`) apparaît dans `/family` et la vue collective mais pas dans l'analyse complète |
+| Full mode / Fallback mode | Modes du score de fiabilité | Voir « Score de fiabilité » |
+
+### Snapshots, decks et points
+
+| Terme | Définition | Où trouver la valeur |
+| --- | --- | --- |
+| Snapshot | État de guerre persisté pour reconstituer les deltas journaliers | Redis `snapshots:<TAG>` via `backend/services/snapshot.js` ; produits par `collectSnapshots.js` et `preResetSnapshot.js`. Champs : `snapshotTime` (ou `snapshotBackupTime`), `decks`, `decksPreReset`, `_cumul`, `_cumulFame`, `snapshotPreResetTime` |
+| Decks cumul (semaine) | Decks joués depuis le début de la semaine | Live `currentRace.clan.participants[].decksUsed` ; persisté `_cumul` ; historique `warHistory.weeks[].decksUsed` |
+| Decks du jour (live) | Decks joués aujourd'hui | `participants[].decksUsedToday` (aussi `currentRace.clans[i]` pour tout le groupe, sans appel supplémentaire) |
+| Decks journaliers (passés) | Decks d'une journée terminée | `decks` du snapshot du jour (max avec `decksPreReset`), sinon delta entre cumuls ; `warSnapshotDays` pour la vue joueur |
+| Fame cumul (semaine) | Points de bataille depuis le J1 | Live `sum(participants[].fame)` (= `currentFame`) ; persisté `_cumulFame` ; historique `warHistory.weeks[].fame` |
+| Fame du jour (live) | Points de bataille du jour | `currentRace.clan.periodPoints` / `clans[i].periodPoints`, en GDC normale comme en Colisée |
+| Fame journalière (passée) | Points d'une journée terminée | `computeDailyFame(dayEntry, prevDayEntry)` (`notifyWarSummary.js`) : cumul pré-reset du jour − cumul de la veille, valable seulement si la veille a un snapshot pré-reset (`snapshotPreResetTime`), sinon « donnée indisponible » ; J4 : `sum(participants[].fame)` − `_cumulFamePreReset` de la veille (repli : − somme des `periodPointsEarned` J1-J3) |
+
+⚠️ Pièges de l'API :
+
+- `currentRace.clan.fame` / `clans[i].fame` = progression du **bateau** (0-10 000), jamais les points de bataille.
+- `periodLogs[].items[].pointsEarned` (stocké `periodPointsEarned` dans les snapshots) n'est **pas** une source fiable des points d'une journée passée (valeur constatée figée d'une semaine à l'autre) : dernier repli seulement ; `progressEarned` = points de classement, non pertinent.
 
 ---
 
 ## Licence
 
-MIT — projet non affilié à Supercell et non approuvé par Supercell.
+MIT : projet non affilié à Supercell et non approuvé par Supercell.

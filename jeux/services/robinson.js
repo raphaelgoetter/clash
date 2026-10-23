@@ -210,7 +210,7 @@ export async function grantFreeRadeauPoints(points) {
 // Don direct sur une seule ressource — utilisé par Épave (Bois, depuis son
 // inversion le 28/08). Colis Royal et le bonus Indigestion Royale
 // utilisaient grantEqualResources() (les 3 ressources à la fois) avant
-// d'être retirés le 29/08 (refonte de durcissement, voir CONTRIBUTING.md) ;
+// d'être retirés le 29/08 (refonte de durcissement, voir jeux/CONTRIBUTING.md) ;
 // fonction supprimée faute d'appelant restant. INCRBY atomique comme
 // partout ailleurs dans ce fichier.
 export async function grantResource(resourceId, amount) {
@@ -306,7 +306,7 @@ async function clearVotes(jour) {
 // ── Fonctions pures de logique de jeu (aucun I/O, testées unitairement) ──
 
 // Tirage normal 0 à 5, ~16,7% chacun (équilibrage validé par simulation :
-// voir CONTRIBUTING.md, section Robinson — moyenne 2,5, calibrée pour une
+// voir jeux/CONTRIBUTING.md, section Robinson — moyenne 2,5, calibrée pour une
 // survie passive dans la fourchette 50-80% selon le nombre de votants).
 export function rollHarvestAmount(rng = Math.random) {
   return Math.floor(rng() * 6);
@@ -316,7 +316,7 @@ export function rollHarvestAmount(rng = Math.random) {
 // (moyenne 0,5) : la simulation a montré que l'Ouragan (double plafond
 // Pêche+Bois) concentrait à lui seul ~35-45% de toutes les défaites à
 // V=12-16 (déficit structurel ≈ V ce jour-là, qu'AUCUN bonus fixe dégressif
-// ne peut compenser pour les gros groupes — voir CONTRIBUTING.md). Adoucir
+// ne peut compenser pour les gros groupes — voir jeux/CONTRIBUTING.md). Adoucir
 // le palier lui-même (au lieu d'ajouter un bonus fixe) a l'avantage de
 // s'auto-proportionner à V, contrairement aux bonus dégressifs des autres
 // événements.
@@ -364,7 +364,7 @@ export function pickChefCharpentier(previousDayVoters, excludeId, rng = Math.ran
 // le vote de cette seule personne est retiré du pool de survie ce jour-là
 // (pas une fraction du groupe), donc un coût marginal faible et constant
 // (~1/V) plutôt qu'une ponction proportionnelle qui écraserait la survie —
-// voir CONTRIBUTING.md pour la simulation qui a invalidé une stratégie de
+// voir jeux/CONTRIBUTING.md pour la simulation qui a invalidé une stratégie de
 // détournement de votes classique (fraction du groupe) avant ce rôle.
 export function rollCharpentierRadeauPoints(rng = Math.random) {
   return (rollHarvestAmount(rng) + 1) * 2;
@@ -425,7 +425,7 @@ export function applyFlooredDelta(stocks, consumption) {
 // compromettre le taux de réussite") : repassé de 3 à 2 — un seul jour de
 // répit au lieu de deux avant la défaite, combiné au retrait des dons
 // gratuits (Colis Royal, bonus Jour 5, Indigestion Royale) et au passage à
-// 7 jours. Voir CONTRIBUTING.md pour les simulations qui ont validé ce choix.
+// 7 jours. Voir jeux/CONTRIBUTING.md pour les simulations qui ont validé ce choix.
 export const ZERO_STREAK_LIMIT = 2;
 
 // Cœur de la détection de défaite : incrémente le compteur d'une ressource
@@ -461,7 +461,7 @@ export function isSurvivalVictory(jour, dureeJours) {
 }
 
 // Garde-fou anti-double-avancée (26/08, incident réel) : un cron `schedule`
-// en retard (best-effort côté GitHub, voir CONTRIBUTING.md) peut encore se
+// en retard (best-effort côté GitHub, voir jeux/CONTRIBUTING.md) peut encore se
 // déclencher après qu'un admin a relancé le jour à la main entretemps — sans
 // ce filet, les deux appels à postRobinson() clôtureraient chacun une
 // journée d'affilée, sautant un jour entier de vote quasi sans laisser le
@@ -495,7 +495,7 @@ export function eventForDay(jour, evenements, previousDayVoters = 0) {
 // Don de Bois brut de l'événement Épave (inversé le 28/08, initialement un
 // don de points de Radeau directs) — dégressif selon le nombre de votants
 // de la veille, pour favoriser les petits groupes qui ont structurellement
-// moins de votes/jour à consacrer au Radeau (voir CONTRIBUTING.md, section
+// moins de votes/jour à consacrer au Radeau (voir jeux/CONTRIBUTING.md, section
 // Robinson, pour le raisonnement complet). Le Bois doit encore être converti
 // en points via de vrais votes Radeau (1 vote = 1 point) — contrairement à
 // l'ancien don direct, qui rendait la victoire par Radeau quasi certaine dès

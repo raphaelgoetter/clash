@@ -6,7 +6,7 @@
 // Stockage : Upstash Redis (mêmes conventions que robinson.js)
 // — espace de clés `bossraid:*`.
 //
-// ⚠️ Refonte stratégique (voir CONTRIBUTING.md) : AUCUN aléatoire nulle part
+// ⚠️ Refonte stratégique (voir jeux/CONTRIBUTING.md) : AUCUN aléatoire nulle part
 // dans le jeu — tous les dégâts sont fixes, le débuff Voleuse est
 // déterministe (-1 Défense/vote), il n'y a plus d'Ultimes/All-In ni de
 // régénération nocturne. Chaque jour repart de la même posture de base
@@ -357,12 +357,12 @@ export function computeDefenseEffective(nbVoleuses, dayParams, config) {
 // ni protégé — insensible à la Défense/Résistance du Boss et au malus de
 // non-protection. Contrairement à Voleuse/Sorcier/Archères, son unique
 // levier d'équilibrage au quotidien est la valeur fixe elle-même (voir
-// CONTRIBUTING.md, section Princesse) : sans coût d'investissement (pas de
+// jeux/CONTRIBUTING.md, section Princesse) : sans coût d'investissement (pas de
 // Chevalier nécessaire), la moindre valeur trop haute la rend strictement
 // dominante à tout N — raison pour laquelle `princesseMultiplier` (comme
 // `sorcierMultiplier`/`archeresMultiplier`) reste à 1 sur tous les jours
 // SAUF exception événementielle assumée (voir "Princesse" dans
-// CONTRIBUTING.md pour l'exemple du Jour 3).
+// jeux/CONTRIBUTING.md pour l'exemple du Jour 3).
 export function computeComboDamage(counts, dayParams, config, { protectedSorcier, protectedArcheres }) {
   // Plafond "rôles identiques limités à 10" (MAX_VOTES_PAR_ROLE) — les
   // votes au-delà du plafond, pour un même rôle, sont ignorés ici. Pour

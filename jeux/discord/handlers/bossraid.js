@@ -6,7 +6,7 @@
 // par jeux/scripts/postBossRaid.js (postBossRaid) — les boutons restent gérés
 // par api/discord/interactions.js.
 //
-// ⚠️ Refonte stratégique (voir CONTRIBUTING.md) : plus aucun aléatoire
+// ⚠️ Refonte stratégique (voir jeux/CONTRIBUTING.md) : plus aucun aléatoire
 // nulle part, plus de régénération nocturne. Chaque jour repart de la même
 // posture de base (aucune progressbar : juste "5/10"). L'objectif devient
 // de faire coïncider la répartition des votes du jour avec la MEILLEURE
@@ -419,7 +419,7 @@ export async function postBossRaid(
     // "cette manche"). Jamais archivé en dry-run NI sur le salon de test
     // (isPublic) — seule une vraie publication sur le salon public compte
     // comme une manche réelle, pour ne jamais polluer l'archive avec des
-    // parties de test (voir CONTRIBUTING.md, section Manches).
+    // parties de test (voir jeux/CONTRIBUTING.md, section Manches).
     let currentManche = null;
     if (!dryRun && isPublic) {
       currentManche = await archiveManche({

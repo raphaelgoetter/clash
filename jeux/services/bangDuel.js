@@ -11,7 +11,7 @@
 // `INACTIVITE_SECONDES`, la partie disparaît (aucun score conservé : jeu
 // libre).
 //
-// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Bang! Duel), source de vérité.
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord

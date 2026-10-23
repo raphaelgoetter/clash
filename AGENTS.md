@@ -25,11 +25,12 @@ Utiliser les outils `codegraph_*` (context, explore, search, trace, impact) pour
 
 ## Sources de vérité — règle absolue
 
-**Avant de modifier ou d'implémenter une formule de scoring, un calcul de niveau, ou toute logique métier, consulter d'abord `CONTRIBUTING.md`** à la racine. Ce document est la source de vérité unique pour :
-- les formules de score, matchup, projection GDC
-- le calcul du niveau de Tour du Roi
-- les paliers de ligue, barèmes de points, seuils de verdict
-- toute règle métier documentée
+**Avant de modifier ou d'implémenter une formule de scoring, un calcul de niveau, ou toute logique métier, consulter d'abord la source de vérité concernée**, et la mettre à jour dans le même changement :
+
+- `CONTRIBUTING.md` (racine) : TrustRoyale et monorepo (formules de score, matchup, projection GDC, niveau de Tour du Roi, paliers de ligue, seuils de verdict, scripts et crons GDC) ;
+- `jeux/CONTRIBUTING.md` : jeux Discord (règles, barèmes, données, clés Redis, scripts et crons de chaque jeu).
+
+Ces documents ne décrivent que l'état actuel : pas d'historique daté ni de récit d'incident (git les conserve) ; une contrainte issue d'un incident s'écrit comme une règle.
 
 ## Vercel Serverless — règle absolue
 

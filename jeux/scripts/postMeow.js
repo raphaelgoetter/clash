@@ -39,7 +39,7 @@ const PNJ = !PUBLIC && !process.argv.includes("--sans-pnj");
 const AVANCER = PUBLIC ? null : process.argv.includes("--distribution") ? "distribution" : "jour";
 
 // Réutilise les salons du jeu Frame (même principe que les autres jeux
-// spéciaux, voir CONTRIBUTING.md) plutôt que de provisionner un salon dédié.
+// spéciaux, voir jeux/CONTRIBUTING.md) plutôt que de provisionner un salon dédié.
 const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC : process.env.DISCORD_CHANNEL_FRAME_TEST;
 
 if (!channelId) {

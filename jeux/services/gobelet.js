@@ -290,7 +290,7 @@ export function listMatchingCombinations(dice) {
   return labels;
 }
 
-// Barème (voir CONTRIBUTING.md) : on retient la catégorie la plus valorisée
+// Barème (voir jeux/CONTRIBUTING.md) : on retient la catégorie la plus valorisée
 // parmi celles présentes dans les dés ET pas encore réalisées par le joueur
 // lors des jours/manches précédents (`used`) — chaque combinaison ne
 // rapporte qu'une seule fois par partie (règle du 26/09). Si toutes les

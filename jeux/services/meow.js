@@ -11,7 +11,7 @@
 // clés `meow:*`. Toute la partie tient dans une seule clé, lue et réécrite
 // sous verrou à chaque action.
 //
-// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Meow), source de vérité.
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord

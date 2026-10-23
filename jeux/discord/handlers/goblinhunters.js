@@ -887,7 +887,7 @@ export async function postGoblinHunters(
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit jamais être
-  // reprise ici (même incident/principe que Boss Raid, voir CONTRIBUTING.md).
+  // reprise ici (même incident/principe que Boss Raid, voir jeux/CONTRIBUTING.md).
   if (state && state.channelId !== channelId) {
     return { wrongChannel: true, activeChannelId: state.channelId };
   }
@@ -899,7 +899,7 @@ export async function postGoblinHunters(
   // 1) Aucun état -> ouverture de la fenêtre d'inscription. Interroge le
   // vrai compteur (pas 0 en dur) : en production personne n'est encore
   // inscrit à ce stade, mais le flux de test recommandé seed le faux pool
-  // AVANT d'ouvrir (voir goblinhunters:seed-test-pool, CONTRIBUTING.md).
+  // AVANT d'ouvrir (voir goblinhunters:seed-test-pool, jeux/CONTRIBUTING.md).
   if (!state) {
     const closingAt = dateCloture(config.fenetre_inscription_jours);
     const initialCount = await countInscriptions();

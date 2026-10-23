@@ -7,7 +7,7 @@ on:
   # Créneau réservé : minute 14 (prochaine libre après bossraid=2,
   # goblinhunters=4, quiz=6, robinson=8, tamagotchi=10, blackjack=12 —
   # jamais la même minute que les autres crons de 8h UTC, voir
-  # CONTRIBUTING.md, incident du 27/08).
+  # jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) »).
   schedule:
     - cron: "14 8 * * *"
   workflow_dispatch: {}

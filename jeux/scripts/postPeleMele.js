@@ -6,7 +6,7 @@
 // décide lui-même si c'est Anagram ou Pêle-mêle qui doit poster). Utile pour
 // tester ou rattraper un créneau manqué de Pêle-mêle spécifiquement, une
 // fois que c'est bien sa saison. Réutilise DISCORD_CHANNEL_FRAME_PUBLIC/TEST
-// (voir CONTRIBUTING.md) plutôt que de nouvelles variables dédiées.
+// (voir jeux/CONTRIBUTING.md) plutôt que de nouvelles variables dédiées.
 //
 // Usage :
 //   node jeux/scripts/postPeleMele.js               — poste sur le salon de test

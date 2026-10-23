@@ -36,7 +36,7 @@ const FORCE = process.argv.includes("--force") || !PUBLIC;
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
 // Réutilise les salons du jeu Frame (même principe que les autres mini-jeux,
-// voir CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons Discord.
+// voir jeux/CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons Discord.
 const channelId = PUBLIC
   ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC
   : process.env.DISCORD_CHANNEL_FRAME_TEST;

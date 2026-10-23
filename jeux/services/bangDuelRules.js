@@ -11,7 +11,7 @@
 // jeu = le tour du joueur puis celui du Bot ; `tours_max` tours au plus,
 // match nul si personne n'a explosé.
 //
-// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Bang! Duel), source de vérité.
 // ============================================================
 

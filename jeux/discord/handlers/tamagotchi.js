@@ -723,7 +723,7 @@ export async function postTamagotchi(
     // (marquée "cette manche"). Jamais archivé en dry-run NI sur le salon de
     // test (isPublic) — seule une vraie publication sur le salon public
     // compte comme une manche réelle, pour ne jamais polluer l'archive avec
-    // des parties de test (voir CONTRIBUTING.md, section Manches).
+    // des parties de test (voir jeux/CONTRIBUTING.md, section Manches).
     let currentManche = null;
     if (!dryRun && isPublic) {
       currentManche = await archiveManche({

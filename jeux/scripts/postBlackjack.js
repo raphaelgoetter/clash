@@ -34,11 +34,11 @@ const REQUIRE_ACTIVE = process.argv.includes("--require-active");
 // qu'à ralentir l'itération manuelle, donc contourné automatiquement.
 const FORCE = process.argv.includes("--force") || !PUBLIC;
 // Jamais de ping sur le salon de test, même sans --no-ping explicite (voir
-// CONTRIBUTING.md) — seul le salon public ping réellement @MINI JEUX.
+// jeux/CONTRIBUTING.md) — seul le salon public ping réellement @MINI JEUX.
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
 // Réutilise les salons du jeu Frame (même principe que les autres mini-jeux,
-// voir CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons Discord.
+// voir jeux/CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons Discord.
 const channelId = PUBLIC
   ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC
   : process.env.DISCORD_CHANNEL_FRAME_TEST;

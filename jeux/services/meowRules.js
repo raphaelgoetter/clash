@@ -17,7 +17,7 @@
 // modifient la partie reçue en place ; `rng` et `now` injectables pour les
 // tests.
 //
-// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Meow), source de vérité. Équilibrage : jeux/outils/meow-simulation/simulate.mjs.
 // ============================================================
 

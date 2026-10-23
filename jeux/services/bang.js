@@ -13,7 +13,7 @@
 // réécrite sous verrou à chaque action (les joueurs jouent en même temps
 // sur la même pioche).
 //
-// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Bang!), source de vérité.
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord

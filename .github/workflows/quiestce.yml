@@ -5,7 +5,7 @@ permissions:
 
 on:
   # Créneau réservé : minute 20 (prochaine libre après bang=18 — jamais la
-  # même minute que les autres crons de 8h UTC, voir CONTRIBUTING.md,
+  # même minute que les autres crons de 8h UTC, voir jeux/CONTRIBUTING.md,
   # incident du 27/08). Le cron passe --require-active : il n'avance
   # qu'une partie déjà lancée à la main (workflow_dispatch).
   schedule:

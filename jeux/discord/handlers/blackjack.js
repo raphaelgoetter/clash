@@ -430,7 +430,7 @@ export async function postBlackjack(
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être
-  // reprise ici (voir CONTRIBUTING.md — incident réel du 23/08/2026 sur Quiz).
+  // reprise ici (voir jeux/CONTRIBUTING.md — incident réel du 23/08/2026 sur Quiz).
   if (state && state.channelId !== channelId) {
     return { wrongChannel: true, activeChannelId: state.channelId };
   }
@@ -551,7 +551,7 @@ export async function postBlackjack(
     const ranking = buildRanking(points, await readUsernames(), cardsDrawn);
     // Jamais archivé en dry-run NI sur le salon de test (isPublic) — seule
     // une vraie publication publique compte comme une manche réelle (même
-    // principe que les autres jeux, voir CONTRIBUTING.md).
+    // principe que les autres jeux, voir jeux/CONTRIBUTING.md).
     let currentManche = null;
     if (isPublic) {
       const resolvedRanking = await Promise.all(

@@ -12,7 +12,7 @@
 // `quiestce:*`. Toute la partie tient dans une seule clé, lue et réécrite
 // sous verrou à chaque action.
 //
-// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Qui est-ce ?), source de vérité.
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord

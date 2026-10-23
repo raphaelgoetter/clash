@@ -8,15 +8,15 @@ on:
   # (workflow_dispatch). Le cron ne fait qu'avancer une partie déjà en cours
   # (rappel d'inscription ou clôture de jour, voir --require-active) : tant
   # qu'aucun lancement manuel n'a eu lieu, il ne se passe rien — même
-  # principe que Boss Raid (voir CONTRIBUTING.md).
+  # principe que Boss Raid (voir jeux/CONTRIBUTING.md).
   schedule:
     # Décalé de la ronde (0 8) : 5 crons quotidiens du dépôt tombaient tous à
     # la même minute, la pire pour GitHub Actions (charge maximale en haut
-    # d'heure) — voir CONTRIBUTING.md, incident du 27/08.
+    # d'heure) — voir jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) ».
     # Commit de resynchronisation (28/08) : bug GitHub documenté où `schedule`
     # se désynchronise silencieusement pendant que `workflow_dispatch`
     # continue de fonctionner — tout commit sur la branche par défaut force
-    # un resync côté GitHub (voir CONTRIBUTING.md).
+    # un resync côté GitHub (voir jeux/CONTRIBUTING.md).
     - cron: "4 8 * * *"
   workflow_dispatch: {}
 

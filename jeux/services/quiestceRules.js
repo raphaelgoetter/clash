@@ -12,7 +12,7 @@
 // travaille sur une copie fraîchement désérialisée) ; `rng` injectable pour
 // les tests.
 //
-// ⚠️ Toute modification de règle doit suivre CONTRIBUTING.md (section
+// ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Qui est-ce ?), source de vérité.
 // ============================================================
 
@@ -41,7 +41,7 @@ export const QIDS = Object.keys(QUESTIONS);
 
 // Carte jouable : coût connu, et PV/portée renseignés pour les troupes
 // (les troupes sans ces données, même après completerCartes(), sont
-// écartées, voir CONTRIBUTING.md).
+// écartées, voir jeux/CONTRIBUTING.md).
 export function carteEligible(c) {
   if (c.elixir == null || !TYPES[c.type] || !RARETES[c.rarity]) return false;
   return !estTroupe(c) || (c.hp != null && !!c.range?.kind);

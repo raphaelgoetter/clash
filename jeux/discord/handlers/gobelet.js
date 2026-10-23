@@ -127,7 +127,7 @@ async function formatResultsSection(results) {
 
 // ── Embed / composants du jour d'annonce ───────────────────────────
 // Tous les jeux spéciaux ont au moins un jour de présentation avant le
-// Jour 1 (voir CONTRIBUTING.md) : le lancement manuel publie cette annonce,
+// Jour 1 (voir jeux/CONTRIBUTING.md) : le lancement manuel publie cette annonce,
 // le cron du lendemain publie le Jour 1.
 
 function buildAnnonceEmbed(config) {
@@ -397,7 +397,7 @@ export async function postGobelet(
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être
-  // reprise ici (voir CONTRIBUTING.md — incident réel du 23/08/2026 sur Quiz).
+  // reprise ici (voir jeux/CONTRIBUTING.md — incident réel du 23/08/2026 sur Quiz).
   if (state && state.channelId !== channelId) {
     return { wrongChannel: true, activeChannelId: state.channelId };
   }

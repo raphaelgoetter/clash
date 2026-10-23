@@ -4,7 +4,7 @@
 // complet avec camps/rôles/PV/positions, progression des actions du jour)
 // sans avoir besoin d'ouvrir Discord. ⚠️ Usage ADMIN UNIQUEMENT — spoile les
 // camps/rôles de tous les joueurs, ne jamais partager cette sortie avec les
-// joueurs en cours de partie (voir CONTRIBUTING.md).
+// joueurs en cours de partie (voir jeux/CONTRIBUTING.md).
 //
 // Usage : node jeux/scripts/goblinHuntersStatus.js
 
