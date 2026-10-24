@@ -30,8 +30,8 @@ export const REFONTE_SEASON = {
 
 // Nouvelles paires : [jeu des écarts pairs (saison de bascule), jeu des
 // écarts impairs]. Identifiants techniques = préfixes Redis. Pêle-mêle
-// garde le sien : même jeu, nouveau thème (archives rangées par saison,
-// donc jamais mélangées avec celles de la version Clash Royale). Zoom logo
+// rejoint « Jeux de mots » tel quel (même identifiant, thème Clash Royale
+// conservé). Zoom logo
 // a son propre identifiant (`zoom2`) : Zoom carte (`zoom`) continue de
 // tourner jusqu'à la bascule, puis rejoint le groupe Clash avec Trivia.
 export const REFONTE_PAIRS = {
@@ -44,11 +44,10 @@ export const REFONTE_PAIRS = {
 
 // Jeux des nouvelles paires réellement prêts. Un jeu absent de cette liste
 // n'est jamais lancé à partir de la bascule, même si son identifiant est
-// déjà branché (pelemele : version Clash Royale tant que sa refonte n'est
-// pas faite). Frame est déjà hors Clash Royale, Trivia et Zoom carte
-// tournent déjà. Un jeu n'est prêt que dans sa propre paire : Zoom carte ne
+// déjà branché. Frame est déjà hors Clash Royale, Pêle-mêle, Trivia et
+// Zoom carte tournent déjà. Un jeu n'est prêt que dans sa propre paire : Zoom carte ne
 // revient jamais dans le groupe visuels.
-export const REFONTE_PRETS = new Set(["frame", "triviageek", "concept", "synopsis", "zoom2", "platpays", "trivia", "zoom"]);
+export const REFONTE_PRETS = new Set(["frame", "triviageek", "concept", "synopsis", "zoom2", "platpays", "pelemele", "trivia", "zoom"]);
 
 const LABELS = {
   culture: { avant: "🎬 Jeux de culture", apres: "🎬 Ciné-club" },

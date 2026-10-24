@@ -48,11 +48,11 @@ assert.strictEqual(getActiveCultureGame(140), "frame");
 console.log("✓ calendrier décembre/janvier");
 
 // Jeux prêts : avant la bascule tout passe ; après, seuls ceux de
-// REFONTE_PRETS (Pêle-mêle garde son id mais ne doit jamais relancer sa
-// version Clash Royale, Zoom carte n'est plus lancé).
+// REFONTE_PRETS (Zoom carte n'est plus lancé par le groupe visuels).
 assert.strictEqual(getWiredGame("visuels", 138, "zoom"), "zoom");
 assert.strictEqual(getWiredGame("visuels", 140, "zoom"), null);
-assert.strictEqual(getWiredGame("lettres", 140, "pelemele"), null);
+assert.strictEqual(getActiveLetterGame(140), "pelemele");
+assert.strictEqual(getWiredGame("lettres", 140, "pelemele"), "pelemele");
 assert.strictEqual(getWiredGame("culture", 139, "synopsis"), "synopsis");
 assert.strictEqual(getWiredGame("visuels", 139, "zoom2"), "zoom2");
 assert.strictEqual(getWiredGame("visuels", 140, "platpays"), "platpays");

@@ -52,17 +52,17 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | --- | --- | --- | --- |
 | `culture` | 🎬 Ciné-club | `synopsis` (Synopsis éclaté) | `frame` (Trouve le film) |
 | `aveugle` | 🎮 Culture geek | `triviageek` (Trivia Geek) | `intrus` (Intrus de l'inventaire) |
-| `lettres` | 🔤 Jeux de mots | `concept` (Concept) | `pelemele` (Pêle-mêle, nouveau thème) |
+| `lettres` | 🔤 Jeux de mots | `concept` (Concept) | `pelemele` (Pêle-mêle) |
 | `visuels` | 📸 Coup d'œil | `zoom2` (Zoom logo) | `platpays` (Plat Pays) |
 | `clash` (nouveau) | ⚔️ Clash | `trivia` (Trivia) | `zoom` (Zoom carte) |
 
 - Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
 - Groupe Clash : garde un rendez-vous Clash Royale. Aucun jeu avant la bascule (`getActiveClashGame` → `null`, `postJeuxClash.js` sort sans rien poster ni écrire, `/mini-jeux` masque le groupe). Trivia et Zoom carte quittent leurs anciens groupes et y gardent leur identifiant, leur catalogue et leurs archives ; leur jour de publication dépend de la saison (`publicationWeekday`, `jeuxclash.js` : mercredi / vendredi jusqu'en novembre 2026, mardi ensuite), pour l'embed comme pour le total de manches. Zoom carte (janvier) et Zoom logo (décembre) ne tombent jamais le même mois.
 - Un jeu n'est prêt que dans sa propre paire (`getWiredGame`) : Zoom carte figure dans `REFONTE_PRETS` pour le groupe Clash mais n'est jamais relancé par l'orchestrateur visuels. `/mini-jeux` n'attribue une manche à un groupe que si le jeu y était actif pour la saison de la manche (`state.seasonId`), et `/mini-jeux-history` range les résultats de Trivia et Zoom carte selon la saison de la manche (`splitAtClash`) : ancien groupe avant la bascule, « ⚔️ Clash » ensuite.
-- Pêle-mêle garde son identifiant (même jeu, nouveau thème) : ses archives sont rangées par saison, donc jamais mélangées avec celles de la version Clash Royale. Ses clés de rotation et d'état (`pelemele:order`, `pelemele:state`…) sont à purger au lancement du nouveau thème. Trivia Geek change de groupe et Zoom logo remplace Zoom carte pendant que celui-ci tourne encore, d'où des identifiants distincts (`triviageek`, `zoom2`).
-- À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi de relancer la version Clash Royale de Pêle-mêle, ou Zoom carte.
+- Pêle-mêle rejoint « 🔤 Jeux de mots » tel quel (même identifiant, même thème Clash Royale, mêmes clés Redis). Trivia Geek change de groupe et Zoom logo remplace Zoom carte pendant que celui-ci tourne encore, d'où des identifiants distincts (`triviageek`, `zoom2`).
+- À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi le groupe visuels de relancer Zoom carte.
 - Catalogue Trivia Geek : `jeux/data/triviageek/trivia-geek.json`, même format que `trivia-clash.json` (bonne réponse suffixée « √ », parcouru dans l'ordre, ajouts en fin de fichier) plus `numero` (repère humain, 1 = première manche, à garder égal à la position dans le fichier), `titre` (titre humoristique affiché avec la question) et `sourceUrl`. Chaque réponse est vérifiée par une source web avant d'entrer au catalogue.
-- Brancher un nouveau jeu : l'ajouter à `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`, libellé du jeu selon la date pour Pêle-mêle).
+- Brancher un nouveau jeu : l'ajouter à `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`).
 
 Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque passage :
 
@@ -275,7 +275,7 @@ Schéma commun, plus :
 
 ## Pêle-mêle (retrouve les cartes cachées dans les lettres)
 
-Jeux de lettres (en alternance avec Anagram). Service `jeux/services/pelemele.js`.
+Jeux de lettres (en alternance avec Anagram), puis « 🔤 Jeux de mots » à partir de la refonte (en alternance avec Concept). Service `jeux/services/pelemele.js`.
 
 Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Toute carte du pool formable avec ces lettres est valide ; la manche n'est jamais « résolue », elle reste ouverte jusqu'à son remplacement. Chaque joueur propose autant de cartes qu'il veut.
 
