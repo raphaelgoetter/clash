@@ -9,8 +9,8 @@
 // l'ancien seasonId calé sur Clash Royale (bornes au 1er lundi du mois).
 // ============================================================
 
-import { getCurrentSeasonBounds } from "./saison.js";
-import { groupLabelForDate } from "./refonte.js";
+import { getCurrentSeasonBounds, seasonIdForDate } from "./saison.js";
+import { groupLabelForDate, isRefonteSeason } from "./refonte.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
@@ -36,6 +36,7 @@ const GAME_ORDER = [
   "lettres",
   "visuels",
   "aveugle",
+  "clash",
   "quiz",
   "blackjack",
   "marioclash",
@@ -50,6 +51,21 @@ const GAME_ORDER = [
 // raisonne en saison technique CR, non en saison calendaire mini-jeux).
 function tagSubGame(fetchFn, subGame) {
   return async () => (await fetchFn()).map((r) => ({ ...r, subGame }));
+}
+
+// Trivia et Zoom carte rejoignent le groupe Clash à la refonte : leurs
+// résultats restent dans leur ancien groupe avant la bascule (clash: false),
+// dans « clash » ensuite (clash: true). Découpage par saison de la manche
+// (la dernière manche Zoom carte de novembre se résout aussi début
+// décembre), par date à défaut ; les anciens seasonId calés sur Clash
+// Royale sont tous antérieurs à la bascule.
+function splitAtClash(fetchFn, { clash }) {
+  return async () =>
+    (await fetchFn()).filter((r) => {
+      const dateStr = r.solvedAt || r.postedAt;
+      const seasonId = r.seasonId ?? (dateStr ? seasonIdForDate(new Date(dateStr)) : null);
+      return seasonId != null && isRefonteSeason("clash", Number(seasonId)) === clash;
+    });
 }
 
 // Jeux réguliers : une entrée archivée = un joueur ayant résolu une manche.
@@ -82,7 +98,7 @@ const SCORE_GAMES = [
     labelFor: (seasonStart) => groupLabelForDate("culture", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getFrameResults, "Trouve le film")()),
-      ...(await tagSubGame(getTriviaResults, "Trivia")()),
+      ...(await tagSubGame(splitAtClash(getTriviaResults, { clash: false }), "Trivia")()),
       ...(await tagSubGame(getSynopsisResults, "Synopsis éclaté")()),
     ],
   },
@@ -99,7 +115,7 @@ const SCORE_GAMES = [
     key: "visuels",
     labelFor: (seasonStart) => groupLabelForDate("visuels", seasonStart),
     fetch: async () => [
-      ...(await tagSubGame(getZoomResults, "Zoom carte")()),
+      ...(await tagSubGame(splitAtClash(getZoomResults, { clash: false }), "Zoom carte")()),
       ...(await tagSubGame(getPaletteResults, "Palette")()),
       ...(await tagSubGame(getZoom2Results, "Zoom logo")()),
     ],
@@ -111,6 +127,14 @@ const SCORE_GAMES = [
       ...(await tagSubGame(getBlindRoyaleResults, "Blind Royale")()),
       ...(await tagSubGame(getLaJusteCarteResults, "La Juste Carte")()),
       ...(await tagSubGame(getTriviaGeekResults, "Trivia Geek")()),
+    ],
+  },
+  {
+    key: "clash",
+    labelFor: (seasonStart) => groupLabelForDate("clash", seasonStart),
+    fetch: async () => [
+      ...(await tagSubGame(splitAtClash(getTriviaResults, { clash: true }), "Trivia")()),
+      ...(await tagSubGame(splitAtClash(getZoomResults, { clash: true }), "Zoom carte")()),
     ],
   },
 ];

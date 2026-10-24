@@ -18,7 +18,8 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
+import { countRemainingWeekdayOccurrences, getCurrentSeasonId, seasonIdForDate } from "./saison.js";
+import { publicationWeekday } from "./jeuxclash.js";
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -205,13 +206,11 @@ async function assignSeasonMancheNumber(seasonId, gameId) {
   return seasonManche;
 }
 
-// X = manche déjà attribuée + vendredis restants avant la fin de la saison
-// calendaire — même principe que Frame (mercredis) / Anagram (samedis).
-function countRemainingFridays(now = new Date()) {
-  return countRemainingWeekdayOccurrences(now, FRIDAY);
-}
+// X = manche déjà attribuée + jours de publication restants avant la fin de
+// la saison calendaire (vendredis, puis mardis dans le groupe Clash, voir
+// jeuxclash.js) — même principe que Frame (mercredis) / Anagram (samedis).
 export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
-  return seasonManche + countRemainingFridays(now);
+  return seasonManche + countRemainingWeekdayOccurrences(now, publicationWeekday(seasonIdForDate(now), FRIDAY));
 }
 
 export async function startNewGame(channelId) {

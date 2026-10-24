@@ -19,7 +19,7 @@
 
 import fs from "fs/promises";
 import { Redis } from "@upstash/redis";
-import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
+import { countRemainingWeekdayOccurrences, getCurrentSeasonId, seasonIdForDate } from "./saison.js";
 
 export const LETTERS = ["A", "B", "C", "D"];
 
@@ -161,8 +161,10 @@ const ROUND_LABEL_MAX_LENGTH = 80;
 // ── Instance ─────────────────────────────────────────────────────────
 // prefix : préfixe des clés Redis (`<prefix>:state`, `<prefix>:archived:*`…)
 // catalogPath : chemin absolu du catalogue JSON
-// weekday : jour UTC de publication (0 = dimanche), pour le total de manches
+// weekday : jour UTC de publication (0 = dimanche), pour le total de manches,
+//           ou fonction (seasonId) → jour si le jeu change de créneau
 export function createTriviaService({ prefix, catalogPath, weekday }) {
+  const weekdayFor = typeof weekday === "function" ? weekday : () => weekday;
   const STATE_KEY = `${prefix}:state`;
   const orderKey = (gameId) => `${prefix}:order:${gameId}`;
   const participantsKey = (gameId) => `${prefix}:participants:${gameId}`;
@@ -228,7 +230,7 @@ export function createTriviaService({ prefix, catalogPath, weekday }) {
   }
 
   function computeSeasonMancheTotal(seasonManche, now = new Date()) {
-    return seasonManche + countRemainingWeekdayOccurrences(now, weekday);
+    return seasonManche + countRemainingWeekdayOccurrences(now, weekdayFor(seasonIdForDate(now)));
   }
 
   async function previewSeasonManche(seasonId) {

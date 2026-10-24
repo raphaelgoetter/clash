@@ -6,7 +6,8 @@
 //
 // config :
 //   name, emoji, color   — nom affiché (« Trivia »), émoji, couleur d'embed
-//   jour                  — jour de publication affiché (« mercredi »)
+//   jour                  — jour de publication affiché (« mercredi »), ou
+//                           fonction (seasonId) → jour
 //   answerPrefix          — préfixe des custom_id des boutons A/B/C/D
 //   bannerPath            — image fixe du jeu (frontend TrustRoyale), ou null
 // ============================================================
@@ -27,13 +28,15 @@ const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
 export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPrefix, bannerPath }) {
   const { LETTERS } = svc;
   const logTag = `[${name}]`;
+  const jourFor = typeof jour === "function" ? jour : () => jour;
 
   function buildTriviaEmbed({ entryTitre, entryQuestion, entryOptionsDisplay, seasonId, seasonManche, seasonMancheTotal }) {
     // Propositions dans le CORPS de l'embed (lettre + texte), jamais sur les
     // boutons : le texte d'une proposition serait trop long pour un bouton.
     const choicesLines = entryOptionsDisplay.map((text, i) => `**${LETTERS[i]}.** ${text}`);
+    const jourSaison = jourFor(seasonId);
     const embed = {
-      title: `${emoji} Le jeu du ${jour} : ${name} !`,
+      title: `${emoji} Le jeu du ${jourSaison} : ${name} !`,
       description: [
         `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
         "",
@@ -46,7 +49,7 @@ export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPref
         "Réponds via les boutons ci-dessous : un seul essai possible, définitif.",
       ].join("\n"),
       color,
-      footer: { text: `Nouvelle manche : ${jour} prochain !` },
+      footer: { text: `Nouvelle manche : ${jourSaison} prochain !` },
     };
     // Cache-buster (?v=) : Discord met en cache l'aperçu d'un embed PAR URL,
     // y compris un échec de fetch (même piège que justecarte/frames/zoom).

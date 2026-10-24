@@ -1,17 +1,20 @@
 // ============================================================
 // trivia.js — Handlers Discord du jeu "Trivia" (QCM de culture Clash
 // Royale), en alternance une saison sur deux avec Frame (voir
-// jeux/services/jeuxculture.js). Instance de triviaEngine.js.
+// jeux/services/jeuxculture.js), puis avec Zoom carte dans le groupe Clash
+// (voir jeux/services/jeuxclash.js). Instance de triviaEngine.js.
 // ============================================================
 
 import * as svc from "../../services/trivia.js";
 import { createTriviaHandlers } from "./triviaEngine.js";
+import { isRefonteSeason } from "../../services/refonte.js";
+import { CLASH_JOUR } from "../../services/jeuxclash.js";
 
 const handlers = createTriviaHandlers(svc, {
   name: "Trivia",
   emoji: "🧠",
   color: 0xf1c40f,
-  jour: "mercredi",
+  jour: (seasonId) => (isRefonteSeason("clash", seasonId) ? CLASH_JOUR : "mercredi"),
   answerPrefix: "trivia_answer",
   // Bannière fixe (frontend/public/images/trivia/images/).
   bannerPath: "/images/trivia/images/trivia-game.webp",

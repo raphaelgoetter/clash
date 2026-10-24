@@ -32,7 +32,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 S'applique à Frame, Trivia, Trivia Geek, Concept, Synopsis éclaté, Anagram, Pêle-mêle, Zoom carte, Zoom logo, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
 
-### Alternance saisonnière (4 groupes)
+### Alternance saisonnière (4 groupes, 5 à partir de la refonte)
 
 Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numérotation des manches »), en alternance. Décision : écart à `ACTIVE_GAME_REFERENCE_SEASON = 136` pair → 1er jeu, impair → 2nd jeu.
 
@@ -42,10 +42,11 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | 🔤 Jeux de lettres | Anagram / Pêle-mêle | samedi 18:00 (`0 18 * * 6`) | `jeux-de-lettres.yml` | `postJeuxDeLettres.js` | `jeuxdelettres.js` | `lettres:*` |
 | 🎨 Jeux visuels | Zoom carte / Palette | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml` | `postJeuxVisuels.js` | `jeuxvisuels.js` | `visuels:*` |
 | 🙈 Jeux à l'aveugle | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`) | `jeux-aveugle.yml` | `postJeuxAveugle.js` | `jeuxaveugle.js` | `aveugle:*` |
+| ⚔️ Clash (à partir de la refonte) | Trivia / Zoom carte | mardi 18:00 (`0 18 * * 2`) | `jeux-clash.yml` | `postJeuxClash.js` | `jeuxclash.js` | `clash:*` |
 
 ### Refonte hors Clash Royale (bascule par groupe)
 
-`jeux/services/refonte.js` remplace chaque paire par une nouvelle, sans lien avec Clash Royale, à partir de la saison `REFONTE_SEASON[groupe]` (139 = décembre 2026 pour les 4 groupes). Avant cette saison, l'alternance ci-dessus s'applique sans changement ; à partir d'elle, la parité s'ancre sur la saison de bascule : écart pair → 1er jeu, impair → 2nd. Reporter la bascule d'un groupe = augmenter sa saison dans `REFONTE_SEASON`.
+`jeux/services/refonte.js` remplace chaque paire par une nouvelle, sans lien avec Clash Royale, à partir de la saison `REFONTE_SEASON[groupe]` (139 = décembre 2026 pour les 5 groupes). Avant cette saison, l'alternance ci-dessus s'applique sans changement ; à partir d'elle, la parité s'ancre sur la saison de bascule : écart pair → 1er jeu, impair → 2nd. Reporter la bascule d'un groupe = augmenter sa saison dans `REFONTE_SEASON`.
 
 | Groupe (clé technique) | Libellé après bascule | Écart pair (déc. 2026) | Écart impair (janv. 2027) |
 | --- | --- | --- | --- |
@@ -53,8 +54,11 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | `aveugle` | 🎮 Culture geek | `triviageek` (Trivia Geek) | `intrus` (Intrus de l'inventaire) |
 | `lettres` | 🔤 Jeux de mots | `concept` (Concept) | `pelemele` (Pêle-mêle, nouveau thème) |
 | `visuels` | 📸 Coup d'œil | `zoom2` (Zoom logo) | `platpays` (Plat Pays) |
+| `clash` (nouveau) | ⚔️ Clash | `trivia` (Trivia) | `zoom` (Zoom carte) |
 
 - Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
+- Groupe Clash : garde un rendez-vous Clash Royale. Aucun jeu avant la bascule (`getActiveClashGame` → `null`, `postJeuxClash.js` sort sans rien poster ni écrire, `/mini-jeux` masque le groupe). Trivia et Zoom carte quittent leurs anciens groupes et y gardent leur identifiant, leur catalogue et leurs archives ; leur jour de publication dépend de la saison (`publicationWeekday`, `jeuxclash.js` : mercredi / vendredi jusqu'en novembre 2026, mardi ensuite), pour l'embed comme pour le total de manches. Zoom carte (janvier) et Zoom logo (décembre) ne tombent jamais le même mois.
+- Un jeu n'est prêt que dans sa propre paire (`getWiredGame`) : Zoom carte figure dans `REFONTE_PRETS` pour le groupe Clash mais n'est jamais relancé par l'orchestrateur visuels. `/mini-jeux` n'attribue une manche à un groupe que si le jeu y était actif pour la saison de la manche (`state.seasonId`), et `/mini-jeux-history` range les résultats de Trivia et Zoom carte selon la saison de la manche (`splitAtClash`) : ancien groupe avant la bascule, « ⚔️ Clash » ensuite.
 - Pêle-mêle garde son identifiant (même jeu, nouveau thème) : ses archives sont rangées par saison, donc jamais mélangées avec celles de la version Clash Royale. Ses clés de rotation et d'état (`pelemele:order`, `pelemele:state`…) sont à purger au lancement du nouveau thème. Trivia Geek change de groupe et Zoom logo remplace Zoom carte pendant que celui-ci tourne encore, d'où des identifiants distincts (`triviageek`, `zoom2`).
 - À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi de relancer la version Clash Royale de Pêle-mêle, ou Zoom carte.
 - Catalogue Trivia Geek : `jeux/data/triviageek/trivia-geek.json`, même format que `trivia-clash.json` (bonne réponse suffixée « √ », parcouru dans l'ordre, ajouts en fin de fichier) plus `numero` (repère humain, 1 = première manche, à garder égal à la position dans le fichier), `titre` (titre humoristique affiché avec la question) et `sourceUrl`. Chaque réponse est vérifiée par une source web avant d'entrer au catalogue.
@@ -75,7 +79,7 @@ Chaque service réexporte `getCurrentSeasonId()` depuis `jeux/services/saison.js
 - Salon de test `DISCORD_CHANNEL_FRAME_TEST`, salon public `DISCORD_CHANNEL_FRAME_PUBLIC` : partagés par tous les mini-jeux, ne pas créer de salon dédié.
 - Le salon de test ne pingue jamais (`NO_PING = --no-ping || !--public`). En public, ping du rôle `MINI-JEUX` résolu par son nom (`MINI_JEUX_ROLE_NAME`, `getRoleIdByName`/`buildRolePingFields`, `packages/commun/discordRoles.js`). ⚠️ Le nom doit correspondre exactement au rôle Discord, sinon le ping échoue silencieusement pour tous les jeux.
 - Redis : `KV_REST_API_URL`/`KV_REST_API_TOKEN` (Upstash), un préfixe de clés par jeu, aucun partage de données entre jeux.
-- Secrets des 4 workflows : `CLASH_API_KEY`, `DISCORD_TOKEN`, `DISCORD_APP_ID`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`, `KV_REST_API_URL`, `KV_REST_API_TOKEN` (GitHub → Settings → Secrets and variables → Actions). Sans les `KV_*`, échec `[Upstash Redis] The 'url'/'token' property is missing`.
+- Secrets des 5 workflows : `CLASH_API_KEY`, `DISCORD_TOKEN`, `DISCORD_APP_ID`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`, `KV_REST_API_URL`, `KV_REST_API_TOKEN` (GitHub → Settings → Secrets and variables → Actions). Sans les `KV_*`, échec `[Upstash Redis] The 'url'/'token' property is missing`.
 
 ### Stockage Upstash Redis : pièges et schéma
 
@@ -189,11 +193,12 @@ Deux instances du même moteur : service `jeux/services/triviaEngine.js` (`creat
 
 | Jeu | Groupe | Préfixe Redis | Catalogue | Jour | Boutons |
 | --- | --- | --- | --- | --- | --- |
-| 🧠 Trivia (culture Clash Royale) | Jeux de culture, alternance avec Frame | `trivia:` | `jeux/data/triviaclash/trivia-clash.json` | mercredi | `trivia_answer:` |
+| 🧠 Trivia (culture Clash Royale) | Jeux de culture (alternance avec Frame), puis Clash à partir de la refonte (alternance avec Zoom carte) | `trivia:` | `jeux/data/triviaclash/trivia-clash.json` | mercredi, puis mardi | `trivia_answer:` |
 | 🎮 Trivia Geek | Culture geek à partir de la refonte | `triviageek:` | `jeux/data/triviageek/trivia-geek.json` | lundi | `triviageek_answer:` |
 
 - QCM A/B/C/D, essai unique, miroir de Palette. Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
 - Champ optionnel `titre` : affiché en italique au-dessus de la question.
+- Jour : `weekday` (service) et `jour` (handlers) acceptent une fonction `(seasonId) → jour` pour un jeu qui change de créneau (Trivia).
 - Ordre des réponses mélangé par manche (`<préfixe>:order:<gameId>`).
 - Barème : **1 pt** bonne réponse, 0 sinon, un seul clic verrouillé (`HSETNX`). La réponse éphémère révèle la bonne réponse et la source (`source`).
 - Erratum : un champ `erratum` sur une question offre 1 pt à tous les participants de la manche (`grantErratumPoint()`, idempotent) et poste une annonce une seule fois (`<préfixe>:erratum_posted:<gameId>`).
@@ -323,7 +328,7 @@ Les résultats de **tous** les participants sont archivés d'un coup (`finalizeR
 
 ## Zoom carte (devine la carte zoomée)
 
-Jeux visuels (en alternance avec Palette). Service `jeux/services/zoom.js`, image `jeux/services/zoomImage.js`. Une manche = une carte (base, évolution ou héros) zoomée à l'extrême.
+Jeux visuels (en alternance avec Palette, vendredi), puis groupe Clash à partir de la refonte (en alternance avec Trivia, mardi). Service `jeux/services/zoom.js`, image `jeux/services/zoomImage.js`. Une manche = une carte (base, évolution ou héros) zoomée à l'extrême.
 
 ### Barème
 

@@ -43,6 +43,11 @@ import {
   getCurrentSeasonId as getCultureSeasonId,
   getActiveCultureGame,
 } from "../../services/jeuxculture.js";
+import {
+  getCurrentSeasonId as getClashSeasonId,
+  getActiveClashGame,
+  CLASH_WEEKDAY,
+} from "../../services/jeuxclash.js";
 
 import {
   readState as readQuizState,
@@ -168,6 +173,12 @@ const CULTURE_GAMES = {
   // Refonte (voir refonte.js) : "Ciné-club" à partir de décembre 2026.
   synopsis: { title: "🎬 Synopsis éclaté", svc: synopsisSvc },
 };
+// "Clash" (mardi, à partir de décembre 2026, voir jeuxclash.js) : Trivia et
+// Zoom carte quittent leurs anciens groupes pour alterner ici.
+const CLASH_GAMES = {
+  trivia: { title: "🧠 Trivia", svc: triviaSvc },
+  zoom: { title: "🔍 Zoom carte", svc: zoomSvc },
+};
 
 // Filet de sécurité si getCurrentSeasonId() renvoyait null : on retombe sur
 // le jeu "historique" de la paire plutôt que de planter l'embed /mini-jeux.
@@ -179,6 +190,12 @@ const CULTURE_GAMES = {
 // récente a été postée sur le salon public ; le jeu désigné par la saison
 // n'est retenu que si aucune manche publique n'existe encore (et "next"
 // signale la relève quand les deux diffèrent).
+//
+// Un même jeu peut appartenir à deux groupes selon la saison (Trivia et Zoom
+// carte rejoignent le groupe Clash à la refonte) : une manche n'est retenue
+// pour ce groupe que si le jeu y était actif pour la saison de la manche.
+// fallbackKey null : groupe masqué tant qu'il n'a aucun jeu (Clash avant la
+// bascule).
 async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
   const seasonId = await getSeasonId();
   const activeKey = seasonId == null ? fallbackKey : getActiveKey(seasonId);
@@ -194,8 +211,10 @@ async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
   );
   const running = states
     .filter(({ state }) => state?.channelId === PUBLIC_CHANNEL_ID)
+    .filter(({ key, state }) => state.seasonId == null || getActiveKey(state.seasonId) === key)
     .sort((a, b) => String(b.state.startedAt ?? "").localeCompare(String(a.state.startedAt ?? "")))[0];
   const key = running?.key ?? seasonKey ?? fallbackKey;
+  if (!key) return null;
   return {
     ...games[key],
     seasonId,
@@ -218,6 +237,10 @@ function resolveActiveLettresGame() {
 
 function resolveActiveCultureGame() {
   return resolvePairGame(CULTURE_GAMES, getCultureSeasonId, (id) => getWiredGame("culture", id, getActiveCultureGame(id)), "frame");
+}
+
+function resolveActiveClashGame() {
+  return resolvePairGame(CLASH_GAMES, getClashSeasonId, (id) => getWiredGame("clash", id, getActiveClashGame(id)), null);
 }
 
 // Un seul actif à la fois par convention (voir les gardes-fous "wrongChannel"
@@ -676,20 +699,23 @@ function buildCountdownBar(daysUntil) {
   return "🟦".repeat(filled) + "⬜".repeat(BAR_SEGMENTS - filled);
 }
 
-// Les 4 jeux réguliers actifs, triés par fin la plus proche — même ordre
-// pour /mini-jeux et pour le bouton "Ma participation".
+// Les jeux réguliers actifs (4, puis 5 avec le groupe Clash), triés par fin
+// la plus proche — même ordre pour /mini-jeux et pour le bouton "Ma
+// participation".
 async function resolveRegularGames(now) {
-  const [aveugleGame, visuelsGame, lettresGame, cultureGame] = await Promise.all([
+  const [aveugleGame, visuelsGame, lettresGame, cultureGame, clashGame] = await Promise.all([
     resolveActiveAveugleGame(),
     resolveActiveVisuelsGame(),
     resolveActiveLettresGame(),
     resolveActiveCultureGame(),
+    resolveActiveClashGame(),
   ]);
   const games = [
     { key: "aveugle", weekday: 1, ...aveugleGame },
     { key: "visuels", weekday: 5, ...visuelsGame },
     { key: "lettres", weekday: 6, ...lettresGame },
     { key: "culture", weekday: 3, ...cultureGame },
+    ...(clashGame ? [{ key: "clash", weekday: CLASH_WEEKDAY, ...clashGame }] : []),
   ].map((game) => ({ ...game, daysUntil: daysUntilEnd(now, game) }));
   return games.sort((a, b) => a.daysUntil - b.daysUntil);
 }

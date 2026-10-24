@@ -1,0 +1,43 @@
+name: Jeux Clash — Trivia / Zoom carte (alternance saisonnière)
+
+permissions:
+  contents: read
+
+on:
+  # Mardi 18:00 UTC. Le script décide lui-même, à chaque déclenchement,
+  # quel jeu est actif cette saison (voir jeux/services/jeuxclash.js) et
+  # poste le récap de fin de saison du jeu qui vient de se terminer, le cas
+  # échéant. Avant la saison de bascule (décembre 2026), il sort sans rien
+  # poster.
+  schedule:
+    - cron: "0 18 * * 2"
+  workflow_dispatch: {}
+
+jobs:
+  post-jeux-clash:
+    runs-on: ubuntu-latest
+    env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      # Bot des jeux (jeux/env.js) : vides tant que les secrets n'existent pas.
+      DISCORD_JEUX_TOKEN: ${{ secrets.DISCORD_JEUX_TOKEN }}
+      DISCORD_JEUX_APP_ID: ${{ secrets.DISCORD_JEUX_APP_ID }}
+      DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Post Jeux Clash (salon public, jeu actif décidé par le script)
+        run: npm run clash:public

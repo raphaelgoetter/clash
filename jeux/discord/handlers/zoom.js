@@ -34,6 +34,8 @@ import {
   alreadyPostedThisWeek,
 } from "../../services/zoom.js";
 import { nomSaison } from "../../services/saison.js";
+import { isRefonteSeason } from "../../services/refonte.js";
+import { CLASH_JOUR } from "../../services/jeuxclash.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
@@ -55,8 +57,10 @@ async function resolveRankingPseudos(ranking) {
 // ── Embed / composants du post ────────────────────────────────
 
 function buildZoomEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cacheBust }) {
+  // Vendredi (Jeux visuels), puis mardi dans le groupe Clash (jeuxclash.js).
+  const jour = isRefonteSeason("clash", seasonId) ? CLASH_JOUR : "vendredi";
   return {
-    title: "🔍 Le jeu du vendredi : Zoom carte !",
+    title: `🔍 Le jeu du ${jour} : Zoom carte !`,
     description:
       `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       "Une carte zoomée à l'extrême. Devine son nom !\n\n" +
@@ -72,7 +76,7 @@ function buildZoomEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cac
     },
     color: ZOOM_COLOR,
     footer: {
-      text: "Nouvelle manche : vendredi prochain. Bonne chance tout le monde !",
+      text: `Nouvelle manche : ${jour} prochain. Bonne chance tout le monde !`,
     },
   };
 }

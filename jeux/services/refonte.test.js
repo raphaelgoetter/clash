@@ -4,6 +4,10 @@ import { getActiveCultureGame } from "./jeuxculture.js";
 import { getActiveBlindGame } from "./jeuxaveugle.js";
 import { getActiveLetterGame } from "./jeuxdelettres.js";
 import { getActiveVisualGame } from "./jeuxvisuels.js";
+import { getActiveClashGame, publicationWeekday, CLASH_WEEKDAY } from "./jeuxclash.js";
+import { countRemainingWeekdayOccurrences } from "./saison.js";
+import { computeSeasonMancheTotal as triviaMancheTotal } from "./trivia.js";
+import { computeSeasonMancheTotal as zoomMancheTotal } from "./zoom.js";
 
 console.log("Running refonte tests...");
 
@@ -12,6 +16,7 @@ const GROUPS = {
   aveugle: getActiveBlindGame,
   lettres: getActiveLetterGame,
   visuels: getActiveVisualGame,
+  clash: getActiveClashGame,
 };
 
 // Novembre 2026 (138) : dernières saisons des anciennes paires, intactes.
@@ -53,6 +58,26 @@ assert.strictEqual(getWiredGame("visuels", 139, "zoom2"), "zoom2");
 assert.strictEqual(getWiredGame("visuels", 140, "platpays"), null);
 assert.strictEqual(getWiredGame("culture", 140, "frame"), "frame");
 console.log("✓ seuls les jeux prêts sont lancés après la bascule");
+
+// Groupe Clash : rien avant la bascule, puis Trivia (déc.) / Zoom carte
+// (janv.), jamais Zoom carte et Zoom logo le même mois.
+assert.strictEqual(getActiveClashGame(138), null);
+assert.strictEqual(getActiveClashGame(139), "trivia");
+assert.strictEqual(getActiveClashGame(140), "zoom");
+assert.strictEqual(getWiredGame("clash", 140, "zoom"), "zoom");
+for (let s = 139; s < 151; s++) {
+  assert.ok(!(getActiveClashGame(s) === "zoom" && getActiveVisualGame(s) === "zoom2"), `saison ${s}`);
+}
+// Créneau : ancien jour jusqu'en novembre, mardi ensuite (total de manches).
+assert.strictEqual(publicationWeekday(138, 5), 5);
+assert.strictEqual(publicationWeekday(139, 5), CLASH_WEEKDAY);
+const nov = new Date("2026-11-06T18:00:00Z");
+const dec = new Date("2026-12-01T18:00:00Z");
+assert.strictEqual(zoomMancheTotal(1, nov), 1 + countRemainingWeekdayOccurrences(nov, 5));
+assert.strictEqual(zoomMancheTotal(1, dec), 1 + countRemainingWeekdayOccurrences(dec, CLASH_WEEKDAY));
+assert.strictEqual(triviaMancheTotal(1, new Date("2026-10-28T18:00:00Z")), 1 + countRemainingWeekdayOccurrences(new Date("2026-10-28T18:00:00Z"), 3));
+assert.strictEqual(triviaMancheTotal(1, dec), 1 + countRemainingWeekdayOccurrences(dec, CLASH_WEEKDAY));
+console.log("✓ groupe Clash (alternance et créneau du mardi)");
 
 assert.strictEqual(groupLabel("aveugle", 138), "🙈 Jeux à l'aveugle");
 assert.strictEqual(groupLabel("aveugle", 139), "🎮 Culture geek");
