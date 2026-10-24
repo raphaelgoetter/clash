@@ -91,7 +91,7 @@ function buildPeleMeleEmbed({
         }
       : {}),
     footer: {
-      text: "Nouvelle manche : samedi prochain, à une heure surprise !",
+      text: "Nouvelle manche : samedi prochain.",
     },
   };
 }
