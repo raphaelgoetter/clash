@@ -19,12 +19,11 @@ const GROUPS = {
   clash: getActiveClashGame,
 };
 
-// Novembre 2026 (138) : dernières saisons des anciennes paires, intactes.
+// Octobre 2026 (137) : dernière saison des anciennes paires, intacte.
 assert.strictEqual(getActiveCultureGame(137), "trivia");
-assert.strictEqual(getActiveCultureGame(138), "frame");
-assert.strictEqual(getActiveBlindGame(138), "lajustecarte");
-assert.strictEqual(getActiveLetterGame(138), "anagram");
-assert.strictEqual(getActiveVisualGame(138), "zoom");
+assert.strictEqual(getActiveBlindGame(137), "blindroyale");
+assert.strictEqual(getActiveLetterGame(137), "pelemele");
+assert.strictEqual(getActiveVisualGame(137), "palette");
 console.log("✓ anciennes paires inchangées avant la bascule");
 
 for (const [group, getActive] of Object.entries(GROUPS)) {
@@ -38,51 +37,48 @@ for (const [group, getActive] of Object.entries(GROUPS)) {
 }
 console.log("✓ nouvelles paires à partir de la saison de bascule");
 
-// Décembre 2026 = 1er jeu de chaque nouvelle paire.
-assert.strictEqual(getActiveCultureGame(139), "synopsis");
-assert.strictEqual(getActiveBlindGame(139), "triviageek");
-assert.strictEqual(getActiveLetterGame(139), "concept");
-assert.strictEqual(getActiveVisualGame(139), "zoom2");
-assert.strictEqual(getActiveVisualGame(140), "platpays");
-assert.strictEqual(getActiveCultureGame(140), "frame");
-console.log("✓ calendrier décembre/janvier");
+// Novembre 2026 = 1er jeu de chaque nouvelle paire, décembre = 2nd.
+assert.strictEqual(getActiveCultureGame(138), "synopsis");
+assert.strictEqual(getActiveBlindGame(138), "triviageek");
+assert.strictEqual(getActiveLetterGame(138), "concept");
+assert.strictEqual(getActiveVisualGame(138), "zoom2");
+assert.strictEqual(getActiveVisualGame(139), "platpays");
+assert.strictEqual(getActiveCultureGame(139), "frame");
+assert.strictEqual(getActiveBlindGame(139), "intrus");
+assert.strictEqual(getActiveLetterGame(139), "pelemele");
+console.log("✓ calendrier novembre/décembre");
 
 // Jeux prêts : avant la bascule tout passe ; après, seuls ceux de
 // REFONTE_PRETS (Zoom carte n'est plus lancé par le groupe visuels).
-assert.strictEqual(getWiredGame("visuels", 138, "zoom"), "zoom");
-assert.strictEqual(getWiredGame("visuels", 140, "zoom"), null);
-assert.strictEqual(getActiveLetterGame(140), "pelemele");
-assert.strictEqual(getWiredGame("lettres", 140, "pelemele"), "pelemele");
-assert.strictEqual(getWiredGame("culture", 139, "synopsis"), "synopsis");
-assert.strictEqual(getWiredGame("visuels", 139, "zoom2"), "zoom2");
-assert.strictEqual(getWiredGame("visuels", 140, "platpays"), "platpays");
-assert.strictEqual(getWiredGame("aveugle", 140, "intrus"), "intrus");
-assert.strictEqual(getWiredGame("culture", 140, "frame"), "frame");
+assert.strictEqual(getWiredGame("visuels", 137, "palette"), "palette");
+assert.strictEqual(getWiredGame("visuels", 139, "zoom"), null);
+for (const [group, getActive] of Object.entries(GROUPS)) {
+  for (const s of [138, 139]) assert.strictEqual(getWiredGame(group, s, getActive(s)), getActive(s), `${group} ${s}`);
+}
 console.log("✓ seuls les jeux prêts sont lancés après la bascule");
 
-// Groupe Clash : rien avant la bascule, puis Trivia (déc.) / Zoom carte
-// (janv.), jamais Zoom carte et Zoom logo le même mois.
-assert.strictEqual(getActiveClashGame(138), null);
-assert.strictEqual(getActiveClashGame(139), "trivia");
-assert.strictEqual(getActiveClashGame(140), "zoom");
-assert.strictEqual(getWiredGame("clash", 140, "zoom"), "zoom");
-for (let s = 139; s < 151; s++) {
+// Groupe Clash : rien avant la bascule, puis Trivia (nov.) / Zoom carte
+// (déc.), jamais Zoom carte et Zoom logo le même mois.
+assert.strictEqual(getActiveClashGame(137), null);
+assert.strictEqual(getActiveClashGame(138), "trivia");
+assert.strictEqual(getActiveClashGame(139), "zoom");
+for (let s = 138; s < 150; s++) {
   assert.ok(!(getActiveClashGame(s) === "zoom" && getActiveVisualGame(s) === "zoom2"), `saison ${s}`);
 }
-// Créneau : ancien jour jusqu'en novembre, mardi ensuite (total de manches).
-assert.strictEqual(publicationWeekday(138, 5), 5);
-assert.strictEqual(publicationWeekday(139, 5), CLASH_WEEKDAY);
-const nov = new Date("2026-11-06T18:00:00Z");
+// Créneau : ancien jour jusqu'en octobre, mardi ensuite (total de manches).
+assert.strictEqual(publicationWeekday(137, 3), 3);
+assert.strictEqual(publicationWeekday(138, 3), CLASH_WEEKDAY);
+const oct = new Date("2026-10-28T18:00:00Z");
+const nov = new Date("2026-11-03T18:00:00Z");
 const dec = new Date("2026-12-01T18:00:00Z");
-assert.strictEqual(zoomMancheTotal(1, nov), 1 + countRemainingWeekdayOccurrences(nov, 5));
+assert.strictEqual(triviaMancheTotal(1, oct), 1 + countRemainingWeekdayOccurrences(oct, 3));
+assert.strictEqual(triviaMancheTotal(1, nov), 1 + countRemainingWeekdayOccurrences(nov, CLASH_WEEKDAY));
 assert.strictEqual(zoomMancheTotal(1, dec), 1 + countRemainingWeekdayOccurrences(dec, CLASH_WEEKDAY));
-assert.strictEqual(triviaMancheTotal(1, new Date("2026-10-28T18:00:00Z")), 1 + countRemainingWeekdayOccurrences(new Date("2026-10-28T18:00:00Z"), 3));
-assert.strictEqual(triviaMancheTotal(1, dec), 1 + countRemainingWeekdayOccurrences(dec, CLASH_WEEKDAY));
 console.log("✓ groupe Clash (alternance et créneau du mardi)");
 
-assert.strictEqual(groupLabel("aveugle", 138), "🙈 Jeux à l'aveugle");
-assert.strictEqual(groupLabel("aveugle", 139), "🎮 Culture geek");
-// Frontière Paris/UTC : 1er décembre 00h30 à Paris = 30 novembre 23h30 UTC.
-assert.strictEqual(groupLabelForDate("culture", new Date("2026-11-30T23:30:00Z")), "🎬 Ciné-club");
-assert.strictEqual(groupLabelForDate("culture", new Date("2026-11-30T22:30:00Z")), "🎬 Jeux de culture");
+assert.strictEqual(groupLabel("aveugle", 137), "🙈 Jeux à l'aveugle");
+assert.strictEqual(groupLabel("aveugle", 138), "🎮 Culture geek");
+// Frontière Paris/UTC : 1er novembre 00h30 à Paris = 31 octobre 23h30 UTC.
+assert.strictEqual(groupLabelForDate("culture", new Date("2026-10-31T23:30:00Z")), "🎬 Ciné-club");
+assert.strictEqual(groupLabelForDate("culture", new Date("2026-10-31T22:30:00Z")), "🎬 Jeux de culture");
 console.log("✓ libellés de groupe selon la saison");

@@ -46,9 +46,9 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 
 ### Refonte hors Clash Royale (bascule par groupe)
 
-`jeux/services/refonte.js` remplace chaque paire par une nouvelle, sans lien avec Clash Royale, à partir de la saison `REFONTE_SEASON[groupe]` (139 = décembre 2026 pour les 5 groupes). Avant cette saison, l'alternance ci-dessus s'applique sans changement ; à partir d'elle, la parité s'ancre sur la saison de bascule : écart pair → 1er jeu, impair → 2nd. Reporter la bascule d'un groupe = augmenter sa saison dans `REFONTE_SEASON`.
+`jeux/services/refonte.js` remplace chaque paire par une nouvelle, sans lien avec Clash Royale, à partir de la saison `REFONTE_SEASON[groupe]` (138 = novembre 2026 pour les 5 groupes). Avant cette saison, l'alternance ci-dessus s'applique sans changement ; à partir d'elle, la parité s'ancre sur la saison de bascule : écart pair → 1er jeu, impair → 2nd. Reporter la bascule d'un groupe = augmenter sa saison dans `REFONTE_SEASON`.
 
-| Groupe (clé technique) | Libellé après bascule | Écart pair (déc. 2026) | Écart impair (janv. 2027) |
+| Groupe (clé technique) | Libellé après bascule | Écart pair (nov. 2026) | Écart impair (déc. 2026) |
 | --- | --- | --- | --- |
 | `culture` | 🎬 Ciné-club | `synopsis` (Synopsis éclaté) | `frame` (Trouve le film) |
 | `aveugle` | 🎮 Culture geek | `triviageek` (Trivia Geek) | `intrus` (Intrus de l'inventaire) |
@@ -57,7 +57,7 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | `clash` (nouveau) | ⚔️ Clash | `trivia` (Trivia) | `zoom` (Zoom carte) |
 
 - Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
-- Groupe Clash : garde un rendez-vous Clash Royale. Aucun jeu avant la bascule (`getActiveClashGame` → `null`, `postJeuxClash.js` sort sans rien poster ni écrire, `/mini-jeux` masque le groupe). Trivia et Zoom carte quittent leurs anciens groupes et y gardent leur identifiant, leur catalogue et leurs archives ; leur jour de publication dépend de la saison (`publicationWeekday`, `jeuxclash.js` : mercredi / vendredi jusqu'en novembre 2026, mardi ensuite), pour l'embed comme pour le total de manches. Zoom carte (janvier) et Zoom logo (décembre) ne tombent jamais le même mois.
+- Groupe Clash : garde un rendez-vous Clash Royale. Aucun jeu avant la bascule (`getActiveClashGame` → `null`, `postJeuxClash.js` sort sans rien poster ni écrire, `/mini-jeux` masque le groupe). Trivia et Zoom carte quittent leurs anciens groupes et y gardent leur identifiant, leur catalogue et leurs archives ; leur jour de publication dépend de la saison (`publicationWeekday`, `jeuxclash.js` : mercredi / vendredi jusqu'en octobre 2026, mardi ensuite), pour l'embed comme pour le total de manches. Zoom carte (décembre, février…) et Zoom logo (novembre, janvier…) ne tombent jamais le même mois.
 - Un jeu n'est prêt que dans sa propre paire (`getWiredGame`) : Zoom carte figure dans `REFONTE_PRETS` pour le groupe Clash mais n'est jamais relancé par l'orchestrateur visuels. `/mini-jeux` n'attribue une manche à un groupe que si le jeu y était actif pour la saison de la manche (`state.seasonId`), et `/mini-jeux-history` range les résultats de Trivia et Zoom carte selon la saison de la manche (`splitAtClash`) : ancien groupe avant la bascule, « ⚔️ Clash » ensuite.
 - Pêle-mêle rejoint « 🔤 Jeux de mots » tel quel (même identifiant, même thème Clash Royale, mêmes clés Redis). Trivia Geek change de groupe et Zoom logo remplace Zoom carte pendant que celui-ci tourne encore, d'où des identifiants distincts (`triviageek`, `zoom2`).
 - À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi le groupe visuels de relancer Zoom carte.

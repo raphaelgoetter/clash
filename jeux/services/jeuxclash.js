@@ -1,7 +1,7 @@
 // ============================================================
 // jeuxclash.js — Tronc commun du groupe « Clash » (Trivia / Zoom carte),
 // créé par la refonte (voir refonte.js) pour garder un rendez-vous Clash
-// Royale : rien avant sa saison de bascule (139, décembre 2026), puis
+// Royale : rien avant sa saison de bascule (138, novembre 2026), puis
 // alternance une saison sur deux, le MARDI 18h UTC.
 // jeux/scripts/postJeuxClash.js est le seul consommateur destiné à la
 // production.

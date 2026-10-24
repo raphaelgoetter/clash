@@ -58,8 +58,8 @@ function tagSubGame(fetchFn, subGame) {
 // Trivia et Zoom carte rejoignent le groupe Clash à la refonte : leurs
 // résultats restent dans leur ancien groupe avant la bascule (clash: false),
 // dans « clash » ensuite (clash: true). Découpage par saison de la manche
-// (la dernière manche Zoom carte de novembre se résout aussi début
-// décembre), par date à défaut ; les anciens seasonId calés sur Clash
+// (la dernière manche d'une saison peut se résoudre au début de la
+// suivante), par date à défaut ; les anciens seasonId calés sur Clash
 // Royale sont tous antérieurs à la bascule.
 function splitAtClash(fetchFn, { clash }) {
   return async () =>

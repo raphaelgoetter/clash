@@ -10,8 +10,7 @@ async function main() {
   // saison.
   assert.strictEqual(getActiveLetterGame(ACTIVE_GAME_REFERENCE_SEASON), "anagram");
   assert.strictEqual(getActiveLetterGame(ACTIVE_GAME_REFERENCE_SEASON + 1), "pelemele");
-  assert.strictEqual(getActiveLetterGame(ACTIVE_GAME_REFERENCE_SEASON + 2), "anagram");
-  // À partir de la saison de bascule (139), la nouvelle paire prend le
+  // À partir de la saison de bascule (138), la nouvelle paire prend le
   // relais : voir refonte.test.js.
   // robuste même sur une saison antérieure à la référence (jamais censé
   // arriver en pratique, mais ne doit pas planter ni renvoyer une parité

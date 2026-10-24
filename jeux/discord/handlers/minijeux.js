@@ -145,7 +145,7 @@ function channelLink() {
 const AVEUGLE_GAMES = {
   blindroyale: { title: "🎧 Blind Royale", svc: blindRoyaleSvc },
   lajustecarte: { title: "🃏 La Juste Carte", svc: justeCarteSvc },
-  // Refonte (voir refonte.js) : "Culture geek" à partir de décembre 2026.
+  // Refonte (voir refonte.js) : "Culture geek" à partir de novembre 2026.
   triviageek: { title: "🎮 Trivia Geek", svc: triviaGeekSvc },
   intrus: { title: "🎒 Intrus de l'inventaire", svc: intrusSvc },
 };
@@ -158,14 +158,14 @@ const AVEUGLE_GAMES = {
 const VISUELS_GAMES = {
   zoom: { title: "🔍 Zoom carte", svc: zoomSvc },
   palette: { title: "🎨 Palette", svc: paletteSvc },
-  // Refonte (voir refonte.js) : "Coup d'œil" à partir de décembre 2026.
+  // Refonte (voir refonte.js) : "Coup d'œil" à partir de novembre 2026.
   zoom2: { title: "🔍 Zoom logo", svc: zoom2Svc },
   platpays: { title: "🍽️ Plat Pays", svc: platPaysSvc },
 };
 const LETTRES_GAMES = {
   anagram: { title: "🔤 Anagram", svc: anagramSvc },
   pelemele: { title: "🔤 Pêle-mêle", svc: peleMeleSvc },
-  // Refonte (voir refonte.js) : "Jeux de mots" à partir de décembre 2026.
+  // Refonte (voir refonte.js) : "Jeux de mots" à partir de novembre 2026.
   concept: { title: "🧩 Concept", svc: conceptSvc },
 };
 // "Mini-jeux de Culture" (mercredi) : Frame et Trivia alternent une saison
@@ -174,10 +174,10 @@ const LETTRES_GAMES = {
 const CULTURE_GAMES = {
   frame: { title: "🎬 Trouve le film !", svc: frameSvc },
   trivia: { title: "🧠 Trivia", svc: triviaSvc },
-  // Refonte (voir refonte.js) : "Ciné-club" à partir de décembre 2026.
+  // Refonte (voir refonte.js) : "Ciné-club" à partir de novembre 2026.
   synopsis: { title: "🎬 Synopsis éclaté", svc: synopsisSvc },
 };
-// "Clash" (mardi, à partir de décembre 2026, voir jeuxclash.js) : Trivia et
+// "Clash" (mardi, à partir de novembre 2026, voir jeuxclash.js) : Trivia et
 // Zoom carte quittent leurs anciens groupes pour alterner ici.
 const CLASH_GAMES = {
   trivia: { title: "🧠 Trivia", svc: triviaSvc },

@@ -19,13 +19,13 @@
 
 import { seasonIdForDate } from "./saison.js";
 
-// Saison de bascule par groupe : 139 = décembre 2026.
+// Saison de bascule par groupe : 138 = novembre 2026.
 export const REFONTE_SEASON = {
-  culture: 139,
-  aveugle: 139,
-  lettres: 139,
-  visuels: 139,
-  clash: 139,
+  culture: 138,
+  aveugle: 138,
+  lettres: 138,
+  visuels: 138,
+  clash: 138,
 };
 
 // Nouvelles paires : [jeu des écarts pairs (saison de bascule), jeu des
