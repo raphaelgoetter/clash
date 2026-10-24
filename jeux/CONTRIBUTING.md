@@ -126,7 +126,7 @@ Clés communes (`<p>` = préfixe du jeu) :
 - Routes d'images : `jeux/server/imageRoutes.js` (monté par `backend/server.js`). URL d'embed `https://trustroyale.vercel.app/api/<jeu>/image?gameId=<gameId>&v=<horodatage>`.
 - ⚠️ `gameId` épingle l'image de **cette** manche (sinon les anciens messages affichent la manche en cours quand le proxy Discord revalide son cache). La route refuse tout `gameId` jamais posté (registre `<p>:posted_games` ou équivalent), donc aucune manche future devinable. `v` n'est qu'un cache-buster.
 - Aucun asset de jeu n'est exposé statiquement (rien sous `frontend/public/`).
-- ⚠️ Zoom carte, Zoom logo et Palette (images, surlignages) et la police `data/fonts/Inter-Bold.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- jeux-visuels`.
+- ⚠️ Zoom carte, Zoom logo, Plat Pays et Palette (images, surlignages) et la police `data/fonts/Inter-Bold.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- <préfixe>`, avec le préfixe le plus précis possible (ex. `jeux-visuels/platpays`) : le script n'envoie que les chemins qui commencent par ce préfixe, et `jeux-visuels` seul renvoie plus de 400 fichiers.
 - ⚠️ Rendu SVG → PNG par `@resvg/resvg-js` : tout texte exige la police embarquée (`fontFiles` + `loadSystemFonts: false`), sinon il est invisible sur Vercel, sans erreur.
 
 ### Récapitulatif de fin de saison
@@ -371,10 +371,25 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 - Logos : toujours la version graphique (symbole) quand la marque en a une, jamais sa seule version typographique. Le logo Wikidata (`P154`) est souvent le logotype : chercher le symbole sur Commons, ou sur Wikipédia en anglais pour les logos non libres. Pas de marque trop évidente même zoomée (Apple, Nike, McDonald's…).
 - `accept` : nom affiché + variantes courantes (sigle, nom complet, orthographe fréquente), sans prénom seul ni mot courant ; aucune variante redondante une fois normalisée, aucune acceptée pour deux logos (vérifié par `zoom2.test.js`).
 - Recadrage : formule de Zoom carte, mais **fond blanc** (beaucoup de logos sont noirs sur fond transparent) et zooms par défaut `×3,5` (post public) / `×1,8` (indice), point focal `(0.5, 0.45)`. Réglage logo par logo validé visuellement avant l'ajout au catalogue ; la révélation (`stage=reveal`) est le logo entier centré sur fond blanc.
-- Images dans `jeux/data/jeux-visuels/zoom2/images/`, servies depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels`.
+- Images dans `jeux/data/jeux-visuels/zoom2/images/`, servies depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/zoom2`.
 - Redis (`zoom2:*`) : schéma commun avec `zoom2:posted_games` et `zoom2:hint:<gameId>:<discordId>` (flag `SETNX`) ; `zoom2:reset` purge aussi `posted_games`.
 - Boutons `zoom2_hint:`, `zoom2_answer:` (Modal `zoom2_answer_modal:`), route `/api/zoom2/image`. Pas de commande de scores : « Ma participation » de `/mini-jeux`.
 - Scripts : `zoom2:test`, `zoom2:test:dry`, `zoom2:reset`.
+
+---
+
+## Plat Pays (devine le pays d'origine d'un plat)
+
+Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en alternance avec Zoom logo. Service `jeux/services/platpays.js`, image `jeux/services/platpaysImage.js`, handler `jeux/discord/handlers/platpays.js` : mécanique de Frame (photo affichée entière dès le post, réponse libre via Modal, deux indices textuels), DM de fin de manche avec le pays, le nom du plat, le score de la manche et le total de la saison. Récap de fin de saison posté uniquement par `postJeuxVisuels.js` (`skipSeasonRecap` ignoré).
+
+- Barème : `computeScore(tentativesIncorrectes, indicesPris)` = `max(1, 10 − 1 × tentatives incorrectes − coût des indices)`, avec `HINT_COSTS` : indice 1 (ingrédients) **−1**, indice 2 (continent) **−3**. Plancher 1. Réponse fausse à **−1** (`WRONG_ANSWER_COST`, contre −2 pour Frame) : certains pays restent très difficiles même en connaissant le continent.
+- Réponse : le **pays**, en égalité stricte après normalisation (pas de sous-chaîne : « Niger » ne valide pas « Nigeria »), articles et prépositions de tête ignorés (« le Japon », « au Japon », « l'Inde »). Acceptés : `pays` + `accepte`.
+- Catalogue `jeux/data/jeux-visuels/platpays/platpays.json` : `numero` (= position), `plat`, `pays`, `continent` (Europe, Asie, Afrique, Amérique du Nord, Amérique du Sud, Océanie ; Amérique centrale et Caraïbes → Amérique du Nord), `ingredients` (indice 1, sans rien qui trahisse le pays), `accepte` (variantes du nom du pays), `image`, `credit` (`auteur`, `licence`, `source` = page Commons). Mélangé une fois (jamais deux plats consécutifs du même continent, jamais le même pays à moins de 6 manches). Parcouru dans l'ordre du fichier, en boucle ; `gameId` = `p` + numéro sur 3 chiffres. Ne jamais réordonner, ajouter en fin.
+- Plats : origine incontestée de préférence, au plus 2 plats par pays, pas d'évidence (pizza, sushi, croissant…). Si deux pays revendiquent le plat, le second va dans `accepte` et le champ optionnel `origine` (« Mali ou Sénégal ») remplace `pays` à l'affichage (réponse, DM, récap) : mafé, lamington.
+- Photos : Wikimedia Commons sous licence libre. Le post n'affiche que « Photo : Wikimedia Commons (licence) » : le nom de l'auteur (écriture, langue) peut trahir le pays. Le crédit complet (auteur, licence, page Commons) est donné dans la réponse « Bravo » et le DM de fin de manche. Fichiers nommés d'après le `gameId` (`p001.webp`), jamais d'après le plat, WebP de 835 px de large sans métadonnées (l'EXIF peut contenir le titre de la photo), crédit sans lieu (« from Santiago, Chile » trahirait le pays), et servis uniquement par `/api/platpays/image?gameId=`, gardé par `platpays:posted_games` : aucune URL ne trahit la réponse. Images dans `jeux/data/jeux-visuels/platpays/images/`, lues depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/platpays`.
+- Redis (`platpays:*`) : schéma commun avec `platpays:posted_games` et `platpays:hints:<gameId>:<discordId>` (SET des indices pris) ; `platpays:reset` purge aussi `posted_games`.
+- Boutons `platpays_hint1:`, `platpays_hint2:`, `platpays_answer:` (Modal `platpays_answer_modal:`). Pas de commande de scores : « Ma participation » de `/mini-jeux`.
+- Scripts : `platpays:test`, `platpays:test:dry`, `platpays:reset`.
 
 ---
 

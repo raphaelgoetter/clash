@@ -44,6 +44,8 @@ import { postZoom, postSeasonRecap as postZoomSeasonRecap } from "../discord/han
 import { postPalette, postSeasonRecap as postPaletteSeasonRecap } from "../discord/handlers/palette.js";
 import { alreadyPostedThisWeek as zoom2AlreadyPostedThisWeek } from "../services/zoom2.js";
 import { postZoom2, postSeasonRecap as postZoom2SeasonRecap } from "../discord/handlers/zoom2.js";
+import { alreadyPostedThisWeek as platPaysAlreadyPostedThisWeek } from "../services/platpays.js";
+import { postPlatPays, postSeasonRecap as postPlatPaysSeasonRecap } from "../discord/handlers/platpays.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
@@ -56,10 +58,10 @@ if (!channelId) {
   process.exit(1);
 }
 
-const ALREADY_POSTED_BY_GAME = { zoom: zoomAlreadyPostedThisWeek, palette: paletteAlreadyPostedThisWeek, zoom2: zoom2AlreadyPostedThisWeek };
-const POST_BY_GAME = { zoom: postZoom, palette: postPalette, zoom2: postZoom2 };
-const RECAP_BY_GAME = { zoom: postZoomSeasonRecap, palette: postPaletteSeasonRecap, zoom2: postZoom2SeasonRecap };
-const LABEL_BY_GAME = { zoom: "Zoom carte", palette: "Palette", zoom2: "Zoom logo" };
+const ALREADY_POSTED_BY_GAME = { zoom: zoomAlreadyPostedThisWeek, palette: paletteAlreadyPostedThisWeek, zoom2: zoom2AlreadyPostedThisWeek, platpays: platPaysAlreadyPostedThisWeek };
+const POST_BY_GAME = { zoom: postZoom, palette: postPalette, zoom2: postZoom2, platpays: postPlatPays };
+const RECAP_BY_GAME = { zoom: postZoomSeasonRecap, palette: postPaletteSeasonRecap, zoom2: postZoom2SeasonRecap, platpays: postPlatPaysSeasonRecap };
+const LABEL_BY_GAME = { zoom: "Zoom carte", palette: "Palette", zoom2: "Zoom logo", platpays: "Plat Pays" };
 
 (async () => {
   try {

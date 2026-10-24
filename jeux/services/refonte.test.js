@@ -55,7 +55,8 @@ assert.strictEqual(getWiredGame("visuels", 140, "zoom"), null);
 assert.strictEqual(getWiredGame("lettres", 140, "pelemele"), null);
 assert.strictEqual(getWiredGame("culture", 139, "synopsis"), "synopsis");
 assert.strictEqual(getWiredGame("visuels", 139, "zoom2"), "zoom2");
-assert.strictEqual(getWiredGame("visuels", 140, "platpays"), null);
+assert.strictEqual(getWiredGame("visuels", 140, "platpays"), "platpays");
+assert.strictEqual(getWiredGame("aveugle", 140, "intrus"), null);
 assert.strictEqual(getWiredGame("culture", 140, "frame"), "frame");
 console.log("✓ seuls les jeux prêts sont lancés après la bascule");
 

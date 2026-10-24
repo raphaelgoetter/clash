@@ -63,6 +63,11 @@ import {
   buildAnswerModal as buildSynopsisAnswerModal,
 } from "../handlers/synopsis.js";
 import {
+  handleHintButton as handlePlatPaysHintButton,
+  handleModalSubmit as handlePlatPaysModalSubmit,
+  buildAnswerModal as buildPlatPaysAnswerModal,
+} from "../handlers/platpays.js";
+import {
   buildIdeaModal as buildPollIdeaModal,
   handleIdeaModalSubmit as handlePollIdeaModalSubmit,
 } from "../handlers/poll.js";
@@ -150,6 +155,57 @@ export async function routeMiniJeux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleSynopsisModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
+    return;
+  }
+
+  // ── Jeu Plat Pays : boutons indice (ingrédients, continent) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id.startsWith("platpays_hint1:") ||
+      body.data.custom_id.startsWith("platpays_hint2:"))
+  ) {
+    const [prefix, gameId] = body.data.custom_id.split(":");
+    const hintKey = prefix === "platpays_hint1" ? "indice1" : "indice2";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePlatPaysHintButton(webhookUrl, gameId, hintKey, discordId, username));
+    return;
+  }
+
+  // ── Jeu Plat Pays : bouton "Répondre" → ouverture de la Modal (synchrone) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("platpays_answer:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    return res.status(200).json({ type: 9, data: buildPlatPaysAnswerModal(gameId) });
+  }
+
+  // ── Jeu Plat Pays : soumission de la Modal (body.type 5 = MODAL_SUBMIT) ──
+  if (
+    body.type === 5 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("platpays_answer_modal:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePlatPaysModalSubmit(webhookUrl, gameId, discordId, username, rawAnswer));
     return;
   }
 

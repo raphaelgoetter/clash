@@ -1,0 +1,1278 @@
+[
+  {
+    "numero": 1,
+    "plat": "Souvlaki",
+    "pays": "Grèce",
+    "continent": "Europe",
+    "ingredients": "porc, pain plat, sauce yaourt-concombre, oignon, tomate",
+    "accepte": [
+      "grece"
+    ],
+    "image": "p001.webp",
+    "credit": {
+      "auteur": "Kolforn",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:06-07-2017_Belly_pork_shish_kebab%2C_Albufeira.JPG"
+    }
+  },
+  {
+    "numero": 2,
+    "plat": "Phở",
+    "pays": "Viêt Nam",
+    "continent": "Asie",
+    "ingredients": "nouilles de riz, bouillon de bœuf, anis étoilé, herbes fraîches, citron vert",
+    "accepte": [
+      "vietnam",
+      "viet nam",
+      "viet-nam"
+    ],
+    "image": "p002.webp",
+    "credit": {
+      "auteur": "Phương Huy",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_%C4%90%C3%B4ng_H%C3%A0%2C_T%E1%BA%BFt_2022_(ph%E1%BB%9F_L%C3%BD_Qu%E1%BB%91c_s%C6%B0_%E1%BB%9F_c%C3%B4ng_vi%C3%AAn_C%E1%BB%8D_D%E1%BA%A7u)_(2).jpg"
+    }
+  },
+  {
+    "numero": 3,
+    "plat": "Rösti",
+    "pays": "Suisse",
+    "continent": "Europe",
+    "ingredients": "pomme de terre râpée, beurre, sel",
+    "accepte": [],
+    "image": "p003.webp",
+    "credit": {
+      "auteur": "Grueslayer",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:36VoS_04_Schnitzel_Holsteiner_Art_R%C3%B6stini_Barlag.jpg"
+    }
+  },
+  {
+    "numero": 4,
+    "plat": "Rendang",
+    "pays": "Indonésie",
+    "continent": "Asie",
+    "ingredients": "bœuf, lait de coco, citronnelle, piment, galanga",
+    "accepte": [
+      "indonesie"
+    ],
+    "image": "p004.webp",
+    "credit": {
+      "auteur": "GeeJo",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Lamb_rendang.jpg"
+    }
+  },
+  {
+    "numero": 5,
+    "plat": "Pastel de nata",
+    "pays": "Portugal",
+    "continent": "Europe",
+    "ingredients": "pâte feuilletée, jaune d'œuf, crème, sucre, cannelle",
+    "accepte": [],
+    "image": "p005.webp",
+    "credit": {
+      "auteur": "IngimarE",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:20230201_Pastries_in_Lissabon_2.jpg"
+    }
+  },
+  {
+    "numero": 6,
+    "plat": "Dholl puri",
+    "pays": "Maurice",
+    "continent": "Afrique",
+    "ingredients": "galette, pois cassés, curry, sauce tomate, légumes marinés",
+    "accepte": [
+      "ile maurice"
+    ],
+    "image": "p006.webp",
+    "credit": {
+      "auteur": "carrotmadman6",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:DSCN2542_2_(5580425381).jpg"
+    }
+  },
+  {
+    "numero": 7,
+    "plat": "Aligot",
+    "pays": "France",
+    "continent": "Europe",
+    "ingredients": "pomme de terre, fromage frais de vache, crème, beurre, ail",
+    "accepte": [],
+    "image": "p007.webp",
+    "credit": {
+      "auteur": "Slastic",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Bol_d'aligot.jpg"
+    }
+  },
+  {
+    "numero": 8,
+    "plat": "Tteokbokki",
+    "pays": "Corée du Sud",
+    "continent": "Asie",
+    "ingredients": "bâtonnets de riz, pâte de piment fermentée, galettes de poisson, oignon vert",
+    "accepte": [
+      "coree du sud",
+      "coree"
+    ],
+    "image": "p008.webp",
+    "credit": {
+      "auteur": "jetalone",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Korean.snacks-Tteokbokki-08.jpg"
+    }
+  },
+  {
+    "numero": 9,
+    "plat": "Haggis",
+    "pays": "Royaume-Uni",
+    "continent": "Europe",
+    "ingredients": "abats de mouton, flocons d'avoine, oignon, navet, purée de pommes de terre",
+    "accepte": [
+      "royaume uni",
+      "grande-bretagne",
+      "grande bretagne",
+      "ecosse",
+      "uk"
+    ],
+    "image": "p009.webp",
+    "credit": {
+      "auteur": "Kim Traynor",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:A_haggis_serving.JPG"
+    }
+  },
+  {
+    "numero": 10,
+    "plat": "Karantika",
+    "pays": "Algérie",
+    "continent": "Afrique",
+    "ingredients": "farine de pois chiches, œufs, cumin, huile",
+    "accepte": [
+      "algerie"
+    ],
+    "image": "p010.webp",
+    "credit": {
+      "auteur": "Flouer",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Plats_Algeriens_(4)_karantika.jpg"
+    }
+  },
+  {
+    "numero": 11,
+    "plat": "Arancini",
+    "pays": "Italie",
+    "continent": "Europe",
+    "ingredients": "riz, chapelure, mozzarella, sauce à la viande, petits pois",
+    "accepte": [],
+    "image": "p011.webp",
+    "credit": {
+      "auteur": "Gmelfi",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Arancini_002.jpg"
+    }
+  },
+  {
+    "numero": 12,
+    "plat": "Takoyaki",
+    "pays": "Japon",
+    "continent": "Asie",
+    "ingredients": "pâte, poulpe, gingembre mariné, copeaux de poisson séché",
+    "accepte": [],
+    "image": "p012.webp",
+    "credit": {
+      "auteur": "heiwa4126",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Takoyaki_by_yomi955.jpg"
+    }
+  },
+  {
+    "numero": 13,
+    "plat": "Papanași",
+    "pays": "Roumanie",
+    "continent": "Europe",
+    "ingredients": "fromage frais, semoule, crème aigre, confiture",
+    "accepte": [],
+    "image": "p013.webp",
+    "credit": {
+      "auteur": "Nicubunu",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Papanasi_cu_cirese.jpg"
+    }
+  },
+  {
+    "numero": 14,
+    "plat": "Lablabi",
+    "pays": "Tunisie",
+    "continent": "Afrique",
+    "ingredients": "pois chiches, pain rassis, ail, cumin, pâte de piment",
+    "accepte": [],
+    "image": "p014.webp",
+    "credit": {
+      "auteur": "Habib M'henni",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Bol_de_Leblabi_de_Tunisie%2C_21_mars_2017.jpg"
+    }
+  },
+  {
+    "numero": 15,
+    "plat": "Judd mat Gaardebounen",
+    "pays": "Luxembourg",
+    "continent": "Europe",
+    "ingredients": "collier de porc fumé, fèves, lard, pomme de terre",
+    "accepte": [],
+    "image": "p015.webp",
+    "credit": {
+      "auteur": "UnorthodoxY",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Judd_mat_Gaardebounen.jpg"
+    }
+  },
+  {
+    "numero": 16,
+    "plat": "Taboulé",
+    "pays": "Liban",
+    "continent": "Asie",
+    "ingredients": "persil, boulgour, tomate, menthe, citron",
+    "accepte": [],
+    "image": "p016.webp",
+    "credit": {
+      "auteur": "cyclonebill",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Flickr_-_cyclonebill_-_Tabbouleh.jpg"
+    }
+  },
+  {
+    "numero": 17,
+    "plat": "Bouillabaisse",
+    "pays": "France",
+    "continent": "Europe",
+    "ingredients": "poissons de roche, safran, tomate, croûtons, sauce à l'ail",
+    "accepte": [],
+    "image": "p017.webp",
+    "credit": {
+      "auteur": "Sergey A. Demidov",
+      "licence": "CC BY 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:20250903_Bouillabaisse_in_Khimki_(26200).jpg"
+    }
+  },
+  {
+    "numero": 18,
+    "plat": "Muhammara",
+    "pays": "Syrie",
+    "continent": "Asie",
+    "ingredients": "poivron rouge, noix, chapelure, mélasse de grenade",
+    "accepte": [],
+    "image": "p018.webp",
+    "credit": {
+      "auteur": "Krista",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Tanoreen_muhammara.jpg"
+    }
+  },
+  {
+    "numero": 19,
+    "plat": "Pastitsio",
+    "pays": "Grèce",
+    "continent": "Europe",
+    "ingredients": "pâtes, viande hachée, béchamel, tomate, cannelle",
+    "accepte": [
+      "grece"
+    ],
+    "image": "p019.webp",
+    "credit": {
+      "auteur": "Sam Bailey",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Pastitsio_homemade.jpg"
+    }
+  },
+  {
+    "numero": 20,
+    "plat": "Mapo tofu",
+    "pays": "Chine",
+    "continent": "Asie",
+    "ingredients": "tofu, porc haché, pâte de fèves pimentée, poivre à la saveur citronnée",
+    "accepte": [],
+    "image": "p020.webp",
+    "credit": {
+      "auteur": "Archon6812",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Billyfoodmabodofu3.jpg"
+    }
+  },
+  {
+    "numero": 21,
+    "plat": "Gâteau de Kiev",
+    "pays": "Ukraine",
+    "continent": "Europe",
+    "ingredients": "meringue aux noisettes, crème au beurre, cacao",
+    "accepte": [],
+    "image": "p021.webp",
+    "credit": {
+      "auteur": "Turzh",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:%D0%9A%D0%B8%D1%97%D0%B2%D1%81%D1%8C%D0%BA%D0%B8%D0%B9_%D1%82%D0%BE%D1%80%D1%82_%D0%B1%D0%B5%D0%B7_%D0%BA%D0%BE%D1%80%D0%BE%D0%B1%D0%BA%D0%B8.JPG"
+    }
+  },
+  {
+    "numero": 22,
+    "plat": "Saltah",
+    "pays": "Yémen",
+    "continent": "Asie",
+    "ingredients": "bouillon de viande, mousse de fenugrec, légumes, piment",
+    "accepte": [
+      "yemen"
+    ],
+    "image": "p022.webp",
+    "credit": {
+      "auteur": "Rania al-Bahara",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Saltah.jpg"
+    }
+  },
+  {
+    "numero": 23,
+    "plat": "Karjalanpiirakka",
+    "pays": "Finlande",
+    "continent": "Europe",
+    "ingredients": "farine de seigle, riz au lait, beurre, œuf dur",
+    "accepte": [],
+    "image": "p023.webp",
+    "credit": {
+      "auteur": "JIP",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Breakfast_at_Ruunaan_retkeilykeskus.jpg"
+    }
+  },
+  {
+    "numero": 24,
+    "plat": "Okonomiyaki",
+    "pays": "Japon",
+    "continent": "Asie",
+    "ingredients": "chou, farine, œuf, porc, sauce sucrée-salée",
+    "accepte": [],
+    "image": "p024.webp",
+    "credit": {
+      "auteur": "ume-y",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Okonomiyaki_001.jpg"
+    }
+  },
+  {
+    "numero": 25,
+    "plat": "Cachupa",
+    "pays": "Cap-Vert",
+    "continent": "Afrique",
+    "ingredients": "maïs, haricots, patate douce, poisson ou viande, chou",
+    "accepte": [
+      "cap vert"
+    ],
+    "image": "p025.webp",
+    "credit": {
+      "auteur": "Xandu",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Cachupa_2.jpg"
+    }
+  },
+  {
+    "numero": 26,
+    "plat": "Pelmeni",
+    "pays": "Russie",
+    "continent": "Europe",
+    "ingredients": "pâte, viande hachée, oignon, crème aigre",
+    "accepte": [],
+    "image": "p026.webp",
+    "credit": {
+      "auteur": "Eugene Kim",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Pelmeni_Russian.jpg"
+    }
+  },
+  {
+    "numero": 27,
+    "plat": "Tanjia",
+    "pays": "Maroc",
+    "continent": "Afrique",
+    "ingredients": "bœuf, citron confit, cumin, safran, ail",
+    "accepte": [],
+    "image": "p027.webp",
+    "credit": {
+      "auteur": "Anass Sedrati",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Inside_the_Tangia.jpg"
+    }
+  },
+  {
+    "numero": 28,
+    "plat": "Gaufre de Liège",
+    "pays": "Belgique",
+    "continent": "Europe",
+    "ingredients": "pâte levée, sucre perlé, beurre, vanille",
+    "accepte": [],
+    "image": "p028.webp",
+    "credit": {
+      "auteur": "Jrenier",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Gaufre_liege.jpg"
+    }
+  },
+  {
+    "numero": 29,
+    "plat": "İskender kebap",
+    "pays": "Turquie",
+    "continent": "Asie",
+    "ingredients": "fines tranches de viande grillée, pain plat, sauce tomate, beurre fondu, yaourt",
+    "accepte": [],
+    "image": "p029.webp",
+    "credit": {
+      "auteur": "Adriao",
+      "licence": "CC BY 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:%C4%B0skender_kebap.JPG"
+    }
+  },
+  {
+    "numero": 30,
+    "plat": "Thiéboudienne",
+    "pays": "Sénégal",
+    "continent": "Afrique",
+    "ingredients": "riz, poisson, légumes, concentré de tomate, poisson séché",
+    "accepte": [
+      "senegal"
+    ],
+    "image": "p030.webp",
+    "credit": {
+      "auteur": "KVDP",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Thieboudienne.JPG"
+    }
+  },
+  {
+    "numero": 31,
+    "plat": "Fårikål",
+    "pays": "Norvège",
+    "continent": "Europe",
+    "ingredients": "mouton, chou, poivre noir, pomme de terre",
+    "accepte": [
+      "norvege"
+    ],
+    "image": "p031.webp",
+    "credit": {
+      "auteur": "Jarvin",
+      "licence": "CC BY 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:F%C3%A5r_i_k%C3%A5l.jpg"
+    }
+  },
+  {
+    "numero": 32,
+    "plat": "Ackee and saltfish",
+    "pays": "Jamaïque",
+    "continent": "Amérique du Nord",
+    "ingredients": "fruit tropical à chair jaune, morue salée, oignon, piment",
+    "accepte": [
+      "jamaique"
+    ],
+    "image": "p032.webp",
+    "credit": {
+      "auteur": "gailf548",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Ackee_and_Saltfish.jpg"
+    }
+  },
+  {
+    "numero": 33,
+    "plat": "Chapli kebab",
+    "pays": "Pakistan",
+    "continent": "Asie",
+    "ingredients": "bœuf haché, graines de coriandre, tomate, piment, grenade séchée",
+    "accepte": [],
+    "image": "p033.webp",
+    "credit": {
+      "auteur": "Miansari66",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Chapli_Kabab.JPG"
+    }
+  },
+  {
+    "numero": 34,
+    "plat": "Tavë kosi",
+    "pays": "Albanie",
+    "continent": "Europe",
+    "ingredients": "agneau, riz, yaourt, œufs",
+    "accepte": [],
+    "image": "p034.webp",
+    "credit": {
+      "auteur": "fugzu",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:TAVE_KOSI-_agnello_allo_yogurt_albanese.jpg"
+    }
+  },
+  {
+    "numero": 35,
+    "plat": "Poulet DG",
+    "pays": "Cameroun",
+    "continent": "Afrique",
+    "ingredients": "poulet, banane plantain, carotte, haricots verts, poivron",
+    "accepte": [],
+    "image": "p035.webp",
+    "credit": {
+      "auteur": "Affirebecca",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Poulet_DG.JPG"
+    }
+  },
+  {
+    "numero": 36,
+    "plat": "Salade chopska",
+    "pays": "Bulgarie",
+    "continent": "Europe",
+    "ingredients": "tomate, concombre, poivron, oignon, fromage de brebis",
+    "accepte": [],
+    "image": "p036.webp",
+    "credit": {
+      "auteur": "Popo le Chien",
+      "licence": "CC0",
+      "source": "https://commons.wikimedia.org/wiki/File:Chopska.jpg"
+    }
+  },
+  {
+    "numero": 37,
+    "plat": "Larb",
+    "pays": "Laos",
+    "continent": "Asie",
+    "ingredients": "viande hachée, riz grillé moulu, citron vert, menthe, sauce de poisson",
+    "accepte": [],
+    "image": "p037.webp",
+    "credit": {
+      "auteur": "Jpatokal",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:LaoFood_LarbNeua.JPG"
+    }
+  },
+  {
+    "numero": 38,
+    "plat": "Chiles en nogada",
+    "pays": "Mexique",
+    "continent": "Amérique du Nord",
+    "ingredients": "gros piment vert, viande hachée aux fruits, sauce aux noix, grenade, persil",
+    "accepte": [],
+    "image": "p038.webp",
+    "credit": {
+      "auteur": "Ahleli",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Chile_relleno_en_nogada_con_granada.jpg"
+    }
+  },
+  {
+    "numero": 39,
+    "plat": "Currywurst",
+    "pays": "Allemagne",
+    "continent": "Europe",
+    "ingredients": "saucisse de porc, sauce tomate, épices en poudre, frites",
+    "accepte": [],
+    "image": "p039.webp",
+    "credit": {
+      "auteur": "Rainer Z ...",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Currywurst-1.jpg"
+    }
+  },
+  {
+    "numero": 40,
+    "plat": "Moi moi",
+    "pays": "Nigeria",
+    "continent": "Afrique",
+    "ingredients": "haricots à œil noir, poivron, oignon, huile de palme",
+    "accepte": [],
+    "image": "p040.webp",
+    "credit": {
+      "auteur": "Rka11111",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Moin_Moin.jpg"
+    }
+  },
+  {
+    "numero": 41,
+    "plat": "Milanesa a la napolitana",
+    "pays": "Argentine",
+    "continent": "Amérique du Sud",
+    "ingredients": "escalope panée, sauce tomate, jambon, mozzarella",
+    "accepte": [],
+    "image": "p041.webp",
+    "credit": {
+      "auteur": "Horacio Cambeiro",
+      "licence": "CC BY 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Milanesa_napolitana_argentina.jpg"
+    }
+  },
+  {
+    "numero": 42,
+    "plat": "Ghormeh sabzi",
+    "pays": "Iran",
+    "continent": "Asie",
+    "ingredients": "herbes, agneau, haricots rouges, citron séché",
+    "accepte": [
+      "perse"
+    ],
+    "image": "p042.webp",
+    "credit": {
+      "auteur": "AilinParsa",
+      "licence": "CC0",
+      "source": "https://commons.wikimedia.org/wiki/File:Ailin14VeganGhormehSabzi.JPG"
+    }
+  },
+  {
+    "numero": 43,
+    "plat": "Mafé",
+    "pays": "Mali",
+    "continent": "Afrique",
+    "ingredients": "pâte d'arachide, viande, tomate, patate douce",
+    "accepte": [
+      "senegal"
+    ],
+    "image": "p043.webp",
+    "origine": "Mali ou Sénégal",
+    "credit": {
+      "auteur": "Nicolas PHULPIN",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Maf%C3%A9_S%C3%A9n%C3%A9galais.jpg"
+    }
+  },
+  {
+    "numero": 44,
+    "plat": "Poutine",
+    "pays": "Canada",
+    "continent": "Amérique du Nord",
+    "ingredients": "frites, fromage en grains, sauce brune",
+    "accepte": [
+      "quebec"
+    ],
+    "image": "p044.webp",
+    "credit": {
+      "auteur": "0x010C",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:2016-10_Montreal_-_poutine_33.jpg"
+    }
+  },
+  {
+    "numero": 45,
+    "plat": "Fabada asturiana",
+    "pays": "Espagne",
+    "continent": "Europe",
+    "ingredients": "haricots blancs, saucisse pimentée, boudin noir, lard",
+    "accepte": [],
+    "image": "p045.webp",
+    "credit": {
+      "auteur": "Amasuela, Luis Lafuente Agudín",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Fabada_con_compangu.jpg"
+    }
+  },
+  {
+    "numero": 46,
+    "plat": "Casado",
+    "pays": "Costa Rica",
+    "continent": "Amérique du Nord",
+    "ingredients": "riz, haricots noirs, banane plantain, salade, viande",
+    "accepte": [],
+    "image": "p046.webp",
+    "credit": {
+      "auteur": "Richie Diesterheft",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Casado_Tico.jpg"
+    }
+  },
+  {
+    "numero": 47,
+    "plat": "Papet vaudois",
+    "pays": "Suisse",
+    "continent": "Europe",
+    "ingredients": "poireau, pomme de terre, saucisse fumée, crème",
+    "accepte": [],
+    "image": "p047.webp",
+    "credit": {
+      "auteur": "Clément Bucco-Lechat",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Papet_et_saucisse_aux_choux.jpg"
+    }
+  },
+  {
+    "numero": 48,
+    "plat": "Pad thaï",
+    "pays": "Thaïlande",
+    "continent": "Asie",
+    "ingredients": "nouilles de riz, crevettes, œuf, cacahuètes, pousses de soja",
+    "accepte": [
+      "thailande"
+    ],
+    "image": "p048.webp",
+    "credit": {
+      "auteur": "Takeaway",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Phat_Thai_kung_Chang_Khien_street_stall.jpg"
+    }
+  },
+  {
+    "numero": 49,
+    "plat": "Poulet jerk",
+    "pays": "Jamaïque",
+    "continent": "Amérique du Nord",
+    "ingredients": "poulet, piment, quatre-épices, thym, oignon vert",
+    "accepte": [
+      "jamaique"
+    ],
+    "image": "p049.webp",
+    "credit": {
+      "auteur": "OUTography.com",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:BBQJerk_Chicken.jpg"
+    }
+  },
+  {
+    "numero": 50,
+    "plat": "Poulet yassa",
+    "pays": "Sénégal",
+    "continent": "Afrique",
+    "ingredients": "poulet, oignons, citron, moutarde",
+    "accepte": [
+      "senegal"
+    ],
+    "image": "p050.webp",
+    "credit": {
+      "auteur": "KVDP",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Yassapoulet.JPG"
+    }
+  },
+  {
+    "numero": 51,
+    "plat": "Pão de queijo",
+    "pays": "Brésil",
+    "continent": "Amérique du Sud",
+    "ingredients": "fécule de manioc, fromage, œufs, lait",
+    "accepte": [
+      "bresil"
+    ],
+    "image": "p051.webp",
+    "credit": {
+      "auteur": "Murilo manzini",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Cheesebread.jpg"
+    }
+  },
+  {
+    "numero": 52,
+    "plat": "Butter chicken",
+    "pays": "Inde",
+    "continent": "Asie",
+    "ingredients": "poulet, beurre, tomate, crème, épices",
+    "accepte": [],
+    "image": "p052.webp",
+    "credit": {
+      "auteur": "stu_spivack",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Chicken_makhani.jpg"
+    }
+  },
+  {
+    "numero": 53,
+    "plat": "Foul medames",
+    "pays": "Égypte",
+    "continent": "Afrique",
+    "ingredients": "fèves, huile d'olive, cumin, citron, ail",
+    "accepte": [
+      "egypte"
+    ],
+    "image": "p053.webp",
+    "credit": {
+      "auteur": "Habib M'henni",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Foul_Mdammis%2C_Tunisie.jpg"
+    }
+  },
+  {
+    "numero": 54,
+    "plat": "Osso buco",
+    "pays": "Italie",
+    "continent": "Europe",
+    "ingredients": "jarret de veau, vin blanc, tomate, zeste de citron, persil",
+    "accepte": [],
+    "image": "p054.webp",
+    "credit": {
+      "auteur": "Mogens Engelund",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Ossobuco.jpg"
+    }
+  },
+  {
+    "numero": 55,
+    "plat": "Romazava",
+    "pays": "Madagascar",
+    "continent": "Afrique",
+    "ingredients": "bœuf, brèdes, gingembre, tomate",
+    "accepte": [],
+    "image": "p055.webp",
+    "credit": {
+      "auteur": "Z thomas",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Madagaskar_stew_2019-10-01.jpg"
+    }
+  },
+  {
+    "numero": 56,
+    "plat": "Completo",
+    "pays": "Chili",
+    "continent": "Amérique du Sud",
+    "ingredients": "saucisse, pain, avocat, tomate, mayonnaise",
+    "accepte": [],
+    "image": "p056.webp",
+    "credit": {
+      "auteur": "Paul Lowry",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Completo_italiano.jpg"
+    }
+  },
+  {
+    "numero": 57,
+    "plat": "Key lime pie",
+    "pays": "États-Unis",
+    "continent": "Amérique du Nord",
+    "ingredients": "citron vert, lait concentré sucré, jaunes d'œufs, biscuits émiettés",
+    "accepte": [
+      "etats-unis",
+      "etats unis",
+      "usa",
+      "amerique"
+    ],
+    "image": "p057.webp",
+    "credit": {
+      "auteur": "Peter Veldhuizen",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Key_limepie.jpg"
+    }
+  },
+  {
+    "numero": 58,
+    "plat": "Tortilla de patatas",
+    "pays": "Espagne",
+    "continent": "Europe",
+    "ingredients": "œufs, pomme de terre, oignon, huile d'olive",
+    "accepte": [],
+    "image": "p058.webp",
+    "credit": {
+      "auteur": "Tamorlan",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Tortilla_de_Patatas_(Corte_transversal).jpg"
+    }
+  },
+  {
+    "numero": 59,
+    "plat": "Bánh mì",
+    "pays": "Viêt Nam",
+    "continent": "Asie",
+    "ingredients": "baguette, pâté, porc, légumes marinés, coriandre",
+    "accepte": [
+      "vietnam",
+      "viet nam",
+      "viet-nam"
+    ],
+    "image": "p059.webp",
+    "credit": {
+      "auteur": "源義信",
+      "licence": "CC BY 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:2023-12-10_Coffee_and_b%C3%A1nh_m%C3%AC_in_Saigon.jpg"
+    }
+  },
+  {
+    "numero": 60,
+    "plat": "Fairy bread",
+    "pays": "Australie",
+    "continent": "Océanie",
+    "ingredients": "pain de mie, beurre, vermicelles colorés",
+    "accepte": [],
+    "image": "p060.webp",
+    "credit": {
+      "auteur": "Gemsling",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Fairy_Bread.jpg"
+    }
+  },
+  {
+    "numero": 61,
+    "plat": "Brigadeiro",
+    "pays": "Brésil",
+    "continent": "Amérique du Sud",
+    "ingredients": "lait concentré sucré, cacao, beurre, vermicelles de chocolat",
+    "accepte": [
+      "bresil"
+    ],
+    "image": "p061.webp",
+    "credit": {
+      "auteur": "Mayra",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Brigadeiro.jpg"
+    }
+  },
+  {
+    "numero": 62,
+    "plat": "Bazin",
+    "pays": "Libye",
+    "continent": "Afrique",
+    "ingredients": "pâte d'orge, sauce tomate, agneau, œuf dur",
+    "accepte": [],
+    "image": "p062.webp",
+    "credit": {
+      "auteur": "Libiya11",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Bazin.jpg"
+    }
+  },
+  {
+    "numero": 63,
+    "plat": "Nasi lemak",
+    "pays": "Malaisie",
+    "continent": "Asie",
+    "ingredients": "riz au lait de coco, sauce pimentée, anchois frits, cacahuètes, œuf",
+    "accepte": [],
+    "image": "p063.webp",
+    "credit": {
+      "auteur": "Meandkancil2020",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Nasi_Lemak_dengan_Chili_Nasi_Lemak_dan_Sotong_Pedas%2C_di_Penang_Summer_Restaurant.jpg"
+    }
+  },
+  {
+    "numero": 64,
+    "plat": "Nanaimo bar",
+    "pays": "Canada",
+    "continent": "Amérique du Nord",
+    "ingredients": "biscuit, noix de coco, crème au beurre, chocolat",
+    "accepte": [
+      "quebec"
+    ],
+    "image": "p064.webp",
+    "credit": {
+      "auteur": "Stephanie Spencer",
+      "licence": "CC BY 2.5",
+      "source": "https://commons.wikimedia.org/wiki/File:Nanaimo_bar.JPG"
+    }
+  },
+  {
+    "numero": 65,
+    "plat": "Menemen",
+    "pays": "Turquie",
+    "continent": "Asie",
+    "ingredients": "œufs, tomate, poivron vert, huile d'olive",
+    "accepte": [],
+    "image": "p065.webp",
+    "credit": {
+      "auteur": "やましこ",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Menemen_(49657982813).jpg"
+    }
+  },
+  {
+    "numero": 66,
+    "plat": "Żurek",
+    "pays": "Pologne",
+    "continent": "Europe",
+    "ingredients": "farine de seigle fermentée, saucisse blanche, œuf dur, pomme de terre, marjolaine",
+    "accepte": [],
+    "image": "p066.webp",
+    "credit": {
+      "auteur": "Radosław Drożdżewski",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Zur.jpg"
+    }
+  },
+  {
+    "numero": 67,
+    "plat": "Bunny chow",
+    "pays": "Afrique du Sud",
+    "continent": "Afrique",
+    "ingredients": "pain de mie évidé, curry, viande",
+    "accepte": [],
+    "image": "p067.webp",
+    "credit": {
+      "auteur": "Aneledeysel",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Bunny_Chow_%26_Salad.JPG"
+    }
+  },
+  {
+    "numero": 68,
+    "plat": "Chivito",
+    "pays": "Uruguay",
+    "continent": "Amérique du Sud",
+    "ingredients": "steak fin, jambon, fromage, œuf, pain",
+    "accepte": [],
+    "image": "p068.webp",
+    "credit": {
+      "auteur": "mattrubens",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Chivito_al_pan_uruguayo.jpg"
+    }
+  },
+  {
+    "numero": 69,
+    "plat": "Fish and chips",
+    "pays": "Royaume-Uni",
+    "continent": "Europe",
+    "ingredients": "cabillaud, pâte à frire, frites, petits pois écrasés",
+    "accepte": [
+      "royaume uni",
+      "grande-bretagne",
+      "grande bretagne",
+      "angleterre",
+      "uk"
+    ],
+    "image": "p069.webp",
+    "credit": {
+      "auteur": "Anagoria",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:20230909_Fish_and_Chips_Ashkelon_anagoria.jpg"
+    }
+  },
+  {
+    "numero": 70,
+    "plat": "Bibimbap",
+    "pays": "Corée du Sud",
+    "continent": "Asie",
+    "ingredients": "riz, légumes sautés, œuf, bœuf, pâte de piment fermentée",
+    "accepte": [
+      "coree du sud",
+      "coree"
+    ],
+    "image": "p070.webp",
+    "credit": {
+      "auteur": "abex",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Korean.food-Bibimbap-02.jpg"
+    }
+  },
+  {
+    "numero": 71,
+    "plat": "Baleada",
+    "pays": "Honduras",
+    "continent": "Amérique du Nord",
+    "ingredients": "tortilla de farine, haricots rouges, crème, fromage",
+    "accepte": [],
+    "image": "p071.webp",
+    "credit": {
+      "auteur": "Los viajes del Cangrejo",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Baleada_en_Cop%C3%A1n.jpg"
+    }
+  },
+  {
+    "numero": 72,
+    "plat": "Brik",
+    "pays": "Tunisie",
+    "continent": "Afrique",
+    "ingredients": "feuille de pâte fine, œuf, thon, persil, câpres",
+    "accepte": [],
+    "image": "p072.webp",
+    "credit": {
+      "auteur": "Souad Anane Lesina",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Tunisian_Briks.JPG"
+    }
+  },
+  {
+    "numero": 73,
+    "plat": "Lomo saltado",
+    "pays": "Pérou",
+    "continent": "Amérique du Sud",
+    "ingredients": "bœuf, oignon rouge, tomate, frites, riz",
+    "accepte": [
+      "perou"
+    ],
+    "image": "p073.webp",
+    "credit": {
+      "auteur": "WikiHes",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Lomo-saltado-perudelights.jpg"
+    }
+  },
+  {
+    "numero": 74,
+    "plat": "Waterzooi",
+    "pays": "Belgique",
+    "continent": "Europe",
+    "ingredients": "poulet, poireau, carotte, crème, bouillon",
+    "accepte": [],
+    "image": "p074.webp",
+    "credit": {
+      "auteur": "ayustety",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:(waterzooi)_(79743868).jpg"
+    }
+  },
+  {
+    "numero": 75,
+    "plat": "Pastel de choclo",
+    "pays": "Chili",
+    "continent": "Amérique du Sud",
+    "ingredients": "maïs, viande hachée, poulet, olive, œuf dur",
+    "accepte": [],
+    "image": "p075.webp",
+    "credit": {
+      "auteur": "Paloma Baytelman",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Pastel_de_choclo.jpg"
+    }
+  },
+  {
+    "numero": 76,
+    "plat": "Lamington",
+    "pays": "Australie",
+    "continent": "Océanie",
+    "ingredients": "génoise, chocolat, noix de coco râpée",
+    "accepte": [
+      "nouvelle-zelande",
+      "nouvelle zelande"
+    ],
+    "image": "p076.webp",
+    "origine": "Australie ou Nouvelle-Zélande",
+    "credit": {
+      "auteur": "Spacekadet",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:NZ_Lamington.jpg"
+    }
+  },
+  {
+    "numero": 77,
+    "plat": "Mole poblano",
+    "pays": "Mexique",
+    "continent": "Amérique du Nord",
+    "ingredients": "poulet, piments séchés, chocolat, sésame, épices",
+    "accepte": [],
+    "image": "p077.webp",
+    "credit": {
+      "auteur": "Melissa Doroquez",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Mole_Poblano.jpg"
+    }
+  },
+  {
+    "numero": 78,
+    "plat": "Dosa",
+    "pays": "Inde",
+    "continent": "Asie",
+    "ingredients": "crêpe de riz et lentilles, pommes de terre épicées, chutney de coco, sauce aux lentilles",
+    "accepte": [],
+    "image": "p078.webp",
+    "credit": {
+      "auteur": "Roland",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Dosa-chutney-sambhar.jpg"
+    }
+  },
+  {
+    "numero": 79,
+    "plat": "Forêt-noire",
+    "pays": "Allemagne",
+    "continent": "Europe",
+    "ingredients": "génoise au chocolat, cerises, crème fouettée, eau-de-vie de cerise",
+    "accepte": [],
+    "image": "p079.webp",
+    "credit": {
+      "auteur": "Mikelo",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Black_Forest_gateau.jpg"
+    }
+  },
+  {
+    "numero": 80,
+    "plat": "Buuz",
+    "pays": "Mongolie",
+    "continent": "Asie",
+    "ingredients": "pâte, mouton haché, oignon, ail",
+    "accepte": [],
+    "image": "p080.webp",
+    "credit": {
+      "auteur": "Аркадий Зарубин",
+      "licence": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Buuza_01.jpg"
+    }
+  },
+  {
+    "numero": 81,
+    "plat": "Irish stew",
+    "pays": "Irlande",
+    "continent": "Europe",
+    "ingredients": "agneau, pomme de terre, oignon, carotte",
+    "accepte": [],
+    "image": "p081.webp",
+    "credit": {
+      "auteur": "charles Haynes",
+      "licence": "CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Irish_stew.jpg"
+    }
+  },
+  {
+    "numero": 82,
+    "plat": "Gumbo",
+    "pays": "États-Unis",
+    "continent": "Amérique du Nord",
+    "ingredients": "roux, gombo, saucisse fumée, crevettes, riz",
+    "accepte": [
+      "etats-unis",
+      "etats unis",
+      "usa",
+      "amerique"
+    ],
+    "image": "p082.webp",
+    "credit": {
+      "auteur": "jons2",
+      "licence": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Shrimp_gumbo.jpg"
+    }
+  },
+  {
+    "numero": 83,
+    "plat": "Ndolé",
+    "pays": "Cameroun",
+    "continent": "Afrique",
+    "ingredients": "feuilles amères, arachides, crevettes, viande",
+    "accepte": [],
+    "image": "p083.webp",
+    "credit": {
+      "auteur": "PRA",
+      "licence": "CC BY 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Ndol%C3%A9_camerounais.JPG"
+    }
+  },
+  {
+    "numero": 84,
+    "plat": "Hokey pokey",
+    "pays": "Nouvelle-Zélande",
+    "continent": "Océanie",
+    "ingredients": "glace à la vanille, éclats de caramel au miel",
+    "accepte": [
+      "nouvelle-zelande",
+      "nouvelle zelande"
+    ],
+    "image": "p084.webp",
+    "credit": {
+      "auteur": "Ben Sutherland",
+      "licence": "CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Honeycomb_ice_cream_and_hot_toffee_sauce_(5725734559).jpg"
+    }
+  },
+  {
+    "numero": 85,
+    "plat": "Pastilla",
+    "pays": "Maroc",
+    "continent": "Afrique",
+    "ingredients": "pâte fine, pigeon ou poulet, amandes, cannelle, sucre glace",
+    "accepte": [],
+    "image": "p085.webp",
+    "credit": {
+      "auteur": "Miznate",
+      "licence": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Bastila_semma.jpg"
+    }
+  }
+]
