@@ -4,7 +4,7 @@ Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spécia
 
 Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale`.
 
-Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Anagram, Pêle-mêle, Zoom carte, Palette, La Juste Carte, Blind Royale) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Bang!, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash) · duels · sondage public · noms des cartes · jeux archivés.
+Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Bang!, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash) · duels · sondage public · noms des cartes · jeux archivés.
 
 ---
 
@@ -30,9 +30,9 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 ## Mini-jeux hebdomadaires : fonctionnement commun
 
-S'applique à Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Anagram, Pêle-mêle, Zoom carte, Zoom logo, Palette, La Juste Carte et Blind Royale. Chaque section de jeu ne décrit que ses spécificités.
+S'applique à Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo et Plat Pays (Anagram, Palette, La Juste Carte et Blind Royale : voir « Jeux archivés »). Chaque section de jeu ne décrit que ses spécificités.
 
-### Alternance saisonnière (4 groupes, 5 à partir de la refonte)
+### Alternance saisonnière (anciennes paires jusqu'en octobre 2026, 5 groupes ensuite)
 
 Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numérotation des manches »), en alternance. Décision : écart à `ACTIVE_GAME_REFERENCE_SEASON = 136` pair → 1er jeu, impair → 2nd jeu.
 
@@ -199,7 +199,7 @@ Trois instances du même moteur : service `jeux/services/triviaEngine.js` (`crea
 | 🎮 Trivia Geek | Culture geek à partir de la refonte | `triviageek:` | `jeux/data/triviageek/trivia-geek.json` | lundi | `triviageek_answer:` |
 | 🎒 Intrus de l'inventaire | Culture geek à partir de la refonte (alternance avec Trivia Geek) | `intrus:` | `jeux/data/jeux-visuels/intrus/` (voir ci-dessous) | lundi | `intrus_answer:` |
 
-- QCM A/B/C/D, essai unique, miroir de Palette. Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
+- QCM A/B/C/D, essai unique (même mécanique que Palette, archivé). Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
 - Champ optionnel `titre` : affiché en italique au-dessus de la question.
 - Jour : `weekday` (service) et `jour` (handlers) acceptent une fonction `(seasonId) → jour` pour un jeu qui change de créneau (Trivia).
 - Ordre des réponses mélangé par manche (`<préfixe>:order:<gameId>`).
@@ -259,45 +259,9 @@ Groupe « Ciné-club » (mercredi 18:00 UTC) à partir de la refonte, en alterna
 
 ---
 
-## Anagram (devine la carte)
-
-Jeux de lettres (en alternance avec Pêle-mêle). Service `jeux/services/anagrams.js`.
-
-### Barème : rang d'arrivée
-
-`computeScore(position)` = `max(1, 11 − position)` : 1er 10 pts, 2e 9 pts… 10e et suivants 1 pt. Non trouvé : 0 (absent du classement). Pas d'indice ni de pénalité de tentative.
-
-Position attribuée atomiquement et définitivement à la résolution (`assignArrivalPosition()` : `INCR` + `HSETNX`). Position et score sont donc la même donnée : une seule fonction de classement de manche (`computeGameRanking()`, tri par `position`), pas besoin de `findTiedRank` pour la manche.
-
-### Réponse
-
-Égalité **stricte** normalisée contre `entry.accept` (une sous-chaîne accepterait « Barbares » pour « Barbares d'élite »). DM de fin de manche.
-
-### Données
-
-- `jeux/data/anagrams/anagrams.json` : 50 entrées (`ID`, `anagram`, `answer`, `accept[]`, `cardKey`), éditées à la main, parcourues en boucle. L'anagramme est publiée en clair (pas de route anti-spoiler).
-- Image révélée après résolution (réponse éphémère) via `getCardImageUrl(cardKey)`, qui réutilise le cache mémoire partagé `getOrSet("clashCardDefinitions", fetchCards, 24h)`. Un `cardKey` inconnu donne un `console.warn` et pas d'image, jamais d'erreur.
-
-### Redis (`anagram:*`)
-
-Schéma commun, plus :
-
-| Clé | Type | Contenu |
-| --- | --- | --- |
-| `anagram:position_seq:<gameId>` | STRING (compteur) | Dernière position attribuée |
-| `anagram:positions:<gameId>` | HASH | `discordId → position` (`HSETNX`) |
-
-`anagram:attempts:*` est informatif, hors score.
-
-### Scripts npm spécifiques
-
-`anagram:test` force le post (ignore le gating) ; `anagram:public:force` poste en public en ignorant le gating (rattrapage).
-
----
-
 ## Pêle-mêle (retrouve les cartes cachées dans les lettres)
 
-Jeux de lettres (en alternance avec Anagram), puis « 🔤 Jeux de mots » à partir de la refonte (en alternance avec Concept). Service `jeux/services/pelemele.js`.
+Groupe « 🔤 Jeux de mots » (samedi 18:00 UTC), en alternance avec Concept (avec Anagram jusqu'en octobre 2026). Service `jeux/services/pelemele.js`.
 
 Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Toute carte du pool formable avec ces lettres est valide ; la manche n'est jamais « résolue », elle reste ouverte jusqu'à son remplacement. Chaque joueur propose autant de cartes qu'il veut.
 
@@ -350,7 +314,7 @@ Les résultats de **tous** les participants sont archivés d'un coup (`finalizeR
 
 ## Zoom carte (devine la carte zoomée)
 
-Jeux visuels (en alternance avec Palette, vendredi), puis groupe Clash à partir de la refonte (en alternance avec Trivia, mardi). Service `jeux/services/zoom.js`, image `jeux/services/zoomImage.js`. Une manche = une carte (base, évolution ou héros) zoomée à l'extrême.
+Groupe « ⚔️ Clash » (mardi 18:00 UTC), en alternance avec Trivia (dans les Jeux visuels, avec Palette, jusqu'en octobre 2026). Service `jeux/services/zoom.js`, image `jeux/services/zoomImage.js`. Une manche = une carte (base, évolution ou héros) zoomée à l'extrême.
 
 ### Barème
 
@@ -412,112 +376,6 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 - Redis (`platpays:*`) : schéma commun avec `platpays:posted_games` et `platpays:hints:<gameId>:<discordId>` (SET des indices pris) ; `platpays:reset` purge aussi `posted_games`.
 - Boutons `platpays_hint1:`, `platpays_hint2:`, `platpays_answer:` (Modal `platpays_answer_modal:`). Pas de commande de scores : « Ma participation » de `/mini-jeux`.
 - Scripts : `platpays:test`, `platpays:test:dry`, `platpays:reset`.
-
----
-
-## Palette (devine la couleur dominante d'une carte)
-
-Jeux visuels (en alternance avec Zoom carte). Service `jeux/services/palette.js` (parité de structure avec `zoom.js`), image `jeux/services/paletteImage.js`.
-
-QCM à 4 choix (A/B/C/D), **un seul clic par joueur**, sans Modal (même mécanique que le vote du Quiz : ACK éphémère immédiat). Discord n'autorise pas de couleur sur les boutons : les 4 pastilles sont dessinées dans l'image, les boutons (`palette_answer:<gameId>:<lettre>`) ne portent que la lettre.
-
-### Barème
-
-`computeScore(rank)` = `RANK_POINTS[rank]` avec `RANK_POINTS = [4, 2, 1, 0]` : dominante 4 pts, 2e couleur 2, 3e 1, 4e 0 (`getAnswerRank`, rang dans `entry.colors` trié par part décroissante). Pas de bonus de rapidité ni de pénalité de tentative. `rank` est stocké dans participants et archives ; pour une archive sans `rank`, elle compte comme « dominante trouvée » si `score > 0`.
-
-### Réponse à essai unique
-
-`recordAnswer()` verrouille via `HSETNX` (sûr en cas de double-clic). `archiveAnswer()` archive **tous** les participants, score 0 compris. Pas de DM de fin de manche ni de Journal.
-
-### Catalogue et couleurs
-
-- `npm run palette:catalog` (`jeux/scripts/generatePaletteCatalog.js`, usage ponctuel) : génère `jeux/data/jeux-visuels/palette/palette.json`, télécharge `images/` et `highlights/`, applique `manualOverrides.json` (`forcePlayable`/`forceExcluded`) en dernier. Extraction : `jeux/services/dominantColor.js` (k-means en espace Lab, cadre de rareté exclu par comparaison inter-cartes).
-- Carte jouable si la couleur dominante fait au plus 60 % (`MAX_TOP1_SHARE`) **et** dépasse la 2e d'au moins 5 points (`MIN_TOP_GAP`, sinon `excludedReason: "top1-top2<5%"`). Ce filtre prime sur `forcePlayable`.
-- ⚠️ Une régénération complète peut recalculer le masque de cadre de toute une rareté et changer les couleurs d'autres cartes : à éviter pendant une saison Palette.
-- ⚠️ `images/` (question) et `highlights/` (voile sur la dominante, résultat) ont les mêmes noms de fichiers : les inverser spoile la réponse.
-- Images servies depuis Blob : `/api/palette/image?gameId=` (question), `&stage=result` (résultat).
-
-### Ordre et mélange
-
-- `palette.json` est trié (ordre de `cardNames.json`) : l'ordre de jeu est un mélange persisté dans `palette:play_order` (cartes `playable: true` uniquement). Les nouvelles cartes jouables y sont insérées à des positions aléatoires.
-- Ordre des 4 couleurs : mélange Fisher-Yates à `startNewGame()`, persisté dans `palette:order:<gameId>` (jamais recalculé). L'existence de cette clé sert de registre anti-spoiler (`isGamePosted`).
-
-### Redis (`palette:*`)
-
-Schéma commun (sans `usernames`/`attempts`/`posted_games`), plus `palette:order:<gameId>` et `palette:play_order` (permanents, non effacés par `palette:reset`). `palette:participants` : `{ letter, correct, rank, score, answeredAt }`.
-
-Libellé de manche (récap) : `entry.fr`.
-
----
-
-## La Juste Carte (devine la carte par ses stats)
-
-Jeux à l'aveugle (en alternance avec Blind Royale). Service `jeux/services/lajustecarte.js`, handler `jeux/discord/handlers/lajustecarte.js`.
-
-Une carte secrète par manche. Chaque joueur propose des cartes successivement, à son rythme ; pour chaque stat débloquée, une flèche indique où se situe la **carte secrète** par rapport à la proposition (⬆️ plus haute, ⬇️ plus basse, ✅ égale).
-
-### Barème
-
-`computeScore(attemptNumber, hintUsed)` = `max(1, 11 − attemptNumber − (indice ? 3 : 0))` : 1re proposition gratuite (10 pts), −1 par proposition suivante, −3 pour l'indice, **plancher 1**.
-
-### Indices
-
-| Tentative | Stats visibles |
-| --- | --- |
-| 1re | PV, Portée |
-| 2e | + Élixir |
-| 3e et suivantes | + Dégâts |
-
-- `compareCard(secret, guess, attemptNumber)` (pure) : `secret > guess ? "up" : "down"`.
-- Portée comparée sur `range.rank` uniquement : mêlée `short/medium/long` = 1/2/3, distance = 3 + portée (une troupe à distance passe toujours devant la mêlée).
-- Bouton « 💡 Indice : rareté » (`lajustecarte_hint:<gameId>`), présent sur le post et chaque réponse éphémère : révèle la rareté. Idempotent (`SETNX` sur `lajustecarte:hint:<gameId>:<discordId>`, un 2e clic ne recoûte rien). La pénalité n'est appliquée qu'à la victoire (`hintUsedFor()` relu dans `markSolved()`), `hintUsed` est archivé.
-
-### Réponse : 3 issues
-
-Modal sans autocomplétion (impossible dans une Modal). `resolveGuess()` : égalité stricte normalisée contre le nom FR des cartes du pool.
-
-1. **Nom non reconnu** : aucun état modifié. `resolveAnyCard()` distingue une faute de frappe d'une carte réelle hors pool (« 🚫 carte non incluse dans ce jeu »).
-2. **Carte fausse** : ajoutée à l'historique (`RPUSH`), indices et cartes déjà proposées renvoyés, bouton pour reproposer.
-3. **Carte trouvée** : `markSolved()` (idempotent), `archiveSolve()`, embed de victoire avec image. **DM uniquement à la victoire** (`sendJusteCarteDM`).
-
-Bouton « 📋 Cartes non incluses » sur le post et chaque réponse (`lajustecarte_excluded_list`) : `getExcludedCards()` dérive en direct les cartes de `cardNames.json` sans stats (44 actuellement), triées par nom.
-
-### Données : stats dans `jeux/data/cardNames.json`
-
-- Pool = entrées ayant `elixir`, `hp`, `damage` et `range` (`loadCatalog()`, 79 cartes actuellement), aucun autre champ d'éligibilité. Champions inclus ; évolutions, sorts, bâtiments et troupes de tour exclus.
-- `npm run justecarte:stats` (`jeux/scripts/generateCardStats.js`, ponctuel, n'ajoute que les champs absents) :
-  - Élixir : `fetchCards()` (la colonne « Cost » du wiki ne sert que de contrôle).
-  - PV / Dégâts / Portée : API MediaWiki de `clashroyale.fandom.com/wiki/Cards` (section « Troops »), niveau Tournament Standard.
-  - `damage` = colonne « Damage » (dégât par coup), pas le DPS (`N/A` pour beaucoup de cartes).
-  - Exclusions : sous-unités générées (liens wiki _piped_), et toute carte dont PV, Dégâts ou Portée contient `/` (valeurs multiples) ou `-` (dégâts progressifs).
-
-### Rotation
-
-`cardNames.json` reste trié alphabétiquement : l'ordre de jeu est un mélange persisté dans `lajustecarte:order` (`loadPlayOrder()`), les nouvelles cartes étant ajoutées à la suite, mélangées entre elles. `pickNextIndex()` avance en boucle.
-
-### Redis (`lajustecarte:*`)
-
-Schéma commun, plus `lajustecarte:order` et `lajustecarte:hint:<gameId>:<discordId>`. `lajustecarte:attempts:<gameId>:<discordId>` est une LIST des propositions valides (sa longueur = numéro de tentative). `participants` : `{ solved, solvedAt, score, attempts, hintUsed }`.
-
-### Scripts npm spécifiques
-
-- `justecarte:stats`.
-- `justecarte:order` : affiche toute la rotation à venir (et la crée si absente). **Outil admin**, ne jamais l'exposer aux joueurs.
-- `justecarte:reset` : la rotation est remélangée à la manche suivante.
-
----
-
-## Blind Royale (devine la carte au son)
-
-Jeux à l'aveugle (en alternance avec La Juste Carte). Service `jeux/services/blindroyale.js`, handler `jeux/discord/handlers/blindroyale.js`.
-
-- Chaque manche poste un extrait audio de la carte secrète en **pièce jointe** nommée `carte-mystere.mp3` (le vrai nom du fichier spoilerait la réponse).
-- Pool : entrées de `cardNames.json` ayant un champ `sound` ; fichiers dans `jeux/data/card-sounds/sounds/` (provenance, licence et cartes sans son : `jeux/data/card-sounds/README.md`). Ordre mélangé persisté dans `blindroyale:order`.
-- Réponse via Modal, égalité stricte normalisée.
-- Barème : `max(1, 10 − 2 × tentatives incorrectes − (indice ? 3 : 0))`.
-- Bouton « 💡 Indice : rareté » (`blindroyale_hint:<gameId>`), une fois par manche (`blindroyale:hint:<gameId>:<discordId>`).
-- DM de fin de manche.
-- Scripts spécifiques : `blindroyale:test` force le post ; `blindroyale:public:force` poste en public en ignorant le gating.
 
 ---
 
@@ -1550,17 +1408,51 @@ Source de vérité anglais ↔ français des cartes, partagée par les mini-jeux
 
 ## Jeux archivés
 
+Code, données et archives conservés dans les deux cas ; seule la façon d'archiver et de relancer diffère entre jeux spéciaux et mini-jeux hebdomadaires.
+
+### Jeux spéciaux
+
 Jeux retirés de `/mini-jeux` (`archived: true` dans `SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`) et dont le `schedule` est commenté dans leur workflow (seul `workflow_dispatch` reste). Code, données et archives Redis des manches sont conservés. Les règles complètes (formules, barèmes, clés Redis) sont dans l'historique git : `CONTRIBUTING.md` avant le 23/10/2026.
 
 **Pour relancer** : décommenter le `schedule` du workflow, retirer `archived: true`, lancer `npm run <jeu>:reset`, puis lancement manuel (`workflow_dispatch`). Revérifier la conformité aux règles communes des jeux spéciaux (notamment le jour d'annonce, absent du Tamagotchi).
 
-### Tamagotchi (bébé dragon « Lilith »)
+#### Tamagotchi (bébé dragon « Lilith »)
 
 - Jeu collaboratif de 7 jours : vote quotidien (Nourrir, Sieste, Jouer, Câliner, Pilule) pour garder 3 jauges en zone verte ; étoiles de dressage, Confiance, Fatigue, palier final S/B/F.
 - Code : `jeux/services/tamagotchi.js`, `jeux/discord/handlers/tamagotchi.js`, `jeux/scripts/postTamagotchi.js`, `resetTamagotchi.js`, `tamagotchiStatus.js` ; données `jeux/data/tamagotchi/` ; images `frontend/public/images/tamagotchi/` ; Redis `tamagotchi:*` ; workflow `.github/workflows/tamagotchi.yml` ; scripts `npm run tamagotchi:*`.
 - ⚠️ Lance directement le Jour 1 (pas de phase d'annonce) : à ajouter avant toute relance.
 
-### Boss Raid (score attack communautaire)
+#### Boss Raid (score attack communautaire)
 
 - Jeu collaboratif (annonce + 7 jours) : chaque membre vote un rôle (Chevalier, Voleuse, Sorcier, Archères, Princesse) ; dégâts fixes calculés à la clôture et comparés à la meilleure combinaison possible (note SS à D), événement du Boss chaque jour à partir du Jour 2.
 - Code : `jeux/services/bossraid.js`, `jeux/discord/handlers/bossraid.js`, `jeux/scripts/postBossRaid.js`, `resetBossRaid.js`, `bossRaidStatus.js`, `bossraidRefresh.js` ; données `jeux/data/bossraid/` ; images `frontend/public/images/boss/` ; Redis `bossraid:*` ; workflow `.github/workflows/bossraid.yml` ; scripts `npm run bossraid:*`.
+
+### Mini-jeux hebdomadaires (retirés par la refonte de novembre 2026)
+
+Hors de toute paire depuis la bascule (`REFONTE_PAIRS`, `jeux/services/refonte.js`) : jamais lancés par les orchestrateurs à partir de la saison 138 (garde `getWiredGame`), jamais affichés comme jeu en cours ou à venir dans `/mini-jeux`. Code, données, assets Blob, scripts `npm run <jeu>:*` et archives Redis sont conservés ; leurs résultats restent dans `/mini-jeux-history` et le bouton « 📊 Stats ». Les règles complètes sont dans l'historique git (`jeux/CONTRIBUTING.md` avant novembre 2026).
+
+**Pour relancer** : l'ajouter à une paire de `REFONTE_PAIRS` et à `REFONTE_PRETS`, vérifier sa présence dans les 4 tables de l'orchestrateur du groupe, puis `npm run <jeu>:reset`.
+
+#### Anagram (devine la carte)
+
+- Jeux de lettres (samedi), en alternance avec Pêle-mêle. Anagramme d'un nom de carte publiée en clair, réponse via Modal (égalité stricte normalisée), DM de fin de manche.
+- Barème au rang d'arrivée : `max(1, 11 − position)`, position attribuée atomiquement (`anagram:position_seq:<gameId>`, `anagram:positions:<gameId>`).
+- Code : `jeux/services/anagrams.js`, handler `jeux/discord/handlers/anagrams.js` ; données `jeux/data/anagrams/anagrams.json` ; Redis `anagram:*`.
+
+#### Palette (devine la couleur dominante d'une carte)
+
+- Jeux visuels (vendredi), en alternance avec Zoom carte. QCM A/B/C/D dessiné dans l'image, un seul clic (`HSETNX`).
+- Barème selon le rang de la couleur choisie : 4 / 2 / 1 / 0 pts.
+- Code : `jeux/services/palette.js`, `paletteImage.js`, catalogue généré par `npm run palette:catalog` (`jeux/data/jeux-visuels/palette/`, images et surlignages sur Blob, route `/api/palette/image`) ; Redis `palette:*` (`palette:play_order`, `palette:order:<gameId>`).
+
+#### La Juste Carte (devine la carte par ses stats)
+
+- Jeux à l'aveugle (lundi), en alternance avec Blind Royale. Propositions successives via Modal ; flèches sur PV et Portée, puis Élixir, puis Dégâts ; indice payant « rareté ».
+- Barème : `max(1, 11 − n° de proposition − (indice ? 3 : 0))`.
+- Code : `jeux/services/lajustecarte.js`, handler `jeux/discord/handlers/lajustecarte.js` ; stats dans `jeux/data/cardNames.json` (`npm run justecarte:stats`) ; Redis `lajustecarte:*`.
+
+#### Blind Royale (devine la carte au son)
+
+- Jeux à l'aveugle (lundi), en alternance avec La Juste Carte. Extrait audio en pièce jointe `carte-mystere.mp3`, réponse via Modal, indice « rareté », DM de fin de manche.
+- Barème : `max(1, 10 − 2 × erreurs − (indice ? 3 : 0))`.
+- Code : `jeux/services/blindroyale.js`, handler `jeux/discord/handlers/blindroyale.js` ; sons `jeux/data/card-sounds/` ; Redis `blindroyale:*`.
