@@ -71,6 +71,7 @@ const TARGETS = [
   { dir: "jeux-visuels/zoom/images" },
   { dir: "jeux-visuels/zoom2/images" },
   { dir: "jeux-visuels/platpays/images" },
+  { dir: "jeux-visuels/intrus/images" },
   { dir: "card-art", root: DATA_DIR },
 ];
 

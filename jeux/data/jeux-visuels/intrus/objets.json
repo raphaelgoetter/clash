@@ -1,0 +1,2089 @@
+[
+  {
+    "id": "golden-seed",
+    "nom": "Golden Seed",
+    "nomVO": "Golden Seed",
+    "jeu": "Elden Ring",
+    "image": "golden-seed.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Golden Seed",
+      "fichier": "ER_Icon_Bolstering_Material_Golden_Seed.png",
+      "page": "https://eldenring.wiki.gg/wiki/Golden_Seed"
+    }
+  },
+  {
+    "id": "sacred-tear",
+    "nom": "Sacred Tear",
+    "nomVO": "Sacred Tear",
+    "jeu": "Elden Ring",
+    "image": "sacred-tear.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Sacred Tear",
+      "fichier": "ER_Icon_Bolstering_Material_Sacred_Tear.png",
+      "page": "https://eldenring.wiki.gg/wiki/Sacred_Tear"
+    }
+  },
+  {
+    "id": "spectral-steed-whistle",
+    "nom": "Spectral Steed Whistle",
+    "nomVO": "Spectral Steed Whistle",
+    "jeu": "Elden Ring",
+    "image": "spectral-steed-whistle.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Spectral Steed Whistle",
+      "fichier": "ER_Icon_Tool_Spectral_Steed_Whistle.png",
+      "page": "https://eldenring.wiki.gg/wiki/Spectral_Steed_Whistle"
+    }
+  },
+  {
+    "id": "gourd-seed",
+    "nom": "Gourd Seed",
+    "nomVO": "Gourd Seed",
+    "jeu": "Sekiro: Shadows Die Twice",
+    "image": "gourd-seed.png",
+    "source": {
+      "wiki": "https://sekiroshadowsdietwice.wiki.fextralife.com/api.php",
+      "titre": "Gourd Seed",
+      "fichier": "Gourd seed-quick-item-sekiro-wiki-guide.png",
+      "page": "https://sekiroshadowsdietwice.wiki.fextralife.com/Gourd_Seed"
+    }
+  },
+  {
+    "id": "star-fragment",
+    "nom": "Star Fragment",
+    "nomVO": "Star Fragment",
+    "jeu": "Lies of P",
+    "image": "star-fragment.png",
+    "source": {
+      "wiki": "https://liesofp.wiki.fextralife.com/api.php",
+      "titre": "Star Fragment",
+      "fichier": "Star-fragment-materials-liesofp-wiki-guide128px-min.png",
+      "page": "https://liesofp.wiki.fextralife.com/Star_Fragment"
+    }
+  },
+  {
+    "id": "gold-coin-fruit",
+    "nom": "Gold Coin Fruit",
+    "nomVO": "Gold Coin Fruit",
+    "jeu": "Lies of P",
+    "image": "gold-coin-fruit.png",
+    "source": {
+      "wiki": "https://liesofp.wiki.fextralife.com/api.php",
+      "titre": "Gold Coin Fruit",
+      "fichier": "Gold-coin-fruit-materials-liesofp-wiki-guide128px-min.png",
+      "page": "https://liesofp.wiki.fextralife.com/Gold_Coin_Fruit"
+    }
+  },
+  {
+    "id": "pulse-cell",
+    "nom": "Pulse Cell",
+    "nomVO": "Pulse Cell",
+    "jeu": "Lies of P",
+    "image": "pulse-cell.png",
+    "source": {
+      "wiki": "https://liesofp.wiki.fextralife.com/api.php",
+      "titre": "Pulse Cell",
+      "fichier": "Re-pulse-cell-basic-items-liesofp-wiki-guide-128px.png",
+      "page": "https://liesofp.wiki.fextralife.com/Pulse_Cell"
+    }
+  },
+  {
+    "id": "erdtrees-favor",
+    "nom": "Erdtree's Favor",
+    "nomVO": "Erdtree's Favor",
+    "jeu": "Elden Ring",
+    "image": "erdtrees-favor.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Erdtree's Favor",
+      "fichier": "ER_Icon_Talisman_Erdtree's_Favor.png",
+      "page": "https://eldenring.wiki.gg/wiki/Erdtree%27s_Favor"
+    }
+  },
+  {
+    "id": "shard-of-alexander",
+    "nom": "Shard of Alexander",
+    "nomVO": "Shard of Alexander",
+    "jeu": "Elden Ring",
+    "image": "shard-of-alexander.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Shard of Alexander",
+      "fichier": "ER_Icon_Talisman_Shard_of_Alexander.png",
+      "page": "https://eldenring.wiki.gg/wiki/Shard_of_Alexander"
+    }
+  },
+  {
+    "id": "godfrey-icon",
+    "nom": "Godfrey Icon",
+    "nomVO": "Godfrey Icon",
+    "jeu": "Elden Ring",
+    "image": "godfrey-icon.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Godfrey Icon",
+      "fichier": "ER_Icon_Talisman_Godfrey_Icon.png",
+      "page": "https://eldenring.wiki.gg/wiki/Godfrey_Icon"
+    }
+  },
+  {
+    "id": "iron-wall-amulet",
+    "nom": "Iron Wall Amulet",
+    "nomVO": "Iron Wall Amulet",
+    "jeu": "Lies of P",
+    "image": "iron-wall-amulet.png",
+    "source": {
+      "wiki": "https://liesofp.wiki.fextralife.com/api.php",
+      "titre": "Iron Wall Amulet",
+      "fichier": "Iron-wall-amulet-lies-of-p-wiki-guide-128px.png",
+      "page": "https://liesofp.wiki.fextralife.com/Iron_Wall_Amulet"
+    }
+  },
+  {
+    "id": "divine-confetti",
+    "nom": "Divine Confetti",
+    "nomVO": "Divine Confetti",
+    "jeu": "Sekiro: Shadows Die Twice",
+    "image": "divine-confetti.png",
+    "source": {
+      "wiki": "https://sekiroshadowsdietwice.wiki.fextralife.com/api.php",
+      "titre": "Divine Confetti",
+      "fichier": "Divine confetti-quick-item-sekiro-wiki-guide.png",
+      "page": "https://sekiroshadowsdietwice.wiki.fextralife.com/Divine_Confetti"
+    }
+  },
+  {
+    "id": "pacifying-agent",
+    "nom": "Pacifying Agent",
+    "nomVO": "Pacifying Agent",
+    "jeu": "Sekiro: Shadows Die Twice",
+    "image": "pacifying-agent.png",
+    "source": {
+      "wiki": "https://sekiroshadowsdietwice.wiki.fextralife.com/api.php",
+      "titre": "Pacifying Agent",
+      "fichier": "Pacifying agent-quick-item-sekiro-wiki-guide.png",
+      "page": "https://sekiroshadowsdietwice.wiki.fextralife.com/Pacifying_Agent"
+    }
+  },
+  {
+    "id": "akos-sugar",
+    "nom": "Ako's Sugar",
+    "nomVO": "Ako's Sugar",
+    "jeu": "Sekiro: Shadows Die Twice",
+    "image": "akos-sugar.png",
+    "source": {
+      "wiki": "https://sekiroshadowsdietwice.wiki.fextralife.com/api.php",
+      "titre": "Ako's Sugar",
+      "fichier": "Akos sugar-quick-item-sekiro-wiki-guide.png",
+      "page": "https://sekiroshadowsdietwice.wiki.fextralife.com/Ako%27s_Sugar"
+    }
+  },
+  {
+    "id": "pickled-turtle-neck",
+    "nom": "Pickled Turtle Neck",
+    "nomVO": "Pickled Turtle Neck",
+    "jeu": "Elden Ring",
+    "image": "pickled-turtle-neck.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Pickled Turtle Neck",
+      "fichier": "ER_Icon_Tool_Pickled_Turtle_Neck.png",
+      "page": "https://eldenring.wiki.gg/wiki/Pickled_Turtle_Neck"
+    }
+  },
+  {
+    "id": "shaman-stone",
+    "nom": "Shaman Stone",
+    "nomVO": "Shaman Stone",
+    "jeu": "Hollow Knight",
+    "image": "shaman-stone.png",
+    "source": {
+      "wiki": "https://hollowknight.wiki.fextralife.com/api.php",
+      "titre": "Shaman Stone",
+      "fichier": "Shaman stone hollow knight wiki charms.png",
+      "page": "https://hollowknight.wiki.fextralife.com/Shaman_Stone"
+    }
+  },
+  {
+    "id": "quick-focus",
+    "nom": "Quick Focus",
+    "nomVO": "Quick Focus",
+    "jeu": "Hollow Knight",
+    "image": "quick-focus.png",
+    "source": {
+      "wiki": "https://hollowknight.wiki.fextralife.com/api.php",
+      "titre": "Quick Focus",
+      "fichier": "Quick focus hollow knight wiki charms.png",
+      "page": "https://hollowknight.wiki.fextralife.com/Quick_Focus"
+    }
+  },
+  {
+    "id": "old-spiked-collar",
+    "nom": "Old Spiked Collar",
+    "nomVO": "Old Spiked Collar",
+    "jeu": "Hades",
+    "image": "old-spiked-collar.png",
+    "source": {
+      "wiki": "https://hades.wiki.fextralife.com/api.php",
+      "titre": "Old Spiked Collar",
+      "fichier": "Old-spiked-collar-keepsakes-equipment-magic-hades-wiki-guide.png",
+      "page": "https://hades.wiki.fextralife.com/Old_Spiked_Collar"
+    }
+  },
+  {
+    "id": "pierced-butterfly",
+    "nom": "Pierced Butterfly",
+    "nomVO": "Pierced Butterfly",
+    "jeu": "Hades",
+    "image": "pierced-butterfly.png",
+    "source": {
+      "wiki": "https://hades.wiki.fextralife.com/api.php",
+      "titre": "Pierced Butterfly",
+      "fichier": "Pierced-butterfly-keepsakes-equipment-magic-hades-wiki-guide.png",
+      "page": "https://hades.wiki.fextralife.com/Pierced_Butterfly"
+    }
+  },
+  {
+    "id": "frost-bun",
+    "nom": "Frost Bun",
+    "nomVO": "Frost Bun",
+    "jeu": "Oxygen Not Included",
+    "image": "frost-bun.png",
+    "source": {
+      "wiki": "https://oxygennotincluded.wiki.gg/api.php",
+      "titre": "Frost Bun",
+      "fichier": "Resource_Frost_Bun.png",
+      "page": "https://oxygennotincluded.wiki.gg/wiki/Frost_Bun"
+    }
+  },
+  {
+    "id": "pierogi",
+    "nom": "Pierogi",
+    "nomVO": "Pierogi",
+    "jeu": "Don't Starve",
+    "image": "pierogi.png",
+    "source": {
+      "wiki": "https://dontstarve.wiki.gg/api.php",
+      "titre": "Pierogi",
+      "fichier": "Pierogi.png",
+      "page": "https://dontstarve.wiki.gg/wiki/Pierogi"
+    }
+  },
+  {
+    "id": "thulecite",
+    "nom": "Thulecite",
+    "nomVO": "Thulecite",
+    "jeu": "Don't Starve",
+    "image": "thulecite.png",
+    "source": {
+      "wiki": "https://dontstarve.wiki.gg/api.php",
+      "titre": "Thulecite",
+      "fichier": "Thulecite.png",
+      "page": "https://dontstarve.wiki.gg/wiki/Thulecite"
+    }
+  },
+  {
+    "id": "gears",
+    "nom": "Gears",
+    "nomVO": "Gears",
+    "jeu": "Don't Starve",
+    "image": "gears.png",
+    "source": {
+      "wiki": "https://dontstarve.wiki.gg/api.php",
+      "titre": "Gears",
+      "fichier": "Gears.png",
+      "page": "https://dontstarve.wiki.gg/wiki/Gears"
+    }
+  },
+  {
+    "id": "bottomless-water-bucket",
+    "nom": "Bottomless Water Bucket",
+    "nomVO": "Bottomless Water Bucket",
+    "jeu": "Terraria",
+    "image": "bottomless-water-bucket.png",
+    "source": {
+      "wiki": "https://terraria.wiki.gg/api.php",
+      "titre": "Bottomless Buckets",
+      "fichier": "Bottomless_Water_Bucket.png",
+      "page": "https://terraria.wiki.gg/wiki/Bottomless_Buckets"
+    },
+    "pixel": true
+  },
+  {
+    "id": "gravity-globe",
+    "nom": "Gravity Globe",
+    "nomVO": "Gravity Globe",
+    "jeu": "Terraria",
+    "image": "gravity-globe.png",
+    "source": {
+      "wiki": "https://terraria.wiki.gg/api.php",
+      "titre": "Gravity Globe",
+      "fichier": "Gravity_Globe.png",
+      "page": "https://terraria.wiki.gg/wiki/Gravity_Globe"
+    },
+    "pixel": true
+  },
+  {
+    "id": "totem-of-undying",
+    "nom": "Totem d'immortalité",
+    "nomVO": "Totem of Undying",
+    "jeu": "Minecraft",
+    "image": "totem-of-undying.png",
+    "source": {
+      "wiki": "https://minecraft.wiki/api.php",
+      "titre": "Totem of Undying",
+      "fichier": "Totem_of_Undying_JE2_BE2.png",
+      "page": "https://minecraft.wiki/wiki/Totem_of_Undying"
+    },
+    "sourceNom": "https://minecraft.wiki/w/Totem_of_Undying (langlink fr)",
+    "pixel": true
+  },
+  {
+    "id": "spyglass",
+    "nom": "Longue-vue",
+    "nomVO": "Spyglass",
+    "jeu": "Minecraft",
+    "image": "spyglass.png",
+    "source": {
+      "wiki": "https://minecraft.wiki/api.php",
+      "titre": "Spyglass",
+      "fichier": "Spyglass_(item)_JE3_BE1.png",
+      "page": "https://minecraft.wiki/wiki/Spyglass"
+    },
+    "sourceNom": "https://minecraft.wiki/w/Spyglass (langlink fr)",
+    "pixel": true
+  },
+  {
+    "id": "recovery-compass",
+    "nom": "Boussole de récupération",
+    "nomVO": "Recovery Compass",
+    "jeu": "Minecraft",
+    "image": "recovery-compass.png",
+    "source": {
+      "wiki": "https://minecraft.wiki/api.php",
+      "titre": "Recovery Compass",
+      "fichier": "Recovery_Compass_JE1_BE1.png",
+      "page": "https://minecraft.wiki/wiki/Recovery_Compass"
+    },
+    "sourceNom": "https://minecraft.wiki/w/Recovery_Compass (langlink fr)",
+    "pixel": true
+  },
+  {
+    "id": "magic-conch",
+    "nom": "Conque magique",
+    "nomVO": "Magic Conch",
+    "jeu": "Terraria",
+    "image": "magic-conch.png",
+    "source": {
+      "wiki": "https://terraria.wiki.gg/api.php",
+      "titre": "Magic Conch",
+      "fichier": "Magic_Conch.png",
+      "page": "https://terraria.wiki.gg/wiki/Magic_Conch"
+    },
+    "sourceNom": "https://terraria.wiki.gg/wiki/Magic_Conch (langlink fr, page fr 'Conque magique' existe)",
+    "pixel": true
+  },
+  {
+    "id": "bone-hourglass",
+    "nom": "Bone Hourglass",
+    "nomVO": "Bone Hourglass",
+    "jeu": "Hades",
+    "image": "bone-hourglass.png",
+    "source": {
+      "wiki": "https://hades.wiki.fextralife.com/api.php",
+      "titre": "Bone Hourglass",
+      "fichier": "Bone-hourglass-keepsakes-equipment-magic-hades-wiki-guide.png",
+      "page": "https://hades.wiki.fextralife.com/Bone_Hourglass"
+    }
+  },
+  {
+    "id": "dove-skull",
+    "nom": "Dove Skull",
+    "nomVO": "Dove Skull",
+    "jeu": "Blasphemous",
+    "image": "dove-skull.png",
+    "source": {
+      "wiki": "https://blasphemous.wiki.gg/api.php",
+      "titre": "Dove Skull",
+      "fichier": "Dove_Skull.png",
+      "page": "https://blasphemous.wiki.gg/wiki/Dove_Skull"
+    },
+    "pixel": true
+  },
+  {
+    "id": "frozen-olive",
+    "nom": "Frozen Olive",
+    "nomVO": "Frozen Olive",
+    "jeu": "Blasphemous",
+    "image": "frozen-olive.png",
+    "source": {
+      "wiki": "https://blasphemous.wiki.gg/api.php",
+      "titre": "Frozen Olive",
+      "fichier": "Frozen_Olive.png",
+      "page": "https://blasphemous.wiki.gg/wiki/Frozen_Olive"
+    },
+    "pixel": true
+  },
+  {
+    "id": "super-leaf",
+    "nom": "Super feuille",
+    "nomVO": "Super Leaf",
+    "jeu": "Super Mario (série)",
+    "image": "super-leaf.png",
+    "source": {
+      "wiki": "https://www.mariowiki.com/api.php",
+      "titre": "Super Leaf",
+      "fichier": "Super Leaf Artwork - Super Mario 3D World.png",
+      "page": "https://www.mariowiki.com/Super_Leaf"
+    },
+    "sourceNom": "https://www.mariowiki.com/Super_Leaf"
+  },
+  {
+    "id": "super-bell",
+    "nom": "Super clochette",
+    "nomVO": "Super Bell",
+    "jeu": "Super Mario (série)",
+    "image": "super-bell.png",
+    "source": {
+      "wiki": "https://www.mariowiki.com/api.php",
+      "titre": "Super Bell",
+      "fichier": "Super Bell Artwork - Super Mario 3D World.png",
+      "page": "https://www.mariowiki.com/Super_Bell"
+    },
+    "sourceNom": "https://www.mariowiki.com/Super_Bell"
+  },
+  {
+    "id": "maxim-tomato",
+    "nom": "Maxi-Tomate",
+    "nomVO": "Maxim Tomato",
+    "jeu": "Kirby (série)",
+    "image": "maxim-tomato.png",
+    "source": {
+      "wiki": "https://wikirby.com/w/api.php",
+      "titre": "Maxim Tomato",
+      "fichier": "KRtDLD Maxim Tomato artwork.png",
+      "page": "https://wikirby.com/wiki/Maxim_Tomato"
+    },
+    "sourceNom": "https://wikirby.com/wiki/Maxim_Tomato"
+  },
+  {
+    "id": "super-horn",
+    "nom": "Super klaxon",
+    "nomVO": "Super Horn",
+    "jeu": "Mario Kart World",
+    "image": "super-horn.png",
+    "source": {
+      "wiki": "https://www.mariowiki.com/api.php",
+      "titre": "Super Horn",
+      "fichier": "MKW Super Horn Roulette.png",
+      "page": "https://www.mariowiki.com/Super_Horn"
+    },
+    "sourceNom": "https://www.mariowiki.com/Super_Horn"
+  },
+  {
+    "id": "spiny-shell",
+    "nom": "Carapace à épines",
+    "nomVO": "Spiny Shell",
+    "jeu": "Mario Kart World",
+    "image": "spiny-shell.png",
+    "source": {
+      "wiki": "https://www.mariowiki.com/api.php",
+      "titre": "Spiny Shell (blue)",
+      "fichier": "MKW Spiny Shell Roulette.png",
+      "page": "https://www.mariowiki.com/Spiny_Shell_(blue)"
+    },
+    "sourceNom": "https://www.mariowiki.com/Spiny_Shell_(blue)"
+  },
+  {
+    "id": "boomerang-flower",
+    "nom": "Fleur boomerang",
+    "nomVO": "Boomerang Flower",
+    "jeu": "Mario Kart World",
+    "image": "boomerang-flower.png",
+    "source": {
+      "wiki": "https://www.mariowiki.com/api.php",
+      "titre": "Boomerang Flower",
+      "fichier": "MKW Boomerang Flower Roulette.png",
+      "page": "https://www.mariowiki.com/Boomerang_Flower"
+    },
+    "sourceNom": "https://www.mariowiki.com/Boomerang_Flower"
+  },
+  {
+    "id": "hookshot",
+    "nom": "Hookshot",
+    "nomVO": "Hookshot",
+    "jeu": "The Legend of Zelda: Ocarina of Time 3D",
+    "image": "hookshot.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Hookshot",
+      "fichier": "OoT3D Hookshot Model.png",
+      "page": "https://zeldawiki.wiki/wiki/Hookshot"
+    }
+  },
+  {
+    "id": "lens-of-truth",
+    "nom": "Lens of Truth",
+    "nomVO": "Lens of Truth",
+    "jeu": "The Legend of Zelda: Ocarina of Time 3D",
+    "image": "lens-of-truth.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Lens of Truth",
+      "fichier": "OoT3D Lens of Truth Model.png",
+      "page": "https://zeldawiki.wiki/wiki/Lens_of_Truth"
+    }
+  },
+  {
+    "id": "megaton-hammer",
+    "nom": "Megaton Hammer",
+    "nomVO": "Megaton Hammer",
+    "jeu": "The Legend of Zelda: Ocarina of Time 3D",
+    "image": "megaton-hammer.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Megaton Hammer",
+      "fichier": "OoT3D Megaton Hammer Model.png",
+      "page": "https://zeldawiki.wiki/wiki/Megaton_Hammer"
+    }
+  },
+  {
+    "id": "grapple-beam",
+    "nom": "Grapple Beam",
+    "nomVO": "Grapple Beam",
+    "jeu": "Metroid Prime 2: Echoes",
+    "image": "grapple-beam.png",
+    "source": {
+      "wiki": "https://www.metroidwiki.org/w/api.php",
+      "titre": "Grapple Beam",
+      "fichier": "Grapple Beam (Echoes).png",
+      "page": "https://www.metroidwiki.org/wiki/Grapple_Beam"
+    }
+  },
+  {
+    "id": "hylian-shroom",
+    "nom": "Champi d'Hyrule",
+    "nomVO": "Hylian Shroom",
+    "jeu": "The Legend of Zelda: Breath of the Wild",
+    "image": "hylian-shroom.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Hylian Shroom",
+      "fichier": "BotW Hylian Shroom Icon.png",
+      "page": "https://zeldawiki.wiki/wiki/Hylian_Shroom"
+    },
+    "sourceNom": "https://fr.zeldawiki.wiki/wiki/Champi_d%27Hyrule",
+    "accentuation": 1
+  },
+  {
+    "id": "swift-violet",
+    "nom": "Violettes tempo",
+    "nomVO": "Swift Violet",
+    "jeu": "The Legend of Zelda: Breath of the Wild",
+    "image": "swift-violet.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Swift Violet",
+      "fichier": "BotW Swift Violet Icon.png",
+      "page": "https://zeldawiki.wiki/wiki/Swift_Violet"
+    },
+    "sourceNom": "https://fr.zeldawiki.wiki/wiki/Violettes_tempo",
+    "accentuation": 1
+  },
+  {
+    "id": "silent-princess",
+    "nom": "Princesse de la sérénité",
+    "nomVO": "Silent Princess",
+    "jeu": "The Legend of Zelda: Breath of the Wild",
+    "image": "silent-princess.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Silent Princess",
+      "fichier": "BotW Silent Princess Icon.png",
+      "page": "https://zeldawiki.wiki/wiki/Silent_Princess"
+    },
+    "sourceNom": "https://fr.zeldawiki.wiki/wiki/Princesse_de_la_s%C3%A9r%C3%A9nit%C3%A9",
+    "accentuation": 1
+  },
+  {
+    "id": "sweet-flower",
+    "nom": "Fleur sucrante",
+    "nomVO": "Sweet Flower",
+    "jeu": "Genshin Impact",
+    "image": "sweet-flower.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100012",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100012.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100012"
+  },
+  {
+    "id": "screw-attack",
+    "nom": "Screw Attack",
+    "nomVO": "Screw Attack",
+    "jeu": "Metroid Prime 2: Echoes",
+    "image": "screw-attack.png",
+    "source": {
+      "wiki": "https://www.metroidwiki.org/w/api.php",
+      "titre": "Screw Attack",
+      "fichier": "Screw Attack (Echoes).png",
+      "page": "https://www.metroidwiki.org/wiki/Screw_Attack"
+    }
+  },
+  {
+    "id": "space-jump-boots",
+    "nom": "Space Jump Boots",
+    "nomVO": "Space Jump Boots",
+    "jeu": "Metroid Prime 2: Echoes",
+    "image": "space-jump-boots.png",
+    "source": {
+      "wiki": "https://www.metroidwiki.org/w/api.php",
+      "titre": "Space Jump Boots",
+      "fichier": "Space Jump Boots (Echoes).png",
+      "page": "https://www.metroidwiki.org/wiki/Space_Jump_Boots"
+    }
+  },
+  {
+    "id": "morph-ball-bomb",
+    "nom": "Morph Ball Bomb",
+    "nomVO": "Morph Ball Bomb",
+    "jeu": "Metroid Prime 2: Echoes",
+    "image": "morph-ball-bomb.png",
+    "source": {
+      "wiki": "https://www.metroidwiki.org/w/api.php",
+      "titre": "Morph Ball Bomb",
+      "fichier": "Morph Ball Bomb mp2 Inventory.png",
+      "page": "https://www.metroidwiki.org/wiki/Morph_Ball_Bomb"
+    }
+  },
+  {
+    "id": "monarch-wings",
+    "nom": "Monarch Wings",
+    "nomVO": "Monarch Wings",
+    "jeu": "Hollow Knight",
+    "image": "monarch-wings.png",
+    "source": {
+      "wiki": "https://hollowknight.wiki/mw/api.php",
+      "titre": "Monarch Wings",
+      "fichier": "Icon HK Monarch Wings.png",
+      "page": "https://hollowknight.wiki/w/Monarch_Wings"
+    }
+  },
+  {
+    "id": "rare-candy",
+    "nom": "Super Bonbon",
+    "nomVO": "Rare Candy",
+    "jeu": "Légendes Pokémon : Z-A",
+    "image": "rare-candy.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Super Bonbon",
+      "fichier": "Miniature Super Bonbon LPZA.png",
+      "page": "https://www.pokepedia.fr/Super_Bonbon"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Super_Bonbon"
+  },
+  {
+    "id": "life-orb",
+    "nom": "Orbe Vie",
+    "nomVO": "Life Orb",
+    "jeu": "Légendes Pokémon : Z-A",
+    "image": "life-orb.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Orbe Vie",
+      "fichier": "Miniature Orbe Vie LPZA.png",
+      "page": "https://www.pokepedia.fr/Orbe_Vie"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Orbe_Vie"
+  },
+  {
+    "id": "bunny-hood",
+    "nom": "Capuchon de lapin",
+    "nomVO": "Bunny Hood",
+    "jeu": "The Legend of Zelda: Majora's Mask 3D",
+    "image": "bunny-hood.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Bunny Hood",
+      "fichier": "MM3D Bunny Hood Render.png",
+      "page": "https://zeldawiki.wiki/wiki/Bunny_Hood"
+    },
+    "sourceNom": "https://fr.zeldawiki.wiki/wiki/Capuchon_de_lapin"
+  },
+  {
+    "id": "blast-mask",
+    "nom": "Masque explosif",
+    "nomVO": "Blast Mask",
+    "jeu": "The Legend of Zelda: Majora's Mask 3D",
+    "image": "blast-mask.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Blast Mask",
+      "fichier": "MM3D Blast Mask Render.png",
+      "page": "https://zeldawiki.wiki/wiki/Blast_Mask"
+    },
+    "sourceNom": "https://fr.zeldawiki.wiki/wiki/Masque_explosif"
+  },
+  {
+    "id": "mask-of-scents",
+    "nom": "Masque des parfums",
+    "nomVO": "Mask of Scents",
+    "jeu": "The Legend of Zelda: Majora's Mask 3D",
+    "image": "mask-of-scents.png",
+    "source": {
+      "wiki": "https://zeldawiki.wiki/w/api.php",
+      "titre": "Mask of Scents",
+      "fichier": "MM3D Mask of Scents Render.png",
+      "page": "https://zeldawiki.wiki/wiki/Mask_of_Scents"
+    },
+    "sourceNom": "https://fr.zeldawiki.wiki/wiki/Masque_des_parfums"
+  },
+  {
+    "id": "invincible-candy",
+    "nom": "Super sucette",
+    "nomVO": "Invincible Candy",
+    "jeu": "Kirby (série)",
+    "image": "invincible-candy.png",
+    "source": {
+      "wiki": "https://wikirby.com/w/api.php",
+      "titre": "Invincible Candy",
+      "fichier": "KPR Invincible Candy artwork.png",
+      "page": "https://wikirby.com/wiki/Invincible_Candy"
+    },
+    "sourceNom": "https://wikirby.com/wiki/Invincible_Candy"
+  },
+  {
+    "id": "mint-leaf",
+    "nom": "Feuille de menthe",
+    "nomVO": "Mint Leaf",
+    "jeu": "Kirby (série)",
+    "image": "mint-leaf.png",
+    "source": {
+      "wiki": "https://wikirby.com/w/api.php",
+      "titre": "Mint Leaf",
+      "fichier": "KF2 Mint Leaf model.png",
+      "page": "https://wikirby.com/wiki/Mint_Leaf"
+    },
+    "sourceNom": "https://wikirby.com/wiki/Mint_Leaf"
+  },
+  {
+    "id": "warp-star",
+    "nom": "Étoile Warp",
+    "nomVO": "Warp Star",
+    "jeu": "Kirby (série)",
+    "image": "warp-star.png",
+    "source": {
+      "wiki": "https://wikirby.com/w/api.php",
+      "titre": "Warp Star",
+      "fichier": "KPR Warp Star artwork.png",
+      "page": "https://wikirby.com/wiki/Warp_Star"
+    },
+    "sourceNom": "https://wiki-kirby.fr/wiki/%C3%89toile_Warp"
+  },
+  {
+    "id": "super-mushroom",
+    "nom": "Super champignon",
+    "nomVO": "Super Mushroom",
+    "jeu": "Super Mario (série)",
+    "image": "super-mushroom.png",
+    "source": {
+      "wiki": "https://www.mariowiki.com/api.php",
+      "titre": "Super Mushroom",
+      "fichier": "Super Mushroom Artwork - Super Mario 3D World.png",
+      "page": "https://www.mariowiki.com/Super_Mushroom"
+    },
+    "sourceNom": "https://www.mariowiki.com/Super_Mushroom"
+  },
+  {
+    "id": "oran-berry",
+    "nom": "Baie Oran",
+    "nomVO": "Oran Berry",
+    "jeu": "Légendes Pokémon : Z-A",
+    "image": "oran-berry.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Baie Oran",
+      "fichier": "Miniature Baie Oran LPZA.png",
+      "page": "https://www.pokepedia.fr/Baie_Oran"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Baie_Oran"
+  },
+  {
+    "id": "red-berries",
+    "nom": "Baie rouge",
+    "nomVO": "Red Berries",
+    "jeu": "Palworld",
+    "image": "red-berries.png",
+    "source": {
+      "wiki": "https://palworld.wiki.gg/api.php",
+      "titre": "Red Berries",
+      "fichier": "Red Berries icon.png",
+      "page": "https://palworld.wiki.gg/wiki/Red_Berries"
+    },
+    "sourceNom": "https://paldb.cc/fr/Red_Berries"
+  },
+  {
+    "id": "deathbell",
+    "nom": "Deathbell",
+    "nomVO": "Deathbell",
+    "jeu": "The Elder Scrolls V: Skyrim",
+    "image": "deathbell.png",
+    "source": {
+      "wiki": "https://en.uesp.net/w/api.php",
+      "titre": "Skyrim:Deathbell",
+      "fichier": "SR-icon-ingredient-Deathbell.png",
+      "page": "https://en.uesp.net/wiki/Skyrim:Deathbell"
+    }
+  },
+  {
+    "id": "jazbay-grapes",
+    "nom": "Jazbay Grapes",
+    "nomVO": "Jazbay Grapes",
+    "jeu": "The Elder Scrolls V: Skyrim",
+    "image": "jazbay-grapes.png",
+    "source": {
+      "wiki": "https://en.uesp.net/w/api.php",
+      "titre": "Skyrim:Jazbay Grapes",
+      "fichier": "SR-icon-ingredient-Jazbay Grapes.png",
+      "page": "https://en.uesp.net/wiki/Skyrim:Jazbay_Grapes"
+    }
+  },
+  {
+    "id": "stimpak",
+    "nom": "Stimpak",
+    "nomVO": "Stimpak",
+    "jeu": "Fallout",
+    "image": "stimpak.png",
+    "source": {
+      "wiki": "https://fallout.wiki/api.php",
+      "titre": "Stimpak",
+      "fichier": "FO3 stimpak.png",
+      "page": "https://fallout.wiki/wiki/Stimpak"
+    }
+  },
+  {
+    "id": "radaway",
+    "nom": "RadAway",
+    "nomVO": "RadAway",
+    "jeu": "Fallout",
+    "image": "radaway.png",
+    "source": {
+      "wiki": "https://fallout.wiki/api.php",
+      "titre": "RadAway",
+      "fichier": "FO3 RadAway.png",
+      "page": "https://fallout.wiki/wiki/RadAway"
+    }
+  },
+  {
+    "id": "mentats",
+    "nom": "Mentats",
+    "nomVO": "Mentats",
+    "jeu": "Fallout",
+    "image": "mentats.png",
+    "source": {
+      "wiki": "https://fallout.wiki/api.php",
+      "titre": "Mentats",
+      "fichier": "FO3 Mentats.png",
+      "page": "https://fallout.wiki/wiki/Mentats"
+    }
+  },
+  {
+    "id": "rabadons-deathcap",
+    "nom": "Rabadon's Deathcap",
+    "nomVO": "Rabadon's Deathcap",
+    "jeu": "League of Legends",
+    "image": "rabadons-deathcap.png",
+    "source": {
+      "page": "https://wiki.leagueoflegends.com/en-us/Rabadon's_Deathcap",
+      "image": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3089.png"
+    },
+    "sourceNom": "https://ddragon.leagueoflegends.com/cdn/16.21.1/data/fr_FR/item.json"
+  },
+  {
+    "id": "zhonyas-hourglass",
+    "nom": "Zhonya's Hourglass",
+    "nomVO": "Zhonya's Hourglass",
+    "jeu": "League of Legends",
+    "image": "zhonyas-hourglass.png",
+    "source": {
+      "page": "https://wiki.leagueoflegends.com/en-us/Zhonya's_Hourglass",
+      "image": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3157.png"
+    },
+    "sourceNom": "https://ddragon.leagueoflegends.com/cdn/16.21.1/data/fr_FR/item.json"
+  },
+  {
+    "id": "guardian-angel",
+    "nom": "Guardian Angel",
+    "nomVO": "Guardian Angel",
+    "jeu": "League of Legends",
+    "image": "guardian-angel.png",
+    "source": {
+      "page": "https://wiki.leagueoflegends.com/en-us/Guardian_Angel",
+      "image": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3026.png"
+    },
+    "sourceNom": "https://ddragon.leagueoflegends.com/cdn/16.21.1/data/fr_FR/item.json"
+  },
+  {
+    "id": "blink-dagger",
+    "nom": "Blink Dagger",
+    "nomVO": "Blink Dagger",
+    "jeu": "Dota 2",
+    "image": "blink-dagger.png",
+    "source": {
+      "page": "https://www.dota2.com/datafeed/itemdata?language=english&item_id=1",
+      "image": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blink.png"
+    },
+    "sourceNom": "https://www.dota2.com/datafeed/itemlist?language=french (noms non traduits)",
+    "remplir": true
+  },
+  {
+    "id": "black-king-bar",
+    "nom": "Black King Bar",
+    "nomVO": "Black King Bar",
+    "jeu": "Dota 2",
+    "image": "black-king-bar.png",
+    "source": {
+      "page": "https://www.dota2.com/datafeed/itemdata?language=english&item_id=116",
+      "image": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/black_king_bar.png"
+    },
+    "sourceNom": "https://www.dota2.com/datafeed/itemlist?language=french (noms non traduits)",
+    "remplir": true
+  },
+  {
+    "id": "divine-rapier",
+    "nom": "Divine Rapier",
+    "nomVO": "Divine Rapier",
+    "jeu": "Dota 2",
+    "image": "divine-rapier.png",
+    "source": {
+      "page": "https://www.dota2.com/datafeed/itemdata?language=english&item_id=133",
+      "image": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/rapier.png"
+    },
+    "sourceNom": "https://www.dota2.com/datafeed/itemlist?language=french (noms non traduits)",
+    "remplir": true
+  },
+  {
+    "id": "thorium-ore",
+    "nom": "Minerai de thorium",
+    "nomVO": "Thorium Ore",
+    "jeu": "World of Warcraft",
+    "image": "thorium-ore.png",
+    "source": {
+      "page": "https://www.wowhead.com/item=10620",
+      "image": "https://wow.zamimg.com/images/wow/icons/large/inv_ore_thorium_02.jpg"
+    },
+    "sourceNom": "https://nether.wowhead.com/tooltip/item/10620?locale=2"
+  },
+  {
+    "id": "truesilver-ore",
+    "nom": "Minerai de vrai-argent",
+    "nomVO": "Truesilver Ore",
+    "jeu": "World of Warcraft",
+    "image": "truesilver-ore.png",
+    "source": {
+      "page": "https://www.wowhead.com/item=7911",
+      "image": "https://wow.zamimg.com/images/wow/icons/large/inv_ore_truesilver_01.jpg"
+    },
+    "sourceNom": "https://nether.wowhead.com/tooltip/item/7911?locale=2"
+  },
+  {
+    "id": "saronite-ore",
+    "nom": "Minerai de saronite",
+    "nomVO": "Saronite Ore",
+    "jeu": "World of Warcraft",
+    "image": "saronite-ore.png",
+    "source": {
+      "page": "https://www.wowhead.com/item=36912",
+      "image": "https://wow.zamimg.com/images/wow/icons/large/inv_ore_saronite_01.jpg"
+    },
+    "sourceNom": "https://nether.wowhead.com/tooltip/item/36912?locale=2"
+  },
+  {
+    "id": "orichalcum-ore",
+    "nom": "Minerai d'orichalque",
+    "nomVO": "Orichalcum Ore",
+    "jeu": "Guild Wars 2",
+    "image": "orichalcum-ore.png",
+    "source": {
+      "page": "https://api.guildwars2.com/v2/items/19701?lang=fr",
+      "image": "https://render.guildwars2.com/file/A6E2C82153BA684E2D05D3FCA09F3E02431366ED/220461.png"
+    },
+    "sourceNom": "https://api.guildwars2.com/v2/items/19701?lang=fr"
+  },
+  {
+    "id": "amulette-volcanique",
+    "nom": "Amulette Volcanique",
+    "nomVO": "Amulette Volcanique",
+    "jeu": "Dofus",
+    "image": "amulette-volcanique.png",
+    "source": {
+      "page": "https://api.dofusdu.de/dofus3/v1/fr/items/equipment/19590",
+      "image": "https://api.dofusdu.de/dofus3/v1/img/item/1302-128.png"
+    },
+    "sourceNom": "https://api.dofusdu.de/dofus3/v1/fr/items/equipment/19590"
+  },
+  {
+    "id": "amulette-seculaire",
+    "nom": "Amulette Séculaire",
+    "nomVO": "Amulette Séculaire",
+    "jeu": "Dofus",
+    "image": "amulette-seculaire.png",
+    "source": {
+      "page": "https://api.dofusdu.de/dofus3/v1/fr/items/equipment/14080",
+      "image": "https://api.dofusdu.de/dofus3/v1/img/item/1230-128.png"
+    },
+    "sourceNom": "https://api.dofusdu.de/dofus3/v1/fr/items/equipment/14080"
+  },
+  {
+    "id": "amulette-necrotique",
+    "nom": "Amulette Nécrotique",
+    "nomVO": "Amulette Nécrotique",
+    "jeu": "Dofus",
+    "image": "amulette-necrotique.png",
+    "source": {
+      "page": "https://api.dofusdu.de/dofus3/v1/fr/items/equipment/15499",
+      "image": "https://api.dofusdu.de/dofus3/v1/img/item/1260-128.png"
+    },
+    "sourceNom": "https://api.dofusdu.de/dofus3/v1/fr/items/equipment/15499"
+  },
+  {
+    "id": "lunar-amulet",
+    "nom": "Amulette Lunaire",
+    "nomVO": "Lunar Amulet",
+    "jeu": "Wakfu",
+    "image": "lunar-amulet.png",
+    "source": {
+      "page": "https://static.ankama.com/wakfu/portal/game/item/115/12012374.png",
+      "image": "https://static.ankama.com/wakfu/portal/game/item/115/12012374.png"
+    },
+    "sourceNom": "https://wakfu.cdn.ankama.com/gamedata/1.93.1.62/items.json (id 12374)",
+    "accentuation": 1
+  },
+  {
+    "id": "valyrium",
+    "nom": "Valyrium",
+    "nomVO": "Valyrium",
+    "jeu": "Path of Exile",
+    "image": "valyrium.png",
+    "source": {
+      "wiki": "https://www.poewiki.net/w/api.php",
+      "titre": "Valyrium",
+      "fichier": "Valyrium inventory icon.png",
+      "page": "https://www.poewiki.net/wiki/Valyrium"
+    }
+  },
+  {
+    "id": "hairlarious-cloak",
+    "nom": "Cape Hilare",
+    "nomVO": "Hairlarious Cloak",
+    "jeu": "Wakfu",
+    "image": "hairlarious-cloak.png",
+    "source": {
+      "page": "https://static.ankama.com/wakfu/portal/game/item/115/13226302.png",
+      "image": "https://static.ankama.com/wakfu/portal/game/item/115/13226302.png"
+    },
+    "sourceNom": "https://wakfu.cdn.ankama.com/gamedata/1.93.1.62/items.json (id 26322)",
+    "accentuation": 1
+  },
+  {
+    "id": "capittle-cloak",
+    "nom": "Cape Itale",
+    "nomVO": "Capittle Cloak",
+    "jeu": "Wakfu",
+    "image": "capittle-cloak.png",
+    "source": {
+      "page": "https://static.ankama.com/wakfu/portal/game/item/115/13216029.png",
+      "image": "https://static.ankama.com/wakfu/portal/game/item/115/13216029.png"
+    },
+    "sourceNom": "https://wakfu.cdn.ankama.com/gamedata/1.93.1.62/items.json (id 23281)"
+  },
+  {
+    "id": "stroke-cloak",
+    "nom": "Cape Oplexie",
+    "nomVO": "Stroke Cloak",
+    "jeu": "Wakfu",
+    "image": "stroke-cloak.png",
+    "source": {
+      "page": "https://static.ankama.com/wakfu/portal/game/item/115/13230231.png",
+      "image": "https://static.ankama.com/wakfu/portal/game/item/115/13230231.png"
+    },
+    "sourceNom": "https://wakfu.cdn.ankama.com/gamedata/1.93.1.62/items.json (id 30231)",
+    "accentuation": 1
+  },
+  {
+    "id": "cape-hucine",
+    "nom": "Cape Hucine",
+    "nomVO": "Cape Hucine",
+    "jeu": "Dofus",
+    "image": "cape-hucine.png",
+    "source": {
+      "page": "https://api.dofusdu.de/dofus3/v1/fr/items/equipment/6712",
+      "image": "https://api.dofusdu.de/dofus3/v1/img/item/17082-128.png"
+    },
+    "sourceNom": "https://api.dofusdu.de/dofus3/v1/fr/items/equipment/6712"
+  },
+  {
+    "id": "bolt-of-runecloth",
+    "nom": "Rouleau d'étoffe runique",
+    "nomVO": "Bolt of Runecloth",
+    "jeu": "World of Warcraft",
+    "image": "bolt-of-runecloth.png",
+    "source": {
+      "page": "https://www.wowhead.com/item=14048",
+      "image": "https://wow.zamimg.com/images/wow/icons/large/inv_fabric_purplefire_02.jpg"
+    },
+    "sourceNom": "https://nether.wowhead.com/tooltip/item/14048?locale=2"
+  },
+  {
+    "id": "bolt-of-mageweave",
+    "nom": "Rouleau de tisse-mage",
+    "nomVO": "Bolt of Mageweave",
+    "jeu": "World of Warcraft",
+    "image": "bolt-of-mageweave.png",
+    "source": {
+      "page": "https://www.wowhead.com/item=4339",
+      "image": "https://wow.zamimg.com/images/wow/icons/large/inv_fabric_mageweave_03.jpg"
+    },
+    "sourceNom": "https://nether.wowhead.com/tooltip/item/4339?locale=2"
+  },
+  {
+    "id": "trinas-lily",
+    "nom": "Trina's Lily",
+    "nomVO": "Trina's Lily",
+    "jeu": "Elden Ring",
+    "image": "trinas-lily.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Trina's Lily",
+      "fichier": "ER Icon material trina's lily.png",
+      "page": "https://eldenring.wiki.gg/wiki/Trina's_Lily"
+    }
+  },
+  {
+    "id": "golden-sunflower",
+    "nom": "Golden Sunflower",
+    "nomVO": "Golden Sunflower",
+    "jeu": "Elden Ring",
+    "image": "golden-sunflower.png",
+    "source": {
+      "wiki": "https://eldenring.wiki.gg/api.php",
+      "titre": "Golden Sunflower",
+      "fichier": "ER Icon material golden sunflower.png",
+      "page": "https://eldenring.wiki.gg/wiki/Golden_Sunflower"
+    }
+  },
+  {
+    "id": "lavender",
+    "nom": "Lavender",
+    "nomVO": "Lavender",
+    "jeu": "The Elder Scrolls V: Skyrim",
+    "image": "lavender.png",
+    "source": {
+      "wiki": "https://en.uesp.net/w/api.php",
+      "titre": "Skyrim:Lavender",
+      "fichier": "SR-icon-ingredient-Lavender.png",
+      "page": "https://en.uesp.net/wiki/Skyrim:Lavender"
+    }
+  },
+  {
+    "id": "low-density-structure",
+    "nom": "Structure de faible densité",
+    "nomVO": "Low density structure",
+    "jeu": "Factorio",
+    "image": "low-density-structure.png",
+    "source": {
+      "wiki": "https://wiki.factorio.com/api.php",
+      "titre": "Low density structure",
+      "fichier": "Low density structure.png",
+      "page": "https://wiki.factorio.com/Low_density_structure"
+    },
+    "sourceNom": "https://wiki.factorio.com/Low_density_structure/fr (displaytitle)"
+  },
+  {
+    "id": "flying-robot-frame",
+    "nom": "Châssis de robot volant",
+    "nomVO": "Flying robot frame",
+    "jeu": "Factorio",
+    "image": "flying-robot-frame.png",
+    "source": {
+      "wiki": "https://wiki.factorio.com/api.php",
+      "titre": "Flying robot frame",
+      "fichier": "Flying robot frame.png",
+      "page": "https://wiki.factorio.com/Flying_robot_frame"
+    },
+    "sourceNom": "https://wiki.factorio.com/Flying_robot_frame/fr (displaytitle)"
+  },
+  {
+    "id": "adaptive-control-unit",
+    "nom": "Unité de contrôle adaptative",
+    "nomVO": "Adaptive Control Unit",
+    "jeu": "Satisfactory",
+    "image": "adaptive-control-unit.png",
+    "source": {
+      "wiki": "https://satisfactory.wiki.gg/api.php",
+      "titre": "Adaptive Control Unit",
+      "fichier": "Adaptive Control Unit.png",
+      "page": "https://satisfactory.wiki.gg/wiki/Adaptive_Control_Unit"
+    },
+    "sourceNom": "https://satisfactory.wiki.gg/wiki/Adaptive_Control_Unit (langlink fr)"
+  },
+  {
+    "id": "heavy-modular-frame",
+    "nom": "Cadre modulaire lourd",
+    "nomVO": "Heavy Modular Frame",
+    "jeu": "Satisfactory",
+    "image": "heavy-modular-frame.png",
+    "source": {
+      "wiki": "https://satisfactory.wiki.gg/api.php",
+      "titre": "Heavy Modular Frame",
+      "fichier": "Heavy Modular Frame.png",
+      "page": "https://satisfactory.wiki.gg/wiki/Heavy_Modular_Frame"
+    },
+    "sourceNom": "https://satisfactory.wiki.gg/wiki/Heavy_Modular_Frame (langlink fr)"
+  },
+  {
+    "id": "stator",
+    "nom": "Stator",
+    "nomVO": "Stator",
+    "jeu": "Satisfactory",
+    "image": "stator.png",
+    "source": {
+      "wiki": "https://satisfactory.wiki.gg/api.php",
+      "titre": "Stator",
+      "fichier": "Stator.png",
+      "page": "https://satisfactory.wiki.gg/wiki/Stator"
+    },
+    "sourceNom": "https://satisfactory.wiki.gg/wiki/Stator (langlink fr)"
+  },
+  {
+    "id": "advanced-circuit",
+    "nom": "Circuit avancé",
+    "nomVO": "Advanced circuit",
+    "jeu": "Factorio",
+    "image": "advanced-circuit.png",
+    "source": {
+      "wiki": "https://wiki.factorio.com/api.php",
+      "titre": "Advanced circuit",
+      "fichier": "Advanced circuit.png",
+      "page": "https://wiki.factorio.com/Advanced_circuit"
+    },
+    "sourceNom": "https://wiki.factorio.com/Advanced_circuit/fr (displaytitle)"
+  },
+  {
+    "id": "megingjord",
+    "nom": "Megingjord",
+    "nomVO": "Megingjord",
+    "jeu": "Valheim",
+    "image": "megingjord.png",
+    "source": {
+      "wiki": "https://valheim.weirdgloop.org/api.php",
+      "titre": "Megingjord",
+      "fichier": "Megingjord.png",
+      "page": "https://valheim.weirdgloop.org/w/Megingjord"
+    },
+    "sourceNom": "https://valheim.fandom.com/fr/wiki/Megingjord",
+    "accentuation": 2
+  },
+  {
+    "id": "wishbone",
+    "nom": "Bréchet",
+    "nomVO": "Wishbone",
+    "jeu": "Valheim",
+    "image": "wishbone.png",
+    "source": {
+      "wiki": "https://valheim.weirdgloop.org/api.php",
+      "titre": "Wishbone",
+      "fichier": "Wishbone.png",
+      "page": "https://valheim.weirdgloop.org/w/Wishbone"
+    },
+    "sourceNom": "https://valheim.fandom.com/fr/wiki/Br%C3%A9chet",
+    "accentuation": 1
+  },
+  {
+    "id": "dragon-tear",
+    "nom": "Larme de dragon",
+    "nomVO": "Dragon Tear",
+    "jeu": "Valheim",
+    "image": "dragon-tear.png",
+    "source": {
+      "wiki": "https://valheim.weirdgloop.org/api.php",
+      "titre": "Dragon Tear",
+      "fichier": "Dragon Tear.png",
+      "page": "https://valheim.weirdgloop.org/w/Dragon_Tear"
+    },
+    "sourceNom": "https://valheim.fandom.com/fr/wiki/Larme_de_dragon",
+    "accentuation": 2
+  },
+  {
+    "id": "heart-berry",
+    "nom": "Heart Berry",
+    "nomVO": "Heart Berry",
+    "jeu": "Sun Haven",
+    "image": "heart-berry.png",
+    "source": {
+      "wiki": "https://sunhaven.wiki.gg/api.php",
+      "titre": "Heart Berry",
+      "fichier": "Heart Berry.png",
+      "page": "https://sunhaven.wiki.gg/wiki/Heart_Berry"
+    },
+    "pixel": true
+  },
+  {
+    "id": "kiwi-berry",
+    "nom": "Kiwi Berry",
+    "nomVO": "Kiwi Berry",
+    "jeu": "Sun Haven",
+    "image": "kiwi-berry.png",
+    "source": {
+      "wiki": "https://sunhaven.wiki.gg/api.php",
+      "titre": "Kiwi Berry",
+      "fichier": "Kiwi Berry.png",
+      "page": "https://sunhaven.wiki.gg/wiki/Kiwi_Berry"
+    },
+    "pixel": true
+  },
+  {
+    "id": "blizzard-berry",
+    "nom": "Blizzard Berry",
+    "nomVO": "Blizzard Berry",
+    "jeu": "Sun Haven",
+    "image": "blizzard-berry.png",
+    "source": {
+      "wiki": "https://sunhaven.wiki.gg/api.php",
+      "titre": "Blizzard Berry",
+      "fichier": "Blizzard Berry.png",
+      "page": "https://sunhaven.wiki.gg/wiki/Blizzard_Berry"
+    },
+    "pixel": true
+  },
+  {
+    "id": "elderberry",
+    "nom": "Elderberry",
+    "nomVO": "Elderberry",
+    "jeu": "Terraria",
+    "image": "elderberry.png",
+    "source": {
+      "wiki": "https://terraria.wiki.gg/api.php",
+      "titre": "Elderberry",
+      "fichier": "Elderberry.png",
+      "page": "https://terraria.wiki.gg/wiki/Elderberry"
+    },
+    "sourceNom": "https://terraria.wiki.gg/fr/wiki/Baie_de_sureau (langlink fr)",
+    "pixel": true
+  },
+  {
+    "id": "sinnoh-stone",
+    "nom": "Pierre Sinnoh",
+    "nomVO": "Sinnoh Stone",
+    "jeu": "Pokémon GO",
+    "image": "sinnoh-stone.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Pierre Sinnoh",
+      "fichier": "Sprite Pierre Sinnoh GO.png",
+      "page": "https://www.pokepedia.fr/Pierre_Sinnoh"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Liste_des_objets_de_Pok%C3%A9mon_GO"
+  },
+  {
+    "id": "leaf-stone",
+    "nom": "Pierre Plante",
+    "nomVO": "Leaf Stone",
+    "jeu": "Légendes Pokémon : Z-A",
+    "image": "leaf-stone.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Pierre Plante",
+      "fichier": "Miniature Pierre Plante LPZA.png",
+      "page": "https://www.pokepedia.fr/Pierre_Plante"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Pierre_Plante"
+  },
+  {
+    "id": "genshin-baie-crochet",
+    "nom": "Baie à crochet",
+    "nomVO": "Wolfhook",
+    "jeu": "Genshin Impact",
+    "image": "genshin-baie-crochet.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100021",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100021.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100021"
+  },
+  {
+    "id": "genshin-cecilia",
+    "nom": "Cécilia",
+    "nomVO": "Cecilia",
+    "jeu": "Genshin Impact",
+    "image": "genshin-cecilia.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100023",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100023.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100023"
+  },
+  {
+    "id": "genshin-anemo-champi",
+    "nom": "Champignon anémophile",
+    "nomVO": "Philanemo Mushroom",
+    "jeu": "Genshin Impact",
+    "image": "genshin-anemo-champi.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100025",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100025.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100025"
+  },
+  {
+    "id": "genshin-jueyun",
+    "nom": "Piment de Jueyun",
+    "nomVO": "Jueyun Chili",
+    "jeu": "Genshin Impact",
+    "image": "genshin-jueyun.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100027",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100027.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100027"
+  },
+  {
+    "id": "genshin-fleur-soie",
+    "nom": "Fleur de soie",
+    "nomVO": "Silk Flower",
+    "jeu": "Genshin Impact",
+    "image": "genshin-fleur-soie.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100029",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100029.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100029"
+  },
+  {
+    "id": "genshin-lys-verni",
+    "nom": "Lys verni",
+    "nomVO": "Glaze Lily",
+    "jeu": "Genshin Impact",
+    "image": "genshin-lys-verni.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100030",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100030.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100030"
+  },
+  {
+    "id": "genshin-conque-etoile",
+    "nom": "Conque d'étoile",
+    "nomVO": "Starconch",
+    "jeu": "Genshin Impact",
+    "image": "genshin-conque-etoile.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100033",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100033.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100033"
+  },
+  {
+    "id": "genshin-graines-pissenlit",
+    "nom": "Graines de pissenlit",
+    "nomVO": "Dandelion Seed",
+    "jeu": "Genshin Impact",
+    "image": "genshin-graines-pissenlit.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100057",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100057.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100057"
+  },
+  {
+    "id": "go-poke-ball",
+    "nom": "Poké Ball",
+    "nomVO": "Poké Ball",
+    "jeu": "Pokémon GO",
+    "image": "go-poke-ball.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Poké Ball",
+      "fichier": "Sprite Poké Ball GO.png",
+      "page": "https://www.pokepedia.fr/Pok%C3%A9_Ball"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Liste_des_objets_de_Pok%C3%A9mon_GO"
+  },
+  {
+    "id": "go-lure-module",
+    "nom": "Module Leurre",
+    "nomVO": "Lure Module",
+    "jeu": "Pokémon GO",
+    "image": "go-lure-module.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Module Leurre",
+      "fichier": "Sprite Module Leurre GO.png",
+      "page": "https://www.pokepedia.fr/Module_Leurre"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Liste_des_objets_de_Pok%C3%A9mon_GO"
+  },
+  {
+    "id": "genshin-fleur-cerisier",
+    "nom": "Fleur de cerisier",
+    "nomVO": "Sakura Bloom",
+    "jeu": "Genshin Impact",
+    "image": "genshin-fleur-cerisier.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/101202",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_101202.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/101202"
+  },
+  {
+    "id": "go-lucky-egg",
+    "nom": "Œuf Chance",
+    "nomVO": "Lucky Egg",
+    "jeu": "Pokémon GO",
+    "image": "go-lucky-egg.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Œuf Chance",
+      "fichier": "Sprite Œuf Chance GO.png",
+      "page": "https://www.pokepedia.fr/%C5%92uf_Chance"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Liste_des_objets_de_Pok%C3%A9mon_GO"
+  },
+  {
+    "id": "go-super-candy",
+    "nom": "Super Bonbon",
+    "nomVO": "Rare Candy",
+    "jeu": "Pokémon GO",
+    "image": "go-super-candy.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Super Bonbon",
+      "fichier": "Sprite Super Bonbon GO.png",
+      "page": "https://www.pokepedia.fr/Super_Bonbon"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Liste_des_objets_de_Pok%C3%A9mon_GO"
+  },
+  {
+    "id": "go-hyper-potion",
+    "nom": "Hyper Potion",
+    "nomVO": "Hyper Potion",
+    "jeu": "Pokémon GO",
+    "image": "go-hyper-potion.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Hyper Potion",
+      "fichier": "Sprite Hyper Potion GO.png",
+      "page": "https://www.pokepedia.fr/Hyper_Potion"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Liste_des_objets_de_Pok%C3%A9mon_GO"
+  },
+  {
+    "id": "lpza-potion",
+    "nom": "Potion",
+    "nomVO": "Potion",
+    "jeu": "Légendes Pokémon : Z-A",
+    "image": "lpza-potion.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Potion",
+      "fichier": "Miniature Potion LPZA.png",
+      "page": "https://www.pokepedia.fr/Potion"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Potion"
+  },
+  {
+    "id": "lpza-baie-pecha",
+    "nom": "Baie Pêcha",
+    "nomVO": "Pecha Berry",
+    "jeu": "Légendes Pokémon : Z-A",
+    "image": "lpza-baie-pecha.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Baie Pêcha",
+      "fichier": "Miniature Baie Pêcha LPZA.png",
+      "page": "https://www.pokepedia.fr/Baie_P%C3%AAcha"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Baie_P%C3%AAcha"
+  },
+  {
+    "id": "lpza-pierre-foudre",
+    "nom": "Pierre Foudre",
+    "nomVO": "Thunder Stone",
+    "jeu": "Légendes Pokémon : Z-A",
+    "image": "lpza-pierre-foudre.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Pierre Foudre",
+      "fichier": "Miniature Pierre Foudre LPZA.png",
+      "page": "https://www.pokepedia.fr/Pierre_Foudre"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Pierre_Foudre"
+  },
+  {
+    "id": "go-max-potion",
+    "nom": "Potion Max",
+    "nomVO": "Max Potion",
+    "jeu": "Pokémon GO",
+    "image": "go-max-potion.png",
+    "source": {
+      "wiki": "https://www.pokepedia.fr/api.php",
+      "titre": "Potion Max",
+      "fichier": "Sprite Potion Max GO.png",
+      "page": "https://www.pokepedia.fr/Potion_Max"
+    },
+    "sourceNom": "https://www.pokepedia.fr/Liste_des_objets_de_Pok%C3%A9mon_GO"
+  },
+  {
+    "id": "genshin-jade-noctiluque",
+    "nom": "Jade noctiluque",
+    "nomVO": "Noctilucous Jade",
+    "jeu": "Genshin Impact",
+    "image": "genshin-jade-noctiluque.png",
+    "source": {
+      "page": "https://gi.yatta.moe/api/v2/fr/material/100028",
+      "image": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_100028.png"
+    },
+    "sourceNom": "https://gi.yatta.moe/api/v2/fr/material/100028"
+  },
+  {
+    "id": "cr-chest-wooden",
+    "nom": "Coffre en bois",
+    "nomVO": "Wooden Chest",
+    "jeu": "Clash Royale",
+    "image": "cr-chest-wooden.png",
+    "source": {
+      "page": "https://royaleapi.github.io/cr-api-assets/chests/ic-chest-wooden.png",
+      "image": "https://royaleapi.github.io/cr-api-assets/chests/ic-chest-wooden.png"
+    }
+  },
+  {
+    "id": "roblox-99119158",
+    "nom": "Speed Coil",
+    "nomVO": "Speed Coil",
+    "jeu": "Roblox",
+    "image": "roblox-99119158.png",
+    "source": {
+      "page": "https://www.roblox.com/catalog/99119158",
+      "image": "https://tr.rbxcdn.com/180DAY-c65e1c629edefef3e61b8677fb7f2537/420/420/Gear/Png/noFilter"
+    },
+    "sourceNom": "https://www.roblox.com/catalog/99119158"
+  },
+  {
+    "id": "roblox-119101539",
+    "nom": "Regeneration Coil",
+    "nomVO": "Regeneration Coil",
+    "jeu": "Roblox",
+    "image": "roblox-119101539.png",
+    "source": {
+      "page": "https://www.roblox.com/catalog/119101539",
+      "image": "https://tr.rbxcdn.com/180DAY-604122dba8d6b7436edcb6306965791d/420/420/Gear/Png/noFilter"
+    },
+    "sourceNom": "https://www.roblox.com/catalog/119101539"
+  },
+  {
+    "id": "roblox-186868758",
+    "nom": "Snowy Gravity Coil",
+    "nomVO": "Snowy Gravity Coil",
+    "jeu": "Roblox",
+    "image": "roblox-186868758.png",
+    "source": {
+      "page": "https://www.roblox.com/catalog/186868758",
+      "image": "https://tr.rbxcdn.com/180DAY-ceaebe7c75ba8ba87cfe22c6e34902e7/420/420/Gear/Png/noFilter"
+    },
+    "sourceNom": "https://www.roblox.com/catalog/186868758"
+  },
+  {
+    "id": "roblox-503957396",
+    "nom": "Deluxe Coil Gun",
+    "nomVO": "Deluxe Coil Gun",
+    "jeu": "Roblox",
+    "image": "roblox-503957396.png",
+    "source": {
+      "page": "https://www.roblox.com/catalog/503957396",
+      "image": "https://tr.rbxcdn.com/180DAY-f6af1aff676af2bd8ff613ac4bb3698c/420/420/Gear/Png/noFilter"
+    },
+    "sourceNom": "https://www.roblox.com/catalog/503957396"
+  },
+  {
+    "id": "roblox-88885497",
+    "nom": "S-79 Speed Stunter",
+    "nomVO": "S-79 Speed Stunter",
+    "jeu": "Roblox",
+    "image": "roblox-88885497.png",
+    "source": {
+      "page": "https://www.roblox.com/catalog/88885497",
+      "image": "https://tr.rbxcdn.com/180DAY-b4d6b63a6cb44f4ade62012eddd36b96/420/420/Gear/Png/noFilter"
+    },
+    "sourceNom": "https://www.roblox.com/catalog/88885497"
+  },
+  {
+    "id": "roblox-34901961",
+    "nom": "Gravity Gun",
+    "nomVO": "Gravity Gun",
+    "jeu": "Roblox",
+    "image": "roblox-34901961.png",
+    "source": {
+      "page": "https://www.roblox.com/catalog/34901961",
+      "image": "https://tr.rbxcdn.com/180DAY-ebfd83adf91027c613d290f667ab1ecb/420/420/Gear/Png/noFilter"
+    },
+    "sourceNom": "https://www.roblox.com/catalog/34901961"
+  },
+  {
+    "id": "roblox-101110605",
+    "nom": "Gravity Disruptor",
+    "nomVO": "Gravity Disruptor",
+    "jeu": "Roblox",
+    "image": "roblox-101110605.png",
+    "source": {
+      "page": "https://www.roblox.com/catalog/101110605",
+      "image": "https://tr.rbxcdn.com/180DAY-158e711198ff90066453239b5ff5ae87/420/420/Gear/Png/noFilter"
+    },
+    "sourceNom": "https://www.roblox.com/catalog/101110605"
+  },
+  {
+    "id": "subway-super-sneakers",
+    "nom": "Super Baskets",
+    "nomVO": "Super Sneakers",
+    "jeu": "Subway Surfers",
+    "image": "subway-super-sneakers.png",
+    "source": {
+      "page": "https://github.com/eeshadutta/Subway-Surfers/blob/master/assets/1_Boots.jpeg",
+      "image": "https://raw.githubusercontent.com/eeshadutta/Subway-Surfers/master/assets/1_Boots.jpeg"
+    },
+    "sourceNom": "https://github.com/eeshadutta/Subway-Surfers/blob/master/assets/1_Boots.jpeg"
+  },
+  {
+    "id": "subway-jetpack",
+    "nom": "Jetpack",
+    "nomVO": "Jetpack",
+    "jeu": "Subway Surfers",
+    "image": "subway-jetpack.png",
+    "source": {
+      "page": "https://github.com/eeshadutta/Subway-Surfers/blob/master/assets/1_FlyingBoost.jpeg",
+      "image": "https://raw.githubusercontent.com/eeshadutta/Subway-Surfers/master/assets/1_FlyingBoost.jpeg"
+    },
+    "sourceNom": "https://github.com/eeshadutta/Subway-Surfers/blob/master/assets/1_FlyingBoost.jpeg"
+  },
+  {
+    "id": "subway-hoverboard",
+    "nom": "Hoverboard",
+    "nomVO": "Hoverboard",
+    "jeu": "Subway Surfers",
+    "image": "subway-hoverboard.png",
+    "source": {
+      "page": "https://github.com/eeshadutta/Subway-Surfers/blob/master/assets/1_Hoverboard.jpeg",
+      "image": "https://raw.githubusercontent.com/eeshadutta/Subway-Surfers/master/assets/1_Hoverboard.jpeg"
+    },
+    "sourceNom": "https://github.com/eeshadutta/Subway-Surfers/blob/master/assets/1_Hoverboard.jpeg"
+  },
+  {
+    "id": "candycrush-sheet-003",
+    "nom": "Bonbon Candy #003",
+    "nomVO": "Candy #003",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-003.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-003.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)",
+    "accentuation": 1
+  },
+  {
+    "id": "candycrush-sheet-005",
+    "nom": "Bonbon Candy #005",
+    "nomVO": "Candy #005",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-005.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-005.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "candycrush-sheet-010",
+    "nom": "Bonbon Candy #010",
+    "nomVO": "Candy #010",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-010.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-010.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "candycrush-sheet-016",
+    "nom": "Bonbon Candy #016",
+    "nomVO": "Candy #016",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-016.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-016.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "candycrush-sheet-048",
+    "nom": "Bonbon Candy #048",
+    "nomVO": "Candy #048",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-048.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-048.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "candycrush-sheet-057",
+    "nom": "Bonbon Candy #057",
+    "nomVO": "Candy #057",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-057.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-057.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "candycrush-sheet-059",
+    "nom": "Bonbon Candy #059",
+    "nomVO": "Candy #059",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-059.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-059.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "candycrush-sheet-072",
+    "nom": "Bonbon Candy #072",
+    "nomVO": "Candy #072",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-072.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-072.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "candycrush-sheet-077",
+    "nom": "Bonbon Candy #077",
+    "nomVO": "Candy #077",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-077.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-077.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "candycrush-sheet-086",
+    "nom": "Bonbon Candy #086",
+    "nomVO": "Candy #086",
+    "jeu": "Candy Crush",
+    "image": "candycrush-sheet-086.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/candycrush-sheet/candycrush-sheet-086.png"
+    },
+    "sourceNom": "spritesheet locale Candy Crush Saga (asset 55525)"
+  },
+  {
+    "id": "angrybirds-block-common-028",
+    "nom": "Bloc Angry Birds #028",
+    "nomVO": "Angry Birds Block #028",
+    "jeu": "Angry Birds",
+    "image": "angrybirds-block-common-028.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/angrybirds-blocks-common/angrybirds-block-common-028.png"
+    },
+    "sourceNom": "spritesheet locale Angry Birds - Blocks (Common)"
+  },
+  {
+    "id": "angrybirds-block-common-030",
+    "nom": "Bloc Angry Birds #030",
+    "nomVO": "Angry Birds Block #030",
+    "jeu": "Angry Birds",
+    "image": "angrybirds-block-common-030.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/angrybirds-blocks-common/angrybirds-block-common-030.png"
+    },
+    "sourceNom": "spritesheet locale Angry Birds - Blocks (Common)"
+  },
+  {
+    "id": "angrybirds-block-common-031",
+    "nom": "Bloc Angry Birds #031",
+    "nomVO": "Angry Birds Block #031",
+    "jeu": "Angry Birds",
+    "image": "angrybirds-block-common-031.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/angrybirds-blocks-common/angrybirds-block-common-031.png"
+    },
+    "sourceNom": "spritesheet locale Angry Birds - Blocks (Common)"
+  },
+  {
+    "id": "angrybirds-block-common-050",
+    "nom": "Bloc Angry Birds #050",
+    "nomVO": "Angry Birds Block #050",
+    "jeu": "Angry Birds",
+    "image": "angrybirds-block-common-050.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/angrybirds-blocks-common/angrybirds-block-common-050.png"
+    },
+    "sourceNom": "spritesheet locale Angry Birds - Blocks (Common)"
+  },
+  {
+    "id": "angrybirds-block-common-060",
+    "nom": "Bloc Angry Birds #060",
+    "nomVO": "Angry Birds Block #060",
+    "jeu": "Angry Birds",
+    "image": "angrybirds-block-common-060.png",
+    "source": {
+      "localFile": "jeux/data/jeux-visuels/intrus/sources-local/angrybirds-blocks-common/angrybirds-block-common-060.png"
+    },
+    "sourceNom": "spritesheet locale Angry Birds - Blocks (Common)"
+  },
+  {
+    "id": "acpc-003",
+    "nom": "Black Rockfish",
+    "nomVO": "Black Rockfish",
+    "jeu": "Animal Crossing: Pocket Camp",
+    "image": "acpc-003.png",
+    "source": {
+      "wiki": "https://nookipedia.com/w/api.php",
+      "titre": "File:Black Rockfish PC Icon.png",
+      "fichier": "Black Rockfish PC Icon.png",
+      "page": "https://nookipedia.com/wiki/File%3ABlack_Rockfish_PC_Icon.png"
+    },
+    "sourceNom": "nookipedia.com, catégorie « Pocket Camp fish icons »"
+  },
+  {
+    "id": "acpc-007",
+    "nom": "Giant Snakehead",
+    "nomVO": "Giant Snakehead",
+    "jeu": "Animal Crossing: Pocket Camp",
+    "image": "acpc-007.png",
+    "source": {
+      "wiki": "https://nookipedia.com/w/api.php",
+      "titre": "File:Giant Snakehead PC Icon.png",
+      "fichier": "Giant Snakehead PC Icon.png",
+      "page": "https://nookipedia.com/wiki/File%3AGiant_Snakehead_PC_Icon.png"
+    },
+    "sourceNom": "nookipedia.com, catégorie « Pocket Camp fish icons »"
+  },
+  {
+    "id": "acpc-009",
+    "nom": "Hammerhead Shark",
+    "nomVO": "Hammerhead Shark",
+    "jeu": "Animal Crossing: Pocket Camp",
+    "image": "acpc-009.png",
+    "source": {
+      "wiki": "https://nookipedia.com/w/api.php",
+      "titre": "File:Hammerhead Shark PC Icon.png",
+      "fichier": "Hammerhead Shark PC Icon.png",
+      "page": "https://nookipedia.com/wiki/File%3AHammerhead_Shark_PC_Icon.png"
+    },
+    "sourceNom": "nookipedia.com, catégorie « Pocket Camp fish icons »"
+  },
+  {
+    "id": "acpc-013",
+    "nom": "Orange Bonefish",
+    "nomVO": "Orange Bonefish",
+    "jeu": "Animal Crossing: Pocket Camp",
+    "image": "acpc-013.png",
+    "source": {
+      "wiki": "https://nookipedia.com/w/api.php",
+      "titre": "File:Orange Bonefish PC Icon.png",
+      "fichier": "Orange Bonefish PC Icon.png",
+      "page": "https://nookipedia.com/wiki/File%3AOrange_Bonefish_PC_Icon.png"
+    },
+    "sourceNom": "nookipedia.com, catégorie « Pocket Camp fish icons »"
+  },
+  {
+    "id": "acpc-014",
+    "nom": "Pink Squid",
+    "nomVO": "Pink Squid",
+    "jeu": "Animal Crossing: Pocket Camp",
+    "image": "acpc-014.png",
+    "source": {
+      "wiki": "https://nookipedia.com/w/api.php",
+      "titre": "File:Pink Squid PC Icon.png",
+      "fichier": "Pink Squid PC Icon.png",
+      "page": "https://nookipedia.com/wiki/File%3APink_Squid_PC_Icon.png"
+    },
+    "sourceNom": "nookipedia.com, catégorie « Pocket Camp fish icons »"
+  },
+  {
+    "id": "acpc-025",
+    "nom": "Cushion",
+    "nomVO": "Cushion",
+    "jeu": "Animal Crossing: Pocket Camp",
+    "image": "acpc-025.png",
+    "source": {
+      "wiki": "https://nookipedia.com/w/api.php",
+      "titre": "File:Cushion PC Icon.png",
+      "fichier": "Cushion PC Icon.png",
+      "page": "https://nookipedia.com/wiki/File%3ACushion_PC_Icon.png"
+    },
+    "sourceNom": "nookipedia.com, catégorie « Pocket Camp furniture icons »"
+  },
+  {
+    "id": "battlecats-004",
+    "nom": "GatyaitemD 07 f",
+    "nomVO": "GatyaitemD 07 f",
+    "jeu": "The Battle Cats",
+    "image": "battlecats-004.png",
+    "source": {
+      "wiki": "https://battlecats.miraheze.org/w/api.php",
+      "titre": "File:GatyaitemD 07 f.png",
+      "fichier": "GatyaitemD 07 f.png",
+      "page": "https://battlecats.miraheze.org/wiki/File%3AGatyaitemD_07_f.png"
+    },
+    "sourceNom": "battlecats.miraheze.org, catégorie « Items »"
+  },
+  {
+    "id": "battlecats-007",
+    "nom": "GatyaitemD 140 f",
+    "nomVO": "GatyaitemD 140 f",
+    "jeu": "The Battle Cats",
+    "image": "battlecats-007.png",
+    "source": {
+      "wiki": "https://battlecats.miraheze.org/w/api.php",
+      "titre": "File:GatyaitemD 140 f.png",
+      "fichier": "GatyaitemD 140 f.png",
+      "page": "https://battlecats.miraheze.org/wiki/File%3AGatyaitemD_140_f.png"
+    },
+    "sourceNom": "battlecats.miraheze.org, catégorie « Items »"
+  },
+  {
+    "id": "battlecats-009",
+    "nom": "GatyaitemD 160 f",
+    "nomVO": "GatyaitemD 160 f",
+    "jeu": "The Battle Cats",
+    "image": "battlecats-009.png",
+    "source": {
+      "wiki": "https://battlecats.miraheze.org/w/api.php",
+      "titre": "File:GatyaitemD 160 f.png",
+      "fichier": "GatyaitemD 160 f.png",
+      "page": "https://battlecats.miraheze.org/wiki/File%3AGatyaitemD_160_f.png"
+    },
+    "sourceNom": "battlecats.miraheze.org, catégorie « Items »"
+  },
+  {
+    "id": "battlecats-030",
+    "nom": "GatyaitemD 42 f",
+    "nomVO": "GatyaitemD 42 f",
+    "jeu": "The Battle Cats",
+    "image": "battlecats-030.png",
+    "source": {
+      "wiki": "https://battlecats.miraheze.org/w/api.php",
+      "titre": "File:GatyaitemD 42 f.png",
+      "fichier": "GatyaitemD 42 f.png",
+      "page": "https://battlecats.miraheze.org/wiki/File%3AGatyaitemD_42_f.png"
+    },
+    "sourceNom": "battlecats.miraheze.org, catégorie « Items »"
+  }
+]

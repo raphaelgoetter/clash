@@ -47,7 +47,7 @@ export const REFONTE_PAIRS = {
 // déjà branché. Frame est déjà hors Clash Royale, Pêle-mêle, Trivia et
 // Zoom carte tournent déjà. Un jeu n'est prêt que dans sa propre paire : Zoom carte ne
 // revient jamais dans le groupe visuels.
-export const REFONTE_PRETS = new Set(["frame", "triviageek", "concept", "synopsis", "zoom2", "platpays", "pelemele", "trivia", "zoom"]);
+export const REFONTE_PRETS = new Set(["frame", "triviageek", "intrus", "concept", "synopsis", "zoom2", "platpays", "pelemele", "trivia", "zoom"]);
 
 const LABELS = {
   culture: { avant: "🎬 Jeux de culture", apres: "🎬 Ciné-club" },

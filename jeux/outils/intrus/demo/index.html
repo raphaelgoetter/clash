@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Intrus : relecture</title>
+  <link rel="stylesheet" href="/api/intrus/demo/static/demo.css" />
+</head>
+<body>
+  <header class="top">
+    <h1>Intrus de l'inventaire : relecture</h1>
+    <nav class="tabs">
+      <button class="tab is-active" data-vue="planches">Planches</button>
+      <button class="tab" data-vue="objets">Objets</button>
+    </nav>
+    <div id="resume" class="muted"></div>
+  </header>
+
+  <main>
+    <section id="vue-planches" class="vue">
+      <div class="barre">
+        <label>Statut
+          <select id="f-statut">
+            <option value="a_revoir">À revoir</option>
+            <option value="refuse">Refusées</option>
+            <option value="valide">Validées</option>
+            <option value="toutes">Toutes</option>
+          </select>
+        </label>
+        <label><input id="f-alertes" type="checkbox" /> Seulement avec alerte</label>
+        <span id="compte-planches" class="muted"></span>
+      </div>
+      <div id="liste-planches" class="liste-planches"></div>
+    </section>
+
+    <section id="vue-objets" class="vue" hidden>
+      <div class="barre">
+        <label>Netteté
+          <input id="f-seuil" type="range" min="0" max="60" step="0.5" value="0" />
+          <output id="f-seuil-val">0</output>
+        </label>
+        <select id="f-mode">
+          <option value="masquer">Masquer sous le seuil</option>
+          <option value="seulement">Seulement sous le seuil</option>
+        </select>
+        <label>Jeu <select id="f-jeu"><option value="">Tous</option></select></label>
+        <label>Étiquette <input id="f-etiquette" list="etiquettes" placeholder="steampunk…" /></label>
+        <label>Tri
+          <select id="f-tri">
+            <option value="nettete-asc">Netteté croissante</option>
+            <option value="nettete-desc">Netteté décroissante</option>
+            <option value="jeu">Jeu</option>
+          </select>
+        </label>
+      </div>
+      <div class="barre">
+        <span>Styles :</span>
+        <span id="f-styles" class="styles"></span>
+        <label><input id="f-reserve" type="checkbox" /> Réserve seulement (hors manche)</label>
+        <label><input id="f-exclus" type="checkbox" /> Afficher les exclus</label>
+      </div>
+      <div class="barre">
+        <span id="compte" class="muted"></span>
+        <span class="espace"></span>
+        <button id="exclure-lot" class="ko">Exclure les objets affichés</button>
+        <button id="reintegrer-lot" class="neutre">Réintégrer les objets affichés</button>
+      </div>
+      <div id="objets" class="cartes"></div>
+    </section>
+  </main>
+
+  <datalist id="etiquettes"></datalist>
+  <template id="tpl-carte">
+    <article class="carte">
+      <div class="carte-image"><span class="lettre"></span><img alt="" loading="lazy" /></div>
+      <div class="carte-nom"></div>
+      <div class="carte-jeu muted"></div>
+      <div class="carte-mesures muted"></div>
+      <label class="ligne">Accentuation <input class="acc" type="range" min="0" step="1" /><output class="acc-val"></output></label>
+      <label class="ligne">Style <select class="style"></select></label>
+      <input class="etiq" list="etiquettes" placeholder="étiquettes, séparées par des virgules" />
+      <label class="ligne"><input class="exclu" type="checkbox" /> Exclu</label>
+    </article>
+  </template>
+  <script src="/api/intrus/demo/static/demo.js" type="module"></script>
+</body>
+</html>

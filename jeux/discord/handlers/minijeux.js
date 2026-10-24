@@ -26,6 +26,7 @@ import * as peleMeleSvc from "../../services/pelemele.js";
 import * as justeCarteSvc from "../../services/lajustecarte.js";
 import * as triviaSvc from "../../services/trivia.js";
 import * as triviaGeekSvc from "../../services/triviageek.js";
+import * as intrusSvc from "../../services/intrus.js";
 import * as conceptSvc from "../../services/concept.js";
 import * as synopsisSvc from "../../services/synopsis.js";
 import {
@@ -146,6 +147,7 @@ const AVEUGLE_GAMES = {
   lajustecarte: { title: "🃏 La Juste Carte", svc: justeCarteSvc },
   // Refonte (voir refonte.js) : "Culture geek" à partir de décembre 2026.
   triviageek: { title: "🎮 Trivia Geek", svc: triviaGeekSvc },
+  intrus: { title: "🎒 Intrus de l'inventaire", svc: intrusSvc },
 };
 
 // "Jeux visuels" (vendredi) et "Jeux de lettres" (samedi) alternent chacun

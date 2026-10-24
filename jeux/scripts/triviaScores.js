@@ -5,19 +5,24 @@
 // pas de notion "en cours" (essai unique verrouillé) : un joueur a répondu
 // (correct ou non) ou n'a pas encore répondu, point final.
 //
-// Usage : node jeux/scripts/triviaScores.js [--geek]   (--geek : Trivia Geek)
+// Usage : node jeux/scripts/triviaScores.js [--geek | --intrus]
+//   (--geek : Trivia Geek, --intrus : Intrus de l'inventaire)
 
 import "../env.js";
 
 import * as triviaSvc from "../services/trivia.js";
 import * as triviaGeekSvc from "../services/triviageek.js";
+import * as intrusSvc from "../services/intrus.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 
 const GEEK = process.argv.includes("--geek");
-const LABEL = GEEK ? "Trivia Geek" : "Trivia";
-const { loadTriviaCatalog, resolveTriviaEntry, readState, getGameParticipants, computeSeasonRanking } = GEEK
-  ? triviaGeekSvc
-  : triviaSvc;
+const INTRUS = process.argv.includes("--intrus");
+const LABEL = INTRUS ? "Intrus de l'inventaire" : GEEK ? "Trivia Geek" : "Trivia";
+const { loadTriviaCatalog, resolveTriviaEntry, readState, getGameParticipants, computeSeasonRanking } = INTRUS
+  ? intrusSvc
+  : GEEK
+    ? triviaGeekSvc
+    : triviaSvc;
 
 (async () => {
   const state = await readState();
@@ -34,7 +39,7 @@ const { loadTriviaCatalog, resolveTriviaEntry, readState, getGameParticipants, c
   ]);
 
   console.log(
-    `Jeu ${LABEL} — Manche ${state.seasonManche}/${state.seasonMancheTotal} (${entry?.question ?? state.gameId}) — Saison ${state.seasonId}\n`,
+    `Jeu ${LABEL} — Manche ${state.seasonManche}/${state.seasonMancheTotal} (${entry?.label ?? entry?.question ?? state.gameId}) — Saison ${state.seasonId}\n`,
   );
 
   const answeredIds = new Set(gameParticipants.map((p) => p.discordId));

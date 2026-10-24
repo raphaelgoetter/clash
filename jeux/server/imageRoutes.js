@@ -6,6 +6,7 @@ import { getCurrentFrameImage, getFrameImageByGameId } from "../services/frames.
 import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "../services/zoomImage.js";
 import { getZoom2CardImage, getZoom2HintImage, getZoom2RevealImage } from "../services/zoom2Image.js";
 import { getPlatImage } from "../services/platpaysImage.js";
+import { getIntrusImage } from "../services/intrusImage.js";
 import { getPaletteQuestionImage, getPaletteResultImage } from "../services/paletteImage.js";
 import { getPeleMeleRackImage } from "../services/pelemeleImage.js";
 import {
@@ -92,6 +93,19 @@ router.get("/api/platpays/image", async (req, res) => {
   const { gameId } = req.query;
   if (!gameId) return res.status(400).end();
   const image = await getPlatImage(String(gameId)).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Intrus de l'inventaire : grille 2×2 des objets d'une manche déjà
+// postée, dans l'ordre A/B/C/D de la manche (garde-fou anti-spoiler
+// isGamePosted dans services/intrus.js).
+router.get("/api/intrus/image", async (req, res) => {
+  const { gameId } = req.query;
+  if (!gameId) return res.status(400).end();
+  const image = await getIntrusImage(String(gameId)).catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");

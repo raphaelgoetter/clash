@@ -1,8 +1,8 @@
 // ============================================================
 // triviaEngine.js — Handlers Discord communs aux QCM « Trivia » (voir
-// jeux/services/triviaEngine.js), instanciés par handlers/trivia.js et
-// handlers/triviageek.js. Pas de Modal, pas d'indice, pas de DM : un seul
-// essai par joueur, verrouillé au premier clic.
+// jeux/services/triviaEngine.js), instanciés par handlers/trivia.js,
+// handlers/triviageek.js et handlers/intrus.js. Pas de Modal, pas d'indice,
+// pas de DM : un seul essai par joueur, verrouillé au premier clic.
 //
 // config :
 //   name, emoji, color   — nom affiché (« Trivia »), émoji, couleur d'embed
@@ -10,6 +10,16 @@
 //                           fonction (seasonId) → jour
 //   answerPrefix          — préfixe des custom_id des boutons A/B/C/D
 //   bannerPath            — image fixe du jeu (frontend TrustRoyale), ou null
+//   imageUrl              — (gameId) → URL de l'image propre à la manche
+//                           (prioritaire sur bannerPath), ou null
+//   afficherPropositions  — false : texte des propositions absent du post
+//                           (tout est sur l'image), révélé à la réponse
+//   consigne              — texte affiché à la place des propositions quand
+//                           afficherPropositions est false
+//
+// Champs optionnels d'une entrée, en plus de ceux de parseTriviaEntry :
+// `optionNotes` (précision par proposition, alignée sur `options`, affichée
+// à la révélation) et `explication`.
 // ============================================================
 
 import { nomSaison } from "../../services/saison.js";
@@ -25,15 +35,20 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const SEASON_RECAP_MAX_PLAYERS = 20;
 const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
 
-export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPrefix, bannerPath }) {
+export function createTriviaHandlers(
+  svc,
+  { name, emoji, color, jour, answerPrefix, bannerPath, imageUrl = null, afficherPropositions = true, consigne = null },
+) {
   const { LETTERS } = svc;
   const logTag = `[${name}]`;
   const jourFor = typeof jour === "function" ? jour : () => jour;
 
-  function buildTriviaEmbed({ entryTitre, entryQuestion, entryOptionsDisplay, seasonId, seasonManche, seasonMancheTotal }) {
+  function buildTriviaEmbed({ gameId, entryTitre, entryQuestion, entryOptionsDisplay, seasonId, seasonManche, seasonMancheTotal }) {
     // Propositions dans le CORPS de l'embed (lettre + texte), jamais sur les
     // boutons : le texte d'une proposition serait trop long pour un bouton.
-    const choicesLines = entryOptionsDisplay.map((text, i) => `**${LETTERS[i]}.** ${text}`);
+    const choicesLines = afficherPropositions
+      ? entryOptionsDisplay.map((text, i) => `**${LETTERS[i]}.** ${text}`)
+      : [consigne ?? `Les ${LETTERS.length} propositions (${LETTERS.join(", ")}) sont sur l'image.`];
     const jourSaison = jourFor(seasonId);
     const embed = {
       title: `${emoji} Le jeu du ${jourSaison} : ${name} !`,
@@ -53,7 +68,8 @@ export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPref
     };
     // Cache-buster (?v=) : Discord met en cache l'aperçu d'un embed PAR URL,
     // y compris un échec de fetch (même piège que justecarte/frames/zoom).
-    if (bannerPath) embed.image = { url: `${TRUST_ROYALE_URL}${bannerPath}?v=${Date.now()}` };
+    if (imageUrl && gameId) embed.image = { url: `${imageUrl(gameId)}&v=${Date.now()}` };
+    else if (bannerPath) embed.image = { url: `${TRUST_ROYALE_URL}${bannerPath}?v=${Date.now()}` };
     return embed;
   }
 
@@ -211,6 +227,7 @@ export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPref
       );
     }
     const embed = buildTriviaEmbed({
+      gameId: newState.gameId,
       entryTitre: entry.titre,
       entryQuestion: entry.question,
       entryOptionsDisplay: displayOrderFor(entry, order),
@@ -358,11 +375,13 @@ export function createTriviaHandlers(svc, { name, emoji, color, jour, answerPref
       const breakdown = entry
         ? order.map((optionIdx, i) => {
             const marker = optionIdx === 0 ? "🏆" : "";
-            return `**${LETTERS[i]}.** ${entry.options[optionIdx]} ${marker}`;
+            const note = entry.optionNotes?.[optionIdx] ? ` (${entry.optionNotes[optionIdx]})` : "";
+            return `**${LETTERS[i]}.** ${entry.options[optionIdx]}${note} ${marker}`;
           })
         : [];
 
       const descriptionLines = [resultLine, "", "**Les 4 propositions :**", ...breakdown];
+      if (entry?.explication) descriptionLines.push("", `💡 ${entry.explication}`);
       if (entry?.erratum) {
         descriptionLines.push("", `⚠️ **Erratum :** ${entry.erratum.notice}`);
       }

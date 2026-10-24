@@ -52,6 +52,7 @@ import { handleAnswerButton as handlePaletteAnswer } from "../handlers/palette.j
 // jeux/scripts/postTrivia.js en direct), jamais depuis ce fichier de routing.
 import { handleAnswerButton as handleTriviaAnswer } from "../handlers/trivia.js";
 import { handleAnswerButton as handleTriviaGeekAnswer } from "../handlers/triviageek.js";
+import { handleAnswerButton as handleIntrusAnswer } from "../handlers/intrus.js";
 import {
   handleHintButton as handleConceptHintButton,
   handleModalSubmit as handleConceptModalSubmit,
@@ -845,6 +846,25 @@ export async function routeMiniJeux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleTriviaGeekAnswer(webhookUrl, gameId, letter, discordId, username));
+    return;
+  }
+
+  // ── Jeu Intrus de l'inventaire : boutons de réponse A/B/C/D (même ACK que Trivia) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("intrus_answer:")
+  ) {
+    const [, gameId, letter] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleIntrusAnswer(webhookUrl, gameId, letter, discordId, username));
     return;
   }
 

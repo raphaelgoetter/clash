@@ -1,0 +1,73 @@
+:root {
+  color-scheme: dark;
+  --fond: #0f172a;
+  --carte: #1e293b;
+  --bord: #475569;
+  --texte: #e2e8f0;
+  --doux: #94a3b8;
+  --ok: #166534;
+  --ko: #7f1d1d;
+  --neutre: #334155;
+  --alerte: #f59e0b;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--fond); color: var(--texte); }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; background: var(--neutre); }
+select, input[type="text"], input:not([type]), textarea {
+  background: var(--fond); border: 1px solid var(--bord); border-radius: 6px; padding: 4px 6px;
+}
+kbd { font-size: 0.75rem; opacity: 0.7; }
+.muted { color: var(--doux); font-size: 0.9rem; }
+.top { position: sticky; top: 0; z-index: 2; background: var(--fond); padding: 10px 16px; border-bottom: 1px solid var(--bord); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.top h1 { font-size: 1.1rem; margin: 0; }
+.tabs { display: flex; gap: 6px; }
+.tab.is-active { background: #1d4ed8; }
+main { padding: 12px 16px; max-width: 1400px; margin: 0 auto; }
+.barre { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 10px; }
+.espace { flex: 1; }
+.styles { display: flex; flex-wrap: wrap; gap: 10px; }
+.vide { padding: 40px; text-align: center; color: var(--doux); }
+.liste-planches { display: grid; gap: 8px; }
+.lp { background: var(--carte); border-radius: 10px; padding: 8px 10px; border-left: 4px solid var(--alerte); display: grid; gap: 6px; }
+.lp.valide { border-left-color: #22c55e; }
+.lp.refuse { border-left-color: #ef4444; }
+.lp-tete { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 0.9rem; }
+.lp-corps { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.lp-vignettes { display: flex; gap: 6px; }
+.lp-vignettes figure { margin: 0; width: 72px; text-align: center; font-size: 0.7rem; color: var(--doux); }
+.lp-vignettes img { width: 64px; height: 64px; background: #475569; border-radius: 6px; display: block; margin: 0 auto 2px; }
+.lp-vignettes .is-intrus img { outline: 2px solid #FFD700; }
+.lp-vignettes figcaption { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-vignettes .remplacer { padding: 0 6px; font-size: 0.8rem; margin-top: 2px; }
+.lp-remplacement { display: grid; gap: 4px; border-top: 1px solid var(--bord); padding-top: 6px; }
+.lp-recherche { display: flex; gap: 6px; }
+.lp-recherche input { flex: 1; }
+.lp-choix { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+.remplacant { width: 88px; padding: 4px; background: var(--fond); display: grid; gap: 2px; font-size: 0.7rem; justify-items: center; }
+.remplacant img { width: 64px; height: 64px; background: #475569; border-radius: 6px; }
+.remplacant span { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.remplacant.douteux { opacity: 0.6; outline: 1px dashed var(--alerte); }
+.remplacant .probleme { color: var(--alerte); white-space: normal; }
+.lp-actions { flex: 1; min-width: 260px; display: grid; gap: 4px; }
+.lp-actions .boutons button { padding: 4px 8px; }
+.lp-actions input { width: 100%; }
+.lp-details { display: grid; grid-template-columns: minmax(0, 360px) 1fr; gap: 12px; }
+.lp-details > img { width: 100%; border-radius: 8px; }
+.lp-details .cartes { margin-top: 0; }
+@media (max-width: 800px) {
+  .lp-details { grid-template-columns: 1fr; }
+}
+.cartes { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-top: 12px; }
+.carte { background: var(--carte); border-radius: 10px; padding: 8px; display: grid; gap: 4px; font-size: 0.9rem; }
+.carte.is-exclu { opacity: 0.45; }
+.carte.is-intrus { outline: 2px solid #FFD700; }
+.carte.is-flou .carte-mesures { color: var(--alerte); }
+.carte-image { position: relative; background: #475569; border-radius: 8px; padding: 4px; }
+.carte-image img { width: 64px; height: 64px; display: block; margin: 0 auto; }
+.lettre { position: absolute; top: 4px; left: 4px; background: #FFD700; color: var(--fond); border-radius: 50%; width: 24px; height: 24px; display: grid; place-items: center; font-weight: 700; }
+.lettre:empty { display: none; }
+.carte-nom { font-weight: 700; }
+.ligne { display: flex; align-items: center; gap: 6px; }
+.ligne .acc { flex: 1; }
+.etiq { width: 100%; }

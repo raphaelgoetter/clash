@@ -14,6 +14,7 @@ import { groupLabelForDate, isRefonteSeason } from "./refonte.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
+import { getAllArchivedResults as getIntrusResults } from "./intrus.js";
 import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getConceptResults } from "./concept.js";
@@ -129,6 +130,7 @@ const SCORE_GAMES = [
       ...(await tagSubGame(getBlindRoyaleResults, "Blind Royale")()),
       ...(await tagSubGame(getLaJusteCarteResults, "La Juste Carte")()),
       ...(await tagSubGame(getTriviaGeekResults, "Trivia Geek")()),
+      ...(await tagSubGame(getIntrusResults, "Intrus de l'inventaire")()),
     ],
   },
   {

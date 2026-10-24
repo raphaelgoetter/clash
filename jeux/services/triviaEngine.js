@@ -2,9 +2,10 @@
 // triviaEngine.js — Moteur commun des QCM « Trivia » (4 propositions
 // A/B/C/D, essai unique verrouillé par HSETNX, barème plat 1 pt/0 pt).
 // Couche métier : état Redis, tirage, scoring, classements, erratum.
-// Instancié par trivia.js (culture Clash Royale) et triviageek.js (Trivia
-// Geek, refonte hors Clash Royale) : chaque instance a son préfixe Redis,
-// son catalogue et son jour de publication, jamais de données partagées.
+// Instancié par trivia.js (culture Clash Royale), triviageek.js (Trivia
+// Geek) et intrus.js (Intrus de l'inventaire), refonte hors Clash Royale :
+// chaque instance a son préfixe Redis, son catalogue et son jour de
+// publication, jamais de données partagées.
 //
 // Catalogue : tableau JSON où chaque question a 4 `choices`, la bonne
 // réponse marquée par un suffixe " √". parseTriviaEntry() normalise chaque
@@ -163,7 +164,10 @@ const ROUND_LABEL_MAX_LENGTH = 80;
 // catalogPath : chemin absolu du catalogue JSON
 // weekday : jour UTC de publication (0 = dimanche), pour le total de manches,
 //           ou fonction (seasonId) → jour si le jeu change de créneau
-export function createTriviaService({ prefix, catalogPath, weekday }) {
+// loadCatalog : chargeur alternatif (async () → entrées déjà normalisées,
+//           options[0] = bonne réponse), pour un catalogue qui n'est pas au
+//           format « √ » (Intrus de l'inventaire). Remplace catalogPath.
+export function createTriviaService({ prefix, catalogPath, weekday, loadCatalog = null }) {
   const weekdayFor = typeof weekday === "function" ? weekday : () => weekday;
   const STATE_KEY = `${prefix}:state`;
   const orderKey = (gameId) => `${prefix}:order:${gameId}`;
@@ -180,6 +184,10 @@ export function createTriviaService({ prefix, catalogPath, weekday }) {
 
   async function loadTriviaCatalog() {
     if (catalogCache) return catalogCache;
+    if (loadCatalog) {
+      catalogCache = await loadCatalog();
+      return catalogCache;
+    }
     const txt = await fs.readFile(catalogPath, "utf-8");
     catalogCache = JSON.parse(txt).map(parseTriviaEntry);
     return catalogCache;
@@ -248,14 +256,13 @@ export function createTriviaService({ prefix, catalogPath, weekday }) {
     return raw == null ? null : Number(raw);
   }
 
-  // Intitulé (question tronquée) d'une manche — pour le récap de fin de
-  // saison (liste des manches jouées).
+  // Intitulé (question tronquée, ou `label` de l'entrée s'il existe) d'une
+  // manche — pour le récap de fin de saison (liste des manches jouées).
   async function getTriviaRoundLabel(gameId) {
     const entry = resolveTriviaEntry(await loadTriviaCatalog(), gameId);
     if (!entry) return null;
-    return entry.question.length > ROUND_LABEL_MAX_LENGTH
-      ? `${entry.question.slice(0, ROUND_LABEL_MAX_LENGTH - 1)}…`
-      : entry.question;
+    const label = entry.label ?? entry.question;
+    return label.length > ROUND_LABEL_MAX_LENGTH ? `${label.slice(0, ROUND_LABEL_MAX_LENGTH - 1)}…` : label;
   }
 
   // ── Sélection + démarrage d'une manche ─────────────────────────────

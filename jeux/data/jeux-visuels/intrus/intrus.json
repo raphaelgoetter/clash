@@ -1,0 +1,562 @@
+[
+  {
+    "numero": 1,
+    "difficulte": "intermediaire",
+    "jeu": "Wakfu",
+    "jeuIntrus": "Dofus",
+    "theme": "Illustré",
+    "objets": [
+      "lunar-amulet",
+      "hairlarious-cloak",
+      "stroke-cloak"
+    ],
+    "intrus": "amulette-volcanique",
+    "explication": "Amulette Volcanique vient de Dofus ; les trois autres objets viennent de Wakfu."
+  },
+  {
+    "numero": 2,
+    "difficulte": "facile",
+    "jeu": "Candy Crush",
+    "jeuIntrus": "Pokémon GO",
+    "theme": "Illustré",
+    "objets": [
+      "candycrush-sheet-010",
+      "candycrush-sheet-005",
+      "candycrush-sheet-016"
+    ],
+    "intrus": "go-lure-module",
+    "explication": "Module Leurre vient de Pokémon GO ; les trois autres objets viennent de Candy Crush."
+  },
+  {
+    "numero": 3,
+    "difficulte": "difficile",
+    "jeu": "Genshin Impact",
+    "jeuIntrus": "Palworld",
+    "theme": "Illustré",
+    "objets": [
+      "genshin-fleur-cerisier",
+      "genshin-conque-etoile",
+      "genshin-jueyun"
+    ],
+    "intrus": "red-berries",
+    "explication": "Baie rouge vient de Palworld ; les trois autres objets viennent de Genshin Impact."
+  },
+  {
+    "numero": 4,
+    "difficulte": "expert",
+    "jeu": "Candy Crush",
+    "jeuIntrus": "Angry Birds",
+    "theme": "Illustré",
+    "objets": [
+      "candycrush-sheet-057",
+      "candycrush-sheet-048",
+      "candycrush-sheet-086"
+    ],
+    "intrus": "angrybirds-block-common-060",
+    "explication": "Bloc Angry Birds vient de Angry Birds ; les trois autres objets viennent de Candy Crush."
+  },
+  {
+    "numero": 5,
+    "difficulte": "intermediaire",
+    "jeu": "Valheim",
+    "jeuIntrus": "Animal Crossing: Pocket Camp",
+    "theme": "Illustré",
+    "objets": [
+      "megingjord",
+      "wishbone",
+      "dragon-tear"
+    ],
+    "intrus": "acpc-025",
+    "explication": "Cushion vient de Animal Crossing: Pocket Camp ; les trois autres objets viennent de Valheim."
+  },
+  {
+    "numero": 6,
+    "difficulte": "difficile",
+    "jeu": "Metroid Prime 2: Echoes",
+    "jeuIntrus": "Candy Crush",
+    "theme": "Illustré",
+    "objets": [
+      "grapple-beam",
+      "screw-attack",
+      "space-jump-boots"
+    ],
+    "intrus": "candycrush-sheet-003",
+    "explication": "Bonbon Candy vient de Candy Crush ; les trois autres objets viennent de Metroid Prime 2: Echoes."
+  },
+  {
+    "numero": 7,
+    "difficulte": "expert",
+    "jeu": "Kirby (série)",
+    "jeuIntrus": "Légendes Pokémon : Z-A",
+    "theme": "Illustré",
+    "objets": [
+      "maxim-tomato",
+      "invincible-candy",
+      "warp-star"
+    ],
+    "intrus": "lpza-baie-pecha",
+    "explication": "Baie Pêcha vient de Légendes Pokémon : Z-A ; les trois autres objets viennent de Kirby (série)."
+  },
+  {
+    "numero": 8,
+    "difficulte": "difficile",
+    "jeu": "The Legend of Zelda: Ocarina of Time 3D",
+    "jeuIntrus": "Roblox",
+    "theme": "Illustré",
+    "objets": [
+      "hookshot",
+      "lens-of-truth",
+      "megaton-hammer"
+    ],
+    "intrus": "roblox-503957396",
+    "explication": "Deluxe Coil Gun vient de Roblox ; les trois autres objets viennent de The Legend of Zelda: Ocarina of Time 3D."
+  },
+  {
+    "numero": 9,
+    "difficulte": "intermediaire",
+    "jeu": "Pokémon GO",
+    "jeuIntrus": "Candy Crush",
+    "theme": "Illustré",
+    "objets": [
+      "go-super-candy",
+      "go-poke-ball",
+      "go-max-potion"
+    ],
+    "intrus": "candycrush-sheet-059",
+    "explication": "Bonbon Candy vient de Candy Crush ; les trois autres objets viennent de Pokémon GO."
+  },
+  {
+    "numero": 10,
+    "difficulte": "facile",
+    "jeu": "The Legend of Zelda: Breath of the Wild",
+    "jeuIntrus": "Genshin Impact",
+    "theme": "Illustré",
+    "objets": [
+      "hylian-shroom",
+      "swift-violet",
+      "silent-princess"
+    ],
+    "intrus": "genshin-anemo-champi",
+    "explication": "Champignon anémophile vient de Genshin Impact ; les trois autres objets viennent de The Legend of Zelda: Breath of the Wild."
+  },
+  {
+    "numero": 11,
+    "difficulte": "difficile",
+    "jeu": "Lies of P",
+    "jeuIntrus": "Wakfu",
+    "theme": "Illustré",
+    "objets": [
+      "star-fragment",
+      "pulse-cell",
+      "iron-wall-amulet"
+    ],
+    "intrus": "capittle-cloak",
+    "explication": "Cape Itale vient de Wakfu ; les trois autres objets viennent de Lies of P."
+  },
+  {
+    "numero": 12,
+    "difficulte": "expert",
+    "jeu": "Subway Surfers",
+    "jeuIntrus": "Clash Royale",
+    "theme": "Illustré",
+    "objets": [
+      "subway-super-sneakers",
+      "subway-jetpack",
+      "subway-hoverboard"
+    ],
+    "intrus": "cr-chest-wooden",
+    "explication": "Coffre en bois vient de Clash Royale ; les trois autres objets viennent de Subway Surfers."
+  },
+  {
+    "numero": 13,
+    "difficulte": "intermediaire",
+    "jeu": "Sekiro: Shadows Die Twice",
+    "jeuIntrus": "Elden Ring",
+    "theme": "Illustré",
+    "objets": [
+      "gourd-seed",
+      "divine-confetti",
+      "akos-sugar"
+    ],
+    "intrus": "golden-seed",
+    "explication": "Golden Seed vient de Elden Ring ; les trois autres objets viennent de Sekiro: Shadows Die Twice."
+  },
+  {
+    "numero": 14,
+    "difficulte": "difficile",
+    "jeu": "Super Mario (série)",
+    "jeuIntrus": "Kirby (série)",
+    "theme": "Illustré",
+    "objets": [
+      "super-leaf",
+      "super-bell",
+      "super-mushroom"
+    ],
+    "intrus": "mint-leaf",
+    "explication": "Feuille de menthe vient de Kirby (série) ; les trois autres objets viennent de Super Mario (série)."
+  },
+  {
+    "numero": 15,
+    "difficulte": "expert",
+    "jeu": "Elden Ring",
+    "jeuIntrus": "Lies of P",
+    "theme": "Illustré",
+    "objets": [
+      "sacred-tear",
+      "spectral-steed-whistle",
+      "godfrey-icon"
+    ],
+    "intrus": "gold-coin-fruit",
+    "explication": "Gold Coin Fruit vient de Lies of P ; les trois autres objets viennent de Elden Ring."
+  },
+  {
+    "numero": 16,
+    "difficulte": "difficile",
+    "jeu": "Hollow Knight",
+    "jeuIntrus": "The Battle Cats",
+    "theme": "Illustré",
+    "objets": [
+      "shaman-stone",
+      "quick-focus",
+      "monarch-wings"
+    ],
+    "intrus": "battlecats-009",
+    "explication": "Objet vient de The Battle Cats ; les trois autres objets viennent de Hollow Knight."
+  },
+  {
+    "numero": 17,
+    "difficulte": "intermediaire",
+    "jeu": "Elden Ring",
+    "jeuIntrus": "Genshin Impact",
+    "theme": "Illustré",
+    "objets": [
+      "erdtrees-favor",
+      "shard-of-alexander",
+      "pickled-turtle-neck"
+    ],
+    "intrus": "genshin-graines-pissenlit",
+    "explication": "Graines de pissenlit vient de Genshin Impact ; les trois autres objets viennent de Elden Ring."
+  },
+  {
+    "numero": 18,
+    "difficulte": "facile",
+    "jeu": "Dota 2",
+    "jeuIntrus": "World of Warcraft",
+    "theme": "Icône carrée",
+    "objets": [
+      "blink-dagger",
+      "black-king-bar",
+      "divine-rapier"
+    ],
+    "intrus": "truesilver-ore",
+    "explication": "Minerai de vrai-argent vient de World of Warcraft ; les trois autres objets viennent de Dota 2."
+  },
+  {
+    "numero": 19,
+    "difficulte": "difficile",
+    "jeu": "Légendes Pokémon : Z-A",
+    "jeuIntrus": "Candy Crush",
+    "theme": "Illustré",
+    "objets": [
+      "rare-candy",
+      "lpza-pierre-foudre",
+      "lpza-potion"
+    ],
+    "intrus": "candycrush-sheet-072",
+    "explication": "Bonbon Candy vient de Candy Crush ; les trois autres objets viennent de Légendes Pokémon : Z-A."
+  },
+  {
+    "numero": 20,
+    "difficulte": "expert",
+    "jeu": "Roblox",
+    "jeuIntrus": "Pokémon GO",
+    "theme": "Illustré",
+    "objets": [
+      "roblox-99119158",
+      "roblox-88885497",
+      "roblox-101110605"
+    ],
+    "intrus": "go-hyper-potion",
+    "explication": "Hyper Potion vient de Pokémon GO ; les trois autres objets viennent de Roblox."
+  },
+  {
+    "numero": 21,
+    "difficulte": "intermediaire",
+    "jeu": "League of Legends",
+    "jeuIntrus": "World of Warcraft",
+    "theme": "Icône carrée",
+    "objets": [
+      "rabadons-deathcap",
+      "zhonyas-hourglass",
+      "guardian-angel"
+    ],
+    "intrus": "saronite-ore",
+    "explication": "Minerai de saronite vient de World of Warcraft ; les trois autres objets viennent de League of Legends."
+  },
+  {
+    "numero": 22,
+    "difficulte": "difficile",
+    "jeu": "Satisfactory",
+    "jeuIntrus": "The Battle Cats",
+    "theme": "Illustré",
+    "objets": [
+      "adaptive-control-unit",
+      "heavy-modular-frame",
+      "stator"
+    ],
+    "intrus": "battlecats-030",
+    "explication": "Objet vient de The Battle Cats ; les trois autres objets viennent de Satisfactory."
+  },
+  {
+    "numero": 23,
+    "difficulte": "expert",
+    "jeu": "Dofus",
+    "jeuIntrus": "Animal Crossing: Pocket Camp",
+    "theme": "Illustré",
+    "objets": [
+      "amulette-seculaire",
+      "amulette-necrotique",
+      "cape-hucine"
+    ],
+    "intrus": "acpc-007",
+    "explication": "Giant Snakehead vient de Animal Crossing: Pocket Camp ; les trois autres objets viennent de Dofus."
+  },
+  {
+    "numero": 24,
+    "difficulte": "difficile",
+    "jeu": "The Elder Scrolls V: Skyrim",
+    "jeuIntrus": "Elden Ring",
+    "theme": "Illustré",
+    "objets": [
+      "deathbell",
+      "jazbay-grapes",
+      "lavender"
+    ],
+    "intrus": "golden-sunflower",
+    "explication": "Golden Sunflower vient de Elden Ring ; les trois autres objets viennent de The Elder Scrolls V: Skyrim."
+  },
+  {
+    "numero": 25,
+    "difficulte": "intermediaire",
+    "jeu": "Roblox",
+    "jeuIntrus": "Pokémon GO",
+    "theme": "Illustré",
+    "objets": [
+      "roblox-119101539",
+      "roblox-186868758",
+      "roblox-34901961"
+    ],
+    "intrus": "sinnoh-stone",
+    "explication": "Pierre Sinnoh vient de Pokémon GO ; les trois autres objets viennent de Roblox."
+  },
+  {
+    "numero": 26,
+    "difficulte": "facile",
+    "jeu": "Factorio",
+    "jeuIntrus": "Oxygen Not Included",
+    "theme": "Illustré",
+    "objets": [
+      "low-density-structure",
+      "flying-robot-frame",
+      "advanced-circuit"
+    ],
+    "intrus": "frost-bun",
+    "explication": "Frost Bun vient de Oxygen Not Included ; les trois autres objets viennent de Factorio."
+  },
+  {
+    "numero": 27,
+    "difficulte": "difficile",
+    "jeu": "Animal Crossing: Pocket Camp",
+    "jeuIntrus": "The Battle Cats",
+    "theme": "Illustré",
+    "objets": [
+      "acpc-013",
+      "acpc-014",
+      "acpc-009"
+    ],
+    "intrus": "battlecats-007",
+    "explication": "Objet vient de The Battle Cats ; les trois autres objets viennent de Animal Crossing: Pocket Camp."
+  },
+  {
+    "numero": 28,
+    "difficulte": "expert",
+    "jeu": "Légendes Pokémon : Z-A",
+    "jeuIntrus": "Angry Birds",
+    "theme": "Illustré",
+    "objets": [
+      "life-orb",
+      "oran-berry",
+      "leaf-stone"
+    ],
+    "intrus": "angrybirds-block-common-030",
+    "explication": "Bloc Angry Birds vient de Angry Birds ; les trois autres objets viennent de Légendes Pokémon : Z-A."
+  },
+  {
+    "numero": 29,
+    "difficulte": "intermediaire",
+    "jeu": "Terraria",
+    "jeuIntrus": "Blasphemous",
+    "theme": "Pixel art",
+    "objets": [
+      "gravity-globe",
+      "magic-conch",
+      "elderberry"
+    ],
+    "intrus": "dove-skull",
+    "explication": "Dove Skull vient de Blasphemous ; les trois autres objets viennent de Terraria."
+  },
+  {
+    "numero": 30,
+    "difficulte": "expert",
+    "jeu": "Fallout",
+    "jeuIntrus": "Sekiro: Shadows Die Twice",
+    "theme": "Illustré",
+    "objets": [
+      "stimpak",
+      "radaway",
+      "mentats"
+    ],
+    "intrus": "pacifying-agent",
+    "explication": "Pacifying Agent vient de Sekiro: Shadows Die Twice ; les trois autres objets viennent de Fallout."
+  },
+  {
+    "numero": 31,
+    "difficulte": "intermediaire",
+    "jeu": "Angry Birds",
+    "jeuIntrus": "Candy Crush",
+    "theme": "Illustré",
+    "objets": [
+      "angrybirds-block-common-028",
+      "angrybirds-block-common-050",
+      "angrybirds-block-common-031"
+    ],
+    "intrus": "candycrush-sheet-077",
+    "explication": "Bonbon Candy vient de Candy Crush ; les trois autres objets viennent de Angry Birds."
+  },
+  {
+    "numero": 32,
+    "difficulte": "intermediaire",
+    "jeu": "Sun Haven",
+    "jeuIntrus": "Terraria",
+    "theme": "Pixel art",
+    "objets": [
+      "heart-berry",
+      "kiwi-berry",
+      "blizzard-berry"
+    ],
+    "intrus": "bottomless-water-bucket",
+    "explication": "Bottomless Water Bucket vient de Terraria ; les trois autres objets viennent de Sun Haven."
+  },
+  {
+    "numero": 33,
+    "difficulte": "facile",
+    "jeu": "Genshin Impact",
+    "jeuIntrus": "Animal Crossing: Pocket Camp",
+    "theme": "Illustré",
+    "objets": [
+      "genshin-lys-verni",
+      "genshin-fleur-soie",
+      "genshin-jade-noctiluque"
+    ],
+    "intrus": "acpc-003",
+    "explication": "Black Rockfish vient de Animal Crossing: Pocket Camp ; les trois autres objets viennent de Genshin Impact."
+  },
+  {
+    "numero": 34,
+    "difficulte": "expert",
+    "jeu": "Minecraft",
+    "jeuIntrus": "Blasphemous",
+    "theme": "Pixel art",
+    "objets": [
+      "totem-of-undying",
+      "spyglass",
+      "recovery-compass"
+    ],
+    "intrus": "frozen-olive",
+    "explication": "Frozen Olive vient de Blasphemous ; les trois autres objets viennent de Minecraft."
+  },
+  {
+    "numero": 35,
+    "difficulte": "expert",
+    "jeu": "Mario Kart World",
+    "jeuIntrus": "Metroid Prime 2: Echoes",
+    "theme": "Illustré",
+    "objets": [
+      "super-horn",
+      "spiny-shell",
+      "boomerang-flower"
+    ],
+    "intrus": "morph-ball-bomb",
+    "explication": "Morph Ball Bomb vient de Metroid Prime 2: Echoes ; les trois autres objets viennent de Mario Kart World."
+  },
+  {
+    "numero": 36,
+    "difficulte": "intermediaire",
+    "jeu": "World of Warcraft",
+    "jeuIntrus": "Guild Wars 2",
+    "theme": "Icône carrée",
+    "objets": [
+      "thorium-ore",
+      "bolt-of-runecloth",
+      "bolt-of-mageweave"
+    ],
+    "intrus": "orichalcum-ore",
+    "explication": "Minerai d'orichalque vient de Guild Wars 2 ; les trois autres objets viennent de World of Warcraft."
+  },
+  {
+    "numero": 37,
+    "difficulte": "expert",
+    "jeu": "The Legend of Zelda: Majora's Mask 3D",
+    "jeuIntrus": "Pokémon GO",
+    "theme": "Illustré",
+    "objets": [
+      "bunny-hood",
+      "blast-mask",
+      "mask-of-scents"
+    ],
+    "intrus": "go-lucky-egg",
+    "explication": "Œuf Chance vient de Pokémon GO ; les trois autres objets viennent de The Legend of Zelda: Majora's Mask 3D."
+  },
+  {
+    "numero": 38,
+    "difficulte": "expert",
+    "jeu": "Hades",
+    "jeuIntrus": "Path of Exile",
+    "theme": "Illustré",
+    "objets": [
+      "old-spiked-collar",
+      "pierced-butterfly",
+      "bone-hourglass"
+    ],
+    "intrus": "valyrium",
+    "explication": "Valyrium vient de Path of Exile ; les trois autres objets viennent de Hades."
+  },
+  {
+    "numero": 39,
+    "difficulte": "facile",
+    "jeu": "Genshin Impact",
+    "jeuIntrus": "Elden Ring",
+    "theme": "Illustré",
+    "objets": [
+      "sweet-flower",
+      "genshin-cecilia",
+      "genshin-baie-crochet"
+    ],
+    "intrus": "trinas-lily",
+    "explication": "Trina's Lily vient de Elden Ring ; les trois autres objets viennent de Genshin Impact."
+  },
+  {
+    "numero": 40,
+    "difficulte": "facile",
+    "jeu": "Don't Starve",
+    "jeuIntrus": "The Battle Cats",
+    "theme": "Illustré",
+    "objets": [
+      "pierogi",
+      "thulecite",
+      "gears"
+    ],
+    "intrus": "battlecats-004",
+    "explication": "Objet vient de The Battle Cats ; les trois autres objets viennent de Don't Starve."
+  }
+]

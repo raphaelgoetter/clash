@@ -6,19 +6,22 @@
 // catalogue. Destructif, à utiliser avec
 // précaution une fois le jeu en production.
 //
-// Usage : node jeux/scripts/resetTrivia.js [--geek]   (--geek : Trivia Geek)
+// Usage : node jeux/scripts/resetTrivia.js [--geek | --intrus]
+//   (--geek : Trivia Geek, --intrus : Intrus de l'inventaire)
 
 import "../env.js";
 
 import { resetGame as resetTrivia } from "../services/trivia.js";
 import { resetGame as resetTriviaGeek } from "../services/triviageek.js";
+import { resetGame as resetIntrus } from "../services/intrus.js";
 
 const GEEK = process.argv.includes("--geek");
-const LABEL = GEEK ? "Trivia Geek" : "Trivia";
+const INTRUS = process.argv.includes("--intrus");
+const LABEL = INTRUS ? "Intrus de l'inventaire" : GEEK ? "Trivia Geek" : "Trivia";
 
 (async () => {
   try {
-    await (GEEK ? resetTriviaGeek : resetTrivia)();
+    await (INTRUS ? resetIntrus : GEEK ? resetTriviaGeek : resetTrivia)();
     console.log(`Jeu ${LABEL} remis à zéro : plus de manche active, participants et archives de saison effacés.`);
   } catch (err) {
     console.error("Échec de la remise à zéro :", err.message);

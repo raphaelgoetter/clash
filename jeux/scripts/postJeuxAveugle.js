@@ -45,6 +45,8 @@ import { postJusteCarte, postSeasonRecap as postJusteCarteSeasonRecap } from "..
 import { postBlindRoyale, postSeasonRecap as postBlindRoyaleSeasonRecap } from "../discord/handlers/blindroyale.js";
 import { alreadyPostedThisWeek as triviaGeekAlreadyPostedThisWeek } from "../services/triviageek.js";
 import { postTriviaGeek, postSeasonRecap as postTriviaGeekSeasonRecap } from "../discord/handlers/triviageek.js";
+import { alreadyPostedThisWeek as intrusAlreadyPostedThisWeek } from "../services/intrus.js";
+import { postIntrus, postSeasonRecap as postIntrusSeasonRecap } from "../discord/handlers/intrus.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
@@ -61,14 +63,26 @@ const ALREADY_POSTED_BY_GAME = {
   lajustecarte: justeCarteAlreadyPostedThisWeek,
   blindroyale: blindRoyaleAlreadyPostedThisWeek,
   triviageek: triviaGeekAlreadyPostedThisWeek,
+  intrus: intrusAlreadyPostedThisWeek,
 };
-const POST_BY_GAME = { lajustecarte: postJusteCarte, blindroyale: postBlindRoyale, triviageek: postTriviaGeek };
+const POST_BY_GAME = {
+  lajustecarte: postJusteCarte,
+  blindroyale: postBlindRoyale,
+  triviageek: postTriviaGeek,
+  intrus: postIntrus,
+};
 const RECAP_BY_GAME = {
   lajustecarte: postJusteCarteSeasonRecap,
   blindroyale: postBlindRoyaleSeasonRecap,
   triviageek: postTriviaGeekSeasonRecap,
+  intrus: postIntrusSeasonRecap,
 };
-const LABEL_BY_GAME = { lajustecarte: "La Juste Carte", blindroyale: "Blind Royale", triviageek: "Trivia Geek" };
+const LABEL_BY_GAME = {
+  lajustecarte: "La Juste Carte",
+  blindroyale: "Blind Royale",
+  triviageek: "Trivia Geek",
+  intrus: "Intrus de l'inventaire",
+};
 
 (async () => {
   try {
