@@ -20,7 +20,7 @@
 //
 // Contrairement à postJeuxDeLettres.js (Anagram/Pêle-mêle, samedi, 2
 // créneaux aléatoires), pas de planification multi-créneaux ici : Frame a
-// toujours eu un créneau fixe unique (mercredi 08h UTC), simple gating jour.
+// toujours eu un créneau fixe unique (mercredi 18h UTC), simple gating jour.
 //
 // Usage :
 //   node jeux/scripts/postJeuxCulture.js               — poste sur le salon de test

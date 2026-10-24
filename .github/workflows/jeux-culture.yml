@@ -4,9 +4,9 @@ permissions:
   contents: read
 
 on:
-  # Mercredi 08:00 UTC
+  # Mercredi 18:00 UTC (19h à Paris en hiver), comme les autres groupes
   schedule:
-    - cron: "0 8 * * 3"
+    - cron: "0 18 * * 3"
   workflow_dispatch: {}
 
 jobs:

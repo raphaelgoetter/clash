@@ -38,11 +38,13 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 
 | Groupe | Pair / impair | Publication (UTC) | Workflow | Orchestrateur | Service | npm |
 | --- | --- | --- | --- | --- | --- | --- |
-| 🎬 Jeux de culture | Frame / Trivia | mercredi 08:00 (`0 8 * * 3`) | `jeux-culture.yml` | `jeux/scripts/postJeuxCulture.js` | `jeuxculture.js` | `culture:*` |
+| 🎬 Jeux de culture | Frame / Trivia | mercredi 18:00 (`0 18 * * 3`) | `jeux-culture.yml` | `jeux/scripts/postJeuxCulture.js` | `jeuxculture.js` | `culture:*` |
 | 🔤 Jeux de lettres | Anagram / Pêle-mêle | samedi 18:00 (`0 18 * * 6`) | `jeux-de-lettres.yml` | `postJeuxDeLettres.js` | `jeuxdelettres.js` | `lettres:*` |
 | 🎨 Jeux visuels | Zoom carte / Palette | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml` | `postJeuxVisuels.js` | `jeuxvisuels.js` | `visuels:*` |
 | 🙈 Jeux à l'aveugle | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`) | `jeux-aveugle.yml` | `postJeuxAveugle.js` | `jeuxaveugle.js` | `aveugle:*` |
 | ⚔️ Clash (à partir de la refonte) | Trivia / Zoom carte | mardi 18:00 (`0 18 * * 2`) | `jeux-clash.yml` | `postJeuxClash.js` | `jeuxclash.js` | `clash:*` |
+
+Tous les groupes publient à 18:00 UTC, soit 19h à Paris en hiver et 20h à l'heure d'été (les crons GitHub sont en UTC).
 
 ### Refonte hors Clash Royale (bascule par groupe)
 
@@ -160,7 +162,7 @@ Les scripts propres à un jeu sont listés dans sa section.
 
 ## Frame (devine le film)
 
-Jeux de culture (en alternance avec Trivia), mercredi 08:00 UTC. Une image de film, les joueurs devinent le titre. Service `jeux/services/frames.js`, handler `jeux/discord/handlers/frames.js`.
+Jeux de culture (en alternance avec Trivia), mercredi 18:00 UTC. Une image de film, les joueurs devinent le titre. Service `jeux/services/frames.js`, handler `jeux/discord/handlers/frames.js`.
 
 ### Barème
 
@@ -243,7 +245,7 @@ Groupe « Jeux de mots » (samedi 18:00 UTC) à partir de la refonte, en alterna
 
 ## Synopsis éclaté (devine le film ou la série à partir du pire synopsis)
 
-Groupe « Ciné-club » (mercredi 08:00 UTC) à partir de la refonte, en alternance avec Frame. Service `jeux/services/synopsis.js`, handler `jeux/discord/handlers/synopsis.js`, même parcours que Frame (Modal de réponse, deux indices, DM de fin de manche avec score de la manche et total de la saison, sans rang d'arrivée). Bannière fixe `frontend/public/images/synopsis/synopsis-game.webp`.
+Groupe « Ciné-club » (mercredi 18:00 UTC) à partir de la refonte, en alternance avec Frame. Service `jeux/services/synopsis.js`, handler `jeux/discord/handlers/synopsis.js`, même parcours que Frame (Modal de réponse, deux indices, DM de fin de manche avec score de la manche et total de la saison, sans rang d'arrivée). Bannière fixe `frontend/public/images/synopsis/synopsis-game.webp`.
 
 - Catalogue `jeux/data/synopsis/synopsis.json` : `numero` (= position), `variante` (décrite dans le post par une phrase, `VARIANTE_PHRASES` de `handlers/synopsis.js`), `synopsis`, `indice1` (année de sortie du film ou de première diffusion de la série), `indice2`, `titre` (affiché à la résolution), `accepte`, `refuse?`. Parcouru dans l'ordre du fichier, en boucle ; `gameId` = `s` + numéro sur 3 chiffres. Ne jamais réordonner un catalogue déjà joué, ajouter en fin.
 - `indice2` : réalisateur (premier crédité) pour un film, studio pour un film d'animation (Pixar, DreamWorks, Studio Ghibli), « Série » pour toute série, animée comprise. Libellé affiché : « Réalisation ».

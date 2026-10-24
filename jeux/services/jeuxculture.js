@@ -4,7 +4,7 @@
 // "Mini-jeux de Culture" : résolution de quel jeu est actif pour une saison
 // donnée. Même position que jeuxvisuels.js (pas de planification
 // hebdomadaire à dupliquer ici : Frame a toujours eu un créneau fixe unique,
-// mercredi 08h UTC — le gating jour/heure reste géré directement par
+// mercredi 18h UTC, aligné sur les autres groupes — le gating jour/heure reste géré directement par
 // jeux/scripts/postJeuxCulture.js, seul consommateur destiné à la production,
 // remplace .github/workflows/frames.yml).
 //
