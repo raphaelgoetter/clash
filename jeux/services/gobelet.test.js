@@ -60,7 +60,7 @@ async function main() {
   assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 30 });
   assert.deepStrictEqual(computeBestCombination([1, 3, 5, 5, 3]), { category: "Impairs", points: 30 });
   assert.deepStrictEqual(computeBestCombination([3, 3, 3, 3, 6]), { category: "Carré", points: 35 });
-  assert.deepStrictEqual(computeBestCombination([3, 3, 3, 2, 2]), { category: "Full", points: 30 });
+  assert.deepStrictEqual(computeBestCombination([3, 3, 3, 2, 2]), { category: "Full", points: 35 });
   assert.deepStrictEqual(computeBestCombination([1, 1, 1, 1, 2]), { category: "Somme ≤ 7", points: 50 }); // somme=6
   // Petite Suite (16/09, révisée) : 4 valeurs consécutives parmi les 5 dés
   // (pas forcément les 5 dés) — ici 1-2-3-4, le doublon de 4 ne gêne pas.
@@ -75,7 +75,7 @@ async function main() {
   // priorité de la liste ──
   // 6,6,6,6,5 : Carré (35) ET somme=29 >= 28 (50) -> on retient 50.
   assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 5]), { category: "Somme ≥ 28", points: 50 });
-  // 1,2,1,1,2 : Full (30) ET somme=7 <= 7 (50) -> on retient 50 (cas réel
+  // 1,2,1,1,2 : Full (35) ET somme=7 <= 7 (50) -> on retient 50 (cas réel
   // signalé le 16/09, à l'origine de la révision du barème).
   assert.deepStrictEqual(computeBestCombination([1, 2, 1, 1, 2]), { category: "Somme ≤ 7", points: 50 });
   // 1,2,3,4,5 et 2,3,4,5,6 : 5 dés consécutifs -> Grande Suite (40) l'emporte
@@ -87,8 +87,8 @@ async function main() {
   // Une vraie combinaison l'emporte toujours, la somme brute ne compte plus :
   // 6,6,5,5,4 (somme 26) -> Double quelconque.
   assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Double quelconque", points: 10 });
-  // 4,4,4,2,2 : Full (30) ET 5 dés pairs (30) -> égalité, Full (plus rare) retenu.
-  assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 30 });
+  // 4,4,4,2,2 : Full (35) ET 5 dés pairs (30) -> Full.
+  assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 35 });
   // Régression (16/09, capture d'écran) : un Brelan de 6 (somme=22, plus
   // que les 20 pts du Brelan) doit rester étiqueté "Brelan", jamais "Aucune
   // combinaison" seulement parce que la somme brute serait plus élevée — la
@@ -182,7 +182,7 @@ async function main() {
   assert.deepStrictEqual([rien.status, rien.category, rien.points], ["termine", NO_COMBINATION, 0]);
   // Choix du joueur : Full plutôt que Somme ≥ 28 ; choix invalide refusé.
   const enChoix = { dice: full, status: "choix" };
-  assert.deepStrictEqual(pickChoice(enChoix, [], "Full"), { dice: full, status: "termine", category: "Full", points: 30 });
+  assert.deepStrictEqual(pickChoice(enChoix, [], "Full"), { dice: full, status: "termine", category: "Full", points: 35 });
   assert.strictEqual(pickChoice(enChoix, ["Full"], "Full"), null);
   assert.strictEqual(pickChoice({ ...enChoix, status: "termine" }, [], "Full"), null);
   // Main en attente de choix à la clôture : combinaison la plus payante (hors Joker).
