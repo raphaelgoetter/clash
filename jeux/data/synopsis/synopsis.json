@@ -2,16 +2,12 @@
   {
     "numero": 1,
     "variante": "Enfant",
-    "synopsis": "C'est un papa qui veut jamais que son fils s'éloigne, et justement le fils il s'éloigne. Alors le papa il fait un très très long voyage, et le fils il habitait dans une boîte en verre chez un docteur des dents, avec plein de copains bizarres.",
+    "synopsis": "C'est un papa il veut jamais que son fils s'éloigne, et justement le fils il s'éloigne. Alors le papa il fait un très très long voyage, et le fils il habitait dans une boîte en verre chez un docteur des dents, avec plein de copains bizarres.",
     "indice1": "2003",
     "indice2": "Pixar",
     "titre": "Le Monde de Nemo (Finding Nemo)",
-    "accepte": [
-      "nemo"
-    ],
-    "refuse": [
-      "dory"
-    ]
+    "accepte": ["nemo"],
+    "refuse": ["dory"]
   },
   {
     "numero": 2,
@@ -20,11 +16,7 @@
     "indice1": "1990",
     "indice2": "Série",
     "titre": "Le Prince de Bel-Air (The Fresh Prince of Bel-Air)",
-    "accepte": [
-      "bel air",
-      "belair",
-      "fresh prince"
-    ]
+    "accepte": ["bel air", "belair", "fresh prince"]
   },
   {
     "numero": 3,
@@ -33,10 +25,7 @@
     "indice1": "2001",
     "indice2": "Studio Ghibli",
     "titre": "Le Voyage de Chihiro (Spirited Away)",
-    "accepte": [
-      "chihiro",
-      "spirited away"
-    ]
+    "accepte": ["chihiro", "spirited away"]
   },
   {
     "numero": 4,
@@ -45,9 +34,7 @@
     "indice1": "2012",
     "indice2": "Gary Ross",
     "titre": "Hunger Games (The Hunger Games)",
-    "accepte": [
-      "hunger games"
-    ],
+    "accepte": ["hunger games"],
     "refuse": [
       "embrasement",
       "catching",
@@ -64,60 +51,44 @@
     "indice1": "2021",
     "indice2": "Série",
     "titre": "Arcane",
-    "accepte": [
-      "arcane"
-    ]
+    "accepte": ["arcane"]
   },
   {
     "numero": 6,
     "variante": "Djeunz",
-    "synopsis": "Wesh, un industriel trop relou part au mariage de sa fille et se retrouve embarqué dans une embrouille avec un opposant politique étranger. À un moment il tombe carrément dans une cuve de chewing-gum, frère, tout collant.",
+    "synopsis": "Wesh, un patron raciste de ouf, pour échapper à des tueurs il doit se déguiser en exactement ce qu'il déteste. Le pire c'est que ça lui va trop bien, frère.",
     "indice1": "1973",
     "indice2": "Gérard Oury",
     "titre": "Les Aventures de Rabbi Jacob",
-    "accepte": [
-      "rabbi jacob"
-    ]
+    "accepte": ["rabbi jacob"]
   },
   {
     "numero": 7,
     "variante": "Ultra-littéral",
-    "synopsis": "Deux hommes parlent du nom des hamburgers en France avant d'aller au travail. Plus tard, un homme participe à un concours de danse. Un autre lit dans les toilettes, et ça se passe mal.",
+    "synopsis": "Deux hommes parlent littéralement de hamburgers avant d'aller au travail. Plus tard, un homme participe à un concours de danse. Un autre lit dans les toilettes, et ça se passe mal.",
     "indice1": "1994",
     "indice2": "Quentin Tarantino",
     "titre": "Pulp Fiction",
-    "accepte": [
-      "pulp fiction"
-    ]
+    "accepte": ["pulp fiction"]
   },
   {
     "numero": 8,
     "variante": "Leboncoin",
-    "synopsis": "Vends lot de faire-part pour un mariage dans un château au bord d'une rivière. L'orchestre jouait très bien la dernière chanson. Les invités venus du Nord n'ont laissé aucun avis.",
+    "synopsis": "Vends robe de mariée, portée une seule fois. Banquet dans un château, mais dès que l'orchestre a lancé son morceau, les invités venus du Nord ne sont jamais repartis.",
     "indice1": "2011",
     "indice2": "Série",
     "titre": "Game of Thrones",
-    "accepte": [
-      "game of thrones",
-      "trone de fer"
-    ]
+    "accepte": ["game of thrones", "trone de fer"]
   },
   {
     "numero": 9,
     "variante": "Avis 1 étoile",
-    "synopsis": "Séjour sur une île de la côte Est pour la fête nationale. Plages maintenues ouvertes malgré les rumeurs, le maire porte une veste à ancres et assure que tout va bien. Notre excursion en bateau de pêche s'est très mal terminée. ⭐",
+    "synopsis": "Plages maintenues ouvertes pour le 4 juillet malgré les incidents, le maire y tenait. Notre sortie en mer avec un pêcheur du coin s'est terminée sans le bateau. ⭐",
     "indice1": "1975",
     "indice2": "Steven Spielberg",
     "titre": "Les Dents de la mer (Jaws)",
-    "accepte": [
-      "dents de la mer",
-      "jaws"
-    ],
-    "refuse": [
-      "2",
-      "3",
-      "4"
-    ]
+    "accepte": ["dents de la mer", "jaws"],
+    "refuse": ["2", "3", "4"]
   },
   {
     "numero": 10,
@@ -126,23 +97,16 @@
     "indice1": "2005",
     "indice2": "Série",
     "titre": "Kaamelott",
-    "accepte": [
-      "kaamelott",
-      "kamelott",
-      "kaamelot"
-    ]
+    "accepte": ["kaamelott", "kamelott", "kaamelot"]
   },
   {
     "numero": 11,
     "variante": "Leboncoin",
-    "synopsis": "Vends petit marteau de géologue, très usé, et grande affiche d'actrice des années 40. Le mur derrière l'affiche est fourni dans l'état.",
-    "indice1": "1994",
-    "indice2": "Frank Darabont",
-    "titre": "Les Évadés (The Shawshank Redemption)",
-    "accepte": [
-      "evades",
-      "shawshank"
-    ]
+    "synopsis": "Vends porte en bois, flotte parfaitement, une place seulement (on a essayé à deux). Croquis au fusain d'une dame avec un collier offert en prime.",
+    "indice1": "1997",
+    "indice2": "James Cameron",
+    "titre": "Titanic",
+    "accepte": ["titanic"]
   },
   {
     "numero": 12,
@@ -151,10 +115,7 @@
     "indice1": "2016",
     "indice2": "Série",
     "titre": "The Crown",
-    "accepte": [
-      "the crown",
-      "crown"
-    ]
+    "accepte": ["the crown", "crown"]
   },
   {
     "numero": 13,
@@ -163,44 +124,27 @@
     "indice1": "1993",
     "indice2": "Jean-Marie Poiré",
     "titre": "Les Visiteurs",
-    "accepte": [
-      "visiteurs"
-    ],
-    "refuse": [
-      "couloirs",
-      "revolution",
-      "amerique"
-    ]
+    "accepte": ["visiteurs"],
+    "refuse": ["couloirs", "revolution", "amerique"]
   },
   {
     "numero": 14,
     "variante": "Ultra-littéral",
-    "synopsis": "Un verre d'eau tremble sur le tableau de bord d'une voiture. Un avocat se réfugie dans des toilettes. Plus tard, une fillette regarde trembler une gelée verte dans sa cuillère.",
+    "synopsis": "Un homme assis sur des toilettes. Une fillette fixe sa cuillère de gelée qui tremble. Deux enfants se cachent derrière un plan de travail en inox.",
     "indice1": "1993",
     "indice2": "Steven Spielberg",
     "titre": "Jurassic Park",
-    "accepte": [
-      "jurassic park"
-    ],
-    "refuse": [
-      "monde perdu",
-      "lost world",
-      "world",
-      "iii",
-      "3"
-    ]
+    "accepte": ["jurassic park"],
+    "refuse": ["monde perdu", "lost world", "world", "iii", "3"]
   },
   {
     "numero": 15,
     "variante": "Djeunz",
-    "synopsis": "Wesh, une team de potes part au ski, y'en a un qui drague toutes les meufs et se prend que des vents. Ils se paument en hors-piste et un vieux du coin leur sert une liqueur chelou, frère. Éclatés au sol.",
+    "synopsis": "Wesh, la même bande de potes repart en vacances ensemble, alors que la dernière fois ça avait fini en drama. Cette fois ils ont lâché les tongs pour des grosses chaussures, frère.",
     "indice1": "1979",
     "indice2": "Patrice Leconte",
     "titre": "Les Bronzés font du ski",
-    "accepte": [
-      "bronzes font du ski",
-      "font du ski"
-    ]
+    "accepte": ["bronzes font du ski", "font du ski"]
   },
   {
     "numero": 16,
@@ -209,20 +153,16 @@
     "indice1": "1989",
     "indice2": "Série",
     "titre": "Les Simpson (The Simpsons)",
-    "accepte": [
-      "simpson"
-    ]
+    "accepte": ["simpson"]
   },
   {
     "numero": 17,
     "variante": "Figurant",
-    "synopsis": "Pendant trois mois, on m'a fait recopier les plans d'un palais parce que l'architecte avait parié sur les délais, et des touristes venus du Nord ont distribué aux ouvriers une boisson qui a réglé tous les problèmes de productivité.",
+    "synopsis": "Je suis ouvrier sur un chantier au bord du Nil. Notre architecte avait trois mois pour tout finir. Il a fait venir des consultants de très loin, et franchement ils nous ont boostés.",
     "indice1": "2002",
     "indice2": "Alain Chabat",
     "titre": "Astérix & Obélix : Mission Cléopâtre",
-    "accepte": [
-      "mission cleopatre"
-    ]
+    "accepte": ["mission cleopatre"]
   },
   {
     "numero": 18,
@@ -231,12 +171,8 @@
     "indice1": "2010",
     "indice2": "Série",
     "titre": "The Walking Dead",
-    "accepte": [
-      "walking dead"
-    ],
-    "refuse": [
-      "fear"
-    ]
+    "accepte": ["walking dead"],
+    "refuse": ["fear"]
   },
   {
     "numero": 19,
@@ -245,22 +181,16 @@
     "indice1": "1982",
     "indice2": "Steven Spielberg",
     "titre": "E.T. l'extra-terrestre (E.T. the Extra-Terrestrial)",
-    "accepte": [
-      "et l extra",
-      "extra terrestre",
-      "extraterrestre"
-    ]
+    "accepte": ["et l extra", "extra terrestre", "extraterrestre"]
   },
   {
     "numero": 20,
     "variante": "Figurant",
-    "synopsis": "Je suis un aviateur anglais. Mon parachute a atterri sur la nacelle d'un peintre, celui d'un collègue au zoo, et c'est ce peintre, avec un chef d'orchestre, qui nous a fait traverser la France occupée jusqu'aux planeurs. En passant par des bains turcs.",
+    "synopsis": "Je suis aviateur anglais, abattu au-dessus de Paris. Mon rendez-vous de secours était aux bains turcs, et c'est un peintre en bâtiment qui m'a ramené jusqu'en zone libre.",
     "indice1": "1966",
     "indice2": "Gérard Oury",
     "titre": "La Grande Vadrouille",
-    "accepte": [
-      "grande vadrouille"
-    ]
+    "accepte": ["grande vadrouille"]
   },
   {
     "numero": 21,
@@ -269,11 +199,7 @@
     "indice1": "2008",
     "indice2": "Dany Boon",
     "titre": "Bienvenue chez les Ch'tis",
-    "accepte": [
-      "chtis",
-      "ch tis",
-      "chez les ch"
-    ]
+    "accepte": ["chtis", "ch tis", "chez les ch"]
   },
   {
     "numero": 22,
@@ -282,43 +208,34 @@
     "indice1": "1998",
     "indice2": "Peter Weir",
     "titre": "The Truman Show",
-    "accepte": [
-      "truman"
-    ]
+    "accepte": ["truman"]
   },
   {
     "numero": 23,
     "variante": "Figurant",
-    "synopsis": "Je suis le gérant d'un immeuble de New York. Un appartement à loyer bloqué y est sous-loué illégalement depuis des années par la petite-fille de l'ancienne locataire. Les voisins d'en face traversent le couloir pour vider son frigo, et un soir de fête, l'un d'eux s'est retrouvé avec une dinde sur la tête.",
+    "synopsis": "Je suis le gérant d'un immeuble de New York. Les voisins d'en face traversent le couloir pour vider son frigo, et un soir de fête, l'un d'eux s'est retrouvé avec une dinde sur la tête.",
     "indice1": "1994",
     "indice2": "Série",
     "titre": "Friends",
-    "accepte": [
-      "friends"
-    ]
+    "accepte": ["friends"]
   },
   {
     "numero": 24,
     "variante": "Avis 1 étoile",
-    "synopsis": "Établissement repris par l'ancien commis aux poubelles, qui ne savait pas cuisiner il y a un mois. Toute l'équipe en cuisine a démissionné en même temps. Le service était pourtant d'une rapidité inexplicable. ⭐",
+    "synopsis": "Le seul critique gastronomique qui a aimé y a perdu sa réputation, puis a investi dans le bistrot suivant. L'inspection sanitaire a tout fermé, et franchement on comprend. ⭐",
     "indice1": "2007",
     "indice2": "Pixar",
     "titre": "Ratatouille",
-    "accepte": [
-      "ratatouille"
-    ]
+    "accepte": ["ratatouille"]
   },
   {
     "numero": 25,
     "variante": "Ultra-littéral",
-    "synopsis": "Huit personnes portent la même combinaison et passent plusieurs jours dans un grand bâtiment. Des machines y tournent sans interruption. Pendant ce temps, un homme à lunettes reste dans un hangar et téléphone beaucoup.",
+    "synopsis": "Huit personnes portent la même combinaison et passent plusieurs jours dans un grand bâtiment. Pendant ce temps, un homme à lunettes reste dans un hangar et téléphone beaucoup.",
     "indice1": "2017",
     "indice2": "Série",
     "titre": "La Casa de papel",
-    "accepte": [
-      "casa de papel",
-      "money heist"
-    ]
+    "accepte": ["casa de papel", "money heist"]
   },
   {
     "numero": 26,
@@ -327,40 +244,26 @@
     "indice1": "1994",
     "indice2": "Alain Berbérian",
     "titre": "La Cité de la peur",
-    "accepte": [
-      "cite de la peur"
-    ]
+    "accepte": ["cite de la peur"]
   },
   {
     "numero": 27,
     "variante": "Recette de cuisine",
-    "synopsis": "Recouvrez intégralement votre plan de travail de film plastique. Prélevez une goutte de sang sur une lamelle de verre, à conserver dans une boîte en bois. Emballez le reste dans des sacs-poubelle et jetez au large depuis votre bateau. Le lendemain, apportez des beignets au bureau.",
+    "synopsis": "Bâchez entièrement la pièce. Conservez une goutte de sang sur une lamelle de verre, jetez le reste au large. Le lendemain, n'oubliez pas les beignets pour les collègues.",
     "indice1": "2006",
     "indice2": "Série",
     "titre": "Dexter",
-    "accepte": [
-      "dexter"
-    ]
+    "accepte": ["dexter"]
   },
   {
     "numero": 28,
     "variante": "Leboncoin",
-    "synopsis": "Vends miroir magique, très bon état, présente des célibataires sur demande. Le précédent propriétaire n'a pas fait le bon choix.",
+    "synopsis": "Vends miroir magique, fait aussi agence matrimoniale (trois candidates au choix). L'ancien propriétaire, un monsieur de petite taille, a pris la rousse mais n'a pas survécu au mariage.",
     "indice1": "2001",
     "indice2": "DreamWorks",
     "titre": "Shrek",
-    "accepte": [
-      "shrek"
-    ],
-    "refuse": [
-      "2",
-      "3",
-      "4",
-      "troisieme",
-      "quatre",
-      "chat potte",
-      "puss"
-    ]
+    "accepte": ["shrek"],
+    "refuse": ["2", "3", "4", "troisieme", "quatre", "chat potte", "puss"]
   },
   {
     "numero": 29,
@@ -369,36 +272,26 @@
     "indice1": "1963",
     "indice2": "Georges Lautner",
     "titre": "Les Tontons flingueurs",
-    "accepte": [
-      "tontons flingueurs"
-    ]
+    "accepte": ["tontons flingueurs"]
   },
   {
     "numero": 30,
     "variante": "Djeunz",
-    "synopsis": "Frérot, on est en 1983, trois gamins ils cherchent leur pote dans les bois en vélo, le shérif il déprime grave, et y'a une meuf qui parle presque pas mais qui fait voler une camionnette rien qu'en les regardant.",
+    "synopsis": "Frère, le shérif il passe sa vie dans la flemme depuis qu'il a perdu sa fille, et d'un coup il se met à bosser grave pour une daronne que toute la ville prend pour une folle.",
     "indice1": "2016",
     "indice2": "Série",
     "titre": "Stranger Things",
-    "accepte": [
-      "stranger things"
-    ]
+    "accepte": ["stranger things"]
   },
   {
     "numero": 31,
     "variante": "Commentaire sportif",
-    "synopsis": "Changement tactique en plein déménagement ! Les deux capitaines sont éjectées du poste de commandement et se perdent dans les archives et les îles s'effondrent une à une ! Il faudra le sacrifice d'un éléphant rose en barbe à papa pour rentrer au vestiaire.",
+    "synopsis": "Changement tactique en plein déménagement ! Les deux capitaines sont éjectées du poste de commandement et se perdent dans les archives et les îles s'effondrent une à une !",
     "indice1": "2015",
     "indice2": "Pixar",
     "titre": "Vice-Versa (Inside Out)",
-    "accepte": [
-      "vice versa",
-      "viceversa",
-      "inside out"
-    ],
-    "refuse": [
-      "2"
-    ]
+    "accepte": ["vice versa", "viceversa", "inside out"],
+    "refuse": ["2"]
   },
   {
     "numero": 32,
@@ -407,10 +300,7 @@
     "indice1": "2022",
     "indice2": "Série",
     "titre": "Mercredi (Wednesday)",
-    "accepte": [
-      "mercredi",
-      "wednesday"
-    ]
+    "accepte": ["mercredi", "wednesday"]
   },
   {
     "numero": 33,
@@ -419,15 +309,8 @@
     "indice1": "2006",
     "indice2": "Michel Hazanavicius",
     "titre": "OSS 117 : Le Caire, nid d'espions",
-    "accepte": [
-      "oss 117",
-      "oss117",
-      "nid d espions"
-    ],
-    "refuse": [
-      "rio",
-      "afrique"
-    ]
+    "accepte": ["oss 117", "oss117", "nid d espions"],
+    "refuse": ["rio", "afrique"]
   },
   {
     "numero": 34,
@@ -436,20 +319,16 @@
     "indice1": "2005",
     "indice2": "Série",
     "titre": "Prison Break",
-    "accepte": [
-      "prison break"
-    ]
+    "accepte": ["prison break"]
   },
   {
     "numero": 35,
     "variante": "Ultra-littéral",
-    "synopsis": "Une serveuse de Montmartre trouve une boîte en métal derrière un mur, la rend à son propriétaire, puis passe le reste du film à éviter de parler à un homme qui collectionne des photos déchirées.",
+    "synopsis": "Une jeune femme plonge la main dans un sac de légumes secs, puis fait des ricochets sur un canal. Dans son immeuble, un vieil homme repeint le même Renoir chaque année.",
     "indice1": "2001",
     "indice2": "Jean-Pierre Jeunet",
     "titre": "Le Fabuleux Destin d'Amélie Poulain",
-    "accepte": [
-      "amelie"
-    ]
+    "accepte": ["amelie"]
   },
   {
     "numero": 36,
@@ -458,9 +337,7 @@
     "indice1": "2013",
     "indice2": "Série",
     "titre": "Peaky Blinders",
-    "accepte": [
-      "peaky"
-    ]
+    "accepte": ["peaky"]
   },
   {
     "numero": 37,
@@ -469,24 +346,17 @@
     "indice1": "2019",
     "indice2": "Todd Phillips",
     "titre": "Joker",
-    "accepte": [
-      "joker"
-    ],
-    "refuse": [
-      "folie",
-      "folie a deux"
-    ]
+    "accepte": ["joker"],
+    "refuse": ["folie", "folie a deux"]
   },
   {
     "numero": 38,
     "variante": "Patch notes",
-    "synopsis": "v1.0 : le recrutement se fait désormais dans le métro, via une partie de cartes en papier. Le joueur n° 001 est en réalité l'administrateur. La récompense s'affiche dans une tirelire géante suspendue au plafond.",
+    "synopsis": "v1.0 : le recrutement se fait désormais dans le métro, via une partie de cartes en papier. Le joueur n°1 est en réalité l'administrateur. La récompense s'affiche dans une tirelire géante suspendue au plafond.",
     "indice1": "2021",
     "indice2": "Série",
     "titre": "Squid Game",
-    "accepte": [
-      "squid game"
-    ]
+    "accepte": ["squid game"]
   },
   {
     "numero": 39,
@@ -495,33 +365,25 @@
     "indice1": "2013",
     "indice2": "Martin Scorsese",
     "titre": "Le Loup de Wall Street (The Wolf of Wall Street)",
-    "accepte": [
-      "loup de wall street",
-      "wolf of wall street"
-    ]
+    "accepte": ["loup de wall street", "wolf of wall street"]
   },
   {
     "numero": 40,
     "variante": "Leboncoin",
-    "synopsis": "Vends tableau abstrait, réalisé en une après-midi par un débutant. Déjà acheté une fois par un ami du propriétaire, à un prix à cinq chiffres.",
+    "synopsis": "Vends tableau abstrait de mon aide à domicile, débutant complet. Un ami collectionneur l'a déjà payé une fortune sans connaître l'artiste.",
     "indice1": "2011",
     "indice2": "Olivier Nakache",
     "titre": "Intouchables",
-    "accepte": [
-      "intouchable"
-    ]
+    "accepte": ["intouchable"]
   },
   {
     "numero": 41,
     "variante": "Recette de cuisine",
-    "synopsis": "Prenez un réacteur, baissez la puissance beaucoup trop vite et retirez presque toutes les barres de contrôle. Poursuivez quand même le test jusqu'au bout, et appuyez sur le bouton d'arrêt d'urgence en fin de cuisson. Si le thermomètre indique 3,6 : pas terrible, mais pas dramatique.",
+    "synopsis": "Baissez le feu beaucoup trop vite, retirez presque toutes les barres et terminez le test coûte que coûte. Le thermomètre indique 3,6 ? Pas terrible, mais pas dramatique.",
     "indice1": "2019",
     "indice2": "Série",
     "titre": "Chernobyl",
-    "accepte": [
-      "chernobyl",
-      "tchernobyl"
-    ]
+    "accepte": ["chernobyl", "tchernobyl"]
   },
   {
     "numero": 42,
@@ -530,9 +392,7 @@
     "indice1": "1988",
     "indice2": "Studio Ghibli",
     "titre": "Mon voisin Totoro (My Neighbor Totoro)",
-    "accepte": [
-      "totoro"
-    ]
+    "accepte": ["totoro"]
   },
   {
     "numero": 43,
@@ -564,23 +424,16 @@
     "indice1": "2004",
     "indice2": "Série",
     "titre": "Lost : Les Disparus (Lost)",
-    "accepte": [
-      "lost"
-    ]
+    "accepte": ["lost"]
   },
   {
     "numero": 45,
     "variante": "Commentaire sportif",
-    "synopsis": "Le petit nouveau entre dans la tranchée, son ailier est tombé, il coupe son assistance de visée ! Le défenseur adverse au casque noir est dans sa roue, il arme… MAIS QUI VOILÀ ? Le contrebandier revient de nulle part ! Tir… DANS LE CONDUIT ! La sphère adverse explose, c'est historique !",
+    "synopsis": "Le petit nouveau coupe son assistance de visée, le casque noir est dans sa roue… MAIS QUI VOILÀ ? Le contrebandier ! Tir… DANS LE CONDUIT ! C'est historique !",
     "indice1": "1977",
     "indice2": "George Lucas",
     "titre": "La Guerre des étoiles (Star Wars)",
-    "accepte": [
-      "star wars",
-      "guerre des etoiles",
-      "nouvel espoir",
-      "new hope"
-    ],
+    "accepte": ["star wars", "guerre des etoiles", "nouvel espoir", "new hope"],
     "refuse": [
       "empire",
       "retour",
@@ -599,7 +452,7 @@
   {
     "numero": 46,
     "variante": "Recette de cuisine",
-    "synopsis": "Prenez un garçon qui n'a jamais fêté son anniversaire. Ajoutez un ami roux, une amie qui lève la main à chaque question, un chien à trois têtes et un professeur qui en cache un autre sous son turban. Laissez gratiner jusqu'à la fin de l'année scolaire.",
+    "synopsis": "Dressez un échiquier grandeur nature et sacrifiez le cavalier roux. Servez devant un miroir qui ne montre que ce qu'on désire.",
     "indice1": "2001",
     "indice2": "Chris Columbus",
     "titre": "Harry Potter à l'école des sorciers (Harry Potter and the Philosopher's Stone)",
@@ -630,24 +483,17 @@
     "indice1": "2004",
     "indice2": "Pixar",
     "titre": "Les Indestructibles (The Incredibles)",
-    "accepte": [
-      "indestructibles",
-      "incredibles"
-    ],
-    "refuse": [
-      "2"
-    ]
+    "accepte": ["indestructibles", "incredibles"],
+    "refuse": ["2"]
   },
   {
     "numero": 48,
     "variante": "Une phrase",
-    "synopsis": "Un homme d'entretien profite d'une vente aux enchères pour récupérer un bijou que son père était accusé d'avoir volé.",
+    "synopsis": "Vingt-cinq ans après, un fils venge son père avec, pour seul manuel, le livre que celui-ci lui avait offert.",
     "indice1": "2021",
     "indice2": "Série",
     "titre": "Lupin",
-    "accepte": [
-      "lupin"
-    ]
+    "accepte": ["lupin"]
   },
   {
     "numero": 49,
@@ -656,70 +502,53 @@
     "indice1": "1995",
     "indice2": "Mathieu Kassovitz",
     "titre": "La Haine",
-    "accepte": [
-      "la haine"
-    ]
+    "accepte": ["la haine"]
   },
   {
     "numero": 50,
     "variante": "Recette de cuisine",
-    "synopsis": "Prenez un agent rentré de six ans de mission à Damas et retirez-lui délicatement sa fausse identité. Il refuse ? Laissez-la-lui en cachette et faites-la réchauffer avec une universitaire syrienne croisée là-bas. Surveillez la cuisson : ça déborde sur toute la maison.",
+    "synopsis": "Prenez un agent rentré de six ans à Damas et retirez-lui sa fausse identité. Il la garde en cachette ? Laissez mijoter avec une universitaire syrienne, ça va déborder.",
     "indice1": "2015",
     "indice2": "Série",
     "titre": "Le Bureau des légendes",
-    "accepte": [
-      "bureau des legendes"
-    ]
+    "accepte": ["bureau des legendes"]
   },
   {
     "numero": 51,
     "variante": "Leboncoin",
-    "synopsis": "Vends tablettes de chocolat entamées, très appréciées d'un grand oiseau coloré. Collier traducteur pour chien inclus. Contact : un vieux monsieur grincheux, accompagné d'un scout.",
+    "synopsis": "Vends tablettes de chocolat entamées, très appréciées d'un grand oiseau coloré. Collier traducteur pour chien inclus. Contact : un vieux monsieur accompagné d'un scout.",
     "indice1": "2009",
     "indice2": "Pixar",
     "titre": "Là-haut (Up)",
-    "accepte": [
-      "la haut"
-    ]
+    "accepte": ["la haut"]
   },
   {
     "numero": 52,
-    "variante": "Patch notes",
-    "synopsis": "Bug de sauvegarde : la journée du 2 février se recharge en boucle. Contournement trouvé en apprenant le piano, la sculpture sur glace et la gentillesse.",
+    "variante": "Enfant",
+    "synopsis": "C'est un monsieur de la télé il est méchant avec tout le monde, alors il est puni : il peut plus partir d'une petite ville toute nulle. Il a le droit de partir seulement quand il devient gentil et qu'il sait jouer du piano.",
     "indice1": "1993",
     "indice2": "Harold Ramis",
     "titre": "Un jour sans fin (Groundhog Day)",
-    "accepte": [
-      "jour sans fin",
-      "groundhog"
-    ]
+    "accepte": ["jour sans fin", "groundhog"]
   },
   {
     "numero": 53,
     "variante": "Recette de cuisine",
-    "synopsis": "Faites revenir un chef d'entreprise du New Jersey chez une psychiatre. Ajoutez des canards qui quittent la piscine, quelques cigares et beaucoup de capicola. Laissez cuire six saisons, puis coupez brutalement le feu au moment de servir les rondelles d'oignon.",
+    "synopsis": "Faites revenir un patron du New Jersey chez la psy, à cause des canards partis de sa piscine. Laissez cuire six saisons et coupez le feu net sur les rondelles d'oignon.",
     "indice1": "1999",
     "indice2": "Série",
     "titre": "Les Soprano (The Sopranos)",
-    "accepte": [
-      "soprano"
-    ]
+    "accepte": ["soprano"]
   },
   {
     "numero": 54,
     "variante": "Figurant",
-    "synopsis": "Je suis un dinosaure en plastique. J'ai toujours eu peur de ne pas être assez effrayant, et le nouveau venu de l'anniversaire, lui, était persuadé de savoir voler.",
+    "synopsis": "Je suis une tirelire. Notre chef a été accusé d'avoir poussé un collègue par la fenêtre, et personne ne l'a cru. Moi, j'ai surtout retenu que le gamin d'à côté faisait sauter les gens.",
     "indice1": "1995",
     "indice2": "Pixar",
     "titre": "Toy Story",
-    "accepte": [
-      "toy story"
-    ],
-    "refuse": [
-      "2",
-      "3",
-      "4"
-    ]
+    "accepte": ["toy story"],
+    "refuse": ["2", "3", "4"]
   },
   {
     "numero": 55,
@@ -728,14 +557,8 @@
     "indice1": "2000",
     "indice2": "Ridley Scott",
     "titre": "Gladiator",
-    "accepte": [
-      "gladiator",
-      "gladiateur"
-    ],
-    "refuse": [
-      "2",
-      "ii"
-    ]
+    "accepte": ["gladiator", "gladiateur"],
+    "refuse": ["2", "ii"]
   },
   {
     "numero": 56,
@@ -744,14 +567,8 @@
     "indice1": "2009",
     "indice2": "James Cameron",
     "titre": "Avatar",
-    "accepte": [
-      "avatar"
-    ],
-    "refuse": [
-      "aang",
-      "eau",
-      "water"
-    ]
+    "accepte": ["avatar"],
+    "refuse": ["aang", "eau", "water"]
   },
   {
     "numero": 57,
@@ -760,20 +577,16 @@
     "indice1": "2019",
     "indice2": "Bong Joon-ho",
     "titre": "Parasite",
-    "accepte": [
-      "parasite"
-    ]
+    "accepte": ["parasite"]
   },
   {
     "numero": 58,
     "variante": "Recette de cuisine",
-    "synopsis": "Faites revenir un homme dont la femme vient de partir, bloquez-le dans son canapé et confiez le téléphone à son invité. Ajoutez un ancien ami, une maîtresse jalouse et un contrôleur du fisc. Servez froid, le dîner n'aura pas lieu.",
+    "synopsis": "Prenez un homme que sa femme vient de quitter et bloquez-lui le dos. Confiez son téléphone à l'invité du soir, qui appellera exactement les mauvaises personnes. Le dîner n'aura pas lieu.",
     "indice1": "1998",
     "indice2": "Francis Veber",
     "titre": "Le Dîner de cons",
-    "accepte": [
-      "diner de cons"
-    ]
+    "accepte": ["diner de cons"]
   },
   {
     "numero": 59,
@@ -782,11 +595,7 @@
     "indice1": "1997",
     "indice2": "Luc Besson",
     "titre": "Le Cinquième Élément",
-    "accepte": [
-      "cinquieme element",
-      "5e element",
-      "fifth element"
-    ]
+    "accepte": ["cinquieme element", "5e element", "fifth element"]
   },
   {
     "numero": 60,
@@ -795,9 +604,6 @@
     "indice1": "2008",
     "indice2": "Pixar",
     "titre": "WALL-E",
-    "accepte": [
-      "wall e",
-      "walle"
-    ]
+    "accepte": ["wall e", "walle"]
   }
 ]
