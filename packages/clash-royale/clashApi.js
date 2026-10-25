@@ -53,10 +53,8 @@ async function get(path, retries = 3, delayMs = 500) {
       err.retryAfter = res.headers.get("retry-after");
     }
 
-    if (
-      (res.status === 429 || [502, 503, 504].includes(res.status)) &&
-      attempt < retries
-    ) {
+    // 5xx : le proxy RoyaleAPI (Cloudflare) renvoie aussi des 500/520/525 transitoires
+    if ((res.status === 429 || res.status >= 500) && attempt < retries) {
       const backoff = delayMs * Math.pow(2, attempt);
       attempt += 1;
       await sleep(backoff);
