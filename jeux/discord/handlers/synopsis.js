@@ -58,7 +58,7 @@ const VARIANTE_PHRASES = {
   "Ultra-littéral": "On dirait que quelqu'un raconte uniquement ce qu'il voit à l'écran.",
   "Leboncoin": "On dirait une annonce Leboncoin.",
   "Avis 1 étoile": "On dirait un avis client à 1 étoile.",
-  "Recette de cuisine": "On dirait une recette de cuisine.",
+  "Gros titre": "On dirait un gros titre de journal.",
   "Patch notes": "On dirait les notes de mise à jour d'un jeu vidéo.",
 };
 

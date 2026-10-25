@@ -13,7 +13,7 @@ const VARIANTES = new Set([
   "Ultra-littéral",
   "Une phrase",
   "Leboncoin",
-  "Recette de cuisine",
+  "Gros titre",
   "Avis 1 étoile",
   "Figurant",
   "Patch notes",
