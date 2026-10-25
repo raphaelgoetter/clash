@@ -1281,23 +1281,9 @@ async function postWarSummary(
   }
 
   {
-    // Sans snapshot pré-reset, le total ne repose que sur la correction
-    // "backup" (snapshot.js, dans les 90 min suivant le reset) — celle-ci
-    // peut elle-même sous-compter (vu en prod le 27/08 : 125 au lieu de 200
-    // decks réels, cron pre-reset-snapshot.yml désynchronisé côté GitHub,
-    // voir CONTRIBUTING.md). Le total étant alors potentiellement faux sans
-    // qu'on puisse savoir de combien, on l'annonce comme indisponible
-    // plutôt que d'afficher un chiffre — même logique que "Points marqués"
-    // (hasFameData) qui omet déjà le champ en l'absence de donnée fiable.
-    const decksDataMissing = !dayEntry.snapshotPreResetTime;
-    let line;
-    if (decksDataMissing) {
-      line = "Données indisponibles (snapshot pré-reset manquant)";
-    } else {
-      line = `${fmt(totalDecks)} decks`;
-      if (prevDecks !== null && !raceWonBeforeDay)
-        line += ` ${fmtDelta(totalDecks - prevDecks)}`;
-    }
+    let line = `${fmt(totalDecks)} decks`;
+    if (prevDecks !== null && !raceWonBeforeDay)
+      line += ` ${fmtDelta(totalDecks - prevDecks)}`;
     fields.push({
       name: "<:cards:1493711279121104926> Decks joués",
       value: line,
@@ -1572,13 +1558,20 @@ async function postWarSummary(
     snapshotGapText = `Écart snapshot/reset : ${gapMin >= 0 ? "+" : ""}${gapMin} min`;
   }
 
+  // Sans snapshot pré-reset, aucun chiffre du jour n'est fiable : points
+  // estimés sur un snapshot horaire, decks et combats manquants sous-comptés
+  // d'une quantité inconnue. On n'affiche alors que l'incident de sauvegarde.
+  const preResetMissing = !dayEntry.snapshotPreResetTime;
+  const dayLabel = `Journée ${WAR_DAY_NUMBER[warDay]} (${WAR_DAY_FR[warDay]})`;
   const dailyEmbed = {
     title: `<:stats:1499284927894650950> ${clanName} · Résumé GDC`,
-    description: `Journée ${WAR_DAY_NUMBER[warDay]} (${WAR_DAY_FR[warDay]})`,
-    color,
-    fields,
+    description: preResetMissing
+      ? `${dayLabel}\n\n⚠️ Les données de cette journée n'ont pas pu être sauvegardées : résumé indisponible.`
+      : dayLabel,
+    color: preResetMissing ? 0x5865f2 : color,
+    fields: preResetMissing ? [] : fields,
     footer: {
-      text: `Constat fait le ${postDateFR}${snapshotGapText ? `\n${snapshotGapText}` : ""}`,
+      text: `Constat fait le ${postDateFR}${snapshotGapText && !preResetMissing ? `\n${snapshotGapText}` : ""}`,
     },
   };
 

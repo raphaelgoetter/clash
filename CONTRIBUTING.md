@@ -109,14 +109,14 @@ Horaires en UTC (`.github/workflows/`) ; Paris = UTC+2 en été, UTC+1 en hiver.
 | Workflow | Cron (UTC) | Scripts | Salon |
 | --- | --- | --- | --- |
 | `snapshot.yml` | toutes les heures | `snapshot`, `notify-members`, `cache` | membres (arrivées/départs) |
-| `pre-reset-snapshot.yml` | 07:30 ven, sam, dim, lun | `preResetSnapshot.js` | aucun |
+| `pre-reset-snapshot.yml` | 06:00 ven, sam, dim, lun | `preResetSnapshot.js` | aucun |
 | `war-summary.yml` | 10:05 tous les jours (poste ven à lun) | `notifyWarSummary.js`, `notifyClanStatus.js`, `notifyWarExploit.js` | membres, staff (`DISCORD_CHANNEL_STAFF`), général (`DISCORD_CHANNEL_GENERAL`) |
 | `last-seen.yml` | 10:08 tous les jours | `notifyLastSeen.js` | membres |
 | `gdc-launch.yml` | 10:30 jeudi | `notifyGdcLaunch.js` | membres |
 | `pre-war-summary.yml` | 14:00 mercredi | `pre-war-summary` | membres |
 | `rules.yml` | 14:00 mardi (poste le 1er mardi du mois) | `notifyRules.js` | membres |
 
-- ⚠️ Les triggers `schedule` de GitHub sont _best-effort_ : retards possibles de 75 à 90 min aux heures chargées (d'où le départ à 07:30 de `pre-reset-snapshot.yml`, qui dort ensuite jusqu'à T−2 min avant chaque reset).
+- ⚠️ Les triggers `schedule` de GitHub sont _best-effort_ : retards possibles de plus de 2 h aux heures chargées (d'où le départ à 06:00 de `pre-reset-snapshot.yml`, qui dort ensuite jusqu'à T−2 min avant chaque reset).
 - ⚠️ Un trigger `schedule` peut se désynchroniser silencieusement (aucun run, alors que `workflow_dispatch` fonctionne) : pousser un commit qui touche le workflow sur la branche par défaut force un resync ([community#185355](https://github.com/orgs/community/discussions/185355)). Une occurrence manquée de `pre-reset-snapshot.yml` est irrécupérable.
 
 ---
@@ -426,6 +426,7 @@ Objectif : ne pas pénaliser dans les listes d'échec les membres arrivés penda
 - Une fois la ligne franchie (`clan.finishTime` ≠ `19691231T235959.000Z`, dans `currentriverrace` ou `riverracelog` → `standings[].clan`), l'API compte encore les `decksUsed` mais **ne crédite plus aucun point** (`participants[].fame` figé).
 - Le bateau n'avançant qu'au reset, une `finishTime` à moins de 30 min du début d'une journée signifie que la course était gagnée avant elle (`isRaceFinishedBeforeDay()`, `notifyWarSummary.js`) : le résumé affiche « Non comptabilisés (victoire acquise) » sans delta de decks ni combats manquants ; le bilan hebdo exclut ces decks de « Points moyens / deck » et ces jours des duels manquants.
 - **Decks attendus d'une semaine** (`backend/services/warStandings.js`) : `countedWarDaysFromRaceLog()` (semaine terminée, `finishTime` vs `createdDate`) et `countedWarDaysFromCurrentRace()` (semaine en cours, `finishTime` vs `periodIndex`) donnent 1 à 4 journées comptées ; `maxDecks` = journées × 4 (16, ou 12 si la ligne est franchie au reset du J4) ; semaine complète si `decksUsed >= maxDecks` (`isFullWeek()`) ; `countedWeekDecks()` plafonne pour les ratios points/deck. Appliqué partout (fiche joueur, page clan, `/stats`, `/demote`, `/fail`, `/late`, `/chelem`). Colisée : pas de `finishTime`, toujours 16.
+- Résumé quotidien sans snapshot pré-reset (`snapshotPreResetTime` absent) : l'embed n'affiche aucun chiffre (ni points, ni decks, ni combats/duels manquants), seulement « Les données de cette journée n'ont pas pu être sauvegardées : résumé indisponible. » ; le bilan hebdo reste posté.
 - Garde-fou : un total journalier < 50 pts par deck joué (`MIN_FAME_PER_DECK`) est impossible hors course gagnée et s'affiche « Données indisponibles (valeur incohérente avec les decks joués) » ; la moyenne hebdo « Points moyens / deck » est masquée sous ce seuil.
 
 ### Clans
