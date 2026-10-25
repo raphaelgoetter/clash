@@ -42,47 +42,53 @@ async function main() {
 
   // ── computeBestCombination — chaque catégorie du barème ──
   // "Aucune combinaison" vaut 0 pt depuis la règle d'unicité (26/09).
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], [], { allowJoker: false }), { category: "Aucune combinaison", points: 0 });
+  // Depuis Tout différent (25/10), des dés sans doublon forment toujours une
+  // combinaison : "Aucune combinaison" suppose Tout différent déjà réalisé.
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], ["Tout différent"], { allowJoker: false }), { category: "Aucune combinaison", points: 0 });
   // Joker (27/09) : somme des dés (depuis le 02/10), seulement si rien
   // d'autre n'est libre — somme 17 -> 17 pts.
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Joker", points: 17 });
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], ["Joker"]), { category: "Aucune combinaison", points: 0 });
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], ["Tout différent"]), { category: "Joker", points: 17 });
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6], ["Tout différent", "Joker"]), { category: "Aucune combinaison", points: 0 });
   // Joker jamais préféré à une vraie combinaison libre, même moins payante.
   assert.deepStrictEqual(computeBestCombination([6, 6, 5, 4, 1]), { category: "Double quelconque", points: 10 });
-  // Juste total (27/09) : somme exacte de 21 -> 25 pts (bat Brelan 20).
-  assert.deepStrictEqual(computeBestCombination([5, 5, 5, 4, 2]), { category: "Juste total", points: 25 });
+  // Tout différent (25/10) : 5 valeurs distinctes, consécutives ou non.
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 5, 6]), { category: "Tout différent", points: 30 });
+  // Somme de 21 : plus de combinaison dédiée (Juste total retiré le 25/10).
+  assert.deepStrictEqual(computeBestCombination([5, 5, 5, 4, 2]), { category: "Brelan", points: 20 });
   assert.deepStrictEqual(computeBestCombination([2, 2, 3, 4, 6]), { category: "Double quelconque", points: 10 });
   assert.deepStrictEqual(computeBestCombination([2, 2, 2, 3, 6]), { category: "Brelan", points: 20 });
-  assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 25 });
-  assert.deepStrictEqual(computeBestCombination([1, 3, 5, 5, 3]), { category: "Impairs", points: 25 });
-  assert.deepStrictEqual(computeBestCombination([3, 3, 3, 3, 6]), { category: "Carré", points: 30 });
-  assert.deepStrictEqual(computeBestCombination([3, 3, 3, 2, 2]), { category: "Full", points: 40 });
-  assert.deepStrictEqual(computeBestCombination([1, 1, 1, 1, 2]), { category: "Somme ≤ 7", points: 45 }); // somme=6
+  assert.deepStrictEqual(computeBestCombination([2, 4, 4, 6, 2]), { category: "Pairs", points: 30 });
+  assert.deepStrictEqual(computeBestCombination([1, 3, 5, 5, 3]), { category: "Impairs", points: 30 });
+  assert.deepStrictEqual(computeBestCombination([3, 3, 3, 3, 6]), { category: "Carré", points: 35 });
+  assert.deepStrictEqual(computeBestCombination([3, 3, 3, 2, 2]), { category: "Full", points: 30 });
+  assert.deepStrictEqual(computeBestCombination([1, 1, 1, 1, 2]), { category: "Somme ≤ 7", points: 50 }); // somme=6
   // Petite Suite (16/09, révisée) : 4 valeurs consécutives parmi les 5 dés
-  // (pas forcément les 5 dés) — ici 1-2-3-4, le 6 ne prolonge pas la suite.
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 4, 6]), { category: "Petite Suite", points: 30 });
+  // (pas forcément les 5 dés) — ici 1-2-3-4, le doublon de 4 ne gêne pas.
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 4, 4]), { category: "Petite Suite", points: 25 });
+  // 1-2-3-4 + 6 : Petite Suite (25) ET Tout différent (30) -> Tout différent.
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 4, 6]), { category: "Tout différent", points: 30 });
   // Autre suite de 4 possible : 3-4-5-6 (doublon sur 5, sans importance).
-  assert.deepStrictEqual(computeBestCombination([3, 4, 5, 5, 6]), { category: "Petite Suite", points: 30 });
+  assert.deepStrictEqual(computeBestCombination([3, 4, 5, 5, 6]), { category: "Petite Suite", points: 25 });
   assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 6]), { category: "Gobelet", points: 60 });
 
   // ── Chevauchement — la catégorie la plus valorisée l'emporte, pas la
   // priorité de la liste ──
-  // 6,6,6,6,5 : Carré (30) ET somme=29 >= 28 (45) -> on retient 45.
-  assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 5]), { category: "Somme ≥ 28", points: 45 });
-  // 1,2,1,1,2 : Full (40) ET somme=7 <= 7 (45) -> on retient 45 (cas réel
+  // 6,6,6,6,5 : Carré (35) ET somme=29 >= 28 (50) -> on retient 50.
+  assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 5]), { category: "Somme ≥ 28", points: 50 });
+  // 1,2,1,1,2 : Full (30) ET somme=7 <= 7 (50) -> on retient 50 (cas réel
   // signalé le 16/09, à l'origine de la révision du barème).
-  assert.deepStrictEqual(computeBestCombination([1, 2, 1, 1, 2]), { category: "Somme ≤ 7", points: 45 });
-  // 1,2,3,4,5 et 2,3,4,5,6 : 5 dés consécutifs -> Grande Suite (50) l'emporte
-  // sur Petite Suite (30), qui matche aussi (contient bien une suite de 4).
-  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 4, 5]), { category: "Grande Suite", points: 50 });
-  assert.deepStrictEqual(computeBestCombination([2, 3, 4, 5, 6]), { category: "Grande Suite", points: 50 });
-  // Gobelet (60) bat toujours "Somme >= 28" (45) même si les deux matchent.
+  assert.deepStrictEqual(computeBestCombination([1, 2, 1, 1, 2]), { category: "Somme ≤ 7", points: 50 });
+  // 1,2,3,4,5 et 2,3,4,5,6 : 5 dés consécutifs -> Grande Suite (40) l'emporte
+  // sur Tout différent (30) et Petite Suite (25), qui matchent aussi.
+  assert.deepStrictEqual(computeBestCombination([1, 2, 3, 4, 5]), { category: "Grande Suite", points: 40 });
+  assert.deepStrictEqual(computeBestCombination([2, 3, 4, 5, 6]), { category: "Grande Suite", points: 40 });
+  // Gobelet (60) bat toujours "Somme >= 28" (50) même si les deux matchent.
   assert.deepStrictEqual(computeBestCombination([6, 6, 6, 6, 6]).points, 60);
   // Une vraie combinaison l'emporte toujours, la somme brute ne compte plus :
   // 6,6,5,5,4 (somme 26) -> Double quelconque.
   assert.deepStrictEqual(computeBestCombination([6, 6, 5, 5, 4]), { category: "Double quelconque", points: 10 });
-  // 4,4,4,2,2 : Full (40) ET 5 dés pairs (25) -> Full.
-  assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 40 });
+  // 4,4,4,2,2 : Full (30) ET 5 dés pairs (30) -> égalité, Full (plus rare) retenu.
+  assert.deepStrictEqual(computeBestCombination([4, 4, 4, 2, 2]), { category: "Full", points: 30 });
   // Régression (16/09, capture d'écran) : un Brelan de 6 (somme=22, plus
   // que les 20 pts du Brelan) doit rester étiqueté "Brelan", jamais "Aucune
   // combinaison" seulement parce que la somme brute serait plus élevée — la
@@ -95,9 +101,9 @@ async function main() {
     const dice = [6, 6, 6, 6, 6];
     const expected = [
       ["Gobelet", 60],
-      ["Somme ≥ 28", 45],
-      ["Carré", 30],
-      ["Pairs", 25],
+      ["Somme ≥ 28", 50],
+      ["Carré", 35],
+      ["Pairs", 30],
       ["Brelan", 20],
       ["Double quelconque", 10],
       ["Joker", 30],
@@ -136,20 +142,20 @@ async function main() {
       { a: { dice: [6, 6, 6, 6, 6], status: "en_cours", category: null, points: null, username: "Alice" } },
       { a: ["Gobelet"] },
     );
-    assert.deepStrictEqual([results[0].category, results[0].points], ["Somme ≥ 28", 45]);
+    assert.deepStrictEqual([results[0].category, results[0].points], ["Somme ≥ 28", 50]);
   }
 
   // ── resolveJour — une main "en_cours" à la clôture est figée, jamais ignorée ──
   const hands = {
     a: { dice: [6, 6, 6, 6, 6], status: "en_cours", category: null, points: null, username: "Alice" },
-    b: { dice: [1, 2, 3, 4, 6], status: "termine", category: "Petite Suite", points: 30, username: "Bob" },
+    b: { dice: [1, 2, 3, 4, 6], status: "termine", category: "Petite Suite", points: 25, username: "Bob" },
   };
   const results = resolveJour(hands);
   const byId = Object.fromEntries(results.map((r) => [r.discordId, r]));
   assert.strictEqual(byId.a.category, "Gobelet"); // "en_cours" -> calculé à la clôture
   assert.strictEqual(byId.a.points, 60);
   assert.strictEqual(byId.b.category, "Petite Suite"); // déjà "termine" -> inchangée
-  assert.strictEqual(byId.b.points, 30);
+  assert.strictEqual(byId.b.points, 25);
 
   // ── buildRanking — trié par points décroissants ──
   const ranking = buildRanking({ x: 20, y: 60, z: 0 });
@@ -170,18 +176,18 @@ async function main() {
   assert.strictEqual(listChoices(full, [JOKER]).some((c) => c.category === JOKER), false);
   assert.strictEqual(finishHand({ dice: full, status: "en_cours" }, []).status, "choix");
   // Un seul choix possible : main figée directement.
-  const seulJoker = finishHand({ dice: [1, 2, 4, 5, 6] }, []);
+  const seulJoker = finishHand({ dice: [1, 2, 4, 5, 6] }, ["Tout différent"]);
   assert.deepStrictEqual([seulJoker.status, seulJoker.category, seulJoker.points], ["termine", JOKER, 18]);
-  const rien = finishHand({ dice: [1, 2, 4, 5, 6] }, [JOKER]);
+  const rien = finishHand({ dice: [1, 2, 4, 5, 6] }, ["Tout différent", JOKER]);
   assert.deepStrictEqual([rien.status, rien.category, rien.points], ["termine", NO_COMBINATION, 0]);
   // Choix du joueur : Full plutôt que Somme ≥ 28 ; choix invalide refusé.
   const enChoix = { dice: full, status: "choix" };
-  assert.deepStrictEqual(pickChoice(enChoix, [], "Full"), { dice: full, status: "termine", category: "Full", points: 40 });
+  assert.deepStrictEqual(pickChoice(enChoix, [], "Full"), { dice: full, status: "termine", category: "Full", points: 30 });
   assert.strictEqual(pickChoice(enChoix, ["Full"], "Full"), null);
   assert.strictEqual(pickChoice({ ...enChoix, status: "termine" }, [], "Full"), null);
   // Main en attente de choix à la clôture : combinaison la plus payante (hors Joker).
   const [auto] = resolveJour({ a: { ...enChoix, username: "A" } }, { a: [] });
-  assert.deepStrictEqual([auto.category, auto.points], ["Somme ≥ 28", 45]);
+  assert.deepStrictEqual([auto.category, auto.points], ["Somme ≥ 28", 50]);
 
   console.log("✓ gobelet service tests passed");
 }

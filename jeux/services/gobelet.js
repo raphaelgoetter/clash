@@ -194,18 +194,21 @@ function containsRun(uniqueSet, run) {
 // calcul (computeBestCombination) ET l'affichage des règles
 // (formatBaremeLines), pour que les deux ne divergent jamais.
 // `description` est affichée entre parenthèses dans les règles.
+// Valeurs calibrées le 25/10 sur la partie complète en jeu optimal (5, 7 et
+// 10 manches, Joker compris) : une combinaison plus facile est marquée au
+// moins aussi souvent qu'une plus difficile (voir jeux/CONTRIBUTING.md).
 export const COMBINATIONS = [
   { label: "Double quelconque", description: "2 dés identiques", points: 10 },
   { label: "Brelan", description: "3 dés identiques", points: 20 },
-  { label: "Pairs", description: "5 dés pairs", points: 25 },
-  { label: "Impairs", description: "5 dés impairs", points: 25 },
-  { label: "Juste total", description: "somme exacte de 21", points: 25 },
-  { label: "Carré", description: "4 dés identiques", points: 30 },
-  { label: "Petite Suite", description: "4 dés qui se suivent", points: 30 },
-  { label: "Full", description: "3 + 2", points: 40 },
-  { label: "Somme ≤ 7", description: null, points: 45 },
-  { label: "Somme ≥ 28", description: null, points: 45 },
-  { label: "Grande Suite", description: "5 dés qui se suivent", points: 50 },
+  { label: "Petite Suite", description: "4 dés qui se suivent", points: 25 },
+  { label: "Pairs", description: "5 dés pairs", points: 30 },
+  { label: "Impairs", description: "5 dés impairs", points: 30 },
+  { label: "Tout différent", description: "5 dés différents", points: 30 },
+  { label: "Full", description: "3 + 2", points: 30 },
+  { label: "Carré", description: "4 dés identiques", points: 35 },
+  { label: "Grande Suite", description: "5 dés qui se suivent", points: 40 },
+  { label: "Somme ≤ 7", description: null, points: 50 },
+  { label: "Somme ≥ 28", description: null, points: 50 },
   { label: "Gobelet", description: "5 dés identiques", points: 60 },
 ];
 
@@ -227,18 +230,19 @@ const POINTS_BY_LABEL = Object.fromEntries(
 // Ordre de priorité utilisé UNIQUEMENT pour départager l'étiquette retenue
 // en cas d'égalité de points entre deux catégories applicables au même
 // résultat (le score retenu, lui, est toujours le maximum — voir
-// computeBestCombination) — n'affecte jamais les points gagnés.
+// computeBestCombination) — n'affecte jamais les points gagnés. À égalité,
+// la plus rare est consommée en premier (Full avant Pairs, par exemple).
 const CATEGORY_PRIORITY = [
   "Gobelet",
-  "Grande Suite",
   "Somme ≥ 28",
   "Somme ≤ 7",
-  "Full",
+  "Grande Suite",
   "Carré",
-  "Petite Suite",
-  "Juste total",
+  "Full",
   "Pairs",
   "Impairs",
+  "Tout différent",
+  "Petite Suite",
   "Brelan",
   "Double quelconque",
 ];
@@ -279,9 +283,10 @@ export function listMatchingCombinations(dice) {
   if (sameCounts(counts, [3, 2])) labels.push("Full");
   if (dice.every((d) => d % 2 === 0)) labels.push("Pairs");
   if (dice.every((d) => d % 2 === 1)) labels.push("Impairs");
+  // 5 valeurs distinctes, consécutives ou non (une Grande Suite en est aussi une).
+  if (uniqueSorted.length === 5) labels.push("Tout différent");
   if (sum <= 7) labels.push("Somme ≤ 7");
   if (sum >= 28) labels.push("Somme ≥ 28");
-  if (sum === 21) labels.push("Juste total");
   // 5 valeurs distinctes consécutives (seules 1-2-3-4-5 et 2-3-4-5-6 sont
   // possibles avec des dés à 6 faces).
   if (uniqueSorted.length === 5 && uniqueSorted[4] - uniqueSorted[0] === 4)

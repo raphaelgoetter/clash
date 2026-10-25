@@ -743,24 +743,26 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 `COMBINATIONS` (`gobelet.js`, ordre croissant) est la source unique du calcul et des règles affichées (`formatBaremeLines()`). Règles communes au jeu spécial et à Gobelet Duel.
 
-| Résultat | Condition | Points |
-| -------- | --------- | ------ |
-| Aucune combinaison | rien de libre, Joker déjà utilisé | 0 |
-| Joker (`JOKER`) | voir ci-dessous | somme des 5 dés |
-| Double quelconque | au moins 2 dés identiques | 10 |
-| Brelan | au moins 3 dés identiques | 20 |
-| Pairs | 5 dés pairs | 25 |
-| Impairs | 5 dés impairs | 25 |
-| Juste total | somme exacte de 21 | 25 |
-| Carré | au moins 4 dés identiques | 30 |
-| Petite Suite | 4 valeurs consécutives parmi les 5 dés (5ᵉ dé libre) | 30 |
-| Full | exactement 3 + 2 | 40 |
-| Somme ≤ 7 | | 45 |
-| Somme ≥ 28 | | 45 |
-| Grande Suite | 1-2-3-4-5 ou 2-3-4-5-6 | 50 |
-| Gobelet | 5 dés identiques | 60 |
+| Résultat | Condition | Points | Proba. visée seule (3 tirages) |
+| -------- | --------- | ------ | ------------------------------ |
+| Aucune combinaison | rien de libre, Joker déjà utilisé | 0 | |
+| Joker (`JOKER`) | voir ci-dessous | somme des 5 dés | |
+| Double quelconque | au moins 2 dés identiques | 10 | 99,9 % |
+| Brelan | au moins 3 dés identiques | 20 | 74 % |
+| Petite Suite | 4 valeurs consécutives parmi les 5 dés (5ᵉ dé libre) | 25 | 62 % |
+| Pairs | 5 dés pairs | 30 | 51 % |
+| Impairs | 5 dés impairs | 30 | 51 % |
+| Tout différent | 5 valeurs distinctes, consécutives ou non | 30 | 53 % |
+| Full | exactement 3 + 2 | 30 | 36 % |
+| Carré | au moins 4 dés identiques | 35 | 29 % |
+| Grande Suite | 1-2-3-4-5 ou 2-3-4-5-6 | 40 | 26 % |
+| Somme ≤ 7 | | 50 | 10 % |
+| Somme ≥ 28 | | 50 | 10 % |
+| Gobelet | 5 dés identiques | 60 | 4,6 % |
 
-- **Unicité** : chaque combinaison ne rapporte qu'**une fois par partie**. `computeBestCombination(dice, used)` retient la plus payante parmi les combinaisons présentes (`listMatchingCombinations()`) et pas encore réalisées ; égalité de points départagée par `CATEGORY_PRIORITY`.
+- **Calibrage** : barème évalué sur la partie complète en stratégie optimale (5, 7 et 10 manches ; Joker, unicité et choix de la combinaison compris). Critère : une combinaison plus facile à obtenir est marquée au moins aussi souvent qu'une plus difficile, et l'espérance d'une partie reste d'environ 145 / 200 / 265 pts sur 5 / 7 / 10 manches. Gobelet (60) et Double (10) sont fixes par habitude des joueurs. Toute modification du barème se revérifie par ce calcul.
+- Avec Tout différent, des dés sans doublon forment toujours une combinaison : « Aucune combinaison » et le Joker automatique ne surviennent qu'une fois les combinaisons présentes déjà réalisées.
+- **Unicité** : chaque combinaison ne rapporte qu'**une fois par partie**. `computeBestCombination(dice, used)` retient la plus payante parmi les combinaisons présentes (`listMatchingCombinations()`) et pas encore réalisées ; égalité de points départagée par `CATEGORY_PRIORITY` (la plus rare d'abord).
 - ⚠️ Double, Brelan et Carré sont des motifs « **au moins** N dés » (un Carré contient un Brelan), pour qu'un joueur ayant déjà fait Carré puisse marquer Brelan. Le Full reste strict.
 - **Joker** (une fois par partie, hors `COMBINATIONS`) : retenu automatiquement seulement si rien d'autre n'est libre, ou choisi volontairement dans le select de fin de main. Le bouton Valider l'ignore (`allowJoker: false`) : impossible de le griller dès le 1ᵉʳ tirage.
 - « Aucune combinaison » vaut 0 et n'est jamais consommée (`withUsedCategory()`).
