@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/bang`, `/gobelet` et leurs boutons de duel |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/bang`, `/gobelet`, `/arene` et leurs boutons de duel |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -781,7 +781,7 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 ### Main du joueur (Gobelet)
 
-- 🎲 **Jouer** lance 5 dés. Un bouton par dé (vraie face bleue, voir « Faces de dé communes » ; 🔒 gardé / 🎲 relancé tant que les emojis ne sont pas uploadés) : basculer ne consomme pas de tirage. La sélection **persiste** d'un tirage à l'autre (seuls les dés relancés repartent « non gardés »).
+- 🎲 **Jouer** lance 5 dés. Un bouton par dé (face bleue seule, sans chiffre, pour tenir sur une ligne en mobile, voir « Faces de dé communes » ; repli chiffre + 🔒 gardé / 🎲 relancé tant que les emojis ne sont pas uploadés) : basculer ne consomme pas de tirage. La sélection **persiste** d'un tirage à l'autre (seuls les dés relancés repartent « non gardés »).
 - 🔁 **Relancer** : relance les dés non gardés, 2 fois au plus.
 - 👍 **Valider** : affiché dès que les dés courants forment une combinaison encore libre (hors Joker), y compris au 1ᵉʳ tirage ; son libellé ne nomme pas la combinaison. Un clic sur un bouton obsolète est ignoré, le message est repeint.
 - Une main `en_cours` ou `"choix"` à la clôture est résolue par `resolveJour()` sur les dés courants (`computeBestCombination()`, Joker en dernier recours).
@@ -1281,14 +1281,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Trois duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/bang`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Quatre duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/bang`, `/arene`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `bangduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `bangduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `bangduel:*`, `areneduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `bangduel_*`, `areneduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** (Blackjack, Gobelet, Bang! 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** (Blackjack, Gobelet, Bang! 1v1, Arène 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (1-3 joueurs)
 
@@ -1365,6 +1365,45 @@ Adaptation d'Exploding Kittens Duel avec les cartes de Bang!. `/bang adversaire:
 
 - `simulateDuel.mjs` : équilibrage sur les vraies règles. Repères (20 000 parties, stratège contre stratège) : ~53 % pour le joueur qui commence, ~46 % pour le Bot, ~1 % de nuls, fin moyenne au tour ~6. ⚠️ Avec 10 Gobelins, ~14 % de nuls (trop de parties sans explosion).
 - `e2eDuel.mjs` (handler contre Kévina), `e2ePvp.mjs` (1v1, refuse de tourner si un vrai 1v1 est en cours).
+
+### Arène (contre Kévina ou en 1v1)
+
+Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/arene adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé.**
+
+- Code : `jeux/services/areneRules.js` (règles pures et Kévina, tests `areneRules.test.js`), `jeux/services/areneDuel.js` (Redis), `jeux/discord/handlers/areneDuel.js` (Discord). Config `jeux/data/arene/duel.json` (`delai_tour_minutes` : 5, 1v1 uniquement).
+- `custom_id` : `areneduel_poser:<colonne>` contre Kévina, `areneduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 2), `areneduel_ouvrir` (Jouer du message public 1v1), `areneduel_regles`.
+
+#### Règles
+
+- Chaque joueur a 3 colonnes de 3 cases : 🏰 Gauche, 👑 Roi, 🏰 Droite. La colonne 👑 Roi n'a aucun effet particulier (règles pures, décision du 26/10).
+- À son tour, un dé est lancé pour le joueur, qui le pose dans une de ses colonnes non pleines (un bouton par colonne, grisé si pleine).
+- **Score d'une colonne** : chaque valeur compte valeur × n × n (n = dés de cette valeur dans la colonne) : 4-4 = 16, 3-3-3 = 27 (`scoreColonne()`).
+- **Destruction** : poser un dé retire tous les dés de même valeur de la colonne adverse correspondante.
+- **Fin** dès qu'une grille est pleine (après la pose) ; plus haut total gagnant, égalité = match nul.
+- **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
+- **Kévina** (`choixGlouton()`) : maximise points gagnés + points détruits ; à égalité, la colonne la moins remplie.
+
+#### Affichage
+
+- Faces de dé communes (voir « Faces de dé communes ») : ses propres dés en **bleu**, ceux de l'adversaire en **rouge** ; case vide ⬛. Grilles en titres `##` (dés agrandis), adversaire en haut (lue depuis le centre du plateau), soi en bas, avec le total et le score de chaque colonne.
+- Chaque vue raconte le dernier coup (`d.dernier` : valeur, colonne, dés détruits).
+
+#### Contre Kévina
+
+- Partie **privée** : un message éphémère édité en place ; Kévina pose son dé aussitôt après le joueur. Une partie par joueur (`areneduel:<discordId>`, verrou `areneduel:lock:<discordId>`), expiration 1 h après la dernière action (`INACTIVITE_SECONDES`). `/arene` relance toujours une nouvelle partie.
+- Fin : résultat et plateau final publiés en **public** dans le salon du clic (`messageFinalSolo()`), pseudo en clair, jamais de mention.
+
+#### 1v1
+
+- Même moteur (sièges `joueur` = celui qui commence, `bot` = l'autre ; `sieges` → discordId). **Une partie à la fois** (`areneduel:pvp`, verrou `areneduel:lock:pvp`, expiration 1 h).
+- Message public avec bouton **Jouer** et plateau en direct (premier joueur en bas, en bleu) : le premier autre joueur qui clique relève le défi, un 3ᵉ est refusé. Chaque joueur a sa vue éphémère, rééditée après chaque coup adverse via le webhook mémorisé (jeton valable 15 min ; au-delà, Jouer rouvre une vue à jour).
+- **Délai** : `delai_tour_minutes` par coup, dépassé = défaite, vérifié paresseusement à la prochaine interaction (`verifierDelai()`, pas de cron). Lobby sans adversaire depuis le délai (ou relancé par son lanceur) et partie au délai dépassé remplacés par un nouveau `/arene adversaire:1v1`.
+- Fin (grille pleine, délai) : récapitulatif avec plateau final dans un nouveau message public, l'ancien supprimé.
+
+#### Outils (`jeux/outils/arene/`, à lancer à la main)
+
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `glouton`) : équilibrage sur les vraies règles. Repères (20 000 parties) : Kévina contre Kévina ~50 % / ~49 % / ~1 % de nuls, ~16 coups par joueur (commencer n'avantage pas) ; hasard contre Kévina ~19 %. Aucune variante testée ne bat Kévina (anticipation de la réponse adverse, prudence face aux destructions, pondérations) ; préférer la colonne la plus remplie à égalité chute à ~39 %.
+- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/arene/e2eDuel.mjs`).
 
 ---
 

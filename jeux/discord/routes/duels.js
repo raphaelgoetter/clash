@@ -1,5 +1,5 @@
-// Duels autonomes (1-3 joueurs) : /blackjack, /bang, /gobelet et leurs
-// boutons (blackjackduel_*, bangduel_*, gobeletduel_*).
+// Duels autonomes (1-3 joueurs) : /blackjack, /bang, /gobelet, /arene et
+// leurs boutons (blackjackduel_*, bangduel_*, gobeletduel_*, areneduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -39,6 +39,16 @@ import {
   handleRegles as handleGobeletDuelRegles,
   extractMember as extractGobeletDuelMember,
 } from "../handlers/gobeletDuel.js";
+import {
+  memberHasMiniJeuxRole as areneMemberHasMiniJeuxRole,
+  extractMember as areneExtractMember,
+  handleAreneRoleRejected,
+  handleAreneCommand,
+  handleArenePvpCommand,
+  handleAreneOuvrir,
+  handleArenePoser,
+  handleAreneRegles,
+} from "../handlers/areneDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export async function routeDuels(body, res) {
@@ -113,6 +123,49 @@ export async function routeDuels(body, res) {
     else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value, { pvp, channelId, pseudo }));
     else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value, { pvp, channelId, pseudo }));
     return;
+  }
+
+  // ── /arene adversaire:bot : Arène contre Kévina (partie privée,
+  // éphémère) ; adversaire:1v1 : contre un joueur (message public). Réservé
+  // au rôle MINI-JEUX pour lancer, même principe que /blackjack ci-dessus.
+  if (body.type === 2 && body.data?.name === "arene") {
+    const discordId = body.member?.user?.id;
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await areneMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleAreneRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handleArenePvpCommand(webhookUrl, body);
+      else await handleAreneCommand(webhookUrl, discordId);
+    });
+    return;
+  }
+
+  // ── Arène : composants. areneduel_poser:<colonne>[:pvp] édite la vue en
+  // place ; areneduel_ouvrir (Jouer du message public 1v1) et
+  // areneduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("areneduel_")) {
+    const [action, colonne, mode] = body.data.custom_id.split(":");
+    if (action === "areneduel_regles" || action === "areneduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "areneduel_regles") runBackground(() => handleAreneRegles(webhookUrl));
+      else runBackground(() => handleAreneOuvrir(webhookUrl, body));
+      return;
+    }
+    if (action === "areneduel_poser") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Contre Kévina, le résultat final est publié dans le salon du clic
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: areneExtractMember(body).username };
+      runBackground(() => handleArenePoser(webhookUrl, discordId, Number(colonne), opts));
+      return;
+    }
   }
 
   // ── /gobelet : lance un duel du Jeu du Gobelet autonome (1-3 joueurs, N

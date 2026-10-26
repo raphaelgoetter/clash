@@ -26,6 +26,7 @@ const botJeuxConfigure = Boolean(jeuxAppId && jeuxToken);
 const JEUX_COMMANDS = new Set([
   "mini-jeux",
   "mini-jeux-history",
+  "arene",
   "bang",
   "blackjack",
   "gobelet",
@@ -503,6 +504,23 @@ const commands = [
     name: "mini-jeux-history",
     description: "Affiche l'historique des vainqueurs des saisons mini-jeux.",
     options: [],
+  },
+  {
+    name: "arene",
+    description:
+      "Arène : pose tes dés et détruis ceux de Kévina ou d'un autre joueur — réservé au rôle MINI-JEUX.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
+        required: true,
+        choices: [
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
+        ],
+      },
+    ],
   },
   {
     name: "bang",

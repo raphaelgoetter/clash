@@ -598,7 +598,8 @@ function buildHandComponents(state, hand, kept, used) {
       components: hand.dice.map((value, i) => ({
         type: 2,
         style: kept[i] ? 3 : 2,
-        label: String(value),
+        // Face seule quand l'emoji existe : 5 boutons sur une ligne en mobile
+        ...(dieButtonEmoji(value, DICE_COLOR) ? {} : { label: String(value) }),
         emoji: buildDieEmoji(value, kept[i]),
         custom_id: `gobeletduel_toggle:${manche}:${i}`,
       })),
