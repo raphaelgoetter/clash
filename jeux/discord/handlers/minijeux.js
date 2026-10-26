@@ -118,7 +118,7 @@ import {
 import { BANDES as MEOW_BANDES, jourDe as meowJourDe, horloge as meowHorloge } from "../../services/meowRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
-import { getCurrentSeasonBounds } from "../../services/saison.js";
+import { getCurrentSeasonBounds, seasonIdForDate } from "../../services/saison.js";
 import { getWiredGame } from "../../services/refonte.js";
 import { computeMiniJeuxStats } from "../../services/miniJeuxStats.js";
 
@@ -216,11 +216,18 @@ async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
   const running = states
     .filter(({ state }) => state?.channelId === PUBLIC_CHANNEL_ID)
     .filter(({ key, state }) => state?.seasonId == null || getActiveKey(state.seasonId) === key)
+    // Une manche d'avant la saison précédente est forcément terminée (seule
+    // la dernière manche de la saison précédente peut encore courir) : sans
+    // ce filtre, un groupe sans manche en cours afficherait une manche
+    // périmée (Frame de septembre entre le Trivia Clash du mardi et le
+    // Synopsis du mercredi, à la refonte).
+    .filter(({ state }) => state?.seasonId == null || seasonId == null || state.seasonId >= seasonId - 1)
     .sort((a, b) => String(b.state.startedAt ?? "").localeCompare(String(a.state.startedAt ?? "")))[0];
   const key = running?.key ?? seasonKey ?? fallbackKey;
   if (!key) return null;
   return {
     ...games[key],
+    gameKey: key,
     seasonId,
     state: running?.state ?? null,
     next: seasonKey && key !== seasonKey ? games[seasonKey] : null,
@@ -674,7 +681,15 @@ function daysUntilEnd(now, game) {
   const daysUntil = daysUntilWeekday(now, game.weekday);
   const startedToday =
     String(game.state?.startedAt ?? "").slice(0, 10) === now.toISOString().slice(0, 10);
-  return daysUntil === 0 && startedToday ? 7 : daysUntil;
+  const regular = daysUntil === 0 && startedToday ? 7 : daysUntil;
+  // Trivia et Zoom carte rejoignent le groupe Clash à la refonte : la
+  // dernière manche de leur ancien groupe se termine dès que le groupe Clash
+  // les reposte, si ce créneau tombe avant celui de l'ancien groupe.
+  if (game.key === "clash" || !CLASH_GAMES[game.gameKey] || !game.state) return regular;
+  const daysToClash = daysUntilWeekday(now, CLASH_WEEKDAY);
+  const clashSeasonId = seasonIdForDate(new Date(now.getTime() + daysToClash * 86400000));
+  if (getWiredGame("clash", clashSeasonId, getActiveClashGame(clashSeasonId)) !== game.gameKey) return regular;
+  return Math.min(regular, daysToClash);
 }
 
 function formatEndLabel(daysUntil) {
@@ -720,7 +735,12 @@ async function resolveRegularGames(now) {
     { key: "lettres", weekday: 6, ...lettresGame },
     { key: "culture", weekday: 3, ...cultureGame },
     ...(clashGame ? [{ key: "clash", weekday: CLASH_WEEKDAY, ...clashGame }] : []),
-  ].map((game) => ({ ...game, daysUntil: daysUntilEnd(now, game) }));
+  ]
+    // Groupe Clash pas encore lancé alors que son jeu court encore dans son
+    // ancien groupe : une seule ligne pour ce jeu, dont la fin tombe le jour
+    // de son premier lancement Clash (voir daysUntilEnd).
+    .filter((game, _, all) => !(game.key === "clash" && !game.state && all.some((other) => other.key !== "clash" && other.state && other.gameKey === game.gameKey)))
+    .map((game) => ({ ...game, daysUntil: daysUntilEnd(now, game) }));
   return games.sort((a, b) => a.daysUntil - b.daysUntil);
 }
 

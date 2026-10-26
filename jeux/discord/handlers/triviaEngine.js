@@ -50,6 +50,10 @@ export function createTriviaHandlers(
       ? entryOptionsDisplay.map((text, i) => `**${LETTERS[i]}.** ${text}`)
       : [consigne ?? `Les ${LETTERS.length} propositions (${LETTERS.join(", ")}) sont sur l'image.`];
     const jourSaison = jourFor(seasonId);
+    // Dernière manche de la saison : la suivante ouvre la saison d'après,
+    // dont le jour peut changer (Trivia passe du mercredi au mardi à la
+    // refonte).
+    const jourSuivant = seasonManche === seasonMancheTotal ? jourFor(seasonId + 1) : jourSaison;
     const embed = {
       title: `${emoji} Le jeu du ${jourSaison} : ${name} !`,
       description: [
@@ -64,7 +68,7 @@ export function createTriviaHandlers(
         "Réponds via les boutons ci-dessous : un seul essai possible, définitif.",
       ].join("\n"),
       color,
-      footer: { text: `Nouvelle manche : ${jourSaison} prochain !` },
+      footer: { text: `Nouvelle manche : ${jourSuivant} prochain !` },
     };
     // Cache-buster (?v=) : Discord met en cache l'aperçu d'un embed PAR URL,
     // y compris un échec de fetch (même piège que justecarte/frames/zoom).
