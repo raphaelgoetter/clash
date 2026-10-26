@@ -1,5 +1,5 @@
 // ============================================================
-// areneRules.js — Règles pures d'Arène (`/arene`), adaptation fidèle de
+// pileRules.js — Règles pures de La Pile (`/pile`), adaptation fidèle de
 // Knucklebones : chaque joueur a 3 colonnes de 3 cases (gauche, centre,
 // droite). À son tour, on lance 1 dé et on le pose dans une de ses
 // colonnes non pleines ; les dés de même valeur de la colonne adverse
@@ -12,7 +12,7 @@
 // et "bot" (Kévina, ou le second joueur en 1v1).
 //
 // ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
-// Arène), source de vérité.
+// La Pile), source de vérité.
 // ============================================================
 
 export const IDS = ["joueur", "bot"];
@@ -104,7 +104,7 @@ export function poser(d, id, colonne, { rng = Math.random } = {}) {
 // Gourmande : maximise points gagnés + points détruits ; à égalité, la
 // colonne la moins remplie (garde de la place pour les combos, et la
 // préférence inverse fait chuter à ~39 % contre elle). Simulation
-// (jeux/outils/arene/) : aucune variante testée ne la bat (anticipation de
+// (jeux/outils/pile/) : aucune variante testée ne la bat (anticipation de
 // la réponse adverse, prudence face aux destructions, pondérations).
 export function choixGlouton(d, id) {
   const grille = d.grilles[id];

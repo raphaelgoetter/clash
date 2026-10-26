@@ -1,7 +1,7 @@
-// Test de bout en bout du handler Arène (contre Kévina et 1v1), sur Redis
+// Test de bout en bout du handler de La Pile (contre Kévina et 1v1), sur Redis
 // en mémoire ; TOUS les appels Discord sont interceptés (aucun message
 // réel). Vérifie les limites Discord des vues et affiche des exemples.
-// Usage : node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/arene/e2eDuel.mjs
+// Usage : node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/pile/e2eDuel.mjs
 import { Redis } from "@upstash/redis";
 
 if (!Redis.isFake) throw new Error("À lancer avec registerFakeRedis.js (voir l'en-tête)");
@@ -19,9 +19,9 @@ globalThis.fetch = async (url, init = {}) => {
 };
 process.env.DISCORD_TOKEN = "faux";
 
-const h = await import("../../discord/handlers/areneDuel.js");
-const { readDuel, readPvp } = await import("../../services/areneDuel.js");
-const { colonnesLibres } = await import("../../services/areneRules.js");
+const h = await import("../../discord/handlers/pileDuel.js");
+const { readDuel, readPvp } = await import("../../services/pileDuel.js");
+const { colonnesLibres } = await import("../../services/pileRules.js");
 
 function verifier(v) {
   for (const e of v.embeds || []) {
@@ -39,7 +39,7 @@ const ID = "joueur-e2e";
 const W = "https://discord.test/webhook";
 const resultats = {};
 for (let g = 0; g < 5; g++) {
-  await h.handleAreneCommand(W, ID);
+  await h.handlePileCommand(W, ID);
   for (let k = 0; ; k++) {
     if (k > 40) throw new Error("partie bloquée");
     const d = await readDuel(ID);
@@ -48,19 +48,19 @@ for (let g = 0; g < 5; g++) {
       break;
     }
     const libres = colonnesLibres(d.grilles.joueur);
-    await h.handleArenePoser(W, ID, libres[Math.floor(Math.random() * libres.length)], { channelId: "salon", pseudo: "Testeur" });
+    await h.handlePilePoser(W, ID, libres[Math.floor(Math.random() * libres.length)], { channelId: "salon", pseudo: "Testeur" });
   }
 }
 // Colonne pleine refusée
-await h.handleAreneCommand(W, ID);
+await h.handlePileCommand(W, ID);
 console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${salon.length} résultats publiés`);
 if (salon.length !== 5) throw new Error("un résultat par partie attendu");
 
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });
-await h.handleArenePvpCommand("https://discord.test/a", body("A", "Alice"));
-await h.handleAreneOuvrir("https://discord.test/b", body("B", "Bob"));
-await h.handleAreneOuvrir("https://discord.test/c", body("C", "Chloé"));
+await h.handlePilePvpCommand("https://discord.test/a", body("A", "Alice"));
+await h.handlePileOuvrir("https://discord.test/b", body("B", "Bob"));
+await h.handlePileOuvrir("https://discord.test/c", body("C", "Chloé"));
 if (!vues.at(-1).content?.includes("Ce duel oppose")) throw new Error("3e joueur non refusé");
 for (let k = 0; ; k++) {
   if (k > 40) throw new Error("1v1 bloqué");
@@ -72,13 +72,13 @@ for (let k = 0; ; k++) {
   const actif = p.sieges[p.duel.actif];
   const libres = colonnesLibres(p.duel.grilles[p.duel.actif]);
   // Clic hors tour : refusé sans effet
-  await h.handleArenePoser(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", 0, { pvp: true });
-  await h.handleArenePoser(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, libres[0], { pvp: true });
+  await h.handlePilePoser(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", 0, { pvp: true });
+  await h.handlePilePoser(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, libres[0], { pvp: true });
 }
 
 vues.forEach(verifier);
 salon.forEach(verifier);
-await h.handleAreneRegles(W);
+await h.handlePileRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 

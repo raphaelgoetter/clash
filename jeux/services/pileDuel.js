@@ -1,18 +1,18 @@
 // ============================================================
-// areneDuel.js — Arène (`/arene`) : un joueur contre Kévina (partie privée,
-// message éphémère) ou contre un autre joueur (`/arene adversaire:1v1`,
+// pileDuel.js — La Pile (`/pile`) : un joueur contre Kévina (partie privée,
+// message éphémère) ou contre un autre joueur (`/pile adversaire:1v1`,
 // message public + vue éphémère par joueur). Règles pures dans
-// areneRules.js.
+// pileRules.js.
 //
 // Stockage : Upstash Redis. Contre Kévina : une clé par joueur
-// (`areneduel:<discordId>`), plusieurs parties en même temps possibles.
-// 1v1 : une seule partie à la fois (`areneduel:pvp`), comme Bang! Duel.
+// (`pileduel:<discordId>`), plusieurs parties en même temps possibles.
+// 1v1 : une seule partie à la fois (`pileduel:pvp`), comme Bang! Duel.
 // Chaque écriture relance l'expiration : sans action pendant
 // `INACTIVITE_SECONDES`, la partie disparaît (aucun score conservé : jeu
 // libre).
 //
 // ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
-// Arène), source de vérité.
+// La Pile), source de vérité.
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord
 // corrompus sinon, voir bossraid.js) : JSON sérialisé/désérialisé nous-mêmes.
@@ -22,15 +22,15 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { adversaire, creerDuel } from "./areneRules.js";
+import { adversaire, creerDuel } from "./pileRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "arene", "duel.json");
+const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "pile", "duel.json");
 
 export const INACTIVITE_SECONDES = 3600;
 
-const cleDuel = (discordId) => `areneduel:${discordId}`;
-const cleVerrou = (discordId) => `areneduel:lock:${discordId}`;
+const cleDuel = (discordId) => `pileduel:${discordId}`;
+const cleVerrou = (discordId) => `pileduel:lock:${discordId}`;
 
 let _redis = null;
 function getRedis() {
@@ -85,7 +85,7 @@ async function withLock(discordId, fn) {
     }
     await new Promise((r) => setTimeout(r, 150));
   }
-  throw new Error("Verrou d'Arène indisponible");
+  throw new Error("Verrou de La Pile indisponible");
 }
 
 // Nouvelle partie contre Kévina (remplace une éventuelle partie en cours) :
@@ -99,7 +99,7 @@ export async function nouveauDuel(discordId) {
 }
 
 // Action du joueur sous verrou : `fn(duel)` modifie le duel (fonctions de
-// areneRules.js) et renvoie un résultat.
+// pileRules.js) et renvoie un résultat.
 // Renvoie { duel, resultat } ou { duel: null } sans partie en cours.
 export async function agirDuel(discordId, fn) {
   return withLock(discordId, async () => {
@@ -111,14 +111,14 @@ export async function agirDuel(discordId, fn) {
   });
 }
 
-// ── 1v1 (`/arene adversaire:1v1`) ─────────────────────────────────────────
+// ── 1v1 (`/pile adversaire:1v1`) ─────────────────────────────────────────
 // Partie : { statut: "lobby" | "enCours" | "fini", channelId, messageId,
 // lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
 // moteur → discordId ; "joueur" commence), duel, webhooks: { discordId:
 // { url, at } } (vue éphémère de chaque joueur, rééditée après chaque coup
 // adverse), dernierCoupAt, raisonFin: "plein" | "delai" }.
 
-const CLE_PVP = "areneduel:pvp";
+const CLE_PVP = "pileduel:pvp";
 const VERROU_PVP = "pvp";
 
 export async function readPvp() {

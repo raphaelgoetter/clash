@@ -1,6 +1,6 @@
 // ============================================================
 // dices.js — Faces de dé communes à tous les jeux de dés (Gobelet, Gobelet
-// Duel, Arène…). Sources vectorielles uniques : jeux/data/dices/dice-1.svg à
+// Duel, La Pile…). Sources vectorielles uniques : jeux/data/dices/dice-1.svg à
 // dice-6.svg (dé plein 15×15, corps de 1 à 14, points évidés). Discord
 // n'affiche pas le SVG : jeux/scripts/uploadDiceEmojis.js les rend en PNG en
 // mémoire, une couleur à la fois, et les uploade comme emojis d'application,

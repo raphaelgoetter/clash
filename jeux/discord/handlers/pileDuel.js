@@ -1,21 +1,21 @@
 // ============================================================
-// areneDuel.js (handler) — Arène (`/arene`), deux modes :
-// - contre Kévina, le bot (`/arene adversaire:bot`) : un seul message
+// pileDuel.js (handler) — La Pile (`/pile`), deux modes :
+// - contre Kévina, le bot (`/pile adversaire:bot`) : un seul message
 //   éphémère édité en place à chaque coup ; Kévina pose son dé aussitôt
 //   après le joueur ; résultat publié dans le salon en fin de partie ;
-// - 1v1 (`/arene adversaire:1v1`) : message public dans le salon (bouton
+// - 1v1 (`/pile adversaire:1v1`) : message public dans le salon (bouton
 //   Jouer : rejoindre, puis afficher sa vue, plateaux visibles de tous) et
 //   une vue éphémère par joueur, rééditée après chaque coup adverse (webhook
 //   mémorisé, valable 15 min, Jouer la rouvre sinon). Une seule partie à la
 //   fois, comme Bang! Duel.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
-// custom_id : areneduel_poser:<colonne> (contre Kévina),
-// areneduel_poser:<colonne>:pvp (1v1), areneduel_ouvrir (bouton Jouer du
-// message public), areneduel_regles.
+// custom_id : pileduel_poser:<colonne> (contre Kévina),
+// pileduel_poser:<colonne>:pvp (1v1), pileduel_ouvrir (bouton Jouer du
+// message public), pileduel_regles.
 //
-// Service : jeux/services/areneDuel.js (Redis),
-// règles : jeux/services/areneRules.js.
+// Service : jeux/services/pileDuel.js (Redis),
+// règles : jeux/services/pileRules.js.
 // ============================================================
 
 import {
@@ -27,7 +27,7 @@ import {
   ouvrirPvp,
   rejoindrePvp,
   siegeDe,
-} from "../../services/areneDuel.js";
+} from "../../services/pileDuel.js";
 import {
   HAUTEUR,
   adversaire,
@@ -35,14 +35,14 @@ import {
   poser,
   scoreColonne,
   scoreGrille,
-} from "../../services/areneRules.js";
+} from "../../services/pileRules.js";
 import { formatDie } from "../../services/dices.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
 
-const ARENE_COLOR = 0x2f6fd6;
+const PILE_COLOR = 0x2f6fd6;
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 
@@ -89,7 +89,7 @@ async function patchOriginal(webhookUrl, payload) {
       }),
     });
   } catch (err) {
-    console.error("[Arene] Échec PATCH:", err.message);
+    console.error("[Pile] Échec PATCH:", err.message);
   }
 }
 
@@ -111,12 +111,12 @@ async function messageSalon(method, channelId, messageId, payload) {
         : {}),
     });
     if (!res.ok && res.status !== 404) {
-      console.warn(`[Arene] Échec ${method} du message public (${res.status}).`);
+      console.warn(`[Pile] Échec ${method} du message public (${res.status}).`);
       return null;
     }
     return method === "POST" ? await res.json() : {};
   } catch (err) {
-    console.warn(`[Arene] Erreur réseau (${method} message public):`, err.message);
+    console.warn(`[Pile] Erreur réseau (${method} message public):`, err.message);
     return null;
   }
 }
@@ -206,7 +206,7 @@ const BOUTON_REGLES = {
   style: 2,
   label: "Règles",
   emoji: { name: "📖" },
-  custom_id: "areneduel_regles",
+  custom_id: "pileduel_regles",
 };
 
 const boutonsFin = () => [{ type: 1, components: [BOUTON_REGLES] }];
@@ -236,9 +236,9 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
         : [`⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
   ];
   const titre = d.termine
-    ? `🏟️ Arène · ${titreFin(d, moi, A, raison)}`
-    : `🏟️ Arène · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
-  const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: ARENE_COLOR };
+    ? `🧱 La Pile · ${titreFin(d, moi, A, raison)}`
+    : `🧱 La Pile · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
+  const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: PILE_COLOR };
   if (!monTour) return { embeds: [embed], components: boutonsFin() };
   const sfx = pvp ? ":pvp" : "";
   return {
@@ -250,7 +250,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
           type: 2,
           style: 1,
           label: col.nom,
-          custom_id: `areneduel_poser:${c}${sfx}`,
+          custom_id: `pileduel_poser:${c}${sfx}`,
           disabled: d.grilles[moi][c].length >= HAUTEUR,
         })),
       },
@@ -261,7 +261,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
 
 function buildReglesEmbed(config) {
   return {
-    title: "📖 Règles de l'Arène",
+    title: "📖 Règles de La Pile",
     description: [
       "Chaque joueur a 3 colonnes de 3 cases (gauche, centre, droite). Tes dés sont bleus, ceux de ton adversaire rouges.",
       "",
@@ -272,7 +272,7 @@ function buildReglesEmbed(config) {
       "",
       `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
     ].join("\n"),
-    color: ARENE_COLOR,
+    color: PILE_COLOR,
   };
 }
 
@@ -288,19 +288,19 @@ function actionPoser(d, moi, colonne, A) {
 
 // ── Contre Kévina ────────────────────────────────────────────────────
 
-export async function handleAreneRoleRejected(webhookUrl) {
+export async function handlePileRoleRejected(webhookUrl) {
   await patchOriginal(webhookUrl, {
     content: "Tu n'as pas le rôle nécessaire (MINI-JEUX) pour lancer une partie.",
   });
 }
 
 // Lance une nouvelle partie (remplace une éventuelle partie en cours).
-export async function handleAreneCommand(webhookUrl, discordId) {
+export async function handlePileCommand(webhookUrl, discordId) {
   try {
     const { duel } = await nouveauDuel(discordId);
     await patchOriginal(webhookUrl, buildVue(duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." }));
   } catch (err) {
-    console.error("[Arene] Échec lancement:", err.message);
+    console.error("[Pile] Échec lancement:", err.message);
   }
 }
 
@@ -318,9 +318,9 @@ function messageFinalSolo(d, pseudo) {
   return {
     embeds: [
       {
-        title: "🏟️ Arène · contre Kévina",
+        title: "🧱 La Pile · contre Kévina",
         description: [resultat, "", ...plateauPublic(d, pseudo, "🤖 Kévina")].join("\n").slice(0, 4096),
-        color: ARENE_COLOR,
+        color: PILE_COLOR,
       },
     ],
     components: boutonsFin(),
@@ -343,8 +343,8 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     await patchOriginal(webhookUrl, {
       embeds: [
         {
-          description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/arene` !",
-          color: ARENE_COLOR,
+          description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/pile` !",
+          color: PILE_COLOR,
         },
       ],
       components: boutonsFin(),
@@ -379,12 +379,12 @@ function vuePvp(partie, config, discordId, texte = null) {
     return {
       embeds: [
         {
-          title: "🏟️ Arène · 1v1",
+          title: "🧱 La Pile · 1v1",
           description: [
             ...(texte ? [texte, ""] : []),
             "⏳ En attente d'un adversaire : le premier qui clique sur **Jouer** dans le salon relève le défi.",
           ].join("\n"),
-          color: ARENE_COLOR,
+          color: PILE_COLOR,
         },
       ],
       // Pas de bouton Règles : celui du message public suffit
@@ -409,8 +409,8 @@ const BOUTON_JOUER = {
   type: 2,
   style: 3,
   label: "Jouer",
-  emoji: { name: "🏟️" },
-  custom_id: "areneduel_ouvrir",
+  emoji: { name: "🧱" },
+  custom_id: "pileduel_ouvrir",
 };
 
 // Message public : lobby, puis plateau en direct (au tour de qui, délai).
@@ -420,9 +420,9 @@ function messagePublic(partie, config) {
     return {
       embeds: [
         {
-          title: "🏟️ Arène · 1v1",
+          title: "🧱 La Pile · 1v1",
           description: `${partie.noms?.[partie.lanceur] ?? "?"} lance un duel ! Qui relève le défi ? Clique sur **Jouer** pour l'affronter.`,
-          color: ARENE_COLOR,
+          color: PILE_COLOR,
         },
       ],
       components,
@@ -433,14 +433,14 @@ function messagePublic(partie, config) {
   return {
     embeds: [
       {
-        title: `🏟️ Arène · ${nom("joueur")} contre ${nom("bot")}`,
+        title: `🧱 La Pile · ${nom("joueur")} contre ${nom("bot")}`,
         description: [
           ...plateauPublic(d, nom("joueur"), nom("bot")),
           "",
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
           "Joueurs : clique sur **Jouer** pour afficher ta vue.",
         ].join("\n").slice(0, 4096),
-        color: ARENE_COLOR,
+        color: PILE_COLOR,
       },
     ],
     components,
@@ -464,9 +464,9 @@ function messageFinal(partie) {
   return {
     embeds: [
       {
-        title: "🏟️ Arène · 1v1",
+        title: "🧱 La Pile · 1v1",
         description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot"))].join("\n").slice(0, 4096),
-        color: ARENE_COLOR,
+        color: PILE_COLOR,
       },
     ],
     components: boutonsFin(),
@@ -493,16 +493,16 @@ async function diffuserPvp(partie, config, discordId, webhookUrl, texte) {
 const AUCUNE_PARTIE_PVP = {
   embeds: [
     {
-      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/arene` (1v1) !",
-      color: ARENE_COLOR,
+      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/pile` (1v1) !",
+      color: PILE_COLOR,
     },
   ],
   components: boutonsFin(),
 };
 
-// `/arene adversaire:1v1` : ouvre le lobby (message public), la réponse
+// `/pile adversaire:1v1` : ouvre le lobby (message public), la réponse
 // éphémère devient la vue du lanceur.
-export async function handleArenePvpCommand(webhookUrl, body) {
+export async function handlePilePvpCommand(webhookUrl, body) {
   try {
     const { discordId, username } = extractMember(body);
     const r = await ouvrirPvp({ channelId: body.channel_id, lanceur: discordId, nom: username });
@@ -521,16 +521,16 @@ export async function handleArenePvpCommand(webhookUrl, body) {
     const { partie } = await agirPvp((p) => {
       memoriserWebhook(p, discordId, webhookUrl);
     });
-    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, "🏟️ Défi lancé dans le salon !"));
+    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, "🧱 Défi lancé dans le salon !"));
   } catch (err) {
-    console.error("[Arene] Échec lancement 1v1:", err.message);
+    console.error("[Pile] Échec lancement 1v1:", err.message);
     await patchOriginal(webhookUrl, { content: "⚠️ Erreur lors du lancement du duel." });
   }
 }
 
-// [🏟️ Jouer] du message public : rejoindre (2ᵉ joueur), sinon afficher sa
+// [🧱 Jouer] du message public : rejoindre (2ᵉ joueur), sinon afficher sa
 // vue (nouvel éphémère, mémorisé pour les mises à jour).
-export async function handleAreneOuvrir(webhookUrl, body) {
+export async function handlePileOuvrir(webhookUrl, body) {
   try {
     const { discordId, username } = extractMember(body);
     const { partie, config, resultat } = await agirPvp((p) => {
@@ -550,7 +550,7 @@ export async function handleAreneOuvrir(webhookUrl, body) {
     if (resultat.erreur) {
       const [a, b] = Object.values(partie.sieges);
       await patchOriginal(webhookUrl, {
-        content: `Ce duel oppose ${partie.noms[a]} et ${partie.noms[b]}. Lance le tien avec \`/arene\` (1v1) une fois qu'il est terminé !`,
+        content: `Ce duel oppose ${partie.noms[a]} et ${partie.noms[b]}. Lance le tien avec \`/pile\` (1v1) une fois qu'il est terminé !`,
       });
       return;
     }
@@ -564,7 +564,7 @@ export async function handleAreneOuvrir(webhookUrl, body) {
     }
     await patchOriginal(webhookUrl, vuePvp(partie, config, discordId));
   } catch (err) {
-    console.error("[Arene] Échec Jouer 1v1:", err.message);
+    console.error("[Pile] Échec Jouer 1v1:", err.message);
   }
 }
 
@@ -595,20 +595,20 @@ async function executerPvp(webhookUrl, discordId, colonne) {
 
 // ── Points d'entrée des composants ───────────────────────────────────
 
-export async function handleArenePoser(webhookUrl, discordId, colonne, { pvp = false, channelId, pseudo } = {}) {
+export async function handlePilePoser(webhookUrl, discordId, colonne, { pvp = false, channelId, pseudo } = {}) {
   try {
     if (pvp) await executerPvp(webhookUrl, discordId, colonne);
     else await executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo });
   } catch (err) {
-    console.error("[Arene] Échec poser:", err.message);
+    console.error("[Pile] Échec poser:", err.message);
   }
 }
 
 // [📖 Règles] : nouvel éphémère.
-export async function handleAreneRegles(webhookUrl) {
+export async function handlePileRegles(webhookUrl) {
   try {
     await patchOriginal(webhookUrl, { embeds: [buildReglesEmbed(await loadDuelConfig())] });
   } catch (err) {
-    console.error("[Arene] Échec Règles:", err.message);
+    console.error("[Pile] Échec Règles:", err.message);
   }
 }
