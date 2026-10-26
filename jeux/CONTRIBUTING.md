@@ -1375,7 +1375,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/arene 
 
 #### Règles
 
-- Chaque joueur a 3 colonnes de 3 cases : 🏰 Gauche, 👑 Roi, 🏰 Droite. La colonne 👑 Roi n'a aucun effet particulier (règles pures, décision du 26/10).
+- Chaque joueur a 3 colonnes de 3 cases : gauche, centre, droite, sans effet particulier (règles pures, ni tours ni Roi).
 - À son tour, un dé est lancé pour le joueur, qui le pose dans une de ses colonnes non pleines (un bouton par colonne, grisé si pleine).
 - **Score d'une colonne** : chaque valeur compte valeur × n × n (n = dés de cette valeur dans la colonne) : 4-4 = 16, 3-3-3 = 27 (`scoreColonne()`).
 - **Destruction** : poser un dé retire tous les dés de même valeur de la colonne adverse correspondante.
@@ -1385,7 +1385,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/arene 
 
 #### Affichage
 
-- Faces de dé communes (voir « Faces de dé communes ») : ses propres dés en **bleu**, ceux de l'adversaire en **rouge** ; case vide ⬛. Grilles en titres `##` (dés agrandis), adversaire en haut (lue depuis le centre du plateau), soi en bas, avec le total et le score de chaque colonne.
+- Faces de dé communes (voir « Faces de dé communes ») : ses propres dés en **bleu**, ceux de l'adversaire en **rouge** ; case vide ⬛. Grilles et dé à poser en titres `#` (plus grande taille d'emoji), adversaire en haut (lue depuis le centre du plateau), soi en bas, avec le total et le score de chaque colonne (gauche · centre · droite). Boutons Gauche, Centre, Droite.
 - Chaque vue raconte le dernier coup (`d.dernier` : valeur, colonne, dés détruits).
 
 #### Contre Kévina

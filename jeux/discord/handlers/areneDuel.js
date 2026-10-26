@@ -51,10 +51,11 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 const MOI = "bleu";
 const ADV = "rouge";
 const CASE_VIDE = "⬛";
+// Libellé du bouton et position dans les récits (« Tu poses 5 à gauche »)
 const COLONNES = [
-  { emoji: "🏰", nom: "Gauche" },
-  { emoji: "👑", nom: "Roi" },
-  { emoji: "🏰", nom: "Droite" },
+  { nom: "Gauche", lieu: "à gauche" },
+  { nom: "Centre", lieu: "au centre" },
+  { nom: "Droite", lieu: "à droite" },
 ];
 
 export async function memberHasMiniJeuxRole(body) {
@@ -126,8 +127,6 @@ function plural(n, mot) {
   return `${n} ${mot}${n > 1 ? "s" : ""}`;
 }
 
-const colonneLabel = (c) => `${COLONNES[c].emoji} ${COLONNES[c].nom}`;
-
 // Désignation de l'adversaire dans les textes : Kévina (le bot) ou un joueur.
 const BOT = { Sujet: "Kévina", de: "de Kévina", emoji: "🤖" };
 
@@ -141,18 +140,19 @@ function nomsAdv(partie, moi) {
   return nomsJoueur(partie.noms[partie.sieges[adversaire(moi)]] ?? "?");
 }
 
-// Lignes d'une grille, en titre H2 pour agrandir les dés. Chaque grille se
-// remplit depuis le centre du plateau : celle du haut est lue à l'envers.
+// Lignes d'une grille, en titre H1 (plus grande taille d'emoji possible).
+// Chaque grille se remplit depuis le centre du plateau : celle du haut est
+// lue à l'envers.
 function lignesGrille(grille, couleur, { haut = false } = {}) {
   const rangs = haut ? [2, 1, 0] : [0, 1, 2];
   return rangs.map(
     (r) =>
-      `## ${grille.map((col) => (col[r] ? formatDie(col[r], couleur) : CASE_VIDE)).join(" ")}`,
+      `# ${grille.map((col) => (col[r] ? formatDie(col[r], couleur) : CASE_VIDE)).join(" ")}`,
   );
 }
 
 function ligneScores(nom, grille) {
-  const detail = grille.map((col, c) => `${COLONNES[c].emoji} ${scoreColonne(col)}`).join(" · ");
+  const detail = grille.map((col) => scoreColonne(col)).join(" · ");
   return `**${nom} : ${scoreGrille(grille)} pts** (${detail})`;
 }
 
@@ -174,19 +174,19 @@ function plateauPublic(d, nomJoueur, nomBot) {
   return plateau(d, "joueur", { moi: nomJoueur, adv: nomBot });
 }
 
-// Récit d'un coup : « Tu poses un 5 en 👑 Roi et détruis 2 dés de Kévina ! »
+// Récit d'un coup : « Tu poses un 5 au centre et détruis 2 dés de Kévina ! »
 const desDetruits = (n, de) => (n > 1 ? `${n} dés ${de}` : `un dé ${de}`);
 
 function monCoup(coup, A) {
   const fin = coup.desDetruits ? ` et détruis ${desDetruits(coup.desDetruits, A.de)} !` : ".";
-  return `Tu poses ${formatDie(coup.valeur, MOI)} en ${colonneLabel(coup.colonne)}${fin}`;
+  return `Tu poses ${formatDie(coup.valeur, MOI)} ${COLONNES[coup.colonne].lieu}${fin}`;
 }
 
 function coupAdverse(coup, A) {
   const fin = coup.desDetruits
     ? ` et détruit ${coup.desDetruits > 1 ? `${coup.desDetruits} de tes dés` : "un de tes dés"} !`
     : ".";
-  return `${A.Sujet} pose ${formatDie(coup.valeur, ADV)} en ${colonneLabel(coup.colonne)}${fin}`;
+  return `${A.Sujet} pose ${formatDie(coup.valeur, ADV)} ${COLONNES[coup.colonne].lieu}${fin}`;
 }
 
 const ERREURS = {
@@ -232,7 +232,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
     ...(d.termine
       ? []
       : monTour
-        ? [`🎲 Ton dé : ${formatDie(d.de, MOI)} Où le poser ?`]
+        ? [`# Ton dé : ${formatDie(d.de, MOI)}`]
         : [`⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
   ];
   const titre = d.termine
@@ -250,7 +250,6 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
           type: 2,
           style: 1,
           label: col.nom,
-          emoji: { name: col.emoji },
           custom_id: `areneduel_poser:${c}${sfx}`,
           disabled: d.grilles[moi][c].length >= HAUTEUR,
         })),
@@ -264,7 +263,7 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles de l'Arène",
     description: [
-      "Chaque joueur a 3 colonnes de 3 cases : 🏰 Gauche, 👑 Roi et 🏰 Droite. Tes dés sont bleus, ceux de ton adversaire rouges.",
+      "Chaque joueur a 3 colonnes de 3 cases (gauche, centre, droite). Tes dés sont bleus, ceux de ton adversaire rouges.",
       "",
       "**🎲 À ton tour** : un dé est lancé pour toi, pose-le dans une de tes colonnes non pleines.",
       "**✖️ Combos** : dans une colonne, des dés identiques se multiplient. Chaque valeur compte valeur × nombre de dés × nombre de dés : deux 4 valent (4 + 4) × 2 = 16, trois 3 valent 9 × 3 = 27.",

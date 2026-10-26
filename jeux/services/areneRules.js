@@ -1,7 +1,7 @@
 // ============================================================
 // areneRules.js — Règles pures d'Arène (`/arene`), adaptation fidèle de
-// Knucklebones : chaque joueur a 3 colonnes de 3 cases (🏰 gauche, 👑 Roi,
-// 🏰 droite). À son tour, on lance 1 dé et on le pose dans une de ses
+// Knucklebones : chaque joueur a 3 colonnes de 3 cases (gauche, centre,
+// droite). À son tour, on lance 1 dé et on le pose dans une de ses
 // colonnes non pleines ; les dés de même valeur de la colonne adverse
 // correspondante sont détruits. Fin dès qu'une grille est pleine, plus haut
 // total gagnant (égalité = match nul).
