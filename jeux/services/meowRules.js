@@ -170,7 +170,7 @@ export function evenementsEntre(de, a, config) {
   return out.sort((x, y) => x.t - y.t);
 }
 
-// Prochaine distribution après `ms` (pour l'affichage : « avant 13h »)
+// Prochaine distribution après `ms` (pour l'affichage : « avant 20h »)
 export function prochaineDistribution(ms, config) {
   const { date } = parisParts(ms);
   for (const jour of [date, ajouterJours(date, 1)])

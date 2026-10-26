@@ -111,12 +111,13 @@ const PROFILS = {
   regulier: { visites: 3 },
   occasionnel: { visites: 1 },
   abandon: { visites: 3, stopJour: 2 }, // joue J1-J2 puis disparaît
+  travailleur: { visites: 2, creneaux: [[8, 9], [18, 23]] }, // avant et après le travail
 };
 const MIX = [["assidu", 0.3], ["regulier", 0.4], ["occasionnel", 0.2], ["abandon", 0.1]];
 
-function tirerProfil(r) {
+function tirerProfil(r, mix = MIX) {
   let x = r();
-  for (const [p, w] of MIX) if ((x -= w) <= 0) return p;
+  for (const [p, w] of mix) if ((x -= w) <= 0) return p;
   return "regulier";
 }
 
@@ -132,7 +133,7 @@ function jouerPartie(cfg, seed) {
   const ordre = [...Array(NB).keys()].sort(() => r() - 0.5);
   const joueurs = ordre.map((_, i) => ({
     bande: i % 3,
-    profil: cfg.profilForce ? cfg.profilForce(i % 3, r) : tirerProfil(r),
+    profil: cfg.profilForce ? cfg.profilForce(i % 3, r) : tirerProfil(r, cfg.mix),
     stock: 0,
     strategie: cfg.strategie ? cfg.strategie(i % 3) : "smart",
   }));
@@ -289,7 +290,8 @@ function jouerPartie(cfg, seed) {
     for (const j of joueurs) {
       const p = PROFILS[j.profil];
       if (p.stopJour && jour > p.stopJour) continue;
-      for (let k = 0; k < p.visites; k++) visitesParHeure[cfg.soir === j.bande ? 20 + Math.floor(r() * 4) : 8 + Math.floor(r() * 16)].push(j);
+      if (p.creneaux) for (const [de, a] of p.creneaux) visitesParHeure[de + Math.floor(r() * (a - de + 1))].push(j);
+      else for (let k = 0; k < p.visites; k++) visitesParHeure[cfg.soir === j.bande ? 20 + Math.floor(r() * 4) : 8 + Math.floor(r() * 16)].push(j);
     }
     for (let h = 0; h < 24; h++) {
       const tAbs = (jour - 1) * 24 + h;
@@ -301,6 +303,8 @@ function jouerPartie(cfg, seed) {
             j.frac = (j.frac || 0) + (tailleMax / tailles[j.bande] - 1) * (cfg.gainDistribution ?? 1);
             while (j.frac >= 1) (gain++, j.frac--);
           }
+          // Chats perdus faute de place en réserve (joueurs encore en jeu)
+          if (!PROFILS[j.profil].stopJour || jour <= PROFILS[j.profil].stopJour) stats.perdus = (stats.perdus || 0) + Math.max(0, j.stock + gain - cfg.stockMax);
           j.stock = Math.min(cfg.stockMax, j.stock + gain);
           j.depFait = false;
           j.squatsFaits = 0;
@@ -1167,5 +1171,70 @@ if (scenario === "actifs") {
   for (const [nom, d] of variantes) {
     const res = cas.map(([, c]) => quiet(nom, { ...P, ...d, ...c }));
     console.log(nom.padEnd(36) + " | " + res.map(([v]) => String(v).padStart(3)).join(" | ") + " | " + res.at(-1)[1]);
+  }
+}
+
+if (scenario === "deux" || scenario === "deux2") {
+  // 2 distributions (8h/20h) au lieu de 3 (8h/13h/21h) : quels réglages gardent la dynamique ?
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 13, 21], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1, gainDistribution: 2, stockMax: 3, mercenaires: { jours: [3], n: 1, parJoueur: true }, siesteUnChat: true, joueurs: 18 };
+  // Mix avec une bonne part de joueurs qui travaillent en journée
+  const TRAVAIL = [["travailleur", 0.4], ["assidu", 0.15], ["regulier", 0.25], ["occasionnel", 0.1], ["abandon", 0.1]];
+  const mesurer = (cfg) => {
+    DES_DEF = 2; DETERMINISTE = false; memoVictoire.clear();
+    const v = [0, 0, 0];
+    let leader = 0, conq = 0, chatsJ7 = 0, perdus = 0;
+    for (let i = 0; i < N; i++) {
+      const g = jouerPartie(cfg, 1000 + i);
+      v[g.classement[0]]++;
+      if (g.stats.leaderJ3 === g.classement[0]) leader++;
+      conq += g.stats.conquetes.reduce((a, b) => a + b, 0) / 7;
+      chatsJ7 += g.stats.chatsMoyens[7];
+      perdus += (g.stats.perdus || 0) / 7 / cfg.joueurs;
+    }
+    return { v: v.map((x) => Math.round((100 * x) / N)), ecart: Math.round(100 * Math.max(...v.map((x) => Math.abs(x / N - 1 / 3)))), leader: Math.round((100 * leader) / N), conq: (conq / N).toFixed(1), chatsJ7: (chatsJ7 / N).toFixed(1), perdus: (perdus / N).toFixed(2) };
+  };
+  const cas = [
+    ["assidus", { profilForce: (b) => (b === 0 ? "assidu" : "regulier") }],
+    ["travail.", { profilForce: (b) => (b === 0 ? "travailleur" : "regulier") }],
+    ["occas.", { profilForce: (b) => (b === 0 ? "occasionnel" : "regulier") }],
+    ["naïfs", { profilForce: () => "regulier", strategie: (b) => (b === 0 ? "naif" : "smart") }],
+  ];
+  const D2 = { rechargeHeures: [8, 20] };
+  const C2 = { croquettes: { chambre: 2, grenier: 2, jardin: 2, cuisine: 2, salon: 2 } };
+  if (scenario === "deux2") {
+    // Travailleurs qui rentrent après 20h, croquettes et mercenaires adaptés
+    cas.push(["trav. 20h+", { profilForce: (b) => (b === 0 ? "travailleurSoir" : "regulier") }]);
+    PROFILS.travailleurSoir = { visites: 2, creneaux: [[8, 9], [20, 23]] };
+  }
+  const variantes = scenario === "deux2" ? [
+    ["actuel 8/13/21, 2 chats, rés. 3, 1 squat", {}],
+    ["8/20, 3 chats, rés. 4, 1 squat", { ...D2, gainDistribution: 3, stockMax: 4 }],
+    ["8/20, 3 chats, rés. 4, 1 squat, croq. 2", { ...D2, gainDistribution: 3, stockMax: 4, ...C2 }],
+    ["8/20, 3 chats, rés. 4, 2 squats", { ...D2, gainDistribution: 3, stockMax: 4, squatsParDistribution: 2 }],
+    ["8/20, 3 chats, rés. 4, 2 squats, croq. 2", { ...D2, gainDistribution: 3, stockMax: 4, squatsParDistribution: 2, ...C2 }],
+    ["8/20, 3 chats, rés. 5, 2 squats, croq. 2", { ...D2, gainDistribution: 3, stockMax: 5, squatsParDistribution: 2, ...C2 }],
+    ["8/20, 3 chats, rés. 4, 2 squats, merc. 2", { ...D2, gainDistribution: 3, stockMax: 4, squatsParDistribution: 2, mercenaires: { jours: [3], n: 2, parJoueur: true } }],
+  ] : [
+    ["actuel 8/13/21, 2 chats, rés. 3, 1 squat", {}],
+    ["8/20, 2 chats, rés. 3, 1 squat", { ...D2 }],
+    ["8/20, 3 chats, rés. 3, 1 squat", { ...D2, gainDistribution: 3 }],
+    ["8/20, 3 chats, rés. 4, 1 squat", { ...D2, gainDistribution: 3, stockMax: 4 }],
+    ["8/20, 3 chats, rés. 5, 1 squat", { ...D2, gainDistribution: 3, stockMax: 5 }],
+    ["8/20, 3 chats, rés. 6, 1 squat", { ...D2, gainDistribution: 3, stockMax: 6 }],
+    ["8/20, 2 chats, rés. 4, 2 squats", { ...D2, stockMax: 4, squatsParDistribution: 2 }],
+    ["8/20, 3 chats, rés. 4, 2 squats", { ...D2, gainDistribution: 3, stockMax: 4, squatsParDistribution: 2 }],
+    ["8/20, 3 chats, rés. 5, 2 squats", { ...D2, gainDistribution: 3, stockMax: 5, squatsParDistribution: 2 }],
+    ["8/20, 3 chats, rés. 6, 2 squats", { ...D2, gainDistribution: 3, stockMax: 6, squatsParDistribution: 2 }],
+  ];
+  for (const [nomMix, mix] of scenario === "deux2" ? [["mix avec 40 % de travailleurs", TRAVAIL]] : [["mix habituel", MIX], ["mix avec 40 % de travailleurs", TRAVAIL]]) {
+    console.log(`\n=== ${nomMix}, ${N} parties ===`);
+    console.log("variante".padEnd(42) + " | victoires 14/18/22 j. (écart max) | conq./jour | chats/coin J7 | perdus/j./jour | leader J3 | bande 0 : " + cas.map(([n]) => n).join(" / "));
+    for (const [nom, d] of variantes) {
+      const tailles = [14, 18, 22].map((joueurs) => mesurer({ ...P, ...d, mix, joueurs }));
+      const m = tailles[1];
+      const c = cas.map(([, x]) => mesurer({ ...P, ...d, ...x }).v[0]);
+      console.log(`${nom.padEnd(42)} | ${tailles.map((t) => t.ecart).join("/")} pts`.padEnd(80) + ` | ${m.conq.padStart(4)} | ${m.chatsJ7.padStart(4)} | ${m.perdus} | ${m.leader} % | ${c.join(" / ")}`);
+    }
   }
 }

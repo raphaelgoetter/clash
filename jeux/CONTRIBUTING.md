@@ -982,7 +982,7 @@ Options de `postQuiEstCe.js` : `--force` (garde-fou anti-double-avancée), `--fo
 
 ## Meow — trois bandes de chats squattent la maison en 7 jours
 
-Jeu spécial **en équipe et en temps réel** : un Risk simplifié. Trois bandes (🟠 Roux, ⚫ Chats noirs, 🔵 Chartreux) se disputent les 20 coins d'une maison ; chaque joueur reçoit des chats trois fois par jour, les **appelle** sur les coins de sa bande et **squatte** les coins voisins (dés du Risk). Chaque soir, chaque coin tenu rapporte 1 point à sa bande. Les chats disponibles sont limités pour tous : le volume de clics ne décide pas.
+Jeu spécial **en équipe et en temps réel** : un Risk simplifié. Trois bandes (🟠 Roux, ⚫ Chats noirs, 🔵 Chartreux) se disputent les 20 coins d'une maison ; chaque joueur reçoit des chats deux fois par jour (8 h et 20 h), les **appelle** sur les coins de sa bande et **squatte** les coins voisins (dés du Risk). Chaque soir, chaque coin tenu rapporte 1 point à sa bande. Les chats disponibles sont limités pour tous : le volume de clics ne décide pas.
 
 | Rôle | Fichier |
 | ---- | ------- |
@@ -1008,8 +1008,8 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 ### Règles (Meow)
 
 - **Lancement** (`demarrer()`) : bandes égales tirées au sort parmi les premiers inscrits ; les 1 ou 2 derniers inscrits au-delà d'un multiple de 3 (ordre `arrivee`) vont chacun dans une bande différente. Première distribution immédiate. Chaque joueur (hors PNJ) reçoit en MP sa bande, sa pièce, son panier et la composition des trois bandes (`envoyerBandesEnMp()` ; un MP refusé ne bloque rien).
-- **Temps réel paresseux** (`rattraper()`) : aucun cron horaire. Les événements passés (heure de Paris, `evenementsEntre()`) sont rattrapés dans l'ordre au début de chaque action et publication : distributions (`distributions` : 8 h, 13 h, 21 h), décompte (`heure_decompte` = 24 : minuit, compte pour le jour qui s'achève), sieste (0 h à `fin_sieste` = 8 h). Combats abandonnés expirés au même moment.
-- **Distribution** (`distribuer()`) : `chats_par_distribution` (2) chats par joueur, réserve plafonnée à `stock_max` (3) ; squats et déplacements remis à zéro. ⚠️ **Recharge équilibrée** : une petite bande reçoit au total autant de chats qu'une grande (chaque joueur cumule `(taille max / taille de sa bande − 1) × chats_par_distribution` dans `frac`, versé chat par chat) ; sans elle, une bande de 4 contre 3/3 gagnait 74 % des parties.
+- **Temps réel paresseux** (`rattraper()`) : aucun cron horaire. Les événements passés (heure de Paris, `evenementsEntre()`) sont rattrapés dans l'ordre au début de chaque action et publication : distributions (`distributions` : 8 h et 20 h), décompte (`heure_decompte` = 24 : minuit, compte pour le jour qui s'achève), sieste (0 h à `fin_sieste` = 8 h). Combats abandonnés expirés au même moment.
+- **Distribution** (`distribuer()`) : `chats_par_distribution` (3) chats par joueur, réserve plafonnée à `stock_max` (4) ; squats et déplacements remis à zéro. ⚠️ **Recharge équilibrée** : une petite bande reçoit au total autant de chats qu'une grande (chaque joueur cumule `(taille max / taille de sa bande − 1) × chats_par_distribution` dans `frac`, versé chat par chat) ; sans elle, une bande de 4 contre 3/3 gagnait 74 % des parties.
 - **Croquettes** : à chaque distribution, une bande qui tient une pièce entière reçoit `croquettes[pièce]` (1) chat, posé sur le coin le plus menacé de la pièce.
 - **Appeler** (`appeler()`) : toute la réserve va sur un coin de sa bande, à toute heure (sieste comprise), sauf coin en combat.
 - **Déplacer** (`deplacer()`) : 1 chat d'un coin de sa bande (qui en garde au moins 1) vers un coin voisin de sa bande, `deplacements_par_distribution` (1) fois entre deux distributions, à toute heure (`deplacementsPossibles()` : vers le coin le plus menacé d'abord).
@@ -1022,7 +1022,7 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 - **🏅 Caïd des coussins** (classement individuel, la victoire reste collective) : `caid.coin` (3) par coin pris + `caid.chat` (1) par chat adverse délogé (`scoreCaid()`). Secret jusqu'au message de fin (ni vue Jouer ni `/mini-jeux`).
 - Meow n'est **pas** compté dans l'historique de saison des mini-jeux (jeu d'équipe).
 
-**Équilibrage** (`simulate.mjs`, bots malins/naïfs, profils assidu/régulier/occasionnel/abandon) : chaque bande gagne entre 32 et 36 % de 12 à 20 joueurs (bandes inégales comprises), une bande naïve nettement moins, une bande entièrement assidue pas plus que les autres. Scénarios `actifs` (réserve et fréquence de jeu) et `deblocage` (mercenaires). ⚠️ Les bots doivent trancher leurs égalités au hasard (`bruit: true` dans `BASE`) : trancher par l'ordre des coins biaise les comparaisons de départs. Écartés : 3 dés en défense, plafond de chats par coin, bonus de départ par bande.
+**Équilibrage** (`simulate.mjs`, bots malins/naïfs, profils assidu/régulier/occasionnel/abandon) : chaque bande gagne entre 32 et 36 % de 12 à 20 joueurs (bandes inégales comprises), une bande naïve nettement moins, une bande entièrement assidue pas plus que les autres. Scénarios `actifs` (réserve et fréquence de jeu), `deblocage` (mercenaires) et `deux` (2 distributions par jour, profil `travailleur` qui joue à 8-9 h et 18-23 h). ⚠️ 2 distributions demandent 3 chats et une réserve de 4 : à 2 chats la maison se fige (−20 % de territoires pris), réserve 3 = chats perdus, réserve 5 ou plus = l'absent rattrape tout d'un coup (bande d'occasionnels 40-50 %). 2 squats par distribution : +40 % de territoires pris et défenses deux fois plus minces. Croquettes à 2 : rien de mieux. ⚠️ Les bots doivent trancher leurs égalités au hasard (`bruit: true` dans `BASE`) : trancher par l'ordre des coins biaise les comparaisons de départs. Écartés : 3 dés en défense, plafond de chats par coin, bonus de départ par bande.
 
 ### Interface (Meow)
 
@@ -1054,7 +1054,7 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 | Commande | Effet |
 | -------- | ----- |
 | `npm run meow:test` | Salon de test : 1er lancement = inscriptions, 2e = Jour 1 immédiat (clôture forcée) avec des **PNJ** pour atteindre l'effectif, qui jouent seuls à chaque distribution (`jouerPnj()`, `partie.pnjActifs` : chats sur le coin le plus menacé, sinon le plus garni, squats tant qu'une cible offre ≥ 60 %). Ensuite un jour par lancement : la partie de test suit sa propre horloge (`horloge()` = heure réelle + `partie.decalage`), avancée au lendemain 8h22 (`avancerHorloge()`), événements sautés rattrapés. |
-| `npm run meow:test:distribution` | Salon de test : avance seulement jusqu'à la prochaine distribution (8h05, 13h05, 21h05). |
+| `npm run meow:test:distribution` | Salon de test : avance seulement jusqu'à la prochaine distribution (8h05 ou 20h05). |
 | `npm run meow:test:dry` / `meow:public:dry` | Aperçus console |
 | `npm run meow:public` | Salon public (heure réelle) ; ne republie jamais deux fois le même jour sans `--force`. |
 | `npm run meow:reset` / `meow:reset:manches` | **Destructif** (le second efface aussi l'archive) |

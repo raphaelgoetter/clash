@@ -17,8 +17,8 @@
 //   node jeux/scripts/postMeow.js --sans-pnj       — salon de test sans les joueurs fictifs (PNJ) inscrits au J1
 //   node jeux/scripts/postMeow.js --force-close    — ignore la date de clôture des inscriptions (lance la partie si
 //                                               l'effectif minimum est atteint) ; implicite sur le salon de test
-//   node jeux/scripts/postMeow.js --distribution   — salon de test : avance jusqu'à la prochaine distribution (8h, 13h,
-//                                               21h) au lieu du lendemain 8h22 (par défaut, un jour par lancement)
+//   node jeux/scripts/postMeow.js --distribution   — salon de test : avance jusqu'à la prochaine distribution (8h ou
+//                                               20h) au lieu du lendemain 8h22 (par défaut, un jour par lancement)
 
 import "../env.js";
 

@@ -98,7 +98,7 @@ function joueurDe(partie, b) {
   const ev = evenementsEntre(parisInstant("2026-10-19", 9), parisInstant("2026-10-20", 9), CONFIG);
   assert.deepStrictEqual(
     ev.map((e) => `${e.date} ${parisParts(e.t).h} ${e.type}`),
-    ["2026-10-19 13 distribution", "2026-10-19 21 distribution", "2026-10-19 0 decompte", "2026-10-20 0 sieste", "2026-10-20 8 distribution"],
+    ["2026-10-19 20 distribution", "2026-10-19 0 decompte", "2026-10-20 0 sieste", "2026-10-20 8 distribution"],
   );
 }
 
@@ -178,7 +178,7 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   const id = joueurDe(partie, 0);
   partie.joueurs[id].squats = 2;
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 19) });
-  // 13h, 21h, (sieste : 1 chat posé), 8h, 13h → réserve pleine (plafond)
+  // 20h, (sieste : 1 chat posé), 8h → réserve pleine (plafond)
   assert.strictEqual(partie.joueurs[id].stock, CONFIG.stock_max);
   assert.strictEqual(partie.joueurs[id].squats, 0);
   assert.ok(partie.journal.some((e) => e.k === "sieste"));
@@ -192,7 +192,7 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   const total = () => COINS.filter((c) => partie.coins[c].b === 1).reduce((t, c) => t + partie.coins[c].n, 0);
   const avant = total();
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 1) });
-  // 13h et 21h : réserve déjà pleine ; minuit : 1 posé
+  // 20h : réserve déjà pleine ; minuit : 1 posé
   assert.strictEqual(partie.joueurs[id].stock, CONFIG.stock_max - 1);
   assert.strictEqual(partie.joueurs[id].nuit.jour, 2);
   assert.ok(total() > avant);

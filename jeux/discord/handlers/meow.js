@@ -343,7 +343,7 @@ function buildReglesEmbed(config) {
     title: "📖 Règles : Meow",
     description: [
       "Trois bandes de chats (🟠 Roux, ⚫ Chats noirs, 🔵 Chartreux) se disputent les 20 territoires de la maison. Ta bande est tirée au sort.",
-      `🕐 **Tu peux jouer 3 fois par jour**, à chaque distribution (${horairesDistribution(config)}) : appeler tes chats, ${plural(config.squats_par_distribution, "squat")} et ${plural(config.deplacements_par_distribution, "déplacement")} à chaque fois.`,
+      `🕐 **Tu peux jouer ${config.distributions.length} fois par jour**, à chaque distribution (${horairesDistribution(config)}) : appeler tes chats, ${plural(config.squats_par_distribution, "squat")} et ${plural(config.deplacements_par_distribution, "déplacement")} à chaque fois.`,
       "",
       "**🐱 Tes chats**",
       `- Distribution à **${horairesDistribution(config)}** : ${chats(config.chats_par_distribution)} pour toi (${config.stock_max} en réserve maximum).`,
@@ -1244,7 +1244,7 @@ export function buildMessageModal() {
             style: 2,
             label: "Ton message (visible par ta bande)",
             placeholder:
-              "Ex. : je prépare 6 chats sur le Carton, on prend le Canapé à 13h ?",
+              "Ex. : je prépare 6 chats sur le Carton, on prend le Canapé à 20h ?",
             required: true,
             max_length: 200,
           },
