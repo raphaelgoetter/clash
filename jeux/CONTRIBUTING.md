@@ -4,7 +4,7 @@ Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spécia
 
 Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale`.
 
-Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Bang!, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash) · duels · sondage public · noms des cartes · jeux archivés.
+Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Bang!, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash) · faces de dé · duels · sondage public · noms des cartes · jeux archivés.
 
 ---
 
@@ -727,6 +727,15 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque membre affronte le Croupier en 
 
 Cron `.github/workflows/blackjack.yml` : `12 8 * * *`. Variables : `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
 
+## Faces de dé communes
+
+Faces partagées par tous les jeux de dés (Gobelet, Gobelet Duel, Arène). Service `jeux/services/dices.js` : `formatDice(dice, couleur)` (texte, titre H1), `dieButtonEmoji(value, couleur)` (bouton, `null` si non uploadé).
+
+- **Sources** : `jeux/data/dices/dice-1.svg` à `dice-6.svg` (dé plein 15×15, corps de 1 à 14, points évidés). Seuls les SVG sont versionnés : Discord n'affiche pas le SVG, les PNG sont rendus en mémoire à l'upload.
+- **Config** `jeux/data/dices/dices.json` : `couleurs` (`bleu` = Gobelet et dés du joueur, `rouge` = dés adverses) et `emojis` (`couleur → valeur → id`). Repli sur les keycaps (texte) ou 🔒/🎲 (boutons) tant qu'un ID vaut `null`.
+- **Lisibilité clair/sombre** : points blancs opaques (carré blanc sous le corps) et fin contour clair (`buildColoredDieSvg()`). Couleur de dé moyenne, contraste ≥ 4,5 sur fond blanc ; pas d'orange ni de jaune.
+- **Upload** : `npm run dices:emojis` (`jeux/scripts/uploadDiceEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque face en PNG 128×128 et l'uploade comme emoji d'application `de_<couleur>_<valeur>`, puis écrit les IDs dans `dices.json` (à committer). Options : `--couleur <nom>`, `--remplacer` (supprime d'abord les emojis du même nom, obligatoire pour changer un visuel). `npm run dices:emojis:dry` écrit les PNG dans `temp/dices` sans appel Discord.
+
 ## Jeu du Gobelet — dés façon Yahtzee
 
 Jeu spécial de 7 jours sur le squelette de Blackjack, sans adversaire : chaque jour, chaque membre lance 5 dés, en conserve 0 à 5 et relance les autres jusqu'à 2 fois (3 tirages), puis marque une combinaison. Pas de commande slash.
@@ -736,7 +745,7 @@ Jeu spécial de 7 jours sur le squelette de Blackjack, sans adversaire : chaque 
 | Règles, Redis | `jeux/services/gobelet.js` |
 | Discord (`postGobelet()`) | `jeux/discord/handlers/gobelet.js` |
 | Publication quotidienne | `jeux/scripts/postGobelet.js` |
-| Config | `jeux/data/gobelet/gobelet.json` : `duree_jours` (7), `diceEmojis`, `trophees` |
+| Config | `jeux/data/gobelet/gobelet.json` : `duree_jours` (7), `trophees` |
 
 Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosure()` : copie propre dans `gobelet.js`, chaque jeu à cron a la sienne). Points et combinaisons utilisées remis à zéro au passage au Jour 1.
 
@@ -772,7 +781,7 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 ### Main du joueur (Gobelet)
 
-- 🎲 **Jouer** lance 5 dés. Un bouton par dé (🔒 gardé / 🎲 relancé, ou la vraie face si `diceEmojis` est renseigné) : basculer ne consomme pas de tirage. La sélection **persiste** d'un tirage à l'autre (seuls les dés relancés repartent « non gardés »).
+- 🎲 **Jouer** lance 5 dés. Un bouton par dé (vraie face bleue, voir « Faces de dé communes » ; 🔒 gardé / 🎲 relancé tant que les emojis ne sont pas uploadés) : basculer ne consomme pas de tirage. La sélection **persiste** d'un tirage à l'autre (seuls les dés relancés repartent « non gardés »).
 - 🔁 **Relancer** : relance les dés non gardés, 2 fois au plus.
 - 👍 **Valider** : affiché dès que les dés courants forment une combinaison encore libre (hors Joker), y compris au 1ᵉʳ tirage ; son libellé ne nomme pas la combinaison. Un clic sur un bouton obsolète est ignoré, le message est repeint.
 - Une main `en_cours` ou `"choix"` à la clôture est résolue par `resolveJour()` sur les dés courants (`computeBestCombination()`, Joker en dernier recours).
@@ -781,10 +790,9 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 ### Interface (Gobelet)
 
-- Titre `🎲 Jeu du Gobelet (Jour X/7)`. Dés en titre Markdown avec des keycaps (`# 3️⃣ 5️⃣ 6️⃣ 2️⃣ 4️⃣`) : ⚠️ pas les glyphes U+2680-2685, minuscules sur Discord.
+- Titre `🎲 Jeu du Gobelet (Jour X/7)`. Dés en titre Markdown (`formatDice()` de `dices.js`, faces bleues, repli keycaps `# 3️⃣ 5️⃣ 6️⃣ 2️⃣ 4️⃣`) : ⚠️ pas les glyphes U+2680-2685, minuscules sur Discord.
 - Boutons `[🎲 Jouer]`, `[📜 Journal]`, `[📖 Règles]`.
 - Illustrations `frontend/public/images/gobelet/gobelet.webp` (Jour 1, révélation finale) et `dices.webp` (autres jours), suffixe `?v=` (`GOBELET_IMAGE_VERSION`) ; originaux dans `jeux/data/gobelet/images/`.
-- **Emojis de dés** : `npm run gobelet:emojis` (`jeux/scripts/uploadGobeletEmojis.js`) uploade `jeux/data/gobelet/images/dice-1.png` à `dice-6.png` comme emoji d'application ; coller les 6 IDs dans `diceEmojis`. Tant qu'ils valent `null`, emoji génériques.
 - **Mentions spéciales** : `trophees` (`{ emoji, label, username }`, saisie à la main) affichées en « 🎖️ Mentions spéciales » dans la révélation finale. À vider pour la partie suivante.
 - Archivage des manches : comme Blackjack (`archiveManche()`, public seulement). Le Gobelet n'est **pas** compté dans l'historique de saison des mini-jeux.
 
@@ -804,7 +812,7 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 ### Scripts et cron (Gobelet)
 
-Mêmes commandes que Blackjack avec le préfixe `gobelet:` (`test`, `test:dry`, `public`, `public:dry`, `reset`, `reset:manches`, `status`, `scores`), plus `npm run gobelet:emojis` (upload one-shot des faces de dé). Cron `.github/workflows/gobelet.yml` : `16 8 * * *`. Variables : celles de Blackjack, plus `DISCORD_APP_ID` (upload des emojis).
+Mêmes commandes que Blackjack avec le préfixe `gobelet:` (`test`, `test:dry`, `public`, `public:dry`, `reset`, `reset:manches`, `status`, `scores`). Cron `.github/workflows/gobelet.yml` : `16 8 * * *`. Variables : celles de Blackjack.
 
 ## Bang! — dernier joueur en vie en 7 jours
 
@@ -1291,7 +1299,7 @@ Trois duels lancés par commande slash, sans cron ni historique de manches : `/b
 | Service | `jeux/services/blackjackDuel.js` | `jeux/services/gobeletDuel.js` |
 | Handler | `jeux/discord/handlers/blackjackDuel.js` | `jeux/discord/handlers/gobeletDuel.js` |
 | Fonctions pures réutilisées | `blackjack.js` : `drawCard`, `drawUniqueCard`, `computeHandValue`, `dealerPlay`, `resolveDay`, `buildRanking`, `pointsForResult`, `isDealerRevealed` | `gobelet.js` : `rollDice`, `rerollKept`, `computeBestCombination`, `finishHand`, `pickChoice`, `resolveJour`, `buildRanking`, `withUsedCategory`, `withHandLock` |
-| Spécificités | aucune | emoji des dés relus dans `jeux/data/gobelet/gobelet.json` (`diceEmojis`, via `loadGobeletConfig()`, config statique sans état) ; sélection des dés Jouer/toggle/Relancer dupliquée |
+| Spécificités | aucune | faces de dé communes (`jeux/services/dices.js`, bleu) ; sélection des dés Jouer/toggle/Relancer dupliquée |
 
 - **Lobby fermé** : inscription par le bouton Jouer jusqu'à ce que tous les sièges soient pris, puis roster verrouillé.
 - **Résolution d'une manche** : seulement quand tous les sièges sont occupés **et** que chaque joueur a fini sa main (`isMancheReady()`, appelée par `checkAndResolveManche()`, verrou `HSETNX` sur `<jeu>:resolving`). Un joueur seul sur 2-3 places attend ses adversaires (« ⏳ En attente de N joueur(s) supplémentaire(s) »). ⚠️ Ne pas résoudre avant le remplissage des sièges, sinon le roster se verrouille et la partie devient injoignable.

@@ -5,8 +5,8 @@
 // Développé EN PARALLÈLE du jeu spécial (_handlers/gobelet.js), sans aucun
 // impact dessus : custom_id préfixés `gobeletduel_*` (jamais `gobelet_*`),
 // état Redis dans jeux/services/gobeletDuel.js (`gobeletduel:*`), aucun
-// import du service du jeu spécial (seule la config statique diceEmojis est
-// relue via loadGobeletConfig, qui ne touche aucun état).
+// import d'état du service du jeu spécial (seules ses fonctions pures sont
+// réutilisées).
 //
 // Contrairement au jeu spécial, le message public est ÉDITÉ EN PLACE à
 // chaque avancée : il n'y a pas de "jour" qui change, seulement des
@@ -28,8 +28,8 @@ import {
   saveHandWebhook,
   readHandWebhooks,
 } from "../../services/gobeletDuel.js";
+import { formatDice as formatDiceFaces, dieButtonEmoji } from "../../services/dices.js";
 import {
-  loadGobeletConfig,
   computeBestCombination,
   formatBaremeLines,
   listChoices,
@@ -46,16 +46,12 @@ import { rangExAequo } from "@clash/commun/classement.js";
 const GOBELETDUEL_COLOR = 0x9b59b6;
 const NO_KEPT = [false, false, false, false, false];
 
-// ── Dés — rendu texte (dupliqué depuis _handlers/gobelet.js : pas de
-// dépendance croisée entre les deux variantes de rendu) ──────────────
-const DICE_FACES = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
-
-function formatDie(value) {
-  return DICE_FACES[value - 1];
-}
+// Faces de dé communes (jeux/services/dices.js) : emojis bleus, repli
+// keycaps tant qu'ils ne sont pas uploadés.
+const DICE_COLOR = "bleu";
 
 function formatDice(dice) {
-  return dice.map(formatDie).join(" ");
+  return formatDiceFaces(dice, DICE_COLOR);
 }
 
 function formatDiceBlock(dice) {
@@ -507,13 +503,12 @@ function relancerLabel(kept) {
     : `Relancer (${count} dé${count > 1 ? "s" : ""})`;
 }
 
-// Emoji d'application Discord uploadés une fois via `npm run gobelet:emojis`
-// (voir jeux/scripts/uploadGobeletEmojis.js) — même config statique que le jeu
-// spécial (jeux/data/gobelet/gobelet.json, clé diceEmojis), relue directement
-// (loadGobeletConfig ne touche aucun état, aucun risque de couplage).
-function buildDieEmoji(value, kept, diceEmojis) {
-  const emojiId = diceEmojis?.[String(value)];
-  if (emojiId) return { id: emojiId, name: `gobelet_dice_${value}` };
+// Vraie face de dé sur le bouton (emoji d'application, voir
+// jeux/services/dices.js) plutôt qu'un simple 🔒/🎲, repli automatique tant
+// que les emojis ne sont pas uploadés.
+function buildDieEmoji(value, kept) {
+  const emoji = dieButtonEmoji(value, DICE_COLOR);
+  if (emoji) return emoji;
   return { name: kept ? "🔒" : "🎲" };
 }
 
@@ -569,7 +564,7 @@ function buildChoiceComponents(customId, hand, used) {
   ];
 }
 
-function buildHandComponents(state, hand, kept, diceEmojis, used) {
+function buildHandComponents(state, hand, kept, used) {
   const manche = state.manche;
   if (hand.status === "choix") {
     return buildChoiceComponents(`gobeletduel_choix:${manche}`, hand, used);
@@ -604,7 +599,7 @@ function buildHandComponents(state, hand, kept, diceEmojis, used) {
         type: 2,
         style: kept[i] ? 3 : 2,
         label: String(value),
-        emoji: buildDieEmoji(value, kept[i], diceEmojis),
+        emoji: buildDieEmoji(value, kept[i]),
         custom_id: `gobeletduel_toggle:${manche}:${i}`,
       })),
     },
@@ -704,11 +699,10 @@ export async function handleJouer(webhookUrl, discordId, username) {
       return;
     }
 
-    const { diceEmojis } = await loadGobeletConfig();
     const state = result.state;
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(state.manche, result.hand, result.kept, result.used, result.opponents)],
-      components: buildHandComponents(state, result.hand, result.kept, diceEmojis, result.used),
+      components: buildHandComponents(state, result.hand, result.kept, result.used),
     });
 
     if (result.isNew || result.hand.status !== "en_cours") {
@@ -749,10 +743,9 @@ export async function handleToggle(webhookUrl, discordId, index) {
       return;
     }
 
-    const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
-      components: buildHandComponents(result.state, result.hand, result.kept, diceEmojis, result.used),
+      components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
   } catch (err) {
     console.error("[GobeletDuel] Échec sélection de dé:", err.message);
@@ -791,10 +784,9 @@ export async function handleRelancer(webhookUrl, discordId) {
       return;
     }
 
-    const { diceEmojis } = await loadGobeletConfig();
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
-      components: buildHandComponents(result.state, result.hand, result.kept, diceEmojis, result.used),
+      components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
 
     await afterHandAction(webhookUrl, discordId, result.state, result.hand);
@@ -835,20 +827,19 @@ export async function handleValider(webhookUrl, discordId) {
       return;
     }
 
-    const { diceEmojis } = await loadGobeletConfig();
     if (result.notEligible) {
       // Garde-fou : le bouton ne devrait normalement pas être cliquable
       // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
-        components: buildHandComponents(result.state, result.hand, result.kept, diceEmojis, result.used),
+        components: buildHandComponents(result.state, result.hand, result.kept, result.used),
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
-      components: buildHandComponents(result.state, result.hand, result.kept, diceEmojis, result.used),
+      components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
 
     await afterHandAction(webhookUrl, discordId, result.state, result.hand);

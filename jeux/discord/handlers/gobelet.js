@@ -10,6 +10,7 @@
 // api/discord/interactions.js.
 // ============================================================
 
+import { formatDice as formatDiceFaces, dieButtonEmoji } from "../../services/dices.js";
 import {
   loadGobeletConfig,
   readState,
@@ -75,19 +76,12 @@ const DAY1_INTRO =
   "**Le Gobelet est prêt !** Lance tes dés chaque jour pendant 7 jours pour cumuler des points. Clique sur *Règles* pour le barème complet.";
 
 // ── Dés — rendu texte ──────────────────────────────────────────────
-// Chiffres "keycap" (1️⃣-6️⃣) plutôt que les glyphes Unicode de dés
-// (⚀-⚅) : mêmes raisons que le choix rang+couleur pour les cartes de
-// Blackjack (29/08) — les keycaps sont de vrais emoji couleur qui
-// s'agrandissent normalement sous un titre H1, contrairement aux glyphes
-// texte qui resteraient minuscules.
-const DICE_FACES = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
-
-function formatDie(value) {
-  return DICE_FACES[value - 1];
-}
+// Faces de dé communes (jeux/services/dices.js) : emojis bleus, repli
+// keycaps tant qu'ils ne sont pas uploadés.
+const DICE_COLOR = "bleu";
 
 function formatDice(dice) {
-  return dice.map(formatDie).join(" ");
+  return formatDiceFaces(dice, DICE_COLOR);
 }
 
 function formatDiceBlock(dice) {
@@ -612,14 +606,12 @@ function relancerLabel(kept) {
     : `Relancer (${count} dé${count > 1 ? "s" : ""})`;
 }
 
-// Emoji d'application Discord uploadés une fois via `npm run gobelet:emojis`
-// (voir jeux/scripts/uploadGobeletEmojis.js) et référencés par ID dans
-// jeux/data/gobelet/gobelet.json (clé diceEmojis) — vraie face de dé sur le
-// bouton plutôt qu'un simple 🔒/🎲. Repli automatique sur les emoji
-// génériques tant que la config n'a pas encore été renseignée.
-function buildDieEmoji(value, kept, diceEmojis) {
-  const emojiId = diceEmojis?.[String(value)];
-  if (emojiId) return { id: emojiId, name: `gobelet_dice_${value}` };
+// Vraie face de dé sur le bouton (emoji d'application, voir
+// jeux/services/dices.js) plutôt qu'un simple 🔒/🎲, repli automatique tant
+// que les emojis ne sont pas uploadés.
+function buildDieEmoji(value, kept) {
+  const emoji = dieButtonEmoji(value, DICE_COLOR);
+  if (emoji) return emoji;
   return { name: kept ? "🔒" : "🎲" };
 }
 
@@ -652,7 +644,7 @@ function buildChoiceComponents(customId, hand, used) {
   ];
 }
 
-function buildHandComponents(jour, hand, kept, diceEmojis, used) {
+function buildHandComponents(jour, hand, kept, used) {
   if (hand.status === "choix") {
     return buildChoiceComponents(`gobelet_choix:${jour}`, hand, used);
   }
@@ -686,7 +678,7 @@ function buildHandComponents(jour, hand, kept, diceEmojis, used) {
         type: 2,
         style: kept[i] ? 3 : 2,
         label: String(value),
-        emoji: buildDieEmoji(value, kept[i], diceEmojis),
+        emoji: buildDieEmoji(value, kept[i]),
         custom_id: `gobelet_toggle:${jour}:${i}`,
       })),
     },
@@ -713,7 +705,6 @@ async function jouer(webhookUrl, jour, discordId, username) {
     }
     const used = await readUsedCategories(discordId);
 
-    const { diceEmojis } = await loadGobeletConfig();
 
     const existing = await readHand(jour, discordId);
     if (existing) {
@@ -723,7 +714,7 @@ async function jouer(webhookUrl, jour, discordId, username) {
           : NO_KEPT;
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(jour, existing, kept, used)],
-        components: buildHandComponents(jour, existing, kept, diceEmojis, used),
+        components: buildHandComponents(jour, existing, kept, used),
       });
       return;
     }
@@ -742,7 +733,7 @@ async function jouer(webhookUrl, jour, discordId, username) {
 
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
-      components: buildHandComponents(jour, hand, NO_KEPT, diceEmojis, used),
+      components: buildHandComponents(jour, hand, NO_KEPT, used),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Jouer:", err.message);
@@ -779,7 +770,6 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
       return;
     }
 
-    const { diceEmojis } = await loadGobeletConfig();
     const i = Number(index);
     const kept = await readKept(jour, discordId);
     await setKeptField(jour, discordId, i, !kept[i]);
@@ -787,7 +777,7 @@ export async function handleToggle(webhookUrl, jour, index, discordId) {
 
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(jour, hand, updatedKept, used)],
-      components: buildHandComponents(jour, hand, updatedKept, diceEmojis, used),
+      components: buildHandComponents(jour, hand, updatedKept, used),
     });
   } catch (err) {
     console.error("[Gobelet] Échec sélection de dé:", err.message);
@@ -824,7 +814,6 @@ async function relancer(webhookUrl, jour, discordId) {
       return;
     }
 
-    const { diceEmojis } = await loadGobeletConfig();
     const kept = await readKept(jour, discordId);
     const dice = rerollKept(hand.dice, kept, Math.random);
     const tirage = hand.tirage + 1;
@@ -846,7 +835,7 @@ async function relancer(webhookUrl, jour, discordId) {
 
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(jour, updated, nextKept, used)],
-      components: buildHandComponents(jour, updated, nextKept, diceEmojis, used),
+      components: buildHandComponents(jour, updated, nextKept, used),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Relancer:", err.message);
@@ -883,7 +872,6 @@ async function validerMain(webhookUrl, jour, discordId) {
       return;
     }
 
-    const { diceEmojis } = await loadGobeletConfig();
     const { category } = computeBestCombination(hand.dice, used, {
       allowJoker: false,
     });
@@ -896,7 +884,7 @@ async function validerMain(webhookUrl, jour, discordId) {
       const kept = await readKept(jour, discordId);
       await patchOriginal(webhookUrl, {
         embeds: [buildHandEmbed(jour, hand, kept, used)],
-        components: buildHandComponents(jour, hand, kept, diceEmojis, used),
+        components: buildHandComponents(jour, hand, kept, used),
       });
       return;
     }
@@ -907,7 +895,7 @@ async function validerMain(webhookUrl, jour, discordId) {
 
     await patchOriginal(webhookUrl, {
       embeds: [buildHandEmbed(jour, updated, NO_KEPT, used)],
-      components: buildHandComponents(jour, updated, NO_KEPT, diceEmojis, used),
+      components: buildHandComponents(jour, updated, NO_KEPT, used),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Valider:", err.message);
