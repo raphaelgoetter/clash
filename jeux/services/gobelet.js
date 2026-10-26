@@ -201,11 +201,11 @@ export const COMBINATIONS = [
   { label: "Double quelconque", description: "2 dés identiques", points: 10 },
   { label: "Brelan", description: "3 dés identiques", points: 20 },
   { label: "Petite Suite", description: "4 dés qui se suivent", points: 25 },
+  { label: "Tout différent", description: "5 dés différents", points: 25 },
   { label: "Pairs", description: "5 dés pairs", points: 30 },
   { label: "Impairs", description: "5 dés impairs", points: 30 },
-  { label: "Tout différent", description: "5 dés différents", points: 30 },
   { label: "Full", description: "3 + 2", points: 35 },
-  { label: "Carré", description: "4 dés identiques", points: 35 },
+  { label: "Carré", description: "4 dés identiques", points: 40 },
   { label: "Grande Suite", description: "5 dés qui se suivent", points: 40 },
   { label: "Somme ≤ 7", description: null, points: 50 },
   { label: "Somme ≥ 28", description: null, points: 50 },
@@ -231,7 +231,7 @@ const POINTS_BY_LABEL = Object.fromEntries(
 // en cas d'égalité de points entre deux catégories applicables au même
 // résultat (le score retenu, lui, est toujours le maximum — voir
 // computeBestCombination) — n'affecte jamais les points gagnés. À égalité,
-// la plus rare est consommée en premier (Carré avant Full, par exemple).
+// la plus rare est consommée en premier (Tout différent avant Petite Suite, par exemple).
 const CATEGORY_PRIORITY = [
   "Gobelet",
   "Somme ≥ 28",

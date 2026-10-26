@@ -750,17 +750,17 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 | Double quelconque | au moins 2 dés identiques | 10 | 99,9 % |
 | Brelan | au moins 3 dés identiques | 20 | 74 % |
 | Petite Suite | 4 valeurs consécutives parmi les 5 dés (5ᵉ dé libre) | 25 | 62 % |
+| Tout différent | 5 valeurs distinctes, consécutives ou non | 25 | 53 % |
 | Pairs | 5 dés pairs | 30 | 51 % |
 | Impairs | 5 dés impairs | 30 | 51 % |
-| Tout différent | 5 valeurs distinctes, consécutives ou non | 30 | 53 % |
 | Full | exactement 3 + 2 | 35 | 36 % |
-| Carré | au moins 4 dés identiques | 35 | 29 % |
+| Carré | au moins 4 dés identiques | 40 | 29 % |
 | Grande Suite | 1-2-3-4-5 ou 2-3-4-5-6 | 40 | 26 % |
 | Somme ≤ 7 | | 50 | 10 % |
 | Somme ≥ 28 | | 50 | 10 % |
 | Gobelet | 5 dés identiques | 60 | 4,6 % |
 
-- **Calibrage** : barème évalué sur la partie complète en stratégie optimale (5, 7 et 10 manches ; Joker, unicité et choix de la combinaison compris). Critère : une combinaison plus facile à obtenir est marquée au moins aussi souvent qu'une plus difficile, et l'espérance d'une partie reste d'environ 150 / 200 / 265 pts sur 5 / 7 / 10 manches. Gobelet (60) et Double (10) sont fixes par habitude des joueurs. Exception assumée : le Full (35) est un peu surpayé et marqué plus souvent que Pairs, Impairs ou Tout différent, pourtant plus faciles. Toute modification du barème se revérifie par ce calcul.
+- **Calibrage** : barème évalué sur la partie complète en stratégie optimale (5, 7 et 10 manches ; Joker, unicité et choix de la combinaison compris). Critère : une combinaison plus facile à obtenir est marquée au moins aussi souvent qu'une plus difficile, et l'espérance d'une partie reste d'environ 150 / 200 / 265 pts sur 5 / 7 / 10 manches. Gobelet (60) et Double (10) sont fixes par habitude des joueurs. Exceptions assumées : le Full (35) est un peu surpayé (marqué plus souvent que Pairs ou Impairs, pourtant plus faciles) et Tout différent (25) un peu sous-payé (marqué moins souvent que Carré ou Grande Suite, pourtant plus difficiles). Toute modification du barème se revérifie par ce calcul.
 - Avec Tout différent, des dés sans doublon forment toujours une combinaison : « Aucune combinaison » et le Joker automatique ne surviennent qu'une fois les combinaisons présentes déjà réalisées.
 - **Unicité** : chaque combinaison ne rapporte qu'**une fois par partie**. `computeBestCombination(dice, used)` retient la plus payante parmi les combinaisons présentes (`listMatchingCombinations()`) et pas encore réalisées ; égalité de points départagée par `CATEGORY_PRIORITY` (la plus rare d'abord).
 - ⚠️ Double, Brelan et Carré sont des motifs « **au moins** N dés » (un Carré contient un Brelan), pour qu'un joueur ayant déjà fait Carré puisse marquer Brelan. Le Full reste strict.
