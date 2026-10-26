@@ -39,6 +39,10 @@ import { listManches as listBangManches } from "./bang.js";
 import { listManches as listQuiEstCeManches } from "./quiestce.js";
 import { listManches as listMeowManches } from "./meow.js";
 
+// Au-delà des 3 premiers paliers, un palier d'assidus n'est affiché que s'il
+// compte au plus ce nombre de joueurs (l'affichage s'arrête au premier trop peuplé).
+const ASSIDUS_LOWER_MAX = 6;
+
 const WEEKLY_GAMES = [
   { key: "frame", title: "🎬 Trouve le film !", fetch: getFrameResults },
   { key: "trivia", title: "🧠 Trivia", fetch: getTriviaResults },
@@ -119,14 +123,16 @@ async function collectWeekly(seasonBounds, players, dates) {
   games.sort((a, b) => b.average - a.average || b.totalPlayers - a.totalPlayers);
 
   // Assidus : nombre de manches jouées sur le total de la saison, du plus
-  // assidu au moins assidu (seuls les 3 premiers paliers sont affichés).
+  // assidu au moins assidu. Les 3 premiers paliers sont toujours affichés ;
+  // les suivants tant qu'ils comptent au plus ASSIDUS_LOWER_MAX joueurs.
   const totalRounds = seasonRounds.size;
   const tiers = [];
-  for (let played = totalRounds; played >= Math.max(1, totalRounds - 2); played--) {
+  for (let played = totalRounds; played >= 1; played--) {
     const names = [...seasonPlayers.values()]
       .filter((p) => p.rounds.size === played)
       .map((p) => p.pseudo)
       .sort((a, b) => a.localeCompare(b));
+    if (played < totalRounds - 2 && names.length > ASSIDUS_LOWER_MAX) break;
     if (names.length) tiers.push({ played, names });
   }
 
