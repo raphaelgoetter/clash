@@ -240,7 +240,7 @@ function vueFin(d, { moi, A, raison }) {
   return {
     embeds: [
       {
-        title: `🔳 La Grille · ${titreFin(d, moi, A, raison)}`,
+        title: `▦ La Grille · ${titreFin(d, moi, A, raison)}`,
         description: `${fin} La partie est terminée, et ${issue}`,
         color: GRILLE_COLOR,
       },
@@ -264,7 +264,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
       ? `# Ton dé : ${formatDie(d.de, MOI)}`
       : `⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
   ];
-  const titre = `🔳 La Grille · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
+  const titre = `▦ La Grille · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: GRILLE_COLOR };
   if (!monTour) return { embeds: [embed], components: boutonsFin() };
   const sfx = pvp ? ":pvp" : "";
@@ -345,7 +345,7 @@ function messageFinalSolo(d, pseudo) {
   return {
     embeds: [
       {
-        title: "🔳 La Grille · contre Kévina",
+        title: "▦ La Grille · contre Kévina",
         description: [resultat, "", ...plateauPublic(d, pseudo, "🤖 Kévina")].join("\n").slice(0, 4096),
         color: GRILLE_COLOR,
       },
@@ -406,7 +406,7 @@ function vuePvp(partie, config, discordId, texte = null) {
     return {
       embeds: [
         {
-          title: "🔳 La Grille · 1v1",
+          title: "▦ La Grille · 1v1",
           description: [
             ...(texte ? [texte, ""] : []),
             "⏳ En attente d'un adversaire : le premier qui clique sur **Jouer** dans le salon relève le défi.",
@@ -435,8 +435,8 @@ function vuePvp(partie, config, discordId, texte = null) {
 const BOUTON_JOUER = {
   type: 2,
   style: 3,
+  // ▦ n'est pas un emoji Discord : refusé comme icône de bouton
   label: "Jouer",
-  emoji: { name: "🔳" },
   custom_id: "grilleduel_ouvrir",
 };
 
@@ -447,7 +447,7 @@ function messagePublic(partie, config) {
     return {
       embeds: [
         {
-          title: "🔳 La Grille · 1v1",
+          title: "▦ La Grille · 1v1",
           description: `${partie.noms?.[partie.lanceur] ?? "?"} lance un duel ! Qui relève le défi ? Clique sur **Jouer** pour l'affronter.`,
           color: GRILLE_COLOR,
         },
@@ -460,7 +460,7 @@ function messagePublic(partie, config) {
   return {
     embeds: [
       {
-        title: `🔳 La Grille · ${nom("joueur")} contre ${nom("bot")}`,
+        title: `▦ La Grille · ${nom("joueur")} contre ${nom("bot")}`,
         description: [
           ...plateauPublic(d, nom("joueur"), nom("bot")),
           "",
@@ -491,7 +491,7 @@ function messageFinal(partie) {
   return {
     embeds: [
       {
-        title: "🔳 La Grille · 1v1",
+        title: "▦ La Grille · 1v1",
         description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot"))].join("\n").slice(0, 4096),
         color: GRILLE_COLOR,
       },
@@ -548,14 +548,14 @@ export async function handleGrillePvpCommand(webhookUrl, body) {
     const { partie } = await agirPvp((p) => {
       memoriserWebhook(p, discordId, webhookUrl);
     });
-    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, "🔳 Défi lancé dans le salon !"));
+    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, "▦ Défi lancé dans le salon !"));
   } catch (err) {
     console.error("[Grille] Échec lancement 1v1:", err.message);
     await patchOriginal(webhookUrl, { content: "⚠️ Erreur lors du lancement du duel." });
   }
 }
 
-// [🔳 Jouer] du message public : rejoindre (2ᵉ joueur), sinon afficher sa
+// [Jouer] du message public : rejoindre (2ᵉ joueur), sinon afficher sa
 // vue (nouvel éphémère, mémorisé pour les mises à jour).
 export async function handleGrilleOuvrir(webhookUrl, body) {
   try {
