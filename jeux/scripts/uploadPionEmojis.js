@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 // uploadPionEmojis.js
 // Rend le pion de Quatre à la suite (jeux/data/pions/pion.svg) en PNG
-// 128×128, en mémoire, pour chaque couleur de jeux/data/pions/pions.json, et
-// l'uploade comme emoji d'application Discord (`pion_<couleur>`).
+// 128×128, en mémoire, pour chaque variante (couleur de
+// jeux/data/pions/pions.json, contour normal ou gagnant), et l'uploade comme
+// emoji d'application Discord (`pion_<variante>`, ex. `pion_bleu_gagnant`).
 // Les IDs obtenus sont écrits directement dans pions.json (à committer : la
 // config est statique, jamais lue depuis Discord au runtime).
 //
 // Usage :
-//   node jeux/scripts/uploadPionEmojis.js [--couleur bleu] [--remplacer]
+//   node jeux/scripts/uploadPionEmojis.js [--variante bleu_gagnant] [--remplacer]
 //   node jeux/scripts/uploadPionEmojis.js --dry-run [--out <dossier>]
 //
-// --couleur   : une seule couleur (défaut : toutes celles de pions.json)
+// --variante  : une seule variante (défaut : toutes)
 // --remplacer : supprime d'abord les emojis d'application du même nom (sinon
 //               l'upload échoue sur un nom déjà pris)
 // --dry-run   : aucun appel Discord, écrit les PNG dans --out (défaut temp/pions)
@@ -20,7 +21,13 @@ import "../env.js";
 import fs from "fs/promises";
 import path from "path";
 import { Resvg } from "@resvg/resvg-js";
-import { PIONS_CONFIG_PATH, loadPionsConfig, emojiName, buildColoredPionSvg } from "../services/pions.js";
+import {
+  PIONS_CONFIG_PATH,
+  loadPionsConfig,
+  variantes as toutesVariantes,
+  emojiName,
+  buildColoredPionSvg,
+} from "../services/pions.js";
 
 const EMOJI_SIZE = 128;
 
@@ -33,25 +40,25 @@ const argValue = (flag) => {
 };
 
 const config = loadPionsConfig();
-const couleurs = argValue("--couleur") ? [argValue("--couleur")] : Object.keys(config.couleurs);
-for (const couleur of couleurs) {
-  if (!config.couleurs[couleur]) {
-    console.error(`Couleur inconnue : ${couleur} (voir ${PIONS_CONFIG_PATH})`);
+const variantes = argValue("--variante") ? [argValue("--variante")] : toutesVariantes();
+for (const variante of variantes) {
+  if (!toutesVariantes().includes(variante)) {
+    console.error(`Variante inconnue : ${variante} (${toutesVariantes().join(", ")})`);
     process.exit(1);
   }
 }
 
-async function renderPng(couleur) {
-  const svg = await buildColoredPionSvg(couleur);
+async function renderPng(variante) {
+  const svg = await buildColoredPionSvg(variante);
   return new Resvg(svg, { fitTo: { mode: "width", value: EMOJI_SIZE } }).render().asPng();
 }
 
 if (dryRun) {
   const outDir = path.resolve(argValue("--out") ?? "temp/pions");
   await fs.mkdir(outDir, { recursive: true });
-  for (const couleur of couleurs) {
-    const file = path.join(outDir, `${emojiName(couleur)}.png`);
-    await fs.writeFile(file, await renderPng(couleur));
+  for (const variante of variantes) {
+    const file = path.join(outDir, `${emojiName(variante)}.png`);
+    await fs.writeFile(file, await renderPng(variante));
     console.log(`✓ ${file}`);
   }
   process.exit(0);
@@ -78,15 +85,15 @@ async function discord(url, init) {
 
 const existing = remplacer ? (await discord(API)).items ?? [] : [];
 
-for (const couleur of couleurs) {
-  const name = emojiName(couleur);
+for (const variante of variantes) {
+  const name = emojiName(variante);
   for (const old of existing.filter((e) => e.name === name)) {
     await discord(`${API}/${old.id}`, { method: "DELETE" });
     console.log(`✗ ${name} supprimé (id ${old.id})`);
   }
-  const image = `data:image/png;base64,${(await renderPng(couleur)).toString("base64")}`;
+  const image = `data:image/png;base64,${(await renderPng(variante)).toString("base64")}`;
   const emoji = await discord(API, { method: "POST", body: JSON.stringify({ name, image }) });
-  config.emojis[couleur] = emoji.id;
+  config.emojis[variante] = emoji.id;
   console.log(`✓ ${name} (id ${emoji.id})`);
 }
 

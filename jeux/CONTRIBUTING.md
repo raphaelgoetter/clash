@@ -738,11 +738,11 @@ Faces utilisées par La Grille (le Gobelet et Gobelet Duel gardent keycaps et bo
 
 ## Pions de Quatre à la suite
 
-Service `jeux/services/pions.js` : `formatPion(couleur)` (texte, titre). Même principe que les faces de dé.
+Service `jeux/services/pions.js` : `formatPion(couleur, { gagnant })` (texte, titre). Même principe que les faces de dé.
 
-- **Source** : `jeux/data/pions/pion.svg`. Les pions sont **toujours ronds** (disque coloré, anneau blanc), même sur une grille de cases carrées.
-- **Config** `jeux/data/pions/pions.json` : `couleurs` (`bleu` = ses pions, `rouge` = pions adverses, `vert` = alignement gagnant, contraste ≥ 4,5 sur fond blanc) et `emojis` (`couleur → id`). Repli sur 🔵 🔴 🟢 tant qu'un ID vaut `null`.
-- **Upload** : `npm run pions:emojis` (`jeux/scripts/uploadPionEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque couleur en PNG 128×128 et l'uploade comme emoji d'application `pion_<couleur>`, puis écrit les IDs dans `pions.json` (à committer). Options : `--couleur <nom>`, `--remplacer`. `npm run pions:emojis:dry` écrit les PNG dans `temp/pions` sans appel Discord.
+- **Source** : `jeux/data/pions/pion.svg`. Les pions sont **toujours ronds**, même sur une grille de cases carrées : disque plein coloré et seulement un contour extérieur (pas d'anneau intérieur, qui réduit la part colorée).
+- **Config** `jeux/data/pions/pions.json` : `couleurs` (`bleu` = ses pions, `rouge` = pions adverses), `contours` (`normal` blanc, `gagnant` jaune, deux fois plus épais) et `emojis` (`variante → id`, variantes `bleu`, `rouge`, `bleu_gagnant`, `rouge_gagnant`). Le contour est tracé à l'intérieur du disque : même taille de pion pour toutes les variantes. Repli sur 🔵 🔴 (🟦 🟥 pour l'alignement gagnant) tant qu'un ID vaut `null`.
+- **Upload** : `npm run pions:emojis` (`jeux/scripts/uploadPionEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque variante en PNG 128×128 et l'uploade comme emoji d'application `pion_<variante>`, puis écrit les IDs dans `pions.json` (à committer). Options : `--variante <nom>`, `--remplacer` (obligatoire pour changer un visuel). `npm run pions:emojis:dry` écrit les PNG dans `temp/pions` sans appel Discord.
 
 ## Jeu du Gobelet — dés façon Yahtzee
 
@@ -1433,8 +1433,8 @@ Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obliga
 
 #### Affichage
 
-- Pions ronds (voir « Pions de Quatre à la suite ») : ses pions en **bleu**, ceux de l'adversaire en **rouge**, cases de l'alignement gagnant en **vert** ; case vide ⬛.
-- Plateau en titres `##` (en `#`, 7 emojis ne tiennent pas sur la largeur d'un embed mobile), précédé d'une légende (pion bleu et rouge avec le nom de chaque camp) et d'une ligne de numéros 1️⃣ à 7️⃣ alignée sur les boutons. Boutons 1 à 7 sur deux rangées (4 + 3, limite de 5 boutons par rangée), grisés si la colonne est pleine.
+- Pions ronds (voir « Pions de Quatre à la suite ») : ses pions en **bleu**, ceux de l'adversaire en **rouge** ; les pions de l'alignement gagnant gardent leur couleur avec un **contour jaune** (une couleur de pion différente déroute) ; case vide ⬛.
+- Plateau en titres `###` (dès `##`, 7 emojis ne tiennent pas sur la largeur d'un embed mobile : le 7ᵉ passe à la ligne), précédé d'une légende (pion bleu et rouge avec le nom de chaque camp) et d'une ligne de numéros 1️⃣ à 7️⃣ alignée sur les boutons. Boutons 1 à 7 sur deux rangées (4 + 3, limite de 5 boutons par rangée), grisés si la colonne est pleine.
 - Chaque vue raconte le dernier coup (« Kévina joue en colonne 4. »).
 - **Vue de fin** (éphémère, `vueFin()`) : titre avec le résultat et une seule phrase (« Tu alignes 4 pions. La partie est terminée, et c'est une victoire pour toi ! », grille pleine ou délai dépassé), sans plateau ni bouton Règles : le message public posté au même moment l'affiche.
 

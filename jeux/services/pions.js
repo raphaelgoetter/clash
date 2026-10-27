@@ -1,14 +1,15 @@
 // ============================================================
 // pions.js — Pions de Quatre à la suite, dans le style des faces de dé de
-// La Grille (dices.js) : disque coloré (toujours rond, même sur une grille
-// de cases carrées), anneau blanc. Source vectorielle unique :
+// La Grille (dices.js) : disque plein coloré (toujours rond, même sur une
+// grille de cases carrées), contour clair. Source vectorielle unique :
 // jeux/data/pions/pion.svg. Discord n'affiche pas le SVG :
-// jeux/scripts/uploadPionEmojis.js le rend en PNG en mémoire, une couleur à
-// la fois, et l'uploade comme emoji d'application, dont l'ID est rangé dans
-// jeux/data/pions/pions.json (config statique).
+// jeux/scripts/uploadPionEmojis.js le rend en PNG en mémoire, une variante
+// à la fois, et l'uploade comme emoji d'application, dont l'ID est rangé
+// dans jeux/data/pions/pions.json (config statique).
 //
-// Couleurs : bleu (ses pions), rouge (pions adverses), vert (alignement
-// gagnant, quel que soit le joueur).
+// Variantes : bleu (ses pions) et rouge (pions adverses), chacune avec un
+// contour blanc, ou jaune et plus épais sur l'alignement gagnant (le pion
+// garde sa couleur).
 // ============================================================
 
 import fs from "fs";
@@ -20,8 +21,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const PIONS_DIR = path.resolve(__dirname, "..", "data", "pions");
 export const PIONS_CONFIG_PATH = path.join(PIONS_DIR, "pions.json");
 
-// Repli tant que l'emoji d'une couleur n'est pas uploadé
-const REPLI = { bleu: "🔵", rouge: "🔴", vert: "🟢" };
+// Repli tant que l'emoji d'une variante n'est pas uploadé
+const REPLI = { bleu: "🔵", rouge: "🔴", bleu_gagnant: "🟦", rouge_gagnant: "🟥" };
+
+// Épaisseur du contour (unités du viewBox 15×15) : le jaune doit se voir
+const EPAISSEUR = { normal: 0.6, gagnant: 1.2 };
 
 let configCache = null;
 
@@ -34,24 +38,38 @@ export function loadPionsConfig() {
   return configCache;
 }
 
-export function emojiName(couleur) {
-  return `pion_${couleur}`;
+// Variantes à uploader : bleu, rouge, bleu_gagnant, rouge_gagnant
+export function variantes() {
+  const couleurs = Object.keys(loadPionsConfig().couleurs);
+  return [...couleurs, ...couleurs.map((c) => `${c}_gagnant`)];
+}
+
+export function emojiName(variante) {
+  return `pion_${variante}`;
 }
 
 // Pion dans un texte (titre, description) : emoji d'application si
-// uploadé, sinon rond de couleur.
-export function formatPion(couleur) {
-  const id = loadPionsConfig().emojis?.[couleur] ?? null;
-  return id ? `<:${emojiName(couleur)}:${id}>` : REPLI[couleur];
+// uploadé, sinon rond (ou carré gagnant) de couleur.
+export function formatPion(couleur, { gagnant = false } = {}) {
+  const variante = gagnant ? `${couleur}_gagnant` : couleur;
+  const id = loadPionsConfig().emojis?.[variante] ?? null;
+  return id ? `<:${emojiName(variante)}:${id}>` : REPLI[variante];
 }
 
-// SVG coloré prêt à rendre (script d'upload, aperçus). Même contour clair
-// que les dés, l'anneau blanc vient du disque blanc placé sous le corps.
-export async function buildColoredPionSvg(couleur) {
-  const hex = loadPionsConfig().couleurs?.[couleur];
-  if (!hex) throw new Error(`Couleur de pion inconnue : ${couleur}`);
+// SVG coloré prêt à rendre (script d'upload, aperçus). Le contour est
+// dessiné à l'intérieur du disque (rayon réduit de la demi-épaisseur) :
+// même taille de pion pour toutes les variantes.
+export async function buildColoredPionSvg(variante) {
+  const config = loadPionsConfig();
+  const [couleur, type = "normal"] = variante.split("_");
+  const hex = config.couleurs?.[couleur];
+  const contour = config.contours?.[type === "gagnant" ? "gagnant" : "normal"];
+  if (!hex || !contour) throw new Error(`Variante de pion inconnue : ${variante}`);
+  const epaisseur = EPAISSEUR[type === "gagnant" ? "gagnant" : "normal"];
   const source = await fsp.readFile(path.join(PIONS_DIR, "pion.svg"), "utf-8");
-  return source
-    .replace(/<path /g, `<path fill="${hex}" stroke="#FFFFFF" stroke-opacity="0.85" stroke-width="0.6" stroke-linejoin="round" `)
-    .replace(/(<svg[^>]*>)/, `$1<circle cx="7.5" cy="7.5" r="5" fill="#FFFFFF"/>`);
+  return source.replace(
+    /<circle cx="7.5" cy="7.5" r="([\d.]+)"/,
+    (_, r) =>
+      `<circle cx="7.5" cy="7.5" r="${Number(r) + 0.3 - epaisseur / 2}" fill="${hex}" stroke="${contour}" stroke-width="${epaisseur}"`,
+  );
 }
