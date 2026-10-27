@@ -1,5 +1,5 @@
-// Duels autonomes (1-3 joueurs) : /blackjack, /bang, /gobelet, /pile et
-// leurs boutons (blackjackduel_*, bangduel_*, gobeletduel_*, pileduel_*).
+// Duels autonomes (1-3 joueurs) : /blackjack, /bang, /gobelet, /grille et
+// leurs boutons (blackjackduel_*, bangduel_*, gobeletduel_*, grilleduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -40,15 +40,15 @@ import {
   extractMember as extractGobeletDuelMember,
 } from "../handlers/gobeletDuel.js";
 import {
-  memberHasMiniJeuxRole as pileMemberHasMiniJeuxRole,
-  extractMember as pileExtractMember,
-  handlePileRoleRejected,
-  handlePileCommand,
-  handlePilePvpCommand,
-  handlePileOuvrir,
-  handlePilePoser,
-  handlePileRegles,
-} from "../handlers/pileDuel.js";
+  memberHasMiniJeuxRole as grilleMemberHasMiniJeuxRole,
+  extractMember as grilleExtractMember,
+  handleGrilleRoleRejected,
+  handleGrilleCommand,
+  handleGrillePvpCommand,
+  handleGrilleOuvrir,
+  handleGrillePoser,
+  handleGrilleRegles,
+} from "../handlers/grilleDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export async function routeDuels(body, res) {
@@ -125,45 +125,45 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── /pile adversaire:bot : La Pile contre Kévina (partie privée,
+  // ── /grille adversaire:bot : La Grille contre Kévina (partie privée,
   // éphémère) ; adversaire:1v1 : contre un joueur (message public). Réservé
   // au rôle MINI-JEUX pour lancer, même principe que /blackjack ci-dessus.
-  if (body.type === 2 && body.data?.name === "pile") {
+  if (body.type === 2 && body.data?.name === "grille") {
     const discordId = body.member?.user?.id;
     const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(async () => {
-      const allowed = await pileMemberHasMiniJeuxRole(body);
+      const allowed = await grilleMemberHasMiniJeuxRole(body);
       if (!allowed) {
-        await handlePileRoleRejected(webhookUrl);
+        await handleGrilleRoleRejected(webhookUrl);
         return;
       }
-      if (pvp) await handlePilePvpCommand(webhookUrl, body);
-      else await handlePileCommand(webhookUrl, discordId);
+      if (pvp) await handleGrillePvpCommand(webhookUrl, body);
+      else await handleGrilleCommand(webhookUrl, discordId);
     });
     return;
   }
 
-  // ── La Pile : composants. pileduel_poser:<colonne>[:pvp] édite la vue en
-  // place ; pileduel_ouvrir (Jouer du message public 1v1) et
-  // pileduel_regles : nouvel éphémère.
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("pileduel_")) {
+  // ── La Grille : composants. grilleduel_poser:<colonne>[:pvp] édite la vue en
+  // place ; grilleduel_ouvrir (Jouer du message public 1v1) et
+  // grilleduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("grilleduel_")) {
     const [action, colonne, mode] = body.data.custom_id.split(":");
-    if (action === "pileduel_regles" || action === "pileduel_ouvrir") {
+    if (action === "grilleduel_regles" || action === "grilleduel_ouvrir") {
       res.status(200).json({ type: 5, data: { flags: 64 } });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      if (action === "pileduel_regles") runBackground(() => handlePileRegles(webhookUrl));
-      else runBackground(() => handlePileOuvrir(webhookUrl, body));
+      if (action === "grilleduel_regles") runBackground(() => handleGrilleRegles(webhookUrl));
+      else runBackground(() => handleGrilleOuvrir(webhookUrl, body));
       return;
     }
-    if (action === "pileduel_poser") {
+    if (action === "grilleduel_poser") {
       const discordId = body.member?.user?.id;
       res.status(200).json({ type: 6 });
       const webhookUrl = buildDiscordWebhookUrl(body);
       // Contre Kévina, le résultat final est publié dans le salon du clic
-      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: pileExtractMember(body).username };
-      runBackground(() => handlePilePoser(webhookUrl, discordId, Number(colonne), opts));
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: grilleExtractMember(body).username };
+      runBackground(() => handleGrillePoser(webhookUrl, discordId, Number(colonne), opts));
       return;
     }
   }

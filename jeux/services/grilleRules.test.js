@@ -1,5 +1,5 @@
 import assert from "assert";
-import { creerDuel, poser, scoreColonne, scoreGrille, choixGlouton } from "./pileRules.js";
+import { creerDuel, poser, scoreColonne, scoreGrille, choixGlouton } from "./grilleRules.js";
 
 // Dé suivant imposé (le rng ne sert qu'au lancer)
 const de = (v) => () => (v - 1) / 6;
@@ -70,7 +70,7 @@ function main() {
     assert.strictEqual(choixGlouton(d, "bot"), 1);
   }
 
-  console.log("pileRules : OK");
+  console.log("grilleRules : OK");
 }
 
 main();

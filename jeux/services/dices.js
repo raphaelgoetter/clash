@@ -1,5 +1,5 @@
 // ============================================================
-// dices.js — Faces de dé communes aux jeux de dés (La Pile ; le Gobelet
+// dices.js — Faces de dé communes aux jeux de dés (La Grille ; le Gobelet
 // garde ses keycaps et ses boutons 🔒/🎲, plus lisibles pour la sélection).
 // Sources vectorielles uniques : jeux/data/dices/dice-1.svg à dice-6.svg
 // (dé plein 15×15, corps de 1 à 14, points évidés). Discord n'affiche pas

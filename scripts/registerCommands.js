@@ -26,7 +26,7 @@ const botJeuxConfigure = Boolean(jeuxAppId && jeuxToken);
 const JEUX_COMMANDS = new Set([
   "mini-jeux",
   "mini-jeux-history",
-  "pile",
+  "grille",
   "bang",
   "blackjack",
   "gobelet",
@@ -506,9 +506,9 @@ const commands = [
     options: [],
   },
   {
-    name: "pile",
+    name: "grille",
     description:
-      "La Pile : pose tes dés et détruis ceux de Kévina ou d'un autre joueur — réservé au rôle MINI-JEUX.",
+      "La Grille : pose tes dés et détruis ceux de Kévina ou d'un autre joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING

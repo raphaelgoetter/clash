@@ -1,9 +1,9 @@
-// Simulation d'équilibrage de La Pile sur les vraies règles
-// (jeux/services/pileRules.js) : profils hasard ou glouton (Kévina).
-// Usage : node jeux/outils/pile/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
-// ex. : node jeux/outils/pile/simulateDuel.mjs 20000 hasard glouton
+// Simulation d'équilibrage de La Grille sur les vraies règles
+// (jeux/services/grilleRules.js) : profils hasard ou glouton (Kévina).
+// Usage : node jeux/outils/grille/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
+// ex. : node jeux/outils/grille/simulateDuel.mjs 20000 hasard glouton
 // Le « joueur » commence toujours.
-import { creerDuel, poser, scoreGrille, choixGlouton, choixHasard } from "../../services/pileRules.js";
+import { creerDuel, poser, scoreGrille, choixGlouton, choixHasard } from "../../services/grilleRules.js";
 
 const PARTIES = Number(process.argv[2] || 20000);
 const PROFILS = { joueur: process.argv[3] || "glouton", bot: process.argv[4] || "glouton" };
