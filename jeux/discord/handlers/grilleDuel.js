@@ -59,6 +59,10 @@ const EMOJI_HIGHSCORE = "<:topplayers:1563107730397601792>";
 const EXPLOSION = "💥";
 const DELAI_EXPLOSION_MS = 900;
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+// Contre Kévina : délai avant d'afficher son coup (elle joue en quelques
+// millisecondes, un coup instantané paraît mécanique), durée tirée au sort
+// (comme Quatre à la suite)
+const REFLEXION_MS = { min: 2000, max: 5000 };
 // Libellé du bouton et position dans les récits (« Tu poses 5 à gauche »)
 const COLONNES = [
   { nom: "Gauche", lieu: "à gauche" },
@@ -411,16 +415,20 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     const r = actionPoser(d, "joueur", colonne, BOT);
     if (r.erreur) return r;
     const lignes = [r.texte];
-    // Étapes d'explosion à afficher avant la vue finale
-    const etapes = r.explosion ? [{ texte: r.texte, grilles: r.explosion }] : [];
-    // Kévina pose son dé aussitôt
+    // Étapes avant la vue finale : explosion du coup du joueur, réflexion
+    // de Kévina (simple attente, rien d'affiché), explosion de son coup
+    // (vue de fin sans plateau : aucune étape quand le coup du joueur
+    // termine la partie, pas d'explosion quand celui de Kévina la termine)
+    const etapes = r.explosion && !d.termine ? [{ texte: r.texte, grilles: r.explosion }] : [];
+    // Kévina joue dans la foulée (sous le même verrou), son coup n'est
+    // affiché qu'après sa réflexion
     if (!d.termine && d.actif === "bot") {
+      etapes.push({ reflexion: true });
       const { explosion } = poserAvecExplosion(d, "bot", choixGlouton(d, "bot"));
       lignes.push(coupAdverse(d.dernier, BOT));
-      if (explosion) etapes.push({ texte: lignes.join("\n"), grilles: explosion });
+      if (explosion && !d.termine) etapes.push({ texte: lignes.join("\n"), grilles: explosion });
     }
-    // Vue de fin sans plateau : pas d'animation
-    return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes: d.termine ? [] : etapes };
+    return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes };
   });
   if (!duel) {
     await patchOriginal(webhookUrl, {
@@ -434,15 +442,19 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     });
     return;
   }
+  for (const etape of resultat.etapes ?? []) {
+    if (etape.reflexion) {
+      await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
+      continue;
+    }
+    await patchOriginal(webhookUrl, buildVue(duel, etape));
+    await pause(DELAI_EXPLOSION_MS);
+  }
   if (resultat.vientDeFinir) {
     // Le message public suffit : vue éphémère supprimée (repli : vue de fin)
     const highScore = await majHighScore(discordId, pseudo, scoreGrille(duel.grilles.joueur));
     const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?", highScore));
     if (ok && (await supprimerOriginal(webhookUrl))) return;
-  }
-  for (const etape of resultat.etapes ?? []) {
-    await patchOriginal(webhookUrl, buildVue(duel, etape));
-    await pause(DELAI_EXPLOSION_MS);
   }
   await patchOriginal(
     webhookUrl,

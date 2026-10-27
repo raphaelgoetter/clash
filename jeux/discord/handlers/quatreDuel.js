@@ -50,7 +50,7 @@ const CASE_VIDE = "⬛";
 const NUMEROS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣"];
 // Contre Kévina : délai avant d'afficher son coup (elle joue en quelques
 // millisecondes, un coup instantané paraît mécanique), durée tirée au sort
-const REFLEXION_MS = { min: 900, max: 1800 };
+const REFLEXION_MS = { min: 2000, max: 5000 };
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function memberHasMiniJeuxRole(body) {
