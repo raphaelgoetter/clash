@@ -1440,7 +1440,7 @@ Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obliga
 
 #### Contre Kévina
 
-- Partie **privée** : un message éphémère édité en place ; Kévina joue aussitôt après le joueur. Une partie par joueur (`quatreduel:<discordId>`, verrou `quatreduel:lock:<discordId>`), expiration 1 h après la dernière action (`INACTIVITE_SECONDES`). `/quatre` relance toujours une nouvelle partie.
+- Partie **privée** : un message éphémère édité en place. Kévina joue dans la foulée du joueur (même verrou), mais son coup n'est affiché qu'après un délai de 0,9 à 1,8 s tiré au sort (`REFLEXION_MS`), pour ne pas paraître instantané. Une partie par joueur (`quatreduel:<discordId>`, verrou `quatreduel:lock:<discordId>`), expiration 1 h après la dernière action (`INACTIVITE_SECONDES`). `/quatre` relance toujours une nouvelle partie.
 - Fin : résultat et plateau final publiés en **public** dans le salon du clic (`messageFinalSolo()`), pseudo en clair, jamais de mention.
 
 #### 1v1

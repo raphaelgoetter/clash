@@ -48,6 +48,10 @@ const ADV = "rouge";
 const CASE_VIDE = "⬛";
 // Numéros des colonnes au-dessus du plateau, alignés sur les boutons
 const NUMEROS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣"];
+// Contre Kévina : délai avant d'afficher son coup (elle joue en quelques
+// millisecondes, un coup instantané paraît mécanique), durée tirée au sort
+const REFLEXION_MS = { min: 900, max: 1800 };
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function memberHasMiniJeuxRole(body) {
   const roleId = await getRoleIdByName(MINI_JEUX_ROLE_NAME);
@@ -333,8 +337,10 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     const r = actionPoser(d, "joueur", colonne);
     if (r.erreur) return r;
     const lignes = [r.texte];
-    // Kévina joue aussitôt
+    let kevinaAJoue = false;
+    // Kévina joue dans la foulée (sous le même verrou)
     if (!d.termine && d.actif === "bot") {
+      kevinaAJoue = true;
       poser(d, "bot", choixKevina(d, "bot", {
         profondeur: config.profondeur_kevina,
         marge: config.marge_kevina,
@@ -342,7 +348,7 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
       }));
       lignes.push(coupAdverse(d.dernier, BOT));
     }
-    return { texte: lignes.join("\n"), vientDeFinir: d.termine };
+    return { texte: lignes.join("\n"), vientDeFinir: d.termine, kevinaAJoue };
   });
   if (!duel) {
     await patchOriginal(webhookUrl, {
@@ -355,6 +361,9 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
       components: boutonsFin(),
     });
     return;
+  }
+  if (resultat.kevinaAJoue) {
+    await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
   }
   if (resultat.vientDeFinir) await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
   await patchOriginal(
