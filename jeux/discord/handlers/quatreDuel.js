@@ -88,6 +88,18 @@ async function patchOriginal(webhookUrl, payload) {
   }
 }
 
+// Supprime la réponse éphémère de l'interaction. Vrai si c'est fait.
+async function supprimerOriginal(webhookUrl) {
+  if (!webhookUrl) return false;
+  try {
+    const res = await fetch(`${webhookUrl}/messages/@original`, { method: "DELETE" });
+    return res.ok;
+  } catch (err) {
+    console.error("[Quatre] Échec DELETE:", err.message);
+    return false;
+  }
+}
+
 // Message public (jeton du bot) : création, édition, suppression.
 async function messageSalon(method, channelId, messageId, payload) {
   const token = process.env.DISCORD_TOKEN;
@@ -365,7 +377,11 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
   if (resultat.kevinaAJoue) {
     await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
   }
-  if (resultat.vientDeFinir) await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
+  if (resultat.vientDeFinir) {
+    // Le message public suffit : vue éphémère supprimée (repli : vue de fin)
+    const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
+    if (ok && (await supprimerOriginal(webhookUrl))) return;
+  }
   await patchOriginal(
     webhookUrl,
     buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte }),
@@ -486,19 +502,28 @@ function messageFinal(partie) {
 }
 
 // Après un coup : vue de l'auteur, vue de l'adversaire (webhook encore
-// valable), message public (ou récapitulatif final).
+// valable), message public ; en fin de partie, récapitulatif seul (vues
+// supprimées).
 async function diffuserPvp(partie, config, discordId, webhookUrl, texte) {
   const autres = Object.values(partie.sieges ?? {}).filter((id) => id !== discordId);
-  await Promise.all([
-    patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte)),
-    ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id))),
-  ]);
   if (partie.statut === "fini") {
     const ok = await messageSalon("POST", partie.channelId, null, messageFinal(partie));
     if (ok) await messageSalon("DELETE", partie.channelId, partie.messageId);
     else await messageSalon("PATCH", partie.channelId, partie.messageId, messageFinal(partie));
+    // Le récapitulatif suffit : vues éphémères supprimées (repli : vue de fin)
+    const vues = [[discordId, webhookUrl, texte], ...autres.map((id) => [id, webhookValide(partie, id), null])];
+    await Promise.all(
+      vues.map(async ([id, url, t]) => {
+        if (ok && (await supprimerOriginal(url))) return;
+        await patchOriginal(url, vuePvp(partie, config, id, t));
+      }),
+    );
     return;
   }
+  await Promise.all([
+    patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte)),
+    ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id))),
+  ]);
   await messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(partie, config));
 }
 

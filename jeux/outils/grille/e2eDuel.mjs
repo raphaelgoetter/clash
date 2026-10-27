@@ -10,7 +10,10 @@ const vues = [];
 const salon = [];
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
-  if (u.startsWith("https://discord.test")) vues.push(JSON.parse(init.body));
+  if (u.startsWith("https://discord.test")) {
+    // DELETE : vue éphémère supprimée (fin de partie)
+    if (init.body) vues.push(JSON.parse(init.body));
+  }
   else if (u.startsWith("https://discord.com")) {
     if (init.body) salon.push({ method: init.method, ...JSON.parse(init.body) });
     return new Response(JSON.stringify({ id: `msg-${salon.length}` }));

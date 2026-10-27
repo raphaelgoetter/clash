@@ -98,6 +98,18 @@ async function patchOriginal(webhookUrl, payload) {
   }
 }
 
+// Supprime la réponse éphémère de l'interaction. Vrai si c'est fait.
+async function supprimerOriginal(webhookUrl) {
+  if (!webhookUrl) return false;
+  try {
+    const res = await fetch(`${webhookUrl}/messages/@original`, { method: "DELETE" });
+    return res.ok;
+  } catch (err) {
+    console.error("[Grille] Échec DELETE:", err.message);
+    return false;
+  }
+}
+
 // Message public (jeton du bot) : création, édition, suppression.
 async function messageSalon(method, channelId, messageId, payload) {
   const token = process.env.DISCORD_TOKEN;
@@ -355,17 +367,25 @@ export async function handleGrilleCommand(webhookUrl, discordId) {
   }
 }
 
+// Fin sur grille pleine, pour les messages publics : « Kévina pose le
+// dernier dé, remplit sa grille et bat X 63 à 41 ». `nom(siege)` : libellé.
+function recitFin(d, nom) {
+  const auteur = d.dernier?.id ?? "joueur";
+  const fin = `${nom(auteur)} pose le dernier dé, remplit sa grille`;
+  const s = (siege) => scoreGrille(d.grilles[siege]);
+  const g = d.gagnant;
+  if (g === "nul") return `${fin} : match nul (${s("joueur")} à ${s("bot")})`;
+  const issue = g === auteur ? ` et bat ${nom(adversaire(g))}` : `, mais ${nom(g)} gagne`;
+  return `${fin}${issue} ${s(g)} à ${s(adversaire(g))}`;
+}
+
 // Fin d'une partie contre Kévina : message public (non éphémère) dans le
-// salon, plateau final compris. Pseudo en clair, jamais de mention.
+// salon, plateau final compris, seul message de fin (la vue éphémère est
+// supprimée). Pseudo en clair, jamais de mention.
 function messageFinalSolo(d, pseudo) {
-  const sj = scoreGrille(d.grilles.joueur);
-  const sb = scoreGrille(d.grilles.bot);
+  const recit = recitFin(d, (siege) => (siege === "bot" ? "Kévina" : pseudo));
   const resultat =
-    d.gagnant === "nul"
-      ? `🤝 Match nul entre ${pseudo} et Kévina (${sj} à ${sb}).`
-      : d.gagnant === "joueur"
-        ? `🏆 ${pseudo} bat Kévina ${sj} à ${sb} !`
-        : `🤖 Kévina bat ${pseudo} ${sb} à ${sj}.`;
+    d.gagnant === "nul" ? `🤝 ${recit}.` : d.gagnant === "joueur" ? `🏆 ${recit} !` : `🤖 ${recit}.`;
   return {
     embeds: [
       {
@@ -406,7 +426,11 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     });
     return;
   }
-  if (resultat.vientDeFinir) await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
+  if (resultat.vientDeFinir) {
+    // Le message public suffit : vue éphémère supprimée (repli : vue de fin)
+    const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
+    if (ok && (await supprimerOriginal(webhookUrl))) return;
+  }
   for (const etape of resultat.etapes ?? []) {
     await patchOriginal(webhookUrl, buildVue(duel, etape));
     await pause(DELAI_EXPLOSION_MS);
@@ -516,14 +540,13 @@ function messageFinal(partie) {
   const d = partie.duel;
   // Pseudos en clair, jamais de mention (pas de ping)
   const nom = (siege) => partie.noms?.[partie.sieges[siege]] ?? "?";
-  const s = { joueur: scoreGrille(d.grilles.joueur), bot: scoreGrille(d.grilles.bot) };
   const g = d.gagnant;
   const resultat =
-    g === "nul"
-      ? `🤝 Match nul entre ${nom("joueur")} et ${nom("bot")} (${s.joueur} à ${s.bot}).`
-      : partie.raisonFin === "delai"
-        ? `🏆 ${nom(g)} remporte le duel : ${nom(adversaire(g))} n'a pas joué à temps.`
-        : `🏆 ${nom(g)} bat ${nom(adversaire(g))} ${s[g]} à ${s[adversaire(g)]} !`;
+    partie.raisonFin === "delai"
+      ? `🏆 ${nom(g)} remporte le duel : ${nom(adversaire(g))} n'a pas joué à temps.`
+      : g === "nul"
+        ? `🤝 ${recitFin(d, nom)}.`
+        : `🏆 ${recitFin(d, nom)} !`;
   return {
     embeds: [
       {
@@ -537,7 +560,8 @@ function messageFinal(partie) {
 }
 
 // Après un coup : vue de l'auteur, vue de l'adversaire (webhook encore
-// valable), message public (ou récapitulatif final). Avec `explosion`
+// valable), message public ; en fin de partie, récapitulatif seul (vues
+// supprimées). Avec `explosion`
 // (partie en cours), étape intermédiaire sur les deux vues d'abord.
 async function diffuserPvp(partie, config, discordId, webhookUrl, texte, explosion = null) {
   const autres = Object.values(partie.sieges ?? {}).filter((id) => id !== discordId);
@@ -548,16 +572,24 @@ async function diffuserPvp(partie, config, discordId, webhookUrl, texte, explosi
     ]);
     await pause(DELAI_EXPLOSION_MS);
   }
-  await Promise.all([
-    patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte)),
-    ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id))),
-  ]);
   if (partie.statut === "fini") {
     const ok = await messageSalon("POST", partie.channelId, null, messageFinal(partie));
     if (ok) await messageSalon("DELETE", partie.channelId, partie.messageId);
     else await messageSalon("PATCH", partie.channelId, partie.messageId, messageFinal(partie));
+    // Le récapitulatif suffit : vues éphémères supprimées (repli : vue de fin)
+    const vues = [[discordId, webhookUrl, texte], ...autres.map((id) => [id, webhookValide(partie, id), null])];
+    await Promise.all(
+      vues.map(async ([id, url, t]) => {
+        if (ok && (await supprimerOriginal(url))) return;
+        await patchOriginal(url, vuePvp(partie, config, id, t));
+      }),
+    );
     return;
   }
+  await Promise.all([
+    patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte)),
+    ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id))),
+  ]);
   await messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(partie, config));
 }
 
