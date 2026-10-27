@@ -168,23 +168,29 @@ function negamax(colonnes, id, profondeur, alpha, beta) {
 
 // Kévina voit `profondeur` coups à l'avance (le sien compris) : elle gagne
 // dès qu'elle peut, bloque toute victoire adverse immédiate, mais ne voit
-// pas les pièges plus lointains. À valeur égale, colonne tirée au sort
-// (parties variées). Profondeur : `profondeur_kevina` de duel.json.
-export function choixKevina(d, id, { profondeur = 4, rng = Math.random } = {}) {
+// pas les pièges plus lointains. Pendant les `ouverture` premiers coups de
+// la partie (les deux joueurs), colonne tirée au sort parmi les coups à
+// `marge` points au plus du meilleur : sans marge, l'ouverture est presque
+// toujours la même. Au-delà, seulement entre coups exactement égaux (une
+// marge sur toute la partie l'affaiblit trop). Une victoire ou une défaite
+// vue vaut des dizaines de milliers de points : ces coups restent forcés.
+// Réglages : `profondeur_kevina`, `marge_kevina`, `ouverture_kevina` de
+// duel.json.
+export function choixKevina(d, id, { profondeur = 4, marge = 0, ouverture = Infinity, rng = Math.random } = {}) {
   const colonnes = d.colonnes.map((c) => [...c]);
   const libres = ORDRE.filter((c) => colonnes[c].length < HAUTEUR);
   for (const c of libres) if (gagneEn(colonnes, c, id)) return c;
-  let meilleurs = [];
-  let max = -Infinity;
-  for (const c of libres) {
+  const valeurs = libres.map((c) => {
     colonnes[c].push(id);
     const v = -negamax(colonnes, adversaire(id), profondeur - 1, -Infinity, Infinity);
     colonnes[c].pop();
-    if (v > max) {
-      max = v;
-      meilleurs = [c];
-    } else if (v === max) meilleurs.push(c);
-  }
+    return { c, v };
+  });
+  const max = Math.max(...valeurs.map((x) => x.v));
+  // Victoire ou défaite en vue : seulement les coups exactement égaux (la
+  // plus rapide, ou la plus lointaine)
+  const seuil = Math.abs(max) >= VICTOIRE / 2 || d.coups >= ouverture ? max : max - marge;
+  const meilleurs = valeurs.filter((x) => x.v >= seuil).map((x) => x.c);
   return meilleurs[Math.floor(rng() * meilleurs.length)];
 }
 

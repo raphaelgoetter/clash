@@ -337,7 +337,11 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     const lignes = [r.texte];
     // Kévina joue aussitôt
     if (!d.termine && d.actif === "bot") {
-      poser(d, "bot", choixKevina(d, "bot", { profondeur: config.profondeur_kevina }));
+      poser(d, "bot", choixKevina(d, "bot", {
+        profondeur: config.profondeur_kevina,
+        marge: config.marge_kevina,
+        ouverture: config.ouverture_kevina,
+      }));
       lignes.push(coupAdverse(d.dernier, BOT));
     }
     return { texte: lignes.join("\n"), vientDeFinir: d.termine };

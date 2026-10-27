@@ -1419,7 +1419,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille
 
 Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé.** Même structure que La Grille (modes, sièges, verrous, délai, messages publics).
 
-- Code : `jeux/services/quatreRules.js` (règles pures et Kévina, tests `quatreRules.test.js`), `jeux/services/quatreDuel.js` (Redis), `jeux/discord/handlers/quatreDuel.js` (Discord). Config `jeux/data/quatre/duel.json` : `delai_tour_minutes` (5, 1v1 uniquement), `profondeur_kevina` (4).
+- Code : `jeux/services/quatreRules.js` (règles pures et Kévina, tests `quatreRules.test.js`), `jeux/services/quatreDuel.js` (Redis), `jeux/discord/handlers/quatreDuel.js` (Discord). Config `jeux/data/quatre/duel.json` : `delai_tour_minutes` (5, 1v1 uniquement), `profondeur_kevina` (4), `marge_kevina` (3), `ouverture_kevina` (6).
 - `custom_id` : `quatreduel_poser:<colonne>` contre Kévina, `quatreduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 6), `quatreduel_ouvrir` (Jouer du message public 1v1), `quatreduel_regles`.
 
 #### Règles
@@ -1429,7 +1429,7 @@ Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obliga
 - **Victoire** dès qu'un joueur aligne au moins 4 pions (horizontale, verticale ou diagonale) ; `d.alignement` garde toutes les cases gagnantes (alignement de 5, croix).
 - **Match nul** : grille pleine sans alignement.
 - **Qui commence** : toujours le joueur contre Kévina (le premier joueur est avantagé au Puissance 4) ; tiré au sort en 1v1.
-- **Kévina** (`choixKevina()`) : negamax alpha-bêta à `profondeur_kevina` coups (le sien compris), évaluation par fenêtres de 4 cases (3 pions + 1 vide, 2 + 2) et colonne centrale. Elle gagne dès qu'elle peut et bloque toute victoire immédiate, mais ne voit pas les pièges plus lointains ; à valeur égale, colonne tirée au sort. ⚠️ Jamais de bot parfait : le Puissance 4 est résolu, le joueur doit pouvoir gagner.
+- **Kévina** (`choixKevina()`) : negamax alpha-bêta à `profondeur_kevina` coups (le sien compris), évaluation par fenêtres de 4 cases (3 pions + 1 vide, 2 + 2) et colonne centrale. Elle gagne dès qu'elle peut et bloque toute victoire immédiate, mais ne voit pas les pièges plus lointains. **Variété** : pendant les `ouverture_kevina` premiers coups de la partie (les deux joueurs), colonne tirée au sort parmi les coups à `marge_kevina` points au plus du meilleur (jamais quand une victoire ou une défaite est en vue) ; ensuite, seulement entre coups exactement égaux. ⚠️ Sans marge, l'ouverture est presque figée (réponse toujours au centre) ; une marge sur toute la partie l'affaiblit trop. ⚠️ Jamais de bot parfait : le Puissance 4 est résolu, le joueur doit pouvoir gagner.
 
 #### Affichage
 
@@ -1452,7 +1452,7 @@ Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obliga
 
 #### Outils (`jeux/outils/quatre/`, à lancer à la main)
 
-- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina1` à `kevina9`, chiffre = profondeur). Repères : hasard contre Kévina (profondeur 4) 0 % ; entre deux profondeurs, la plus grande gagne nettement (kevina5 contre kevina4 : ~68 % / ~28 %) ; entre bots, l'avantage du premier joueur n'apparaît qu'à partir de la profondeur 6 (heuristique). ~1 ms par coup à profondeur 4, ~13 ms à 6.
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina<profondeur>[m<marge>[o<ouverture>]]`, ex. `kevina4m3o6` = réglage de production). Repères : hasard contre Kévina 0 % ; kevina3 contre kevina4 sans variété ~17 % / ~81 %, contre kevina4m3o6 ~51 % / ~43 % (la variété coûte de la force) ; marge sur toute la partie (kevina4m3) ~60 % / ~35 % ; entre deux profondeurs, la plus grande gagne nettement (kevina5 contre kevina4 : ~68 % / ~28 %) ; entre bots, l'avantage du premier joueur n'apparaît qu'à partir de la profondeur 6 (heuristique). ~1 ms par coup à profondeur 4, ~13 ms à 6.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/quatre/e2eDuel.mjs`).
 
 ---

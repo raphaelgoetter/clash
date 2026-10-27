@@ -104,6 +104,27 @@ function main() {
     for (let i = 0; i < 5; i++) assert.notStrictEqual(choixKevina(d, "bot"), 2);
   }
 
+  // ── Variété d'ouverture : marge dans les premiers coups seulement ──
+  {
+    const reponses = (opts) => {
+      const vues = new Set();
+      for (let i = 0; i < 40; i++) {
+        const d = duelTest(["", "", "", "J", "", "", ""], "bot");
+        d.coups = 1;
+        vues.add(choixKevina(d, "bot", opts));
+      }
+      return vues;
+    };
+    assert.deepStrictEqual([...reponses({ marge: 0 })], [3]);
+    assert.ok(reponses({ marge: 6, ouverture: 6 }).size > 1);
+    assert.deepStrictEqual([...reponses({ marge: 6, ouverture: 1 })], [3]);
+  }
+  {
+    // Marge sans effet quand une défaite est en vue : toujours bloquer
+    const d = duelTest(["J", "J", "J", "", "B", "B", ""], "bot");
+    for (let i = 0; i < 10; i++) assert.strictEqual(choixKevina(d, "bot", { marge: 50, ouverture: 99 }), 3);
+  }
+
   console.log("quatreRules : OK");
 }
 

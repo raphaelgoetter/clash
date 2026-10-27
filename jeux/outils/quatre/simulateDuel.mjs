@@ -1,7 +1,7 @@
 // Simulation d'équilibrage de Quatre à la suite sur les vraies règles
-// (jeux/services/quatreRules.js) : profils hasard ou kevina<profondeur>.
+// (jeux/services/quatreRules.js) : profils hasard ou kevina<profondeur>[m<marge>[o<ouverture>]].
 // Usage : node jeux/outils/quatre/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
-// ex. : node jeux/outils/quatre/simulateDuel.mjs 2000 kevina2 kevina4
+// ex. : node jeux/outils/quatre/simulateDuel.mjs 2000 kevina4 kevina4m3
 // Le « joueur » commence toujours.
 import { creerDuel, poser, choixKevina, choixHasard } from "../../services/quatreRules.js";
 
@@ -10,10 +10,12 @@ const PROFILS = { joueur: process.argv[3] || "kevina4", bot: process.argv[4] || 
 
 function choix(profil) {
   if (profil === "hasard") return (d, id) => choixHasard(d, id);
-  const m = /^kevina(\d)$/.exec(profil);
-  if (!m) throw new Error(`Profil inconnu : ${profil} (hasard, kevina1 à kevina9)`);
+  const m = /^kevina(\d)(?:m(\d+)(?:o(\d+))?)?$/.exec(profil);
+  if (!m) throw new Error(`Profil inconnu : ${profil} (hasard, kevina<1-9>[m<marge>[o<ouverture>]])`);
   const profondeur = Number(m[1]);
-  return (d, id) => choixKevina(d, id, { profondeur });
+  const marge = Number(m[2] ?? 0);
+  const ouverture = m[3] ? Number(m[3]) : Infinity;
+  return (d, id) => choixKevina(d, id, { profondeur, marge, ouverture });
 }
 const CHOIX = { joueur: choix(PROFILS.joueur), bot: choix(PROFILS.bot) };
 
