@@ -1386,7 +1386,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille
 - Chaque joueur a 3 colonnes de 3 cases : gauche, centre, droite, sans effet particulier (règles pures, ni tours ni Roi).
 - À son tour, un dé est lancé pour le joueur, qui le pose dans une de ses colonnes non pleines (un bouton par colonne, grisé si pleine).
 - **Score d'une colonne** : chaque valeur compte valeur × n × n (n = dés de cette valeur dans la colonne) : 4-4 = 16, 3-3-3 = 27 (`scoreColonne()`).
-- **Destruction** : poser un dé retire tous les dés de même valeur de la colonne adverse correspondante.
+- **Destruction** : poser un dé retire tous les dés de même valeur de la colonne adverse correspondante ; les dés restants se resserrent vers le centre (dit dans les règles du jeu).
 - **Fin** dès qu'une grille est pleine (après la pose) ; plus haut total gagnant, égalité = match nul.
 - **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
 - **Kévina** (`choixGlouton()`) : maximise points gagnés + points détruits ; à égalité, la colonne la moins remplie.

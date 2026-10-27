@@ -306,7 +306,7 @@ function buildReglesEmbed(config) {
       "",
       "**🎲 À ton tour** : un dé est lancé pour toi, pose-le dans une de tes colonnes non pleines.",
       "**✖️ Combos** : dans une colonne, des dés identiques se multiplient. Chaque valeur compte valeur × nombre de dés × nombre de dés : deux 4 valent (4 + 4) × 2 = 16, trois 3 valent 9 × 3 = 27.",
-      "**💥 Destruction** : poser un dé détruit tous les dés de même valeur dans la colonne d'en face de ton adversaire.",
+      "**💥 Destruction** : poser un dé détruit tous les dés de même valeur dans la colonne d'en face de ton adversaire. Les dés restants se resserrent vers le centre.",
       "**🏁 Fin** : dès qu'une grille est pleine. Le plus haut total gagne.",
       "",
       `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
