@@ -209,6 +209,7 @@ const BOUTON_REGLES = {
   custom_id: "pileduel_regles",
 };
 
+// Bouton Règles : messages publics seulement, jamais dans les éphémères
 const boutonsFin = () => [{ type: 1, components: [BOUTON_REGLES] }];
 
 function titreFin(d, moi, A, raison) {
@@ -220,26 +221,52 @@ function titreFin(d, moi, A, raison) {
   return d.gagnant === moi ? `🏆 Victoire ${s.moi} à ${s.adv} !` : `💀 Défaite ${s.moi} à ${s.adv}…`;
 }
 
+// Vue de fin : une phrase seulement, le plateau final et les scores sont
+// déjà dans le message public posté au même moment.
+function vueFin(d, { moi, A, raison }) {
+  const fin =
+    raison === "delai"
+      ? d.gagnant === moi
+        ? `${A.Sujet} n'a pas joué à temps.`
+        : "Tu n'as pas joué à temps."
+      : d.dernier?.id === moi
+        ? "Tu poses le dernier dé et remplis ta grille."
+        : `${A.Sujet} pose le dernier dé et remplit sa grille.`;
+  const issue =
+    d.gagnant === "nul"
+      ? "c'est un match nul."
+      : d.gagnant === moi
+        ? "c'est une victoire pour toi !"
+        : "c'est une défaite pour toi…";
+  return {
+    embeds: [
+      {
+        title: `🧱 La Pile · ${titreFin(d, moi, A, raison)}`,
+        description: `${fin} La partie est terminée, et ${issue}`,
+        color: PILE_COLOR,
+      },
+    ],
+    components: [],
+  };
+}
+
 // Vue d'un joueur : résultat de la dernière action (`texte`), plateau, dé à
-// poser et une colonne par bouton (à son tour), attente (1v1) ou résultat.
+// poser et une colonne par bouton (à son tour), attente (1v1) ou fin.
 // `ctx` : { moi (siège du moteur), A (adversaire), pvp, echeance, raison }
 function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null } = {}) {
-  const monTour = !d.termine && d.actif === moi;
+  if (d.termine) return vueFin(d, { moi, A, raison });
+  const monTour = d.actif === moi;
   const lignes = [
     ...(texte ? [texte, ""] : []),
     ...plateau(d, moi, { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` }),
     "",
-    ...(d.termine
-      ? []
-      : monTour
-        ? [`# Ton dé : ${formatDie(d.de, MOI)}`]
-        : [`⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
+    monTour
+      ? `# Ton dé : ${formatDie(d.de, MOI)}`
+      : `⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
   ];
-  const titre = d.termine
-    ? `🧱 La Pile · ${titreFin(d, moi, A, raison)}`
-    : `🧱 La Pile · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
+  const titre = `🧱 La Pile · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: PILE_COLOR };
-  if (!monTour) return { embeds: [embed], components: boutonsFin() };
+  if (!monTour) return { embeds: [embed], components: [] };
   const sfx = pvp ? ":pvp" : "";
   return {
     embeds: [embed],
@@ -254,7 +281,6 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
           disabled: d.grilles[moi][c].length >= HAUTEUR,
         })),
       },
-      { type: 1, components: [BOUTON_REGLES] },
     ],
   };
 }
@@ -347,7 +373,7 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
           color: PILE_COLOR,
         },
       ],
-      components: boutonsFin(),
+      components: [],
     });
     return;
   }
@@ -497,7 +523,7 @@ const AUCUNE_PARTIE_PVP = {
       color: PILE_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 // `/pile adversaire:1v1` : ouvre le lobby (message public), la réponse
