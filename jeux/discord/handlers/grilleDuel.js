@@ -51,6 +51,11 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 const MOI = "bleu";
 const ADV = "rouge";
 const CASE_VIDE = "⬛";
+// Dés détruits : affichés 💥, encore à leur place, le temps d'une étape
+// avant leur disparition (plus lisible qu'un effacement brutal)
+const EXPLOSION = "💥";
+const DELAI_EXPLOSION_MS = 900;
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 // Libellé du bouton et position dans les récits (« Tu poses 5 à gauche »)
 const COLONNES = [
   { nom: "Gauche", lieu: "à gauche" },
@@ -147,11 +152,13 @@ function lignesGrille(grille, couleur, { haut = false } = {}) {
   const rangs = haut ? [2, 1, 0] : [0, 1, 2];
   return rangs.map(
     (r) =>
-      `# ${grille.map((col) => (col[r] ? formatDie(col[r], couleur) : CASE_VIDE)).join(" ")}`,
+      `# ${grille.map((col) => (col[r] === EXPLOSION ? EXPLOSION : col[r] ? formatDie(col[r], couleur) : CASE_VIDE)).join(" ")}`,
   );
 }
 
-function ligneScores(nom, grille) {
+function ligneScores(nom, grilleAffichee) {
+  // Dés en explosion déjà hors du score
+  const grille = grilleAffichee.map((col) => col.filter((v) => v !== EXPLOSION));
   const detail = grille.map((col) => scoreColonne(col)).join(" · ");
   return `**${nom} : ${scoreGrille(grille)} pts** (${detail})`;
 }
@@ -252,16 +259,21 @@ function vueFin(d, { moi, A, raison }) {
 
 // Vue d'un joueur : résultat de la dernière action (`texte`), plateau, dé à
 // poser et une colonne par bouton (à son tour), attente (1v1) ou fin.
-// `ctx` : { moi (siège du moteur), A (adversaire), pvp, echeance, raison }
-function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null } = {}) {
+// `ctx` : { moi (siège du moteur), A (adversaire), pvp, echeance, raison,
+// grilles (étape d'explosion : plateau affiché à la place de d.grilles,
+// dé à poser masqué et boutons grisés) }
+function buildVue(
+  d,
+  { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null, grilles = null } = {},
+) {
   if (d.termine) return vueFin(d, { moi, A, raison });
   const monTour = d.actif === moi;
   const lignes = [
     ...(texte ? [texte, ""] : []),
-    ...plateau(d, moi, { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` }),
+    ...plateau(grilles ? { ...d, grilles } : d, moi, { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` }),
     "",
     monTour
-      ? `# Ton dé : ${formatDie(d.de, MOI)}`
+      ? `# Ton dé : ${grilles ? "🎲" : formatDie(d.de, MOI)}`
       : `⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
   ];
   const titre = `▦ La Grille · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
@@ -278,7 +290,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
           style: 1,
           label: col.nom,
           custom_id: `grilleduel_poser:${c}${sfx}`,
-          disabled: d.grilles[moi][c].length >= HAUTEUR,
+          disabled: Boolean(grilles) || d.grilles[moi][c].length >= HAUTEUR,
         })),
       },
       { type: 1, components: [BOUTON_REGLES] },
@@ -305,12 +317,24 @@ function buildReglesEmbed(config) {
 
 // ── Coups (communs aux deux modes) ───────────────────────────────────
 
+// Pose le dé de `id` ; si des dés adverses sont détruits, `explosion` donne
+// les grilles de l'étape intermédiaire (dés détruits en 💥, à leur place).
+function poserAvecExplosion(d, id, colonne) {
+  const cible = d.grilles[adversaire(id)][colonne];
+  const avant = Array.isArray(cible) ? [...cible] : [];
+  const r = poser(d, id, colonne);
+  if (r.erreur || !r.desDetruits) return { r, explosion: null };
+  const explosion = structuredClone(d.grilles);
+  explosion[adversaire(id)][colonne] = avant.map((v) => (v === r.valeur ? EXPLOSION : v));
+  return { r, explosion };
+}
+
 function actionPoser(d, moi, colonne, A) {
-  const r = poser(d, moi, colonne);
+  const { r, explosion } = poserAvecExplosion(d, moi, colonne);
   if (r.erreur) {
     return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "pleine" };
   }
-  return { texte: monCoup(r, A) };
+  return { texte: monCoup(r, A), explosion };
 }
 
 // ── Contre Kévina ────────────────────────────────────────────────────
@@ -359,12 +383,16 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     const r = actionPoser(d, "joueur", colonne, BOT);
     if (r.erreur) return r;
     const lignes = [r.texte];
+    // Étapes d'explosion à afficher avant la vue finale
+    const etapes = r.explosion ? [{ texte: r.texte, grilles: r.explosion }] : [];
     // Kévina pose son dé aussitôt
     if (!d.termine && d.actif === "bot") {
-      poser(d, "bot", choixGlouton(d, "bot"));
+      const { explosion } = poserAvecExplosion(d, "bot", choixGlouton(d, "bot"));
       lignes.push(coupAdverse(d.dernier, BOT));
+      if (explosion) etapes.push({ texte: lignes.join("\n"), grilles: explosion });
     }
-    return { texte: lignes.join("\n"), vientDeFinir: d.termine };
+    // Vue de fin sans plateau : pas d'animation
+    return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes: d.termine ? [] : etapes };
   });
   if (!duel) {
     await patchOriginal(webhookUrl, {
@@ -379,6 +407,10 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     return;
   }
   if (resultat.vientDeFinir) await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
+  for (const etape of resultat.etapes ?? []) {
+    await patchOriginal(webhookUrl, buildVue(duel, etape));
+    await pause(DELAI_EXPLOSION_MS);
+  }
   await patchOriginal(
     webhookUrl,
     buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte }),
@@ -400,8 +432,8 @@ function webhookValide(partie, discordId) {
 }
 
 // Vue éphémère d'un joueur du 1v1 (lobby, partie, fin). Sans `texte`, le
-// dernier coup adverse est raconté.
-function vuePvp(partie, config, discordId, texte = null) {
+// dernier coup adverse est raconté. `grilles` : étape d'explosion.
+function vuePvp(partie, config, discordId, texte = null, grilles = null) {
   if (partie.statut === "lobby") {
     return {
       embeds: [
@@ -429,6 +461,7 @@ function vuePvp(partie, config, discordId, texte = null) {
     pvp: true,
     echeance: echeanceDe(partie, config),
     raison: partie.raisonFin,
+    grilles,
   });
 }
 
@@ -441,7 +474,8 @@ const BOUTON_JOUER = {
 };
 
 // Message public : lobby, puis plateau en direct (au tour de qui, délai).
-function messagePublic(partie, config) {
+// `grilles` : étape d'explosion.
+function messagePublic(partie, config, grilles = null) {
   const components = [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }];
   if (partie.statut === "lobby") {
     return {
@@ -462,7 +496,7 @@ function messagePublic(partie, config) {
       {
         title: `▦ La Grille · ${nom("joueur")} contre ${nom("bot")}`,
         description: [
-          ...plateauPublic(d, nom("joueur"), nom("bot")),
+          ...plateauPublic(grilles ? { ...d, grilles } : d, nom("joueur"), nom("bot")),
           "",
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
           "Joueurs : clique sur **Jouer** pour afficher ta vue.",
@@ -501,9 +535,18 @@ function messageFinal(partie) {
 }
 
 // Après un coup : vue de l'auteur, vue de l'adversaire (webhook encore
-// valable), message public (ou récapitulatif final).
-async function diffuserPvp(partie, config, discordId, webhookUrl, texte) {
+// valable), message public (ou récapitulatif final). Avec `explosion`
+// (partie en cours), étape intermédiaire sur les trois messages d'abord.
+async function diffuserPvp(partie, config, discordId, webhookUrl, texte, explosion = null) {
   const autres = Object.values(partie.sieges ?? {}).filter((id) => id !== discordId);
+  if (explosion && partie.statut === "enCours") {
+    await Promise.all([
+      patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte, explosion)),
+      ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id, null, explosion))),
+      messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(partie, config, explosion)),
+    ]);
+    await pause(DELAI_EXPLOSION_MS);
+  }
   await Promise.all([
     patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte)),
     ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id))),
@@ -614,7 +657,7 @@ async function executerPvp(webhookUrl, discordId, colonne) {
   }
   const texte = resultat.erreur ? avertissement(resultat.erreur) : resultat.texte;
   if (resultat.coup || resultat.vientDeFinir) {
-    await diffuserPvp(partie, config, discordId, webhookUrl, texte);
+    await diffuserPvp(partie, config, discordId, webhookUrl, texte, resultat.explosion);
     return;
   }
   await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte));
