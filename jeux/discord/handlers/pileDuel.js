@@ -209,7 +209,6 @@ const BOUTON_REGLES = {
   custom_id: "pileduel_regles",
 };
 
-// Bouton Règles : messages publics seulement, jamais dans les éphémères
 const boutonsFin = () => [{ type: 1, components: [BOUTON_REGLES] }];
 
 function titreFin(d, moi, A, raison) {
@@ -246,6 +245,7 @@ function vueFin(d, { moi, A, raison }) {
         color: PILE_COLOR,
       },
     ],
+    // Pas de bouton Règles : celui du message public posté au même moment suffit
     components: [],
   };
 }
@@ -266,7 +266,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
   ];
   const titre = `🧱 La Pile · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: PILE_COLOR };
-  if (!monTour) return { embeds: [embed], components: [] };
+  if (!monTour) return { embeds: [embed], components: boutonsFin() };
   const sfx = pvp ? ":pvp" : "";
   return {
     embeds: [embed],
@@ -281,6 +281,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
           disabled: d.grilles[moi][c].length >= HAUTEUR,
         })),
       },
+      { type: 1, components: [BOUTON_REGLES] },
     ],
   };
 }
@@ -373,7 +374,7 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
           color: PILE_COLOR,
         },
       ],
-      components: [],
+      components: boutonsFin(),
     });
     return;
   }
@@ -523,7 +524,7 @@ const AUCUNE_PARTIE_PVP = {
       color: PILE_COLOR,
     },
   ],
-  components: [],
+  components: boutonsFin(),
 };
 
 // `/pile adversaire:1v1` : ouvre le lobby (message public), la réponse

@@ -1387,8 +1387,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/pile a
 
 - Faces de dé communes (voir « Faces de dé communes ») : ses propres dés en **bleu**, ceux de l'adversaire en **rouge** ; case vide ⬛. Grilles et dé à poser en titres `#` (plus grande taille d'emoji), adversaire en haut (lue depuis le centre du plateau), soi en bas, avec le total et le score de chaque colonne (gauche · centre · droite). Boutons Gauche, Centre, Droite.
 - Chaque vue raconte le dernier coup (`d.dernier` : valeur, colonne, dés détruits).
-- **Vue de fin** (éphémère, `vueFin()`) : titre avec le résultat et une seule phrase (« Tu poses le dernier dé et remplis ta grille. La partie est terminée, et c'est une victoire pour toi ! », ou délai dépassé), sans plateau ni scores : le message public posté au même moment les affiche.
-- **Bouton Règles** : uniquement sur les messages publics (lobby et partie 1v1, résultats finaux), jamais dans les éphémères.
+- **Vue de fin** (éphémère, `vueFin()`) : titre avec le résultat et une seule phrase (« Tu poses le dernier dé et remplis ta grille. La partie est terminée, et c'est une victoire pour toi ! », ou délai dépassé), sans plateau, scores ni bouton Règles : le message public posté au même moment les affiche. Les autres vues éphémères gardent le bouton Règles.
 
 #### Contre Kévina
 
