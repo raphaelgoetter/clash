@@ -1395,7 +1395,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille
 
 - Faces de dé communes (voir « Faces de dé communes ») : ses propres dés en **bleu**, ceux de l'adversaire en **rouge** ; case vide ⬛. Grilles et dé à poser en titres `#` (plus grande taille d'emoji), adversaire en haut (lue depuis le centre du plateau), soi en bas, avec le total et le score de chaque colonne (gauche · centre · droite). Boutons Gauche, Centre, Droite.
 - Chaque vue raconte le dernier coup (`d.dernier` : valeur, colonne, dés détruits).
-- **Explosion** : un coup qui détruit des dés passe d'abord par une étape intermédiaire (dés détruits remplacés par 💥 à leur place, hors score, dé à poser 🎲 et boutons grisés), puis la vue finale `DELAI_EXPLOSION_MS` (900 ms) plus tard. Contre Kévina, jusqu'à deux étapes (coup du joueur, puis de Kévina) ; en 1v1, sur les deux vues et le message public. Aucune étape quand le coup termine la partie (la vue de fin n'a pas de plateau).
+- **Explosion** : un coup qui détruit des dés passe d'abord par une étape intermédiaire (dés détruits remplacés par 💥 à leur place, hors score, dé à poser 🎲 et boutons grisés), puis la vue finale `DELAI_EXPLOSION_MS` (900 ms) plus tard. Contre Kévina, jusqu'à deux étapes (coup du joueur, puis de Kévina) ; en 1v1, sur les deux vues. Aucune étape quand le coup termine la partie (la vue de fin n'a pas de plateau).
 - **Vue de fin** (éphémère, `vueFin()`) : titre avec le résultat et une seule phrase (« Tu poses le dernier dé et remplis ta grille. La partie est terminée, et c'est une victoire pour toi ! », ou délai dépassé), sans plateau, scores ni bouton Règles : le message public posté au même moment les affiche. Les autres vues éphémères gardent le bouton Règles.
 
 #### Contre Kévina
@@ -1406,7 +1406,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille
 #### 1v1
 
 - Même moteur (sièges `joueur` = celui qui commence, `bot` = l'autre ; `sieges` → discordId). **Une partie à la fois** (`grilleduel:pvp`, verrou `grilleduel:lock:pvp`, expiration 1 h).
-- Message public avec bouton **Jouer** et plateau en direct (premier joueur en bas, en bleu) : le premier autre joueur qui clique relève le défi, un 3ᵉ est refusé. Chaque joueur a sa vue éphémère, rééditée après chaque coup adverse via le webhook mémorisé (jeton valable 15 min ; au-delà, Jouer rouvre une vue à jour).
+- Message public avec bouton **Jouer**, scores des deux joueurs, joueur au trait et délai, **sans plateau** (chaque joueur a le sien dans sa vue éphémère ; deux plateaux identiques à l'écran prêtent à confusion) : le premier autre joueur qui clique relève le défi, un 3ᵉ est refusé. Chaque joueur a sa vue éphémère, rééditée après chaque coup adverse via le webhook mémorisé (jeton valable 15 min ; au-delà, Jouer rouvre une vue à jour).
 - **Délai** : `delai_tour_minutes` par coup, dépassé = défaite, vérifié paresseusement à la prochaine interaction (`verifierDelai()`, pas de cron). Lobby sans adversaire depuis le délai (ou relancé par son lanceur) et partie au délai dépassé remplacés par un nouveau `/grille adversaire:1v1`.
 - Fin (grille pleine, délai) : récapitulatif avec plateau final dans un nouveau message public, l'ancien supprimé.
 
@@ -1446,7 +1446,7 @@ Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obliga
 #### 1v1
 
 - Même moteur (sièges `joueur` = celui qui commence, `bot` = l'autre ; `sieges` → discordId). **Une partie à la fois** (`quatreduel:pvp`, verrou `quatreduel:lock:pvp`, expiration 1 h), indépendante du 1v1 de La Grille.
-- Message public avec bouton **Jouer** et plateau en direct (premier joueur en bleu) : le premier autre joueur qui clique relève le défi, un 3ᵉ est refusé. Vue éphémère par joueur, rééditée après chaque coup adverse via le webhook mémorisé (jeton valable 15 min ; au-delà, Jouer rouvre une vue à jour).
+- Message public avec bouton **Jouer**, joueur au trait et délai, **sans plateau** (chaque joueur a le sien dans sa vue éphémère) : le premier autre joueur qui clique relève le défi, un 3ᵉ est refusé. Vue éphémère par joueur, rééditée après chaque coup adverse via le webhook mémorisé (jeton valable 15 min ; au-delà, Jouer rouvre une vue à jour).
 - **Délai** : `delai_tour_minutes` par coup, dépassé = défaite, vérifié paresseusement à la prochaine interaction (`verifierDelai()`, pas de cron). Lobby sans adversaire depuis le délai (ou relancé par son lanceur) et partie au délai dépassé remplacés par un nouveau `/quatre adversaire:1v1`.
 - Fin (`raisonFin` : `jeu` pour un alignement ou une grille pleine, `delai`) : récapitulatif avec plateau final dans un nouveau message public, l'ancien supprimé.
 

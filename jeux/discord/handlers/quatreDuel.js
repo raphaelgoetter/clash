@@ -447,9 +447,9 @@ function messagePublic(partie, config) {
     embeds: [
       {
         title: `${TITRE} · ${nom("joueur")} contre ${nom("bot")}`,
+        // Sans plateau : chaque joueur a le sien dans sa vue éphémère (un
+        // second plateau identique à l'écran prêterait à confusion)
         description: [
-          ...plateauPublic(d, nom("joueur"), nom("bot")),
-          "",
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
           "Joueurs : clique sur **Jouer** pour afficher ta vue.",
         ].join("\n").slice(0, 4096),

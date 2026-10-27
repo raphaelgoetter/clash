@@ -473,9 +473,10 @@ const BOUTON_JOUER = {
   custom_id: "grilleduel_ouvrir",
 };
 
-// Message public : lobby, puis plateau en direct (au tour de qui, délai).
-// `grilles` : étape d'explosion.
-function messagePublic(partie, config, grilles = null) {
+// Message public : lobby, puis scores en direct (au tour de qui, délai).
+// Sans plateau : chaque joueur a le sien dans sa vue éphémère (un second
+// plateau identique à l'écran prêterait à confusion).
+function messagePublic(partie, config) {
   const components = [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }];
   if (partie.statut === "lobby") {
     return {
@@ -496,7 +497,8 @@ function messagePublic(partie, config, grilles = null) {
       {
         title: `▦ La Grille · ${nom("joueur")} contre ${nom("bot")}`,
         description: [
-          ...plateauPublic(grilles ? { ...d, grilles } : d, nom("joueur"), nom("bot")),
+          ligneScores(nom("joueur"), d.grilles.joueur),
+          ligneScores(nom("bot"), d.grilles.bot),
           "",
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
           "Joueurs : clique sur **Jouer** pour afficher ta vue.",
@@ -536,14 +538,13 @@ function messageFinal(partie) {
 
 // Après un coup : vue de l'auteur, vue de l'adversaire (webhook encore
 // valable), message public (ou récapitulatif final). Avec `explosion`
-// (partie en cours), étape intermédiaire sur les trois messages d'abord.
+// (partie en cours), étape intermédiaire sur les deux vues d'abord.
 async function diffuserPvp(partie, config, discordId, webhookUrl, texte, explosion = null) {
   const autres = Object.values(partie.sieges ?? {}).filter((id) => id !== discordId);
   if (explosion && partie.statut === "enCours") {
     await Promise.all([
       patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte, explosion)),
       ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id, null, explosion))),
-      messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(partie, config, explosion)),
     ]);
     await pause(DELAI_EXPLOSION_MS);
   }
