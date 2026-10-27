@@ -8,8 +8,8 @@
 // (`grilleduel:<discordId>`), plusieurs parties en même temps possibles.
 // 1v1 : une seule partie à la fois (`grilleduel:pvp`), comme Bang! Duel.
 // Chaque écriture relance l'expiration : sans action pendant
-// `INACTIVITE_SECONDES`, la partie disparaît (aucun score conservé : jeu
-// libre).
+// `INACTIVITE_SECONDES`, la partie disparaît. Seul le high score contre
+// Kévina est conservé (`grilleduel:highscore`).
 //
 // ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // La Grille), source de vérité.
@@ -108,6 +108,30 @@ export async function agirDuel(discordId, fn) {
     const resultat = await fn(duel);
     await writeDuel(discordId, duel);
     return { duel, resultat };
+  });
+}
+
+// ── High score (contre Kévina seulement) ──────────────────────────────────
+// Meilleur total final de tous les temps, que la partie soit gagnée ou non.
+// Pas en 1v1 : deux joueurs pourraient s'entendre pour gonfler un score.
+// JAMAIS effacé (même modèle que le Gobelet Duel).
+
+const CLE_HIGHSCORE = "grilleduel:highscore";
+
+// Pure : strictement supérieur à l'ancien record (une égalité ne détrône
+// pas le détenteur), jamais un score nul.
+export function isNewHighScore(actuel, points) {
+  return points > 0 && (!actuel || points > actuel.points);
+}
+
+// Renvoie le record à jour (nouveau ou inchangé), null s'il n'y en a pas.
+export async function majHighScore(discordId, username, points, now = new Date()) {
+  return withLock("highscore", async () => {
+    const actuel = fromJson(await getRedis().get(CLE_HIGHSCORE));
+    if (!isNewHighScore(actuel, points)) return actuel;
+    const record = { discordId, username: username || null, points, at: now.toISOString() };
+    await getRedis().set(CLE_HIGHSCORE, JSON.stringify(record));
+    return record;
   });
 }
 

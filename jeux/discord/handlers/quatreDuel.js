@@ -322,9 +322,39 @@ export async function handleQuatreCommand(webhookUrl, discordId) {
   }
 }
 
+// ── Séries de victoires (messages de fin) ────────────────────────────
+
+// Série cassée signalée à partir de 2 victoires (« 💔 Fin de la série… »)
+const SERIE_CASSEE_MIN = 2;
+const victoires = (n) => (n > 1 ? `${n} victoires d'affilée` : `${n} victoire`);
+const deNom = (pseudo) => (/^[aeiouyhàâéèêëîïôûAEIOUYHÀÂÉÈÊËÎÏÔÛ]/.test(pseudo) ? `d'${pseudo}` : `de ${pseudo}`);
+
+// « 🔥 Série de X : 4 victoires d'affilée · Record : Y (7) », puis
+// « 💔 Fin de la série de Z (5) ». `gagnant` : { nom, serie } ou null,
+// `perdant` : { nom, avant } ou null, `libelleSerie(nom)`.
+function lignesSeries({ gagnant, perdant, record, libelleSerie, libelleRecord }) {
+  const rec = record ? `${libelleRecord} : ${record.username ?? "?"} (${record.serie})` : null;
+  const lignes = [];
+  if (gagnant) lignes.push([`🔥 ${libelleSerie(gagnant.nom)} : ${victoires(gagnant.serie)}`, rec].filter(Boolean).join(" · "));
+  else if (rec) lignes.push(rec);
+  if (perdant && perdant.avant >= SERIE_CASSEE_MIN) lignes.push(`💔 Fin de la série ${deNom(perdant.nom)} (${perdant.avant})`);
+  return lignes;
+}
+
 // Fin d'une partie contre Kévina : message public (non éphémère) dans le
-// salon, plateau final compris. Pseudo en clair, jamais de mention.
+// salon, plateau final et série compris. Pseudo en clair, jamais de mention.
 function messageFinalSolo(d, pseudo) {
+  const s = d.series;
+  const series = s
+    ? lignesSeries({
+        // Match nul : série intacte, rappelée si elle est en cours
+        gagnant: d.gagnant !== "bot" && s.serie > 0 ? { nom: pseudo, serie: s.serie } : null,
+        perdant: d.gagnant === "bot" ? { nom: pseudo, avant: s.avant } : null,
+        record: s.record,
+        libelleSerie: () => "Série",
+        libelleRecord: "Record",
+      })
+    : [];
   const resultat =
     d.gagnant === "nul"
       ? `🤝 Match nul entre ${pseudo} et Kévina, la grille est pleine.`
@@ -335,7 +365,9 @@ function messageFinalSolo(d, pseudo) {
     embeds: [
       {
         title: `${TITRE} · contre Kévina`,
-        description: [resultat, "", ...plateauPublic(d, pseudo, "🤖 Kévina")].join("\n").slice(0, 4096),
+        description: [resultat, "", ...plateauPublic(d, pseudo, "🤖 Kévina"), ...(series.length ? ["", ...series] : [])]
+          .join("\n")
+          .slice(0, 4096),
         color: QUATRE_COLOR,
       },
     ],
@@ -361,7 +393,7 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
       lignes.push(coupAdverse(d.dernier, BOT));
     }
     return { texte: lignes.join("\n"), vientDeFinir: d.termine, kevinaAJoue };
-  });
+  }, { nom: pseudo });
   if (!duel) {
     await patchOriginal(webhookUrl, {
       embeds: [
@@ -489,11 +521,23 @@ function messageFinal(partie) {
       : partie.raisonFin === "delai"
         ? `🏆 ${nom(g)} remporte le duel : ${nom(adversaire(g))} n'a pas joué à temps.`
         : `🏆 ${nom(g)} aligne 4 pions et bat ${nom(adversaire(g))} !`;
+  const s = partie.series;
+  const series = s
+    ? lignesSeries({
+        gagnant: g !== "nul" ? { nom: nom(g), serie: s[g].serie } : null,
+        perdant: g !== "nul" ? { nom: nom(adversaire(g)), avant: s[adversaire(g)].avant } : null,
+        record: s.record,
+        libelleSerie: (n) => `Série ${deNom(n)}`,
+        libelleRecord: "Record 1v1",
+      })
+    : [];
   return {
     embeds: [
       {
         title: `${TITRE} · 1v1`,
-        description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot"))].join("\n").slice(0, 4096),
+        description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot")), ...(series.length ? ["", ...series] : [])]
+          .join("\n")
+          .slice(0, 4096),
         color: QUATRE_COLOR,
       },
     ],

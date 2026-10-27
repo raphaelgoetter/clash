@@ -8,8 +8,8 @@
 // (`quatreduel:<discordId>`), plusieurs parties en même temps possibles.
 // 1v1 : une seule partie à la fois (`quatreduel:pvp`), comme Bang! Duel.
 // Chaque écriture relance l'expiration : sans action pendant
-// `INACTIVITE_SECONDES`, la partie disparaît (aucun score conservé : jeu
-// libre).
+// `INACTIVITE_SECONDES`, la partie disparaît. Seules les séries de
+// victoires (et leurs records) sont conservées, une par mode.
 //
 // ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Quatre à la suite), source de vérité.
@@ -92,6 +92,9 @@ async function withLock(discordId, fn) {
 // le joueur commence toujours.
 export async function nouveauDuel(discordId) {
   return withLock(discordId, async () => {
+    const s = await lireSerie("bot", discordId);
+    // Partie précédente abandonnée ou remplacée : comptée comme une défaite
+    await ecrireSerie("bot", discordId, { serie: s.enCours ? 0 : s.serie, enCours: true });
     const duel = creerDuel({ commence: "joueur" });
     await writeDuel(discordId, duel);
     return { duel };
@@ -99,16 +102,92 @@ export async function nouveauDuel(discordId) {
 }
 
 // Action du joueur sous verrou : `fn(duel)` modifie le duel (fonctions de
-// quatreRules.js) et renvoie un résultat.
+// quatreRules.js) et renvoie un résultat. En fin de partie, la série est
+// mise à jour et jointe au duel (`duel.series`). `nom` : pseudo du record.
 // Renvoie { duel, resultat } ou { duel: null } sans partie en cours.
-export async function agirDuel(discordId, fn) {
+export async function agirDuel(discordId, fn, { nom = null, now = new Date() } = {}) {
   return withLock(discordId, async () => {
     const duel = await readDuel(discordId);
     if (!duel) return { duel: null };
+    const finiAvant = duel.termine;
     const resultat = await fn(duel);
+    if (!finiAvant && duel.termine) duel.series = await finSerieSolo(discordId, nom, duel.gagnant, now);
     await writeDuel(discordId, duel);
     return { duel, resultat };
   });
+}
+
+// ── Séries de victoires ───────────────────────────────────────────────────
+// Une série par joueur et par mode (contre Kévina, 1v1) : +1 par victoire,
+// remise à 0 par une défaite, intacte sur un match nul. Contre Kévina, une
+// partie abandonnée ou remplacée compte comme une défaite (`enCours` encore
+// vrai au lancement suivant). Record de chaque mode : plus longue série,
+// JAMAIS effacé.
+
+const CLE_SERIES = { bot: "quatreduel:series:bot", pvp: "quatreduel:series:pvp" };
+const CLE_RECORDS = "quatreduel:records";
+
+// Pure : série après une partie (issue "victoire" | "defaite" | "nul").
+export function serieApres(serie, issue) {
+  if (issue === "victoire") return serie + 1;
+  return issue === "defaite" ? 0 : serie;
+}
+
+// Pure : strictement plus longue que le record (une égalité ne détrône pas
+// le détenteur), jamais une série nulle.
+export function isNewRecord(actuel, serie) {
+  return serie > 0 && (!actuel || serie > actuel.serie);
+}
+
+const issueDe = (gagnant, siege) => (gagnant === "nul" ? "nul" : gagnant === siege ? "victoire" : "defaite");
+
+async function lireSerie(mode, discordId) {
+  return fromJson(await getRedis().hget(CLE_SERIES[mode], discordId)) ?? { serie: 0 };
+}
+
+async function ecrireSerie(mode, discordId, serie) {
+  await getRedis().hset(CLE_SERIES[mode], { [discordId]: JSON.stringify(serie) });
+}
+
+export async function lireRecord(mode) {
+  return fromJson(await getRedis().hget(CLE_RECORDS, mode));
+}
+
+// Renvoie le record du mode à jour (nouveau ou inchangé), null sans record.
+async function majRecord(mode, discordId, username, serie, now) {
+  return withLock(`record:${mode}`, async () => {
+    const actuel = await lireRecord(mode);
+    if (!isNewRecord(actuel, serie)) return actuel;
+    const record = { discordId, username: username || null, serie, at: now.toISOString() };
+    await getRedis().hset(CLE_RECORDS, { [mode]: JSON.stringify(record) });
+    return record;
+  });
+}
+
+// Fin d'une partie contre Kévina : { avant, serie, record }.
+async function finSerieSolo(discordId, nom, gagnant, now) {
+  const { serie: avant } = await lireSerie("bot", discordId);
+  const serie = serieApres(avant, issueDe(gagnant, "joueur"));
+  await ecrireSerie("bot", discordId, { serie, enCours: false });
+  return { avant, serie, record: await majRecord("bot", discordId, nom, serie, now) };
+}
+
+// Fin d'une partie 1v1 : { joueur: { avant, serie }, bot: { … }, record }
+// (sièges du moteur).
+async function finSeriesPvp(partie, now) {
+  const series = {};
+  for (const [siege, id] of Object.entries(partie.sieges)) {
+    const { serie: avant } = await lireSerie("pvp", id);
+    const serie = serieApres(avant, issueDe(partie.duel.gagnant, siege));
+    await ecrireSerie("pvp", id, { serie });
+    series[siege] = { avant, serie };
+  }
+  const g = partie.duel.gagnant;
+  series.record =
+    g === "nul"
+      ? await lireRecord("pvp")
+      : await majRecord("pvp", partie.sieges[g], partie.noms[partie.sieges[g]], series[g].serie, now);
+  return series;
 }
 
 // ── 1v1 (`/quatre adversaire:1v1`) ─────────────────────────────────────────
@@ -116,7 +195,8 @@ export async function agirDuel(discordId, fn) {
 // lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
 // moteur → discordId ; "joueur" commence), duel, webhooks: { discordId:
 // { url, at } } (vue éphémère de chaque joueur, rééditée après chaque coup
-// adverse), dernierCoupAt, raisonFin: "jeu" (alignement ou grille pleine) | "delai" }.
+// adverse), dernierCoupAt, raisonFin: "jeu" (alignement ou grille pleine) | "delai",
+// series (en fin de partie, voir finSeriesPvp()) }.
 
 const CLE_PVP = "quatreduel:pvp";
 const VERROU_PVP = "pvp";
@@ -161,6 +241,8 @@ export async function ouvrirPvp({ channelId, lanceur, nom }) {
       return { dejaEnCours: enCours };
     }
     const ancienne = enCours && enCours.statut !== "fini" ? enCours : null;
+    // Partie remplacée au délai dépassé : séries mises à jour (sans message)
+    if (ancienne?.statut === "enCours" && ancienne.duel?.termine) await finSeriesPvp(ancienne, new Date());
     const partie = {
       statut: "lobby",
       channelId,
@@ -209,6 +291,7 @@ export async function agirPvp(fn) {
       partie.raisonFin ??= "jeu";
     }
     resultat.vientDeFinir = !finiAvant && partie.statut === "fini";
+    if (resultat.vientDeFinir) partie.series = await finSeriesPvp(partie, new Date());
     await writePvp(partie);
     return { partie, config, resultat };
   });

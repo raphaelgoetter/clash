@@ -23,6 +23,7 @@ import {
   agirPvp,
   enregistrerMessagePvp,
   loadDuelConfig,
+  majHighScore,
   nouveauDuel,
   ouvrirPvp,
   rejoindrePvp,
@@ -51,6 +52,8 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 const MOI = "bleu";
 const ADV = "rouge";
 const CASE_VIDE = "⬛";
+// Même emoji que le high score du Gobelet Duel
+const EMOJI_HIGHSCORE = "<:topplayers:1563107730397601792>";
 // Dés détruits : affichés 💥, encore à leur place, le temps d'une étape
 // avant leur disparition (plus lisible qu'un effacement brutal)
 const EXPLOSION = "💥";
@@ -381,8 +384,8 @@ function recitFin(d, nom) {
 
 // Fin d'une partie contre Kévina : message public (non éphémère) dans le
 // salon, plateau final compris, seul message de fin (la vue éphémère est
-// supprimée). Pseudo en clair, jamais de mention.
-function messageFinalSolo(d, pseudo) {
+// supprimée), high score compris. Pseudo en clair, jamais de mention.
+function messageFinalSolo(d, pseudo, highScore = null) {
   const recit = recitFin(d, (siege) => (siege === "bot" ? "Kévina" : pseudo));
   const resultat =
     d.gagnant === "nul" ? `🤝 ${recit}.` : d.gagnant === "joueur" ? `🏆 ${recit} !` : `🤖 ${recit}.`;
@@ -390,7 +393,12 @@ function messageFinalSolo(d, pseudo) {
     embeds: [
       {
         title: "▦ La Grille · contre Kévina",
-        description: [resultat, "", ...plateauPublic(d, pseudo, "🤖 Kévina")].join("\n").slice(0, 4096),
+        description: [
+          resultat,
+          "",
+          ...plateauPublic(d, pseudo, "🤖 Kévina"),
+          ...(highScore ? ["", `${EMOJI_HIGHSCORE} High score : ${highScore.username ?? "?"} (${plural(highScore.points, "pt")})`] : []),
+        ].join("\n").slice(0, 4096),
         color: GRILLE_COLOR,
       },
     ],
@@ -428,7 +436,8 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
   }
   if (resultat.vientDeFinir) {
     // Le message public suffit : vue éphémère supprimée (repli : vue de fin)
-    const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
+    const highScore = await majHighScore(discordId, pseudo, scoreGrille(duel.grilles.joueur));
+    const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?", highScore));
     if (ok && (await supprimerOriginal(webhookUrl))) return;
   }
   for (const etape of resultat.etapes ?? []) {

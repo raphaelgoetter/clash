@@ -1376,7 +1376,7 @@ Adaptation d'Exploding Kittens Duel avec les cartes de Bang!. `/bang adversaire:
 
 ### La Grille (contre Kévina ou en 1v1)
 
-Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé.**
+Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf le high score contre Kévina.**
 
 - Code : `jeux/services/grilleRules.js` (règles pures et Kévina, tests `grilleRules.test.js`), `jeux/services/grilleDuel.js` (Redis), `jeux/discord/handlers/grilleDuel.js` (Discord). Config `jeux/data/grille/duel.json` (`delai_tour_minutes` : 5, 1v1 uniquement).
 - `custom_id` : `grilleduel_poser:<colonne>` contre Kévina, `grilleduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 2), `grilleduel_ouvrir` (Jouer du message public 1v1), `grilleduel_regles`.
@@ -1402,6 +1402,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille
 
 - Partie **privée** : un message éphémère édité en place ; Kévina pose son dé aussitôt après le joueur. Une partie par joueur (`grilleduel:<discordId>`, verrou `grilleduel:lock:<discordId>`), expiration 1 h après la dernière action (`INACTIVITE_SECONDES`). `/grille` relance toujours une nouvelle partie.
 - Fin : résultat (« Kévina pose le dernier dé, remplit sa grille et bat X 63 à 41. ») et plateau final publiés en **public** dans le salon du clic (`messageFinalSolo()`), pseudo en clair, jamais de mention ; la vue éphémère est alors **supprimée** (repli : vue de fin si le POST ou la suppression échoue).
+- **High score** (contre Kévina seulement : en 1v1, deux joueurs pourraient s'entendre pour gonfler un score) : total final du joueur, gagnée ou non, affiché en fin du message public (« High score : Pseudo (N pts) »). Clé `grilleduel:highscore` (`{ discordId, username, points, at }`), mise à jour par `majHighScore()` seulement si le record est **strictement** battu (`isNewHighScore()`, score > 0), comme le Gobelet Duel. Jamais effacée.
 
 #### 1v1
 
@@ -1417,7 +1418,7 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille
 
 ### Quatre à la suite (contre Kévina ou en 1v1)
 
-Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé.** Même structure que La Grille (modes, sièges, verrous, délai, messages publics).
+Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que La Grille (modes, sièges, verrous, délai, messages publics).
 
 - Code : `jeux/services/quatreRules.js` (règles pures et Kévina, tests `quatreRules.test.js`), `jeux/services/quatreDuel.js` (Redis), `jeux/discord/handlers/quatreDuel.js` (Discord). Config `jeux/data/quatre/duel.json` : `delai_tour_minutes` (5, 1v1 uniquement), `profondeur_kevina` (4), `marge_kevina` (3), `ouverture_kevina` (6).
 - `custom_id` : `quatreduel_poser:<colonne>` contre Kévina, `quatreduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 6), `quatreduel_ouvrir` (Jouer du message public 1v1), `quatreduel_regles`.
@@ -1449,6 +1450,8 @@ Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obliga
 - Message public avec bouton **Jouer**, joueur au trait et délai, **sans plateau** (chaque joueur a le sien dans sa vue éphémère) : le premier autre joueur qui clique relève le défi, un 3ᵉ est refusé. Vue éphémère par joueur, rééditée après chaque coup adverse via le webhook mémorisé (jeton valable 15 min ; au-delà, Jouer rouvre une vue à jour).
 - **Délai** : `delai_tour_minutes` par coup, dépassé = défaite, vérifié paresseusement à la prochaine interaction (`verifierDelai()`, pas de cron). Lobby sans adversaire depuis le délai (ou relancé par son lanceur) et partie au délai dépassé remplacés par un nouveau `/quatre adversaire:1v1`.
 - Fin (`raisonFin` : `jeu` pour un alignement ou une grille pleine, `delai`) : récapitulatif avec plateau final dans un nouveau message public, l'ancien supprimé ; les vues éphémères des deux joueurs sont **supprimées** (repli : vue de fin si le POST ou la suppression échoue, rien si le webhook a expiré).
+- **Séries de victoires** (une par joueur et par mode, contre Kévina et 1v1, `serieApres()`) : +1 par victoire, remise à 0 par une défaite (délai dépassé compris), **intacte sur un match nul**. Contre Kévina, une partie abandonnée ou remplacée par un nouveau `/quatre` compte comme une défaite (`enCours` encore vrai au lancement suivant). Hashes `quatreduel:series:bot` / `quatreduel:series:pvp` (`discordId` → `{ serie, enCours? }`). Record de chaque mode (plus longue série, battu **strictement**, `isNewRecord()`) dans le hash `quatreduel:records` (`bot` / `pvp` → `{ discordId, username, serie, at }`), jamais effacé.
+- Affichage en fin du message public : contre Kévina « 🔥 Série : 4 victoires d'affilée · Record : Pseudo (7) » (série rappelée sur un nul si elle est en cours, record seul sinon) ; en 1v1 « 🔥 Série de Bob : 4 victoires d'affilée · Record 1v1 : Pseudo (7) » (record seul sur un nul). « 1 victoire » sans « d'affilée ». Série cassée signalée à partir de 2 victoires : « 💔 Fin de la série d'Alice (5) ». Une partie 1v1 remplacée au délai dépassé met les séries à jour sans message ; une partie expirée (1 h sans action) ne les touche pas.
 
 #### Outils (`jeux/outils/quatre/`, à lancer à la main)
 
