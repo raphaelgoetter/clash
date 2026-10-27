@@ -27,6 +27,7 @@ const JEUX_COMMANDS = new Set([
   "mini-jeux",
   "mini-jeux-history",
   "grille",
+  "quatre",
   "bang",
   "blackjack",
   "gobelet",
@@ -509,6 +510,23 @@ const commands = [
     name: "grille",
     description:
       "La Grille : pose tes dés et détruis ceux de Kévina ou d'un autre joueur — réservé au rôle MINI-JEUX.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
+        required: true,
+        choices: [
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "quatre",
+    description:
+      "Quatre à la suite : aligne 4 pions avant Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING

@@ -134,6 +134,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/recap [saison:-1\|-2]` | Bottom 10 La Resistance / top 10 Les Resistants (saison passée) |
 | `/blacklist ajoute tag:#TAG [raison]` / `retire tag:#TAG` / `/blacklist consulte` | Liste Noire (rôle commençant par `STAFF`) |
 | `/grille adversaire:bot\|1v1` | La Grille (Knucklebones) contre Kévina, le bot (partie privée) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
+| `/quatre adversaire:bot\|1v1` | Quatre à la suite (Puissance 4) contre Kévina, le bot (partie privée) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/bang adversaire:bot\|1v1` | Bang! Duel contre Kévina, le bot (partie privée) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 
 ## Sous-agents

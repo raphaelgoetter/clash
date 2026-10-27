@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/bang`, `/gobelet`, `/grille` et leurs boutons de duel |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/bang`, `/gobelet`, `/grille`, `/quatre` et leurs boutons de duel |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -736,6 +736,14 @@ Faces utilisées par La Grille (le Gobelet et Gobelet Duel gardent keycaps et bo
 - **Lisibilité clair/sombre** : points blancs opaques (carré blanc sous le corps) et fin contour clair (`buildColoredDieSvg()`). Couleur de dé moyenne, contraste ≥ 4,5 sur fond blanc ; pas d'orange ni de jaune.
 - **Upload** : `npm run dices:emojis` (`jeux/scripts/uploadDiceEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque face en PNG 128×128 et l'uploade comme emoji d'application `de_<couleur>_<valeur>`, puis écrit les IDs dans `dices.json` (à committer). Options : `--couleur <nom>`, `--remplacer` (supprime d'abord les emojis du même nom, obligatoire pour changer un visuel). `npm run dices:emojis:dry` écrit les PNG dans `temp/dices` sans appel Discord.
 
+## Pions de Quatre à la suite
+
+Service `jeux/services/pions.js` : `formatPion(couleur)` (texte, titre). Même principe que les faces de dé.
+
+- **Source** : `jeux/data/pions/pion.svg`. Les pions sont **toujours ronds** (disque coloré, anneau blanc), même sur une grille de cases carrées.
+- **Config** `jeux/data/pions/pions.json` : `couleurs` (`bleu` = ses pions, `rouge` = pions adverses, `vert` = alignement gagnant, contraste ≥ 4,5 sur fond blanc) et `emojis` (`couleur → id`). Repli sur 🔵 🔴 🟢 tant qu'un ID vaut `null`.
+- **Upload** : `npm run pions:emojis` (`jeux/scripts/uploadPionEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque couleur en PNG 128×128 et l'uploade comme emoji d'application `pion_<couleur>`, puis écrit les IDs dans `pions.json` (à committer). Options : `--couleur <nom>`, `--remplacer`. `npm run pions:emojis:dry` écrit les PNG dans `temp/pions` sans appel Discord.
+
 ## Jeu du Gobelet — dés façon Yahtzee
 
 Jeu spécial de 7 jours sur le squelette de Blackjack, sans adversaire : chaque jour, chaque membre lance 5 dés, en conserve 0 à 5 et relance les autres jusqu'à 2 fois (3 tirages), puis marque une combinaison. Pas de commande slash.
@@ -1281,14 +1289,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Quatre duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/bang`, `/grille`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Cinq duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/bang`, `/grille`, `/quatre`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `bangduel:*`, `grilleduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `bangduel_*`, `grilleduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `bangduel:*`, `grilleduel:*`, `quatreduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `bangduel_*`, `grilleduel_*`, `quatreduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** (Blackjack, Gobelet, Bang! 1v1, Arène 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack, Gobelet, Bang! 1v1, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (1-3 joueurs)
 
@@ -1406,6 +1414,46 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille
 
 - `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `glouton`) : équilibrage sur les vraies règles. Repères (20 000 parties) : Kévina contre Kévina ~50 % / ~49 % / ~1 % de nuls, ~16 coups par joueur (commencer n'avantage pas) ; hasard contre Kévina ~19 %. Aucune variante testée ne bat Kévina (anticipation de la réponse adverse, prudence face aux destructions, pondérations) ; préférer la colonne la plus remplie à égalité chute à ~39 %.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/grille/e2eDuel.mjs`).
+
+### Quatre à la suite (contre Kévina ou en 1v1)
+
+Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé.** Même structure que La Grille (modes, sièges, verrous, délai, messages publics).
+
+- Code : `jeux/services/quatreRules.js` (règles pures et Kévina, tests `quatreRules.test.js`), `jeux/services/quatreDuel.js` (Redis), `jeux/discord/handlers/quatreDuel.js` (Discord). Config `jeux/data/quatre/duel.json` : `delai_tour_minutes` (5, 1v1 uniquement), `profondeur_kevina` (4).
+- `custom_id` : `quatreduel_poser:<colonne>` contre Kévina, `quatreduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 6), `quatreduel_ouvrir` (Jouer du message public 1v1), `quatreduel_regles`.
+
+#### Règles
+
+- Grille commune de 7 colonnes sur 6 rangées (`d.colonnes` : une liste de sièges par colonne, du bas vers le haut).
+- À son tour, le joueur lâche un pion dans une colonne non pleine ; il tombe tout en bas.
+- **Victoire** dès qu'un joueur aligne au moins 4 pions (horizontale, verticale ou diagonale) ; `d.alignement` garde toutes les cases gagnantes (alignement de 5, croix).
+- **Match nul** : grille pleine sans alignement.
+- **Qui commence** : toujours le joueur contre Kévina (le premier joueur est avantagé au Puissance 4) ; tiré au sort en 1v1.
+- **Kévina** (`choixKevina()`) : negamax alpha-bêta à `profondeur_kevina` coups (le sien compris), évaluation par fenêtres de 4 cases (3 pions + 1 vide, 2 + 2) et colonne centrale. Elle gagne dès qu'elle peut et bloque toute victoire immédiate, mais ne voit pas les pièges plus lointains ; à valeur égale, colonne tirée au sort. ⚠️ Jamais de bot parfait : le Puissance 4 est résolu, le joueur doit pouvoir gagner.
+
+#### Affichage
+
+- Pions ronds (voir « Pions de Quatre à la suite ») : ses pions en **bleu**, ceux de l'adversaire en **rouge**, cases de l'alignement gagnant en **vert** ; case vide ⬛.
+- Plateau en titres `##` (en `#`, 7 emojis ne tiennent pas sur la largeur d'un embed mobile), précédé d'une légende (pion bleu et rouge avec le nom de chaque camp) et d'une ligne de numéros 1️⃣ à 7️⃣ alignée sur les boutons. Boutons 1 à 7 sur deux rangées (4 + 3, limite de 5 boutons par rangée), grisés si la colonne est pleine.
+- Chaque vue raconte le dernier coup (« Kévina joue en colonne 4. »).
+- **Vue de fin** (éphémère, `vueFin()`) : titre avec le résultat et une seule phrase (« Tu alignes 4 pions. La partie est terminée, et c'est une victoire pour toi ! », grille pleine ou délai dépassé), sans plateau ni bouton Règles : le message public posté au même moment l'affiche.
+
+#### Contre Kévina
+
+- Partie **privée** : un message éphémère édité en place ; Kévina joue aussitôt après le joueur. Une partie par joueur (`quatreduel:<discordId>`, verrou `quatreduel:lock:<discordId>`), expiration 1 h après la dernière action (`INACTIVITE_SECONDES`). `/quatre` relance toujours une nouvelle partie.
+- Fin : résultat et plateau final publiés en **public** dans le salon du clic (`messageFinalSolo()`), pseudo en clair, jamais de mention.
+
+#### 1v1
+
+- Même moteur (sièges `joueur` = celui qui commence, `bot` = l'autre ; `sieges` → discordId). **Une partie à la fois** (`quatreduel:pvp`, verrou `quatreduel:lock:pvp`, expiration 1 h), indépendante du 1v1 de La Grille.
+- Message public avec bouton **Jouer** et plateau en direct (premier joueur en bleu) : le premier autre joueur qui clique relève le défi, un 3ᵉ est refusé. Vue éphémère par joueur, rééditée après chaque coup adverse via le webhook mémorisé (jeton valable 15 min ; au-delà, Jouer rouvre une vue à jour).
+- **Délai** : `delai_tour_minutes` par coup, dépassé = défaite, vérifié paresseusement à la prochaine interaction (`verifierDelai()`, pas de cron). Lobby sans adversaire depuis le délai (ou relancé par son lanceur) et partie au délai dépassé remplacés par un nouveau `/quatre adversaire:1v1`.
+- Fin (`raisonFin` : `jeu` pour un alignement ou une grille pleine, `delai`) : récapitulatif avec plateau final dans un nouveau message public, l'ancien supprimé.
+
+#### Outils (`jeux/outils/quatre/`, à lancer à la main)
+
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina1` à `kevina9`, chiffre = profondeur). Repères : hasard contre Kévina (profondeur 4) 0 % ; entre deux profondeurs, la plus grande gagne nettement (kevina5 contre kevina4 : ~68 % / ~28 %) ; entre bots, l'avantage du premier joueur n'apparaît qu'à partir de la profondeur 6 (heuristique). ~1 ms par coup à profondeur 4, ~13 ms à 6.
+- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/quatre/e2eDuel.mjs`).
 
 ---
 

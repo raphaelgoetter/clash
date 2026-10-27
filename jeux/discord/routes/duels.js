@@ -1,5 +1,6 @@
-// Duels autonomes (1-3 joueurs) : /blackjack, /bang, /gobelet, /grille et
-// leurs boutons (blackjackduel_*, bangduel_*, gobeletduel_*, grilleduel_*).
+// Duels autonomes (1-3 joueurs) : /blackjack, /bang, /gobelet, /grille,
+// /quatre et leurs boutons (blackjackduel_*, bangduel_*, gobeletduel_*,
+// grilleduel_*, quatreduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -49,6 +50,16 @@ import {
   handleGrillePoser,
   handleGrilleRegles,
 } from "../handlers/grilleDuel.js";
+import {
+  memberHasMiniJeuxRole as quatreMemberHasMiniJeuxRole,
+  extractMember as quatreExtractMember,
+  handleQuatreRoleRejected,
+  handleQuatreCommand,
+  handleQuatrePvpCommand,
+  handleQuatreOuvrir,
+  handleQuatrePoser,
+  handleQuatreRegles,
+} from "../handlers/quatreDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export async function routeDuels(body, res) {
@@ -164,6 +175,49 @@ export async function routeDuels(body, res) {
       // Contre Kévina, le résultat final est publié dans le salon du clic
       const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: grilleExtractMember(body).username };
       runBackground(() => handleGrillePoser(webhookUrl, discordId, Number(colonne), opts));
+      return;
+    }
+  }
+
+  // ── /quatre adversaire:bot : Quatre à la suite contre Kévina (partie
+  // privée, éphémère) ; adversaire:1v1 : contre un joueur (message public).
+  // Réservé au rôle MINI-JEUX pour lancer, même principe que /blackjack.
+  if (body.type === 2 && body.data?.name === "quatre") {
+    const discordId = body.member?.user?.id;
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await quatreMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleQuatreRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handleQuatrePvpCommand(webhookUrl, body);
+      else await handleQuatreCommand(webhookUrl, discordId);
+    });
+    return;
+  }
+
+  // ── Quatre à la suite : composants. quatreduel_poser:<colonne>[:pvp]
+  // édite la vue en place ; quatreduel_ouvrir (Jouer du message public 1v1)
+  // et quatreduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("quatreduel_")) {
+    const [action, colonne, mode] = body.data.custom_id.split(":");
+    if (action === "quatreduel_regles" || action === "quatreduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "quatreduel_regles") runBackground(() => handleQuatreRegles(webhookUrl));
+      else runBackground(() => handleQuatreOuvrir(webhookUrl, body));
+      return;
+    }
+    if (action === "quatreduel_poser") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Contre Kévina, le résultat final est publié dans le salon du clic
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: quatreExtractMember(body).username };
+      runBackground(() => handleQuatrePoser(webhookUrl, discordId, Number(colonne), opts));
       return;
     }
   }
