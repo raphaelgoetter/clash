@@ -28,7 +28,6 @@ import {
   saveHandWebhook,
   readHandWebhooks,
 } from "../../services/gobeletDuel.js";
-import { formatDice as formatDiceFaces, dieButtonEmoji } from "../../services/dices.js";
 import {
   computeBestCombination,
   formatBaremeLines,
@@ -46,12 +45,21 @@ import { rangExAequo } from "@clash/commun/classement.js";
 const GOBELETDUEL_COLOR = 0x9b59b6;
 const NO_KEPT = [false, false, false, false, false];
 
-// Faces de dé communes (jeux/services/dices.js) : emojis bleus, repli
-// keycaps tant qu'ils ne sont pas uploadés.
-const DICE_COLOR = "bleu";
+// Chiffres "keycap" (1️⃣-6️⃣) plutôt que les glyphes Unicode de dés
+// (⚀-⚅) : mêmes raisons que le choix rang+couleur pour les cartes de
+// Blackjack (29/08) — les keycaps sont de vrais emoji couleur qui
+// s'agrandissent normalement sous un titre H1, contrairement aux glyphes
+// texte qui resteraient minuscules. Les faces de dé communes
+// (jeux/services/dices.js) ne servent pas ici : la sélection des dés était
+// moins lisible (décision du 27/10).
+const DICE_FACES = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
+
+function formatDie(value) {
+  return DICE_FACES[value - 1];
+}
 
 function formatDice(dice) {
-  return formatDiceFaces(dice, DICE_COLOR);
+  return dice.map(formatDie).join(" ");
 }
 
 function formatDiceBlock(dice) {
@@ -503,12 +511,8 @@ function relancerLabel(kept) {
     : `Relancer (${count} dé${count > 1 ? "s" : ""})`;
 }
 
-// Vraie face de dé sur le bouton (emoji d'application, voir
-// jeux/services/dices.js) plutôt qu'un simple 🔒/🎲, repli automatique tant
-// que les emojis ne sont pas uploadés.
-function buildDieEmoji(value, kept) {
-  const emoji = dieButtonEmoji(value, DICE_COLOR);
-  if (emoji) return emoji;
+// Bouton de dé : 🔒 gardé / 🎲 relancé, la valeur en libellé.
+function buildDieEmoji(kept) {
   return { name: kept ? "🔒" : "🎲" };
 }
 
@@ -598,9 +602,8 @@ function buildHandComponents(state, hand, kept, used) {
       components: hand.dice.map((value, i) => ({
         type: 2,
         style: kept[i] ? 3 : 2,
-        // Face seule quand l'emoji existe : 5 boutons sur une ligne en mobile
-        ...(dieButtonEmoji(value, DICE_COLOR) ? {} : { label: String(value) }),
-        emoji: buildDieEmoji(value, kept[i]),
+        label: String(value),
+        emoji: buildDieEmoji(kept[i]),
         custom_id: `gobeletduel_toggle:${manche}:${i}`,
       })),
     },
