@@ -381,10 +381,11 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     const r = actionPoser(d, "joueur", colonne);
     if (r.erreur) return r;
     const lignes = [r.texte];
-    let kevinaAJoue = false;
+    // Plateau après le coup du joueur, affiché pendant la réflexion de Kévina
+    let avantKevina = null;
     // Kévina joue dans la foulée (sous le même verrou)
     if (!d.termine && d.actif === "bot") {
-      kevinaAJoue = true;
+      avantKevina = structuredClone(d);
       poser(d, "bot", choixKevina(d, "bot", {
         profondeur: config.profondeur_kevina,
         marge: config.marge_kevina,
@@ -392,7 +393,7 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
       }));
       lignes.push(coupAdverse(d.dernier, BOT));
     }
-    return { texte: lignes.join("\n"), vientDeFinir: d.termine, kevinaAJoue };
+    return { texte: lignes.join("\n"), vientDeFinir: d.termine, avantKevina, texteJoueur: r.texte };
   }, { nom: pseudo });
   if (!duel) {
     await patchOriginal(webhookUrl, {
@@ -406,7 +407,9 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     });
     return;
   }
-  if (resultat.kevinaAJoue) {
+  if (resultat.avantKevina) {
+    // Coup du joueur affiché d'abord, celui de Kévina après sa réflexion
+    await patchOriginal(webhookUrl, buildVue(resultat.avantKevina, { texte: resultat.texteJoueur }));
     await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
   }
   if (resultat.vientDeFinir) {

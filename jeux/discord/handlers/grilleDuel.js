@@ -416,14 +416,14 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     if (r.erreur) return r;
     const lignes = [r.texte];
     // Étapes avant la vue finale : explosion du coup du joueur, réflexion
-    // de Kévina (simple attente, rien d'affiché), explosion de son coup
+    // de Kévina (plateau après le coup du joueur, puis attente), explosion de son coup
     // (vue de fin sans plateau : aucune étape quand le coup du joueur
     // termine la partie, pas d'explosion quand celui de Kévina la termine)
     const etapes = r.explosion && !d.termine ? [{ texte: r.texte, grilles: r.explosion }] : [];
     // Kévina joue dans la foulée (sous le même verrou), son coup n'est
     // affiché qu'après sa réflexion
     if (!d.termine && d.actif === "bot") {
-      etapes.push({ reflexion: true });
+      etapes.push({ reflexion: true, texte: r.texte, duel: structuredClone(d) });
       const { explosion } = poserAvecExplosion(d, "bot", choixGlouton(d, "bot"));
       lignes.push(coupAdverse(d.dernier, BOT));
       if (explosion && !d.termine) etapes.push({ texte: lignes.join("\n"), grilles: explosion });
@@ -444,6 +444,8 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
   }
   for (const etape of resultat.etapes ?? []) {
     if (etape.reflexion) {
+      // Coup du joueur affiché d'abord, celui de Kévina après sa réflexion
+      await patchOriginal(webhookUrl, buildVue(etape.duel, { texte: etape.texte }));
       await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
       continue;
     }
