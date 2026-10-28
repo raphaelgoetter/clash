@@ -154,6 +154,11 @@ function formatMemberBlock(m) {
   }
   if (m.riskyClan) {
     lines.push(`• ⚠️ Clan à risque (${m.riskyClan.name})`);
+  } else if (m.previousClan?.name) {
+    lines.push(`• ⬅️ Vient de ${m.previousClan.name}`);
+  }
+  if (m.nextClan?.name) {
+    lines.push(`• ➡️ Parti vers ${m.nextClan.name}`);
   }
 
   const scoreObj = m.analysis?.warScore ?? m.analysis?.reliability;
@@ -347,10 +352,20 @@ async function main() {
         tag,
         clanName,
         [
-          { tag: "#FAKEARRIVAL1", name: "NouveauMembre" },
+          {
+            tag: "#FAKEARRIVAL1",
+            name: "NouveauMembre",
+            previousClan: { tag: "#FAKECLAN1", name: "AncienClan" },
+          },
           { tag: "#FAKEARRIVAL2", name: "AutreArrivée" },
         ],
-        [{ tag: "#FAKEDEPART1", name: "AncienMembre" }],
+        [
+          {
+            tag: "#FAKEDEPART1",
+            name: "AncienMembre",
+            nextClan: { tag: "#FAKECLAN2", name: "NouveauClan" },
+          },
+        ],
         [
           {
             tag: "#FAKEPROMO1",
@@ -495,6 +510,7 @@ async function main() {
                   clanHistoryFromBattles(arrival.tag, battles),
                   `#${tag}`,
                 );
+                arrival.previousClan = previous;
                 // Le joueur lui-même ne rend pas son ancien clan « à risque »
                 const flagged = [...(riskyClans.get(previous?.tag) ?? [])];
                 if (flagged.some((t) => t !== arrival.tag)) {
@@ -572,6 +588,12 @@ async function main() {
             }
           }),
         );
+      }
+
+      // Clan de destination : clan actuel du profil, s'il diffère du clan quitté
+      for (const d of newDepartures) {
+        const clan = d.analysis?.overview?.clan;
+        if (clan?.tag && clan.tag !== `#${tag}`) d.nextClan = clan;
       }
 
       await postDiscordEmbed(

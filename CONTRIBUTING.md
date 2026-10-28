@@ -94,7 +94,7 @@ npm run discord-links:remove -- "#TAG" [...]
 
 - Hash Redis `blacklist` : un champ par `#TAG`, valeur `{ name, clans, reason, addedBy, addedAt }`. `clans` = historique des clans distincts (plus récent en tête, 5 max), initialisé depuis le journal de combats puis le clan actuel, mis à jour à chaque `consulte`. « Dernier clan connu » = premier clan de l'historique différent du clan actuel (`lastKnownClan()`).
 - Accès : rôle Discord commençant par `STAFF` (`memberHasRolePrefix()`, `@clash/commun/discordRoles.js`) ; réponses éphémères. Handler : `api/discord/_handlers/blacklist.js`.
-- `notifyMemberChanges.js`, à l'arrivée d'un joueur : `⚠️ Joueur figurant dans la Liste Noire` si son tag y figure ; `⚠️ Clan à risque (NOM)` si son dernier clan connu apparaît dans l'historique d'un *autre* joueur de la liste (`buildRiskyClanMap()`, clans de la famille exclus). Redis indisponible : notification envoyée sans ces avertissements.
+- `notifyMemberChanges.js`, à l'arrivée d'un joueur : `⚠️ Joueur figurant dans la Liste Noire` si son tag y figure ; `⚠️ Clan à risque (NOM)` si son dernier clan connu apparaît dans l'historique d'un *autre* joueur de la liste (`buildRiskyClanMap()`, clans de la famille exclus). Redis indisponible : notification envoyée sans ces avertissements. Hors clan à risque, l'arrivée affiche `⬅️ Vient de NOM` (dernier clan connu) ; un départ affiche `➡️ Parti vers NOM` (clan actuel du profil, s'il en a un). Clan inconnu : ligne omise.
 
 ### Thread dédié aux notifications d'un clan
 
