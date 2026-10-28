@@ -26,12 +26,19 @@ const h = await import("../../discord/handlers/quatreDuel.js");
 const { readDuel, readPvp } = await import("../../services/quatreDuel.js");
 const { colonnesLibres } = await import("../../services/quatreRules.js");
 
+// Messages en Components V2 : texte (type 10) et rangées de boutons
+// (type 1), éventuellement dans un conteneur (type 17).
+function aplatir(composants = []) {
+  return composants.flatMap((c) => (c.type === 17 ? aplatir(c.components) : [c]));
+}
+const texte = (v) => aplatir(v.components).filter((c) => c.type === 10).map((c) => c.content).join("\n");
+const rangees = (v) => aplatir(v.components).filter((c) => c.type === 1);
+
 function verifier(v) {
-  for (const e of v.embeds || []) {
-    if ((e.description || "").length > 4096) throw new Error("description > 4096");
-    if ((e.title || "").length > 256) throw new Error("titre > 256");
-  }
-  for (const row of v.components || []) {
+  if (!(v.flags & (1 << 15))) throw new Error("message hors Components V2");
+  if ("content" in v || "embeds" in v) throw new Error("content/embeds interdits en Components V2");
+  if (texte(v).length > 4000) throw new Error("texte > 4000");
+  for (const row of rangees(v)) {
     if (row.components.length > 5) throw new Error("> 5 composants");
     for (const c of row.components) if (c.custom_id.length > 100) throw new Error("custom_id > 100");
   }
@@ -62,7 +69,7 @@ const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id
 await h.handleQuatrePvpCommand("https://discord.test/a", body("A", "Alice"));
 await h.handleQuatreOuvrir("https://discord.test/b", body("B", "Bob"));
 await h.handleQuatreOuvrir("https://discord.test/c", body("C", "Chloé"));
-if (!vues.at(-1).content?.includes("Ce duel oppose")) throw new Error("3e joueur non refusé");
+if (!texte(vues.at(-1)).includes("Ce duel oppose")) throw new Error("3e joueur non refusé");
 for (let k = 0; ; k++) {
   if (k > 50) throw new Error("1v1 bloqué");
   const p = await readPvp();
@@ -83,7 +90,7 @@ await h.handleQuatreRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
-const exemple = vues.find((v) => v.components?.length === 3 && v.embeds?.[0]?.description?.includes("Kévina joue"));
-console.log("\n--- Vue contre Kévina ---\n" + exemple.embeds[0].title + "\n" + exemple.embeds[0].description);
-console.log("Boutons :", exemple.components.map((r) => r.components.map((c) => `${c.label}${c.disabled ? " (grisé)" : ""}`).join(" | ")).join(" / "));
-console.log("\n--- Récap 1v1 ---\n" + salon.filter((m) => m.method === "POST").at(-1).embeds[0].description);
+const exemple = vues.find((v) => rangees(v).length === 3 && texte(v).includes("Kévina joue"));
+console.log("\n--- Vue contre Kévina ---\n" + texte(exemple));
+console.log("Boutons :", rangees(exemple).map((r) => r.components.map((c) => `${c.label}${c.disabled ? " (grisé)" : ""}`).join(" | ")).join(" / "));
+console.log("\n--- Récap 1v1 ---\n" + texte(salon.filter((m) => m.method === "POST").at(-1)));

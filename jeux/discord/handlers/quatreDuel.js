@@ -69,18 +69,37 @@ export function extractMember(body) {
   return { discordId, username };
 }
 
+// Messages en Components V2 (conteneur à liseré coloré, comme un embed) :
+// le texte y a la taille d'un message (16 px) et non d'un embed (14 px),
+// donc des pions plus grands à interligne serré, comme DraftBot. Les vues
+// sont écrites comme des embeds, converties ici à l'envoi : titre en `###`,
+// description, puis boutons dans le conteneur. `content` seul : texte nu.
+const IS_COMPONENTS_V2 = 1 << 15;
+// Limite Discord : 4 000 caractères de texte pour tout le message
+const TEXTE_MAX = 4000;
+
+export function versV2({ content = null, embeds = [], components = [], ...reste }) {
+  const blocs = [];
+  if (content) blocs.push({ type: 10, content });
+  const [embed] = embeds;
+  if (embed) {
+    const texte = [embed.title ? `### ${embed.title}` : null, embed.description].filter(Boolean).join("\n");
+    blocs.push({
+      type: 17,
+      accent_color: embed.color ?? QUATRE_COLOR,
+      components: [{ type: 10, content: texte.slice(0, TEXTE_MAX) }, ...components],
+    });
+  } else blocs.push(...components);
+  return { ...reste, flags: IS_COMPONENTS_V2, components: blocs };
+}
+
 async function patchOriginal(webhookUrl, payload) {
   if (!webhookUrl) return;
   try {
     await fetch(`${webhookUrl}/messages/@original`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: "",
-        embeds: [],
-        components: [],
-        ...payload,
-      }),
+      body: JSON.stringify(versV2(payload)),
     });
   } catch (err) {
     console.error("[Quatre] Échec PATCH:", err.message);
@@ -113,7 +132,7 @@ async function messageSalon(method, channelId, messageId, payload) {
       },
       // Jamais de ping dans ce jeu, même si une mention se glissait
       ...(payload
-        ? { body: JSON.stringify({ allowed_mentions: { parse: [] }, ...payload }) }
+        ? { body: JSON.stringify({ allowed_mentions: { parse: [] }, ...versV2(payload) }) }
         : {}),
     });
     if (!res.ok && res.status !== 404) {
