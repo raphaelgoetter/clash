@@ -1378,7 +1378,7 @@ Adaptation d'Exploding Kittens Duel avec les cartes de Bang!. `/bang adversaire:
 
 Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf le high score contre Kévina.**
 
-- Code : `jeux/services/grilleRules.js` (règles pures et Kévina, tests `grilleRules.test.js`), `jeux/services/grilleDuel.js` (Redis), `jeux/discord/handlers/grilleDuel.js` (Discord). Config `jeux/data/grille/duel.json` (`delai_tour_minutes` : 5, 1v1 uniquement).
+- Code : `jeux/services/grilleRules.js` (règles pures et Kévina, tests `grilleRules.test.js`), `jeux/services/grilleDuel.js` (Redis), `jeux/discord/handlers/grilleDuel.js` (Discord). Config `jeux/data/grille/duel.json` (`delai_tour_minutes` : 1, 1v1 uniquement).
 - `custom_id` : `grilleduel_poser:<colonne>` contre Kévina, `grilleduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 2), `grilleduel_ouvrir` (Jouer du message public 1v1), `grilleduel_regles`.
 
 #### Règles
@@ -1421,8 +1421,9 @@ Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille
 
 Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que La Grille (modes, sièges, verrous, délai, messages publics).
 
-- Code : `jeux/services/quatreRules.js` (règles pures et Kévina, tests `quatreRules.test.js`), `jeux/services/quatreDuel.js` (Redis), `jeux/discord/handlers/quatreDuel.js` (Discord). Config `jeux/data/quatre/duel.json` : `delai_tour_minutes` (5, 1v1 uniquement), `profondeur_kevina` (4), `marge_kevina` (3), `ouverture_kevina` (6).
-- `custom_id` : `quatreduel_poser:<colonne>` contre Kévina, `quatreduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 6), `quatreduel_ouvrir` (Jouer du message public 1v1), `quatreduel_regles`.
+- Code : `jeux/services/quatreRules.js` (règles pures et Kévina, tests `quatreRules.test.js`), `jeux/services/quatreDuel.js` (Redis), `jeux/discord/handlers/quatreDuel.js` (Discord). Config `jeux/data/quatre/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `profondeur_kevina` (4), `marge_kevina` (3), `ouverture_kevina` (6).
+- `custom_id` : `quatreduel_poser:<colonne>` contre Kévina, `quatreduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 6), `quatreduel_ouvrir` (Jouer du message public 1v1), `quatreduel_regles`, `quatreduel_abandon[:pvp]` (🏳️), `quatreduel_abandon_ok[:pvp]` / `quatreduel_abandon_non[:pvp]` (confirmation).
+- **Abandon** (🏳️, à côté de Règles : à son tour contre Kévina, toujours en 1v1) : la vue remplace les boutons de jeu par « 🏳️ Abandonner la partie ? Ce sera une défaite. » avec **Abandonner** / **Annuler** (retour à la vue). Confirmé : défaite (`duel.abandon` = siège qui abandonne, `raisonFin: "abandon"` en 1v1), série perdue, récap public (« 🏳️ X abandonne face à Kévina. », « 🏳️ X abandonne : Y remporte le duel. »).
 
 #### Règles
 

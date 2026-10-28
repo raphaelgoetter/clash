@@ -84,6 +84,25 @@ for (let k = 0; ; k++) {
   await h.handleQuatrePoser(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, libres[0], { pvp: true });
 }
 
+// ── Abandon (🏳️ puis confirmation) ──
+await h.handleQuatreCommand(W, ID);
+await h.handleQuatreAbandon(W, ID, "demande", { channelId: "salon", pseudo: "Testeur" });
+if (!texte(vues.at(-1)).includes("Abandonner la partie ?")) throw new Error("confirmation d'abandon absente");
+await h.handleQuatreAbandon(W, ID, "non", { channelId: "salon", pseudo: "Testeur" });
+if (rangees(vues.at(-1)).length !== 3) throw new Error("Annuler ne rend pas les boutons de jeu");
+await h.handleQuatreAbandon(W, ID, "ok", { channelId: "salon", pseudo: "Testeur" });
+if (!(await readDuel(ID)).abandon) throw new Error("abandon contre Kévina non enregistré");
+if (!texte(salon.at(-1)).includes("abandonne face à Kévina")) throw new Error("abandon contre Kévina non publié");
+
+await h.handleQuatrePvpCommand("https://discord.test/a", body("A", "Alice"));
+await h.handleQuatreOuvrir("https://discord.test/b", body("B", "Bob"));
+await h.handleQuatreAbandon("https://discord.test/b", "B", "ok", { pvp: true });
+const pAbandon = await readPvp();
+if (pAbandon.raisonFin !== "abandon" || pAbandon.duel.gagnant !== (pAbandon.sieges.joueur === "A" ? "joueur" : "bot")) {
+  throw new Error("abandon 1v1 mal résolu");
+}
+console.log("Abandon : " + texte(salon.filter((m) => m.method === "POST").at(-1)).split("\n")[1]);
+
 vues.forEach(verifier);
 salon.forEach(verifier);
 await h.handleQuatreRegles(W);

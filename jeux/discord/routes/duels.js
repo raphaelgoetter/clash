@@ -59,6 +59,7 @@ import {
   handleQuatreOuvrir,
   handleQuatrePoser,
   handleQuatreRegles,
+  handleQuatreAbandon,
 } from "../handlers/quatreDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
@@ -218,6 +219,18 @@ export async function routeDuels(body, res) {
       // Contre Kévina, le résultat final est publié dans le salon du clic
       const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: quatreExtractMember(body).username };
       runBackground(() => handleQuatrePoser(webhookUrl, discordId, Number(colonne), opts));
+      return;
+    }
+    // [🏳️] : quatreduel_abandon[:pvp] (confirmation), quatreduel_abandon_ok /
+    // quatreduel_abandon_non[:pvp], tous édités en place
+    const ETAPES_ABANDON = { quatreduel_abandon: "demande", quatreduel_abandon_ok: "ok", quatreduel_abandon_non: "non" };
+    if (ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Le suffixe :pvp est en 2ᵉ position (pas de colonne)
+      const opts = { pvp: colonne === "pvp", channelId: body.channel_id, pseudo: quatreExtractMember(body).username };
+      runBackground(() => handleQuatreAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

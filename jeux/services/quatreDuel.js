@@ -195,7 +195,7 @@ async function finSeriesPvp(partie, now) {
 // lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
 // moteur → discordId ; "joueur" commence), duel, webhooks: { discordId:
 // { url, at } } (vue éphémère de chaque joueur, rééditée après chaque coup
-// adverse), dernierCoupAt, raisonFin: "jeu" (alignement ou grille pleine) | "delai",
+// adverse), dernierCoupAt, raisonFin: "jeu" (alignement ou grille pleine) | "delai" | "abandon",
 // series (en fin de partie, voir finSeriesPvp()) }.
 
 const CLE_PVP = "quatreduel:pvp";

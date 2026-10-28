@@ -12,7 +12,8 @@
 //
 // custom_id : quatreduel_poser:<colonne> (contre Kévina),
 // quatreduel_poser:<colonne>:pvp (1v1), quatreduel_ouvrir (bouton Jouer du
-// message public), quatreduel_regles.
+// message public), quatreduel_regles, quatreduel_abandon[:pvp] (🏳️, demande
+// confirmation), quatreduel_abandon_ok[:pvp] / quatreduel_abandon_non[:pvp].
 //
 // Service : jeux/services/quatreDuel.js (Redis),
 // règles : jeux/services/quatreRules.js.
@@ -25,6 +26,8 @@ import {
   loadDuelConfig,
   nouveauDuel,
   ouvrirPvp,
+  readDuel,
+  readPvp,
   rejoindrePvp,
   siegeDe,
 } from "../../services/quatreDuel.js";
@@ -222,8 +225,24 @@ const BOUTON_REGLES = {
 
 const boutonsFin = () => [{ type: 1, components: [BOUTON_REGLES] }];
 
+// 🏳️ : abandon, après confirmation (défaite, la série est perdue)
+const boutonAbandon = (sfx) => ({ type: 2, style: 2, emoji: { name: "🏳️" }, custom_id: `quatreduel_abandon${sfx}` });
+
+function boutonsConfirmation(sfx) {
+  return [
+    {
+      type: 1,
+      components: [
+        { type: 2, style: 4, label: "Abandonner", emoji: { name: "🏳️" }, custom_id: `quatreduel_abandon_ok${sfx}` },
+        { type: 2, style: 2, label: "Annuler", custom_id: `quatreduel_abandon_non${sfx}` },
+      ],
+    },
+  ];
+}
+
 function titreFin(d, moi, A, raison) {
   if (d.gagnant === "nul") return "🤝 Match nul";
+  if (d.abandon) return d.gagnant === moi ? `🏆 Victoire ! ${A.Sujet} abandonne.` : "🏳️ Tu abandonnes.";
   if (raison === "delai") {
     return d.gagnant === moi ? `🏆 Victoire ! ${A.Sujet} n'a pas joué à temps.` : "💀 Défaite… tu n'as pas joué à temps.";
   }
@@ -233,8 +252,11 @@ function titreFin(d, moi, A, raison) {
 // Vue de fin : une phrase seulement, le plateau final est déjà dans le
 // message public posté au même moment.
 function vueFin(d, { moi, A, raison }) {
-  const fin =
-    raison === "delai"
+  const fin = d.abandon
+    ? d.gagnant === moi
+      ? `${A.Sujet} abandonne.`
+      : "Tu abandonnes."
+    : raison === "delai"
       ? d.gagnant === moi
         ? `${A.Sujet} n'a pas joué à temps.`
         : "Tu n'as pas joué à temps."
@@ -280,22 +302,27 @@ function boutonsColonnes(d, sfx) {
 
 // Vue d'un joueur : résultat de la dernière action (`texte`), plateau et
 // une colonne par bouton (à son tour), attente (1v1) ou fin.
-// `ctx` : { moi (siège du moteur), A (adversaire), pvp, echeance, raison }
-function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null } = {}) {
+// `ctx` : { moi (siège du moteur), A (adversaire), pvp, echeance, raison,
+// confirmerAbandon (question à la place des boutons de jeu) }
+function buildVue(
+  d,
+  { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null, confirmerAbandon = false } = {},
+) {
   if (d.termine) return vueFin(d, { moi, A, raison });
   const monTour = d.actif === moi;
+  const sfx = pvp ? ":pvp" : "";
   const lignes = [
-    ...(texte ? [texte, ""] : []),
+    ...(confirmerAbandon ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite.", ""] : texte ? [texte, ""] : []),
     ...plateau(d, moi, { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` }),
     ...(monTour ? [] : ["", `⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
   ];
   const titre = `${TITRE} · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: QUATRE_COLOR };
-  if (!monTour) return { embeds: [embed], components: boutonsFin() };
-  return {
-    embeds: [embed],
-    components: [...boutonsColonnes(d, pvp ? ":pvp" : ""), { type: 1, components: [BOUTON_REGLES] }],
-  };
+  if (confirmerAbandon) return { embeds: [embed], components: boutonsConfirmation(sfx) };
+  // Contre Kévina, ce n'est jamais son tour qu'en pleine réflexion : pas d'abandon
+  const regles = { type: 1, components: [BOUTON_REGLES, ...(monTour || pvp ? [boutonAbandon(sfx)] : [])] };
+  if (!monTour) return { embeds: [embed], components: [regles] };
+  return { embeds: [embed], components: [...boutonsColonnes(d, sfx), regles] };
 }
 
 function buildReglesEmbed(config) {
@@ -307,6 +334,7 @@ function buildReglesEmbed(config) {
       "**⬇️ À ton tour** : choisis une colonne non pleine, ton pion tombe tout en bas.",
       "**🏆 Victoire** : le premier qui aligne 4 pions (horizontale, verticale ou diagonale) gagne.",
       "**🤝 Match nul** : la grille est pleine sans alignement.",
+      "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
       `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
     ].join("\n"),
@@ -375,8 +403,9 @@ function messageFinalSolo(d, pseudo) {
         libelleRecord: "Record",
       })
     : [];
-  const resultat =
-    d.gagnant === "nul"
+  const resultat = d.abandon
+    ? `🏳️ ${pseudo} abandonne face à Kévina.`
+    : d.gagnant === "nul"
       ? `🤝 Match nul entre ${pseudo} et Kévina, la grille est pleine.`
       : d.gagnant === "joueur"
         ? `🏆 ${pseudo} aligne 4 pions et bat Kévina !`
@@ -416,15 +445,7 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     return { texte: lignes.join("\n"), vientDeFinir: d.termine, avantKevina, texteJoueur: r.texte };
   }, { nom: pseudo });
   if (!duel) {
-    await patchOriginal(webhookUrl, {
-      embeds: [
-        {
-          description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/quatre` !",
-          color: QUATRE_COLOR,
-        },
-      ],
-      components: boutonsFin(),
-    });
+    await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
     return;
   }
   if (resultat.avantKevina) {
@@ -432,15 +453,47 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     await patchOriginal(webhookUrl, buildVue(resultat.avantKevina, { texte: resultat.texteJoueur }));
     await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
   }
-  if (resultat.vientDeFinir) {
-    // Le message public suffit : vue éphémère supprimée (repli : vue de fin)
-    const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
-    if (ok && (await supprimerOriginal(webhookUrl))) return;
-  }
+  if (resultat.vientDeFinir && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
   await patchOriginal(
     webhookUrl,
     buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte }),
   );
+}
+
+const AUCUNE_PARTIE_SOLO = {
+  embeds: [
+    {
+      description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/quatre` !",
+      color: QUATRE_COLOR,
+    },
+  ],
+  components: boutonsFin(),
+};
+
+// Fin contre Kévina : le message public suffit, vue éphémère supprimée.
+// Faux si l'un des deux a échoué (l'appelant affiche alors la vue de fin).
+async function publierFinSolo(webhookUrl, channelId, duel, pseudo) {
+  const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
+  return Boolean(ok) && (await supprimerOriginal(webhookUrl));
+}
+
+// [🏳️] confirmé contre Kévina : défaite, série perdue.
+async function abandonSolo(webhookUrl, discordId, { channelId, pseudo } = {}) {
+  const { duel, resultat } = await agirDuel(
+    discordId,
+    (d) => {
+      if (d.termine) return { erreur: "termine" };
+      Object.assign(d, { termine: true, gagnant: "bot", abandon: "joueur" });
+      return {};
+    },
+    { nom: pseudo },
+  );
+  if (!duel) {
+    await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
+    return;
+  }
+  if (!resultat.erreur && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
+  await patchOriginal(webhookUrl, buildVue(duel));
 }
 
 // ── 1v1 ──────────────────────────────────────────────────────────────
@@ -459,7 +512,7 @@ function webhookValide(partie, discordId) {
 
 // Vue éphémère d'un joueur du 1v1 (lobby, partie, fin). Sans `texte`, le
 // dernier coup adverse est raconté.
-function vuePvp(partie, config, discordId, texte = null) {
+function vuePvp(partie, config, discordId, texte = null, { confirmerAbandon = false } = {}) {
   if (partie.statut === "lobby") {
     return {
       embeds: [
@@ -487,6 +540,7 @@ function vuePvp(partie, config, discordId, texte = null) {
     pvp: true,
     echeance: echeanceDe(partie, config),
     raison: partie.raisonFin,
+    confirmerAbandon,
   });
 }
 
@@ -539,7 +593,9 @@ function messageFinal(partie) {
   const nom = (siege) => partie.noms?.[partie.sieges[siege]] ?? "?";
   const g = d.gagnant;
   const resultat =
-    g === "nul"
+    partie.raisonFin === "abandon"
+      ? `🏳️ ${nom(adversaire(g))} abandonne : ${nom(g)} remporte le duel.`
+      : g === "nul"
       ? `🤝 Match nul entre ${nom("joueur")} et ${nom("bot")}, la grille est pleine.`
       : partie.raisonFin === "delai"
         ? `🏆 ${nom(g)} remporte le duel : ${nom(adversaire(g))} n'a pas joué à temps.`
@@ -695,6 +751,64 @@ async function executerPvp(webhookUrl, discordId, colonne) {
     return;
   }
   await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte));
+}
+
+// [🏳️] confirmé en 1v1 : défaite, l'adversaire remporte le duel.
+async function abandonPvp(webhookUrl, discordId) {
+  const { partie, config, resultat } = await agirPvp((p) => {
+    const moi = siegeDe(p, discordId);
+    if (!moi) return { erreur: "pasJoueur" };
+    memoriserWebhook(p, discordId, webhookUrl);
+    if (p.statut !== "enCours") return { erreur: "termine" };
+    Object.assign(p.duel, { termine: true, gagnant: adversaire(moi), abandon: moi });
+    p.raisonFin = "abandon";
+    return {};
+  });
+  if (!partie) {
+    await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
+    return;
+  }
+  if (resultat.erreur === "pasJoueur") {
+    await patchOriginal(webhookUrl, { content: avertissement("pasJoueur") });
+    return;
+  }
+  // Fin par abandon (ou par délai dépassé constaté au même moment)
+  if (resultat.vientDeFinir) {
+    await diffuserPvp(partie, config, discordId, webhookUrl, null);
+    return;
+  }
+  await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, avertissement("termine")));
+}
+
+// [🏳️] (`etape` "demande") : question de confirmation à la place des
+// boutons de jeu ; "non" : retour à la vue ; "ok" : abandon.
+export async function handleQuatreAbandon(webhookUrl, discordId, etape, { pvp = false, channelId, pseudo } = {}) {
+  try {
+    if (etape === "ok") {
+      if (pvp) await abandonPvp(webhookUrl, discordId);
+      else await abandonSolo(webhookUrl, discordId, { channelId, pseudo });
+      return;
+    }
+    const confirmerAbandon = etape === "demande";
+    if (!pvp) {
+      const duel = await readDuel(discordId);
+      await patchOriginal(webhookUrl, duel ? buildVue(duel, { confirmerAbandon }) : AUCUNE_PARTIE_SOLO);
+      return;
+    }
+    const partie = await readPvp();
+    if (!partie) {
+      await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
+      return;
+    }
+    if (!siegeDe(partie, discordId)) {
+      await patchOriginal(webhookUrl, { content: avertissement("pasJoueur") });
+      return;
+    }
+    const config = await loadDuelConfig();
+    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, null, { confirmerAbandon }));
+  } catch (err) {
+    console.error("[Quatre] Échec abandon:", err.message);
+  }
 }
 
 // ── Points d'entrée des composants ───────────────────────────────────
