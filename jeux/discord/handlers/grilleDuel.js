@@ -90,7 +90,7 @@ export function extractMember(body) {
 async function patchOriginal(webhookUrl, payload) {
   if (!webhookUrl) return;
   try {
-    await fetch(`${webhookUrl}/messages/@original`, {
+    const res = await fetch(`${webhookUrl}/messages/@original`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -100,6 +100,8 @@ async function patchOriginal(webhookUrl, payload) {
         ...payload,
       }),
     });
+    // Refus de Discord (vue invalide, jeton expiré) : sinon le clic reste sans effet visible
+    if (!res.ok) console.error(`[Grille] PATCH refusé (${res.status}) :`, (await res.text()).slice(0, 300));
   } catch (err) {
     console.error("[Grille] Échec PATCH:", err.message);
   }
@@ -620,6 +622,17 @@ async function diffuserPvp(partie, config, discordId, webhookUrl, texte, explosi
   await messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(partie, config));
 }
 
+// Fin au délai sans attendre un clic : sinon le message public reste figé
+// « au tour de X, limite il y a … » jusqu'à la prochaine interaction. Après
+// un coup, l'invocation attend l'échéance (+1 s) puis clôt la partie si
+// personne n'a joué entre-temps (`verifierDelai()` dans `agirPvp`).
+async function surveillerDelai(partie, config, discordId, webhookUrl) {
+  if (partie.statut !== "enCours") return;
+  await pause(Math.max(0, partie.dernierCoupAt + config.delai_tour_minutes * 60_000 - Date.now()) + 1000);
+  const r = await agirPvp(() => ({}));
+  if (r.partie && r.resultat.vientDeFinir) await diffuserPvp(r.partie, r.config, discordId, webhookUrl, null);
+}
+
 const AUCUNE_PARTIE_PVP = {
   embeds: [
     {
@@ -690,6 +703,7 @@ export async function handleGrilleOuvrir(webhookUrl, body) {
         : null;
       // Le lanceur voit aussi l'arrivée de son adversaire
       await diffuserPvp(partie, config, discordId, webhookUrl, texte);
+      if (resultat.rejoint) await surveillerDelai(partie, config, discordId, webhookUrl);
       return;
     }
     await patchOriginal(webhookUrl, vuePvp(partie, config, discordId));
@@ -718,6 +732,7 @@ async function executerPvp(webhookUrl, discordId, colonne) {
   const texte = resultat.erreur ? avertissement(resultat.erreur) : resultat.texte;
   if (resultat.coup || resultat.vientDeFinir) {
     await diffuserPvp(partie, config, discordId, webhookUrl, texte, resultat.explosion);
+    if (resultat.coup) await surveillerDelai(partie, config, discordId, webhookUrl);
     return;
   }
   await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte));

@@ -21,6 +21,10 @@ globalThis.fetch = async (url, init = {}) => {
   return new Response("{}");
 };
 process.env.DISCORD_TOKEN = "faux";
+// Pauses instantanées : la surveillance du délai 1v1 (surveillerDelai)
+// attendrait sinon l'échéance réelle après chaque coup
+const setTimeoutReel = globalThis.setTimeout;
+globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 
 const h = await import("../../discord/handlers/quatreDuel.js");
 const { readDuel, readPvp } = await import("../../services/quatreDuel.js");
