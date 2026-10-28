@@ -26,7 +26,7 @@ export const PIONS_CONFIG_PATH = path.join(PIONS_DIR, "pions.json");
 const REPLI = { bleu: "🔵", rouge: "🔴", bleu_gagnant: "🟦", rouge_gagnant: "🟥", vide: "⚫" };
 
 // Épaisseur du contour (unités du viewBox 15×15) : le jaune doit se voir
-const EPAISSEUR = { normal: 0.6, gagnant: 1.2 };
+const EPAISSEUR = { normal: 0.6, gagnant: 1.8 };
 
 let configCache = null;
 
