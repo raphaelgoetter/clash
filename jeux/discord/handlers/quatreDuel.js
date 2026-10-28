@@ -165,9 +165,9 @@ function nomsAdv(partie, moi) {
 }
 
 // Plateau vu par le siège `moi` (ses pions en bleu) : emojis à taille de
-// texte, collés, cases vides rondes. Une rangée par ligne de texte : grille
-// aussi serrée en hauteur qu'en largeur (les titres `###` agrandissaient les
-// pions mais ajoutaient une marge entre les rangées). `noms` : { moi, adv }
+// texte séparés par une espace, cases vides rondes, pions qui remplissent
+// toute l'image de l'emoji (comme DraftBot). Une rangée par ligne de texte,
+// sans titre `###` (marge entre les rangées). `noms` : { moi, adv }
 // libellés des deux camps, en légende.
 function plateau(d, moi, noms) {
   const gagnantes = new Set((d.alignement ?? []).map(([c, r]) => `${c},${r}`));
@@ -177,11 +177,11 @@ function plateau(d, moi, noms) {
   };
   const rangees = [];
   for (let r = HAUTEUR - 1; r >= 0; r--) {
-    rangees.push(d.colonnes.map((col, c) => pion(col[r], c, r)).join(""));
+    rangees.push(d.colonnes.map((col, c) => pion(col[r], c, r)).join(" "));
   }
   return [
     `${formatPion(MOI)} **${noms.moi}** · ${formatPion(ADV)} **${noms.adv}**`,
-    NUMEROS.join(""),
+    NUMEROS.join(" "),
     ...rangees,
   ];
 }
