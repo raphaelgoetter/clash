@@ -413,7 +413,7 @@ function messageFinalSolo(d, pseudo) {
   return {
     embeds: [
       {
-        title: `${TITRE} · contre Kévina`,
+        title: `${TITRE} · ${pseudo} contre Kévina`,
         description: [resultat, "", ...plateauPublic(d, pseudo, "🤖 Kévina"), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
@@ -587,6 +587,10 @@ function messagePublic(partie, config) {
 
 // Fin du 1v1 : récapitulatif dans un NOUVEAU message (visible en bas du
 // salon), puis suppression du message de la partie (comme La Grille).
+// Titre de fin du 1v1 : gagnant en premier (ordre des sièges si match nul)
+const titreGagnant = (g, nom) =>
+  g === "nul" ? `${nom("joueur")} contre ${nom("bot")}` : `${nom(g)} contre ${nom(adversaire(g))}`;
+
 function messageFinal(partie) {
   const d = partie.duel;
   // Pseudos en clair, jamais de mention (pas de ping)
@@ -613,7 +617,7 @@ function messageFinal(partie) {
   return {
     embeds: [
       {
-        title: `${TITRE} · 1v1`,
+        title: `${TITRE} · ${titreGagnant(g, nom)}`,
         description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot")), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),

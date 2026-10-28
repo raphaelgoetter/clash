@@ -396,7 +396,7 @@ function messageFinalSolo(d, pseudo, highScore = null) {
   return {
     embeds: [
       {
-        title: "▦ La Grille · contre Kévina",
+        title: `▦ La Grille · ${pseudo} contre Kévina`,
         description: [
           resultat,
           "",
@@ -559,6 +559,10 @@ function messagePublic(partie, config) {
 
 // Fin du 1v1 : récapitulatif dans un NOUVEAU message (visible en bas du
 // salon), puis suppression du message de la partie (comme Bang! Duel).
+// Titre de fin du 1v1 : gagnant en premier (ordre des sièges si match nul)
+const titreGagnant = (g, nom) =>
+  g === "nul" ? `${nom("joueur")} contre ${nom("bot")}` : `${nom(g)} contre ${nom(adversaire(g))}`;
+
 function messageFinal(partie) {
   const d = partie.duel;
   // Pseudos en clair, jamais de mention (pas de ping)
@@ -573,7 +577,7 @@ function messageFinal(partie) {
   return {
     embeds: [
       {
-        title: "▦ La Grille · 1v1",
+        title: `▦ La Grille · ${titreGagnant(g, nom)}`,
         description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot"))].join("\n").slice(0, 4096),
         color: GRILLE_COLOR,
       },
