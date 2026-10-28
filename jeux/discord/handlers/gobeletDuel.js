@@ -229,7 +229,7 @@ async function buildPendingLabel(state, hands) {
       pendingIds.map((id) => resolveDisplayName(id, hands[id]?.username)),
     );
     lines.push(
-      `⏳ ${names.length > 1 ? "Doivent" : "Doit"} encore jouer cette manche : ${names.join(", ")}`,
+      `⏳ ${names.length > 1 ? "Doivent" : "Doit"} encore jouer cette manche (bouton **Jouer**) : ${names.join(", ")}`,
     );
   }
   // Roster incomplet : la manche attend les places libres avant d'être
@@ -279,9 +279,11 @@ async function buildTableEmbed(
   // est utilisé pour le body) — même principe que buildTodaySection du jeu
   // spécial (_handlers/gobelet.js).
   const seatsLabel = `${state.players.length}/${state.maxPlayers} joueur${state.maxPlayers > 1 ? "s" : ""} inscrit${state.players.length > 1 ? "s" : ""}`;
+  // Inscriptions closes : pas d'appel générique (il laisserait croire qu'on
+  // peut encore rejoindre), la ligne d'attente nomme les joueurs concernés.
   lines.push(
     "## 🎲 À vos dés !",
-    "Clique sur **Jouer** pour lancer tes 5 dés.",
+    ...(state.rosterLocked ? [] : ["Clique sur **Jouer** pour lancer tes 5 dés."]),
     "",
     seatsLabel,
   );

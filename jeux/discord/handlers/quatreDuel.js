@@ -576,7 +576,7 @@ function messagePublic(partie, config) {
         // second plateau identique à l'écran prêterait à confusion)
         description: [
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
-          "Joueurs : clique sur **Jouer** pour afficher ta vue.",
+          `${nom("joueur")} et ${nom("bot")} : cliquez sur **Jouer** pour voir votre plateau.`,
         ].join("\n").slice(0, 4096),
         color: QUATRE_COLOR,
       },

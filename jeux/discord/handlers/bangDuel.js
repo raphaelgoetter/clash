@@ -729,7 +729,7 @@ function messagePublic(partie, config) {
           `**Tour ${d.tour}/${config.tours_max}** · au tour de ${partie.noms[partie.sieges[d.actif]]}, limite <t:${echeanceDe(partie, config)}:R>`,
           `🃏 Pioche : **${plural(d.pioche.length, "carte")}**, dont **${bombes}** 💥`,
           "",
-          "Joueurs : clique sur **Jouer** pour afficher ta main.",
+          `${partie.noms[a]} et ${partie.noms[b]} : cliquez sur **Jouer** pour voir votre main.`,
         ].join("\n"),
         color: BANG_COLOR,
       },
