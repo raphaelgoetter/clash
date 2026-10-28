@@ -730,10 +730,11 @@ async function buildClanReportPayload(resolved) {
       return sum / list.length;
     }
 
+    // Membres liés à Discord (clans famille uniquement)
     let discordLinkedCount = 0;
-    if (isNoWarClan) {
+    if (isFamilyClan) {
       const links = await getDiscordLinks();
-      discordLinkedCount = rosterForNoWarStats.filter((m) => {
+      discordLinkedCount = members.filter((m) => {
         const tag = m.tag?.startsWith("#") ? m.tag : `#${m.tag}`;
         return Boolean(links[tag]);
       }).length;
@@ -783,6 +784,12 @@ async function buildClanReportPayload(resolved) {
     }
 
     const clanUrl = trustClanUrl(resolved.tag);
+    const discordField = {
+      name: "Discord",
+      value: `<:discord:1526507049779990601> ${discordLinkedCount}/${clan.members ?? "?"}`,
+      inline: true,
+    };
+
     const fields = [
       // Rangée 1 : Membres | Statut | Chef
       {
@@ -834,7 +841,7 @@ async function buildClanReportPayload(resolved) {
         inline: true,
       },
       { name: "​", value: "​", inline: true },
-      // Rangée 4 : Moyenne/joueur (ou Trophées/joueur) | Points/deck (ou Discord)
+      // Rangée 4 : Moyenne/joueur | Points/deck | Discord (sans GDC : Trophées/joueur | Discord)
       isNoWarClan
         ? {
             name: "Trophées/joueur",
@@ -847,17 +854,15 @@ async function buildClanReportPayload(resolved) {
             inline: true,
           },
       isNoWarClan
-        ? {
-            name: "Discord",
-            value: `<:discord:1526507049779990601> ${discordLinkedCount}/${clan.members ?? "?"}`,
-            inline: true,
-          }
+        ? discordField
         : {
             name: "Points/deck",
             value: `${fmtInt(lastWarSummary?.pointsPerDeck)} pts`,
             inline: true,
           },
-      { name: "​", value: "​", inline: true },
+      isFamilyClan && !isNoWarClan
+        ? discordField
+        : { name: "​", value: "​", inline: true },
     ];
 
     // Rangée 5 : listes membres (uniquement pour les clans famille)
@@ -1696,6 +1701,9 @@ export async function routeClan(body, res) {
           }
         }
 
+        // Liens Discord chargés une seule fois pour les 4 clans
+        const discordLinks = await getDiscordLinks().catch(() => null);
+
         const clanResults = await mapWithConcurrency(
           familyClanDefs,
           4,
@@ -1753,6 +1761,14 @@ export async function routeClan(body, res) {
               clanScore: clan.clanScore,
               supremeChampionsCount: clan.supremeChampionsCount,
               leaderValue: findClanLeaderValue(leaderMembers),
+              discordLinkedCount: discordLinks
+                ? leaderMembers.filter((m) => {
+                    const memberTag = m.tag?.startsWith("#")
+                      ? m.tag
+                      : `#${m.tag}`;
+                    return Boolean(discordLinks[memberTag]);
+                  }).length
+                : null,
               isFamilyClan: true,
               usedLiteFallback,
             };
@@ -1802,7 +1818,7 @@ export async function routeClan(body, res) {
                 inline: true,
               },
               { name: "​", value: "​", inline: true },
-              // Rangée 3 : Trophées | CS atteints | (spacer)
+              // Rangée 3 : Trophées | CS atteints | Discord
               {
                 name: "Trophées",
                 value: `<:trophy:1498645869224792105> ${
@@ -1821,7 +1837,11 @@ export async function routeClan(body, res) {
                 }`,
                 inline: true,
               },
-              { name: "​", value: "​", inline: true },
+              {
+                name: "Discord",
+                value: `<:discord:1526507049779990601> ${clanResult.discordLinkedCount ?? "—"}/${clanResult.members}`,
+                inline: true,
+              },
             ],
           };
         });
