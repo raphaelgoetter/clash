@@ -292,7 +292,7 @@ function buildVue(
     ...plateau(grilles ? { ...d, grilles } : d, moi, { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` }),
     "",
     monTour
-      ? `# Ton dé : ${grilles ? "🎲" : formatDie(d.de, MOI)}`
+      ? `# Ton dé : ${grilles ? "⏳" : formatDie(d.de, MOI)}`
       : `⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
   ];
   const titre = `▦ La Grille · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
