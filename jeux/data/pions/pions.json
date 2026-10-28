@@ -7,10 +7,12 @@
     "normal": "#FFFFFF",
     "gagnant": "#FFC83D"
   },
+  "vide": "#4E5058",
   "emojis": {
     "bleu": "1564637783417430096",
     "rouge": "1564637785778823229",
     "bleu_gagnant": "1564637787691552931",
-    "rouge_gagnant": "1564637789381730314"
+    "rouge_gagnant": "1564637789381730314",
+    "vide": null
   }
 }

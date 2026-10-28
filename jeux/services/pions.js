@@ -9,7 +9,8 @@
 //
 // Variantes : bleu (ses pions) et rouge (pions adverses), chacune avec un
 // contour blanc, ou jaune et plus épais sur l'alignement gagnant (le pion
-// garde sa couleur).
+// garde sa couleur) ; vide (case libre : disque gris sans contour, même
+// taille, pour une grille régulière).
 // ============================================================
 
 import fs from "fs";
@@ -22,7 +23,7 @@ export const PIONS_DIR = path.resolve(__dirname, "..", "data", "pions");
 export const PIONS_CONFIG_PATH = path.join(PIONS_DIR, "pions.json");
 
 // Repli tant que l'emoji d'une variante n'est pas uploadé
-const REPLI = { bleu: "🔵", rouge: "🔴", bleu_gagnant: "🟦", rouge_gagnant: "🟥" };
+const REPLI = { bleu: "🔵", rouge: "🔴", bleu_gagnant: "🟦", rouge_gagnant: "🟥", vide: "⚫" };
 
 // Épaisseur du contour (unités du viewBox 15×15) : le jaune doit se voir
 const EPAISSEUR = { normal: 0.6, gagnant: 1.2 };
@@ -38,10 +39,10 @@ export function loadPionsConfig() {
   return configCache;
 }
 
-// Variantes à uploader : bleu, rouge, bleu_gagnant, rouge_gagnant
+// Variantes à uploader : bleu, rouge, bleu_gagnant, rouge_gagnant, vide
 export function variantes() {
   const couleurs = Object.keys(loadPionsConfig().couleurs);
-  return [...couleurs, ...couleurs.map((c) => `${c}_gagnant`)];
+  return [...couleurs, ...couleurs.map((c) => `${c}_gagnant`), "vide"];
 }
 
 export function emojiName(variante) {
@@ -50,8 +51,9 @@ export function emojiName(variante) {
 
 // Pion dans un texte (titre, description) : emoji d'application si
 // uploadé, sinon rond (ou carré gagnant) de couleur.
+// `couleur` "vide" : case libre.
 export function formatPion(couleur, { gagnant = false } = {}) {
-  const variante = gagnant ? `${couleur}_gagnant` : couleur;
+  const variante = gagnant && couleur !== "vide" ? `${couleur}_gagnant` : couleur;
   const id = loadPionsConfig().emojis?.[variante] ?? null;
   return id ? `<:${emojiName(variante)}:${id}>` : REPLI[variante];
 }
@@ -61,6 +63,10 @@ export function formatPion(couleur, { gagnant = false } = {}) {
 // même taille de pion pour toutes les variantes.
 export async function buildColoredPionSvg(variante) {
   const config = loadPionsConfig();
+  if (variante === "vide") {
+    const source = await fsp.readFile(path.join(PIONS_DIR, "pion.svg"), "utf-8");
+    return source.replace(/<circle cx="7.5" cy="7.5" r="([\d.]+)"/, (_, r) => `<circle cx="7.5" cy="7.5" r="${Number(r) + 0.3}" fill="${config.vide}"`);
+  }
   const [couleur, type = "normal"] = variante.split("_");
   const hex = config.couleurs?.[couleur];
   const contour = config.contours?.[type === "gagnant" ? "gagnant" : "normal"];

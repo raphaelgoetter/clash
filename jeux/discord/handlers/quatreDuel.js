@@ -45,7 +45,6 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 // de Clash Royale) ; alignement gagnant : même couleur, contour jaune
 const MOI = "bleu";
 const ADV = "rouge";
-const CASE_VIDE = "⬛";
 // Numéros des colonnes au-dessus du plateau, alignés sur les boutons
 const NUMEROS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣"];
 // Contre Kévina : délai avant d'afficher son coup (elle joue en quelques
@@ -146,22 +145,24 @@ function nomsAdv(partie, moi) {
   return nomsJoueur(partie.noms[partie.sieges[adversaire(moi)]] ?? "?");
 }
 
-// Plateau vu par le siège `moi` (ses pions en bleu), en titres `###` : sur
-// mobile, 7 emojis par ligne débordent dès `##` (6 par ligne, le 7ᵉ passe
-// à la ligne). `noms` : { moi, adv } libellés des deux camps, en légende.
+// Plateau vu par le siège `moi` (ses pions en bleu) : emojis à taille de
+// texte, collés, cases vides rondes. Une rangée par ligne de texte : grille
+// aussi serrée en hauteur qu'en largeur (les titres `###` agrandissaient les
+// pions mais ajoutaient une marge entre les rangées). `noms` : { moi, adv }
+// libellés des deux camps, en légende.
 function plateau(d, moi, noms) {
   const gagnantes = new Set((d.alignement ?? []).map(([c, r]) => `${c},${r}`));
   const pion = (id, c, r) => {
-    if (!id) return CASE_VIDE;
+    if (!id) return formatPion("vide");
     return formatPion(id === moi ? MOI : ADV, { gagnant: gagnantes.has(`${c},${r}`) });
   };
   const rangees = [];
   for (let r = HAUTEUR - 1; r >= 0; r--) {
-    rangees.push(`### ${d.colonnes.map((col, c) => pion(col[r], c, r)).join(" ")}`);
+    rangees.push(d.colonnes.map((col, c) => pion(col[r], c, r)).join(""));
   }
   return [
     `${formatPion(MOI)} **${noms.moi}** · ${formatPion(ADV)} **${noms.adv}**`,
-    `### ${NUMEROS.join(" ")}`,
+    NUMEROS.join(""),
     ...rangees,
   ];
 }
