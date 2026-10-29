@@ -7,12 +7,17 @@ import { Redis } from "@upstash/redis";
 if (!Redis.isFake) throw new Error("À lancer avec registerFakeRedis.js (voir l'en-tête)");
 
 const vues = [];
+// Éditions d'une vue renvoyée en followup (vue du lanceur en 1v1)
+let editionsFollowup = 0;
 const salon = [];
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   if (u.startsWith("https://discord.test")) {
     // DELETE : vue éphémère supprimée (fin de partie)
     if (init.body) vues.push(JSON.parse(init.body));
+    if (init.method === "PATCH" && u.includes("/messages/vue-")) editionsFollowup++;
+    // Followup (vue renvoyée sous le message public) : son id
+    if (init.method === "POST") return new Response(JSON.stringify({ id: `vue-${vues.length}` }));
   }
   else if (u.startsWith("https://discord.com")) {
     if (init.body) salon.push({ method: init.method, ...JSON.parse(init.body) });
@@ -81,6 +86,7 @@ for (let k = 0; ; k++) {
   const p = await readPvp();
   if (p.statut === "fini") {
     console.log(`1v1 : fini (${p.raisonFin}), gagnant ${p.duel.gagnant}`);
+    if (!editionsFollowup) throw new Error("vue du lanceur (followup) jamais mise à jour");
     break;
   }
   const actif = p.sieges[p.duel.actif];

@@ -90,10 +90,14 @@ export function extractMember(body) {
   return { discordId, username };
 }
 
+// Message visé : la réponse de l'interaction (`@original`), ou un followup
+// si l'URL mémorisée désigne déjà un message (`…/messages/<id>`).
+const urlMessage = (webhookUrl) => (webhookUrl.includes("/messages/") ? webhookUrl : `${webhookUrl}/messages/@original`);
+
 async function patchOriginal(webhookUrl, payload) {
   if (!webhookUrl) return;
   try {
-    const res = await fetch(`${webhookUrl}/messages/@original`, {
+    const res = await fetch(urlMessage(webhookUrl), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -114,7 +118,7 @@ async function patchOriginal(webhookUrl, payload) {
 async function supprimerOriginal(webhookUrl) {
   if (!webhookUrl) return false;
   try {
-    const res = await fetch(`${webhookUrl}/messages/@original`, { method: "DELETE" });
+    const res = await fetch(urlMessage(webhookUrl), { method: "DELETE" });
     return res.ok;
   } catch (err) {
     console.error("[Grille] Échec DELETE:", err.message);
@@ -123,20 +127,25 @@ async function supprimerOriginal(webhookUrl) {
 }
 
 // Nouveau message éphémère de l'interaction (followup), posté après les
-// messages déjà présents. Vrai si c'est fait.
+// messages déjà présents. Renvoie l'URL du followup (à mémoriser pour
+// l'éditer), null en cas d'échec.
 async function envoyerEphemere(webhookUrl, payload) {
-  if (!webhookUrl) return false;
+  if (!webhookUrl) return null;
   try {
-    const res = await fetch(webhookUrl, {
+    const res = await fetch(`${webhookUrl}?wait=true`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...payload, flags: 64 }),
     });
-    if (!res.ok) console.error(`[Grille] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
-    return res.ok;
+    if (!res.ok) {
+      console.error(`[Grille] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
+      return null;
+    }
+    const { id } = await res.json();
+    return id ? `${webhookUrl}/messages/${id}` : null;
   } catch (err) {
     console.error("[Grille] Échec followup:", err.message);
-    return false;
+    return null;
   }
 }
 
@@ -606,10 +615,9 @@ const BOUTON_JOUER = {
   custom_id: "grilleduel_ouvrir",
 };
 
-// Message public : lobby, puis scores en direct (au tour de qui, délai).
-// Sans plateau : chaque joueur a le sien dans sa vue éphémère (un second
-// plateau identique à l'écran prêterait à confusion).
-function messagePublic(partie, config) {
+// Message public : lobby, puis plateau en direct (au tour de qui, délai,
+// plateau neutre à petits dés, explosions comprises).
+function messagePublic(partie, config, grilles = null) {
   const components = [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }];
   if (partie.statut === "lobby") {
     return {
@@ -629,12 +637,14 @@ function messagePublic(partie, config) {
     embeds: [
       {
         title: `▦ La Grille · ${nom("joueur")} contre ${nom("bot")}`,
+        // Plateau neutre à petits dés, suivi par le salon ; chaque joueur
+        // joue depuis sa vue éphémère (Jouer la rouvre)
         description: [
-          ligneScores(nom("joueur"), d.grilles.joueur),
-          ligneScores(nom("bot"), d.grilles.bot),
-          "",
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
-          `${nom("joueur")} et ${nom("bot")} : cliquez sur **Jouer** pour voir votre grille.`,
+          "",
+          ...plateauPublic(grilles ? { ...d, grilles } : d, nom("joueur"), nom("bot")),
+          "",
+          `${nom("joueur")} et ${nom("bot")} : cliquez sur **Jouer** pour jouer.`,
         ].join("\n").slice(0, 4096),
         color: GRILLE_COLOR,
       },
@@ -682,6 +692,7 @@ async function diffuserPvp(partie, config, discordId, webhookUrl, texte, explosi
     await Promise.all([
       patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte, explosion)),
       ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id, null, explosion))),
+      messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(partie, config, explosion)),
     ]);
     await pause(DELAI_EXPLOSION_MS);
   }
@@ -745,10 +756,18 @@ export async function handleGrillePvpCommand(webhookUrl, body) {
     const message = await messageSalon("POST", body.channel_id, null, messagePublic(r.partie, config));
     if (!message?.id) throw new Error("message public non créé");
     await enregistrerMessagePvp(message.id);
+    // Vue du lanceur SOUS le message public : réponse différée (créée dès
+    // la commande, au-dessus) supprimée, vue renvoyée en followup, dont
+    // l'URL est mémorisée pour les mises à jour. Repli : réponse différée.
+    const vue = vuePvp(r.partie, config, discordId, "▦ Défi lancé dans le salon !");
+    const followup = (await supprimerOriginal(webhookUrl)) ? await envoyerEphemere(webhookUrl, vue) : null;
     const { partie } = await agirPvp((p) => {
-      memoriserWebhook(p, discordId, webhookUrl);
+      memoriserWebhook(p, discordId, followup ?? webhookUrl);
     });
-    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, "▦ Défi lancé dans le salon !"));
+    // Adversaire arrivé entre-temps : sa diffusion n'a pas pu atteindre cette vue
+    const aJour = partie && partie.statut !== "lobby" ? vuePvp(partie, config, discordId) : null;
+    if (!followup) await patchOriginal(webhookUrl, aJour ?? vue);
+    else if (aJour) await patchOriginal(followup, aJour);
   } catch (err) {
     console.error("[Grille] Échec lancement 1v1:", err.message);
     await patchOriginal(webhookUrl, { content: "⚠️ Erreur lors du lancement du duel." });

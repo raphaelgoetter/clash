@@ -99,10 +99,14 @@ export function versV2({ content = null, embeds = [], components = [], ...reste 
   return { ...reste, flags: IS_COMPONENTS_V2, components: blocs };
 }
 
+// Message visé : la réponse de l'interaction (`@original`), ou un followup
+// si l'URL mémorisée désigne déjà un message (`…/messages/<id>`).
+const urlMessage = (webhookUrl) => (webhookUrl.includes("/messages/") ? webhookUrl : `${webhookUrl}/messages/@original`);
+
 async function patchOriginal(webhookUrl, payload) {
   if (!webhookUrl) return;
   try {
-    const res = await fetch(`${webhookUrl}/messages/@original`, {
+    const res = await fetch(urlMessage(webhookUrl), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(versV2(payload)),
@@ -118,7 +122,7 @@ async function patchOriginal(webhookUrl, payload) {
 async function supprimerOriginal(webhookUrl) {
   if (!webhookUrl) return false;
   try {
-    const res = await fetch(`${webhookUrl}/messages/@original`, { method: "DELETE" });
+    const res = await fetch(urlMessage(webhookUrl), { method: "DELETE" });
     return res.ok;
   } catch (err) {
     console.error("[Quatre] Échec DELETE:", err.message);
@@ -127,21 +131,26 @@ async function supprimerOriginal(webhookUrl) {
 }
 
 // Nouveau message éphémère de l'interaction (followup), posté après les
-// messages déjà présents. Vrai si c'est fait.
+// messages déjà présents. Renvoie l'URL du followup (à mémoriser pour
+// l'éditer), null en cas d'échec.
 async function envoyerEphemere(webhookUrl, payload) {
-  if (!webhookUrl) return false;
+  if (!webhookUrl) return null;
   try {
     const v2 = versV2(payload);
-    const res = await fetch(webhookUrl, {
+    const res = await fetch(`${webhookUrl}?wait=true`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...v2, flags: v2.flags | EPHEMERE }),
     });
-    if (!res.ok) console.error(`[Quatre] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
-    return res.ok;
+    if (!res.ok) {
+      console.error(`[Quatre] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
+      return null;
+    }
+    const { id } = await res.json();
+    return id ? `${webhookUrl}/messages/${id}` : null;
   } catch (err) {
     console.error("[Quatre] Échec followup:", err.message);
-    return false;
+    return null;
   }
 }
 
@@ -633,7 +642,8 @@ const BOUTON_JOUER = {
   custom_id: "quatreduel_ouvrir",
 };
 
-// Message public : lobby, puis plateau en direct (au tour de qui, délai).
+// Message public : lobby, puis plateau en direct (au tour de qui, délai,
+// plateau neutre).
 function messagePublic(partie, config) {
   const components = [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }];
   if (partie.statut === "lobby") {
@@ -654,11 +664,14 @@ function messagePublic(partie, config) {
     embeds: [
       {
         title: `${TITRE} · ${nom("joueur")} contre ${nom("bot")}`,
-        // Sans plateau : chaque joueur a le sien dans sa vue éphémère (un
-        // second plateau identique à l'écran prêterait à confusion)
+        // Plateau neutre, suivi par le salon ; chaque joueur joue depuis sa
+        // vue éphémère (Jouer la rouvre)
         description: [
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
-          `${nom("joueur")} et ${nom("bot")} : cliquez sur **Jouer** pour voir votre plateau.`,
+          "",
+          ...plateauPublic(d, nom("joueur"), nom("bot")),
+          "",
+          `${nom("joueur")} et ${nom("bot")} : cliquez sur **Jouer** pour jouer.`,
         ].join("\n").slice(0, 4096),
         color: QUATRE_COLOR,
       },
@@ -775,10 +788,18 @@ export async function handleQuatrePvpCommand(webhookUrl, body) {
     const message = await messageSalon("POST", body.channel_id, null, messagePublic(r.partie, config));
     if (!message?.id) throw new Error("message public non créé");
     await enregistrerMessagePvp(message.id);
+    // Vue du lanceur SOUS le message public : réponse différée (créée dès
+    // la commande, au-dessus) supprimée, vue renvoyée en followup, dont
+    // l'URL est mémorisée pour les mises à jour. Repli : réponse différée.
+    const vue = vuePvp(r.partie, config, discordId, "④ Défi lancé dans le salon !");
+    const followup = (await supprimerOriginal(webhookUrl)) ? await envoyerEphemere(webhookUrl, vue) : null;
     const { partie } = await agirPvp((p) => {
-      memoriserWebhook(p, discordId, webhookUrl);
+      memoriserWebhook(p, discordId, followup ?? webhookUrl);
     });
-    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, "④ Défi lancé dans le salon !"));
+    // Adversaire arrivé entre-temps : sa diffusion n'a pas pu atteindre cette vue
+    const aJour = partie && partie.statut !== "lobby" ? vuePvp(partie, config, discordId) : null;
+    if (!followup) await patchOriginal(webhookUrl, aJour ?? vue);
+    else if (aJour) await patchOriginal(followup, aJour);
   } catch (err) {
     console.error("[Quatre] Échec lancement 1v1:", err.message);
     await patchOriginal(webhookUrl, { content: "⚠️ Erreur lors du lancement du duel." });
