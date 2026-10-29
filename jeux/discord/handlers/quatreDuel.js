@@ -80,6 +80,7 @@ export function extractMember(body) {
 // sont écrites comme des embeds, converties ici à l'envoi : titre en `###`,
 // description, puis boutons dans le conteneur. `content` seul : texte nu.
 const IS_COMPONENTS_V2 = 1 << 15;
+const EPHEMERE = 1 << 6;
 // Limite Discord : 4 000 caractères de texte pour tout le message
 const TEXTE_MAX = 4000;
 
@@ -121,6 +122,25 @@ async function supprimerOriginal(webhookUrl) {
     return res.ok;
   } catch (err) {
     console.error("[Quatre] Échec DELETE:", err.message);
+    return false;
+  }
+}
+
+// Nouveau message éphémère de l'interaction (followup), posté après les
+// messages déjà présents. Vrai si c'est fait.
+async function envoyerEphemere(webhookUrl, payload) {
+  if (!webhookUrl) return false;
+  try {
+    const v2 = versV2(payload);
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...v2, flags: v2.flags | EPHEMERE }),
+    });
+    if (!res.ok) console.error(`[Quatre] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
+    return res.ok;
+  } catch (err) {
+    console.error("[Quatre] Échec followup:", err.message);
     return false;
   }
 }
@@ -395,7 +415,10 @@ async function majSalonSolo(d, pseudo) {
 }
 
 // Lance une nouvelle partie (remplace une éventuelle partie en cours) :
-// plateau public dans le salon, puis vue éphémère du joueur.
+// plateau public dans le salon, puis vue éphémère du joueur EN DESSOUS. La
+// réponse différée, créée dès la commande (au-dessus du plateau), est
+// supprimée et la vue renvoyée en followup ; les clics éditent ensuite ce
+// followup (message du bouton). Repli : vue dans la réponse différée.
 export async function handleQuatreCommand(webhookUrl, body) {
   try {
     const { discordId, username } = extractMember(body);
@@ -409,10 +432,9 @@ export async function handleQuatreCommand(webhookUrl, body) {
           d.salon = { channelId: body.channel_id, messageId: message.id };
         })
       : null;
-    await patchOriginal(
-      webhookUrl,
-      buildVue(enregistre?.duel ?? duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." }),
-    );
+    const vue = buildVue(enregistre?.duel ?? duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." });
+    if (enregistre && (await supprimerOriginal(webhookUrl)) && (await envoyerEphemere(webhookUrl, vue))) return;
+    await patchOriginal(webhookUrl, vue);
   } catch (err) {
     console.error("[Quatre] Échec lancement:", err.message);
   }
