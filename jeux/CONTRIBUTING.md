@@ -1482,7 +1482,7 @@ Adaptation de Punto (Bernhard Weber) en duel. `/punto adversaire:bot|1v1` (optio
 #### Règles
 
 - Grille commune de **5×5** cases (`d.grille` : 25 cases, `null` ou la carte du dessus `{ s (siège), k (couleur 0 ou 1), v (valeur) }` ; les cartes recouvertes ne comptent plus).
-- Chaque joueur a **sa pioche de 36 cartes** : 2 couleurs × valeurs 1 à 9 (élixir) × 2 exemplaires, mélangée (`d.pioches`). À son tour, le joueur retourne la carte du dessus (`d.carte`, visible de tous) et la pose :
+- Chaque joueur a **sa pioche de 36 cartes** : 2 couleurs × valeurs 1 à 9 × 2 exemplaires, mélangée (`d.pioches`). À son tour, le joueur retourne la carte du dessus (`d.carte`, visible de tous) et la pose :
   - sur une case vide **voisine** d'une carte (côté ou coin) ;
   - ou **sur une carte de valeur strictement inférieure**, quelle que soit sa couleur ou son propriétaire : elle la recouvre.
 - La toute première carte de la partie se pose **au centre** (seule case jouable).
@@ -1491,7 +1491,7 @@ Adaptation de Punto (Bernhard Weber) en duel. `/punto adversaire:bot|1v1` (optio
 - **Match nul** : pioches vides sans alignement (quasi inexistant).
 - Pas de manches : une partie = une manche (la règle d'origine se joue en 2 manches gagnantes, trop long en duel). Grille fixe de 5×5 et 4 cartes à aligner au lieu de 6×6 et 5 : parties un peu plus courtes que La Grille.
 - **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
-- **Kévina** (`choixKevina()`) : gloutonne, sans anticipation. Elle gagne dès qu'elle peut, sinon elle joue la case qui maximise son potentiel (fenêtres de 4 cases sans carte étrangère, au cube du nombre de cartes de la même couleur) moins `defense_kevina` fois celui de l'adversaire, moins `prudence_kevina` fois le risque qu'il gagne au coup suivant ; `solidite_kevina` valorise les cartes chères (plus dures à recouvrir). `marge_kevina` : case tirée au sort parmi celles à `marge` points au plus de la meilleure (variété et erreurs). ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
+- **Kévina** (`choixKevina()`) : gloutonne, sans anticipation. Elle gagne dès qu'elle peut, sinon elle joue la case qui maximise son potentiel (fenêtres de 4 cases sans carte étrangère, au cube du nombre de cartes de la même couleur) moins `defense_kevina` fois celui de l'adversaire, moins `prudence_kevina` fois le risque qu'il gagne au coup suivant ; `solidite_kevina` valorise les cartes fortes (plus dures à recouvrir). `marge_kevina` : case tirée au sort parmi celles à `marge` points au plus de la meilleure (variété et erreurs). ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
 
 #### Affichage
 

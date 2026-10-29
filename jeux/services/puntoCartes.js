@@ -1,6 +1,6 @@
 // ============================================================
 // puntoCartes.js — Cartes de Punto, dans le style des faces de dé de La
-// Grille (dices.js) : carré arrondi plein coloré, valeur en élixir (1 à 9)
+// Grille (dices.js) : carré arrondi plein coloré, valeur (1 à 9)
 // en chiffre blanc tracé (pas de police : rendu identique partout), fin
 // contour clair. Source vectorielle unique : jeux/data/punto/carte.svg ;
 // chiffres définis ici (CHIFFRES). Discord n'affiche pas le SVG :

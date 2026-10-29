@@ -56,7 +56,7 @@ function main() {
     assert.strictEqual(d.dernier.case, CENTRE);
   }
 
-  // ── Cases jouables : vides voisines (coins compris), ou carte moins chère ──
+  // ── Cases jouables : vides voisines (coins compris), ou carte plus faible ──
   {
     const lignes = grilleVide();
     lignes[2] = "....J5....";
@@ -68,7 +68,7 @@ function main() {
     assert.ok(poser(d, "bot", 6).erreur);
   }
   {
-    // Recouvrir une carte adverse moins chère : la carte du dessus change de camp
+    // Recouvrir une carte adverse plus faible : la carte du dessus change de camp
     const lignes = grilleVide();
     lignes[2] = "....B3....";
     const d = duelTest(lignes, { carte: { k: 1, v: 4 } });

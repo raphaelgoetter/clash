@@ -41,7 +41,7 @@ import {
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
 
-// Violet élixir
+// Violet
 const PUNTO_COLOR = 0x8e44c9;
 const TITRE = "🃏 Punto";
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
@@ -407,11 +407,11 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles de Punto",
     description: [
-      `Une grille de ${TAILLE}×${TAILLE} cases. Chaque joueur a sa pioche de 36 cartes : 2 couleurs, de 1 à 9 élixir, chaque carte en double. Tes cartes sont bleues et vertes, celles de ton adversaire rouges et orange.`,
+      `Une grille de ${TAILLE}×${TAILLE} cases. Chaque joueur a sa pioche de 36 cartes : 2 couleurs, valeurs de 1 à 9, chaque carte en double. Tes cartes sont bleues et vertes, celles de ton adversaire rouges et orange.`,
       "",
       "**🃏 À ton tour** : tu retournes la carte du dessus de ta pioche et tu la poses :",
       "• sur une case vide **voisine** d'une carte (côté ou coin) ;",
-      "• ou **sur une carte moins chère**, quelle que soit sa couleur : elle la recouvre.",
+      "• ou **sur une carte de valeur plus faible**, quelle que soit sa couleur : elle la recouvre.",
       "La toute première carte se pose au centre. Les cases vides possibles ont un liseré clair.",
       "**🏆 Victoire** : le premier qui aligne 4 cartes **de la même couleur** (horizontale, verticale ou diagonale) gagne.",
       "**🗑️ Carte bloquée** : si elle ne peut aller nulle part, elle est défaussée et ton adversaire joue.",

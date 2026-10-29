@@ -1,7 +1,7 @@
 // ============================================================
 // puntoRules.js — Règles pures de Punto (`/punto`) : grille commune de
 // 5×5 cases. Chaque joueur a sa pioche de 36 cartes, 2 couleurs de 1 à 9
-// élixir en double. À son tour, on retourne la carte du dessus de sa pioche
+// en double. À son tour, on retourne la carte du dessus de sa pioche
 // et on la pose sur une case vide voisine d'une carte (côté ou coin), ou
 // sur une carte de valeur inférieure (quelle que soit sa couleur), qu'elle
 // recouvre. Le premier qui aligne 4 cartes d'une même couleur gagne.
@@ -195,7 +195,7 @@ for (let r = 0; r < TAILLE; r++) {
 // Potentiel de `id` : fenêtres sans carte étrangère (autre joueur ou autre
 // couleur), au cube du nombre de cartes de la couleur (une fenêtre de 3
 // cartes vaut bien plus que trois fenêtres d'une carte). `solidite` :
-// bonus pour les cartes chères, plus dures à recouvrir.
+// bonus pour les cartes fortes, plus dures à recouvrir.
 function potentiel(grille, id, solidite = 0) {
   let total = 0;
   for (const fenetre of FENETRES) {
