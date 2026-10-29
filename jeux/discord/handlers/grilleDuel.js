@@ -14,7 +14,8 @@
 //
 // custom_id : grilleduel_poser:<colonne> (contre Kévina),
 // grilleduel_poser:<colonne>:pvp (1v1), grilleduel_ouvrir (bouton Jouer du
-// message public), grilleduel_regles.
+// message public), grilleduel_regles, grilleduel_case:<case> (case du
+// plateau, clic sans effet).
 //
 // Service : jeux/services/grilleDuel.js (Redis),
 // règles : jeux/services/grilleRules.js.
@@ -40,7 +41,8 @@ import {
   scoreColonne,
   scoreGrille,
 } from "../../services/grilleRules.js";
-import { formatDie } from "../../services/dices.js";
+import { dieButtonEmoji, formatDie } from "../../services/dices.js";
+import { carteButtonEmoji } from "../../services/puntoCartes.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -90,6 +92,48 @@ export function extractMember(body) {
   return { discordId, username };
 }
 
+// Messages en Components V2 (conteneur à liseré coloré, comme un embed) :
+// seuls à permettre un plateau en boutons entre deux textes, aux rangées
+// serrées (des titres `#` ajoutent une marge entre les rangées). Les vues
+// sont écrites comme des embeds, converties ici à l'envoi : titre en `###`,
+// description (texte, ou tableau mêlant lignes de texte et composants :
+// rangées du plateau, séparateur), puis boutons dans le conteneur.
+// `content` seul : texte nu.
+const IS_COMPONENTS_V2 = 1 << 15;
+const EPHEMERE = 1 << 6;
+// Limite Discord : 4 000 caractères de texte pour tout le message
+const TEXTE_MAX = 4000;
+
+function blocsEmbed({ title, description }) {
+  const blocs = [];
+  let lignes = [];
+  const vider = () => {
+    const texte = lignes.join("\n").trim();
+    if (texte) blocs.push({ type: 10, content: texte.slice(0, TEXTE_MAX) });
+    lignes = [];
+  };
+  for (const partie of [title ? `### ${title}` : null, ...[description].flat()]) {
+    if (partie == null) continue;
+    if (typeof partie === "string") lignes.push(partie);
+    else {
+      vider();
+      blocs.push(partie);
+    }
+  }
+  vider();
+  return blocs;
+}
+
+export function versV2({ content = null, embeds = [], components = [], ...reste }) {
+  const blocs = [];
+  if (content) blocs.push({ type: 10, content });
+  const [embed] = embeds;
+  if (embed) {
+    blocs.push({ type: 17, accent_color: embed.color ?? GRILLE_COLOR, components: [...blocsEmbed(embed), ...components] });
+  } else blocs.push(...components);
+  return { ...reste, flags: IS_COMPONENTS_V2, components: blocs };
+}
+
 // Message visé : la réponse de l'interaction (`@original`), ou un followup
 // si l'URL mémorisée désigne déjà un message (`…/messages/<id>`).
 const urlMessage = (webhookUrl) => (webhookUrl.includes("/messages/") ? webhookUrl : `${webhookUrl}/messages/@original`);
@@ -100,12 +144,7 @@ async function patchOriginal(webhookUrl, payload) {
     const res = await fetch(urlMessage(webhookUrl), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: "",
-        embeds: [],
-        components: [],
-        ...payload,
-      }),
+      body: JSON.stringify(versV2(payload)),
     });
     // Refus de Discord (vue invalide, jeton expiré) : sinon le clic reste sans effet visible
     if (!res.ok) console.error(`[Grille] PATCH refusé (${res.status}) :`, (await res.text()).slice(0, 300));
@@ -132,10 +171,11 @@ async function supprimerOriginal(webhookUrl) {
 async function envoyerEphemere(webhookUrl, payload) {
   if (!webhookUrl) return null;
   try {
+    const v2 = versV2(payload);
     const res = await fetch(`${webhookUrl}?wait=true`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, flags: 64 }),
+      body: JSON.stringify({ ...v2, flags: v2.flags | EPHEMERE }),
     });
     if (!res.ok) {
       console.error(`[Grille] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
@@ -163,7 +203,7 @@ async function messageSalon(method, channelId, messageId, payload) {
       },
       // Jamais de ping dans ce jeu, même si une mention se glissait
       ...(payload
-        ? { body: JSON.stringify({ allowed_mentions: { parse: [] }, ...payload }) }
+        ? { body: JSON.stringify({ allowed_mentions: { parse: [] }, ...versV2(payload) }) }
         : {}),
     });
     if (!res.ok && res.status !== 404) {
@@ -196,16 +236,34 @@ function nomsAdv(partie, moi) {
   return nomsJoueur(partie.noms[partie.sieges[adversaire(moi)]] ?? "?");
 }
 
-// Lignes d'une grille, en titre H1 (plus grande taille d'emoji possible),
-// H3 dans les messages publics (dés un tiers plus petits). Chaque grille se
-// remplit depuis le centre du plateau : celle du haut est lue à l'envers.
-function lignesGrille(grille, couleur, { haut = false, titre = "#" } = {}) {
-  const rangs = haut ? [2, 1, 0] : [0, 1, 2];
-  return rangs.map(
-    (r) =>
-      `${titre} ${grille.map((col) => (col[r] === EXPLOSION ? EXPLOSION : col[r] ? formatDie(col[r], couleur) : CASE_VIDE)).join(" ")}`,
-  );
+// Case du plateau : bouton gris portant le dé (ou la case vide de Punto,
+// même taille). Jamais désactivé : Discord estompe un bouton désactivé,
+// emoji compris. Un clic ne fait rien (grilleduel_case) : on choisit une
+// colonne, pas une case, avec les boutons Gauche, Centre, Droite.
+function boutonCase(valeur, couleur, id) {
+  const emoji =
+    valeur === EXPLOSION
+      ? { name: EXPLOSION }
+      : valeur
+        ? dieButtonEmoji(valeur, couleur)
+        : (carteButtonEmoji("vide") ?? { name: CASE_VIDE });
+  // Repli tant que la face n'est pas uploadée : la valeur en texte
+  return { type: 2, style: 2, ...(emoji ? { emoji } : { label: String(valeur) }), custom_id: `grilleduel_case:${id}` };
 }
+
+// Rangées de boutons d'une grille. Chaque grille se remplit depuis le
+// centre du plateau : celle du haut est lue à l'envers. `id` : préfixe des
+// custom_id (uniques dans le message).
+function rangeesGrille(grille, couleur, { haut = false, id }) {
+  const rangs = haut ? [2, 1, 0] : [0, 1, 2];
+  return rangs.map((r) => ({
+    type: 1,
+    components: grille.map((col, c) => boutonCase(col[r], couleur, `${id}${r}${c}`)),
+  }));
+}
+
+// Ligne de séparation entre les deux grilles
+const MILIEU = { type: 14, divider: true, spacing: 1 };
 
 function ligneScores(nom, grilleAffichee) {
   // Dés en explosion déjà hors du score
@@ -215,23 +273,22 @@ function ligneScores(nom, grilleAffichee) {
 }
 
 // Plateau vu par le siège `moi` : l'adversaire en haut (rouge), soi en bas
-// (bleu). `noms` : { moi, adv } libellés des deux camps, `titre` : niveau
-// de titre des rangées.
-function plateau(d, moi, noms, titre = "#") {
+// (bleu), en rangées de boutons à insérer dans une description (voir
+// `versV2()`). `noms` : { moi, adv } libellés des deux camps.
+function plateau(d, moi, noms) {
   const adv = adversaire(moi);
   return [
     ligneScores(noms.adv, d.grilles[adv]),
-    ...lignesGrille(d.grilles[adv], ADV, { haut: true, titre }),
-    "",
-    ...lignesGrille(d.grilles[moi], MOI, { titre }),
+    ...rangeesGrille(d.grilles[adv], ADV, { haut: true, id: "h" }),
+    MILIEU,
+    ...rangeesGrille(d.grilles[moi], MOI, { id: "b" }),
     ligneScores(noms.moi, d.grilles[moi]),
   ];
 }
 
-// Plateau neutre (message public) : premier joueur en bas, en bleu, dés
-// plus petits que dans la vue du joueur.
+// Plateau neutre (message public) : premier joueur en bas, en bleu.
 function plateauPublic(d, nomJoueur, nomBot) {
-  return plateau(d, "joueur", { moi: nomJoueur, adv: nomBot }, "###");
+  return plateau(d, "joueur", { moi: nomJoueur, adv: nomBot });
 }
 
 // Récit d'un coup : « Tu poses un 5 au centre et détruis 2 dés de Kévina ! »
@@ -330,7 +387,7 @@ function buildVue(
       : `⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
   ];
   const titre = `▦ La Grille · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
-  const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: GRILLE_COLOR };
+  const embed = { title: titre, description: lignes, color: GRILLE_COLOR };
   if (!monTour) return { embeds: [embed], components: boutonsFin() };
   const sfx = pvp ? ":pvp" : "";
   return {
@@ -416,9 +473,7 @@ function messageSolo(d, pseudo, { grilles = null, actif = d.actif } = {}) {
           ...plateauPublic(grilles ? { ...d, grilles } : d, pseudo, "🤖 Kévina"),
           "",
           `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
-        ]
-          .join("\n")
-          .slice(0, 4096),
+        ],
         color: GRILLE_COLOR,
       },
     ],
@@ -485,7 +540,7 @@ function messageFinalSolo(d, pseudo, highScore = null) {
           "",
           ...plateauPublic(d, pseudo, "🤖 Kévina"),
           ...(highScore ? ["", `${EMOJI_HIGHSCORE} High score : ${highScore.username ?? "?"} (${plural(highScore.points, "pt")})`] : []),
-        ].join("\n").slice(0, 4096),
+        ],
         color: GRILLE_COLOR,
       },
     ],
@@ -616,7 +671,7 @@ const BOUTON_JOUER = {
 };
 
 // Message public : lobby, puis plateau en direct (au tour de qui, délai,
-// plateau neutre à petits dés, explosions comprises).
+// plateau neutre, explosions comprises).
 function messagePublic(partie, config, grilles = null) {
   if (partie.statut === "lobby") {
     const components = [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }];
@@ -637,13 +692,13 @@ function messagePublic(partie, config, grilles = null) {
     embeds: [
       {
         title: `▦ La Grille · ${nom("joueur")} contre ${nom("bot")}`,
-        // Plateau neutre à petits dés, suivi par le salon ; chaque joueur
+        // Plateau neutre, suivi par le salon ; chaque joueur
         // joue depuis sa vue éphémère
         description: [
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
           "",
           ...plateauPublic(grilles ? { ...d, grilles } : d, nom("joueur"), nom("bot")),
-        ].join("\n").slice(0, 4096),
+        ],
         color: GRILLE_COLOR,
       },
     ],
@@ -673,7 +728,7 @@ function messageFinal(partie) {
     embeds: [
       {
         title: `▦ La Grille · ${titreGagnant(g, nom)}`,
-        description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot"))].join("\n").slice(0, 4096),
+        description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot"))],
         color: GRILLE_COLOR,
       },
     ],
