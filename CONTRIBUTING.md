@@ -94,7 +94,8 @@ npm run discord-links:remove -- "#TAG" [...]
 
 - Hash Redis `blacklist` : un champ par `#TAG`, valeur `{ name, clans, reason, addedBy, addedAt }`. `clans` = historique des clans distincts (plus récent en tête, 5 max), initialisé depuis le journal de combats puis le clan actuel, mis à jour à chaque `consulte`. « Dernier clan connu » = premier clan de l'historique différent du clan actuel (`lastKnownClan()`).
 - Accès : rôle Discord commençant par `STAFF` (`memberHasRolePrefix()`, `@clash/commun/discordRoles.js`) ; réponses éphémères. Handler : `api/discord/_handlers/blacklist.js`.
-- `notifyMemberChanges.js`, à l'arrivée d'un joueur : `⚠️ Joueur figurant dans la Liste Noire` si son tag y figure ; `⚠️ Clan à risque (NOM)` si son dernier clan connu apparaît dans l'historique d'un *autre* joueur de la liste (`buildRiskyClanMap()`, clans de la famille exclus). Redis indisponible : notification envoyée sans ces avertissements. Hors clan à risque, l'arrivée affiche `⬅️ Vient de NOM` (dernier clan connu) ; un départ affiche `➡️ Parti vers NOM` (clan actuel du profil, s'il en a un). Clan inconnu : ligne omise.
+- `notifyMemberChanges.js`, à l'arrivée d'un joueur : `⚠️ Joueur figurant dans la Liste Noire` si son tag y figure ; `⚠️ Clan à risque (NOM #TAG)` si son dernier clan connu apparaît dans l'historique d'un *autre* joueur de la liste (`buildRiskyClanMap()`, clans de la famille exclus). Redis indisponible : notification envoyée sans ces avertissements. Hors clan à risque, l'arrivée affiche `⬅️ Vient de NOM (#TAG)` (dernier clan connu) ; un départ affiche `➡️ Parti vers NOM (#TAG)` (clan actuel du profil au moment du constat, s’il en a un : un joueur sans clan à ce moment n’a pas de ligne). Clan inconnu : ligne omise.
+- `notifyMemberChanges.js`, nuit (23h à 6h, heure de Paris) : aucun constat posté ; arrivées, départs et changements de rôle sont mis en attente (`membernotifications[TAG].pending`) et postés au premier passage à partir de 6h, après recoupement avec le clan actuel (joueur revenu ou reparti dans la nuit : rien n'est annoncé ; rôle comparé entre le début de nuit et 6h, inchangé : rien n'est annoncé).
 
 ### Thread dédié aux notifications d'un clan
 
@@ -108,7 +109,7 @@ Horaires en UTC (`.github/workflows/`) ; Paris = UTC+2 en été, UTC+1 en hiver.
 
 | Workflow | Cron (UTC) | Scripts | Salon |
 | --- | --- | --- | --- |
-| `snapshot.yml` | toutes les heures | `snapshot`, `notify-members`, `cache` | membres (arrivées/départs) |
+| `snapshot.yml` | toutes les heures | `snapshot`, `notify-members`, `cache` | membres (arrivées, départs, rôles ; constats de nuit reportés à 6h) |
 | `pre-reset-snapshot.yml` | 06:00 ven, sam, dim, lun | `preResetSnapshot.js` | aucun |
 | `war-summary.yml` | 10:05 tous les jours (poste ven à lun) | `notifyWarSummary.js`, `notifyClanStatus.js`, `notifyWarExploit.js` | membres, staff (`DISCORD_CHANNEL_STAFF`), général (`DISCORD_CHANNEL_GENERAL`) |
 | `last-seen.yml` | 10:08 tous les jours | `notifyLastSeen.js` | membres |

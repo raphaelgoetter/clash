@@ -48,6 +48,42 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const SIMULATE = process.argv.includes("--simulate");
 const DEBUG = process.env.DEBUG_NOTIFY_MEMBER_CHANGES === "1";
 
+// Nuit (heure de Paris) : aucun constat posté, changements mis en attente
+// jusqu'au premier passage à partir de NIGHT_END_HOUR (lit aussi « Vient de » /
+// « Parti vers » une fois les joueurs installés dans leur nouveau clan).
+const NIGHT_START_HOUR = 23;
+const NIGHT_END_HOUR = 6;
+
+/**
+ * Indique si la date tombe dans la plage de nuit (heure de Paris).
+ * @param {Date} date
+ * @returns {boolean}
+ */
+function isNight(date) {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Paris",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(date),
+  );
+  return hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR;
+}
+
+/**
+ * Ajoute des membres à une liste sans doublon de tag (premier nom conservé).
+ * @param {Array<{tag: string, name: string}>} list
+ * @param {Array<{tag: string, name: string}>} members
+ * @returns {Array<{tag: string, name: string}>}
+ */
+function mergeByTag(list, members) {
+  const merged = [...list];
+  for (const { tag, name } of members) {
+    if (!merged.some((m) => m.tag === tag)) merged.push({ tag, name });
+  }
+  return merged;
+}
+
 /**
  * Lit le clan cache persisté pour un tag donné.
  * Retourne null si le fichier est absent (premier run).
@@ -153,12 +189,12 @@ function formatMemberBlock(m) {
     lines.push("• ⚠️ Joueur figurant dans la Liste Noire");
   }
   if (m.riskyClan) {
-    lines.push(`• ⚠️ Clan à risque (${m.riskyClan.name})`);
+    lines.push(`• ⚠️ Clan à risque (${m.riskyClan.name} ${m.riskyClan.tag})`);
   } else if (m.previousClan?.name) {
-    lines.push(`• ⬅️ Vient de ${m.previousClan.name}`);
+    lines.push(`• ⬅️ Vient de ${m.previousClan.name} (${m.previousClan.tag})`);
   }
   if (m.nextClan?.name) {
-    lines.push(`• ➡️ Parti vers ${m.nextClan.name}`);
+    lines.push(`• ➡️ Parti vers ${m.nextClan.name} (${m.nextClan.tag})`);
   }
 
   const scoreObj = m.analysis?.warScore ?? m.analysis?.reliability;
@@ -388,6 +424,7 @@ async function main() {
   }
 
   let hasError = false;
+  const night = isNight(new Date());
   const notifiedChanges = await readNotifiedChanges();
 
   const discordLinks = await getDiscordLinks().catch(() => ({}));
@@ -485,18 +522,105 @@ async function main() {
           current.roles.get(t) !== cached.roles.get(t),
       );
 
-      const newArrivals = arrivals.filter(
+      let newArrivals = arrivals.filter(
         (a) => !notified.arrivals.includes(a.tag),
       );
-      const newDepartures = departures.filter(
+      let newDepartures = departures.filter(
         (d) => !notified.departures.includes(d.tag),
       );
-      const newPromotions = promotions.filter(
+
+      let newPromotions = promotions.filter(
         (p) => !notified.promotions.includes(p.tag),
       );
-      const newDemotions = demotions.filter(
+      let newDemotions = demotions.filter(
         (d) => !notified.demotions.includes(d.tag),
       );
+
+      // Changements de nuit : mis en attente (notified.pending), puis postés
+      // au premier passage de jour, recoupés avec l'état actuel du clan.
+      const pending = {
+        arrivals: [],
+        departures: [],
+        roles: [],
+        ...(notified.pending ?? {}),
+      };
+      const newRoleChanges = [...newPromotions, ...newDemotions];
+      if (night) {
+        if (
+          newArrivals.length > 0 ||
+          newDepartures.length > 0 ||
+          newRoleChanges.length > 0
+        ) {
+          console.log(
+            `[${tag}] Nuit : ${newArrivals.length} arrivée(s), ${newDepartures.length} départ(s), ${newRoleChanges.length} changement(s) de rôle mis en attente jusqu'à ${NIGHT_END_HOUR}h.`,
+          );
+          if (!DRY_RUN) {
+            // Rôle : premier ancien rôle de la nuit conservé
+            const roles = [...pending.roles];
+            for (const { tag: t, name, oldRole } of newRoleChanges) {
+              if (!roles.some((r) => r.tag === t)) {
+                roles.push({ tag: t, name, oldRole });
+              }
+            }
+            notified.pending = {
+              arrivals: mergeByTag(pending.arrivals, newArrivals),
+              departures: mergeByTag(pending.departures, newDepartures),
+              roles,
+            };
+            notified.arrivals.push(...newArrivals.map((a) => a.tag));
+            notified.departures.push(...newDepartures.map((d) => d.tag));
+            notified.promotions.push(...newPromotions.map((p) => p.tag));
+            notified.demotions.push(...newDemotions.map((d) => d.tag));
+          }
+        }
+        newArrivals = [];
+        newDepartures = [];
+        newPromotions = [];
+        newDemotions = [];
+      } else if (
+        pending.arrivals.length > 0 ||
+        pending.departures.length > 0 ||
+        pending.roles.length > 0
+      ) {
+        const allArrivals = mergeByTag(pending.arrivals, newArrivals);
+        const allDepartures = mergeByTag(pending.departures, newDepartures);
+        // Arrivé puis reparti (ou parti puis revenu) dans la nuit : rien à annoncer
+        const roundTrips = new Set(
+          allArrivals
+            .map((a) => a.tag)
+            .filter((t) => allDepartures.some((d) => d.tag === t)),
+        );
+        newArrivals = allArrivals.filter(
+          (a) => !roundTrips.has(a.tag) && current.tags.has(a.tag),
+        );
+        newDepartures = allDepartures.filter(
+          (d) => !roundTrips.has(d.tag) && !current.tags.has(d.tag),
+        );
+        // Rôle : ancien rôle du début de nuit comparé au rôle actuel
+        const roleChanges = [...pending.roles];
+        for (const { tag: t, name, oldRole } of newRoleChanges) {
+          if (!roleChanges.some((r) => r.tag === t)) {
+            roleChanges.push({ tag: t, name, oldRole });
+          }
+        }
+        const finalRoles = roleChanges
+          .filter((r) => current.tags.has(r.tag))
+          .map((r) => ({
+            ...r,
+            name: current.names.get(r.tag) ?? r.name,
+            newRole: current.roles.get(r.tag) ?? "member",
+          }));
+        newPromotions = finalRoles.filter(
+          (r) => getRolePriority(r.newRole) > getRolePriority(r.oldRole),
+        );
+        newDemotions = finalRoles.filter(
+          (r) => getRolePriority(r.newRole) < getRolePriority(r.oldRole),
+        );
+        console.log(
+          `[${tag}] Fin de nuit : ${newArrivals.length} arrivée(s), ${newDepartures.length} départ(s), ${newPromotions.length + newDemotions.length} changement(s) de rôle en attente à poster.`,
+        );
+        if (!DRY_RUN) delete notified.pending;
+      }
 
       if (newArrivals.length > 0) {
         await Promise.all(
