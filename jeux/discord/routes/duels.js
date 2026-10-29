@@ -137,11 +137,10 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── /grille adversaire:bot : La Grille contre Kévina (partie privée,
-  // éphémère) ; adversaire:1v1 : contre un joueur (message public). Réservé
+  // ── /grille adversaire:bot : La Grille contre Kévina (plateau public,
+  // boutons dans une vue éphémère) ; adversaire:1v1 : contre un joueur (message public). Réservé
   // au rôle MINI-JEUX pour lancer, même principe que /blackjack ci-dessus.
   if (body.type === 2 && body.data?.name === "grille") {
-    const discordId = body.member?.user?.id;
     const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
@@ -152,7 +151,7 @@ export async function routeDuels(body, res) {
         return;
       }
       if (pvp) await handleGrillePvpCommand(webhookUrl, body);
-      else await handleGrilleCommand(webhookUrl, discordId);
+      else await handleGrilleCommand(webhookUrl, body);
     });
     return;
   }

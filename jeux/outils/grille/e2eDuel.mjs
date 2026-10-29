@@ -44,9 +44,10 @@ function verifier(v) {
 // ── Contre Kévina ──
 const ID = "joueur-e2e";
 const W = "https://discord.test/webhook";
+const lancement = { member: { user: { id: ID, username: "Testeur" } }, channel_id: "salon" };
 const resultats = {};
 for (let g = 0; g < 5; g++) {
-  await h.handleGrilleCommand(W, ID);
+  await h.handleGrilleCommand(W, lancement);
   for (let k = 0; ; k++) {
     if (k > 40) throw new Error("partie bloquée");
     const d = await readDuel(ID);
@@ -59,9 +60,15 @@ for (let g = 0; g < 5; g++) {
   }
 }
 // Colonne pleine refusée
-await h.handleGrilleCommand(W, ID);
-console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${salon.length} résultats publiés`);
-if (salon.length !== 5) throw new Error("un résultat par partie attendu");
+await h.handleGrilleCommand(W, lancement);
+// Par partie : plateau public (lancement) puis récapitulatif ; la 6ᵉ
+// partie, lancée seulement, a son plateau public
+const posts = salon.filter((m) => m.method === "POST");
+console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${posts.length} messages publiés`);
+if (posts.length !== 11) throw new Error("plateau public et résultat attendus pour chaque partie");
+if (!salon.some((m) => m.method === "PATCH" && m.embeds?.[0]?.description.includes("Kévina réfléchit"))) {
+  throw new Error("plateau public non suivi");
+}
 
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });

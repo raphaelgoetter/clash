@@ -1,8 +1,10 @@
 // ============================================================
 // grilleDuel.js (handler) — La Grille (`/grille`), deux modes :
-// - contre Kévina, le bot (`/grille adversaire:bot`) : un seul message
-//   éphémère édité en place à chaque coup ; Kévina pose son dé aussitôt
-//   après le joueur ; résultat publié dans le salon en fin de partie ;
+// - contre Kévina, le bot (`/grille adversaire:bot`) : plateau public
+//   dans le salon (suivi par tous) et vue éphémère du joueur (plateau et
+//   boutons), édités en place à chaque coup ; Kévina pose son dé aussitôt
+//   après le joueur ; résultat publié dans un nouveau message en fin de
+//   partie ;
 // - 1v1 (`/grille adversaire:1v1`) : message public dans le salon (bouton
 //   Jouer : rejoindre, puis afficher sa vue, plateaux visibles de tous) et
 //   une vue éphémère par joueur, rééditée après chaque coup adverse (webhook
@@ -22,6 +24,7 @@ import {
   agirDuel,
   agirPvp,
   enregistrerMessagePvp,
+  INACTIVITE_SECONDES,
   loadDuelConfig,
   majHighScore,
   nouveauDuel,
@@ -119,6 +122,24 @@ async function supprimerOriginal(webhookUrl) {
   }
 }
 
+// Nouveau message éphémère de l'interaction (followup), posté après les
+// messages déjà présents. Vrai si c'est fait.
+async function envoyerEphemere(webhookUrl, payload) {
+  if (!webhookUrl) return false;
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, flags: 64 }),
+    });
+    if (!res.ok) console.error(`[Grille] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
+    return res.ok;
+  } catch (err) {
+    console.error("[Grille] Échec followup:", err.message);
+    return false;
+  }
+}
+
 // Message public (jeton du bot) : création, édition, suppression.
 async function messageSalon(method, channelId, messageId, payload) {
   const token = process.env.DISCORD_TOKEN;
@@ -166,14 +187,14 @@ function nomsAdv(partie, moi) {
   return nomsJoueur(partie.noms[partie.sieges[adversaire(moi)]] ?? "?");
 }
 
-// Lignes d'une grille, en titre H1 (plus grande taille d'emoji possible).
-// Chaque grille se remplit depuis le centre du plateau : celle du haut est
-// lue à l'envers.
-function lignesGrille(grille, couleur, { haut = false } = {}) {
+// Lignes d'une grille, en titre H1 (plus grande taille d'emoji possible),
+// H3 dans les messages publics (dés un tiers plus petits). Chaque grille se
+// remplit depuis le centre du plateau : celle du haut est lue à l'envers.
+function lignesGrille(grille, couleur, { haut = false, titre = "#" } = {}) {
   const rangs = haut ? [2, 1, 0] : [0, 1, 2];
   return rangs.map(
     (r) =>
-      `# ${grille.map((col) => (col[r] === EXPLOSION ? EXPLOSION : col[r] ? formatDie(col[r], couleur) : CASE_VIDE)).join(" ")}`,
+      `${titre} ${grille.map((col) => (col[r] === EXPLOSION ? EXPLOSION : col[r] ? formatDie(col[r], couleur) : CASE_VIDE)).join(" ")}`,
   );
 }
 
@@ -185,21 +206,23 @@ function ligneScores(nom, grilleAffichee) {
 }
 
 // Plateau vu par le siège `moi` : l'adversaire en haut (rouge), soi en bas
-// (bleu). `noms` : { moi, adv } libellés des deux camps.
-function plateau(d, moi, noms) {
+// (bleu). `noms` : { moi, adv } libellés des deux camps, `titre` : niveau
+// de titre des rangées.
+function plateau(d, moi, noms, titre = "#") {
   const adv = adversaire(moi);
   return [
     ligneScores(noms.adv, d.grilles[adv]),
-    ...lignesGrille(d.grilles[adv], ADV, { haut: true }),
+    ...lignesGrille(d.grilles[adv], ADV, { haut: true, titre }),
     "",
-    ...lignesGrille(d.grilles[moi], MOI),
+    ...lignesGrille(d.grilles[moi], MOI, { titre }),
     ligneScores(noms.moi, d.grilles[moi]),
   ];
 }
 
-// Plateau neutre (message public) : premier joueur en bas, en bleu.
+// Plateau neutre (message public) : premier joueur en bas, en bleu, dés
+// plus petits que dans la vue du joueur.
 function plateauPublic(d, nomJoueur, nomBot) {
-  return plateau(d, "joueur", { moi: nomJoueur, adv: nomBot });
+  return plateau(d, "joueur", { moi: nomJoueur, adv: nomBot }, "###");
 }
 
 // Récit d'un coup : « Tu poses un 5 au centre et détruis 2 dés de Kévina ! »
@@ -366,11 +389,60 @@ export async function handleGrilleRoleRejected(webhookUrl) {
   });
 }
 
-// Lance une nouvelle partie (remplace une éventuelle partie en cours).
-export async function handleGrilleCommand(webhookUrl, discordId) {
+// Plateau public d'une partie contre Kévina, en cours : suivi par le salon,
+// le joueur joue depuis sa vue éphémère. `etape` : { grilles (explosion),
+// actif (joueur au trait à cette étape) }. Expiration rappelée, sinon le
+// message d'une partie abandonnée resterait figé sur « Au tour de X ».
+function messageSolo(d, pseudo, { grilles = null, actif = d.actif } = {}) {
+  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
+  return {
+    embeds: [
+      {
+        title: `▦ La Grille · ${pseudo} contre Kévina`,
+        description: [
+          actif === "bot"
+            ? "⏳ Kévina réfléchit…"
+            : `Au tour de **${pseudo}**${grilles ? "." : `, dé à poser : ${formatDie(d.de, MOI)}`}`,
+          "",
+          ...plateauPublic(grilles ? { ...d, grilles } : d, pseudo, "🤖 Kévina"),
+          "",
+          `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
+        ]
+          .join("\n")
+          .slice(0, 4096),
+        color: GRILLE_COLOR,
+      },
+    ],
+    components: boutonsFin(),
+  };
+}
+
+// Édite le plateau public (partie lancée avant ce message : rien).
+async function majSalonSolo(d, pseudo, etape) {
+  if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?", etape));
+}
+
+// Lance une nouvelle partie (remplace une éventuelle partie en cours) :
+// plateau public dans le salon, puis vue éphémère du joueur EN DESSOUS. La
+// réponse différée, créée dès la commande (au-dessus du plateau), est
+// supprimée et la vue renvoyée en followup ; les clics éditent ensuite ce
+// followup (message du bouton). Repli : vue dans la réponse différée.
+export async function handleGrilleCommand(webhookUrl, body) {
   try {
-    const { duel } = await nouveauDuel(discordId);
-    await patchOriginal(webhookUrl, buildVue(duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." }));
+    const { discordId, username } = extractMember(body);
+    const { duel, ancien } = await nouveauDuel(discordId);
+    // Partie remplacée : son plateau public, figé, est retiré du salon
+    if (ancien?.salon && !ancien.termine) await messageSalon("DELETE", ancien.salon.channelId, ancien.salon.messageId);
+    const message = await messageSalon("POST", body.channel_id, null, messageSolo(duel, username));
+    // Échec du POST : partie jouable quand même, résultat publié à la fin
+    const enregistre = message?.id
+      ? await agirDuel(discordId, (d) => {
+          d.salon = { channelId: body.channel_id, messageId: message.id };
+        })
+      : null;
+    const vue = buildVue(enregistre?.duel ?? duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." });
+    if (enregistre && (await supprimerOriginal(webhookUrl)) && (await envoyerEphemere(webhookUrl, vue))) return;
+    await patchOriginal(webhookUrl, vue);
   } catch (err) {
     console.error("[Grille] Échec lancement:", err.message);
   }
@@ -421,14 +493,14 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     // de Kévina (plateau après le coup du joueur, puis attente), explosion de son coup
     // (vue de fin sans plateau : aucune étape quand le coup du joueur
     // termine la partie, pas d'explosion quand celui de Kévina la termine)
-    const etapes = r.explosion && !d.termine ? [{ texte: r.texte, grilles: r.explosion }] : [];
+    const etapes = r.explosion && !d.termine ? [{ texte: r.texte, grilles: r.explosion, actif: d.actif }] : [];
     // Kévina joue dans la foulée (sous le même verrou), son coup n'est
     // affiché qu'après sa réflexion
     if (!d.termine && d.actif === "bot") {
       etapes.push({ reflexion: true, texte: r.texte, duel: structuredClone(d) });
       const { explosion } = poserAvecExplosion(d, "bot", choixGlouton(d, "bot"));
       lignes.push(coupAdverse(d.dernier, BOT));
-      if (explosion && !d.termine) etapes.push({ texte: lignes.join("\n"), grilles: explosion });
+      if (explosion && !d.termine) etapes.push({ texte: lignes.join("\n"), grilles: explosion, actif: d.actif });
     }
     return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes };
   });
@@ -447,23 +519,35 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
   for (const etape of resultat.etapes ?? []) {
     if (etape.reflexion) {
       // Coup du joueur affiché d'abord, celui de Kévina après sa réflexion
-      await patchOriginal(webhookUrl, buildVue(etape.duel, { texte: etape.texte }));
+      await Promise.all([
+        patchOriginal(webhookUrl, buildVue(etape.duel, { texte: etape.texte })),
+        majSalonSolo(etape.duel, pseudo),
+      ]);
       await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
       continue;
     }
-    await patchOriginal(webhookUrl, buildVue(duel, etape));
+    await Promise.all([patchOriginal(webhookUrl, buildVue(duel, etape)), majSalonSolo(duel, pseudo, etape)]);
     await pause(DELAI_EXPLOSION_MS);
   }
   if (resultat.vientDeFinir) {
-    // Le message public suffit : vue éphémère supprimée (repli : vue de fin)
+    // Récapitulatif dans un NOUVEAU message (visible en bas du salon),
+    // plateau public supprimé (repli : édité en récapitulatif), vue
+    // éphémère supprimée (repli : vue de fin)
     const highScore = await majHighScore(discordId, pseudo, scoreGrille(duel.grilles.joueur));
-    const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?", highScore));
+    const final = messageFinalSolo(duel, pseudo ?? "?", highScore);
+    const { salon } = duel;
+    const ok = await messageSalon("POST", salon?.channelId ?? channelId, null, final);
+    if (salon) {
+      if (ok) await messageSalon("DELETE", salon.channelId, salon.messageId);
+      else await messageSalon("PATCH", salon.channelId, salon.messageId, final);
+    }
     if (ok && (await supprimerOriginal(webhookUrl))) return;
   }
-  await patchOriginal(
-    webhookUrl,
-    buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte }),
-  );
+  await Promise.all([
+    patchOriginal(webhookUrl, buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
+    // Fin (repli) : plateau public déjà remplacé par le récapitulatif
+    ...(resultat.erreur || duel.termine ? [] : [majSalonSolo(duel, pseudo)]),
+  ]);
 }
 
 // ── 1v1 ──────────────────────────────────────────────────────────────

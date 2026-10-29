@@ -1,6 +1,6 @@
 // ============================================================
-// grilleDuel.js — La Grille (`/grille`) : un joueur contre Kévina (partie privée,
-// message éphémère) ou contre un autre joueur (`/grille adversaire:1v1`,
+// grilleDuel.js — La Grille (`/grille`) : un joueur contre Kévina (plateau
+// public + vue éphémère du joueur) ou contre un autre joueur (`/grille adversaire:1v1`,
 // message public + vue éphémère par joueur). Règles pures dans
 // grilleRules.js.
 //
@@ -89,12 +89,14 @@ async function withLock(discordId, fn) {
 }
 
 // Nouvelle partie contre Kévina (remplace une éventuelle partie en cours) :
-// le joueur commence toujours.
+// le joueur commence toujours. `ancien` : partie remplacée (ou null), pour
+// retirer son plateau public du salon.
 export async function nouveauDuel(discordId) {
   return withLock(discordId, async () => {
+    const ancien = await readDuel(discordId);
     const duel = creerDuel({ commence: "joueur" });
     await writeDuel(discordId, duel);
-    return { duel };
+    return { duel, ancien };
   });
 }
 
