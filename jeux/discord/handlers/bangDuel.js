@@ -3,10 +3,10 @@
 // - contre Kévina, le bot (`/bang adversaire:bot`) : un seul message éphémère édité en place à
 //   chaque action ; Kévina joue son tour aussitôt que le joueur a fini le
 //   sien ;
-// - 1v1 (`/bang adversaire:1v1`) : message public dans le salon (bouton Jouer :
-//   rejoindre, puis afficher sa main) et une vue éphémère par joueur,
-//   rééditée après chaque action adverse (webhook mémorisé, valable 15 min,
-//   Jouer la rouvre sinon). Une seule partie à la fois, comme Blackjack
+// - 1v1 (`/bang adversaire:1v1`) : message public dans le salon (bouton
+//   Jouer dans le lobby seulement : rejoindre) et une vue éphémère par
+//   joueur, rééditée après chaque action adverse (webhook mémorisé, valable
+//   15 min, renouvelé à chaque action du joueur). Une seule partie à la fois, comme Blackjack
 //   et Gobelet Duel.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
@@ -728,13 +728,12 @@ function messagePublic(partie, config) {
         description: [
           `**Tour ${d.tour}/${config.tours_max}** · au tour de ${partie.noms[partie.sieges[d.actif]]}, limite <t:${echeanceDe(partie, config)}:R>`,
           `🃏 Pioche : **${plural(d.pioche.length, "carte")}**, dont **${bombes}** 💥`,
-          "",
-          `${partie.noms[a]} et ${partie.noms[b]} : cliquez sur **Jouer** pour voir votre main.`,
         ].join("\n"),
         color: BANG_COLOR,
       },
     ],
-    components: [bouton],
+    // Partie lancée : Jouer retiré, on joue depuis sa vue éphémère
+    components: [{ type: 1, components: [BOUTON_REGLES] }],
   };
 }
 

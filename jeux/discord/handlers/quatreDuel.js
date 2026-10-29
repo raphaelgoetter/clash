@@ -5,9 +5,9 @@
 //   boutons), édités en place à chaque coup ; Kévina joue aussitôt après
 //   le joueur ; résultat publié dans un nouveau message en fin de partie ;
 // - 1v1 (`/quatre adversaire:1v1`) : message public dans le salon (bouton
-//   Jouer : rejoindre, puis afficher sa vue, plateau visible de tous) et
+//   Jouer dans le lobby seulement : rejoindre ; plateau visible de tous) et
 //   une vue éphémère par joueur, rééditée après chaque coup adverse (webhook
-//   mémorisé, valable 15 min, Jouer la rouvre sinon). Une seule partie à la
+//   mémorisé, valable 15 min, renouvelé à chaque coup du joueur). Une seule partie à la
 //   fois, comme La Grille.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
@@ -645,8 +645,8 @@ const BOUTON_JOUER = {
 // Message public : lobby, puis plateau en direct (au tour de qui, délai,
 // plateau neutre).
 function messagePublic(partie, config) {
-  const components = [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }];
   if (partie.statut === "lobby") {
+    const components = [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }];
     return {
       embeds: [
         {
@@ -665,18 +665,17 @@ function messagePublic(partie, config) {
       {
         title: `${TITRE} · ${nom("joueur")} contre ${nom("bot")}`,
         // Plateau neutre, suivi par le salon ; chaque joueur joue depuis sa
-        // vue éphémère (Jouer la rouvre)
+        // vue éphémère
         description: [
           `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
           "",
           ...plateauPublic(d, nom("joueur"), nom("bot")),
-          "",
-          `${nom("joueur")} et ${nom("bot")} : cliquez sur **Jouer** pour jouer.`,
         ].join("\n").slice(0, 4096),
         color: QUATRE_COLOR,
       },
     ],
-    components,
+    // Partie lancée : Jouer retiré, on joue depuis sa vue éphémère
+    components: boutonsFin(),
   };
 }
 
