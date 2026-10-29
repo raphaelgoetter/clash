@@ -34,12 +34,30 @@ async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Délai max d'une requête : sans lui, un proxy qui ne répond plus (ETIMEDOUT)
+// bloque la fonction Vercel jusqu'à son timeout de 60 s.
+const REQUEST_TIMEOUT_MS = 10000;
+
 async function get(path, retries = 3, delayMs = 500) {
   const url = `${BASE_URL}${path}`;
   let attempt = 0;
 
   while (true) {
-    const res = await fetch(url, { headers: buildHeaders() });
+    let res;
+    try {
+      res = await fetch(url, {
+        headers: buildHeaders(),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+    } catch (networkErr) {
+      // Coupure réseau (ECONNRESET, ETIMEDOUT, délai dépassé) : un seul nouvel essai
+      if (attempt < 1) {
+        attempt += 1;
+        await sleep(delayMs);
+        continue;
+      }
+      throw networkErr;
+    }
 
     if (res.ok) {
       return res.json();

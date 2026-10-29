@@ -1096,6 +1096,11 @@ const MEMBER_DATA_TTL_MS = 30 * 60 * 1000; // 30 min
 export async function buildClanAnalysis(clanTag, options = {}) {
   const forceRefresh = !!options.forceRefresh;
 
+  const normalizeTag = (tag) =>
+    `#${String(tag ?? "")
+      .replace(/^#/, "")
+      .toUpperCase()}`;
+
   // sanitiZe input exactly as the route does
   if (clanTag.startsWith("#")) clanTag = clanTag.slice(1);
   clanTag = clanTag.toUpperCase();
@@ -1485,11 +1490,6 @@ export async function buildClanAnalysis(clanTag, options = {}) {
       }
     }
   }
-
-  const normalizeTag = (tag) =>
-    `#${String(tag ?? "")
-      .replace(/^#/, "")
-      .toUpperCase()}`;
 
   // Remove old members who are no longer in clan.
   const currentMemberTags = new Set(members.map((m) => normalizeTag(m.tag)));

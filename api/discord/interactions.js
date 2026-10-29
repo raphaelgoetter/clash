@@ -99,8 +99,17 @@ async function buildTagAutocompleteChoices(body, links) {
     : linkedTags;
 
   const limitedTags = filteredTags.slice(0, 25);
+  // Discord abandonne l'autocomplétion après 3 s : au-delà de 1,5 s on affiche le tag seul
+  const withTimeout = (promise) =>
+    Promise.race([
+      promise,
+      new Promise((resolve) => setTimeout(() => resolve(null), 1500)),
+    ]);
   const resolvedNames = await Promise.all(
-    limitedTags.map(async (tag) => ({ tag, name: await getClashTagName(tag) })),
+    limitedTags.map(async (tag) => ({
+      tag,
+      name: await withTimeout(getClashTagName(tag)),
+    })),
   );
 
   return resolvedNames.map(({ tag, name }) => ({
