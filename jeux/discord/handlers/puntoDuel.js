@@ -11,8 +11,9 @@
 //   partie à la fois, comme Quatre à la suite.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
-// custom_id : puntoduel_poser:<case> (contre Kévina),
-// puntoduel_poser:<case>:pvp (1v1), puntoduel_ouvrir (bouton Jouer du
+// custom_id : puntoduel_poser:<case>:<coup> (contre Kévina),
+// puntoduel_poser:<case>:<coup>:pvp (1v1 ; <coup> = d.coups à l'affichage,
+// un clic sur une vue dépassée est refusé), puntoduel_ouvrir (bouton Jouer du
 // message public), puntoduel_regles, puntoduel_abandon[:pvp] (🏳️, demande
 // confirmation), puntoduel_abandon_ok[:pvp] / puntoduel_abandon_non[:pvp].
 //
@@ -255,6 +256,7 @@ const ERREURS = {
   termine: "La partie est terminée.",
   pasTonTour: "Ce n'est pas ton tour.",
   interdite: "Ta carte ne peut pas aller sur cette case.",
+  perime: "Le plateau a changé depuis : rejoue sur celui-ci.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
 };
@@ -333,8 +335,12 @@ function vueFin(d, { moi, A, raison }) {
 }
 
 // Plateau en boutons (5 rangées de 5) : chaque bouton montre la carte du
-// dessus (ou une case vide). À son tour, les cases où la carte peut aller
-// sont en bleu, les autres grisées ; hors de son tour, tout est grisé.
+// dessus (ou une case vide). Tous gris et jamais désactivés : Discord
+// estompe un bouton désactivé, emoji compris, et un bouton bleu tranche
+// trop. À son tour, seules les cases vides où la carte peut aller se
+// distinguent (liseré clair, emoji `jouable`) ; un clic ailleurs est
+// refusé avec un avertissement. Le numéro du coup dans le custom_id écarte
+// un clic sur une vue dépassée (pendant la réflexion de Kévina, par exemple).
 function boutonsPlateau(d, moi, monTour, sfx) {
   const jouables = new Set(monTour && d.carte ? casesJouables(d.grille, d.carte) : []);
   const rangees = [];
@@ -343,14 +349,15 @@ function boutonsPlateau(d, moi, monTour, sfx) {
     for (let c = 0; c < TAILLE; c++) {
       const i = r * TAILLE + c;
       const x = d.grille[i];
-      const emoji = x ? carteButtonEmoji(couleurDe(x.s, x.k, moi), x.v) : carteButtonEmoji("vide");
+      const emoji = x
+        ? carteButtonEmoji(couleurDe(x.s, x.k, moi), x.v)
+        : carteButtonEmoji(jouables.has(i) ? "jouable" : "vide");
       components.push({
         type: 2,
-        style: jouables.has(i) ? 1 : 2,
+        style: 2,
         // Repli tant que les emojis ne sont pas uploadés : la valeur en texte
-        ...(emoji ? { emoji } : { label: x ? String(x.v) : "·" }),
-        custom_id: `puntoduel_poser:${i}${sfx}`,
-        disabled: !jouables.has(i),
+        ...(emoji ? { emoji } : { label: x ? String(x.v) : jouables.has(i) ? "+" : "·" }),
+        custom_id: `puntoduel_poser:${i}:${d.coups}${sfx}`,
       });
     }
     rangees.push({ type: 1, components });
@@ -358,11 +365,12 @@ function boutonsPlateau(d, moi, monTour, sfx) {
   return rangees;
 }
 
-// « Ta carte : 🟦7 » à son tour, « Carte de Kévina : 🟥3 » sinon.
+// « Ta carte : 🟦7 » en titre (carte agrandie) à son tour, « Carte de
+// Kévina : 🟥3 » en texte sinon.
 function ligneCarte(d, moi, A) {
   if (!d.carte) return null;
   const carte = carteVue(d.carte, d.actif, moi);
-  return d.actif === moi ? `**Ta carte : ${carte}**` : `Carte de ${A.Sujet} : ${carte}`;
+  return d.actif === moi ? `## Ta carte : ${carte}` : `Carte de ${A.Sujet} : ${carte}`;
 }
 
 // Vue d'un joueur : résultat de la dernière action (`texte`), carte à
@@ -380,10 +388,12 @@ function buildVue(
   const lignes = confirmerAbandon
     ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite.", "", ...plateau(d, moi, noms)]
     : [
-        ...(texte ? [texte, ""] : []),
+        // Légende d'abord (fixe), puis le récit du dernier coup, puis la carte
         `${PASTILLES.moi} **${noms.moi}** · ${PASTILLES.adv} **${noms.adv}**`,
-        ligneCarte(d, moi, A),
+        ...(texte ? ["", texte] : []),
+        "",
         ...(monTour ? [] : [`⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
+        ligneCarte(d, moi, A),
       ].filter((l) => l !== null);
   const titre = `${TITRE} · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: PUNTO_COLOR };
@@ -402,7 +412,7 @@ function buildReglesEmbed(config) {
       "**🃏 À ton tour** : tu retournes la carte du dessus de ta pioche et tu la poses :",
       "• sur une case vide **voisine** d'une carte (côté ou coin) ;",
       "• ou **sur une carte moins chère**, quelle que soit sa couleur : elle la recouvre.",
-      "La toute première carte se pose au centre. Les cases possibles sont en bleu.",
+      "La toute première carte se pose au centre. Les cases vides possibles ont un liseré clair.",
       "**🏆 Victoire** : le premier qui aligne 4 cartes **de la même couleur** (horizontale, verticale ou diagonale) gagne.",
       "**🗑️ Carte bloquée** : si elle ne peut aller nulle part, elle est défaussée et ton adversaire joue.",
       "**🤝 Match nul** : les pioches sont vides sans alignement.",
@@ -416,7 +426,8 @@ function buildReglesEmbed(config) {
 
 // ── Coups (communs aux deux modes) ───────────────────────────────────
 
-function actionPoser(d, moi, i) {
+function actionPoser(d, moi, i, coup) {
+  if (!d.termine && coup !== d.coups) return { erreur: "perime" };
   const r = poser(d, moi, i);
   if (r.erreur) {
     return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "interdite" };
@@ -546,10 +557,10 @@ function messageFinalSolo(d, pseudo) {
   };
 }
 
-async function executerSolo(webhookUrl, discordId, i, { channelId, pseudo } = {}) {
+async function executerSolo(webhookUrl, discordId, i, coup, { channelId, pseudo } = {}) {
   const config = await loadDuelConfig();
   const { duel, resultat } = await agirDuel(discordId, (d) => {
-    const r = actionPoser(d, "joueur", i);
+    const r = actionPoser(d, "joueur", i, coup);
     if (r.erreur) return r;
     const texteJoueur = recit(d, "joueur", BOT);
     const lignes = [texteJoueur];
@@ -896,13 +907,13 @@ export async function handlePuntoOuvrir(webhookUrl, body) {
   }
 }
 
-async function executerPvp(webhookUrl, discordId, i) {
+async function executerPvp(webhookUrl, discordId, i, coup) {
   const { partie, config, resultat } = await agirPvp((p) => {
     const moi = siegeDe(p, discordId);
     if (!moi) return { erreur: p.statut === "lobby" ? "lobby" : "pasJoueur" };
     memoriserWebhook(p, discordId, webhookUrl);
     if (p.statut !== "enCours") return { erreur: "termine" };
-    const r = actionPoser(p.duel, moi, i);
+    const r = actionPoser(p.duel, moi, i, coup);
     return r.erreur ? r : { texte: recit(p.duel, moi, nomsAdv(p, moi)), coup: true };
   });
   if (!partie) {
@@ -982,11 +993,12 @@ export async function handlePuntoAbandon(webhookUrl, discordId, etape, { pvp = f
 
 // ── Points d'entrée des composants ───────────────────────────────────
 
-export async function handlePuntoPoser(webhookUrl, discordId, i, { pvp = false, channelId, pseudo } = {}) {
+// `coup` : numéro du coup affiché par la vue cliquée (d.coups).
+export async function handlePuntoPoser(webhookUrl, discordId, i, coup, { pvp = false, channelId, pseudo } = {}) {
   try {
     if (!Number.isInteger(i) || i < 0 || i >= NB_CASES) return;
-    if (pvp) await executerPvp(webhookUrl, discordId, i);
-    else await executerSolo(webhookUrl, discordId, i, { channelId, pseudo });
+    if (pvp) await executerPvp(webhookUrl, discordId, i, coup);
+    else await executerSolo(webhookUrl, discordId, i, coup, { channelId, pseudo });
   } catch (err) {
     console.error("[Punto] Échec poser:", err.message);
   }

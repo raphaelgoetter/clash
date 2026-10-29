@@ -73,7 +73,7 @@ for (let g = 0; g < 5; g++) {
       break;
     }
     const cases = casesJouables(d.grille, d.carte);
-    await h.handlePuntoPoser(W, ID, cases[Math.floor(Math.random() * cases.length)], { channelId: "salon", pseudo: "Testeur" });
+    await h.handlePuntoPoser(W, ID, cases[Math.floor(Math.random() * cases.length)], d.coups, { channelId: "salon", pseudo: "Testeur" });
   }
 }
 // Par partie : plateau public (lancement) puis récapitulatif
@@ -84,9 +84,13 @@ if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfl�
 
 // Case interdite : avertissement, partie intacte
 await h.handlePuntoCommand(W, lancement);
-await h.handlePuntoPoser(W, ID, 0, { channelId: "salon", pseudo: "Testeur" });
+await h.handlePuntoPoser(W, ID, 0, 0, { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("ne peut pas aller sur cette case")) throw new Error("case interdite acceptée");
 if ((await readDuel(ID)).coups !== 0) throw new Error("coup interdit joué");
+// Vue dépassée (numéro de coup ancien) : refusée, même sur une case jouable
+await h.handlePuntoPoser(W, ID, 12, 5, { channelId: "salon", pseudo: "Testeur" });
+if (!texte(vues.at(-1)).includes("Le plateau a changé")) throw new Error("clic sur une vue dépassée accepté");
+if ((await readDuel(ID)).coups !== 0) throw new Error("coup d'une vue dépassée joué");
 
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });
@@ -105,8 +109,8 @@ for (let k = 0; ; k++) {
   const actif = p.sieges[p.duel.actif];
   const cases = casesJouables(p.duel.grille, p.duel.carte);
   // Clic hors tour : refusé sans effet
-  await h.handlePuntoPoser(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", cases[0], { pvp: true });
-  await h.handlePuntoPoser(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, cases[0], { pvp: true });
+  await h.handlePuntoPoser(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", cases[0], p.duel.coups, { pvp: true });
+  await h.handlePuntoPoser(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, cases[0], p.duel.coups, { pvp: true });
 }
 
 // ── Abandon (🏳️ puis confirmation) ──
@@ -140,7 +144,7 @@ console.log(
   "Boutons :\n" +
     rangees(exemple)
       .slice(0, 5)
-      .map((r) => r.components.map((c) => (c.disabled ? `(${c.label ?? c.emoji?.name})` : `[${c.label ?? c.emoji?.name}]`)).join(" "))
+      .map((r) => r.components.map((c) => `[${c.label ?? c.emoji?.name}]`).join(" "))
       .join("\n"),
 );
 console.log("\n--- Récap 1v1 ---\n" + texte(salon.filter((m) => m.method === "POST").at(-1)));

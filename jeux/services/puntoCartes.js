@@ -10,7 +10,9 @@
 //
 // Variantes : `<couleur>_<valeur>` (contour blanc), `<couleur>_<valeur>_gagnant`
 // (contour jaune épais sur l'alignement gagnant, la carte garde sa couleur)
-// et `vide` (case libre : carré gris sans chiffre, même taille).
+// `vide` (case libre : carré gris sans chiffre, même taille) et `jouable`
+// (case vide où la carte à poser peut aller : même carré gris, fin liseré
+// clair, pour une différence discrète dans le plateau en boutons).
 // ============================================================
 
 import fs from "fs";
@@ -27,7 +29,8 @@ export const VALEURS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 // Repli tant que l'emoji d'une variante n'est pas uploadé : keycap de la
 // valeur (la couleur est perdue), carré noir pour la case vide
 const KEYCAPS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"];
-const REPLI_VIDE = "⬛";
+const REPLI = { vide: "⬛", jouable: "🔲" };
+const CASES_VIDES = ["vide", "jouable"];
 
 // Épaisseur du contour (unités du viewBox 15×15) : le jaune doit se voir
 const EPAISSEUR = { normal: 0.6, gagnant: 1.8 };
@@ -66,7 +69,7 @@ export function variantes() {
   for (const couleur of Object.keys(loadCartesConfig().couleurs)) {
     for (const v of VALEURS) liste.push(varianteDe(couleur, v), varianteDe(couleur, v, { gagnant: true }));
   }
-  return [...liste, "vide"];
+  return [...liste, ...CASES_VIDES];
 }
 
 export function emojiName(variante) {
@@ -76,18 +79,19 @@ export function emojiName(variante) {
 const emojiId = (variante) => loadCartesConfig().emojis?.[variante] ?? null;
 
 // Carte dans un texte (titre, description) : emoji d'application si
-// uploadé, sinon keycap. `couleur` "vide" : case libre.
+// uploadé, sinon keycap. `couleur` "vide" : case libre ("jouable" : case
+// libre où la carte peut aller).
 export function formatCarte(couleur, valeur, { gagnant = false } = {}) {
-  const variante = couleur === "vide" ? "vide" : varianteDe(couleur, valeur, { gagnant });
+  const variante = CASES_VIDES.includes(couleur) ? couleur : varianteDe(couleur, valeur, { gagnant });
   const id = emojiId(variante);
   if (id) return `<:${emojiName(variante)}:${id}>`;
-  return couleur === "vide" ? REPLI_VIDE : KEYCAPS[valeur - 1];
+  return REPLI[variante] ?? KEYCAPS[valeur - 1];
 }
 
 // Objet `emoji` d'un bouton Discord, ou null si la variante n'est pas
 // uploadée (à l'appelant de choisir son repli).
 export function carteButtonEmoji(couleur, valeur) {
-  const variante = couleur === "vide" ? "vide" : varianteDe(couleur, valeur);
+  const variante = CASES_VIDES.includes(couleur) ? couleur : varianteDe(couleur, valeur);
   const id = emojiId(variante);
   return id ? { id, name: emojiName(variante) } : null;
 }
@@ -99,6 +103,14 @@ export async function buildCarteSvg(variante) {
   const source = await fsp.readFile(path.join(PUNTO_DIR, "carte.svg"), "utf-8");
   const rect = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="([\d.]+)"/;
   if (variante === "vide") return source.replace(rect, (m) => `${m} fill="${config.vide}"`);
+  if (variante === "jouable") {
+    const e = EPAISSEUR.normal;
+    return source.replace(
+      rect,
+      (_, x, y, w, h, rx) =>
+        `<rect x="${Number(x) + e / 2}" y="${Number(y) + e / 2}" width="${Number(w) - e}" height="${Number(h) - e}" rx="${Number(rx) - e / 2}" fill="${config.vide}" stroke="${config.contours.normal}" stroke-opacity="0.7" stroke-width="${e}"`,
+    );
+  }
 
   const [couleur, valeur, type = "normal"] = variante.split("_");
   const hex = config.couleurs?.[couleur];

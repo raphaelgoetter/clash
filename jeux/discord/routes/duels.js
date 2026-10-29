@@ -266,11 +266,11 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── Punto : composants. puntoduel_poser:<case>[:pvp] édite la vue en
-  // place ; puntoduel_ouvrir (Jouer du message public 1v1) et
+  // ── Punto : composants. puntoduel_poser:<case>:<coup>[:pvp] édite la vue
+  // en place ; puntoduel_ouvrir (Jouer du message public 1v1) et
   // puntoduel_regles : nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("puntoduel_")) {
-    const [action, arg, mode] = body.data.custom_id.split(":");
+    const [action, arg, ...suite] = body.data.custom_id.split(":");
     if (action === "puntoduel_regles" || action === "puntoduel_ouvrir") {
       res.status(200).json({ type: 5, data: { flags: 64 } });
       const webhookUrl = buildDiscordWebhookUrl(body);
@@ -283,8 +283,9 @@ export async function routeDuels(body, res) {
       res.status(200).json({ type: 6 });
       const webhookUrl = buildDiscordWebhookUrl(body);
       // Contre Kévina, le résultat final est publié dans le salon du clic
+      const [coup, mode] = suite;
       const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: puntoExtractMember(body).username };
-      runBackground(() => handlePuntoPoser(webhookUrl, discordId, Number(arg), opts));
+      runBackground(() => handlePuntoPoser(webhookUrl, discordId, Number(arg), Number(coup), opts));
       return;
     }
     // [🏳️] : puntoduel_abandon[:pvp] (confirmation), puntoduel_abandon_ok /
