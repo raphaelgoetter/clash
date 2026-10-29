@@ -325,9 +325,13 @@ function buildVue(
     ...(texte ? [texte, ""] : []),
     ...plateau(grilles ? { ...d, grilles } : d, moi, { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` }),
     "",
-    monTour
-      ? `# Ton dé : ${grilles ? "⏳" : formatDie(d.de, MOI)}`
-      : `⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
+    ...(monTour
+      ? [`# Ton dé : ${grilles ? "⏳" : formatDie(d.de, MOI)}`]
+      : [
+          `⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
+          // Dé adverse connu avant qu'il ne le pose (comme la carte dans Punto)
+          ...(d.de && !grilles ? [`Dé ${A.de} : ${formatDie(d.de, ADV)}`] : []),
+        ]),
   ];
   const titre = `▦ La Grille · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: GRILLE_COLOR };
@@ -410,7 +414,7 @@ function messageSolo(d, pseudo, { grilles = null, actif = d.actif } = {}) {
         title: `▦ La Grille · ${pseudo} contre Kévina`,
         description: [
           actif === "bot"
-            ? "⏳ Kévina réfléchit…"
+            ? `⏳ Kévina réfléchit…${d.de && !grilles ? ` Dé à poser : ${formatDie(d.de, ADV)}` : ""}`
             : `Au tour de **${pseudo}**${grilles ? "." : `, dé à poser : ${formatDie(d.de, MOI)}`}`,
           "",
           ...plateauPublic(grilles ? { ...d, grilles } : d, pseudo, "🤖 Kévina"),
@@ -640,7 +644,7 @@ function messagePublic(partie, config, grilles = null) {
         // Plateau neutre à petits dés, suivi par le salon ; chaque joueur
         // joue depuis sa vue éphémère
         description: [
-          `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
+          `Au tour de **${nom(d.actif)}**${grilles ? "" : `, dé à poser : ${formatDie(d.de, d.actif === "joueur" ? MOI : ADV)}`}, limite <t:${echeanceDe(partie, config)}:R>`,
           "",
           ...plateauPublic(grilles ? { ...d, grilles } : d, nom("joueur"), nom("bot")),
         ].join("\n").slice(0, 4096),
