@@ -170,7 +170,7 @@ export async function routeDuels(body, res) {
 
   // ── La Grille : composants. grilleduel_poser:<colonne>[:pvp] édite la vue en
   // place ; grilleduel_ouvrir (Jouer du message public 1v1) et
-  // grilleduel_regles : nouvel éphémère ; grilleduel_case (plateau) : rien.
+  // grilleduel_regles : nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("grilleduel_")) {
     const [action, colonne, mode] = body.data.custom_id.split(":");
     if (action === "grilleduel_regles" || action === "grilleduel_ouvrir") {
@@ -178,11 +178,6 @@ export async function routeDuels(body, res) {
       const webhookUrl = buildDiscordWebhookUrl(body);
       if (action === "grilleduel_regles") runBackground(() => handleGrilleRegles(webhookUrl));
       else runBackground(() => handleGrilleOuvrir(webhookUrl, body));
-      return;
-    }
-    // Case du plateau : simple affichage, clic sans effet
-    if (action === "grilleduel_case") {
-      res.status(200).json({ type: 6 });
       return;
     }
     if (action === "grilleduel_poser") {

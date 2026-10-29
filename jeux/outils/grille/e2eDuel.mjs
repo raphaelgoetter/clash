@@ -35,37 +35,15 @@ const h = await import("../../discord/handlers/grilleDuel.js");
 const { readDuel, readPvp } = await import("../../services/grilleDuel.js");
 const { colonnesLibres } = await import("../../services/grilleRules.js");
 
-// Messages en Components V2 : texte (type 10), séparateur (type 14) et
-// rangées de boutons (type 1), éventuellement dans un conteneur (type 17).
-function aplatir(composants = []) {
-  return composants.flatMap((c) => (c.type === 17 ? [c, ...aplatir(c.components)] : c.type === 1 ? [c, ...c.components] : [c]));
-}
-const texte = (v) => aplatir(v.components).filter((c) => c.type === 10).map((c) => c.content).join("\n");
-const rangees = (v) => aplatir(v.components).filter((c) => c.type === 1);
-// Plateau en texte, une rangée de boutons par ligne (aperçu)
-const apercu = (v) =>
-  aplatir(v.components)
-    .filter((c) => c.type === 10 || c.type === 1 || c.type === 14)
-    .map((c) =>
-      c.type === 10 ? c.content : c.type === 14 ? "-----" : c.components.map((b) => b.label ?? b.emoji?.name).join(" | "),
-    )
-    .join("\n");
-
 function verifier(v) {
-  if (!(v.flags & (1 << 15))) throw new Error("message hors Components V2");
-  if ("content" in v || "embeds" in v) throw new Error("content/embeds interdits en Components V2");
-  if (texte(v).length > 4000) throw new Error("texte > 4000");
-  // Limite Discord des Components V2 : 40 composants au total
-  if (aplatir(v.components).length > 40) throw new Error(`${aplatir(v.components).length} composants > 40`);
-  for (const row of rangees(v)) {
-    if (row.components.length > 5) throw new Error("> 5 composants");
-    for (const c of row.components) {
-      if (c.custom_id.length > 100) throw new Error("custom_id > 100");
-      if (!c.label && !c.emoji) throw new Error("bouton sans libellé ni emoji");
-    }
+  for (const e of v.embeds || []) {
+    if ((e.description || "").length > 4096) throw new Error("description > 4096");
+    if ((e.title || "").length > 256) throw new Error("titre > 256");
   }
-  const ids = rangees(v).flatMap((r) => r.components.map((c) => c.custom_id));
-  if (new Set(ids).size !== ids.length) throw new Error("custom_id en double");
+  for (const row of v.components || []) {
+    if (row.components.length > 5) throw new Error("> 5 composants");
+    for (const c of row.components) if (c.custom_id.length > 100) throw new Error("custom_id > 100");
+  }
 }
 
 // ── Contre Kévina ──
@@ -93,7 +71,7 @@ await h.handleGrilleCommand(W, lancement);
 const posts = salon.filter((m) => m.method === "POST");
 console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${posts.length} messages publiés`);
 if (posts.length !== 11) throw new Error("plateau public et résultat attendus pour chaque partie");
-if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfléchit"))) {
+if (!salon.some((m) => m.method === "PATCH" && m.embeds?.[0]?.description.includes("Kévina réfléchit"))) {
   throw new Error("plateau public non suivi");
 }
 
@@ -102,7 +80,7 @@ const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id
 await h.handleGrillePvpCommand("https://discord.test/a", body("A", "Alice"));
 await h.handleGrilleOuvrir("https://discord.test/b", body("B", "Bob"));
 await h.handleGrilleOuvrir("https://discord.test/c", body("C", "Chloé"));
-if (!texte(vues.at(-1)).includes("Ce duel oppose")) throw new Error("3e joueur non refusé");
+if (!vues.at(-1).content?.includes("Ce duel oppose")) throw new Error("3e joueur non refusé");
 for (let k = 0; ; k++) {
   if (k > 40) throw new Error("1v1 bloqué");
   const p = await readPvp();
@@ -124,6 +102,7 @@ await h.handleGrilleRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
-const exemple = vues.find((v) => texte(v).includes("Kévina pose") && rangees(v).some((r) => r.components[0]?.label === "Gauche"));
-console.log("\n--- Vue contre Kévina ---\n" + apercu(exemple));
-console.log("\n--- Récap 1v1 ---\n" + apercu(salon.filter((m) => m.method === "POST").at(-1)));
+const exemple = vues.find((v) => v.components?.[0]?.components?.length === 3 && v.embeds?.[0]?.description?.includes("Kévina pose"));
+console.log("\n--- Vue contre Kévina ---\n" + exemple.embeds[0].title + "\n" + exemple.embeds[0].description);
+console.log("Boutons :", exemple.components.map((r) => r.components.map((c) => `${c.label}${c.disabled ? " (grisé)" : ""}`).join(" | ")).join(" / "));
+console.log("\n--- Récap 1v1 ---\n" + salon.filter((m) => m.method === "POST").at(-1).embeds[0].description);
