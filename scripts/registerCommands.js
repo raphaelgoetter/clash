@@ -544,7 +544,7 @@ const commands = [
   {
     name: "punto",
     description:
-      "Punto : aligne 4 cartes de la même couleur avant Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
+      "Punto : aligne 4 cartes d'une couleur avant Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING
