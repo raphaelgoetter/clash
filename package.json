@@ -209,6 +209,8 @@
     "dices:emojis:dry": "node jeux/scripts/uploadDiceEmojis.js --dry-run",
     "pions:emojis": "node jeux/scripts/uploadPionEmojis.js",
     "pions:emojis:dry": "node jeux/scripts/uploadPionEmojis.js --dry-run",
+    "punto:emojis": "node jeux/scripts/uploadPuntoEmojis.js",
+    "punto:emojis:dry": "node jeux/scripts/uploadPuntoEmojis.js --dry-run",
     "gobeletduel:watchdog": "node jeux/scripts/gobeletDuelWatchdog.js",
     "gobeletduel:reset": "node jeux/scripts/resetGobeletDuel.js",
     "gobeletduel:status": "node jeux/scripts/gobeletDuelStatus.js",

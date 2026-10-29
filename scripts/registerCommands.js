@@ -28,6 +28,7 @@ const JEUX_COMMANDS = new Set([
   "mini-jeux-history",
   "grille",
   "quatre",
+  "punto",
   "bang",
   "blackjack",
   "gobelet",
@@ -527,6 +528,23 @@ const commands = [
     name: "quatre",
     description:
       "Quatre à la suite : aligne 4 pions avant Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
+        required: true,
+        choices: [
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "punto",
+    description:
+      "Punto : aligne 4 cartes de la même couleur avant Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING

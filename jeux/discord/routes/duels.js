@@ -1,6 +1,6 @@
 // Duels autonomes (1-3 joueurs) : /blackjack, /bang, /gobelet, /grille,
-// /quatre et leurs boutons (blackjackduel_*, bangduel_*, gobeletduel_*,
-// grilleduel_*, quatreduel_*).
+// /quatre, /punto et leurs boutons (blackjackduel_*, bangduel_*,
+// gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -61,6 +61,17 @@ import {
   handleQuatreRegles,
   handleQuatreAbandon,
 } from "../handlers/quatreDuel.js";
+import {
+  memberHasMiniJeuxRole as puntoMemberHasMiniJeuxRole,
+  extractMember as puntoExtractMember,
+  handlePuntoRoleRejected,
+  handlePuntoCommand,
+  handlePuntoPvpCommand,
+  handlePuntoOuvrir,
+  handlePuntoPoser,
+  handlePuntoRegles,
+  handlePuntoAbandon,
+} from "../handlers/puntoDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export async function routeDuels(body, res) {
@@ -230,6 +241,61 @@ export async function routeDuels(body, res) {
       // Le suffixe :pvp est en 2ᵉ position (pas de colonne)
       const opts = { pvp: colonne === "pvp", channelId: body.channel_id, pseudo: quatreExtractMember(body).username };
       runBackground(() => handleQuatreAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /punto adversaire:bot : Punto contre Kévina (plateau public, plateau
+  // en boutons dans une vue éphémère) ; adversaire:1v1 : contre un joueur
+  // (message public). Réservé au rôle MINI-JEUX pour lancer, même principe
+  // que /blackjack.
+  if (body.type === 2 && body.data?.name === "punto") {
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await puntoMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handlePuntoRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handlePuntoPvpCommand(webhookUrl, body);
+      else await handlePuntoCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Punto : composants. puntoduel_poser:<case>[:pvp] édite la vue en
+  // place ; puntoduel_ouvrir (Jouer du message public 1v1) et
+  // puntoduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("puntoduel_")) {
+    const [action, arg, mode] = body.data.custom_id.split(":");
+    if (action === "puntoduel_regles" || action === "puntoduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "puntoduel_regles") runBackground(() => handlePuntoRegles(webhookUrl));
+      else runBackground(() => handlePuntoOuvrir(webhookUrl, body));
+      return;
+    }
+    if (action === "puntoduel_poser") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Contre Kévina, le résultat final est publié dans le salon du clic
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: puntoExtractMember(body).username };
+      runBackground(() => handlePuntoPoser(webhookUrl, discordId, Number(arg), opts));
+      return;
+    }
+    // [🏳️] : puntoduel_abandon[:pvp] (confirmation), puntoduel_abandon_ok /
+    // puntoduel_abandon_non[:pvp], tous édités en place
+    const ETAPES_ABANDON = { puntoduel_abandon: "demande", puntoduel_abandon_ok: "ok", puntoduel_abandon_non: "non" };
+    if (ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Le suffixe :pvp est en 2ᵉ position (pas de case)
+      const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: puntoExtractMember(body).username };
+      runBackground(() => handlePuntoAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

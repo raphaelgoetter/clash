@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/bang`, `/gobelet`, `/grille`, `/quatre` et leurs boutons de duel |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/bang`, `/gobelet`, `/grille`, `/quatre`, `/punto` et leurs boutons de duel |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -744,6 +744,14 @@ Service `jeux/services/pions.js` : `formatPion(couleur, { gagnant })` (texte, ti
 - **Config** `jeux/data/pions/pions.json` : `couleurs` (`bleu` = ses pions, `rouge` = pions adverses), `contours` (`normal` blanc, `gagnant` jaune, trois fois plus épais) `vide` (gris de la case libre) et `emojis` (`variante → id`, variantes `bleu`, `rouge`, `bleu_gagnant`, `rouge_gagnant`, `vide` : disque gris sans contour, même taille que les pions). Le contour est tracé à l'intérieur du disque : même taille de pion pour toutes les variantes. Repli sur 🔵 🔴 (🟦 🟥 pour l'alignement gagnant, ⚫ pour la case vide) tant qu'un ID vaut `null`.
 - **Upload** : `npm run pions:emojis` (`jeux/scripts/uploadPionEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque variante en PNG 128×128 et l'uploade comme emoji d'application `pion_<variante>`, puis écrit les IDs dans `pions.json` (à committer). Options : `--variante <nom>`, `--remplacer` (obligatoire pour changer un visuel). `npm run pions:emojis:dry` écrit les PNG dans `temp/pions` sans appel Discord.
 
+## Cartes de Punto
+
+Service `jeux/services/puntoCartes.js` : `formatCarte(couleur, valeur, { gagnant })` (texte, titre), `carteButtonEmoji(couleur, valeur)` (boutons du plateau). Même principe que les faces de dé et les pions.
+
+- **Source** : `jeux/data/punto/carte.svg` (carré arrondi plein, sans marge : la carte remplit l'emoji) ; les chiffres 1 à 9 sont des **tracés** blancs à bouts arrondis (`CHIFFRES`, style afficheur), jamais du texte SVG : le rendu ne dépend d'aucune police.
+- **Config** `jeux/data/punto/cartes.json` : `couleurs` (`bleu` et `vert` = ses cartes, `rouge` et `orange` = cartes adverses), `contours` (`normal` blanc, `gagnant` jaune, trois fois plus épais), `vide` (gris de la case libre) et `emojis` (`variante → id`). Variantes : `<couleur>_<valeur>`, `<couleur>_<valeur>_gagnant`, `vide` (73 en tout). Repli sur les keycaps 1️⃣ à 9️⃣ (couleur perdue) et ⬛ pour la case vide tant qu'un ID manque ; dans les boutons, la valeur en libellé.
+- **Upload** : `npm run punto:emojis` (`jeux/scripts/uploadPuntoEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque variante en PNG 128×128, l'uploade comme emoji d'application `punto_<variante>` et écrit l'ID dans `cartes.json` au fil de l'eau (à committer). Options : `--variante <nom>`, `--remplacer` (obligatoire pour changer un visuel). `npm run punto:emojis:dry` écrit les PNG dans `temp/punto` sans appel Discord.
+
 ## Jeu du Gobelet — dés façon Yahtzee
 
 Jeu spécial de 7 jours sur le squelette de Blackjack, sans adversaire : chaque jour, chaque membre lance 5 dés, en conserve 0 à 5 et relance les autres jusqu'à 2 fois (3 tirages), puis marque une combinaison. Pas de commande slash.
@@ -1289,14 +1297,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Cinq duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/bang`, `/grille`, `/quatre`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Six duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/bang`, `/grille`, `/quatre`, `/punto`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `bangduel:*`, `grilleduel:*`, `quatreduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `bangduel_*`, `grilleduel_*`, `quatreduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `bangduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `bangduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack, Gobelet, Bang! 1v1, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack, Gobelet, Bang! 1v1, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (1-3 joueurs)
 
@@ -1462,6 +1470,39 @@ Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obliga
 
 - `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina<profondeur>[m<marge>[o<ouverture>]]`, ex. `kevina4m3o6` = réglage de production). Repères : hasard contre Kévina 0 % ; kevina3 contre kevina4 sans variété ~17 % / ~81 %, contre kevina4m3o6 ~51 % / ~43 % (la variété coûte de la force) ; marge sur toute la partie (kevina4m3) ~60 % / ~35 % ; entre deux profondeurs, la plus grande gagne nettement (kevina5 contre kevina4 : ~68 % / ~28 %) ; entre bots, l'avantage du premier joueur n'apparaît qu'à partir de la profondeur 6 (heuristique). ~1 ms par coup à profondeur 4, ~13 ms à 6.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/quatre/e2eDuel.mjs`).
+
+### Punto (contre Kévina ou en 1v1)
+
+Adaptation de Punto (Bernhard Weber) en duel. `/punto adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Quatre à la suite (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
+
+- Code : `jeux/services/puntoRules.js` (règles pures et Kévina, tests `puntoRules.test.js`), `jeux/services/puntoDuel.js` (Redis, tests `puntoDuel.test.js`), `jeux/discord/handlers/puntoDuel.js` (Discord), cartes `jeux/services/puntoCartes.js` (voir « Cartes de Punto »). Config `jeux/data/punto/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `defense_kevina` (1), `prudence_kevina` (0), `solidite_kevina` (0), `marge_kevina` (10).
+- Redis : `puntoduel:<discordId>` (contre Kévina), `puntoduel:pvp`, verrous `puntoduel:lock:*`, séries `puntoduel:series:bot` / `puntoduel:series:pvp`, records `puntoduel:records`.
+- `custom_id` : `puntoduel_poser:<case>` contre Kévina, `puntoduel_poser:<case>:pvp` en 1v1 (case 0 à 24, ligne × 5 + colonne), `puntoduel_ouvrir`, `puntoduel_regles`, `puntoduel_abandon[:pvp]`, `puntoduel_abandon_ok[:pvp]` / `puntoduel_abandon_non[:pvp]`.
+
+#### Règles
+
+- Grille commune de **5×5** cases (`d.grille` : 25 cases, `null` ou la carte du dessus `{ s (siège), k (couleur 0 ou 1), v (valeur) }` ; les cartes recouvertes ne comptent plus).
+- Chaque joueur a **sa pioche de 36 cartes** : 2 couleurs × valeurs 1 à 9 (élixir) × 2 exemplaires, mélangée (`d.pioches`). À son tour, le joueur retourne la carte du dessus (`d.carte`, visible de tous) et la pose :
+  - sur une case vide **voisine** d'une carte (côté ou coin) ;
+  - ou **sur une carte de valeur strictement inférieure**, quelle que soit sa couleur ou son propriétaire : elle la recouvre.
+- La toute première carte de la partie se pose **au centre** (seule case jouable).
+- **Victoire** dès qu'un joueur aligne **4 cartes de la même couleur** (horizontale, verticale ou diagonale) ; deux couleurs du même joueur ne s'additionnent pas. `d.alignement` garde toutes les cases gagnantes.
+- **Carte bloquée** (aucune case possible) : défaussée (`d.defausses`, racontée par la vue), l'adversaire joue.
+- **Match nul** : pioches vides sans alignement (quasi inexistant).
+- Pas de manches : une partie = une manche (la règle d'origine se joue en 2 manches gagnantes, trop long en duel). Grille fixe de 5×5 et 4 cartes à aligner au lieu de 6×6 et 5 : parties un peu plus courtes que La Grille.
+- **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
+- **Kévina** (`choixKevina()`) : gloutonne, sans anticipation. Elle gagne dès qu'elle peut, sinon elle joue la case qui maximise son potentiel (fenêtres de 4 cases sans carte étrangère, au cube du nombre de cartes de la même couleur) moins `defense_kevina` fois celui de l'adversaire, moins `prudence_kevina` fois le risque qu'il gagne au coup suivant ; `solidite_kevina` valorise les cartes chères (plus dures à recouvrir). `marge_kevina` : case tirée au sort parmi celles à `marge` points au plus de la meilleure (variété et erreurs). ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
+
+#### Affichage
+
+- Cartes en emojis (voir « Cartes de Punto ») : ses cartes en **bleu et vert**, celles de l'adversaire en **rouge et orange** ; alignement gagnant : contour jaune ; case vide grise. Légende `🟦🟩 Toi · 🟥🟧 Kévina`.
+- **Vue éphémère** : le plateau est une **grille de 5×5 boutons** portant chacun la carte du dessus (ou la case vide) ; à son tour, les cases où la carte peut aller sont **bleues** (`style: 1`), les autres grisées et désactivées ; hors de son tour, tout est grisé. Au-dessus : récit du dernier coup (« Kévina pose 🟥7 sur ton 🟦4. », défausses) et « **Ta carte : 🟦7** » (ou « Carte de Kévina »). La confirmation d'abandon remplace les boutons par le plateau en texte. ⚠️ 6 rangées de boutons (5 du plateau + Règles/🏳️) : possible seulement en Components V2 (limite de 40 composants par message, vérifiée par l'e2e).
+- **Messages publics** (plateau suivi par le salon, récapitulatifs) : plateau en texte, une rangée d'emojis par ligne, avec « carte à poser » du joueur au trait.
+
+#### Outils (`jeux/outils/punto/`, à lancer à la main)
+
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina[d<defense>][p<prudence>][s<solidite>][m<marge>]`, ex. `kevinam10` = réglage de production). Repères (2 000 à 4 000 parties) : hasard contre Kévina ~0,3 % ; « bon joueur » `kevinap1s0.5` contre Kévina de production ~70 % / ~30 %, `kevina` (gloutonne sans marge) contre elle ~64 % / ~36 % ; `kevinam10` contre elle-même ~53 % / ~47 % (léger avantage au premier), ~9,5 coups par joueur en médiane (90e centile ~14). Entre bots corrects, le meilleur ne gagne que ~55 à 60 % : le tirage des cartes pèse, mais jouer au hasard perd toujours.
+- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/punto/e2eDuel.mjs`).
 
 ---
 
