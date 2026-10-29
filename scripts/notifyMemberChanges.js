@@ -28,6 +28,7 @@ import { getDiscordLinks } from "../backend/services/discordLinks.js";
 import { ALLOWED_CLANS } from "../backend/routes/clan.js";
 import { resolveMembersChannelId } from "@clash/commun/discordChannels.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
+import { parseClashDate } from "@clash/clash-royale/dateUtils.js";
 import { isSupremeChampionLeague } from "../backend/services/rankedLeagues.js";
 
 let _redis = null;
@@ -192,6 +193,13 @@ function formatMemberBlock(m) {
     lines.push(`• ⚠️ Clan à risque (${m.riskyClan.name} ${m.riskyClan.tag})`);
   } else if (m.previousClan?.name) {
     lines.push(`• ⬅️ Vient de ${m.previousClan.name} (${m.previousClan.tag})`);
+  } else if (m.noClanSince) {
+    const since = m.noClanSince.toLocaleDateString("fr-FR", {
+      timeZone: "Europe/Paris",
+      day: "2-digit",
+      month: "2-digit",
+    });
+    lines.push(`• ⬅️ Sans clan (depuis au moins le ${since})`);
   }
   if (m.nextClan?.name) {
     lines.push(`• ➡️ Parti vers ${m.nextClan.name} (${m.nextClan.tag})`);
@@ -635,6 +643,14 @@ async function main() {
                   `#${tag}`,
                 );
                 arrival.previousClan = previous;
+                // Aucun autre clan dans le journal : sans clan depuis au moins
+                // le plus ancien combat joué sans clan
+                const clanless = battles.filter(
+                  (b) => !b.team?.find((p) => p.tag === arrival.tag)?.clan?.tag,
+                );
+                if (!previous && clanless.length > 0) {
+                  arrival.noClanSince = parseClashDate(clanless.at(-1).battleTime);
+                }
                 // Le joueur lui-même ne rend pas son ancien clan « à risque »
                 const flagged = [...(riskyClans.get(previous?.tag) ?? [])];
                 if (flagged.some((t) => t !== arrival.tag)) {
