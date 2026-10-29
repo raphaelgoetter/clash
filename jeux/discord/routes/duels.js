@@ -1,4 +1,4 @@
-// Duels autonomes (1-3 joueurs) : /blackjack, /bang, /gobelet, /grille,
+// Duels autonomes (1 ou 2 joueurs) : /blackjack, /bang, /gobelet, /grille,
 // /quatre, /punto et leurs boutons (blackjackduel_*, bangduel_*,
 // gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*).
 //
@@ -75,7 +75,7 @@ import {
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export async function routeDuels(body, res) {
-  // ── /blackjack : lance un duel Blackjack autonome (1-3 joueurs, N
+  // ── /blackjack : lance un duel Blackjack autonome (1 ou 2 joueurs, N
   // manches) — jeu développé en parallèle du jeu spécial, sans lien avec
   // lui. Réservé au rôle MINI-JEUX : le check se fait ici en arrière-plan
   // (getRoleIdByName fait un appel réseau, trop risqué dans la fenêtre de
@@ -84,7 +84,8 @@ export async function routeDuels(body, res) {
   if (body.type === 2 && body.data?.name === "blackjack") {
     const joueursOpt = body.data.options?.find((o) => o.name === "joueurs");
     const manchesOpt = body.data.options?.find((o) => o.name === "manches");
-    const maxPlayers = Number(joueursOpt?.value) || 1;
+    // 2 joueurs au plus, comme les autres duels (ancienne commande à 3 places comprise)
+    const maxPlayers = Math.min(Number(joueursOpt?.value) || 1, 2);
     const totalManches = Number(manchesOpt?.value) || 5;
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
@@ -300,13 +301,14 @@ export async function routeDuels(body, res) {
     }
   }
 
-  // ── /gobelet : lance un duel du Jeu du Gobelet autonome (1-3 joueurs, N
+  // ── /gobelet : lance un duel du Jeu du Gobelet autonome (1 ou 2 joueurs, N
   // manches) — jeu développé en parallèle du jeu spécial, sans lien avec
   // lui. Réservé au rôle MINI-JEUX, même principe que /blackjack ci-dessus.
   if (body.type === 2 && body.data?.name === "gobelet") {
     const joueursOpt = body.data.options?.find((o) => o.name === "joueurs");
     const manchesOpt = body.data.options?.find((o) => o.name === "manches");
-    const maxPlayers = Number(joueursOpt?.value) || 1;
+    // 2 joueurs au plus, comme les autres duels (ancienne commande à 3 places comprise)
+    const maxPlayers = Math.min(Number(joueursOpt?.value) || 1, 2);
     const totalManches = Number(manchesOpt?.value) || 5;
 
     res.status(200).json({ type: 5, data: { flags: 64 } });

@@ -1,5 +1,5 @@
 // ============================================================
-// blackjackDuel.js — Blackjack duel autonome (1 à 3 joueurs, N manches),
+// blackjackDuel.js — Blackjack duel autonome (1 ou 2 joueurs, N manches),
 // lancé à la demande via la commande /blackjack (rôle MINI-JEUX requis).
 //
 // Développé EN PARALLÈLE du jeu spécial (jeux/services/blackjack.js),
@@ -11,7 +11,7 @@
 // réutiliser ne crée donc aucun risque d'impact sur le jeu spécial.
 //
 // Différences structurelles avec le jeu spécial :
-// - Lobby FERMÉ (1 à 3 joueurs inscrits au lancement via le bouton Jouer,
+// - Lobby FERMÉ (1 ou 2 joueurs inscrits au lancement via le bouton Jouer,
 //   pas un lobby ouvert à tous) ;
 // - avancement piloté par les ACTIONS des joueurs (une manche se termine
 //   dès que tous les sièges sont occupés et que chacun a joué), pas par un
@@ -214,7 +214,7 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
   // (points/mains/verrous de résolution) avant de repartir à zéro.
   await resetBlackjackDuel();
 
-  // Croupier uniquement en solo (1 joueur) — à 2 ou 3 joueurs, pas de
+  // Croupier uniquement en solo (1 joueur) — à 2 joueurs, pas de
   // Croupier : les joueurs s'affrontent directement (voir resolvePvP), le
   // jeu redevient un vrai "duel" plutôt qu'un multi-solo côte à côte.
   const dealer = maxPlayers === 1 ? dealerPlay(Math.random, DEALER_MIN, DEALER_MAX) : null;
@@ -351,7 +351,7 @@ export async function checkAndResolveManche() {
   return { resolved: true, ...outcome };
 }
 
-// Pure : résout une manche à 2-3 joueurs SANS Croupier — la meilleure main
+// Pure : résout une manche à 2 joueurs SANS Croupier — la meilleure main
 // non bust l'emporte (2 points, comme une victoire face au Croupier) ; en
 // cas d'égalité au sommet, tous les joueurs à égalité se partagent 1 point
 // chacun (même barème qu'une égalité face au Croupier — voir
@@ -377,7 +377,7 @@ export function resolvePvP(hands) {
 }
 
 // Pure : calcule les résultats de la manche (face au Croupier en solo,
-// entre joueurs à 2-3) et le classement mis à jour, sans écrire dans Redis
+// entre les 2 joueurs) et le classement mis à jour, sans écrire dans Redis
 // (le tirage du prochain Croupier, lui, reste dans le caller I/O
 // ci-dessous — pas besoin de le prédire pour décider si la partie est finie).
 export function computeMancheOutcome(state, hands, currentPoints) {
@@ -404,7 +404,7 @@ async function resolveManche(state, hands) {
   // Historique complet (mains, scores, points) de la manche qui vient de se
   // résoudre — affiché en intégralité dans le récapitulatif final, voir
   // buildFinalEmbed côté handler. Le Croupier n'y figure que pour les
-  // manches solo (null en duel 2-3 joueurs, voir resolvePvP).
+  // manches solo (null en duel à 2 joueurs, voir resolvePvP).
   const mancheRecord = {
     manche: state.manche,
     dealer: state.maxPlayers === 1 ? state.dealer : null,

@@ -1,6 +1,6 @@
 // ============================================================
 // blackjackDuel.js — Handlers Discord pour le Blackjack duel autonome
-// (1 à 3 joueurs, N manches), lancé à la demande via /blackjack.
+// (1 ou 2 joueurs, N manches), lancé à la demande via /blackjack.
 //
 // Développé EN PARALLÈLE du jeu spécial (_handlers/blackjack.js), sans
 // aucun impact dessus : custom_id préfixés `blackjackduel_*` (jamais
@@ -274,7 +274,7 @@ async function buildTableEmbed(
   // "Jour X/Y" en double dans son propre corps de message.
   const seatsLabel = `${state.players.length}/${state.maxPlayers} joueur${state.maxPlayers > 1 ? "s" : ""} inscrit${state.players.length > 1 ? "s" : ""}`;
   if (!isSolo) {
-    // 2-3 joueurs : pas de Croupier — duel direct, résultat connu dès que
+    // 2 joueurs : pas de Croupier — duel direct, résultat connu dès que
     // tous les joueurs inscrits ont fini leur main.
     lines.push(
       "## 🃏 Duel entre joueurs (pas de Croupier)",
@@ -322,7 +322,7 @@ async function buildTableEmbed(
 
 // Une ligne par manche : main + score de chaque joueur, et points gagnés —
 // le Croupier n'apparaît que sur les manches solo (mancheRecord.dealer est
-// null en duel 2-3 joueurs, voir resolveManche côté service).
+// null en duel à 2 joueurs, voir resolveManche côté service).
 async function buildMancheHistoryBlocks(history) {
   const blocks = [];
   for (const entry of history) {
@@ -696,7 +696,7 @@ function buildReglesEmbed() {
   return {
     title: "📖 Règles du Blackjack Duel",
     description: [
-      "Duel fermé à 1-3 joueurs, sur plusieurs manches.",
+      "Duel fermé à 1 ou 2 joueurs, sur plusieurs manches.",
       "",
       "**Valeur des cartes :** 2 à 10 = leur valeur, Valet/Dame/Roi = 10, As = 11 ou 1 (ramené à 1 si besoin pour éviter de dépasser 21).",
       "",
@@ -710,9 +710,9 @@ function buildReglesEmbed() {
       "",
       "**En solo (1 joueur) :** tu affrontes le Croupier. Sur les manches impaires (1, 3, 5…), il joue en premier : son score est connu à l'avance. Sur les manches paires, il joue en second : tu joues sans connaître son score, révélé seulement à la résolution.",
       "",
-      "**À 2 ou 3 joueurs :** pas de Croupier, vous vous affrontez directement. La meilleure main non dépassée l'emporte, résultat révélé dès que tout le monde a joué sa main.",
+      "**À 2 joueurs :** pas de Croupier, vous vous affrontez directement. La meilleure main non dépassée l'emporte, résultat révélé dès que tout le monde a joué sa main.",
       "",
-      "**Résultat d'une manche :** le vainqueur gagne **2 points**. Égalité (avec le Croupier en solo, ou entre joueurs à 2-3) = **1 point** quand même. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
+      "**Résultat d'une manche :** le vainqueur gagne **2 points**. Égalité (avec le Croupier en solo, ou entre les 2 joueurs) = **1 point** quand même. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
       "",
       "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 1h peut être remplacée en relançant /blackjack.",
     ].join("\n"),

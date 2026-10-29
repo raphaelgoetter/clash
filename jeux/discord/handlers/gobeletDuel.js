@@ -1,6 +1,6 @@
 // ============================================================
 // gobeletDuel.js — Handlers Discord pour le Jeu du Gobelet, duel autonome
-// (1 à 3 joueurs, N manches), lancé à la demande via /gobelet.
+// (1 ou 2 joueurs, N manches), lancé à la demande via /gobelet.
 //
 // Développé EN PARALLÈLE du jeu spécial (_handlers/gobelet.js), sans aucun
 // impact dessus : custom_id préfixés `gobeletduel_*` (jamais `gobelet_*`),
@@ -899,7 +899,7 @@ function buildReglesEmbed() {
   return {
     title: "📖 Règles du Jeu du Gobelet Duel",
     description: [
-      "Duel fermé à 1-3 joueurs, sur plusieurs manches.",
+      "Duel fermé à 1 ou 2 joueurs, sur plusieurs manches.",
       "",
       "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes.",
       "",

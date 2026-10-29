@@ -1,5 +1,5 @@
 // ============================================================
-// gobeletDuel.js — Jeu du Gobelet, duel autonome (1 à 3 joueurs, N manches),
+// gobeletDuel.js — Jeu du Gobelet, duel autonome (1 ou 2 joueurs, N manches),
 // lancé à la demande via la commande /gobelet (rôle MINI-JEUX requis).
 //
 // Développé EN PARALLÈLE du jeu spécial (jeux/services/gobelet.js), sans
@@ -12,7 +12,7 @@
 // blackjack.js.
 //
 // Différences structurelles avec le jeu spécial :
-// - Lobby FERMÉ (1 à 3 joueurs inscrits au lancement via le bouton Jouer,
+// - Lobby FERMÉ (1 ou 2 joueurs inscrits au lancement via le bouton Jouer,
 //   pas un lobby ouvert à tous) ;
 // - avancement piloté par les ACTIONS des joueurs (une manche se termine
 //   dès que tous les sièges sont occupés et que chacun a terminé ses 3

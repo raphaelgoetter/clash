@@ -1306,9 +1306,9 @@ Six duels lancés par commande slash, sans cron ni historique de manches : `/bla
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
 - **Une seule partie publique à la fois** par jeu (Blackjack, Gobelet, Bang! 1v1, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
-### Blackjack Duel et Gobelet Duel (1-3 joueurs)
+### Blackjack Duel et Gobelet Duel (1 ou 2 joueurs)
 
-`/blackjack joueurs:<1-3> manches:<5|10>` et `/gobelet joueurs:<1-3> manches:<5|10>`.
+`/blackjack joueurs:<1|2> manches:<5|10>` et `/gobelet joueurs:<1|2> manches:<5|10>`. 2 joueurs au plus, comme les autres duels (valeur bornée à 2 par la route, même depuis une ancienne commande).
 
 | | Blackjack Duel | Gobelet Duel |
 | --- | --- | --- |
@@ -1318,7 +1318,7 @@ Six duels lancés par commande slash, sans cron ni historique de manches : `/bla
 | Spécificités | aucune | sélection des dés Jouer/toggle/Relancer dupliquée |
 
 - **Lobby fermé** : inscription par le bouton Jouer jusqu'à ce que tous les sièges soient pris, puis roster verrouillé.
-- **Résolution d'une manche** : seulement quand tous les sièges sont occupés **et** que chaque joueur a fini sa main (`isMancheReady()`, appelée par `checkAndResolveManche()`, verrou `HSETNX` sur `<jeu>:resolving`). Un joueur seul sur 2-3 places attend ses adversaires (« ⏳ En attente de N joueur(s) supplémentaire(s) »). ⚠️ Ne pas résoudre avant le remplissage des sièges, sinon le roster se verrouille et la partie devient injoignable.
+- **Résolution d'une manche** : seulement quand tous les sièges sont occupés **et** que chaque joueur a fini sa main (`isMancheReady()`, appelée par `checkAndResolveManche()`, verrou `HSETNX` sur `<jeu>:resolving`). Un joueur seul sur 2 places attend son adversaire (« ⏳ En attente de N joueur(s) supplémentaire(s) »). ⚠️ Ne pas résoudre avant le remplissage des sièges, sinon le roster se verrouille et la partie devient injoignable.
 - **Partie abandonnée** (`STALE_HOURS` = 1 h d'inactivité) : un nouveau `/blackjack` ou `/gobelet` la remplace (`startGame()`). Gobelet Duel la clôt en plus paresseusement à la moindre interaction (`expireIfStale()`, `expired: true`) et poste le récapitulatif « Partie terminée » avec le classement figé.
 - **High score par format** (5 ou 10 manches, totaux non comparables) : affiché dans le récap de fin (« High score : Pseudo (N pts) »), hash `<jeu>:highscore` (`totalManches` → `{ discordId, username, points, at }`), mis à jour par `updateHighScore()` seulement si le record est **strictement** battu (`isNewHighScore()`, score > 0). Jamais effacé par un reset.
 - **Gobelet Duel uniquement** : la main éphémère liste les combinaisons déjà réalisées par les adversaires (« 👀 Pseudo : … », `readOpponentsUsed()`, pseudos dans `gobeletduel:usernames`, catégories dans `gobeletduel:used`).

@@ -578,17 +578,16 @@ const commands = [
   {
     name: "blackjack",
     description:
-      "Lance un duel de Blackjack (1-3 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",
+      "Lance un duel de Blackjack (1 ou 2 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 4, // INTEGER
         name: "joueurs",
-        description: "Nombre de joueurs (1 à 3).",
+        description: "Nombre de joueurs (1 ou 2).",
         required: true,
         choices: [
           { name: "1", value: 1 },
           { name: "2", value: 2 },
-          { name: "3", value: 3 },
         ],
       },
       {
@@ -606,17 +605,16 @@ const commands = [
   {
     name: "gobelet",
     description:
-      "Lance un duel du Jeu du Gobelet (1-3 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",
+      "Lance un duel du Jeu du Gobelet (1 ou 2 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 4, // INTEGER
         name: "joueurs",
-        description: "Nombre de joueurs (1 à 3).",
+        description: "Nombre de joueurs (1 ou 2).",
         required: true,
         choices: [
           { name: "1", value: 1 },
           { name: "2", value: 2 },
-          { name: "3", value: 3 },
         ],
       },
       {
