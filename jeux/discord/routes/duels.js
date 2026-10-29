@@ -180,11 +180,11 @@ export async function routeDuels(body, res) {
     }
   }
 
-  // ── /quatre adversaire:bot : Quatre à la suite contre Kévina (partie
-  // privée, éphémère) ; adversaire:1v1 : contre un joueur (message public).
+  // ── /quatre adversaire:bot : Quatre à la suite contre Kévina (plateau
+  // public, boutons dans une vue éphémère) ; adversaire:1v1 : contre un
+  // joueur (message public).
   // Réservé au rôle MINI-JEUX pour lancer, même principe que /blackjack.
   if (body.type === 2 && body.data?.name === "quatre") {
-    const discordId = body.member?.user?.id;
     const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
@@ -195,7 +195,7 @@ export async function routeDuels(body, res) {
         return;
       }
       if (pvp) await handleQuatrePvpCommand(webhookUrl, body);
-      else await handleQuatreCommand(webhookUrl, discordId);
+      else await handleQuatreCommand(webhookUrl, body);
     });
     return;
   }

@@ -1,8 +1,9 @@
 // ============================================================
 // quatreDuel.js (handler) — Quatre à la suite (`/quatre`), deux modes :
-// - contre Kévina, le bot (`/quatre adversaire:bot`) : un seul message
-//   éphémère édité en place à chaque coup ; Kévina joue aussitôt après le
-//   joueur ; résultat publié dans le salon en fin de partie ;
+// - contre Kévina, le bot (`/quatre adversaire:bot`) : plateau public
+//   dans le salon (suivi par tous) et vue éphémère du joueur (plateau et
+//   boutons), édités en place à chaque coup ; Kévina joue aussitôt après
+//   le joueur ; résultat publié dans un nouveau message en fin de partie ;
 // - 1v1 (`/quatre adversaire:1v1`) : message public dans le salon (bouton
 //   Jouer : rejoindre, puis afficher sa vue, plateau visible de tous) et
 //   une vue éphémère par joueur, rééditée après chaque coup adverse (webhook
@@ -23,6 +24,7 @@ import {
   agirDuel,
   agirPvp,
   enregistrerMessagePvp,
+  INACTIVITE_SECONDES,
   loadDuelConfig,
   nouveauDuel,
   ouvrirPvp,
@@ -362,11 +364,55 @@ export async function handleQuatreRoleRejected(webhookUrl) {
   });
 }
 
-// Lance une nouvelle partie (remplace une éventuelle partie en cours).
-export async function handleQuatreCommand(webhookUrl, discordId) {
+// Plateau public d'une partie contre Kévina, en cours : suivi par le salon,
+// le joueur joue depuis sa vue éphémère. Expiration rappelée, sinon le
+// message d'une partie abandonnée resterait figé sur « Au tour de X ».
+function messageSolo(d, pseudo) {
+  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
+  return {
+    embeds: [
+      {
+        title: `${TITRE} · ${pseudo} contre Kévina`,
+        description: [
+          d.actif === "bot" ? "⏳ Kévina réfléchit…" : `Au tour de **${pseudo}**.`,
+          "",
+          ...plateauPublic(d, pseudo, "🤖 Kévina"),
+          "",
+          `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
+        ]
+          .join("\n")
+          .slice(0, 4096),
+        color: QUATRE_COLOR,
+      },
+    ],
+    components: boutonsFin(),
+  };
+}
+
+// Édite le plateau public (partie lancée avant ce message : rien).
+async function majSalonSolo(d, pseudo) {
+  if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?"));
+}
+
+// Lance une nouvelle partie (remplace une éventuelle partie en cours) :
+// plateau public dans le salon, puis vue éphémère du joueur.
+export async function handleQuatreCommand(webhookUrl, body) {
   try {
-    const { duel } = await nouveauDuel(discordId);
-    await patchOriginal(webhookUrl, buildVue(duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." }));
+    const { discordId, username } = extractMember(body);
+    const { duel, ancien } = await nouveauDuel(discordId);
+    // Partie remplacée : son plateau public, figé, est retiré du salon
+    if (ancien?.salon && !ancien.termine) await messageSalon("DELETE", ancien.salon.channelId, ancien.salon.messageId);
+    const message = await messageSalon("POST", body.channel_id, null, messageSolo(duel, username));
+    // Échec du POST : partie jouable quand même, résultat publié à la fin
+    const enregistre = message?.id
+      ? await agirDuel(discordId, (d) => {
+          d.salon = { channelId: body.channel_id, messageId: message.id };
+        })
+      : null;
+    await patchOriginal(
+      webhookUrl,
+      buildVue(enregistre?.duel ?? duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." }),
+    );
   } catch (err) {
     console.error("[Quatre] Échec lancement:", err.message);
   }
@@ -452,14 +498,18 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
   }
   if (resultat.avantKevina) {
     // Coup du joueur affiché d'abord, celui de Kévina après sa réflexion
-    await patchOriginal(webhookUrl, buildVue(resultat.avantKevina, { texte: resultat.texteJoueur }));
+    await Promise.all([
+      patchOriginal(webhookUrl, buildVue(resultat.avantKevina, { texte: resultat.texteJoueur })),
+      majSalonSolo(resultat.avantKevina, pseudo),
+    ]);
     await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
   }
   if (resultat.vientDeFinir && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
-  await patchOriginal(
-    webhookUrl,
-    buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte }),
-  );
+  await Promise.all([
+    patchOriginal(webhookUrl, buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
+    // Fin (repli) : plateau public déjà remplacé par le récapitulatif
+    ...(resultat.erreur || duel.termine ? [] : [majSalonSolo(duel, pseudo)]),
+  ]);
 }
 
 const AUCUNE_PARTIE_SOLO = {
@@ -472,10 +522,18 @@ const AUCUNE_PARTIE_SOLO = {
   components: boutonsFin(),
 };
 
-// Fin contre Kévina : le message public suffit, vue éphémère supprimée.
-// Faux si l'un des deux a échoué (l'appelant affiche alors la vue de fin).
+// Fin contre Kévina : récapitulatif dans un NOUVEAU message (visible en bas
+// du salon), plateau public supprimé (repli : édité en récapitulatif), vue
+// éphémère supprimée. Faux si le POST ou la suppression de la vue a échoué
+// (l'appelant affiche alors la vue de fin).
 async function publierFinSolo(webhookUrl, channelId, duel, pseudo) {
-  const ok = await messageSalon("POST", channelId, null, messageFinalSolo(duel, pseudo ?? "?"));
+  const final = messageFinalSolo(duel, pseudo ?? "?");
+  const { salon } = duel;
+  const ok = await messageSalon("POST", salon?.channelId ?? channelId, null, final);
+  if (salon) {
+    if (ok) await messageSalon("DELETE", salon.channelId, salon.messageId);
+    else await messageSalon("PATCH", salon.channelId, salon.messageId, final);
+  }
   return Boolean(ok) && (await supprimerOriginal(webhookUrl));
 }
 

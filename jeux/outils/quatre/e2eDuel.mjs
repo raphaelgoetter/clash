@@ -51,9 +51,10 @@ function verifier(v) {
 // ── Contre Kévina ──
 const ID = "joueur-e2e";
 const W = "https://discord.test/webhook";
+const lancement = { member: { user: { id: ID, username: "Testeur" } }, channel_id: "salon" };
 const resultats = {};
 for (let g = 0; g < 5; g++) {
-  await h.handleQuatreCommand(W, ID);
+  await h.handleQuatreCommand(W, lancement);
   for (let k = 0; ; k++) {
     if (k > 50) throw new Error("partie bloquée");
     const d = await readDuel(ID);
@@ -65,8 +66,11 @@ for (let g = 0; g < 5; g++) {
     await h.handleQuatrePoser(W, ID, libres[Math.floor(Math.random() * libres.length)], { channelId: "salon", pseudo: "Testeur" });
   }
 }
-console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${salon.length} résultats publiés`);
-if (salon.length !== 5) throw new Error("un résultat par partie attendu");
+// Par partie : plateau public (lancement) puis récapitulatif
+const posts = salon.filter((m) => m.method === "POST");
+console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${posts.length} messages publiés`);
+if (posts.length !== 10) throw new Error("plateau public et résultat attendus pour chaque partie");
+if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfléchit"))) throw new Error("plateau public non suivi");
 
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });
@@ -89,7 +93,7 @@ for (let k = 0; ; k++) {
 }
 
 // ── Abandon (🏳️ puis confirmation) ──
-await h.handleQuatreCommand(W, ID);
+await h.handleQuatreCommand(W, lancement);
 await h.handleQuatreAbandon(W, ID, "demande", { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("Abandonner la partie ?")) throw new Error("confirmation d'abandon absente");
 await h.handleQuatreAbandon(W, ID, "non", { channelId: "salon", pseudo: "Testeur" });

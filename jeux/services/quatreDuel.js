@@ -1,7 +1,7 @@
 // ============================================================
 // quatreDuel.js — Quatre à la suite (`/quatre`) : un joueur contre Kévina
-// (partie privée, message éphémère) ou contre un autre joueur (`/quatre
-// adversaire:1v1`, message public + vue éphémère par joueur). Règles pures
+// (plateau public + vue éphémère du joueur) ou contre un autre joueur
+// (`/quatre adversaire:1v1`, message public + vue éphémère par joueur). Règles pures
 // dans quatreRules.js.
 //
 // Stockage : Upstash Redis. Contre Kévina : une clé par joueur
@@ -89,15 +89,17 @@ async function withLock(discordId, fn) {
 }
 
 // Nouvelle partie contre Kévina (remplace une éventuelle partie en cours) :
-// le joueur commence toujours.
+// le joueur commence toujours. `ancien` : partie remplacée (ou null), pour
+// retirer son plateau public du salon.
 export async function nouveauDuel(discordId) {
   return withLock(discordId, async () => {
+    const ancien = await readDuel(discordId);
     const s = await lireSerie("bot", discordId);
     // Partie précédente abandonnée ou remplacée : comptée comme une défaite
     await ecrireSerie("bot", discordId, { serie: s.enCours ? 0 : s.serie, enCours: true });
     const duel = creerDuel({ commence: "joueur" });
     await writeDuel(discordId, duel);
-    return { duel };
+    return { duel, ancien };
   });
 }
 
