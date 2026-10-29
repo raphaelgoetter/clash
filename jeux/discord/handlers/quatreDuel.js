@@ -706,10 +706,13 @@ export async function handleQuatrePvpCommand(webhookUrl, body) {
 }
 
 // [Jouer] du message public : rejoindre (2ᵉ joueur), sinon afficher sa
-// vue (nouvel éphémère, mémorisé pour les mises à jour).
+// vue (nouvel éphémère, mémorisé pour les mises à jour). L'ancienne vue du
+// joueur est supprimée : seule la dernière est rééditée, une vue restée
+// au-dessus afficherait sinon un tour figé.
 export async function handleQuatreOuvrir(webhookUrl, body) {
   try {
     const { discordId, username } = extractMember(body);
+    let ancienneVue = null;
     const { partie, config, resultat } = await agirPvp((p) => {
       if (p.statut === "lobby" && discordId !== p.lanceur) {
         rejoindrePvp(p, discordId, username);
@@ -717,9 +720,11 @@ export async function handleQuatreOuvrir(webhookUrl, body) {
         return { rejoint: true, coup: true };
       }
       if (p.statut !== "lobby" && !siegeDe(p, discordId)) return { erreur: "pasJoueur" };
+      ancienneVue = webhookValide(p, discordId);
       memoriserWebhook(p, discordId, webhookUrl);
       return {};
     });
+    await supprimerOriginal(ancienneVue);
     if (!partie) {
       await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
       return;
