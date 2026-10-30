@@ -1222,7 +1222,7 @@ Cinq duels lancés par commande slash, sans cron ni historique de manches : `/bl
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
 - **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack, Gobelet, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (1 ou 2 joueurs)
 
@@ -1236,18 +1236,17 @@ Cinq duels lancés par commande slash, sans cron ni historique de manches : `/bl
 | Spécificités | aucune | sélection des dés Jouer/toggle/Relancer dupliquée |
 
 - **Lobby fermé** : inscription par le bouton Jouer jusqu'à ce que tous les sièges soient pris, puis roster verrouillé.
-- **Résolution d'une manche** : seulement quand tous les sièges sont occupés **et** que chaque joueur a fini sa main (`isMancheReady()`, appelée par `checkAndResolveManche()`, verrou `HSETNX` sur `<jeu>:resolving`). Un joueur seul sur 2 places attend son adversaire (« ⏳ En attente de N joueur(s) supplémentaire(s) »). ⚠️ Ne pas résoudre avant le remplissage des sièges, sinon le roster se verrouille et la partie devient injoignable.
-- **Partie abandonnée** (`STALE_HOURS` = 1 h d'inactivité) : un nouveau `/blackjack` ou `/gobelet` la remplace (`startGame()`). Gobelet Duel la clôt en plus paresseusement à la moindre interaction (`expireIfStale()`, `expired: true`) et poste le récapitulatif « Partie terminée » avec le classement figé.
+- **Résolution d'une manche** : seulement quand tous les sièges sont occupés **et** que chaque joueur a fini sa main (`isMancheReady()`, appelée par `checkAndResolveManche()`, verrou `HSETNX` sur `<jeu>:<gid>:resolving`). Un joueur seul sur 2 places attend son adversaire (« ⏳ En attente de N joueur(s) supplémentaire(s) »). ⚠️ Ne pas résoudre avant le remplissage des sièges, sinon le roster se verrouille et la partie devient injoignable.
+- **Parties comme les autres duels.** Identifiant de partie `gid` (`gameIdFor()`) : le `discordId` du lanceur en solo (une partie par joueur, plusieurs en même temps, jouable par lui seul : `applyJoin()` → `notYours`), `pvp` à 2 joueurs (une seule à la fois, `alreadyActive`). Un `/blackjack` ou `/gobelet` solo remplace toujours la partie du joueur et supprime son message public. Chaque écriture relance l'expiration des clés de la partie (`INACTIVITE_SECONDES` = 1 h, pas de cron) ; le message public rappelle l'échéance (« ⏰ Sans action, partie abandonnée <t:…:R> »). Tous les `custom_id` de partie finissent par `:<gid>` (`blackjackduel_jouer:<gid>`, `blackjackduel_piocher|arreter|suivante:<manche>:<gid>`, `gobeletduel_jouer:<gid>`, `gobeletduel_relancer|valider|choix|suivante:<manche>:<gid>`, `gobeletduel_toggle:<manche>:<dé>:<gid>`) ; un bouton sans `gid` (ancien message) ou d'une partie expirée répond « ⏰ Aucune partie en cours (abandonnée après 1 h sans action) ».
 - **High score par format** (5 ou 10 manches, totaux non comparables) : affiché dans le récap de fin (« High score : Pseudo (N pts) »), hash `<jeu>:highscore` (`totalManches` → `{ discordId, username, points, at }`), mis à jour par `updateHighScore()` seulement si le record est **strictement** battu (`isNewHighScore()`, score > 0). Jamais effacé par un reset.
-- **Gobelet Duel uniquement** : la main éphémère liste les combinaisons déjà réalisées par les adversaires (« 👀 Pseudo : … », `readOpponentsUsed()`, pseudos dans `gobeletduel:usernames`, catégories dans `gobeletduel:used`).
-- **Clés Redis** (`<jeu>` = `blackjackduel` ou `gobeletduel`) : `state`, `points`, `usernames`, `resolving`, `highscore`, `hand:<manche>`, `webhook:<manche>` ; Gobelet en plus `used`, `kept:<manche>:<discordId>`, `lock:<discordId>`.
-- **Nettoyage 100 % manuel** (⚠️ aucun cron ni workflow, choix explicite) :
+- **Gobelet Duel uniquement** : la main éphémère liste les combinaisons déjà réalisées par les adversaires (« 👀 Pseudo : … », `readOpponentsUsed()`, pseudos dans `gobeletduel:<gid>:usernames`, catégories dans `gobeletduel:<gid>:used`).
+- **Clés Redis** (`<jeu>` = `blackjackduel` ou `gobeletduel`) : par partie `<jeu>:<gid>:` + `state`, `points`, `usernames`, `resolving`, `hand:<manche>`, `webhook:<manche>`, Gobelet en plus `used`, `kept:<manche>:<discordId>` (expiration 1 h, 15 min pour `webhook`) ; hors partie `<jeu>:highscore` et, Gobelet, `gobeletduel:lock:<discordId>`.
+- **Scripts** (⚠️ aucun cron ni workflow, choix explicite) :
 
 | Commande | Effet |
 | --- | --- |
-| `npm run blackjackduel:status` / `gobeletduel:status` | État courant, pour décider |
-| `npm run blackjackduel:watchdog` / `gobeletduel:watchdog` | Reset seulement si inactif depuis 1 h (`resetIfStale()`) |
-| `npm run blackjackduel:reset` / `gobeletduel:reset` | Reset inconditionnel (préserve le high score) |
+| `npm run blackjackduel:status` / `gobeletduel:status` | Liste les parties en cours |
+| `npm run blackjackduel:reset` / `gobeletduel:reset` | Efface toutes les parties (préserve le high score) |
 
 ### La Grille (contre Kévina ou en 1v1)
 

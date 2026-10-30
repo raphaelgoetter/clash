@@ -24,9 +24,9 @@ import {
   choisir,
   checkAndResolveManche,
   listHands,
-  expireIfStale,
   saveHandWebhook,
   readHandWebhooks,
+  INACTIVITE_SECONDES,
 } from "../../services/gobeletDuel.js";
 import {
   computeBestCombination,
@@ -166,7 +166,15 @@ async function postFinalMessage(state, payload) {
     await patchPublicMessage(state, payload);
     return;
   }
-  if (!state.messageId) return;
+  await deletePublicMessage(state);
+}
+
+// Supprime le message public de la partie (fin de partie, ou partie solo
+// remplacée par un nouveau /gobelet).
+async function deletePublicMessage(state) {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token || !state?.channelId || !state?.messageId) return;
+  const headers = { Authorization: `Bot ${token}` };
   try {
     const res = await fetch(
       `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
@@ -195,7 +203,7 @@ const REGLES_BUTTON = {
   custom_id: "gobeletduel_regles",
 };
 
-function buildJoinComponents() {
+function buildJoinComponents(gid) {
   return [
     {
       type: 1,
@@ -205,7 +213,7 @@ function buildJoinComponents() {
           style: 3,
           label: "Jouer",
           emoji: { name: "🎲" },
-          custom_id: "gobeletduel_jouer",
+          custom_id: `gobeletduel_jouer:${gid}`,
         },
         REGLES_BUTTON,
       ],
@@ -259,7 +267,7 @@ async function buildTableEmbed(
   state,
   { previousResults = state.lastResults } = {},
 ) {
-  const hands = await listHands(state.manche);
+  const hands = await listHands(state.gid, state.manche);
   const lines = [];
 
   if (previousResults) {
@@ -295,6 +303,11 @@ async function buildTableEmbed(
       "Clique sur **Jouer** pour t'inscrire et lancer ta première main.",
     );
   }
+
+  // Pas de cron : le message d'une partie expirée resterait figé, d'où le
+  // rappel de l'échéance (relancée à chaque action).
+  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
+  lines.push("", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`);
 
   return {
     title: `🎲 Gobelet Duel (Manche ${state.manche}/${state.totalManches})`,
@@ -347,54 +360,6 @@ async function buildFinalEmbed(state, results, ranking, highScore) {
   };
 }
 
-// Partie close pour inactivité (voir expireIfStale) : même titre que la fin
-// normale, classement cumulé figé à la dernière manche jouée.
-async function buildExpiredEmbed(state, ranking) {
-  const resolvedRanking = await Promise.all(
-    ranking.map(async (r) => ({
-      ...r,
-      username: await resolveDisplayName(r.discordId, r.username),
-    })),
-  );
-  const lines = [
-    `⌛ Partie expirée après 1h d'inactivité (manche ${state.manche}/${state.totalManches}).`,
-    "",
-    "**Classement final :**",
-    ...(resolvedRanking.length
-      ? resolvedRanking.map(
-          (r, i, list) =>
-            `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
-        )
-      : ["Personne n'a marqué de point."]),
-  ];
-  return {
-    title: `🏁 Gobelet Duel : partie terminée (${state.totalManches} manches)`,
-    description: lines.join("\n"),
-    color: GOBELETDUEL_COLOR,
-  };
-}
-
-// Clôture paresseuse, sans cron : à chaque interaction, une partie inactive
-// depuis 1h est close et son récapitulatif reposté en "Partie terminée".
-// Renvoie true si la partie vient d'expirer.
-async function closeIfStale() {
-  const result = await expireIfStale();
-  if (!result.expired) return false;
-  const embed = await buildExpiredEmbed(result.state, result.ranking);
-  await postFinalMessage(result.state, { embeds: [embed], components: buildFinalComponents() });
-  return true;
-}
-
-async function replyIfExpired(webhookUrl) {
-  if (!(await closeIfStale())) return false;
-  await patchOriginal(webhookUrl, {
-    content: "Cette partie du Jeu du Gobelet Duel a expiré après 1h d'inactivité.",
-    embeds: [],
-    components: [],
-  });
-  return true;
-}
-
 // ── Commande /gobelet ──────────────────────────────────────────────
 
 export async function handleGobeletCommand(
@@ -404,21 +369,21 @@ export async function handleGobeletCommand(
 ) {
   try {
     const channelId = body.channel_id;
-    // Repeint l'ancien message avant que startGame ne remplace la partie.
-    await closeIfStale();
-    const result = await startGame(channelId, { maxPlayers, totalManches });
+    const { discordId } = extractMember(body);
+    const result = await startGame(channelId, discordId, { maxPlayers, totalManches });
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie du Jeu du Gobelet Duel est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle expire après 1h d'inactivité).`,
+        content: `Une partie du Jeu du Gobelet Duel à 2 joueurs est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle soit abandonnée après 1 h sans action).`,
         embeds: [],
         components: [],
       });
       return;
     }
+    if (result.replaced) await deletePublicMessage(result.replaced);
 
     const embed = await buildTableEmbed(result.state);
-    const components = buildJoinComponents();
+    const components = buildJoinComponents(result.state.gid);
 
     const token = process.env.DISCORD_TOKEN;
     const res = await fetch(
@@ -437,7 +402,7 @@ export async function handleGobeletCommand(
       throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
     }
     const message = await res.json();
-    await writeState({ ...result.state, messageId: message.id });
+    await writeState(result.state.gid, { ...result.state, messageId: message.id });
 
     await deleteOriginal(webhookUrl);
   } catch (err) {
@@ -526,7 +491,7 @@ function buildDieEmoji(kept) {
 // la manche (activé ensuite par activateNextButtons), pour enchaîner depuis
 // l'éphémère sans remonter jusqu'au message public. Rien après la dernière
 // manche.
-function buildNextComponents(manche, totalManches, ready) {
+function buildNextComponents(gid, manche, totalManches, ready) {
   if (manche >= totalManches) return [];
   return [
     {
@@ -537,7 +502,7 @@ function buildNextComponents(manche, totalManches, ready) {
           style: 3,
           label: "Manche suivante",
           emoji: { name: "🎲" },
-          custom_id: `gobeletduel_suivante:${manche + 1}`,
+          custom_id: `gobeletduel_suivante:${manche + 1}:${gid}`,
           disabled: !ready,
         },
       ],
@@ -573,9 +538,9 @@ function buildChoiceComponents(customId, hand, used) {
 function buildHandComponents(state, hand, kept, used) {
   const manche = state.manche;
   if (hand.status === "choix") {
-    return buildChoiceComponents(`gobeletduel_choix:${manche}`, hand, used);
+    return buildChoiceComponents(`gobeletduel_choix:${manche}:${state.gid}`, hand, used);
   }
-  if (hand.status !== "en_cours") return buildNextComponents(manche, state.totalManches, false);
+  if (hand.status !== "en_cours") return buildNextComponents(state.gid, manche, state.totalManches, false);
   const { category } = computeBestCombination(hand.dice, used, {
     allowJoker: false,
   });
@@ -586,7 +551,7 @@ function buildHandComponents(state, hand, kept, used) {
       style: 1,
       label: relancerLabel(kept),
       emoji: { name: kept.every(Boolean) ? "➡️" : "🔁" },
-      custom_id: `gobeletduel_relancer:${manche}`,
+      custom_id: `gobeletduel_relancer:${manche}:${state.gid}`,
     },
   ];
   if (canValider) {
@@ -595,7 +560,7 @@ function buildHandComponents(state, hand, kept, used) {
       style: 3,
       label: "Valider",
       emoji: { name: "👍" },
-      custom_id: `gobeletduel_valider:${manche}`,
+      custom_id: `gobeletduel_valider:${manche}:${state.gid}`,
     });
   }
   return [
@@ -606,7 +571,7 @@ function buildHandComponents(state, hand, kept, used) {
         style: kept[i] ? 3 : 2,
         label: String(value),
         emoji: buildDieEmoji(kept[i]),
-        custom_id: `gobeletduel_toggle:${manche}:${i}`,
+        custom_id: `gobeletduel_toggle:${manche}:${i}:${state.gid}`,
       })),
     },
     { type: 1, components: secondRow },
@@ -616,8 +581,8 @@ function buildHandComponents(state, hand, kept, used) {
 // Après une relance qui peut terminer une main (3ᵉ tirage atteint) : vérifie
 // si la manche (ou la partie) doit se résoudre, puis rafraîchit le message
 // public en place. Seule la fin de partie est repostée (postFinalMessage).
-async function refreshPublicMessage() {
-  const outcome = await checkAndResolveManche();
+async function refreshPublicMessage(gid) {
+  const outcome = await checkAndResolveManche(gid);
   if (outcome.inactive) return outcome;
 
   if (!outcome.resolved) {
@@ -626,7 +591,7 @@ async function refreshPublicMessage() {
     const embed = await buildTableEmbed(outcome.state);
     await patchPublicMessage(outcome.state, {
       embeds: [embed],
-      components: buildJoinComponents(),
+      components: buildJoinComponents(gid),
     });
     return outcome;
   }
@@ -650,7 +615,7 @@ async function refreshPublicMessage() {
   });
   await patchPublicMessage(outcome.state, {
     embeds: [embed],
-    components: buildJoinComponents(),
+    components: buildJoinComponents(gid),
   });
   return outcome;
 }
@@ -660,11 +625,11 @@ async function refreshPublicMessage() {
 // d'être résolue, active « Manche suivante » sur l'éphémère de chaque joueur.
 async function afterHandAction(webhookUrl, discordId, state, hand) {
   const done = hand.status === "termine";
-  if (done) await saveHandWebhook(state.manche, discordId, webhookUrl);
-  const outcome = await refreshPublicMessage();
+  if (done) await saveHandWebhook(state.gid, state.manche, discordId, webhookUrl);
+  const outcome = await refreshPublicMessage(state.gid);
   if (!done || outcome.inactive || outcome.final) return;
   if (outcome.resolved) {
-    const webhooks = await readHandWebhooks(state.manche);
+    const webhooks = await readHandWebhooks(state.gid, state.manche);
     await activateNextButtons(state, Object.values({ ...webhooks, [discordId]: webhookUrl }));
   } else if (outcome.alreadyResolving) {
     // Résolution prise par un clic concurrent qui a pu lire les webhooks
@@ -675,21 +640,25 @@ async function afterHandAction(webhookUrl, discordId, state, hand) {
 
 // PATCH des seuls composants : l'embed de la main reste affiché.
 async function activateNextButtons(state, webhookUrls) {
-  const components = buildNextComponents(state.manche, state.totalManches, true);
+  const components = buildNextComponents(state.gid, state.manche, state.totalManches, true);
   await Promise.all(webhookUrls.map((url) => patchOriginal(url, { components })));
 }
 
-export async function handleJouer(webhookUrl, discordId, username) {
+const MESSAGE_INACTIVE = "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/gobelet` !";
+
+export async function handleJouer(webhookUrl, gid, discordId, username) {
   try {
-    if (await replyIfExpired(webhookUrl)) return;
-    const result = await joinAndDeal(discordId, username);
+    const result = await joinAndDeal(gid, discordId, username);
     // Clic simultané d'un même joueur : le clic en cours repeint le message.
     if (result.busy) return;
 
     if (result.inactive) {
+      await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
+      return;
+    }
+    if (result.notYours) {
       await patchOriginal(webhookUrl, {
-        content:
-          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
+        content: "Cette partie solo n'est pas la tienne : lance la tienne avec `/gobelet` !",
         embeds: [],
         components: [],
       });
@@ -719,18 +688,12 @@ export async function handleJouer(webhookUrl, discordId, username) {
   }
 }
 
-export async function handleToggle(webhookUrl, discordId, index) {
+export async function handleToggle(webhookUrl, gid, discordId, index) {
   try {
-    if (await replyIfExpired(webhookUrl)) return;
-    const result = await toggleKept(discordId, Number(index));
+    const result = await toggleKept(gid, discordId, Number(index));
 
     if (result.inactive) {
-      await patchOriginal(webhookUrl, {
-        content:
-          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
-        embeds: [],
-        components: [],
-      });
+      await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
       return;
     }
     if (result.noHand) {
@@ -758,20 +721,14 @@ export async function handleToggle(webhookUrl, discordId, index) {
   }
 }
 
-export async function handleRelancer(webhookUrl, discordId) {
+export async function handleRelancer(webhookUrl, gid, discordId) {
   try {
-    if (await replyIfExpired(webhookUrl)) return;
-    const result = await relance(discordId);
+    const result = await relance(gid, discordId);
     // Clic simultané d'un même joueur : le clic en cours repeint le message.
     if (result.busy) return;
 
     if (result.inactive) {
-      await patchOriginal(webhookUrl, {
-        content:
-          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
-        embeds: [],
-        components: [],
-      });
+      await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
       return;
     }
     if (result.noHand) {
@@ -801,20 +758,14 @@ export async function handleRelancer(webhookUrl, discordId) {
   }
 }
 
-export async function handleValider(webhookUrl, discordId) {
+export async function handleValider(webhookUrl, gid, discordId) {
   try {
-    if (await replyIfExpired(webhookUrl)) return;
-    const result = await valider(discordId);
+    const result = await valider(gid, discordId);
     // Clic simultané d'un même joueur : le clic en cours repeint le message.
     if (result.busy) return;
 
     if (result.inactive) {
-      await patchOriginal(webhookUrl, {
-        content:
-          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
-        embeds: [],
-        components: [],
-      });
+      await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
       return;
     }
     if (result.noHand) {
@@ -855,20 +806,14 @@ export async function handleValider(webhookUrl, discordId) {
 }
 
 // Select de fin de main : fige la combinaison choisie par le joueur.
-export async function handleChoisir(webhookUrl, discordId, category) {
+export async function handleChoisir(webhookUrl, gid, discordId, category) {
   try {
-    if (await replyIfExpired(webhookUrl)) return;
-    const result = await choisir(discordId, category);
+    const result = await choisir(gid, discordId, category);
     // Clic simultané d'un même joueur : le clic en cours repeint le message.
     if (result.busy) return;
 
     if (result.inactive) {
-      await patchOriginal(webhookUrl, {
-        content:
-          "Aucune partie du Jeu du Gobelet Duel en cours pour le moment.",
-        embeds: [],
-        components: [],
-      });
+      await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
       return;
     }
     if (result.noHand) {
@@ -901,7 +846,7 @@ function buildReglesEmbed() {
     description: [
       "Duel fermé à 1 ou 2 joueurs, sur plusieurs manches.",
       "",
-      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes.",
+      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. En solo, seul celui qui a lancé la partie peut jouer.",
       "",
       "**Déroulement (1 main par manche) :**",
       "🎲 **Jouer** : lance tes 5 dés.",
@@ -915,7 +860,7 @@ function buildReglesEmbed() {
       "**Barème :**",
       ...formatBaremeLines(),
       "",
-      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini sa main (combinaison choisie). Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 1h est close automatiquement.",
+      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini sa main (combinaison choisie). Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Sans action pendant 1 h, la partie est abandonnée.",
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };
@@ -923,7 +868,6 @@ function buildReglesEmbed() {
 
 export async function handleRegles(webhookUrl) {
   try {
-    await closeIfStale();
     await patchOriginal(webhookUrl, {
       embeds: [buildReglesEmbed()],
       components: [],

@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 // resetGobeletDuel.js
-// Remet à zéro le Jeu du Gobelet Duel : efface la partie active (quel que
-// soit son état ou son ancienneté), points, mains et verrous de résolution.
-// Sert de filet manuel : une seule partie à la fois sur le serveur (voir
-// jeux/services/gobeletDuel.js) — si une partie reste bloquée (joueur qui
-// ne revient pas, manche jamais résolue), lance cette commande pour la
-// débloquer et permettre à /gobelet de relancer une nouvelle partie.
+// Efface toutes les parties du Jeu du Gobelet Duel en cours (points,
+// mains, verrous de résolution), quel que soit leur état ; le high score
+// est préservé. Rarement utile : chaque partie expire d'elle-même 1 h après
+// la dernière action (voir jeux/services/gobeletDuel.js).
 //
 // Usage : node jeux/scripts/resetGobeletDuel.js
 

@@ -18,6 +18,7 @@ export class Redis {
   async hdel(k, ...fs) { let n = 0; for (const f of fs) n += hash(k).delete(f) ? 1 : 0; return n; }
   async hlen(k) { const h = store.get(k); return h instanceof Map ? h.size : 0; }
   async hset(k, obj) { for (const [f, v] of Object.entries(obj)) hash(k).set(f, String(v)); return 1; }
+  async hincrby(k, f, n) { const v = Number(hash(k).get(f) || 0) + Number(n); hash(k).set(f, String(v)); return v; }
   async hsetnx(k, f, v) { if (hash(k).has(f)) return 0; hash(k).set(f, v); return 1; }
   async hkeys(k) { const h = store.get(k); return h instanceof Map ? [...h.keys()] : []; }
   async hgetall(k) { const h = store.get(k); return h instanceof Map ? [...h].flat() : []; }

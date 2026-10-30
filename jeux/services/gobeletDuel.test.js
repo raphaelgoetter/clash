@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, isMancheReady, isStale, isNewHighScore, computeMancheOutcome, buildRanking } from "./gobeletDuel.js";
+import { applyJoin, gameIdFor, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking } from "./gobeletDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -123,15 +123,16 @@ async function main() {
     assert.strictEqual(outcome.pointsAfter.a, 60);
   }
 
-  // ── isStale — seuil de 1h d'inactivité, jamais sur une partie terminée ──
+  // ── applyJoin — en solo, réservé au joueur qui a lancé ──
   {
-    const now = Date.parse("2026-09-30T19:41:00Z");
-    const at = (iso) => baseState({ lastActivityAt: iso });
-    assert.strictEqual(isStale(at("2026-09-30T18:40:00Z"), now), true);
-    assert.strictEqual(isStale(at("2026-09-30T19:00:00Z"), now), false);
-    assert.strictEqual(isStale({ ...at("2026-09-30T18:40:00Z"), termine: true }, now), false);
-    assert.strictEqual(isStale(null, now), false);
+    const state = baseState({ maxPlayers: 1, ownerId: "a" });
+    assert.strictEqual(applyJoin(state, "b").notYours, true);
+    assert.strictEqual(applyJoin(state, "a").allowed, true);
   }
+
+  // ── gameIdFor — une partie par joueur en solo, une seule à 2 joueurs ──
+  assert.strictEqual(gameIdFor(1, "a"), "a");
+  assert.strictEqual(gameIdFor(2, "a"), "pvp");
 
   console.log("✓ gobeletDuel service tests passed");
 }

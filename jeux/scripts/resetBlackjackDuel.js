@@ -1,12 +1,9 @@
 #!/usr/bin/env node
 // resetBlackjackDuel.js
-// Remet à zéro Blackjack Duel : efface la partie active (quel que soit son
-// état ou son ancienneté), points, mains et verrous de résolution. Sert de
-// filet manuel en remplacement du watchdog automatique (retiré le 12/09 —
-// une seule partie à la fois sur le serveur, voir backend/services/
-// blackjackDuel.js) : si une partie reste bloquée (joueur qui ne revient
-// pas, manche jamais résolue), lance cette commande pour la débloquer et
-// permettre à /blackjack de relancer une nouvelle partie.
+// Efface toutes les parties de Blackjack Duel en cours (points, mains,
+// verrous de résolution), quel que soit leur état ; le high score est
+// préservé. Rarement utile : chaque partie expire d'elle-même 1 h après la
+// dernière action (voir jeux/services/blackjackDuel.js).
 //
 // Usage : node jeux/scripts/resetBlackjackDuel.js
 

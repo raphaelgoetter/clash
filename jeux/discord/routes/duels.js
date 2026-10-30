@@ -265,47 +265,57 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── Blackjack Duel : bouton "Jouer" (inscription + main, message public) ──
-  if (body.type === 3 && body.data?.custom_id === "blackjackduel_jouer") {
+  // ── Blackjack Duel : bouton "Jouer" (inscription + main, message public).
+  // custom_id `blackjackduel_jouer:<partie>` (sans partie : ancien message,
+  // traité comme une partie expirée).
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id === "blackjackduel_jouer" || body.data.custom_id.startsWith("blackjackduel_jouer:"))
+  ) {
+    const gid = body.data.custom_id.split(":")[1];
     const { discordId, username } = extractBlackjackDuelMember(body);
     // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : crée le
     // message éphémère "ta main", comme blackjack_jouer: du jeu spécial.
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleBlackjackDuelJouer(webhookUrl, discordId, username));
+    runBackground(() => handleBlackjackDuelJouer(webhookUrl, gid, discordId, username));
     return;
   }
 
-  // ── Blackjack Duel : boutons "Piocher" / "Arrêter" (message éphémère) ──
+  // ── Blackjack Duel : boutons "Piocher" / "Arrêter" (message éphémère),
+  // custom_id `<action>:<manche>:<partie>` ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
     (body.data.custom_id.startsWith("blackjackduel_piocher:") ||
       body.data.custom_id.startsWith("blackjackduel_arreter:"))
   ) {
-    const [action] = body.data.custom_id.split(":");
+    const [action, , gid] = body.data.custom_id.split(":");
     const { discordId } = extractBlackjackDuelMember(body);
     // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
     // déjà affiché, comme blackjack_piocher:/blackjack_arreter: existants.
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
     const handler = action === "blackjackduel_piocher" ? handleBlackjackDuelPiocher : handleBlackjackDuelArreter;
-    runBackground(() => handler(webhookUrl, discordId));
+    runBackground(() => handler(webhookUrl, gid, discordId));
     return;
   }
 
-  // ── Blackjack Duel : bouton "Manche suivante" (message éphémère) ──
+  // ── Blackjack Duel : bouton "Manche suivante" (message éphémère),
+  // custom_id `blackjackduel_suivante:<manche>:<partie>` ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("blackjackduel_suivante:")
   ) {
+    const gid = body.data.custom_id.split(":")[2];
     const { discordId, username } = extractBlackjackDuelMember(body);
     // type 6 = DEFERRED_UPDATE_MESSAGE : la main de la nouvelle manche
     // remplace la précédente dans le même message éphémère.
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleBlackjackDuelJouer(webhookUrl, discordId, username));
+    runBackground(() => handleBlackjackDuelJouer(webhookUrl, gid, discordId, username));
     return;
   }
 
@@ -317,14 +327,22 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── Gobelet Duel : bouton "Jouer" (inscription + main, message public) ──
-  if (body.type === 3 && body.data?.custom_id === "gobeletduel_jouer") {
+  // ── Gobelet Duel : bouton "Jouer" (inscription + main, message public).
+  // custom_id `gobeletduel_jouer:<partie>` ; les autres boutons finissent
+  // aussi par `:<partie>` (sans partie : ancien message, traité comme une
+  // partie expirée).
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    (body.data.custom_id === "gobeletduel_jouer" || body.data.custom_id.startsWith("gobeletduel_jouer:"))
+  ) {
+    const gid = body.data.custom_id.split(":")[1];
     const { discordId, username } = extractGobeletDuelMember(body);
     // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : crée le
     // message éphémère "ta main", comme gobelet_jouer: du jeu spécial.
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletDuelJouer(webhookUrl, discordId, username));
+    runBackground(() => handleGobeletDuelJouer(webhookUrl, gid, discordId, username));
     return;
   }
 
@@ -334,11 +352,11 @@ export async function routeDuels(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobeletduel_toggle:")
   ) {
-    const [, , index] = body.data.custom_id.split(":");
+    const [, , index, gid] = body.data.custom_id.split(":");
     const { discordId } = extractGobeletDuelMember(body);
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletDuelToggle(webhookUrl, discordId, index));
+    runBackground(() => handleGobeletDuelToggle(webhookUrl, gid, discordId, index));
     return;
   }
 
@@ -348,12 +366,13 @@ export async function routeDuels(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobeletduel_relancer:")
   ) {
+    const gid = body.data.custom_id.split(":")[2];
     const { discordId } = extractGobeletDuelMember(body);
     // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
     // déjà affiché, comme blackjackduel_piocher:/blackjackduel_arreter:.
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletDuelRelancer(webhookUrl, discordId));
+    runBackground(() => handleGobeletDuelRelancer(webhookUrl, gid, discordId));
     return;
   }
 
@@ -364,10 +383,11 @@ export async function routeDuels(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobeletduel_valider:")
   ) {
+    const gid = body.data.custom_id.split(":")[2];
     const { discordId } = extractGobeletDuelMember(body);
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletDuelValider(webhookUrl, discordId));
+    runBackground(() => handleGobeletDuelValider(webhookUrl, gid, discordId));
     return;
   }
 
@@ -377,11 +397,12 @@ export async function routeDuels(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobeletduel_choix:")
   ) {
+    const gid = body.data.custom_id.split(":")[2];
     const { discordId } = extractGobeletDuelMember(body);
     const category = body.data.values?.[0];
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletDuelChoisir(webhookUrl, discordId, category));
+    runBackground(() => handleGobeletDuelChoisir(webhookUrl, gid, discordId, category));
     return;
   }
 
@@ -391,12 +412,13 @@ export async function routeDuels(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobeletduel_suivante:")
   ) {
+    const gid = body.data.custom_id.split(":")[2];
     const { discordId, username } = extractGobeletDuelMember(body);
     // type 6 = DEFERRED_UPDATE_MESSAGE : la main de la nouvelle manche
     // remplace la précédente dans le même message éphémère.
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletDuelJouer(webhookUrl, discordId, username));
+    runBackground(() => handleGobeletDuelJouer(webhookUrl, gid, discordId, username));
     return;
   }
 

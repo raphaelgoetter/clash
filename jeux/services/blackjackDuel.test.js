@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
+import { applyJoin, gameIdFor, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -48,6 +48,17 @@ async function main() {
     const decision = applyJoin(state, "c");
     assert.strictEqual(decision.allowed, false);
   }
+
+  // ── applyJoin — contre le Croupier, réservé au joueur qui a lancé ──
+  {
+    const state = baseState({ maxPlayers: 1, ownerId: "a" });
+    assert.strictEqual(applyJoin(state, "b").notYours, true);
+    assert.strictEqual(applyJoin(state, "a").allowed, true);
+  }
+
+  // ── gameIdFor — une partie par joueur en solo, une seule à 2 joueurs ──
+  assert.strictEqual(gameIdFor(1, "a"), "a");
+  assert.strictEqual(gameIdFor(2, "a"), "pvp");
 
   // ── isMancheReady — roster incomplet : jamais résolue, même si le seul
   // inscrit a fini (sinon la partie se verrouille en solo) ──

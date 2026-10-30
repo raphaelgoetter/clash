@@ -24,6 +24,7 @@ import {
   pointsForResult,
   saveHandWebhook,
   readHandWebhooks,
+  INACTIVITE_SECONDES,
 } from "../../services/blackjackDuel.js";
 import {
   getRoleIdByName,
@@ -155,7 +156,15 @@ async function postFinalMessage(state, payload) {
     await patchPublicMessage(state, payload);
     return;
   }
-  if (!state.messageId) return;
+  await deletePublicMessage(state);
+}
+
+// Supprime le message public de la partie (fin de partie, ou partie contre
+// le Croupier remplacée par un nouveau /blackjack).
+async function deletePublicMessage(state) {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token || !state?.channelId || !state?.messageId) return;
+  const headers = { Authorization: `Bot ${token}` };
   try {
     const res = await fetch(
       `https://discord.com/api/v10/channels/${state.channelId}/messages/${state.messageId}`,
@@ -176,7 +185,7 @@ async function postFinalMessage(state, payload) {
 // d'un NOUVEAU joueur une fois les inscriptions verrouillées est géré
 // côté serveur (joinAndDeal) avec un message de rejet éphémère, pas en
 // désactivant le bouton pour tout le monde.
-function buildJoinComponents() {
+function buildJoinComponents(gid) {
   return [
     {
       type: 1,
@@ -186,7 +195,7 @@ function buildJoinComponents() {
           style: 3,
           label: "Jouer",
           emoji: { name: "🃏" },
-          custom_id: "blackjackduel_jouer",
+          custom_id: `blackjackduel_jouer:${gid}`,
         },
         {
           type: 2,
@@ -235,7 +244,7 @@ async function buildTableEmbed(
     previousDealer = state.history?.at(-1)?.dealer,
   } = {},
 ) {
-  const hands = await listHands(state.manche);
+  const hands = await listHands(state.gid, state.manche);
   const lines = [];
   const isSolo = state.maxPlayers === 1;
 
@@ -307,6 +316,11 @@ async function buildTableEmbed(
   } else {
     lines.push("Clique sur **Jouer** pour t'inscrire et jouer ta première main.");
   }
+
+  // Pas de cron : le message d'une partie expirée resterait figé, d'où le
+  // rappel de l'échéance (relancée à chaque action).
+  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
+  lines.push("", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`);
 
   return {
     title: `🃏 Blackjack Duel (Manche ${state.manche}/${state.totalManches})`,
@@ -382,19 +396,21 @@ async function buildFinalEmbed(state, ranking, highScore) {
 export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, totalManches }) {
   try {
     const channelId = body.channel_id;
-    const result = await startGame(channelId, { maxPlayers, totalManches });
+    const { discordId } = extractMember(body);
+    const result = await startGame(channelId, discordId, { maxPlayers, totalManches });
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie de Blackjack Duel est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle expire après 1h d'inactivité).`,
+        content: `Une partie de Blackjack Duel à 2 joueurs est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle soit abandonnée après 1 h sans action).`,
         embeds: [],
         components: [],
       });
       return;
     }
+    if (result.replaced) await deletePublicMessage(result.replaced);
 
     const embed = await buildTableEmbed(result.state);
-    const components = buildJoinComponents();
+    const components = buildJoinComponents(result.state.gid);
 
     const token = process.env.DISCORD_TOKEN;
     const res = await fetch(
@@ -413,7 +429,7 @@ export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, tot
       throw new Error(`Erreur envoi salon Discord (${res.status}): ${errText}`);
     }
     const message = await res.json();
-    await writeState({ ...result.state, messageId: message.id });
+    await writeState(result.state.gid, { ...result.state, messageId: message.id });
 
     await deleteOriginal(webhookUrl);
   } catch (err) {
@@ -490,7 +506,7 @@ function buildHandEmbed(manche, hand, message) {
 // la manche (activé ensuite par activateNextButtons), pour enchaîner depuis
 // l'éphémère sans remonter jusqu'au message public. Rien après la dernière
 // manche.
-function buildNextComponents(manche, totalManches, ready) {
+function buildNextComponents(gid, manche, totalManches, ready) {
   if (manche >= totalManches) return [];
   return [
     {
@@ -501,7 +517,7 @@ function buildNextComponents(manche, totalManches, ready) {
           style: 3,
           label: "Manche suivante",
           emoji: { name: "🃏" },
-          custom_id: `blackjackduel_suivante:${manche + 1}`,
+          custom_id: `blackjackduel_suivante:${manche + 1}:${gid}`,
           disabled: !ready,
         },
       ],
@@ -511,7 +527,7 @@ function buildNextComponents(manche, totalManches, ready) {
 
 function buildHandComponents(state, hand) {
   const manche = state.manche;
-  if (hand.status !== "en_cours") return buildNextComponents(manche, state.totalManches, false);
+  if (hand.status !== "en_cours") return buildNextComponents(state.gid, manche, state.totalManches, false);
   return [
     {
       type: 1,
@@ -521,14 +537,14 @@ function buildHandComponents(state, hand) {
           style: 2,
           label: "Piocher",
           emoji: { name: "👆" },
-          custom_id: `blackjackduel_piocher:${manche}`,
+          custom_id: `blackjackduel_piocher:${manche}:${state.gid}`,
         },
         {
           type: 2,
           style: 1,
           label: "Arrêter",
           emoji: { name: "🛑" },
-          custom_id: `blackjackduel_arreter:${manche}`,
+          custom_id: `blackjackduel_arreter:${manche}:${state.gid}`,
         },
       ],
     },
@@ -539,8 +555,8 @@ function buildHandComponents(state, hand) {
 // vérifie si la manche (ou la partie) doit se résoudre, puis rafraîchit le
 // message public en place. Seule la fin de partie est repostée
 // (postFinalMessage).
-async function refreshPublicMessage() {
-  const outcome = await checkAndResolveManche();
+async function refreshPublicMessage(gid) {
+  const outcome = await checkAndResolveManche(gid);
   if (outcome.inactive) return outcome;
 
   if (!outcome.resolved) {
@@ -549,7 +565,7 @@ async function refreshPublicMessage() {
     const embed = await buildTableEmbed(outcome.state);
     await patchPublicMessage(outcome.state, {
       embeds: [embed],
-      components: buildJoinComponents(),
+      components: buildJoinComponents(gid),
     });
     return outcome;
   }
@@ -566,7 +582,7 @@ async function refreshPublicMessage() {
   });
   await patchPublicMessage(outcome.state, {
     embeds: [embed],
-    components: buildJoinComponents(),
+    components: buildJoinComponents(gid),
   });
   return outcome;
 }
@@ -576,11 +592,11 @@ async function refreshPublicMessage() {
 // d'être résolue, active « Manche suivante » sur l'éphémère de chaque joueur.
 async function afterHandAction(webhookUrl, discordId, state, hand) {
   const done = hand.status !== "en_cours";
-  if (done) await saveHandWebhook(state.manche, discordId, webhookUrl);
-  const outcome = await refreshPublicMessage();
+  if (done) await saveHandWebhook(state.gid, state.manche, discordId, webhookUrl);
+  const outcome = await refreshPublicMessage(state.gid);
   if (!done || outcome.inactive || outcome.final) return;
   if (outcome.resolved) {
-    const webhooks = await readHandWebhooks(state.manche);
+    const webhooks = await readHandWebhooks(state.gid, state.manche);
     await activateNextButtons(state, Object.values({ ...webhooks, [discordId]: webhookUrl }));
   } else if (outcome.alreadyResolving) {
     // Résolution prise par un clic concurrent qui a pu lire les webhooks
@@ -591,17 +607,23 @@ async function afterHandAction(webhookUrl, discordId, state, hand) {
 
 // PATCH des seuls composants : l'embed de la main reste affiché.
 async function activateNextButtons(state, webhookUrls) {
-  const components = buildNextComponents(state.manche, state.totalManches, true);
+  const components = buildNextComponents(state.gid, state.manche, state.totalManches, true);
   await Promise.all(webhookUrls.map((url) => patchOriginal(url, { components })));
 }
 
-export async function handleJouer(webhookUrl, discordId, username) {
+const MESSAGE_INACTIVE = "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/blackjack` !";
+
+export async function handleJouer(webhookUrl, gid, discordId, username) {
   try {
-    const result = await joinAndDeal(discordId, username);
+    const result = await joinAndDeal(gid, discordId, username);
 
     if (result.inactive) {
+      await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
+      return;
+    }
+    if (result.notYours) {
       await patchOriginal(webhookUrl, {
-        content: "Aucune partie de Blackjack Duel en cours pour le moment.",
+        content: "Cette partie contre le Croupier n'est pas la tienne : lance la tienne avec `/blackjack` !",
         embeds: [],
         components: [],
       });
@@ -636,16 +658,12 @@ export async function handleJouer(webhookUrl, discordId, username) {
   }
 }
 
-async function handleDrawOrStand(webhookUrl, discordId, { draw }) {
+async function handleDrawOrStand(webhookUrl, gid, discordId, { draw }) {
   try {
-    const result = await drawOrStand(discordId, { draw });
+    const result = await drawOrStand(gid, discordId, { draw });
 
     if (result.inactive) {
-      await patchOriginal(webhookUrl, {
-        content: "Aucune partie de Blackjack Duel en cours pour le moment.",
-        embeds: [],
-        components: [],
-      });
+      await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
       return;
     }
     if (result.noHand) {
@@ -682,12 +700,12 @@ async function handleDrawOrStand(webhookUrl, discordId, { draw }) {
   }
 }
 
-export async function handlePiocher(webhookUrl, discordId) {
-  return handleDrawOrStand(webhookUrl, discordId, { draw: true });
+export async function handlePiocher(webhookUrl, gid, discordId) {
+  return handleDrawOrStand(webhookUrl, gid, discordId, { draw: true });
 }
 
-export async function handleArreter(webhookUrl, discordId) {
-  return handleDrawOrStand(webhookUrl, discordId, { draw: false });
+export async function handleArreter(webhookUrl, gid, discordId) {
+  return handleDrawOrStand(webhookUrl, gid, discordId, { draw: false });
 }
 
 // ── Bouton [📖 Règles] — éphémère, statique ────────────────────────
@@ -700,7 +718,7 @@ function buildReglesEmbed() {
       "",
       "**Valeur des cartes :** 2 à 10 = leur valeur, Valet/Dame/Roi = 10, As = 11 ou 1 (ramené à 1 si besoin pour éviter de dépasser 21).",
       "",
-      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris (ou dès que la 1ʳᵉ manche se termine), les inscriptions sont définitivement closes.",
+      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. En solo, seul celui qui a lancé la partie peut jouer.",
       "",
       "**Déroulement (1 main par manche) :**",
       "🃏 **Jouer** : reçois 2 cartes.",
@@ -714,7 +732,7 @@ function buildReglesEmbed() {
       "",
       "**Résultat d'une manche :** le vainqueur gagne **2 points**. Égalité (avec le Croupier en solo, ou entre les 2 joueurs) = **1 point** quand même. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
       "",
-      "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Une partie inactive depuis plus de 1h peut être remplacée en relançant /blackjack.",
+      "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Sans action pendant 1 h, la partie est abandonnée.",
     ].join("\n"),
     color: BLACKJACKDUEL_COLOR,
   };

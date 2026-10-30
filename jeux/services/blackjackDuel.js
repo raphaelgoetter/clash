@@ -18,14 +18,10 @@
 //   cron quotidien ;
 // - pas d'historique persistant (aucun équivalent à archiveManche /
 //   writeHistoriqueEntry) ;
-// - une seule partie à la fois sur tout le serveur (état global unique,
-//   comme le jeu spécial) ;
-// - pas de nettoyage automatique (retiré le 12/09, retour utilisateur : "je
-//   ne souhaite absolument pas de cron/action pour cela") — une partie
-//   bloquée >1h (resetIfStale) ou dans n'importe quel état se nettoie
-//   désormais À LA MAIN via `npm run blackjackduel:reset` (inconditionnel)
-//   ou `npm run blackjackduel:watchdog` (respecte le seuil de 1h) ; voir
-//   `npm run blackjackduel:status` pour décider.
+// - comme les autres duels : une partie par joueur contre le Croupier,
+//   une seule à 2 joueurs, chacune expirée 1 h après la dernière action
+//   (TTL Redis, ni cron ni nettoyage manuel) ; `npm run blackjackduel:status`
+//   liste les parties, `npm run blackjackduel:reset` les efface toutes.
 // ============================================================
 
 import { Redis } from "@upstash/redis";
@@ -102,36 +98,41 @@ async function scanDelete(pattern) {
   if (keys.length) await getRedis().del(...keys);
 }
 
-const STATE_KEY = "blackjackduel:state";
-const POINTS_KEY = "blackjackduel:points";
-const USERNAMES_KEY = "blackjackduel:usernames";
-const RESOLVING_KEY = "blackjackduel:resolving";
+// ── Clés Redis : une partie par joueur contre le Croupier (`<discordId>`),
+// une seule à 2 joueurs (`pvp`), comme les autres duels. Chaque écriture
+// relance l'expiration : sans action pendant INACTIVITE_SECONDES, la partie
+// disparaît d'elle-même (pas de cron).
+export const INACTIVITE_SECONDES = 3600;
+
+// Identifiant de la partie lancée par `discordId` avec `maxPlayers` places.
+export function gameIdFor(maxPlayers, discordId) {
+  return maxPlayers === 1 ? discordId : "pvp";
+}
+
+const stateKey = (gid) => `blackjackduel:${gid}:state`;
+const pointsKey = (gid) => `blackjackduel:${gid}:points`;
+const usernamesKey = (gid) => `blackjackduel:${gid}:usernames`;
+const resolvingKey = (gid) => `blackjackduel:${gid}:resolving`;
+const handKey = (gid, manche) => `blackjackduel:${gid}:hand:${manche}`;
+const webhookKey = (gid, manche) => `blackjackduel:${gid}:webhook:${manche}`;
 // Meilleur score final de tous les temps, un record par format (5 ou 10
 // manches : des totaux non comparables). JAMAIS effacé par la remise à zéro
 // d'une partie.
 const HIGHSCORE_KEY = "blackjackduel:highscore";
-
-function handKey(manche) {
-  return `blackjackduel:hand:${manche}`;
-}
 
 // Webhook de la main éphémère de chaque joueur ayant fini sa manche : à la
 // résolution, le bouton « Manche suivante » y est activé (jeton valable
 // 15 min, au-delà le bouton Jouer du message public reste le recours).
 const WEBHOOK_TTL_SECONDS = 15 * 60;
 
-function webhookKey(manche) {
-  return `blackjackduel:webhook:${manche}`;
-}
-
-export async function saveHandWebhook(manche, discordId, webhookUrl) {
+export async function saveHandWebhook(gid, manche, discordId, webhookUrl) {
   if (!webhookUrl) return;
-  await getRedis().hset(webhookKey(manche), { [discordId]: webhookUrl });
-  await getRedis().expire(webhookKey(manche), WEBHOOK_TTL_SECONDS);
+  await getRedis().hset(webhookKey(gid, manche), { [discordId]: webhookUrl });
+  await getRedis().expire(webhookKey(gid, manche), WEBHOOK_TTL_SECONDS);
 }
 
-export async function readHandWebhooks(manche) {
-  return hgetallRaw(webhookKey(manche));
+export async function readHandWebhooks(gid, manche) {
+  return hgetallRaw(webhookKey(gid, manche));
 }
 
 // Mêmes bornes que le Croupier du jeu spécial (jeux/data/blackjack/blackjack.json)
@@ -140,45 +141,50 @@ export async function readHandWebhooks(manche) {
 const DEALER_MIN = 16;
 const DEALER_MAX = 21;
 
-// ── Délai d'inactivité avant nettoyage automatique (watchdog) ─────
-const STALE_HOURS = 1;
-
 // ── État de la partie ──────────────────────────────────────────────
 
-export async function readState() {
-  return fromJson(await getRedis().get(STATE_KEY));
+// gid absent : bouton d'un ancien message (avant les parties par joueur).
+export async function readState(gid) {
+  if (!gid) return null;
+  return fromJson(await getRedis().get(stateKey(gid)));
 }
 
-export async function writeState(state) {
-  await getRedis().set(STATE_KEY, toJson(state));
-}
-
-// ── Mains des joueurs (une par manche, hash `blackjackduel:hand:<manche>`) ──
-
-export async function readHand(manche, discordId) {
-  return fromJson(await getRedis().hget(handKey(manche), discordId));
-}
-
-async function writeHand(manche, discordId, hand) {
-  await getRedis().hset(handKey(manche), { [discordId]: toJson(hand) });
-  if (hand.username) {
-    await getRedis().hset(USERNAMES_KEY, { [discordId]: hand.username });
+// Relance aussi l'expiration des clés de la partie écrites plus rarement
+// (points, pseudos, verrous de résolution), pour qu'elles vivent autant que l'état.
+export async function writeState(gid, state) {
+  await getRedis().set(stateKey(gid), toJson(state), { ex: INACTIVITE_SECONDES });
+  for (const key of [pointsKey(gid), usernamesKey(gid), resolvingKey(gid)]) {
+    await getRedis().expire(key, INACTIVITE_SECONDES);
   }
 }
 
-export async function listHands(manche) {
-  return hgetallJson(handKey(manche));
+// ── Mains des joueurs (une par manche, hash `blackjackduel:<gid>:hand:<manche>`) ──
+
+export async function readHand(gid, manche, discordId) {
+  return fromJson(await getRedis().hget(handKey(gid, manche), discordId));
+}
+
+async function writeHand(gid, manche, discordId, hand) {
+  await getRedis().hset(handKey(gid, manche), { [discordId]: toJson(hand) });
+  await getRedis().expire(handKey(gid, manche), INACTIVITE_SECONDES);
+  if (hand.username) {
+    await getRedis().hset(usernamesKey(gid), { [discordId]: hand.username });
+  }
+}
+
+export async function listHands(gid, manche) {
+  return hgetallJson(handKey(gid, manche));
 }
 
 // ── Points cumulés sur la partie en cours ──────────────────────────
 
-async function addPoints(discordId, amount) {
+async function addPoints(gid, discordId, amount) {
   if (amount <= 0) return;
-  await getRedis().hincrby(POINTS_KEY, discordId, amount);
+  await getRedis().hincrby(pointsKey(gid), discordId, amount);
 }
 
-export async function readPoints() {
-  const raw = await hgetallRaw(POINTS_KEY);
+export async function readPoints(gid) {
+  const raw = await hgetallRaw(pointsKey(gid));
   const result = {};
   for (const [discordId, value] of Object.entries(raw)) {
     result[discordId] = Number(value) || 0;
@@ -188,37 +194,57 @@ export async function readPoints() {
 
 export { buildRanking, isDealerRevealed, pointsForResult };
 
-// ── Remise à zéro complète (nouvelle partie / watchdog) ────────────
+// ── Remise à zéro ───────────────────────────────────────────────────
 
+async function resetGame(gid) {
+  await getRedis().del(stateKey(gid), pointsKey(gid), usernamesKey(gid), resolvingKey(gid));
+  await scanDelete(`blackjackduel:${gid}:hand:*`);
+  await scanDelete(`blackjackduel:${gid}:webhook:*`);
+}
+
+// Toutes les parties en cours (script de statut).
+export async function listGames() {
+  const keys = await scanKeys("blackjackduel:*:state");
+  const games = [];
+  for (const key of keys) {
+    const state = fromJson(await getRedis().get(key));
+    if (state) games.push({ gid: key.split(":")[1], state });
+  }
+  return games;
+}
+
+// Efface toutes les parties (y compris les clés de l'ancien format à
+// partie unique), jamais le high score.
 export async function resetBlackjackDuel() {
-  await getRedis().del(STATE_KEY, POINTS_KEY, USERNAMES_KEY, RESOLVING_KEY);
-  await scanDelete("blackjackduel:hand:*");
-  await scanDelete("blackjackduel:webhook:*");
+  const keys = (await scanKeys("blackjackduel:*")).filter((k) => k !== HIGHSCORE_KEY);
+  if (keys.length) await getRedis().del(...keys);
 }
 
 // ── Lancement d'une partie ──────────────────────────────────────────
-// Refuse si une partie non terminée existe déjà, n'importe quel salon (une
-// seule partie à la fois sur tout le serveur, comme le jeu spécial).
+// Contre le Croupier : relancer remplace toujours sa propre partie
+// (`replaced`, dont l'appelant supprime le message public). À 2 joueurs :
+// refusé tant qu'une partie non terminée existe (elle expire seule après
+// INACTIVITE_SECONDES sans action).
 
-export async function startGame(channelId, { maxPlayers, totalManches }) {
-  const existing = await readState();
-  // Une partie inactive depuis STALE_HOURS (ex. un joueur seul qui attend un
-  // adversaire jamais venu, voir isMancheReady) est considérée abandonnée :
-  // relancer la commande la remplace, sans cron de nettoyage.
-  const hoursSince = existing ? (Date.now() - new Date(existing.lastActivityAt).getTime()) / 3_600_000 : 0;
-  if (existing && !existing.termine && hoursSince < STALE_HOURS) {
+export async function startGame(channelId, discordId, { maxPlayers, totalManches }) {
+  const gid = gameIdFor(maxPlayers, discordId);
+  const existing = await readState(gid);
+  if (existing && !existing.termine && maxPlayers > 1) {
     return { alreadyActive: true, state: existing };
   }
+  const replaced = existing && !existing.termine ? existing : null;
 
-  // Nettoie les résidus d'une éventuelle partie précédente déjà terminée
-  // (points/mains/verrous de résolution) avant de repartir à zéro.
-  await resetBlackjackDuel();
+  // Nettoie les résidus de la partie précédente (points/mains/verrous de
+  // résolution) avant de repartir à zéro.
+  await resetGame(gid);
 
   // Croupier uniquement en solo (1 joueur) — à 2 joueurs, pas de
   // Croupier : les joueurs s'affrontent directement (voir resolvePvP), le
   // jeu redevient un vrai "duel" plutôt qu'un multi-solo côte à côte.
   const dealer = maxPlayers === 1 ? dealerPlay(Math.random, DEALER_MIN, DEALER_MAX) : null;
   const state = {
+    gid,
+    ownerId: discordId,
     channelId,
     messageId: null,
     maxPlayers,
@@ -233,8 +259,8 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
     lastActivityAt: new Date().toISOString(),
     termine: false,
   };
-  await writeState(state);
-  return { state };
+  await writeState(gid, state);
+  return { state, replaced };
 }
 
 // ── Bouton [Jouer] — inscription (si nouveau siège libre) + distribution ──
@@ -246,6 +272,10 @@ export async function startGame(channelId, { maxPlayers, totalManches }) {
 // uniquement quand l'appelant a déjà vérifié (I/O) qu'aucune main n'existe
 // encore pour ce joueur sur la manche en cours.
 export function applyJoin(state, discordId) {
+  // Contre le Croupier, la partie est réservée à celui qui l'a lancée.
+  if (state.maxPlayers === 1 && state.ownerId && discordId !== state.ownerId) {
+    return { allowed: false, notYours: true };
+  }
   const isSeated = state.players.includes(discordId);
   // Nouveau joueur : refusé si les inscriptions sont verrouillées (tous les
   // sièges pris). Aucune manche n'est résolue tant que le roster est
@@ -259,17 +289,18 @@ export function applyJoin(state, discordId) {
   return { allowed: true, isSeated, players, rosterLocked };
 }
 
-export async function joinAndDeal(discordId, username) {
-  const state = await readState();
+export async function joinAndDeal(gid, discordId, username) {
+  const state = await readState(gid);
   if (!state || state.termine) return { inactive: true };
 
   const manche = state.manche;
-  const existingHand = await readHand(manche, discordId);
+  const existingHand = await readHand(gid, manche, discordId);
   if (existingHand) {
     return { state, hand: existingHand, isNew: false };
   }
 
   const decision = applyJoin(state, discordId);
+  if (decision.notYours) return { notYours: true, state };
   if (!decision.allowed) return { rosterLocked: true, state };
 
   const first = drawCard();
@@ -277,7 +308,7 @@ export async function joinAndDeal(discordId, username) {
   const score = computeHandValue(cards);
   const status = score === 21 ? "stand" : "en_cours";
   const hand = { cards, score, status, username };
-  await writeHand(manche, discordId, hand);
+  await writeHand(gid, manche, discordId, hand);
 
   const newState = {
     ...state,
@@ -285,19 +316,19 @@ export async function joinAndDeal(discordId, username) {
     rosterLocked: decision.rosterLocked,
     lastActivityAt: new Date().toISOString(),
   };
-  await writeState(newState);
+  await writeState(gid, newState);
 
   return { state: newState, hand, isNew: true };
 }
 
 // ── Boutons [Piocher] / [Arrêter] ────────────────────────────────────
 
-export async function drawOrStand(discordId, { draw }) {
-  const state = await readState();
+export async function drawOrStand(gid, discordId, { draw }) {
+  const state = await readState(gid);
   if (!state || state.termine) return { inactive: true };
 
   const manche = state.manche;
-  const hand = await readHand(manche, discordId);
+  const hand = await readHand(gid, manche, discordId);
   if (!hand) return { noHand: true, state };
   if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
 
@@ -305,10 +336,10 @@ export async function drawOrStand(discordId, { draw }) {
   const score = computeHandValue(cards);
   const status = !draw ? "stand" : score > 21 ? "bust" : score === 21 ? "stand" : "en_cours";
   const updated = { ...hand, cards, score, status };
-  await writeHand(manche, discordId, updated);
+  await writeHand(gid, manche, discordId, updated);
 
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
-  await writeState(newState);
+  await writeState(gid, newState);
 
   return { state: newState, hand: updated };
 }
@@ -319,8 +350,8 @@ export async function drawOrStand(discordId, { draw }) {
 // évite une double résolution si les 2 derniers joueurs cliquent au même
 // instant. Les appels perdants ont déjà sauvegardé leur main avant ce
 // check, rien n'est perdu.
-async function claimResolution(manche) {
-  const claimed = Number(await getRedis().hsetnx(RESOLVING_KEY, String(manche), "1"));
+async function claimResolution(gid, manche) {
+  const claimed = Number(await getRedis().hsetnx(resolvingKey(gid), String(manche), "1"));
   return claimed === 1;
 }
 
@@ -336,18 +367,18 @@ export function isMancheReady(state, hands) {
 // Appelée après CHAQUE action qui termine une main (Jouer avec 21 naturel,
 // Piocher jusqu'au bust, Arrêter) : vérifie si tous les joueurs inscrits ont
 // fini leur main pour la manche en cours, et résout si c'est le cas.
-export async function checkAndResolveManche() {
-  const state = await readState();
+export async function checkAndResolveManche(gid) {
+  const state = await readState(gid);
   if (!state || state.termine) return { inactive: true };
 
   const manche = state.manche;
-  const hands = await listHands(manche);
+  const hands = await listHands(gid, manche);
   if (!isMancheReady(state, hands)) return { resolved: false, state };
 
-  const claimed = await claimResolution(manche);
+  const claimed = await claimResolution(gid, manche);
   if (!claimed) return { resolved: false, alreadyResolving: true, state };
 
-  const outcome = await resolveManche(state, hands);
+  const outcome = await resolveManche(gid, state, hands);
   return { resolved: true, ...outcome };
 }
 
@@ -393,12 +424,12 @@ export function computeMancheOutcome(state, hands, currentPoints) {
   return { results, pointsAfter, mancheSuivante, estFinDePartie, ranking };
 }
 
-async function resolveManche(state, hands) {
-  const currentPoints = await readPoints();
+async function resolveManche(gid, state, hands) {
+  const currentPoints = await readPoints(gid);
   const outcome = computeMancheOutcome(state, hands, currentPoints);
 
   for (const r of outcome.results) {
-    await addPoints(r.discordId, pointsForResult(r.result));
+    await addPoints(gid, r.discordId, pointsForResult(r.result));
   }
 
   // Historique complet (mains, scores, points) de la manche qui vient de se
@@ -414,8 +445,8 @@ async function resolveManche(state, hands) {
 
   if (outcome.estFinDePartie) {
     const newState = { ...state, history, lastActivityAt: new Date().toISOString(), termine: true };
-    await writeState(newState);
-    const highScore = await updateHighScore(state.totalManches, outcome.ranking);
+    await writeState(gid, newState);
+    const highScore = await updateHighScore(gid, state.totalManches, outcome.ranking);
     return {
       final: true,
       highScore,
@@ -434,7 +465,7 @@ async function resolveManche(state, hands) {
     history,
     lastActivityAt: new Date().toISOString(),
   };
-  await writeState(newState);
+  await writeState(gid, newState);
   return { final: false, dealer: state.dealer, results: outcome.results, state: newState };
 }
 
@@ -446,32 +477,13 @@ export function isNewHighScore(current, points) {
   return points > 0 && (!current || points > current.points);
 }
 
-async function updateHighScore(totalManches, ranking) {
+async function updateHighScore(gid, totalManches, ranking) {
   const field = String(totalManches);
   const current = fromJson(await getRedis().hget(HIGHSCORE_KEY, field));
   const top = ranking?.[0];
   if (!top || !isNewHighScore(current, top.points)) return current;
-  const username = await getRedis().hget(USERNAMES_KEY, top.discordId);
+  const username = await getRedis().hget(usernamesKey(gid), top.discordId);
   const record = { discordId: top.discordId, username: username || null, points: top.points, at: new Date().toISOString() };
   await getRedis().hset(HIGHSCORE_KEY, { [field]: toJson(record) });
   return record;
-}
-
-// ── Watchdog anti-blocage ────────────────────────────────────────────
-// Une partie où plus personne n'agit (manche bloquée en attente d'un
-// joueur, ou partie jamais reprise) est nettoyée après STALE_HOURS. Un seul
-// horodatage (lastActivityAt, mis à jour à chaque action) suffit à couvrir
-// les deux cas demandés ("partie non finie" et "joueur inactif", seuil
-// ramené de 24h à 2h le 26/09, puis 1h le 13/10) : tant qu'un joueur en attente n'agit
-// pas, la manche ne peut pas se résoudre, donc aucune autre activité n'a lieu non plus.
-
-export async function resetIfStale(now = Date.now()) {
-  const state = await readState();
-  if (!state || state.termine) return { skipped: true };
-
-  const hoursSince = (now - new Date(state.lastActivityAt).getTime()) / 3_600_000;
-  if (hoursSince < STALE_HOURS) return { skipped: true, hoursSince };
-
-  await resetBlackjackDuel();
-  return { reset: true, hoursSince, previousState: state };
 }
