@@ -587,7 +587,7 @@ const commands = [
   {
     name: "gobelet",
     description:
-      "Jeu du Gobelet : réalise les meilleures combinaisons de dés, seul ou contre un autre joueur — réservé au rôle MINI-JEUX.",
+      "Jeu du Gobelet : vise les meilleures combinaisons de dés, seul ou à 2 — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING
