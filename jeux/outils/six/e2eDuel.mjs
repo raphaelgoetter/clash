@@ -33,9 +33,13 @@ globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 
 const h = await import("../../discord/handlers/sixDuel.js");
 const { readDuel, readPvp } = await import("../../services/sixDuel.js");
+const { coupsPossibles } = await import("../../services/sixRules.js");
 
-// Colonne au hasard parmi les 4
-const auHasard = () => Math.floor(Math.random() * 4);
+// Colonne permise au hasard
+const auHasard = (d) => {
+  const coups = coupsPossibles(d);
+  return coups[Math.floor(Math.random() * coups.length)].c;
+};
 
 // Messages en Components V2 : texte (type 10) et rangées de boutons
 // (type 1), éventuellement dans un conteneur (type 17).
@@ -74,7 +78,7 @@ for (let g = 0; g < 5; g++) {
       resultats[d.gagnant] = (resultats[d.gagnant] || 0) + 1;
       break;
     }
-    await h.handleSixJouer(W, ID, auHasard(), d.coups, { channelId: "salon", pseudo: "Testeur" });
+    await h.handleSixJouer(W, ID, auHasard(d), d.coups, { channelId: "salon", pseudo: "Testeur" });
   }
 }
 // Par partie : plateau public (lancement) puis récapitulatif
@@ -83,8 +87,16 @@ console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${posts.le
 if (posts.length !== 10) throw new Error("plateau public et résultat attendus pour chaque partie");
 if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfléchit"))) throw new Error("plateau public non suivi");
 
-// Vue dépassée (numéro de coup ancien) : refusée
+// Colonne interdite : avertissement, partie intacte
 await h.handleSixCommand(W, lancement);
+const dInterdit = await readDuel(ID);
+const interdite = [0, 1, 2, 3].find((c) => !coupsPossibles(dInterdit).some((x) => x.c === c));
+if (interdite !== undefined) {
+  await h.handleSixJouer(W, ID, interdite, 0, { channelId: "salon", pseudo: "Testeur" });
+  if (!texte(vues.at(-1)).includes("ne peut pas aller dans cette colonne")) throw new Error("colonne interdite acceptée");
+  if ((await readDuel(ID)).coups !== 0) throw new Error("coup interdit joué");
+}
+// Vue dépassée (numéro de coup ancien) : refusée
 await h.handleSixJouer(W, ID, 0, 5, { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("Le plateau a changé")) throw new Error("clic sur une vue dépassée accepté");
 if ((await readDuel(ID)).coups !== 0) throw new Error("coup d'une vue dépassée joué");
@@ -104,7 +116,7 @@ for (let k = 0; ; k++) {
     break;
   }
   const actif = p.sieges[p.duel.actif];
-  const c = auHasard();
+  const c = auHasard(p.duel);
   // Clic hors tour : refusé sans effet
   await h.handleSixJouer(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", c, p.duel.coups, { pvp: true });
   if ((await readPvp()).duel.coups !== p.duel.coups) throw new Error("coup hors tour joué");
@@ -136,7 +148,7 @@ await h.handleSixRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
-const exemple = vues.find((v) => rangees(v).length === 2 && texte(v).includes("Kévina") && texte(v).includes("🧹"));
+const exemple = vues.find((v) => rangees(v).length === 2 && texte(v).includes("Kévina joue") && texte(v).includes("prochaine"));
 console.log("\n--- Vue contre Kévina ---\n" + texte(exemple));
 console.log(
   "Boutons :\n" +

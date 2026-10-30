@@ -42,7 +42,9 @@ import {
   SEUIL,
   adversaire,
   choixKevina,
+  coupsPossibles,
   jouer,
+  prochaine,
 } from "../../services/sixRules.js";
 import { formatCarte } from "../../services/puntoCartes.js";
 import {
@@ -240,19 +242,18 @@ function plateauPublic(d, nomJoueur, nomBot) {
 }
 
 // Récit du dernier coup vu par `moi`, sans point final : « Tu joues 🟦7
-// en A », « Kévina joue 🟥2 en B (🧹 −5) » (ramassage volontaire),
-// « … (💥 −5) » (6e carte).
+// en A », « Kévina joue 🟥2 en B (💥 −5) » (6e carte, colonne ramassée).
 function recit(d, moi, A) {
   const x = d.dernier;
   if (!x) return null;
   const toi = x.id === moi;
-  const ramassage = { volontaire: "🧹", sixieme: "💥" }[x.type];
-  return `${toi ? "Tu joues" : `${A.Sujet} joue`} ${carteTexte(x.carte)} en ${NOMS_COLONNES[x.colonne]}${ramassage ? ` (${ramassage} −${x.penalite})` : ""}`;
+  return `${toi ? "Tu joues" : `${A.Sujet} joue`} ${carteTexte(x.carte)} en ${NOMS_COLONNES[x.colonne]}${x.type === "sixieme" ? ` (💥 −${x.penalite})` : ""}`;
 }
 
 const ERREURS = {
   termine: "La partie est terminée.",
   pasTonTour: "Ce n'est pas ton tour.",
+  interdite: "Ta carte ne peut pas aller dans cette colonne.",
   perime: "Le plateau a changé depuis : rejoue sur celui-ci.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
@@ -327,30 +328,34 @@ function vueFin(d, { moi, A, raison }) {
   };
 }
 
-// Boutons de coup, à son tour seulement : un par colonne (A à D), tous
-// gris et sans indication de perte (le récit du coup la donne). Le numéro
-// du coup dans le custom_id écarte un clic sur une vue dépassée (pendant
-// la réflexion de Kévina, par exemple).
+// Boutons de coup, à son tour seulement : un par colonne permise (les
+// autres sont masquées, pas désactivées : Discord estomperait le bouton),
+// tous gris et sans indication de perte (le récit du coup la donne). Le
+// numéro du coup dans le custom_id écarte un clic sur une vue dépassée
+// (pendant la réflexion de Kévina, par exemple).
 function boutonsCoups(d, monTour, sfx) {
   if (!monTour) return [];
   return [
     {
       type: 1,
-      components: NOMS_COLONNES.map((nom, c) => ({
+      components: coupsPossibles(d).map(({ c }) => ({
         type: 2,
         style: 2,
-        label: nom,
+        label: NOMS_COLONNES[c],
         custom_id: `sixduel_jouer:${c}:${d.coups}${sfx}`,
       })),
     },
   ];
 }
 
-// « Ta carte : 🟦7 » en titre H1 (carte agrandie) à son tour, « Carte de
-// Kévina : 🟥3 » en texte sinon.
+// « Ta carte : 🟦7 » en titre H1 (carte agrandie) à son tour, avec la
+// prochaine carte de la pioche (celle de l'adversaire) en petit dessous ;
+// « Carte de Kévina : 🟥3 » en texte sinon.
 function ligneCarte(d, moi, A) {
   if (!d.carte) return null;
-  return d.actif === moi ? `# Ta carte : ${carteTexte(d.carte)}` : `Carte de ${A.Sujet} : ${carteTexte(d.carte)}`;
+  if (d.actif !== moi) return `Carte de ${A.Sujet} : ${carteTexte(d.carte)}`;
+  const suivante = prochaine(d);
+  return [`# Ta carte : ${carteTexte(d.carte)}`, ...(suivante ? [`-# (prochaine : ${carteTexte(suivante)})`] : [])].join("\n");
 }
 
 // Vue d'un joueur : plateau, résultat de la dernière action
@@ -390,10 +395,10 @@ function buildReglesEmbed(config) {
     description: [
       `${NB_COLONNES} colonnes et une pioche commune de 36 cartes (4 couleurs, de 1 à 9). But : perdre le moins de points.`,
       "",
-      "**🃏 À ton tour**, tu retournes la carte du dessus de la pioche et tu la poses sur une colonne :",
-      "• Carte **plus forte** que la dernière d'une colonne : elle s'y ajoute.",
-      "• Carte posée sur une colonne où elle n'est pas plus forte, alors qu'elle l'est sur une autre : tu **ramasses** cette colonne, ta carte la remplace.",
-      "• Carte plus forte nulle part : tu la poses où tu veux, sans rien ramasser.",
+      "**🃏 À ton tour**, tu retournes la carte du dessus de la pioche :",
+      "• tu la poses sur une colonne dont la dernière carte est **plus faible** (au choix s'il y en a plusieurs) ;",
+      "• plus forte nulle part : tu la poses où tu veux.",
+      "La prochaine carte, celle de ton adversaire, est visible.",
       `• ${SIXIEME} **6ᵉ carte** d'une colonne : tu ramasses les 5 autres, ta carte reste.`,
       `**💸 Points perdus** : 1 par carte ramassée, ${1 + PENALITE_MAUDITE} par carte **rouge** (maudite).`,
       `**🏆 Fin** : dès qu'un joueur atteint ${SEUIL} points perdus, ou quand la pioche est vide. Le moins de points gagne, égalité : match nul.`,
@@ -410,7 +415,7 @@ function buildReglesEmbed(config) {
 function actionJouer(d, moi, c, coup) {
   if (!d.termine && coup !== d.coups) return { erreur: "perime" };
   const r = jouer(d, moi, c);
-  if (r.erreur) return { erreur: d.termine ? "termine" : "pasTonTour" };
+  if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "interdite" };
   return {};
 }
 

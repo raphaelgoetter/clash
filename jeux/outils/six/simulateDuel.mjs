@@ -43,7 +43,7 @@ const parPartie = (n) => ((n ?? 0) / PARTIES).toFixed(1);
 console.log(`${PARTIES} parties, joueur (commence) = ${PROFILS.joueur}, bot = ${PROFILS.bot}`);
 console.log(`Victoires joueur ${pct(res.joueur)} | bot ${pct(res.bot)} | nuls ${pct(res.nul)}`);
 console.log(
-  `Par partie : ${parPartie(types.sixieme)} ramassages à la 6e carte, ${parPartie(types.volontaire)} volontaires, ${parPartie(types.libre)} poses libres, ${(points / PARTIES / 2).toFixed(1)} points par joueur`,
+  `Par partie : ${parPartie(types.sixieme)} ramassages à la 6e carte, ${parPartie(types.libre)} poses libres, ${(points / PARTIES / 2).toFixed(1)} points par joueur`,
 );
 console.log(`${(coups / PARTIES / 2).toFixed(1)} coups par joueur, ${pct(fins.seuil ?? 0)} des parties finies au seuil de points`);
 console.log(`Temps moyen par partie ${((Date.now() - debut) / PARTIES).toFixed(1)} ms`);

@@ -2,13 +2,10 @@
 // sixRules.js — Règles pures de Six (`/six`), duel inspiré du 6 qui prend :
 // pioche commune de 36 cartes (4 couleurs de 1 à 9, celles de Punto),
 // 4 colonnes. À son tour, on retourne la carte du dessus de la pioche et
-// on la pose sur une colonne :
-// - plus forte que sa dernière carte : elle s'y ajoute ;
-// - pas plus forte, alors qu'elle l'est sur une autre colonne : on
-//   ramasse la colonne (ramassage volontaire), la carte la remplace ;
-// - plus forte sur aucune colonne : elle s'y ajoute quand même (pose
-//   libre) ;
-// - 6e carte d'une colonne : on ramasse les 5 premières, elle reste.
+// on la pose sur une colonne dont la dernière carte est plus faible (au
+// choix s'il y en a plusieurs) ; plus forte sur aucune colonne, elle va
+// sur la colonne de son choix (pose libre). 6e carte d'une colonne : on
+// ramasse les 5 premières, elle reste.
 // Une colonne ramassée coûte 1 point par carte, plus PENALITE_MAUDITE par
 // carte de la couleur maudite. Fin dès qu'un joueur atteint SEUIL points
 // ou quand la pioche est vide : le moins de points gagne.
@@ -64,32 +61,35 @@ export const penalite = (cartes) =>
 const derniere = (colonne) => colonne[colonne.length - 1];
 
 // Type du coup « `carte` sur la colonne `c` » : "pose", "libre",
-// "sixieme" (ramasse les 5 premières) ou "volontaire" (ramasse tout).
+// "sixieme" (ramasse les 5 premières), ou null si la colonne est
+// interdite (carte pas plus forte ici alors qu'elle l'est ailleurs).
 export function typeCoup(colonnes, carte, c) {
   const monte = (col) => carte.v > derniere(col).v;
-  if (monte(colonnes[c]) || !colonnes.some(monte)) {
-    if (colonnes[c].length === LIMITE - 1) return "sixieme";
-    return monte(colonnes[c]) ? "pose" : "libre";
-  }
-  return "volontaire";
+  if (!monte(colonnes[c]) && colonnes.some(monte)) return null;
+  if (colonnes[c].length === LIMITE - 1) return "sixieme";
+  return monte(colonnes[c]) ? "pose" : "libre";
 }
 
 // Cartes ramassées par un coup de ce type sur `colonne` ([] sans ramassage)
-const ramassees = (colonne, type) => (type === "sixieme" || type === "volontaire" ? [...colonne] : []);
+const ramassees = (colonne, type) => (type === "sixieme" ? [...colonne] : []);
 
 // Colonnes après le coup (copie, `colonnes` intact)
 function appliquer(colonnes, carte, c, type) {
   return colonnes.map((col, i) => (i !== c ? col : ramassees(col, type).length ? [carte] : [...col, carte]));
 }
 
-// Les coups possibles de `carte` (par défaut celle du joueur actif), un
-// par colonne : { c, type, penalite }.
+// Les coups permis de `carte` (par défaut celle du joueur actif), un par
+// colonne autorisée : { c, type, penalite }.
 export function coupsPossibles(d, carte = d.carte) {
-  return d.colonnes.map((col, c) => {
+  return d.colonnes.flatMap((col, c) => {
     const type = typeCoup(d.colonnes, carte, c);
-    return { c, type, penalite: penalite(ramassees(col, type)) };
+    return type ? [{ c, type, penalite: penalite(ramassees(col, type)) }] : [];
   });
 }
+
+// Prochaine carte de la pioche (celle de l'adversaire au tour suivant),
+// visible de tous ; null si la pioche est vide.
+export const prochaine = (d) => d.pioche[d.pioche.length - 1] ?? null;
 
 export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
   const cartes = pioche(rng);
@@ -120,6 +120,7 @@ export function jouer(d, id, c) {
 
   const carte = d.carte;
   const type = typeCoup(d.colonnes, carte, c);
+  if (!type) return { erreur: "Colonne interdite." };
   const prises = ramassees(d.colonnes[c], type);
   const points = penalite(prises);
   d.colonnes = appliquer(d.colonnes, carte, c, type);
@@ -142,24 +143,23 @@ export function jouer(d, id, c) {
 
 // ── Kévina ────────────────────────────────────────────────────────
 
-// Points que l'adversaire perdra au mieux à son tour, en moyenne sur sa
-// carte inconnue (une carte de la pioche, dont l'ordre est secret).
-function penaliteAdverse(colonnes, inconnues) {
-  if (!inconnues.length) return 0;
-  const auMieux = (carte) =>
-    Math.min(...colonnes.map((col, c) => penalite(ramassees(col, typeCoup(colonnes, carte, c)))));
-  return inconnues.reduce((s, carte) => s + auMieux(carte), 0) / inconnues.length;
+// Points que l'adversaire perdra au mieux à son tour avec `carte` (la
+// prochaine, visible de tous ; 0 sans carte).
+function penaliteAdverse(colonnes, carte) {
+  if (!carte) return 0;
+  return Math.min(...coupsPossibles({ colonnes }, carte).map((x) => x.penalite));
 }
 
 // Kévina minimise ses points perdus moins ceux que l'adversaire perdra au
-// mieux à son tour suivant, sans anticipation plus lointaine. `marge` :
+// mieux à son tour suivant avec la prochaine carte (visible de tous), sans
+// anticipation plus lointaine. `marge` :
 // colonne tirée au sort parmi celles à `marge` points au plus de la
 // meilleure (variété, et des erreurs qui laissent sa chance au joueur).
 // Réglage : `marge_kevina` de duel.json. Renvoie la colonne.
 export function choixKevina(d, id, { marge = 0, rng = Math.random } = {}) {
   const valeurs = coupsPossibles(d).map((coup) => {
     const apres = appliquer(d.colonnes, d.carte, coup.c, coup.type);
-    return { c: coup.c, v: coup.penalite - penaliteAdverse(apres, d.pioche) };
+    return { c: coup.c, v: coup.penalite - penaliteAdverse(apres, prochaine(d)) };
   });
   const min = Math.min(...valeurs.map((x) => x.v));
   const meilleurs = valeurs.filter((x) => x.v <= min + marge);
@@ -174,5 +174,6 @@ export function choixSimple(d) {
 }
 
 export function choixHasard(d, rng = Math.random) {
-  return Math.floor(rng() * NB_COLONNES);
+  const coups = coupsPossibles(d);
+  return coups[Math.floor(rng() * coups.length)].c;
 }

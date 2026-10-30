@@ -9,6 +9,7 @@ import {
   COULEUR_MAUDITE,
   PENALITE_MAUDITE,
   SEUIL,
+  prochaine,
 } from "./sixRules.js";
 
 // Colonnes de test : une chaîne de valeurs par colonne ("147" = 1, 4, 7),
@@ -46,27 +47,37 @@ function main() {
     const colonnes = [col("3"), col("8"), col("12345"), col("9")];
     const c = (v) => ({ k: 0, v });
     assert.strictEqual(typeCoup(colonnes, c(5), 0), "pose");
-    // Plus faible ici, plus forte sur la colonne 0 : ramassage volontaire
-    assert.strictEqual(typeCoup(colonnes, c(5), 1), "volontaire");
+    // Plus faible ici, plus forte sur la colonne 0 : interdit
+    assert.strictEqual(typeCoup(colonnes, c(5), 1), null);
     // 6e carte : ramasse
     assert.strictEqual(typeCoup(colonnes, c(9), 2), "sixieme");
     // Égalité : ne monte pas
-    assert.strictEqual(typeCoup(colonnes, c(8), 1), "volontaire");
+    assert.strictEqual(typeCoup(colonnes, c(8), 1), null);
     // Plus forte nulle part : pose libre, sauf 6e carte
     const hautes = [col("9"), col("8"), col("12348"), col("7")];
     assert.strictEqual(typeCoup(hautes, c(2), 0), "libre");
     assert.strictEqual(typeCoup(hautes, c(2), 2), "sixieme");
   }
 
-  // ── Coups possibles : un par colonne, pénalité annoncée ──
+  // ── Coups possibles : colonnes permises seulement, pénalité annoncée ──
   {
     const d = duelTest([col("3"), col("8", "8"), col("12345"), col("9")], 6);
     assert.deepStrictEqual(coupsPossibles(d), [
       { c: 0, type: "pose", penalite: 0 },
-      { c: 1, type: "volontaire", penalite: 1 + PENALITE_MAUDITE },
       { c: 2, type: "sixieme", penalite: 5 },
-      { c: 3, type: "volontaire", penalite: 1 },
     ]);
+    // Colonne interdite refusée, partie intacte
+    assert.ok(jouer(d, "joueur", 1).erreur);
+    assert.strictEqual(d.coups, 0);
+  }
+
+  // ── Prochaine carte : le dessus de la pioche ──
+  {
+    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [{ k: 0, v: 2 }, { k: 3, v: 7 }] });
+    assert.deepStrictEqual(prochaine(d), { k: 3, v: 7 });
+    jouer(d, "joueur", 0);
+    assert.deepStrictEqual(d.carte, { k: 3, v: 7 });
+    assert.deepStrictEqual(prochaine(d), { k: 0, v: 2 });
   }
 
   // ── Jouer : pose, puis carte retournée pour l'adversaire ──
@@ -92,15 +103,6 @@ function main() {
     assert.strictEqual(d.points.joueur, 5 + PENALITE_MAUDITE);
     assert.strictEqual(d.dernier.ramassees.length, 5);
     assert.strictEqual(d.dernier.type, "sixieme");
-  }
-
-  // ── Ramassage volontaire : la colonne entière, la carte la remplace ──
-  {
-    const d = duelTest([col("3"), col("68"), col("1"), col("9")], 5);
-    jouer(d, "joueur", 1);
-    assert.deepStrictEqual(d.colonnes[1], [{ k: 1, v: 5 }]);
-    assert.strictEqual(d.points.joueur, 2);
-    assert.strictEqual(d.dernier.type, "volontaire");
   }
 
   // ── Pose libre : aucune colonne où monter, aucun point ──
@@ -142,7 +144,7 @@ function main() {
   // ── Partie complète : au plus 16 coups chacun ──
   {
     const d = creerDuel({ rng: () => 0.3 });
-    while (!d.termine) jouer(d, d.actif, 0);
+    while (!d.termine) jouer(d, d.actif, coupsPossibles(d)[0].c);
     assert.ok(d.coups <= 32);
   }
 
