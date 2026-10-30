@@ -142,6 +142,11 @@ if (pAbandon.raisonFin !== "abandon" || pAbandon.duel.gagnant !== (pAbandon.sieg
 }
 console.log("Abandon : " + texte(salon.filter((m) => m.method === "POST").at(-1)).split("\n")[1]);
 
+// Étape d'explosion (6e carte) : 💥 sur la vue et le plateau public
+// (rangée du plateau en titre H1 contenant 💥)
+const explosions = vues.filter((v) => /^# .*💥/m.test(texte(v)));
+if (!explosions.length) throw new Error("aucune étape d'explosion affichée");
+if (!salon.some((m) => texte(m).includes("ramasse la colonne"))) throw new Error("explosion absente du plateau public");
 vues.forEach(verifier);
 salon.forEach(verifier);
 await h.handleSixRegles(W);
@@ -157,5 +162,6 @@ console.log(
       .map((r) => r.components.map((c) => `[${c.label ?? c.emoji?.name}]`).join(" "))
       .join("\n"),
 );
+console.log("\n--- Étape d'explosion ---\n" + texte(explosions[0]));
 console.log("\n--- Récap 1v1 ---\n" + texte(salon.filter((m) => m.method === "POST").at(-1)));
 console.log("\n--- Règles ---\n" + texte(vues.at(-1)));
