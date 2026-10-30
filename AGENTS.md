@@ -136,6 +136,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/grille adversaire:bot\|1v1` | La Grille (Knucklebones) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/quatre adversaire:bot\|1v1` | Quatre à la suite (Puissance 4) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/punto adversaire:bot\|1v1` | Punto (aligner 4 cartes de même couleur) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
+| `/six adversaire:bot\|1v1` | Six (éviter de ramasser les colonnes, façon 6 qui prend) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 
 ## Sous-agents
 

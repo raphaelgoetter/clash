@@ -1,6 +1,6 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto et leurs boutons (blackjackduel_*, gobeletduel_*,
-// grilleduel_*, quatreduel_*, puntoduel_*).
+// /quatre, /punto, /six et leurs boutons (blackjackduel_*, gobeletduel_*,
+// grilleduel_*, quatreduel_*, puntoduel_*, sixduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -60,6 +60,17 @@ import {
   handlePuntoRegles,
   handlePuntoAbandon,
 } from "../handlers/puntoDuel.js";
+import {
+  memberHasMiniJeuxRole as sixMemberHasMiniJeuxRole,
+  extractMember as sixExtractMember,
+  handleSixRoleRejected,
+  handleSixCommand,
+  handleSixPvpCommand,
+  handleSixOuvrir,
+  handleSixJouer,
+  handleSixRegles,
+  handleSixAbandon,
+} from "../handlers/sixDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 // /blackjack et /gobelet : `adversaire:bot|1v1` comme les autres duels ;
@@ -246,6 +257,62 @@ export async function routeDuels(body, res) {
       // Le suffixe :pvp est en 2ᵉ position (pas de case)
       const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: puntoExtractMember(body).username };
       runBackground(() => handlePuntoAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /six adversaire:bot : Six contre Kévina (plateau public, plateau et
+  // boutons de coup dans une vue éphémère) ; adversaire:1v1 : contre un
+  // joueur (message public). Réservé au rôle MINI-JEUX pour lancer, même
+  // principe que /blackjack.
+  if (body.type === 2 && body.data?.name === "six") {
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await sixMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleSixRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handleSixPvpCommand(webhookUrl, body);
+      else await handleSixCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Six : composants. sixduel_jouer:<carte>:<colonne>:<coup>[:pvp] édite
+  // la vue en place ; sixduel_ouvrir (Jouer du message public 1v1) et
+  // sixduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("sixduel_")) {
+    const [action, arg, ...suite] = body.data.custom_id.split(":");
+    if (action === "sixduel_regles" || action === "sixduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "sixduel_regles") runBackground(() => handleSixRegles(webhookUrl));
+      else runBackground(() => handleSixOuvrir(webhookUrl, body));
+      return;
+    }
+    if (action === "sixduel_jouer") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Contre Kévina, le résultat final est publié dans le salon du clic
+      const [colonne, coup, mode] = suite;
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: sixExtractMember(body).username };
+      runBackground(() => handleSixJouer(webhookUrl, discordId, Number(arg), Number(colonne), Number(coup), opts));
+      return;
+    }
+    // [🏳️] : sixduel_abandon[:pvp] (confirmation), sixduel_abandon_ok /
+    // sixduel_abandon_non[:pvp], tous édités en place
+    const ETAPES_ABANDON = { sixduel_abandon: "demande", sixduel_abandon_ok: "ok", sixduel_abandon_non: "non" };
+    if (ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Le suffixe :pvp est en 2ᵉ position
+      const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: sixExtractMember(body).username };
+      runBackground(() => handleSixAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }
