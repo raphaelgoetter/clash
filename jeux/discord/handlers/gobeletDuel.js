@@ -844,7 +844,7 @@ function buildReglesEmbed() {
   return {
     title: "📖 Règles du Jeu du Gobelet Duel",
     description: [
-      "Duel fermé à 1 ou 2 joueurs, sur plusieurs manches.",
+      "En solo (défi de score) ou à 2 joueurs, sur plusieurs manches.",
       "",
       "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. En solo, seul celui qui a lancé la partie peut jouer.",
       "",

@@ -53,7 +53,7 @@ function formatCardsBlock(cards, scoreLabel = null) {
 }
 
 function formatDealerLine(dealer) {
-  return `🎩 **Croupier :** ${formatCards(dealer.cards)} (**${dealer.score}**)`;
+  return `🤖 **Kévina :** ${formatCards(dealer.cards)} (**${dealer.score}**)`;
 }
 
 // ── Résolution des rôles/utilisateurs ────────────────────────────────
@@ -160,7 +160,7 @@ async function postFinalMessage(state, payload) {
 }
 
 // Supprime le message public de la partie (fin de partie, ou partie contre
-// le Croupier remplacée par un nouveau /blackjack).
+// Kévina remplacée par un nouveau /blackjack).
 async function deletePublicMessage(state) {
   const token = process.env.DISCORD_TOKEN;
   if (!token || !state?.channelId || !state?.messageId) return;
@@ -259,7 +259,7 @@ async function buildTableEmbed(
         formatDealerLine(previousDealer),
         winnerNames.length
           ? `🏆 Gagnant${winnerNames.length > 1 ? "s" : ""} : ${winnerNames.join(", ")}`
-          : "🏆 Personne n'a battu le Croupier.",
+          : "🏆 Personne n'a battu Kévina.",
         "",
       );
     } else {
@@ -286,7 +286,7 @@ async function buildTableEmbed(
     // 2 joueurs : pas de Croupier — duel direct, résultat connu dès que
     // tous les joueurs inscrits ont fini leur main.
     lines.push(
-      "## 🃏 Duel entre joueurs (pas de Croupier)",
+      "## 🃏 Duel entre joueurs",
       "La meilleure main l'emporte. Résultat révélé dès que tout le monde a joué.",
       "",
       seatsLabel,
@@ -297,15 +297,15 @@ async function buildTableEmbed(
     // jeu spécial) : le Croupier joue en second, après tous les joueurs —
     // révélé seulement à la résolution de la manche.
     lines.push(
-      `## 🎩 Score à battre : ${state.dealer.score}`,
+      `## 🤖 Score à battre : ${state.dealer.score}`,
       ...formatCardsBlock(state.dealer.cards),
       "",
       seatsLabel,
     );
   } else {
     lines.push(
-      "## 🎩 Le Croupier joue en second cette manche",
-      "Il n'a pas encore joué sa main : il jouera après tous les joueurs, résultat révélé à la fin de la manche.",
+      "## 🤖 Kévina joue en second cette manche",
+      "Elle n'a pas encore joué sa main : elle jouera après toi, résultat révélé à la fin de la manche.",
       "",
       seatsLabel,
     );
@@ -323,7 +323,7 @@ async function buildTableEmbed(
   lines.push("", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`);
 
   return {
-    title: `🃏 Blackjack Duel (Manche ${state.manche}/${state.totalManches})`,
+    title: `🃏 Blackjack Duel${isSolo ? " contre Kévina" : ""} (Manche ${state.manche}/${state.totalManches})`,
     description: lines.join("\n"),
     color: BLACKJACKDUEL_COLOR,
     footer: {
@@ -385,7 +385,7 @@ async function buildFinalEmbed(state, ranking, highScore) {
   }
 
   return {
-    title: `🏁 Blackjack Duel : partie terminée (${state.totalManches} manches)`,
+    title: `🏁 Blackjack Duel${state.maxPlayers === 1 ? " contre Kévina" : ""} : partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     color: BLACKJACKDUEL_COLOR,
   };
@@ -474,7 +474,7 @@ function handStatusMessage(hand, dealer, manche, isSolo) {
   const revealed = isDealerRevealed(manche);
   if (hand.status === "bust") {
     return revealed
-      ? `💥 Tu dépasses 21 (le Croupier était à ${dealer.score}), ta main est perdue pour cette manche.`
+      ? `💥 Tu dépasses 21 (Kévina était à ${dealer.score}), ta main est perdue pour cette manche.`
       : "💥 Tu dépasses 21, ta main est perdue pour cette manche.";
   }
   if (hand.status === "stand") {
@@ -483,12 +483,12 @@ function handStatusMessage(hand, dealer, manche, isSolo) {
       ? "🎉 21 sur deux cartes, la meilleure main possible !"
       : `🛑 Tu t'arrêtes à ${hand.score}.`;
     if (!revealed) {
-      return `${intro} Le Croupier n'a pas encore joué : il jouera en second cette manche, tu sauras si tu l'as battu à la résolution.`;
+      return `${intro} Kévina n'a pas encore joué : elle jouera en second cette manche, tu sauras si tu l'as battue à la résolution.`;
     }
-    if (hand.score > dealer.score) return `${intro} Le Croupier était à ${dealer.score}, tu gagnes 2 points !`;
+    if (hand.score > dealer.score) return `${intro} Kévina était à ${dealer.score}, tu gagnes 2 points !`;
     if (hand.score === dealer.score)
-      return `${intro} Le Croupier était aussi à ${dealer.score} : égalité, tu gagnes quand même 1 point !`;
-    return `${intro} Le Croupier était à ${dealer.score}, pas de point cette manche.`;
+      return `${intro} Kévina était aussi à ${dealer.score} : égalité, tu gagnes quand même 1 point !`;
+    return `${intro} Kévina était à ${dealer.score}, pas de point cette manche.`;
   }
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
@@ -623,7 +623,7 @@ export async function handleJouer(webhookUrl, gid, discordId, username) {
     }
     if (result.notYours) {
       await patchOriginal(webhookUrl, {
-        content: "Cette partie contre le Croupier n'est pas la tienne : lance la tienne avec `/blackjack` !",
+        content: "Cette partie contre Kévina n'est pas la tienne : lance la tienne avec `/blackjack` !",
         embeds: [],
         components: [],
       });
@@ -714,11 +714,11 @@ function buildReglesEmbed() {
   return {
     title: "📖 Règles du Blackjack Duel",
     description: [
-      "Duel fermé à 1 ou 2 joueurs, sur plusieurs manches.",
+      "Contre Kévina (le bot) ou à 2 joueurs, sur plusieurs manches.",
       "",
       "**Valeur des cartes :** 2 à 10 = leur valeur, Valet/Dame/Roi = 10, As = 11 ou 1 (ramené à 1 si besoin pour éviter de dépasser 21).",
       "",
-      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. En solo, seul celui qui a lancé la partie peut jouer.",
+      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. Contre Kévina, seul celui qui a lancé la partie peut jouer.",
       "",
       "**Déroulement (1 main par manche) :**",
       "🃏 **Jouer** : reçois 2 cartes.",
@@ -726,11 +726,11 @@ function buildReglesEmbed() {
       "🛑 **Arrêter** : fige ton score pour cette manche.",
       "Dépasser 21 = main perdue immédiatement pour la manche.",
       "",
-      "**En solo (1 joueur) :** tu affrontes le Croupier. Sur les manches impaires (1, 3, 5…), il joue en premier : son score est connu à l'avance. Sur les manches paires, il joue en second : tu joues sans connaître son score, révélé seulement à la résolution.",
+      "**Contre Kévina :** elle tient le rôle du croupier. Sur les manches impaires (1, 3, 5…), elle joue en premier : son score est connu à l'avance. Sur les manches paires, elle joue en second : tu joues sans connaître son score, révélé seulement à la résolution.",
       "",
-      "**À 2 joueurs :** pas de Croupier, vous vous affrontez directement. La meilleure main non dépassée l'emporte, résultat révélé dès que tout le monde a joué sa main.",
+      "**À 2 joueurs :** pas de Kévina, vous vous affrontez directement. La meilleure main non dépassée l'emporte, résultat révélé dès que tout le monde a joué sa main.",
       "",
-      "**Résultat d'une manche :** le vainqueur gagne **2 points**. Égalité (avec le Croupier en solo, ou entre les 2 joueurs) = **1 point** quand même. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
+      "**Résultat d'une manche :** le vainqueur gagne **2 points**. Égalité (avec Kévina, ou entre les 2 joueurs) = **1 point** quand même. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
       "",
       "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Sans action pendant 1 h, la partie est abandonnée.",
     ].join("\n"),

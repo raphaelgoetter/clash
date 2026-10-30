@@ -560,16 +560,16 @@ const commands = [
   {
     name: "blackjack",
     description:
-      "Lance un duel de Blackjack (1 ou 2 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",
+      "Blackjack : approche-toi de 21 contre Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
-        type: 4, // INTEGER
-        name: "joueurs",
-        description: "Nombre de joueurs (1 ou 2).",
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
         required: true,
         choices: [
-          { name: "1", value: 1 },
-          { name: "2", value: 2 },
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
         ],
       },
       {
@@ -587,16 +587,18 @@ const commands = [
   {
     name: "gobelet",
     description:
-      "Lance un duel du Jeu du Gobelet (1 ou 2 joueurs) dans ce salon — réservé au rôle MINI-JEUX.",
+      "Jeu du Gobelet : réalise les meilleures combinaisons de dés, seul ou contre un autre joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
-        type: 4, // INTEGER
-        name: "joueurs",
-        description: "Nombre de joueurs (1 ou 2).",
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
         required: true,
+        // Pas de Kévina au Gobelet : en solo, personne ne joue contre toi
+        // (défi de score), d'où « Solo » sur la valeur commune `bot`.
         choices: [
-          { name: "1", value: 1 },
-          { name: "2", value: 2 },
+          { name: "Solo", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
         ],
       },
       {

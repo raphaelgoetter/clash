@@ -18,7 +18,7 @@
 //   cron quotidien ;
 // - pas d'historique persistant (aucun équivalent à archiveManche /
 //   writeHistoriqueEntry) ;
-// - comme les autres duels : une partie par joueur contre le Croupier,
+// - comme les autres duels : une partie par joueur contre Kévina (le Croupier),
 //   une seule à 2 joueurs, chacune expirée 1 h après la dernière action
 //   (TTL Redis, ni cron ni nettoyage manuel) ; `npm run blackjackduel:status`
 //   liste les parties, `npm run blackjackduel:reset` les efface toutes.
@@ -98,7 +98,7 @@ async function scanDelete(pattern) {
   if (keys.length) await getRedis().del(...keys);
 }
 
-// ── Clés Redis : une partie par joueur contre le Croupier (`<discordId>`),
+// ── Clés Redis : une partie par joueur contre Kévina (`<discordId>`),
 // une seule à 2 joueurs (`pvp`), comme les autres duels. Chaque écriture
 // relance l'expiration : sans action pendant INACTIVITE_SECONDES, la partie
 // disparaît d'elle-même (pas de cron).
@@ -221,7 +221,7 @@ export async function resetBlackjackDuel() {
 }
 
 // ── Lancement d'une partie ──────────────────────────────────────────
-// Contre le Croupier : relancer remplace toujours sa propre partie
+// Contre Kévina : relancer remplace toujours sa propre partie
 // (`replaced`, dont l'appelant supprime le message public). À 2 joueurs :
 // refusé tant qu'une partie non terminée existe (elle expire seule après
 // INACTIVITE_SECONDES sans action).
@@ -272,7 +272,7 @@ export async function startGame(channelId, discordId, { maxPlayers, totalManches
 // uniquement quand l'appelant a déjà vérifié (I/O) qu'aucune main n'existe
 // encore pour ce joueur sur la manche en cours.
 export function applyJoin(state, discordId) {
-  // Contre le Croupier, la partie est réservée à celui qui l'a lancée.
+  // Contre Kévina, la partie est réservée à celui qui l'a lancée.
   if (state.maxPlayers === 1 && state.ownerId && discordId !== state.ownerId) {
     return { allowed: false, notYours: true };
   }

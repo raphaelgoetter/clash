@@ -1224,9 +1224,12 @@ Cinq duels lancés par commande slash, sans cron ni historique de manches : `/bl
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
 - **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
-### Blackjack Duel et Gobelet Duel (1 ou 2 joueurs)
+### Blackjack Duel et Gobelet Duel (contre Kévina / solo, ou en 1v1)
 
-`/blackjack joueurs:<1|2> manches:<5|10>` et `/gobelet joueurs:<1|2> manches:<5|10>`. 2 joueurs au plus, comme les autres duels (valeur bornée à 2 par la route, même depuis une ancienne commande).
+`/blackjack adversaire:bot|1v1 manches:<5|10>` et `/gobelet adversaire:bot|1v1 manches:<5|10>`, même option que les autres duels (`nombreDeJoueurs()` dans la route : `bot` = 1 place, `1v1` = 2 ; repli sur l'ancienne option `joueurs:1|2`, bornée à 2, tant que les commandes ne sont pas ré-enregistrées).
+
+- **Blackjack contre Kévina** : Kévina tient le rôle du Croupier du jeu spécial (`state.dealer`, même tirage `dealerPlay()`) et est **toujours nommée** dans les textes joueurs (titres « Blackjack Duel contre Kévina », « 🤖 Kévina : … », « 🤖 Score à battre », règles), jamais « le Croupier ».
+- **Gobelet en solo** : pas d'adversaire (défi de score), choix « Solo » sur la valeur commune `bot`, sans mention de Kévina.
 
 | | Blackjack Duel | Gobelet Duel |
 | --- | --- | --- |

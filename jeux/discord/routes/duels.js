@@ -62,18 +62,26 @@ import {
 } from "../handlers/puntoDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
+// /blackjack et /gobelet : `adversaire:bot|1v1` comme les autres duels ;
+// repli sur l'ancienne option `joueurs:1|2` (bornée à 2) tant que les
+// commandes ne sont pas ré-enregistrées.
+function nombreDeJoueurs(body) {
+  const adversaire = body.data.options?.find((o) => o.name === "adversaire")?.value;
+  if (adversaire) return adversaire === "1v1" ? 2 : 1;
+  const joueurs = body.data.options?.find((o) => o.name === "joueurs")?.value;
+  return Math.min(Number(joueurs) || 1, 2);
+}
+
 export async function routeDuels(body, res) {
-  // ── /blackjack : lance un duel Blackjack autonome (1 ou 2 joueurs, N
-  // manches) — jeu développé en parallèle du jeu spécial, sans lien avec
+  // ── /blackjack : lance un duel Blackjack autonome (contre Kévina ou à
+  // 2 joueurs, N manches) — jeu développé en parallèle du jeu spécial, sans lien avec
   // lui. Réservé au rôle MINI-JEUX : le check se fait ici en arrière-plan
   // (getRoleIdByName fait un appel réseau, trop risqué dans la fenêtre de
   // 3s d'accusé de réception) — d'où le defer éphémère systématique, suivi
   // soit du rejet, soit du lancement réel.
   if (body.type === 2 && body.data?.name === "blackjack") {
-    const joueursOpt = body.data.options?.find((o) => o.name === "joueurs");
     const manchesOpt = body.data.options?.find((o) => o.name === "manches");
-    // 2 joueurs au plus, comme les autres duels (ancienne commande à 3 places comprise)
-    const maxPlayers = Math.min(Number(joueursOpt?.value) || 1, 2);
+    const maxPlayers = nombreDeJoueurs(body);
     const totalManches = Number(manchesOpt?.value) || 5;
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
@@ -246,10 +254,8 @@ export async function routeDuels(body, res) {
   // manches) — jeu développé en parallèle du jeu spécial, sans lien avec
   // lui. Réservé au rôle MINI-JEUX, même principe que /blackjack ci-dessus.
   if (body.type === 2 && body.data?.name === "gobelet") {
-    const joueursOpt = body.data.options?.find((o) => o.name === "joueurs");
     const manchesOpt = body.data.options?.find((o) => o.name === "manches");
-    // 2 joueurs au plus, comme les autres duels (ancienne commande à 3 places comprise)
-    const maxPlayers = Math.min(Number(joueursOpt?.value) || 1, 2);
+    const maxPlayers = nombreDeJoueurs(body);
     const totalManches = Number(manchesOpt?.value) || 5;
 
     res.status(200).json({ type: 5, data: { flags: 64 } });
