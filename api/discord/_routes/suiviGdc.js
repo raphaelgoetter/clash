@@ -23,9 +23,17 @@ import {
   formatParisObservationTime,
   mapWithConcurrency,
   parseBattleTimestamp,
-  deckUsageBadge,
   normalizeClanTag,
 } from "../_lib/commun.js";
+
+// Badge d'historique de /fail en émojis standards : les émojis personnalisés
+// de deckUsageBadge() (~29 caractères chacun) font déborder la description.
+function failDeckBadge(decksUsed, ignored, maxDecks = 16) {
+  if (ignored) return "⚪";
+  if (decksUsed >= maxDecks) return "🟢";
+  if (decksUsed >= maxDecks - 4) return "🟡";
+  return "🔴";
+}
 
 // ============================================================
 // /recap — récap GDC saison passée (bottom 10 La Resistance / top 10 Les
@@ -2051,7 +2059,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           return;
         }
 
-        const DETAILABLE_FAIL_LIMIT = 12;
+        const DETAILABLE_FAIL_LIMIT = 15;
         if (failedPlayers.length > DETAILABLE_FAIL_LIMIT) {
           await fetch(webhookUrl, {
             method: "POST",
@@ -2090,7 +2098,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
               const decksLine = recent
                 .map((w) => {
                   const deckCount = Number(w.decksUsed || 0);
-                  const badge = deckUsageBadge(
+                  const badge = failDeckBadge(
                     deckCount,
                     Boolean(w.ignored),
                     w.maxDecks,
@@ -2129,19 +2137,38 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
         const failCount = failedPlayers.length;
         const failLabel =
           failCount === 1 ? "Joueur en échec" : "Joueurs en échec";
-        const embed = {
-          title: `<:boohoo:1493849412387209357> ${resolved.name} — ${failCount} ${failLabel} hier (${warDayLabel})`,
-          url: trustClanUrl(resolved.tag),
-          color: 0xe74c3c,
-          description: `Historique des dernières GDC :\n${fetchLines.join("\n")}`,
-          footer: { text: `Données pour ${warDayLabel} — ${currentWeekId}` },
-        };
+        // Une ligne joueur pèse ~400 caractères (émojis personnalisés) : on
+        // découpe en plusieurs embeds sous la limite de 4096 de la description,
+        // un par message pour rester sous les 6000 caractères par message.
+        const descriptions = [];
+        let current = "Historique des dernières GDC :";
+        for (const line of fetchLines) {
+          if (current.length + 1 + line.length > 4096) {
+            descriptions.push(current);
+            current = line;
+          } else {
+            current += `\n${line}`;
+          }
+        }
+        descriptions.push(current);
 
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ embeds: [embed] }),
-        });
+        for (const [i, description] of descriptions.entries()) {
+          const embed = { color: 0xe74c3c, description };
+          if (i === 0) {
+            embed.title = `<:boohoo:1493849412387209357> ${resolved.name} — ${failCount} ${failLabel} hier (${warDayLabel})`;
+            embed.url = trustClanUrl(resolved.tag);
+          }
+          if (i === descriptions.length - 1) {
+            embed.footer = {
+              text: `Données pour ${warDayLabel} — ${toPublicWeekId(currentWeekId)}`,
+            };
+          }
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ embeds: [embed] }),
+          });
+        }
       } catch (err) {
         await fetch(webhookUrl, {
           method: "POST",
