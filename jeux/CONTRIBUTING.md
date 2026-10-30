@@ -1376,38 +1376,37 @@ Adaptation de Punto (Bernhard Weber) en duel. `/punto adversaire:bot|1v1` (optio
 
 ### Six (contre Kévina ou en 1v1)
 
-Duel inspiré du 6 qui prend (Wolfgang Kramer), au tour par tour avec carte passée. `/six adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Punto (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
+Duel inspiré du 6 qui prend (Wolfgang Kramer), au tour par tour. `/six adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Punto (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
 
-- Code : `jeux/services/sixRules.js` (règles pures et Kévina, tests `sixRules.test.js`), `jeux/services/sixDuel.js` (Redis, tests `sixDuel.test.js`), `jeux/discord/handlers/sixDuel.js` (Discord). Cartes : celles de Punto (`jeux/services/puntoCartes.js`, voir « Cartes de Punto »), aucun emoji propre. Config `jeux/data/six/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `marge_kevina` (4).
+- Code : `jeux/services/sixRules.js` (règles pures et Kévina, tests `sixRules.test.js`), `jeux/services/sixDuel.js` (Redis, tests `sixDuel.test.js`), `jeux/discord/handlers/sixDuel.js` (Discord). Cartes : celles de Punto (`jeux/services/puntoCartes.js`, voir « Cartes de Punto »), aucun emoji propre. Config `jeux/data/six/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `marge_kevina` (1).
 - Redis : `sixduel:<discordId>` (contre Kévina), `sixduel:pvp`, verrous `sixduel:lock:*`, séries `sixduel:series:bot` / `sixduel:series:pvp`, records `sixduel:records`.
-- `custom_id` : `sixduel_jouer:<carte>:<colonne>:<coup>` contre Kévina, `sixduel_jouer:<carte>:<colonne>:<coup>:pvp` en 1v1 (`<carte>` 0 ou 1 de la main, `<colonne>` 0 à 2 ; `<coup>` = `d.coups` de la vue affichée : un clic sur une vue dépassée est refusé avec « Le plateau a changé depuis »), `sixduel_ouvrir`, `sixduel_regles`, `sixduel_abandon[:pvp]`, `sixduel_abandon_ok[:pvp]` / `sixduel_abandon_non[:pvp]`.
+- `custom_id` : `sixduel_jouer:<colonne>:<coup>` contre Kévina, `sixduel_jouer:<colonne>:<coup>:pvp` en 1v1 (`<colonne>` 0 à 3 ; `<coup>` = `d.coups` de la vue affichée : un clic sur une vue dépassée est refusé avec « Le plateau a changé depuis »), `sixduel_ouvrir`, `sixduel_regles`, `sixduel_abandon[:pvp]`, `sixduel_abandon_ok[:pvp]` / `sixduel_abandon_non[:pvp]`.
 
 #### Règles
 
 - **Pioche commune de 36 cartes** : 4 couleurs × valeurs 1 à 9, un exemplaire chacune (`d.pioche`, carte `{ k (couleur 0 à 3), v }`). Le rouge (`COULEUR_MAUDITE`) est la **couleur maudite**.
-- **3 colonnes** (`d.colonnes`), chacune commence par une carte de la pioche.
-- **À son tour**, le joueur actif a **2 cartes** (`d.main`, visibles de tous) : celle laissée par l'adversaire et une nouvelle pioche (au premier tour, deux cartes de la pioche). Il en pose une sur une colonne ; **l'autre passe à l'adversaire**, qui la complète d'une nouvelle pioche.
-- Carte posée sur une colonne (`typeCoup()`) :
+- **4 colonnes** (`d.colonnes`), chacune commence par une carte de la pioche.
+- **À son tour**, le joueur actif retourne la carte du dessus de la pioche (`d.carte`, visible de tous) et la pose sur la colonne de son choix (`typeCoup()`) :
   - **plus forte** (strictement) que sa dernière carte : elle s'y ajoute (`pose`) ;
   - pas plus forte, alors qu'elle l'est sur une autre colonne : **ramassage volontaire** (`volontaire`), le joueur ramasse toute la colonne et sa carte la remplace ;
-  - plus forte sur aucune colonne : elle s'y ajoute quand même, sans ramasser (`libre`) ;
+  - plus forte sur aucune colonne : **pose libre**, elle s'y ajoute quand même, sans ramasser (`libre`) ;
   - **6e carte** d'une colonne (`LIMITE`), par une pose ou une pose libre : le joueur ramasse les 5 premières, sa carte reste seule (`sixieme`).
 - **Points perdus** par colonne ramassée : 1 par carte (`PENALITE_CARTE`), +3 par carte de la couleur maudite (`PENALITE_MAUDITE`, soit 4 par carte rouge).
-- **Fin** : pioche vide après un coup (32 coups, 16 chacun) ; le moins de points perdus gagne, égalité = match nul (~4 %).
+- **Fin** (`d.fin`) : dès qu'un joueur atteint **15 points perdus** (`SEUIL`, `"seuil"`, ~85 % des parties) ou quand la pioche est vide (`"pioche"`, 32 coups au plus, 16 chacun). Le moins de points gagne, égalité = match nul (~3 %). Une seule manche.
 - **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
-- **Kévina** (`choixKevina()`) : minimise ses points perdus moins ceux que l'adversaire perdra au mieux à son tour suivant (avec la carte qu'elle lui passe et une carte inconnue de la pioche), sans anticipation plus lointaine. `marge_kevina` : coup tiré au sort parmi ceux à `marge` points au plus du meilleur. ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
-- Pourquoi ces règles (simulations) : avec des valeurs de 1 à 9, la règle d'origine « carte trop basse = ramasser une colonne » fait ramasser une petite colonne un coup sur deux et la 6e carte n'arrive presque jamais ; la pose libre la remplace. La carte passée crée l'essentiel de la stratégie (refiler à l'adversaire la carte qui ne rentre que sur une colonne pleine) : sans elle, la règle de bon sens fait presque aussi bien qu'un joueur réfléchi.
+- **Kévina** (`choixKevina()`) : minimise ses points perdus moins ceux que l'adversaire perdra au mieux à son tour suivant (en moyenne sur sa carte inconnue), sans anticipation plus lointaine. `marge_kevina` : colonne tirée au sort parmi celles à `marge` points au plus de la meilleure. ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
+- Pourquoi ces règles (simulations) : avec des valeurs de 1 à 9, la règle d'origine « carte trop basse = ramasser une colonne » fait ramasser une petite colonne un coup sur deux et la 6e carte n'arrive plus ; la pose libre la remplace. Le placement forcé du jeu d'origine (rangée la plus proche en dessous) supprime toute décision avec une seule carte. Ajouter un 0 ou un 10 ne change rien de notable. Le hasard du tirage pèse autant qu'au 6 qui prend à 2 joueurs : un joueur réfléchi ne bat la règle de bon sens qu'à ~55 %.
 
 #### Affichage
 
-- Cartes en emojis de Punto (couleurs `bleu`, `vert`, `rouge`, `orange` pour les indices 0 à 3), communes aux deux joueurs.
-- **Plateau en texte** : en-têtes `🇦 🇧 🇨`, puis 6 rangées d'emojis, les colonnes à la verticale (plus ancienne carte en haut), emplacements libres gris et 6e emplacement `💀`. En dessous : points perdus des deux joueurs, puis le barème (« Ramasser : −1 par carte, −4 par carte rouge. »).
-- **Vue éphémère** : plateau, récit du dernier coup (« 🧹 Kévina ramasse la colonne A (3 cartes, −5 points) et y pose 🟦2. », « 💥 … en 6ᵉ carte … », carte passée), puis « **Tes cartes : 🟦7 🟥3** » en titre `##` à son tour. **Boutons de coup**, à son tour seulement : une rangée par carte de la main, un bouton par colonne (emoji de la carte, « → A ») ; un coup qui fait ramasser est **rouge** (`style: 4`) et annonce la perte (« → B · −5 »). Tous les coups sont permis : pas de case interdite.
-- **Messages publics** : plateau en texte avec les cartes du joueur au trait.
+- Cartes en emojis de Punto (couleurs `bleu`, `vert`, `rouge`, `orange` pour les indices 0 à 3).
+- **Plateau en texte** : en-têtes `🇦 🇧 🇨 🇩`, puis 6 rangées d'emojis, les colonnes à la verticale (plus ancienne carte en haut), emplacements libres gris et 6e emplacement `💀`. Chaque rangée est un titre **H1** dans la vue du joueur (plus grande taille d'emoji, comme La Grille), **H3** dans les messages publics (cartes plus petites).
+- **Vue éphémère, minimale** : plateau, récit du dernier coup en une ligne (« Tu joues 🟦1 en A, Kévina joue 🟦2 en B (🧹 −1). » ; 🧹 = ramassage volontaire, 💥 = 6e carte), puis « **Ta carte : 🟦7** » en titre H1 à son tour. Ni score ni barème : score dans le message public, barème dans les Règles. **4 boutons A à D**, à son tour seulement, tous gris (`style: 2`) et sans indication de perte : le récit du coup la donne. Jamais de bouton coloré. Tous les coups sont permis.
+- **Messages publics** : carte du joueur au trait, plateau en texte et « Score en cours : X 0 · 🤖 Kévina 1 » (points perdus) ; le récapitulatif de fin donne les points dans sa phrase de résultat.
 
 #### Outils (`jeux/outils/six/`, à lancer à la main)
 
-- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `simple` = bon sens : le moins de points perdus puis la plus petite marche, `kevina[m<marge>]`, ex. `kevinam4` = réglage de production). Repères (3 000 parties) : « bon joueur » `kevina` contre Kévina de production ~71 % / ~26 % ; `simple` contre elle ~48 % / ~48 % ; hasard contre elle ~0,5 % ; par partie, ~1,6 ramassage à la 6e carte, ~7 volontaires, ~8,5 poses libres, ~17 points perdus par joueur.
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `simple` = bon sens : le moins de points perdus puis la plus petite marche, `kevina[m<marge>]`, ex. `kevinam1` = réglage de production). Repères (3 000 parties) : `simple` contre Kévina de production ~50 % / ~48 % ; « bon joueur » `kevina` contre elle ~54 % / ~43 % ; hasard contre elle ~0 % ; par partie, ~0,8 ramassage à la 6e carte, ~6 volontaires, ~7 poses libres, ~14 coups par joueur.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/six/e2eDuel.mjs`).
 
 ---

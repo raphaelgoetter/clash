@@ -34,8 +34,8 @@ globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 const h = await import("../../discord/handlers/sixDuel.js");
 const { readDuel, readPvp } = await import("../../services/sixDuel.js");
 
-// Coup au hasard parmi les 6 (2 cartes × 3 colonnes)
-const auHasard = () => ({ m: Math.floor(Math.random() * 2), c: Math.floor(Math.random() * 3) });
+// Colonne au hasard parmi les 4
+const auHasard = () => Math.floor(Math.random() * 4);
 
 // Messages en Components V2 : texte (type 10) et rangées de boutons
 // (type 1), éventuellement dans un conteneur (type 17).
@@ -74,8 +74,7 @@ for (let g = 0; g < 5; g++) {
       resultats[d.gagnant] = (resultats[d.gagnant] || 0) + 1;
       break;
     }
-    const { m, c } = auHasard();
-    await h.handleSixJouer(W, ID, m, c, d.coups, { channelId: "salon", pseudo: "Testeur" });
+    await h.handleSixJouer(W, ID, auHasard(), d.coups, { channelId: "salon", pseudo: "Testeur" });
   }
 }
 // Par partie : plateau public (lancement) puis récapitulatif
@@ -86,7 +85,7 @@ if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfl�
 
 // Vue dépassée (numéro de coup ancien) : refusée
 await h.handleSixCommand(W, lancement);
-await h.handleSixJouer(W, ID, 0, 0, 5, { channelId: "salon", pseudo: "Testeur" });
+await h.handleSixJouer(W, ID, 0, 5, { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("Le plateau a changé")) throw new Error("clic sur une vue dépassée accepté");
 if ((await readDuel(ID)).coups !== 0) throw new Error("coup d'une vue dépassée joué");
 
@@ -105,11 +104,11 @@ for (let k = 0; ; k++) {
     break;
   }
   const actif = p.sieges[p.duel.actif];
-  const { m, c } = auHasard();
+  const c = auHasard();
   // Clic hors tour : refusé sans effet
-  await h.handleSixJouer(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", m, c, p.duel.coups, { pvp: true });
+  await h.handleSixJouer(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", c, p.duel.coups, { pvp: true });
   if ((await readPvp()).duel.coups !== p.duel.coups) throw new Error("coup hors tour joué");
-  await h.handleSixJouer(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, m, c, p.duel.coups, { pvp: true });
+  await h.handleSixJouer(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, c, p.duel.coups, { pvp: true });
 }
 
 // ── Abandon (🏳️ puis confirmation) ──
@@ -117,7 +116,7 @@ await h.handleSixCommand(W, lancement);
 await h.handleSixAbandon(W, ID, "demande", { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("Abandonner la partie ?")) throw new Error("confirmation d'abandon absente");
 await h.handleSixAbandon(W, ID, "non", { channelId: "salon", pseudo: "Testeur" });
-if (rangees(vues.at(-1)).length !== 3) throw new Error("Annuler ne rend pas les boutons de coup");
+if (rangees(vues.at(-1)).length !== 2) throw new Error("Annuler ne rend pas les boutons de coup");
 await h.handleSixAbandon(W, ID, "ok", { channelId: "salon", pseudo: "Testeur" });
 if (!(await readDuel(ID)).abandon) throw new Error("abandon contre Kévina non enregistré");
 if (!texte(salon.at(-1)).includes("abandonne face à Kévina")) throw new Error("abandon contre Kévina non publié");
@@ -137,12 +136,12 @@ await h.handleSixRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
-const exemple = vues.find((v) => rangees(v).length === 3 && texte(v).includes("Kévina") && texte(v).includes("🧹"));
+const exemple = vues.find((v) => rangees(v).length === 2 && texte(v).includes("Kévina") && texte(v).includes("🧹"));
 console.log("\n--- Vue contre Kévina ---\n" + texte(exemple));
 console.log(
   "Boutons :\n" +
     rangees(exemple)
-      .slice(0, 2)
+      .slice(0, 1)
       .map((r) => r.components.map((c) => `[${c.label ?? c.emoji?.name}]`).join(" "))
       .join("\n"),
 );

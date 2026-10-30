@@ -22,16 +22,19 @@ const CHOIX = { joueur: choix(PROFILS.joueur), bot: choix(PROFILS.bot) };
 
 const res = { joueur: 0, bot: 0, nul: 0 };
 const types = {};
+const fins = {};
+let coups = 0;
 let points = 0;
 const debut = Date.now();
 for (let i = 0; i < PARTIES; i++) {
   const d = creerDuel();
   while (!d.termine) {
-    const { m, c } = CHOIX[d.actif](d, d.actif);
-    jouer(d, d.actif, m, c);
+    jouer(d, d.actif, CHOIX[d.actif](d, d.actif));
     types[d.dernier.type] = (types[d.dernier.type] ?? 0) + 1;
   }
   res[d.gagnant]++;
+  fins[d.fin] = (fins[d.fin] ?? 0) + 1;
+  coups += d.coups;
   points += d.points.joueur + d.points.bot;
 }
 
@@ -42,4 +45,5 @@ console.log(`Victoires joueur ${pct(res.joueur)} | bot ${pct(res.bot)} | nuls ${
 console.log(
   `Par partie : ${parPartie(types.sixieme)} ramassages à la 6e carte, ${parPartie(types.volontaire)} volontaires, ${parPartie(types.libre)} poses libres, ${(points / PARTIES / 2).toFixed(1)} points par joueur`,
 );
+console.log(`${(coups / PARTIES / 2).toFixed(1)} coups par joueur, ${pct(fins.seuil ?? 0)} des parties finies au seuil de points`);
 console.log(`Temps moyen par partie ${((Date.now() - debut) / PARTIES).toFixed(1)} ms`);

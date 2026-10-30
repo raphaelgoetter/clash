@@ -11,9 +11,9 @@
 //   partie à la fois, comme Quatre à la suite.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
-// custom_id : sixduel_jouer:<carte>:<colonne>:<coup> (contre Kévina),
-// sixduel_jouer:<carte>:<colonne>:<coup>:pvp (1v1 ; <carte> 0 ou 1 de la
-// main, <colonne> 0 à 2, <coup> = d.coups à l'affichage,
+// custom_id : sixduel_jouer:<colonne>:<coup> (contre Kévina),
+// sixduel_jouer:<colonne>:<coup>:pvp (1v1 ; <colonne> 0 à 3, <coup> =
+// d.coups à l'affichage,
 // un clic sur une vue dépassée est refusé), sixduel_ouvrir (bouton Jouer du
 // message public), sixduel_regles, sixduel_abandon[:pvp] (🏳️, demande
 // confirmation), sixduel_abandon_ok[:pvp] / sixduel_abandon_non[:pvp].
@@ -39,12 +39,12 @@ import {
   LIMITE,
   NB_COLONNES,
   PENALITE_MAUDITE,
+  SEUIL,
   adversaire,
   choixKevina,
-  coupsPossibles,
   jouer,
 } from "../../services/sixRules.js";
-import { carteButtonEmoji, formatCarte } from "../../services/puntoCartes.js";
+import { formatCarte } from "../../services/puntoCartes.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -60,9 +60,9 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 // carte (0 à 3) dans le moteur, le rouge est la couleur maudite
 // (COULEUR_MAUDITE)
 const COULEURS = ["bleu", "vert", "rouge", "orange"];
-const NOMS_COLONNES = ["A", "B", "C"];
+const NOMS_COLONNES = ["A", "B", "C", "D"];
 // En-têtes des colonnes, à la largeur des cartes
-const ENTETES = ["🇦", "🇧", "🇨"];
+const ENTETES = ["🇦", "🇧", "🇨", "🇩"];
 // Emplacement vide de la 6e carte (celle qui fait ramasser)
 const SIXIEME = "💀";
 // Contre Kévina : délai avant d'afficher son coup (elle joue en quelques
@@ -219,52 +219,35 @@ const pts = (n) => plural(n, "point");
 
 // Plateau : les 3 colonnes à la verticale sous leurs en-têtes, la plus
 // ancienne carte en haut ; emplacements libres gris, 6e emplacement 💀
-// (la carte qui y tomberait fait ramasser). Emojis à taille de texte
-// séparés par une espace, une rangée par ligne de texte.
-function plateau(d) {
-  const rangees = [ENTETES.join(" ")];
+// (la carte qui y tomberait fait ramasser). Une rangée par ligne, en titre
+// H1 dans la vue du joueur (plus grande taille d'emoji possible, comme La
+// Grille), H3 dans les messages publics (`titre`).
+function plateau(d, titre = "#") {
+  const rangees = [`${titre} ${ENTETES.join(" ")}`];
   for (let r = 0; r < LIMITE; r++) {
-    rangees.push(
-      d.colonnes.map((col) => (col[r] ? carteTexte(col[r]) : r === LIMITE - 1 ? SIXIEME : formatCarte("vide"))).join(" "),
+    const cases = d.colonnes.map((col) =>
+      col[r] ? carteTexte(col[r]) : r === LIMITE - 1 ? SIXIEME : formatCarte("vide"),
     );
+    rangees.push(`${titre} ${cases.join(" ")}`);
   }
   return rangees;
 }
 
-// Points perdus des deux joueurs, vus par le siège `moi` ; `noms` :
-// { moi, adv } libellés des deux camps.
-function lignePoints(d, moi, noms) {
-  return `Points perdus : **${noms.moi} ${d.points[moi]}** · ${noms.adv} ${d.points[adversaire(moi)]}`;
-}
-
-const BAREME = `Ramasser : −1 par carte, −${1 + PENALITE_MAUDITE} par carte rouge.`;
-
-// Plateau neutre (message public) : points du premier joueur d'abord.
+// Plateau neutre (message public) : cartes plus petites que dans la vue du
+// joueur, puis le score de la partie en cours (premier joueur d'abord).
 function plateauPublic(d, nomJoueur, nomBot) {
-  return [...plateau(d), lignePoints(d, "joueur", { moi: nomJoueur, adv: nomBot })];
+  return [...plateau(d, "###"), `Score en cours : **${nomJoueur} ${d.points.joueur}** · ${nomBot} ${d.points.bot}`];
 }
 
-// Récit du dernier coup vu par `moi` : « Kévina pose 🟥7 sur la colonne
-// B. », « 🧹 Tu ramasses la colonne A (3 cartes, −5 points) et y poses
-// 🟦2. », puis la carte passée à l'adversaire.
+// Récit du dernier coup vu par `moi`, sans point final : « Tu joues 🟦7
+// en A », « Kévina joue 🟥2 en B (🧹 −5) » (ramassage volontaire),
+// « … (💥 −5) » (6e carte).
 function recit(d, moi, A) {
   const x = d.dernier;
   if (!x) return null;
   const toi = x.id === moi;
-  const sujet = toi ? "Tu" : A.Sujet;
-  const verbe = (v) => (toi ? `${v}s` : v);
-  const carte = carteTexte(x.carte);
-  const col = NOMS_COLONNES[x.colonne];
-  const lignes = [
-    x.type === "sixieme"
-      ? `💥 ${sujet} ${verbe("pose")} ${carte} en 6ᵉ carte de la colonne ${col} : ${toi ? "tu ramasses" : "ramasse"} les 5 autres (−${pts(x.penalite)}).`
-      : x.type === "volontaire"
-        ? `🧹 ${sujet} ${verbe("ramasse")} la colonne ${col} (${plural(x.ramassees.length, "carte")}, −${pts(x.penalite)}) et y ${verbe("pose")} ${carte}.`
-        : `${sujet} ${verbe("pose")} ${carte} sur la colonne ${col}${x.type === "libre" ? " (plus forte nulle part)" : ""}.`,
-  ];
-  // Carte passée : la première de la main du joueur suivant
-  if (!d.termine) lignes.push(toi ? `Tu laisses ${carteTexte(d.main[0])} à ${A.Sujet}.` : `${A.Sujet} te laisse ${carteTexte(d.main[0])}.`);
-  return lignes.join("\n");
+  const ramassage = { volontaire: "🧹", sixieme: "💥" }[x.type];
+  return `${toi ? "Tu joues" : `${A.Sujet} joue`} ${carteTexte(x.carte)} en ${NOMS_COLONNES[x.colonne]}${ramassage ? ` (${ramassage} −${x.penalite})` : ""}`;
 }
 
 const ERREURS = {
@@ -324,7 +307,7 @@ function vueFin(d, { moi, A, raison }) {
       ? d.gagnant === moi
         ? `${A.Sujet} n'a pas joué à temps.`
         : "Tu n'as pas joué à temps."
-      : `La pioche est vide : tu perds ${pts(d.points[moi])}, ${A.Sujet} ${pts(d.points[adversaire(moi)])}.`;
+      : `${d.fin === "seuil" ? `${SEUIL} points atteints` : "La pioche est vide"} : tu perds ${pts(d.points[moi])}, ${A.Sujet} ${pts(d.points[adversaire(moi)])}.`;
   const issue =
     d.gagnant === "nul"
       ? "c'est un match nul."
@@ -344,44 +327,34 @@ function vueFin(d, { moi, A, raison }) {
   };
 }
 
-// Boutons de coup, à son tour seulement : une rangée par carte de sa main,
-// un bouton par colonne (« 🟦7 → A »). Un coup qui fait ramasser est en
-// rouge et annonce les points perdus (« → B · −5 »). Le numéro du coup
-// dans le custom_id écarte un clic sur une vue dépassée (pendant la
-// réflexion de Kévina, par exemple).
+// Boutons de coup, à son tour seulement : un par colonne (A à D), tous
+// gris et sans indication de perte (le récit du coup la donne). Le numéro
+// du coup dans le custom_id écarte un clic sur une vue dépassée (pendant
+// la réflexion de Kévina, par exemple).
 function boutonsCoups(d, monTour, sfx) {
   if (!monTour) return [];
-  const coups = coupsPossibles(d);
-  return d.main.map((carte, m) => ({
-    type: 1,
-    components: coups
-      .filter((x) => x.m === m)
-      .map((x) => {
-        const emoji = carteButtonEmoji(COULEURS[carte.k], carte.v);
-        const cible = `→ ${NOMS_COLONNES[x.c]}${x.penalite ? ` · −${x.penalite}` : ""}`;
-        return {
-          type: 2,
-          style: x.penalite ? 4 : 2,
-          // Repli tant que les emojis ne sont pas uploadés : la valeur en texte
-          ...(emoji ? { emoji, label: cible } : { label: `${carte.v} ${cible}` }),
-          custom_id: `sixduel_jouer:${m}:${x.c}:${d.coups}${sfx}`,
-        };
-      }),
-  }));
+  return [
+    {
+      type: 1,
+      components: NOMS_COLONNES.map((nom, c) => ({
+        type: 2,
+        style: 2,
+        label: nom,
+        custom_id: `sixduel_jouer:${c}:${d.coups}${sfx}`,
+      })),
+    },
+  ];
 }
 
-// « Tes cartes : 🟦7 🟥3 » en titre (cartes agrandies) à son tour,
-// « Cartes de Kévina : … » en texte sinon.
-function ligneMain(d, moi, A) {
-  if (!d.main.length) return null;
-  const cartes = d.main.map(carteTexte).join(" ");
-  return d.actif === moi
-    ? `## Tes cartes : ${cartes}\nCelle que tu ne joues pas part chez ${A.Sujet}.`
-    : `Cartes de ${A.Sujet} : ${cartes}`;
+// « Ta carte : 🟦7 » en titre H1 (carte agrandie) à son tour, « Carte de
+// Kévina : 🟥3 » en texte sinon.
+function ligneCarte(d, moi, A) {
+  if (!d.carte) return null;
+  return d.actif === moi ? `# Ta carte : ${carteTexte(d.carte)}` : `Carte de ${A.Sujet} : ${carteTexte(d.carte)}`;
 }
 
-// Vue d'un joueur : plateau, points, résultat de la dernière action
-// (`texte`), sa main et les boutons de coup à son tour, ou fin.
+// Vue d'un joueur : plateau, résultat de la dernière action
+// (`texte`), sa carte et les boutons de coup à son tour, ou fin.
 // `ctx` : { moi (siège du moteur), A (adversaire), pvp, echeance, raison,
 // confirmerAbandon (question à la place des boutons) }
 function buildVue(
@@ -391,19 +364,16 @@ function buildVue(
   if (d.termine) return vueFin(d, { moi, A, raison });
   const monTour = d.actif === moi;
   const sfx = pvp ? ":pvp" : "";
-  const noms = { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` };
   const lignes = [
     ...(confirmerAbandon ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite.", ""] : []),
     ...plateau(d),
-    lignePoints(d, moi, noms),
-    BAREME,
     ...(confirmerAbandon
       ? []
       : [
           ...(texte ? ["", texte] : []),
           "",
           ...(monTour ? [] : [`⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
-          ligneMain(d, moi, A),
+          ligneCarte(d, moi, A),
         ]),
   ].filter((l) => l !== null);
   const titre = `${TITRE} · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
@@ -420,13 +390,13 @@ function buildReglesEmbed(config) {
     description: [
       `${NB_COLONNES} colonnes et une pioche commune de 36 cartes (4 couleurs, de 1 à 9). But : perdre le moins de points.`,
       "",
-      "**🃏 À ton tour**, tu as 2 cartes : celle laissée par ton adversaire et une nouvelle. Tu en poses une, **l'autre part chez ton adversaire**.",
+      "**🃏 À ton tour**, tu retournes la carte du dessus de la pioche et tu la poses sur une colonne :",
       "• Carte **plus forte** que la dernière d'une colonne : elle s'y ajoute.",
       "• Carte posée sur une colonne où elle n'est pas plus forte, alors qu'elle l'est sur une autre : tu **ramasses** cette colonne, ta carte la remplace.",
       "• Carte plus forte nulle part : tu la poses où tu veux, sans rien ramasser.",
       `• ${SIXIEME} **6ᵉ carte** d'une colonne : tu ramasses les 5 autres, ta carte reste.`,
-      `**💸 Points perdus** : 1 par carte ramassée, ${1 + PENALITE_MAUDITE} par carte **rouge** (maudite). Les boutons rouges annoncent ce que tu perds.`,
-      "**🏆 Fin** : quand la pioche est vide (16 coups chacun), le moins de points gagne. Égalité : match nul.",
+      `**💸 Points perdus** : 1 par carte ramassée, ${1 + PENALITE_MAUDITE} par carte **rouge** (maudite).`,
+      `**🏆 Fin** : dès qu'un joueur atteint ${SEUIL} points perdus, ou quand la pioche est vide. Le moins de points gagne, égalité : match nul.`,
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
       `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
@@ -437,9 +407,9 @@ function buildReglesEmbed(config) {
 
 // ── Coups (communs aux deux modes) ───────────────────────────────────
 
-function actionJouer(d, moi, m, c, coup) {
+function actionJouer(d, moi, c, coup) {
   if (!d.termine && coup !== d.coups) return { erreur: "perime" };
-  const r = jouer(d, moi, m, c);
+  const r = jouer(d, moi, c);
   if (r.erreur) return { erreur: d.termine ? "termine" : "pasTonTour" };
   return {};
 }
@@ -464,7 +434,7 @@ function messageSolo(d, pseudo) {
         description: [
           d.actif === "bot"
             ? "⏳ Kévina réfléchit…"
-            : `Au tour de **${pseudo}**, cartes : ${d.main.map(carteTexte).join(" ")}`,
+            : `Au tour de **${pseudo}**, carte : ${carteTexte(d.carte)}`,
           "",
           ...plateauPublic(d, pseudo, "🤖 Kévina"),
           "",
@@ -557,7 +527,7 @@ function messageFinalSolo(d, pseudo) {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [resultat, "", ...plateauPublic(d, pseudo, "🤖 Kévina"), ...(series.length ? ["", ...series] : [])]
+        description: [resultat, "", ...plateau(d, "###"), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
         color: SIX_COLOR,
@@ -567,23 +537,22 @@ function messageFinalSolo(d, pseudo) {
   };
 }
 
-async function executerSolo(webhookUrl, discordId, m, c, coup, { channelId, pseudo } = {}) {
+async function executerSolo(webhookUrl, discordId, c, coup, { channelId, pseudo } = {}) {
   const config = await loadDuelConfig();
   const { duel, resultat } = await agirDuel(discordId, (d) => {
-    const r = actionJouer(d, "joueur", m, c, coup);
+    const r = actionJouer(d, "joueur", c, coup);
     if (r.erreur) return r;
-    const texteJoueur = recit(d, "joueur", BOT);
-    const lignes = [texteJoueur];
+    const texteJoueur = `${recit(d, "joueur", BOT)}.`;
+    const lignes = [recit(d, "joueur", BOT)];
     // Plateau après le coup du joueur, affiché pendant la réflexion de Kévina
     let avantKevina = null;
     // Kévina joue dans la foulée (sous le même verrou)
     if (!d.termine) {
       avantKevina = structuredClone(d);
-      const choix = choixKevina(d, "bot", { marge: config.marge_kevina });
-      jouer(d, "bot", choix.m, choix.c);
+      jouer(d, "bot", choixKevina(d, "bot", { marge: config.marge_kevina }));
       lignes.push(recit(d, "joueur", BOT));
     }
-    return { texte: lignes.join("\n"), vientDeFinir: d.termine, avantKevina, texteJoueur };
+    return { texte: `${lignes.join(", ")}.`, vientDeFinir: d.termine, avantKevina, texteJoueur };
   }, { nom: pseudo });
   if (!duel) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
@@ -686,7 +655,7 @@ function vuePvp(partie, config, discordId, texte = null, { confirmerAbandon = fa
   const A = nomsAdv(partie, moi);
   const d = partie.duel;
   return buildVue(d, {
-    texte: texte ?? recit(d, moi, A),
+    texte: texte ?? (d.dernier ? `${recit(d, moi, A)}.` : null),
     moi,
     A,
     pvp: true,
@@ -728,7 +697,7 @@ function messagePublic(partie, config) {
         // Plateau neutre, suivi par le salon ; chaque joueur joue depuis sa
         // vue éphémère
         description: [
-          `Au tour de **${nom(d.actif)}**, cartes : ${d.main.map(carteTexte).join(" ")}, limite <t:${echeanceDe(partie, config)}:R>`,
+          `Au tour de **${nom(d.actif)}**, carte : ${carteTexte(d.carte)}, limite <t:${echeanceDe(partie, config)}:R>`,
           "",
           ...plateauPublic(d, nom("joueur"), nom("bot")),
         ].join("\n").slice(0, 4096),
@@ -773,7 +742,7 @@ function messageFinal(partie) {
     embeds: [
       {
         title: `${TITRE} · ${titreGagnant(g, nom)}`,
-        description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot")), ...(series.length ? ["", ...series] : [])]
+        description: [resultat, "", ...plateau(d, "###"), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
         color: SIX_COLOR,
@@ -912,14 +881,14 @@ export async function handleSixOuvrir(webhookUrl, body) {
   }
 }
 
-async function executerPvp(webhookUrl, discordId, m, c, coup) {
+async function executerPvp(webhookUrl, discordId, c, coup) {
   const { partie, config, resultat } = await agirPvp((p) => {
     const moi = siegeDe(p, discordId);
     if (!moi) return { erreur: p.statut === "lobby" ? "lobby" : "pasJoueur" };
     memoriserWebhook(p, discordId, webhookUrl);
     if (p.statut !== "enCours") return { erreur: "termine" };
-    const r = actionJouer(p.duel, moi, m, c, coup);
-    return r.erreur ? r : { texte: recit(p.duel, moi, nomsAdv(p, moi)), coup: true };
+    const r = actionJouer(p.duel, moi, c, coup);
+    return r.erreur ? r : { texte: `${recit(p.duel, moi, nomsAdv(p, moi))}.`, coup: true };
   });
   if (!partie) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
@@ -998,13 +967,12 @@ export async function handleSixAbandon(webhookUrl, discordId, etape, { pvp = fal
 
 // ── Points d'entrée des composants ───────────────────────────────────
 
-// `m` : carte de la main (0 ou 1), `c` : colonne, `coup` : numéro du coup
-// affiché par la vue cliquée (d.coups).
-export async function handleSixJouer(webhookUrl, discordId, m, c, coup, { pvp = false, channelId, pseudo } = {}) {
+// `c` : colonne, `coup` : numéro du coup affiché par la vue cliquée (d.coups).
+export async function handleSixJouer(webhookUrl, discordId, c, coup, { pvp = false, channelId, pseudo } = {}) {
   try {
-    if (![0, 1].includes(m) || !Number.isInteger(c) || c < 0 || c >= NB_COLONNES) return;
-    if (pvp) await executerPvp(webhookUrl, discordId, m, c, coup);
-    else await executerSolo(webhookUrl, discordId, m, c, coup, { channelId, pseudo });
+    if (!Number.isInteger(c) || c < 0 || c >= NB_COLONNES) return;
+    if (pvp) await executerPvp(webhookUrl, discordId, c, coup);
+    else await executerSolo(webhookUrl, discordId, c, coup, { channelId, pseudo });
   } catch (err) {
     console.error("[Six] Échec jouer:", err.message);
   }

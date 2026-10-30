@@ -1,9 +1,8 @@
 // ============================================================
 // sixRules.js — Règles pures de Six (`/six`), duel inspiré du 6 qui prend :
 // pioche commune de 36 cartes (4 couleurs de 1 à 9, celles de Punto),
-// 3 colonnes. À son tour, on a 2 cartes : celle laissée par l'adversaire
-// et une nouvelle pioche. On en pose une, l'autre passe à l'adversaire.
-// Une carte posée sur une colonne :
+// 4 colonnes. À son tour, on retourne la carte du dessus de la pioche et
+// on la pose sur une colonne :
 // - plus forte que sa dernière carte : elle s'y ajoute ;
 // - pas plus forte, alors qu'elle l'est sur une autre colonne : on
 //   ramasse la colonne (ramassage volontaire), la carte la remplace ;
@@ -11,7 +10,8 @@
 //   libre) ;
 // - 6e carte d'une colonne : on ramasse les 5 premières, elle reste.
 // Une colonne ramassée coûte 1 point par carte, plus PENALITE_MAUDITE par
-// carte de la couleur maudite. Pioche vide : le moins de points gagne.
+// carte de la couleur maudite. Fin dès qu'un joueur atteint SEUIL points
+// ou quand la pioche est vide : le moins de points gagne.
 // Aucune I/O : la couche Redis lit le duel, appelle ces fonctions sous
 // verrou puis le réécrit. `rng` injectable (tests, simulation).
 //
@@ -23,7 +23,7 @@
 // ============================================================
 
 export const IDS = ["joueur", "bot"];
-export const NB_COLONNES = 3;
+export const NB_COLONNES = 4;
 // La 6e carte d'une colonne la fait ramasser
 export const LIMITE = 6;
 export const NB_COULEURS = 4;
@@ -32,6 +32,8 @@ export const VALEUR_MAX = 9;
 export const COULEUR_MAUDITE = 2;
 export const PENALITE_CARTE = 1;
 export const PENALITE_MAUDITE = 3;
+// Points perdus qui terminent la partie
+export const SEUIL = 15;
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
 
@@ -80,17 +82,13 @@ function appliquer(colonnes, carte, c, type) {
   return colonnes.map((col, i) => (i !== c ? col : ramassees(col, type).length ? [carte] : [...col, carte]));
 }
 
-// Les 6 coups possibles du joueur actif : { m (carte 0 ou 1 de sa main),
-// c (colonne), type, penalite }.
-export function coupsPossibles(d) {
-  const coups = [];
-  for (let m = 0; m < d.main.length; m++) {
-    for (let c = 0; c < NB_COLONNES; c++) {
-      const type = typeCoup(d.colonnes, d.main[m], c);
-      coups.push({ m, c, type, penalite: penalite(ramassees(d.colonnes[c], type)) });
-    }
-  }
-  return coups;
+// Les coups possibles de `carte` (par défaut celle du joueur actif), un
+// par colonne : { c, type, penalite }.
+export function coupsPossibles(d, carte = d.carte) {
+  return d.colonnes.map((col, c) => {
+    const type = typeCoup(d.colonnes, carte, c);
+    return { c, type, penalite: penalite(ramassees(col, type)) };
+  });
 }
 
 export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
@@ -99,9 +97,8 @@ export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
   return {
     colonnes,
     pioche: cartes,
-    // Main du joueur actif : [carte laissée par l'adversaire, nouvelle
-    // pioche] (au premier tour, deux cartes de la pioche)
-    main: [cartes.pop(), cartes.pop()],
+    // Carte à poser par le joueur actif (visible de tous)
+    carte: cartes.pop(),
     actif: commence,
     points: { joueur: 0, bot: 0 },
     coups: 0,
@@ -109,19 +106,19 @@ export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
     dernier: null,
     termine: false,
     gagnant: null,
+    // Fin : "seuil" (un joueur a atteint SEUIL points) ou "pioche" (vide)
+    fin: null,
   };
 }
 
-// Pose la carte `m` (0 ou 1) de la main du joueur actif `id` sur la
-// colonne `c`, puis fin de partie (pioche vide) ou tour adverse : l'autre
-// carte lui passe, avec une nouvelle pioche.
-export function jouer(d, id, m, c) {
+// Pose la carte du joueur actif `id` sur la colonne `c`, puis fin de
+// partie (seuil atteint ou pioche vide) ou tour adverse (carte retournée).
+export function jouer(d, id, c) {
   if (d.termine) return { erreur: "Partie terminée." };
   if (d.actif !== id) return { erreur: "Ce n'est pas ton tour." };
-  if (![0, 1].includes(m) || !Number.isInteger(c) || c < 0 || c >= NB_COLONNES) return { erreur: "Coup inconnu." };
+  if (!Number.isInteger(c) || c < 0 || c >= NB_COLONNES) return { erreur: "Coup inconnu." };
 
-  const carte = d.main[m];
-  const autre = d.main[1 - m];
+  const carte = d.carte;
   const type = typeCoup(d.colonnes, carte, c);
   const prises = ramassees(d.colonnes[c], type);
   const points = penalite(prises);
@@ -130,57 +127,52 @@ export function jouer(d, id, m, c) {
   d.coups += 1;
   d.dernier = { id, carte, colonne: c, type, ramassees: prises, penalite: points };
 
-  if (!d.pioche.length) {
+  if (d.points[id] >= SEUIL || !d.pioche.length) {
     d.termine = true;
-    d.main = [];
+    d.fin = d.points[id] >= SEUIL ? "seuil" : "pioche";
+    d.carte = null;
     const { joueur, bot } = d.points;
     d.gagnant = joueur === bot ? "nul" : joueur < bot ? "joueur" : "bot";
   } else {
     d.actif = adversaire(id);
-    d.main = [autre, d.pioche.pop()];
+    d.carte = d.pioche.pop();
   }
   return { carte, type, penalite: points };
 }
 
 // ── Kévina ────────────────────────────────────────────────────────
 
-// Points que l'adversaire perdra au mieux à son tour, en moyenne : il
-// aura la carte `passee` (connue) et une carte inconnue parmi `inconnues`
-// (la pioche, dont l'ordre est secret).
-function penaliteAdverse(colonnes, passee, inconnues) {
+// Points que l'adversaire perdra au mieux à son tour, en moyenne sur sa
+// carte inconnue (une carte de la pioche, dont l'ordre est secret).
+function penaliteAdverse(colonnes, inconnues) {
+  if (!inconnues.length) return 0;
   const auMieux = (carte) =>
     Math.min(...colonnes.map((col, c) => penalite(ramassees(col, typeCoup(colonnes, carte, c)))));
-  const p = auMieux(passee);
-  if (!inconnues.length) return p;
-  return inconnues.reduce((s, carte) => s + Math.min(p, auMieux(carte)), 0) / inconnues.length;
+  return inconnues.reduce((s, carte) => s + auMieux(carte), 0) / inconnues.length;
 }
 
 // Kévina minimise ses points perdus moins ceux que l'adversaire perdra au
-// mieux à son tour suivant (la carte qu'elle lui passe comprise), sans
-// anticipation plus lointaine. `marge` : coup tiré au sort parmi ceux à
-// `marge` points au plus du meilleur (variété, et des erreurs qui laissent
-// sa chance au joueur). Réglage : `marge_kevina` de duel.json.
-// Renvoie { m, c }.
+// mieux à son tour suivant, sans anticipation plus lointaine. `marge` :
+// colonne tirée au sort parmi celles à `marge` points au plus de la
+// meilleure (variété, et des erreurs qui laissent sa chance au joueur).
+// Réglage : `marge_kevina` de duel.json. Renvoie la colonne.
 export function choixKevina(d, id, { marge = 0, rng = Math.random } = {}) {
   const valeurs = coupsPossibles(d).map((coup) => {
-    const carte = d.main[coup.m];
-    const apres = appliquer(d.colonnes, carte, coup.c, coup.type);
-    return { coup, v: coup.penalite - penaliteAdverse(apres, d.main[1 - coup.m], d.pioche) };
+    const apres = appliquer(d.colonnes, d.carte, coup.c, coup.type);
+    return { c: coup.c, v: coup.penalite - penaliteAdverse(apres, d.pioche) };
   });
   const min = Math.min(...valeurs.map((x) => x.v));
   const meilleurs = valeurs.filter((x) => x.v <= min + marge);
-  const { m, c } = meilleurs[Math.floor(rng() * meilleurs.length)].coup;
-  return { m, c };
+  return meilleurs[Math.floor(rng() * meilleurs.length)].c;
 }
 
 // Joueur « de bon sens » (simulation) : le moins de points perdus, puis
 // la plus petite marche au-dessus de la dernière carte.
 export function choixSimple(d) {
-  const cle = (x) => x.penalite * 100 + (x.type === "pose" ? d.main[x.m].v - derniere(d.colonnes[x.c]).v : 20);
-  const { m, c } = coupsPossibles(d).reduce((b, x) => (cle(x) < cle(b) ? x : b));
-  return { m, c };
+  const cle = (x) => x.penalite * 100 + (x.type === "pose" ? d.carte.v - derniere(d.colonnes[x.c]).v : 20);
+  return coupsPossibles(d).reduce((b, x) => (cle(x) < cle(b) ? x : b)).c;
 }
 
 export function choixHasard(d, rng = Math.random) {
-  return { m: Math.floor(rng() * 2), c: Math.floor(rng() * NB_COLONNES) };
+  return Math.floor(rng() * NB_COLONNES);
 }
