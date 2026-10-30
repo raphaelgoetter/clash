@@ -8,6 +8,10 @@
 import { getDiscordLinks } from "../../../backend/services/discordLinks.js";
 import { loadSnapshots } from "../../../backend/services/snapshot.js";
 import {
+  rosterAtDayEnd,
+  wasInClanAtDayEnd,
+} from "../../../backend/services/arrivalUtils.js";
+import {
   toPublicSeasonId,
   toPublicWeekId,
 } from "@clash/clash-royale/dateUtils.js";
@@ -2009,6 +2013,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           }
         }
 
+        const prevDayRoster = rosterAtDayEnd(prevDaySnap);
         const failedPlayers = Array.from(snapshotMembersByTag.entries())
           .map(([normalizedTag, member]) => ({
             name: member.name || "Inconnu",
@@ -2036,8 +2041,13 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           }))
           // Les joueurs arrivés en cours de semaine sont inclus comme les
           // autres (annotés 🆕 plus bas via arrivalWeeks) : un membre qui
-          // vient de rejoindre doit quand même jouer ses decks du jour.
-          .filter((p) => p.decks < 4)
+          // vient de rejoindre doit quand même jouer ses decks du jour. Seuls
+          // ceux arrivés après la fin de la journée sont écartés.
+          .filter(
+            (p) =>
+              p.decks < 4 &&
+              wasInClanAtDayEnd(prevDayRoster, normalizeTag(p.tag)),
+          )
           .sort((a, b) =>
             a.name.localeCompare(b.name, "fr", {
               numeric: true,

@@ -73,3 +73,31 @@ export function hasLateArrivalDailyPattern(daily) {
   const firstDataIdx = daily.findIndex((v) => v != null);
   return firstDataIdx >= 2;
 }
+
+/**
+ * Tags des joueurs présents dans le clan à la fin d'une journée de GDC,
+ * d'après le snapshot pré-reset. Les participants de la course renvoyés par
+ * l'API incluent tous les membres présents (à 0 s'ils n'ont pas joué) : un
+ * joueur absent de cette capture a rejoint le clan après la journée et ne
+ * peut pas l'avoir manquée.
+ *
+ * @param {object|null} dayEntry - Jour de snapshot (brut ou formaté)
+ * @returns {Set<string>|null} Tags normalisés (majuscules, sans #), ou null
+ *          si le jour n'a pas de capture pré-reset (pas de filtrage possible)
+ */
+export function rosterAtDayEnd(dayEntry) {
+  const cumul = dayEntry?._cumulFamePreReset ?? dayEntry?._cumulPreReset;
+  if (!cumul || Object.keys(cumul).length === 0) return null;
+  return new Set(
+    Object.keys(cumul).map((tag) => tag.replace(/^#/, "").toUpperCase()),
+  );
+}
+
+/**
+ * true si le joueur était dans le clan à la fin de la journée, ou si on ne
+ * peut pas le savoir (roster null).
+ */
+export function wasInClanAtDayEnd(roster, tag) {
+  if (!roster) return true;
+  return roster.has(String(tag ?? "").replace(/^#/, "").toUpperCase());
+}

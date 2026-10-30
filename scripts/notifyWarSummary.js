@@ -38,7 +38,11 @@ import {
   RACE_FINISH_LINE,
 } from "../backend/services/warStandings.js";
 import { resolveMembersChannelId } from "@clash/commun/discordChannels.js";
-import { isJoinedThisWar } from "../backend/services/arrivalUtils.js";
+import {
+  isJoinedThisWar,
+  rosterAtDayEnd,
+  wasInClanAtDayEnd,
+} from "../backend/services/arrivalUtils.js";
 import { getRoleIdByName } from "@clash/commun/discordRoles.js";
 import { loadClanCache } from "../backend/services/clanCache.js";
 import { getDiscordLinks } from "../backend/services/discordLinks.js";
@@ -334,6 +338,8 @@ function computeMissingDuelsFromSnapshots(
     .map(([playerTag, meta]) => {
       const missingDuels = normalizedDays.reduce((sum, realDay) => {
         const day = dayEntries.find((entry) => entry.realDay === realDay);
+        // Arrivé après la fin de la journée : pas de duel attendu ce jour-là.
+        if (!wasInClanAtDayEnd(rosterAtDayEnd(day), playerTag)) return sum;
         return sum + ((day?.duelsTodayByTag?.[playerTag] ?? 0) > 0 ? 0 : 1);
       }, 0);
 
@@ -1375,6 +1381,10 @@ async function postWarSummary(
       return Number.isFinite(ts) ? ts : null;
     })();
 
+    // Un joueur arrivé après la fin de la journée (ex. transfert juste après
+    // le reset) ne peut pas l'avoir manquée, même s'il a déjà une ancienneté
+    // dans la famille qui le fait passer pour un membre installé.
+    const dayRoster = rosterAtDayEnd(dayEntry);
     const missingPlayers = Object.entries(memberNames)
       .map(([tagNorm, member]) => {
         const diskDecks = Math.max(
@@ -1412,7 +1422,11 @@ async function postWarSummary(
         const isNewArrival =
           !joinedBeforeWarStart &&
           isJoinedThisWar(p.arrivalStreak, p.day1Decks);
-        return p.missing > 0 && !isNewArrival;
+        return (
+          p.missing > 0 &&
+          !isNewArrival &&
+          wasInClanAtDayEnd(dayRoster, p.tag)
+        );
       })
       .sort(
         (a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr"),

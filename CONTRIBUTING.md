@@ -401,12 +401,13 @@ Objectif : ne pas pénaliser dans les listes d'échec les membres arrivés penda
 | `1` avec `day1Decks ≥ 1`, ou `≥ 2` | | installé |
 
 - `hasLateArrivalDailyPattern(daily)` (même fichier) : arrivé si les 2 premiers jours au moins sont sans donnée de snapshot (cas d'un départ puis retour dans la semaine, que le streak masque).
+- `rosterAtDayEnd(dayEntry)` / `wasInClanAtDayEnd(roster, tag)` (même fichier) : membres présents à la fin d'une journée, d'après les participants de la capture pré-reset (`_cumulFamePreReset`, à défaut `_cumulPreReset`), qui listent tous les membres présents, même à 0. Un joueur absent de cette capture a rejoint le clan après la journée et n'est jamais compté en échec pour celle-ci ; sans capture pré-reset, aucun filtrage.
 
 | Usage | Règle |
 | --- | --- |
-| `notifyWarSummary.js` (résumé quotidien) | `isJoinedThisWar()` pour ne pas compter les arrivants comme manquants |
+| `notifyWarSummary.js` (résumé quotidien) | `isJoinedThisWar()` pour ne pas compter les arrivants comme manquants ; combats et duels manquants limités aux présents en fin de journée (`wasInClanAtDayEnd()`) |
 | `/demote` | Sépare arrivés et réguliers via `joinedThisWeek`, calculé dans `backend/routes/clan.js` : `lateArrival` ou streak 0 ou (streak 1 et pas de donnée J1) ou `hasLateArrivalDailyPattern()` |
-| `/fail` | N'exclut pas les arrivants : ils sont listés et annotés 🆕 si `arrivalTotalWeeks ≤ 1` |
+| `/fail` | N'exclut pas les arrivants présents en fin de journée : ils sont listés et annotés 🆕 si `arrivalTotalWeeks ≤ 1` ; les arrivés après la journée sont écartés (`wasInClanAtDayEnd()`) |
 
 ---
 
