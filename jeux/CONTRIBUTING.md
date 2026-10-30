@@ -4,7 +4,7 @@ Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spécia
 
 Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale`.
 
-Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Bang!, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash) · faces de dé · duels · sondage public · noms des cartes · jeux archivés.
+Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash) · faces de dé · duels · sondage public · noms des cartes · jeux archivés.
 
 ---
 
@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/bang`, `/gobelet`, `/grille`, `/quatre`, `/punto` et leurs boutons de duel |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto` et leurs boutons de duel |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -382,7 +382,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 
 ## Jeux spéciaux : fonctionnement commun
 
-Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scripts/post<Jeu>.js`, boutons routés par `jeux/discord/routes/jeuxSpeciaux.js`, sauf le vote du Quiz `quiz_vote:` routé par `miniJeux.js`) : Quiz, Robinson, Mario Clash, Bang!, Gobelet, Blackjack, Meow, Qui est-ce ?, Goblin Hunters (+ Tamagotchi et Boss Raid, archivés). Un seul jeu spécial actif à la fois sur le salon public, affiché dans `/mini-jeux` (`SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`, premier état non terminé sur le salon public).
+Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scripts/post<Jeu>.js`, boutons routés par `jeux/discord/routes/jeuxSpeciaux.js`, sauf le vote du Quiz `quiz_vote:` routé par `miniJeux.js`) : Quiz, Robinson, Mario Clash, Gobelet, Blackjack, Meow, Qui est-ce ?, Goblin Hunters (+ Tamagotchi, Boss Raid et Bang!, archivés). Un seul jeu spécial actif à la fois sur le salon public, affiché dans `/mini-jeux` (`SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`, premier état non terminé sur le salon public).
 
 ### Lancement : jour d'annonce obligatoire
 
@@ -439,10 +439,9 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | Blackjack      | `blackjack.yml`     | `12 8 * * *` |
 | Mario Clash    | `marioclash.yml`    | `14 8 * * *` |
 | Jeu du Gobelet | `gobelet.yml`       | `16 8 * * *` |
-| Bang!          | `bang.yml`          | `18 8 * * *` |
 | Qui est-ce ?   | `quiestce.yml`      | `20 8 * * *` |
 
-Tamagotchi (`tamagotchi.yml`, ex-minute 10) et Boss Raid (`bossraid.yml`, ex-minute 2) ont leur cron commenté : voir « Jeux archivés ».
+Tamagotchi (`tamagotchi.yml`, ex-minute 10), Boss Raid (`bossraid.yml`, ex-minute 2) et Bang! (`bang.yml`, ex-minute 18) ont leur cron commenté : voir « Jeux archivés ».
 
 - Le cron lance `npm run <jeu>:public -- --require-active` : il n'avance qu'une partie déjà lancée. Le lancement se fait à la main (`workflow_dispatch`, bouton « Run workflow » ou `gh workflow run <fichier>.yml`).
 - ⚠️ Ne jamais caler deux crons sur la même minute ni sur une heure ronde : les triggers `schedule` de GitHub sont _best-effort_ et retardés aux heures chargées.
@@ -830,87 +829,6 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 Mêmes commandes que Blackjack avec le préfixe `gobelet:` (`test`, `test:dry`, `public`, `public:dry`, `reset`, `reset:manches`, `status`, `scores`). Cron `.github/workflows/gobelet.yml` : `16 8 * * *`. Variables : celles de Blackjack.
 
-## Bang! — dernier joueur en vie en 7 jours
-
-Jeu spécial 100 % asynchrone inspiré d'Exploding Kittens : une pioche commune truffée de **Gobelins explosifs**, des cartes d'action pour piéger les autres, objectif être le dernier en vie. Pas d'ordre de passage, chaque action est résolue tout de suite.
-
-| Rôle | Fichier |
-| ---- | ------- |
-| Règles pures (testées par `bangRules.test.js`) | `jeux/services/bangRules.js` |
-| Redis | `jeux/services/bang.js` |
-| Images | `jeux/services/bangImage.js` |
-| Discord | `jeux/discord/handlers/bang.js` |
-| Publication | `jeux/scripts/postBang.js` |
-| Config | `jeux/data/bang/bang.json` |
-
-### Cartes (Bang!)
-
-Chaque carte est illustrée par une carte Clash Royale (`CARTES`).
-
-| Carte | Carte CR | Effet |
-| ----- | -------- | ----- |
-| 💥 Gobelin explosif | Goblin Demolisher | Piochée : un Esprit de guérison en main est sacrifié, sinon le joueur explose (éliminé, main défaussée, le Gobelin explosif quitte le jeu). |
-| 💚 Esprit de guérison | Heal Spirit | Sauve du Gobelin explosif, que le joueur cache ensuite dans la pioche (`POSITIONS` : haut, 2e, 3e, milieu, fond, hasard). Un en main au départ. |
-| 🙏 Moine | Monk | Joué à l'avance, **secret** (absent du journal). La prochaine attaque ciblée (Gang, Malédiction, Voleuse) est renvoyée à l'attaquant. Actif jusqu'à la clôture, un seul à la fois, un renvoi ne se renvoie pas. |
-| 🛢️ Fût à gobelins | Goblin Barrel | Annule une pioche due (Gang), sinon termine le tour sans piocher. Ne vise personne. |
-| 🧿 Malédiction | Goblin Curse | La prochaine carte piochée par la cible (hors Gobelin explosif) devient un simple Gobelin ; reste active les jours suivants tant qu'elle n'est pas consommée. |
-| 👊 Gang de gobelins | Goblin Gang | La cible doit piocher `gang_pioches` (2) cartes. Reçu avant son tour : minimum du menu de pioche relevé à 2. Reçu après : pioches dues en un clic (sans choix ni Bravoure), et le joueur peut rejouer des cartes (Fût…) tant qu'elles ne sont pas faites. |
-| 🎯 Gobelin à sarbacane | Dart Goblin | Montre les 3 premières cartes de la pioche (éphémère). |
-| 🦹 Voleuse | Bandit | Vole une carte au hasard dans la main de la cible. |
-| 👺 Gobelin | Goblins | Sans pouvoir (dilue la main face à la Voleuse). |
-
-### Règles (Bang!)
-
-- **Inscription** au premier clic sur un bouton, jusqu'au jour `inscription_jours` (2) inclus (`agir()`). Le joueur reçoit un Esprit de guérison et `main_depart` (2) cartes de son paquet ; le reste est mélangé dans la pioche (`paquet_par_joueur` : gobelin 4, sarbacane 1, moine 1, fût 1, gang 1, malédiction 1, voleuse 1, esprit 0,5 ; un taux fractionnaire de 0,5 = un exemplaire tous les deux joueurs), plus `bombes_par_joueur` (1,5) Gobelins explosifs par joueur **à partir du deuxième** (`ajouterJoueur()`).
-- **Tour** : le joueur joue ses cartes d'abord, puis pioche **1 à `pioches_par_jour` (3) cartes d'un coup**, ce qui termine son tour jusqu'à la clôture (`joueur.tourFait`). Menu `choixPioche()` : de `max(1, dette)` à `pioches_par_jour`, borné par la taille de la pioche ; `piocherClic(…, { nb })` pose `dette = nb`, `bonus = nb - min`. La pioche s'arrête sur un Gobelin explosif désamorcé ; les cartes restantes sont piochées dès qu'il est caché.
-- Jouer une carte est gratuit, dans la limite de `cartes_par_jour` (3) par jour (`joueur.jouees`) : empêche les rafales sur une même cible. Jamais obligé de jouer la carte piochée.
-- **Une attaque de chaque type subie par jour** (`UNIQUES` : Gang, Voleuse, Malédiction ; `joueur.subies`) quel que soit l'attaquant ; un attaquant peut viser plusieurs cibles. `jouer()` renvoie `dejaSubie` (carte gardée), le menu n'affiche que les cibles attaquables (`ciblesPossibles()`). Une attaque renvoyée par un Moine compte pour l'attaquant.
-- **Clôture** (`cloturer()`, cron), dans un ordre aléatoire : Gobelin explosif pas encore caché placé au hasard ; chaque survivant qui n'a ni pioché ni joué de Fût pioche automatiquement `max(dette, pioches_auto)` (2) cartes (pénalité de passivité, sans Bravoure) ; Moines, `subies`, `jouees`, `dette` remis à zéro.
-- **🔥 Bravoure** (`joueur.bravoure`) : `bravoure.pioche` (1) par carte piochée au-delà du minimum du tour (sur les `bonus` dernières pioches, jamais pour une carte non piochée) ; `bravoure.attaque` (1) par attaque aboutie (Gang, Malédiction, Voleuse, même sur main vide ; en cas de renvoi, c'est le joueur protégé qui la gagne). Le Fût n'en rapporte pas.
-- **Fin** : dès qu'il ne reste qu'un joueur (message final posté par l'action éliminatoire, résultat figé une seule fois par `figerResultat()`), sinon à la clôture du jour `duree_jours` (7).
-- **Classement** (`classement()`, ordre strict, pas de `rangExAequo`) : survivants d'abord, par Bravoure, puis Esprits en main, nombre de cartes, ordre d'arrivée ; puis éliminés du dernier au premier. **Score = nombre de joueurs classés derrière**, cumulé dans l'historique de saison des mini-jeux.
-
-**Équilibrage** : `jeux/outils/bang/simulateBang.mjs` (bots passif/prudent/hardi/audacieux) et `jeux/outils/bang/simulateLimite.mjs` (plafond de cartes jouées). Avec les réglages actuels, à 15-18 joueurs (cible habituelle) : environ 5 % / 1 % de parties finies avant le J7, 3,7 / 4,5 survivants, et un profil passif quasi jamais gagnant. Le nombre de Gobelins (4 par joueur) dilue les Gobelins explosifs pour compenser les pioches volontaires.
-
-### Interface (Bang!)
-
-- **Message officiel** (un par jour, réédité après chaque action par `rafraichirTable()`) : intro au J1, puis bilan de la veille (« 📰 Hier dans l'Arène » : explosions, sauvetages, attaques, renvois, pioches automatiques ; `partie.jour` archivé dans `partie.veille`), pioche et Gobelins explosifs restants, survivants, éliminés, et seulement les faits cruciaux du jour (« 💥 Aujourd'hui »). Boutons **Piocher**, **Jouer une carte**, **Journal**, **Règles**, en éphémère.
-- ⚠️ Plateau **joint au message** (`joindreImage()`, `attachment://plateau.png`) plutôt que confié par URL (le proxy Discord dépassait son délai sur un rendu à froid, l'image disparaissait d'une édition à l'autre). Chaque envoi liste la seule pièce jointe à garder (`attachments`), même au repli sur l'URL, sinon l'ancien plateau reste affiché.
-- **Piocher** (`buildPiocheView()`) : menu « Combien de cartes piocher ? » (`bang_nbpioche`, avec la Bravoure de chaque option ; option « Imposé par le Gang de gobelins » après un Gang), cartes piochées, menu « Où cacher le Gobelin explosif ? » après un désamorçage, bouton « Piocher (N) » pour des pioches dues.
-- **Jouer une carte** (`buildJouerView()`) : dernier résultat, alertes (Gang, Malédiction, Moine actif), Bravoure, image de la main, menu des cartes jouables avec leur effet, menu des cibles, Annuler.
-- **Journal** (`handleJournal()`) : ce qui concerne le joueur, par jour, du plus récent au plus ancien. `partie.journal` (1000 entrées au plus) : `{ j, k, s, v, c, ids, … }` pour un événement public, rédigé à l'affichage par `texteJournal()` (2e personne pour le lecteur, 3e sur le message officiel) ; `{ j, t, p }` pour une note privée. Les mains restent secrètes ; le Moine joué n'apparaît pas.
-
-### Images (Bang!)
-
-Routes dans `jeux/server/imageRoutes.js`, dessin des cartes via `@clash/clash-royale/cardImage.js`.
-
-- `/api/bang/main?c=id1|id2|…` : main du joueur (cartes seules, 5 par ligne, badge `×N`), cache CDN (`s-maxage`).
-- `/api/bang/table?d=…` : plateau sur le tapis `bang-table.jpg` (⚠️ JPEG : resvg ne décode pas le WebP embarqué) ; état encodé dans l'URL (`encodeTable()`, base64url), donc nouvelle URL à chaque action, ce qui contourne le cache Discord. Avatars sur anneau doré avec le nombre de cartes, gris barrés pour les éliminés. Rendu local : `node jeux/outils/bang/renderTable.mjs <sortie.png> [joueurs] [éliminés]`.
-- **Avatars** : 12 créatures DiceBear Clay (CC0), `jeux/data/bang/avatars/clay-01…12.png`, attribués par ordre d'arrivée décalé au hasard (`partie.decalageAvatars`), répétés au-delà de 12 joueurs.
-- `/api/bang/illustration` : `bang-launch.webp`, message de présentation.
-- Assets servis depuis Vercel Blob : `npm run assets:upload-blob -- bang` après modification.
-
-### Stockage Redis (`bang:*`)
-
-| Clé | Type | Contenu |
-| --- | ---- | ------- |
-| `bang:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing }` |
-| `bang:partie` | STRING | `{ pioche, joueurs, journal, numeroJour, elimines, termine, jour, veille, decalageAvatars }` ; joueur : `{ username, main, bravoure, pioches, bonus, subies, vivant, moine, maudit, dette, tourFait, jouees, enAttente, arrivee, rangElimination }`. Réécrite sous verrou à chaque action. |
-| `bang:resultat` | STRING | classement final (écrit une fois) |
-| `bang:lock` | STRING | verrou des actions (10 s) |
-| `bang:manches` / `bang:manche_seq` | HASH / compteur | `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }` des parties publiques, jamais nettoyé sauf `--manches` |
-
-### Scripts et cron (Bang!)
-
-| Commande | Effet |
-| -------- | ----- |
-| `npm run bang:test` | Salon de test. Au passage au J1, inscrit 6 ou 7 **PNJ** (`pnj-N`) qui ne jouent pas mais piochent à la clôture et servent de cibles (`-- --sans-pnj` pour s'en passer). |
-| `npm run bang:test:dry` / `bang:public` / `bang:public:dry` | Aperçu / salon public / aperçu public |
-| `npm run bang:reset` / `bang:reset:manches` | **Destructif** (le second efface aussi l'archive) |
-| `npm run bang:status` | Vue organisateur (pioche, mains, effets en cours) |
-
-Test de bout en bout local (Redis et Discord simulés) : `node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/bang/e2eBang.mjs [joueurs]`. Cron `.github/workflows/bang.yml` : `18 8 * * *`. Variables : `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`TOKEN`, `BLOB_READ_WRITE_TOKEN`.
-
 ## Qui est-ce ? — démasquer les cartes secrètes en 7 jours
 
 Jeu spécial 100 % asynchrone : chaque joueur reçoit en secret une carte d'une grille commune et chasse les cartes des autres, avec **une question par jour** sur sa cible puis une accusation. Un objet gratuit par jour, offensif (contre sa cible) ou défensif (contre son chasseur).
@@ -1297,14 +1215,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Six duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/bang`, `/grille`, `/quatre`, `/punto`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Cinq duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `bangduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `bangduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack, Gobelet, Bang! 1v1, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack, Gobelet, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (1 ou 2 joueurs)
 
@@ -1330,57 +1248,6 @@ Six duels lancés par commande slash, sans cron ni historique de manches : `/bla
 | `npm run blackjackduel:status` / `gobeletduel:status` | État courant, pour décider |
 | `npm run blackjackduel:watchdog` / `gobeletduel:watchdog` | Reset seulement si inactif depuis 1 h (`resetIfStale()`) |
 | `npm run blackjackduel:reset` / `gobeletduel:reset` | Reset inconditionnel (préserve le high score) |
-
-### Bang! Duel (contre Kévina ou en 1v1)
-
-Adaptation d'Exploding Kittens Duel avec les cartes de Bang!. `/bang adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé.**
-
-- Code : `jeux/services/bangDuelRules.js` (règles pures et Bot, tests `bangDuelRules.test.js`), `jeux/services/bangDuel.js` (Redis), `jeux/discord/handlers/bangDuel.js` (Discord).
-- Config : `jeux/data/bang/duel.json`. Cartes partagées avec Bang! (`CARTES` de `bangRules.js` ; la 🌪️ Tornade est réservée au Duel), images de main via `/api/bang/main`.
-- `custom_id` : `bangduel_<action>` contre Kévina, `bangduel_<action>:pvp` en 1v1 (`piocher`, `carte`, `placer`), `bangduel_ouvrir` (Jouer du message public 1v1), `bangduel_regles`.
-
-#### Règles (config `duel.json`)
-
-| Paramètre | Valeur |
-| --- | --- |
-| `paquet` | 6 Gobelins, 3 Fûts, 3 Sarbacanes, 2 Gangs, 2 Voleuses, 2 Moines, 2 Tornades (mélangés) |
-| `main_depart` | 4 cartes + 1 Esprit de guérison par joueur |
-| Pioche | reste du paquet + `esprits_pioche` (2) Esprits + `bombes` (2) Gobelins explosifs (16 cartes) |
-| `tours_max` | 10 tours (un tour = joueur puis adversaire) ; **match nul** si personne n'a explosé |
-| `cartes_par_tour` | 3 cartes jouées au plus |
-| `gang_pioches` | 2 |
-| `delai_tour_minutes` | 5 (1v1 uniquement) |
-
-- **Le joueur commence toujours** contre Kévina (tiré au sort en 1v1).
-- **À son tour** : jusqu'à 3 cartes jouées **d'abord**, puis **la pioche termine le tour** : une carte, ou les 2 pioches dues d'un Gang, en un seul clic (`piocherClic()` : arrêt sur un Gobelin explosif désamorcé le temps de le cacher, puis les pioches restantes s'enchaînent). Pas de bouton « Finir mon tour » ni « Abandonner ». Pioche vide : le bouton devient « Passer ». `dette` = pioches restantes du tour.
-- **Cartes** :
-  - 💥 Gobelin explosif : un Esprit est sacrifié puis la bombe cachée au choix (positions de Bang!) ; sans Esprit, défaite.
-  - 🎯 Sarbacane : voit les 3 premières cartes.
-  - 🛢️ Fût : esquive une pioche (celle du tour, qui se termine alors, ou une des pioches dues d'un Gang).
-  - 👊 Gang : termine le tour sans piocher, l'adversaire devra piocher 2 fois (sans cumul).
-  - 🦹 Voleuse : prend **une carte au hasard** de la main adverse (jamais au choix, sinon l'Esprit est toujours pris).
-  - 🙏 Moine : secret, actif jusqu'à la prochaine attaque reçue, renvoie un Gang ou une Voleuse (Voleuse renvoyée : carte au hasard de l'attaquant).
-  - 🌪️ Tornade : mélange la pioche.
-  - 👺 Gobelin : inutile (pas de paire). Ni « Non ! », ni Malédiction.
-- **Une attaque subie par tour** : un joueur ne subit qu'un Gang et une Voleuse par tour (`UNIQUES_DUEL`, `joueur.subies`, remis à zéro par `finirTour()`) ; `jouer()` renvoie `dejaSubie` et la carte disparaît du menu. Une attaque renvoyée par un Moine est subie par l'attaquant.
-- **Bot** (`jouerBot()`, stratège) : Moine d'avance, Voleuse dès que possible, Sarbacane avant de piocher, esquive (Gang, puis Tornade, puis Fût) si un Gobelin explosif est vu ou soupçonné au sommet (l'adversaire vient d'en cacher un), bombe désamorcée cachée au sommet une fois sur deux, sinon au hasard ; s'il lui reste une pioche due, toujours **hors sommet** (`placer(…, { eviterSommet })`). Son tour est raconté sans dévoiler ses pioches, son Moine ni l'emplacement de ses bombes.
-
-#### Contre Kévina
-
-- Partie **privée** : un message éphémère édité en place. Une partie par joueur (`bangduel:<discordId>`, verrou `bangduel:lock:<discordId>`), expiration 1 h après la dernière action (`INACTIVITE_SECONDES`). `/bang` relance toujours une nouvelle partie.
-- Fin de partie : résultat publié en **public** dans le salon du clic (`messageFinalSolo()`) avec un récit (`recit()`) : au plus 3 moments forts (classés par priorité, affichés dans l'ordre chronologique, coup fatal en tête), plus une ligne d'explosions évitées. Moments retenus : coup fatal (bombe cachée par l'adversaire ou par soi, suivie via l'`index` du journal et perdue après une Tornade ; Gang ou Gang renvoyé), Esprit volé, Gang renvoyé par un Moine, piège adverse évité grâce à un Esprit, Gang volé puis renvoyé, Voleuse renvoyée, bombe repérée à la Sarbacane (`vu`) puis esquivée. Match nul : bilan explosions évitées et Gangs envoyés.
-
-#### 1v1
-
-- Même moteur (sièges `joueur` = celui qui commence, `bot` = l'autre ; `sieges` → discordId). **Une partie à la fois** (`bangduel:pvp`, verrou `bangduel:lock:pvp`, expiration 1 h).
-- Message public avec bouton **Jouer** dans le lobby : le premier autre joueur qui clique relève le défi, un 3ᵉ est refusé. **Partie lancée, Jouer est retiré** (Règles seul) : on joue depuis sa vue éphémère, sans moyen de la rouvrir si Discord l'efface (rechargement, autre appareil, « Dismiss »), choix assumé. Chaque joueur a sa vue éphémère, rééditée après chaque action adverse via le webhook mémorisé (jeton valable 15 min, renouvelé à chaque action du joueur). Le joueur en attente voit le tour adverse en direct (`debutTour`), puis son résumé à son tour (`resume[siège]`).
-- **Délai** : 5 min par tour, dépassé = défaite, vérifié paresseusement à la prochaine interaction (`verifierDelai()`, pas de cron).
-- Fin (explosion, nul, délai) : récapitulatif (même récit) dans un nouveau message public, l'ancien supprimé. Un lobby sans adversaire depuis le délai (ou relancé par son lanceur) et une partie au délai dépassé sont remplacés par un nouveau `/bang adversaire:1v1`.
-
-#### Outils (`jeux/outils/bang/`, à lancer à la main)
-
-- `simulateDuel.mjs` : équilibrage sur les vraies règles. Repères (20 000 parties, stratège contre stratège) : ~53 % pour le joueur qui commence, ~46 % pour le Bot, ~1 % de nuls, fin moyenne au tour ~6. ⚠️ Avec 10 Gobelins, ~14 % de nuls (trop de parties sans explosion).
-- `e2eDuel.mjs` (handler contre Kévina), `e2ePvp.mjs` (1v1, refuse de tourner si un vrai 1v1 est en cours).
 
 ### La Grille (contre Kévina ou en 1v1)
 
@@ -1562,7 +1429,7 @@ Code, données et archives conservés dans les deux cas ; seule la façon d'arch
 
 ### Jeux spéciaux
 
-Jeux retirés de `/mini-jeux` (`archived: true` dans `SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`) et dont le `schedule` est commenté dans leur workflow (seul `workflow_dispatch` reste). Code, données et archives Redis des manches sont conservés. Les règles complètes (formules, barèmes, clés Redis) sont dans l'historique git : `CONTRIBUTING.md` avant le 23/10/2026.
+Jeux retirés de `/mini-jeux` (`archived: true` dans `SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`) et dont le `schedule` est commenté dans leur workflow (seul `workflow_dispatch` reste). Code, données et archives Redis des manches sont conservés. Les règles complètes (formules, barèmes, clés Redis) sont dans l'historique git : `CONTRIBUTING.md` avant le 23/10/2026 (avant le 30/10/2026 pour Bang!).
 
 **Pour relancer** : décommenter le `schedule` du workflow, retirer `archived: true`, lancer `npm run <jeu>:reset`, puis lancement manuel (`workflow_dispatch`). Revérifier la conformité aux règles communes des jeux spéciaux (notamment le jour d'annonce, absent du Tamagotchi).
 
@@ -1576,6 +1443,12 @@ Jeux retirés de `/mini-jeux` (`archived: true` dans `SPECIAL_GAMES`, `jeux/disc
 
 - Jeu collaboratif (annonce + 7 jours) : chaque membre vote un rôle (Chevalier, Voleuse, Sorcier, Archères, Princesse) ; dégâts fixes calculés à la clôture et comparés à la meilleure combinaison possible (note SS à D), événement du Boss chaque jour à partir du Jour 2.
 - Code : `jeux/services/bossraid.js`, `jeux/discord/handlers/bossraid.js`, `jeux/scripts/postBossRaid.js`, `resetBossRaid.js`, `bossRaidStatus.js`, `bossraidRefresh.js` ; données `jeux/data/bossraid/` ; images `frontend/public/images/boss/` ; Redis `bossraid:*` ; workflow `.github/workflows/bossraid.yml` ; scripts `npm run bossraid:*`.
+
+#### Bang! (dernier joueur en vie)
+
+- Jeu de survie de 7 jours inspiré d'Exploding Kittens : pioche commune truffée de Gobelins explosifs, cartes d'action (Gang, Malédiction, Voleuse, Moine, Fût, Sarbacane), Bravoure pour départager les survivants ; score = nombre de joueurs classés derrière.
+- Code : `jeux/services/bang.js`, `bangRules.js` (tests `bangRules.test.js`), `bangImage.js`, `jeux/discord/handlers/bang.js`, `jeux/scripts/postBang.js`, `resetBang.js`, `bangStatus.js` ; données `jeux/data/bang/` ; assets Blob (`npm run assets:upload-blob -- bang`) et routes `/api/bang/*` ; Redis `bang:*` ; workflow `.github/workflows/bang.yml` ; scripts `npm run bang:*` ; outils `jeux/outils/bang/`.
+- Les manches publiques restent dans `/mini-jeux-history` et le bouton « 📊 Stats ».
 
 ### Mini-jeux hebdomadaires (retirés par la refonte de novembre 2026)
 

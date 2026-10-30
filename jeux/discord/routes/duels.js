@@ -1,23 +1,11 @@
-// Duels autonomes (1 ou 2 joueurs) : /blackjack, /bang, /gobelet, /grille,
-// /quatre, /punto et leurs boutons (blackjackduel_*, bangduel_*,
-// gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*).
+// Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
+// /quatre, /punto et leurs boutons (blackjackduel_*, gobeletduel_*,
+// grilleduel_*, quatreduel_*, puntoduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
 // la main sans rien envoyer et le routeur essaie le module suivant.
 
-import {
-  memberHasMiniJeuxRole as bangDuelMemberHasMiniJeuxRole,
-  extractMember as bangDuelExtractMember,
-  handleBangDuelRoleRejected,
-  handleBangDuelCommand,
-  handleBangDuelPiocher,
-  handleBangDuelPlacer,
-  handleBangDuelCarte,
-  handleBangDuelRegles,
-  handleBangDuelPvpCommand,
-  handleBangDuelOuvrir,
-} from "../handlers/bangDuel.js";
 import {
   handleBlackjackCommand as handleBlackjackDuelCommand,
   handleBlackjackRoleRejected as handleBlackjackDuelRoleRejected,
@@ -98,54 +86,6 @@ export async function routeDuels(body, res) {
       }
       await handleBlackjackDuelCommand(webhookUrl, body, { maxPlayers, totalManches });
     });
-    return;
-  }
-
-  // ── /bang adversaire:bot : Bang! Duel contre Kévina (partie privée, éphémère) ;
-  // adversaire:1v1 : contre un joueur (message public). Réservé au rôle MINI-JEUX pour lancer,
-  // même principe que /blackjack ci-dessus.
-  if (body.type === 2 && body.data?.name === "bang") {
-    const discordId = body.member?.user?.id;
-    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(async () => {
-      const allowed = await bangDuelMemberHasMiniJeuxRole(body);
-      if (!allowed) {
-        await handleBangDuelRoleRejected(webhookUrl);
-        return;
-      }
-      if (pvp) await handleBangDuelPvpCommand(webhookUrl, body);
-      else await handleBangDuelCommand(webhookUrl, discordId);
-    });
-    return;
-  }
-
-  // ── Bang! Duel : composants des messages (édition en place) ──
-  // custom_id : bangduel_<action> contre Kévina, bangduel_<action>:pvp en
-  // 1v1 ; actions : piocher (bouton), carte,
-  // placer (menus). bangduel_ouvrir (Jouer du message public 1v1) et
-  // bangduel_regles : nouvel éphémère.
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bangduel_")) {
-    const [action, mode] = body.data.custom_id.split(":");
-    const pvp = mode === "pvp";
-    const discordId = body.member?.user?.id;
-    const value = body.data.values?.[0];
-    // Salon et pseudo : contre Kévina, le résultat final y est publié
-    const channelId = body.channel_id;
-    const pseudo = bangDuelExtractMember(body).username;
-    if (action === "bangduel_regles" || action === "bangduel_ouvrir") {
-      res.status(200).json({ type: 5, data: { flags: 64 } });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      if (action === "bangduel_regles") runBackground(() => handleBangDuelRegles(webhookUrl));
-      else runBackground(() => handleBangDuelOuvrir(webhookUrl, body));
-      return;
-    }
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "bangduel_piocher") runBackground(() => handleBangDuelPiocher(webhookUrl, discordId, { pvp, channelId, pseudo }));
-    else if (action === "bangduel_placer") runBackground(() => handleBangDuelPlacer(webhookUrl, discordId, value, { pvp, channelId, pseudo }));
-    else if (action === "bangduel_carte") runBackground(() => handleBangDuelCarte(webhookUrl, discordId, value, { pvp, channelId, pseudo }));
     return;
   }
 

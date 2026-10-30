@@ -6,7 +6,7 @@
 //
 // Stockage : Upstash Redis. Contre Kévina : une clé par joueur
 // (`puntoduel:<discordId>`), plusieurs parties en même temps possibles.
-// 1v1 : une seule partie à la fois (`puntoduel:pvp`), comme Bang! Duel.
+// 1v1 : une seule partie à la fois (`puntoduel:pvp`).
 // Chaque écriture relance l'expiration : sans action pendant
 // `INACTIVITE_SECONDES`, la partie disparaît. Seules les séries de
 // victoires (et leurs records) sont conservées, une par mode.

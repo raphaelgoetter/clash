@@ -1,15 +1,19 @@
-name: Bang! — dernier joueur en vie en 7 jours
+name: Bang! — dernier joueur en vie en 7 jours (archivé)
 
 permissions:
   contents: read
 
 on:
-  # Créneau réservé : minute 18 (prochaine libre après marioclash=14,
-  # gobelet=16 — jamais la même minute que les autres crons de 8h UTC, voir
-  # jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) »). Le cron passe --require-active : il
-  # n'avance qu'une partie déjà lancée à la main (workflow_dispatch).
-  schedule:
-    - cron: "18 8 * * *"
+  # 📦 Jeu archivé (30/10) : pas de relance prévue pour le moment, schedule
+  # volontairement commenté (seul workflow_dispatch reste disponible). À
+  # décommenter en cas de relance, en retirant aussi `archived: true` dans
+  # jeux/discord/handlers/minijeux.js (voir jeux/CONTRIBUTING.md).
+  # schedule:
+  #   # Créneau réservé : minute 18 (jamais la même minute que les autres
+  #   # crons de 8h UTC, voir jeux/CONTRIBUTING.md, section « Crons GitHub
+  #   # Actions (jeux spéciaux) »). Le cron passe --require-active : il
+  #   # n'avance qu'une partie déjà lancée à la main (workflow_dispatch).
+  #   - cron: "18 8 * * *"
   workflow_dispatch: {}
 
 jobs:

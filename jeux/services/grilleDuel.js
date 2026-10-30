@@ -6,7 +6,7 @@
 //
 // Stockage : Upstash Redis. Contre Kévina : une clé par joueur
 // (`grilleduel:<discordId>`), plusieurs parties en même temps possibles.
-// 1v1 : une seule partie à la fois (`grilleduel:pvp`), comme Bang! Duel.
+// 1v1 : une seule partie à la fois (`grilleduel:pvp`).
 // Chaque écriture relance l'expiration : sans action pendant
 // `INACTIVITE_SECONDES`, la partie disparaît. Seul le high score contre
 // Kévina est conservé (`grilleduel:highscore`).

@@ -540,6 +540,9 @@ const SPECIAL_GAMES = [
     key: "bang",
     title: "Bang!",
     style: "Survie",
+    // Jeu archivé (30/10, aucun intérêt des joueurs) : ignoré par
+    // findActiveSpecialGame(), même si un état périmé traîne dans Redis.
+    archived: true,
     readState: readBangState,
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
