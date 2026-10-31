@@ -45,6 +45,18 @@ function main() {
     assert.deepStrictEqual(resoudre([0, 9, 0], 1, 1).piles, [0, 0, 0]);
   }
 
+  // ── Contenu des piles : dés posés et souffles, vidé à l'explosion ──
+  {
+    const contenu = [[{ v: 3, id: "joueur" }, { v: 5, id: "bot" }], [{ v: 4, id: "bot" }], []];
+    const r = resoudre([8, 4, 0], 0, 2, contenu, { v: 2, id: "joueur" });
+    assert.deepStrictEqual(r.contenu, [[], [{ v: 4, id: "bot" }, { v: 3, souffle: true }], []]);
+    assert.deepStrictEqual(r.videes, { 0: 3 });
+    assert.strictEqual(contenu[0].length, 2); // copie, contenu d'origine intact
+    const d = duelTest([0, 0, 0], 4, 6);
+    jouer(d, "joueur", 1);
+    assert.deepStrictEqual(d.contenu[1], [{ v: 4, id: "joueur" }]);
+  }
+
   // ── Coups possibles : jamais au-delà de la cible ──
   {
     const d = duelTest([8, 3, 0], 4, 1);

@@ -18,8 +18,8 @@
 // confirmation), pilepoilduel_abandon_ok[:pvp] / pilepoilduel_abandon_non[:pvp].
 //
 // Service : jeux/services/pilepoilDuel.js (Redis),
-// règles : jeux/services/pilepoilRules.js, tuiles : cartes de Punto
-// (jeux/services/puntoCartes.js), dés : jeux/services/dices.js.
+// règles : jeux/services/pilepoilRules.js, dés : jeux/services/dices.js,
+// souffles et cases vides : cartes de Punto (jeux/services/puntoCartes.js).
 // ============================================================
 
 import {
@@ -62,7 +62,7 @@ const TITRE = "🎯 Pile-Poil";
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 
 const NOMS_PILES = ["A", "B", "C"].slice(0, NB_PILES);
-// En-têtes des piles, à la largeur des tuiles
+// En-têtes des piles, à la largeur des dés
 const ENTETES = ["🇦", "🇧", "🇨"].slice(0, NB_PILES);
 // Étape d'explosion (comme La Grille) : piles explosées 💥, piles sautées
 // (souffle qui dépasse, joueur bloqué) 💨, affichées un court instant avant
@@ -225,33 +225,39 @@ const pts = (n) => plural(n, "point");
 const couleurDe = (id, moi) => (id === moi ? "bleu" : "rouge");
 const de = (v, id, moi = "joueur") => formatDie(v, couleurDe(id, moi));
 
-// Tuile d'une pile : ce qu'il lui MANQUE pour atteindre CIBLE (carte de
-// Punto), rouge si un petit dé la fait exploser (1 à 3), orange (4 à 6),
-// verte si aucun dé ne peut l'atteindre (7 à 9), grise si elle est vide ;
-// 💥 / 💨 pendant l'étape d'explosion.
-function tuile(p) {
-  if (typeof p === "string") return p;
-  if (p === 0) return formatCarte("vide");
-  const manque = CIBLE - p;
-  return formatCarte(manque <= 3 ? "rouge" : manque <= 6 ? "orange" : "vert", manque);
+// Pièce d'une pile vue par `moi` : dé posé (bleu s'il vient de lui, rouge
+// sinon), souffle (carte orange « 3 » de Punto : pas un dé), 💥 / 💨
+// pendant l'étape d'explosion, case grise pour compléter la colonne.
+function piece(x, moi) {
+  if (typeof x === "string") return x;
+  if (!x) return formatCarte("vide");
+  return x.souffle ? formatCarte("orange", x.v) : de(x.v, x.id, moi);
 }
 
-// Plateau : en-têtes puis une tuile par pile, sur deux rangées en titre H1
-// dans la vue du joueur (plus grande taille d'emoji possible, comme La
-// Grille), H3 dans les messages publics (`titre`).
-function plateau(d, titre = "#") {
-  return [`${titre} ${ENTETES.join(" ")}`, `${titre} ${d.piles.map(tuile).join(" ")}`];
+// Plateau vu par `moi` : en-têtes, puis les piles en colonnes, les pièces
+// empilées dans l'ordre où elles ont été posées (pas de total à calculer :
+// la cible est 10). Hauteur = la plus haute pile (au moins une rangée). Une
+// rangée par ligne, en titre H1 dans la vue du joueur (plus grande taille
+// d'emoji possible, comme La Grille), H3 dans les messages publics.
+function plateau(d, titre = "#", moi = "joueur") {
+  const hauteur = Math.max(1, ...d.contenu.map((pile) => pile.length));
+  const rangees = [`${titre} ${ENTETES.join(" ")}`];
+  for (let r = 0; r < hauteur; r++) rangees.push(`${titre} ${d.contenu.map((pile) => piece(pile[r], moi)).join(" ")}`);
+  return rangees;
 }
 
 // Étape d'explosion après un coup qui fait exploser ou sauter des piles
 // (`d.dernier`), null sinon : copie du duel dont ces piles montrent 💥 ou
-// 💨 ; ni dés ni fin (le récapitulatif suit).
+// 💨 à la place de leurs pièces ; ni dés ni fin (le récapitulatif suit).
 function etatExplosion(d) {
   const x = d.dernier;
   if (!x || (!x.explosions.length && !x.ratees.length)) return null;
   const etat = structuredClone(d);
-  for (const k of x.explosions) etat.piles[k] = EXPLOSION;
-  for (const k of x.ratees) etat.piles[k] = RATEE;
+  const marquer = (k, signe) => {
+    etat.contenu[k] = Array(Math.max(1, x.videes?.[k] ?? 1)).fill(signe);
+  };
+  for (const k of x.explosions) marquer(k, EXPLOSION);
+  for (const k of x.ratees) marquer(k, RATEE);
   return Object.assign(etat, { explosion: true, termine: false });
 }
 
@@ -272,7 +278,7 @@ function ligneExplosion(d, nom) {
   return `${EXPLOSION} ${nom(x.id)} fait exploser ${pile} (+${x.gain}${ratees}) !`;
 }
 
-// Plateau neutre (message public, premier joueur en bleu) : tuiles plus
+// Plateau neutre (message public, premier joueur en bleu) : pièces plus
 // petites que dans la vue du joueur, puis le score en cours.
 function plateauPublic(d, nomJoueur, nomBot) {
   return [...plateau(d, "###"), `Score : 🟦 **${nomJoueur} ${d.points.joueur}** · 🟥 ${nomBot} ${d.points.bot}`];
@@ -417,7 +423,7 @@ function buildVue(
   const sfx = pvp ? ":pvp" : "";
   const lignes = [
     ...(confirmerAbandon ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite.", ""] : []),
-    ...plateau(d),
+    ...plateau(d, "#", moi),
     ...(confirmerAbandon
       ? []
       : [
@@ -446,7 +452,7 @@ function buildReglesEmbed(config) {
     title: "📖 Règles de Pile-Poil",
     description: [
       `${NB_PILES} piles communes, A, B et C, qui partent de 0. But : en amener une **pile à ${CIBLE}** pour la faire exploser.`,
-      `Chaque pile affiche **ce qu'il lui manque** pour atteindre ${CIBLE} (grise : pile vide).`,
+      `Chaque pile montre les dés posés dessus, et les **+${SOUFFLE}** du souffle (carré orange).`,
       "",
       "**🎲 À ton tour**, tu as 2 dés : ton lancer et le dé laissé par ton adversaire. Tu en joues un sur une pile, sans dépasser " + CIBLE + " ; **l'autre part chez ton adversaire**. 🔄 change le dé joué.",
       `**💥 Explosion** : une pile qui tombe pile sur ${CIBLE} explose. Tu marques 1 point, elle repart à 0, et son souffle ajoute **+${SOUFFLE}** aux piles voisines non vides (A et B, B et C). Une voisine qui tombe pile explose aussi (+1 pour toi), une voisine qui dépasse saute (+1 pour ton adversaire).`,

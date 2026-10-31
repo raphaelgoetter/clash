@@ -44,10 +44,21 @@ export const bloque = (piles, des) => !des.some((v) => piles.some((p) => p + v <
 
 // Résout la pose de `v` sur la pile `k` (copie de `piles`) :
 // { piles, explosions (piles explosées, dans l'ordre), ratees (piles
-// sautées par le souffle), gain, perte }.
-export function resoudre(piles, k, v) {
+// sautées par le souffle), gain, perte }. Avec `contenu` (pièces de chaque
+// pile, voir creerDuel) et `piece` (le dé posé) : `contenu` mis à jour
+// (copie) et `videes` ({ pile: nombre de pièces } des piles vidées, pour
+// l'étape d'explosion).
+export function resoudre(piles, k, v, contenu = null, piece = null) {
   const p = [...piles];
+  const c = contenu?.map((pile) => [...pile]);
+  const videes = {};
+  const vider = (j) => {
+    if (!c) return;
+    videes[j] = c[j].length;
+    c[j] = [];
+  };
   p[k] += v;
+  c?.[k].push(piece);
   const explosions = [];
   const ratees = [];
   const file = p[k] === CIBLE ? [k] : [];
@@ -56,17 +67,20 @@ export function resoudre(piles, k, v) {
     if (p[j] === CIBLE) {
       explosions.push(j);
       p[j] = 0;
+      vider(j);
       for (const x of voisines(j)) {
         if (p[x] === 0) continue;
         p[x] += SOUFFLE;
+        c?.[x].push({ v: SOUFFLE, souffle: true });
         if (p[x] >= CIBLE) file.push(x);
       }
     } else if (p[j] > CIBLE) {
       ratees.push(j);
       p[j] = 0;
+      vider(j);
     }
   }
-  return { piles: p, explosions, ratees, gain: explosions.length, perte: ratees.length };
+  return { piles: p, explosions, ratees, gain: explosions.length, perte: ratees.length, ...(c ? { contenu: c, videes } : {}) };
 }
 
 // Coups possibles sur les piles avec le dé `v` (par défaut celui que le
@@ -95,6 +109,9 @@ function choixInitial(d) {
 export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
   const d = {
     piles: Array(NB_PILES).fill(0),
+    // Pièces de chaque pile, dans l'ordre (affichage) : { v, id } pour un
+    // dé posé par `id`, { v: SOUFFLE, souffle: true } pour un souffle
+    contenu: Array.from({ length: NB_PILES }, () => []),
     actif: commence,
     // Lancer du joueur actif et dé laissé par l'adversaire (au premier
     // tour, un second lancer) ; `choix` : dé sélectionné pour jouer
@@ -106,7 +123,8 @@ export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
     // Numéro de l'état affiché, +1 à chaque action (coup ou changement de
     // dé) : écarte un clic sur une vue dépassée
     vue: 0,
-    // Dernier coup : { id, de, pile, type, explosions, ratees, gain, perte }
+    // Dernier coup : { id, de, pile, type, explosions, ratees, gain, perte,
+    // videes ({ pile: nombre de pièces } des piles vidées) }
     dernier: null,
     termine: false,
     gagnant: null,
@@ -140,18 +158,20 @@ export function jouer(d, id, k, { rng = Math.random } = {}) {
     // Joueur bloqué : la pile choisie saute, +1 pour l'adversaire
     const piles = [...d.piles];
     piles[k] = 0;
-    r = { piles, explosions: [], ratees: [k], gain: 0, perte: 1, type: "sautee" };
+    const contenu = d.contenu.map((pile, j) => (j === k ? [] : pile));
+    r = { piles, contenu, videes: { [k]: d.contenu[k].length }, explosions: [], ratees: [k], gain: 0, perte: 1, type: "sautee" };
   } else {
     if (d.piles[k] + v > CIBLE) return { erreur: "Ce dé dépasserait la cible." };
-    r = resoudre(d.piles, k, v);
+    r = resoudre(d.piles, k, v, d.contenu, { v, id });
     r.type = r.gain ? "explosion" : "pose";
   }
   d.piles = r.piles;
+  d.contenu = r.contenu;
   d.points[id] += r.gain;
   d.points[adv] += r.perte;
   d.coups += 1;
   d.vue += 1;
-  d.dernier = { id, de: v, pile: k, type: r.type, explosions: r.explosions, ratees: r.ratees, gain: r.gain, perte: r.perte };
+  d.dernier = { id, de: v, pile: k, type: r.type, explosions: r.explosions, ratees: r.ratees, gain: r.gain, perte: r.perte, videes: r.videes };
 
   if (d.points[id] >= SEUIL || d.points[adv] >= SEUIL) {
     d.termine = true;
