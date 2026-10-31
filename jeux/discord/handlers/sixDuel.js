@@ -67,8 +67,6 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 const NOMS_COLONNES = ["A", "B", "C", "D"].slice(0, NB_COLONNES);
 // En-têtes des colonnes, à la largeur des cartes
 const ENTETES = ["🇦", "🇧", "🇨", "🇩"].slice(0, NB_COLONNES);
-// Emplacement vide de la 6e carte (celle qui ferme la colonne)
-const SIXIEME = "🎯";
 // Étape d'explosion (6e carte, comme La Grille) : les 5 cartes ramassées
 // remplacées par 💥 sous la carte posée, affichées un court instant avant
 // le plateau suivant
@@ -242,15 +240,15 @@ function lignesMarquees(d, nomJoueur, nomBot) {
 }
 
 // Plateau vu par le siège `moi` : les colonnes à la verticale sous leurs
-// en-têtes, la plus ancienne carte en haut ; emplacements libres gris, 6e
-// emplacement 🎯 (la carte qui y tombe ferme la colonne). Une rangée par
+// en-têtes, la plus ancienne carte en haut ; 5 emplacements par colonne,
+// libres en gris (pas de 6e rangée, pour tenir sur mobile). Une rangée par
 // ligne, en titre H1 dans la vue du joueur (plus grande taille d'emoji
 // possible, comme La Grille), H3 dans les messages publics (`titre`).
 function plateau(d, titre = "#", moi = "joueur") {
   const rangees = [`${titre} ${ENTETES.join(" ")}`];
-  for (let r = 0; r < LIMITE; r++) {
+  for (let r = 0; r < LIMITE - 1; r++) {
     const cases = d.colonnes.map((col) =>
-      col[r] === EXPLOSION ? EXPLOSION : col[r] ? carteTexte(col[r], moi) : r === LIMITE - 1 ? SIXIEME : formatCarte("vide"),
+      col[r] === EXPLOSION ? EXPLOSION : col[r] ? carteTexte(col[r], moi) : formatCarte("vide"),
     );
     rangees.push(`${titre} ${cases.join(" ")}`);
   }
@@ -258,13 +256,14 @@ function plateau(d, titre = "#", moi = "joueur") {
 }
 
 // Étape d'explosion après une 6e carte (`d.dernier`), null sinon : copie
-// du duel dont la colonne fermée montre 💥 à la place des 5 cartes, la
-// carte posée dessous ; ni carte à jouer ni fin (le récapitulatif suit).
+// du duel dont la colonne fermée montre 💥 à la place des 5 cartes (la
+// carte qui ferme apparaît ensuite, en tête de la colonne qui repart) ; ni
+// carte à jouer ni fin (le récapitulatif suit).
 function etatExplosion(d) {
   const x = d.dernier;
   if (x?.type !== "fermeture") return null;
   const etat = structuredClone(d);
-  etat.colonnes[x.colonne] = [...x.ramassees.map(() => EXPLOSION), x.carte];
+  etat.colonnes[x.colonne] = x.ramassees.map(() => EXPLOSION);
   return Object.assign(etat, { explosion: true, termine: false, carte: null });
 }
 
@@ -464,7 +463,7 @@ function buildReglesEmbed(config) {
       "• plus forte nulle part : tu la poses où tu veux.",
       "• 🔄 **Réserve** : tu as une carte de côté. Avant de poser, tu peux l'échanger avec ta carte du tour : tu joues ta réserve, ta carte la remplace.",
       "Les réserves et la prochaine carte (celle de ton adversaire) sont visibles.",
-      `• ${SIXIEME} **6ᵉ carte** d'une colonne : tu la **fermes** et marques **1 point par carte bleue** parmi les 5 autres, ta carte reste.`,
+      `• **6ᵉ carte** d'une colonne : tu la **fermes** et marques **1 point par carte bleue** parmi les 5 autres, ta carte reste.`,
       `**🏆 Victoire** : le premier à ${SEUIL} points. Si la pioche est vide avant, le plus de points gagne (égalité : match nul).`,
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
