@@ -6,6 +6,8 @@ import {
   coupsPossibles,
   penalite,
   choixKevina,
+  echangePermis,
+  echanger,
   COULEUR_MAUDITE,
   PENALITE_MAUDITE,
   SEUIL,
@@ -152,8 +154,33 @@ function main() {
   {
     // Le 9 sur la colonne 2 (5 cartes) ramasserait, ailleurs il se pose
     const d = duelTest([col("2"), col("8"), col("12345"), col("1")], 9, { actif: "bot", pioche: [{ k: 0, v: 1 }] });
-    const c = choixKevina(d, "bot");
-    assert.strictEqual(coupsPossibles(d)[c].penalite, 0);
+    const choix = choixKevina(d, "bot");
+    const carte = choix.echange ? prochaine(d) : d.carte;
+    assert.strictEqual(coupsPossibles(d, carte).find((x) => x.c === choix.c).penalite, 0);
+  }
+
+  // ── Échange : seulement si sa carte passe sans ramasser, 1 par partie ──
+  {
+    // Le 7 ne peut aller que sur la colonne 0 (5 cartes) : il ferait ramasser
+    const d = duelTest([col("12345"), col("8"), col("9"), col("9")], 7, { pioche: [{ k: 0, v: 2 }, { k: 3, v: 4 }] });
+    assert.strictEqual(echangePermis(d, "joueur"), false);
+    assert.ok(echanger(d, "joueur").erreur);
+  }
+  {
+    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [{ k: 0, v: 2 }, { k: 3, v: 7 }] });
+    assert.strictEqual(echangePermis(d, "bot"), false); // pas son tour
+    const r = echanger(d, "joueur");
+    assert.deepStrictEqual(r, { donnee: { k: 1, v: 5 }, recue: { k: 3, v: 7 } });
+    assert.deepStrictEqual(d.carte, { k: 3, v: 7 });
+    assert.deepStrictEqual(prochaine(d), { k: 1, v: 5 });
+    assert.strictEqual(d.echanges.joueur, 0);
+    assert.strictEqual(d.vue, 1);
+    assert.ok(echanger(d, "joueur").erreur); // un seul par tour (et plus aucun)
+    jouer(d, "joueur", 0);
+    assert.strictEqual(d.dernier.echange, true);
+    // L'adversaire reçoit la carte donnée
+    assert.deepStrictEqual(d.carte, { k: 1, v: 5 });
+    assert.strictEqual(echangePermis(d, "bot"), true);
   }
 }
 

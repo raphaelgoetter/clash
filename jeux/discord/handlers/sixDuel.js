@@ -11,10 +11,10 @@
 //   partie à la fois, comme Quatre à la suite.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
-// custom_id : sixduel_jouer:<colonne>:<coup> (contre Kévina),
-// sixduel_jouer:<colonne>:<coup>:pvp (1v1 ; <colonne> 0 à 3, <coup> =
-// d.coups à l'affichage,
-// un clic sur une vue dépassée est refusé), sixduel_ouvrir (bouton Jouer du
+// custom_id : sixduel_jouer:<colonne>:<vue> (contre Kévina),
+// sixduel_jouer:<colonne>:<vue>:pvp (1v1 ; <colonne> 0 à 3),
+// sixduel_echanger:<vue>[:pvp] (🔄 ; <vue> = d.vue à l'affichage, un clic
+// sur une vue dépassée est refusé), sixduel_ouvrir (bouton Jouer du
 // message public), sixduel_regles, sixduel_abandon[:pvp] (🏳️, demande
 // confirmation), sixduel_abandon_ok[:pvp] / sixduel_abandon_non[:pvp].
 //
@@ -43,6 +43,8 @@ import {
   adversaire,
   choixKevina,
   coupsPossibles,
+  echangePermis,
+  echanger,
   jouer,
   prochaine,
 } from "../../services/sixRules.js";
@@ -262,18 +264,21 @@ function plateauPublic(d, nomJoueur, nomBot) {
 }
 
 // Récit du dernier coup vu par `moi`, sans point final : « Tu joues 🟦7
-// en A », « Kévina joue 🟥2 en B (💥 −5) » (6e carte, colonne ramassée).
+// en A », « Kévina joue 🟥2 en B (💥 −5) » (6e carte, colonne ramassée),
+// « Kévina échange et joue 🟥2 en B » (après un échange).
 function recit(d, moi, A) {
   const x = d.dernier;
   if (!x) return null;
   const toi = x.id === moi;
-  return `${toi ? "Tu joues" : `${A.Sujet} joue`} ${carteTexte(x.carte)} en ${NOMS_COLONNES[x.colonne]}${x.type === "sixieme" ? ` (💥 −${x.penalite})` : ""}`;
+  const verbe = toi ? (x.echange ? "Tu échanges et joues" : "Tu joues") : `${A.Sujet} ${x.echange ? "échange et joue" : "joue"}`;
+  return `${verbe} ${carteTexte(x.carte)} en ${NOMS_COLONNES[x.colonne]}${x.type === "sixieme" ? ` (💥 −${x.penalite})` : ""}`;
 }
 
 const ERREURS = {
   termine: "La partie est terminée.",
   pasTonTour: "Ce n'est pas ton tour.",
   interdite: "Ta carte ne peut pas aller dans cette colonne.",
+  echange: "Échange impossible.",
   perime: "Le plateau a changé depuis : rejoue sur celui-ci.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
@@ -349,23 +354,32 @@ function vueFin(d, { moi, A, raison }) {
 }
 
 // Boutons de coup, à son tour seulement : toujours toutes les colonnes, celles
-// où la carte ne peut pas aller désactivées (grisées) ; tous gris et sans
-// indication de perte (le récit du coup la donne). Le numéro du coup dans
-// le custom_id écarte un clic sur une vue dépassée (pendant la réflexion
-// de Kévina, par exemple).
+// où la carte ne peut pas aller désactivées (grisées), puis 🔄 (échange,
+// grisé s'il n'est pas permis) ; tous gris et sans indication de perte (le
+// récit du coup la donne). Le numéro de vue dans le custom_id écarte un
+// clic sur une vue dépassée (pendant la réflexion de Kévina, par exemple).
 function boutonsCoups(d, monTour, sfx) {
   if (!monTour) return [];
   const permises = new Set(coupsPossibles(d).map((x) => x.c));
   return [
     {
       type: 1,
-      components: NOMS_COLONNES.map((nom, c) => ({
-        type: 2,
-        style: 2,
-        label: nom,
-        disabled: !permises.has(c),
-        custom_id: `sixduel_jouer:${c}:${d.coups}${sfx}`,
-      })),
+      components: [
+        ...NOMS_COLONNES.map((nom, c) => ({
+          type: 2,
+          style: 2,
+          label: nom,
+          disabled: !permises.has(c),
+          custom_id: `sixduel_jouer:${c}:${d.vue}${sfx}`,
+        })),
+        {
+          type: 2,
+          style: 2,
+          emoji: { name: "🔄" },
+          disabled: !echangePermis(d, d.actif),
+          custom_id: `sixduel_echanger:${d.vue}${sfx}`,
+        },
+      ],
     },
   ];
 }
@@ -427,6 +441,7 @@ function buildReglesEmbed(config) {
       "• tu la poses sur une colonne dont la dernière carte est **plus faible** (au choix s'il y en a plusieurs) ;",
       "• plus forte nulle part : tu la poses où tu veux.",
       "La prochaine carte, celle de ton adversaire, est visible.",
+      "• 🔄 **Échange** (1 par partie) : si ta carte peut être posée sans rien ramasser, tu peux la donner à ton adversaire (elle devient sa prochaine carte) et jouer la prochaine à la place.",
       `• ${SIXIEME} **6ᵉ carte** d'une colonne : tu ramasses les 5 autres, ta carte reste.`,
       `**💸 Points perdus** : 1 par carte ramassée, ${1 + PENALITE_MAUDITE} par carte **rouge** (maudite).`,
       `**🏆 Fin** : dès qu'un joueur atteint ${SEUIL} points perdus, ou quand la pioche est vide. Le moins de points gagne, égalité : match nul.`,
@@ -440,8 +455,8 @@ function buildReglesEmbed(config) {
 
 // ── Coups (communs aux deux modes) ───────────────────────────────────
 
-function actionJouer(d, moi, c, coup) {
-  if (!d.termine && coup !== d.coups) return { erreur: "perime" };
+function actionJouer(d, moi, c, vue) {
+  if (!d.termine && vue !== d.vue) return { erreur: "perime" };
   const r = jouer(d, moi, c);
   if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "interdite" };
   return {};
@@ -589,7 +604,9 @@ async function executerSolo(webhookUrl, discordId, c, coup, { channelId, pseudo 
     // Kévina joue dans la foulée (sous le même verrou)
     if (!d.termine) {
       etapes.push({ duel: structuredClone(d), texte: texteJoueur, reflexion: true });
-      jouer(d, "bot", choixKevina(d, "bot", { marge: config.marge_kevina }));
+      const choix = choixKevina(d, "bot", { marge: config.marge_kevina });
+      if (choix.echange) echanger(d, "bot");
+      jouer(d, "bot", choix.c);
       lignes.push(recit(d, "joueur", BOT));
       const explosionKevina = etatExplosion(d);
       if (explosionKevina) etapes.push({ duel: explosionKevina, texte: `${lignes.join(", ")}.`, pause: DELAI_EXPLOSION_MS });
@@ -1015,9 +1032,66 @@ export async function handleSixAbandon(webhookUrl, discordId, etape, { pvp = fal
   }
 }
 
+// [🔄] : échange de la carte du joueur avec la prochaine (`vue` : d.vue
+// affiché), puis vue rééditée (il choisit ensuite sa colonne) ; en 1v1,
+// vue adverse et message public aussi (sa prochaine carte change).
+function actionEchanger(d, moi, vue, A) {
+  if (!d.termine && vue !== d.vue) return { erreur: "perime" };
+  const r = echanger(d, moi);
+  if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "echange" };
+  return { texte: `🔄 Tu échanges : ${carteTexte(r.donnee)} part chez ${A.Sujet}.` };
+}
+
+async function echangerSolo(webhookUrl, discordId, vue, { pseudo } = {}) {
+  const { duel, resultat } = await agirDuel(discordId, (d) => actionEchanger(d, "joueur", vue, BOT), { nom: pseudo });
+  if (!duel) {
+    await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
+    return;
+  }
+  await Promise.all([
+    patchOriginal(webhookUrl, buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
+    ...(resultat.erreur ? [] : [majSalonSolo(duel, pseudo)]),
+  ]);
+}
+
+async function echangerPvp(webhookUrl, discordId, vue) {
+  const { partie, config, resultat } = await agirPvp((p) => {
+    const moi = siegeDe(p, discordId);
+    if (!moi) return { erreur: p.statut === "lobby" ? "lobby" : "pasJoueur" };
+    memoriserWebhook(p, discordId, webhookUrl);
+    if (p.statut !== "enCours") return { erreur: "termine" };
+    const r = actionEchanger(p.duel, moi, vue, nomsAdv(p, moi));
+    return r.erreur ? r : { ...r, echange: true };
+  });
+  if (!partie) {
+    await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
+    return;
+  }
+  if (resultat.erreur === "pasJoueur") {
+    await patchOriginal(webhookUrl, { content: avertissement("pasJoueur") });
+    return;
+  }
+  const texte = resultat.erreur ? avertissement(resultat.erreur) : resultat.texte;
+  // Échange (ou fin au délai constatée au même moment) : toutes les vues
+  if (resultat.echange || resultat.vientDeFinir) {
+    await diffuserPvp(partie, config, discordId, webhookUrl, texte);
+    return;
+  }
+  await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte));
+}
+
 // ── Points d'entrée des composants ───────────────────────────────────
 
-// `c` : colonne, `coup` : numéro du coup affiché par la vue cliquée (d.coups).
+export async function handleSixEchanger(webhookUrl, discordId, vue, { pvp = false, pseudo } = {}) {
+  try {
+    if (pvp) await echangerPvp(webhookUrl, discordId, vue);
+    else await echangerSolo(webhookUrl, discordId, vue, { pseudo });
+  } catch (err) {
+    console.error("[Six] Échec échanger:", err.message);
+  }
+}
+
+// `c` : colonne, `coup` : numéro de vue affiché par la vue cliquée (d.vue).
 export async function handleSixJouer(webhookUrl, discordId, c, coup, { pvp = false, channelId, pseudo } = {}) {
   try {
     if (!Number.isInteger(c) || c < 0 || c >= NB_COLONNES) return;

@@ -14,6 +14,15 @@ test("rosterAtDayEnd : repli sur _cumulPreReset (snapshot brut)", () => {
   assert.ok(roster.has("ABC123"));
 });
 
+test("rosterAtDayEnd : membres pré-reset prioritaires sur les participants", () => {
+  // Un ancien membre reste dans les participants de la course (à 0).
+  const roster = rosterAtDayEnd({
+    membersPreReset: ["#abc123"],
+    _cumulFamePreReset: { "#ABC123": 900, "#P9R8Y90P8": 0 },
+  });
+  assert.deepEqual([...roster], ["ABC123"]);
+});
+
 test("rosterAtDayEnd : null sans capture pré-reset", () => {
   assert.equal(rosterAtDayEnd({ decks: { "#ABC123": 4 } }), null);
   assert.equal(rosterAtDayEnd({ _cumulFamePreReset: {} }), null);

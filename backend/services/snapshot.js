@@ -164,6 +164,8 @@ function normalizeSnapshots(raw, clanTag = null) {
         existing._cumulFamePreReset ?? {},
         incoming._cumulFamePreReset ?? {},
       ),
+      membersPreReset:
+        incoming.membersPreReset ?? existing.membersPreReset ?? null,
       duelsTodayByTag: mergeMaps(
         existing.duelsTodayByTag ?? {},
         incoming.duelsTodayByTag ?? {},
@@ -901,6 +903,10 @@ export async function recordSnapshot(
     dayEntry.decksPreReset = { ...dayEntry.decks };
     dayEntry._cumulPreReset = { ...currentCumul };
     dayEntry._cumulFamePreReset = { ...currentCumulFame };
+    // Membres présents au reset (les participants incluent les anciens membres).
+    if (Array.isArray(options.memberTags) && options.memberTags.length > 0) {
+      dayEntry.membersPreReset = [...options.memberTags];
+    }
   }
 
   dayEntry._cumul = mergeMaps(dayEntry._cumul ?? {}, currentCumul);
@@ -1043,6 +1049,7 @@ export async function getSnapshotsForWeek(clanTag, week = null) {
       _cumulFamePreReset: isValidSnapshot(d)
         ? (d._cumulFamePreReset ?? {})
         : {},
+      membersPreReset: isValidSnapshot(d) ? (d.membersPreReset ?? null) : null,
       duelsTodayByTag: isValidSnapshot(d) ? (d.duelsTodayByTag ?? {}) : {},
       duelsComplete: isValidSnapshot(d) ? Boolean(d.duelsComplete) : false,
     };
@@ -1111,6 +1118,7 @@ export async function getSnapshotsForWeeks(clanTag, weeks) {
       _cumulFamePreReset: isValidSnapshot(d)
         ? (d._cumulFamePreReset ?? {})
         : {},
+      membersPreReset: isValidSnapshot(d) ? (d.membersPreReset ?? null) : null,
       duelsTodayByTag: isValidSnapshot(d) ? (d.duelsTodayByTag ?? {}) : {},
       duelsComplete: isValidSnapshot(d) ? Boolean(d.duelsComplete) : false,
       gdcPeriod: d.gdcPeriod ?? null,

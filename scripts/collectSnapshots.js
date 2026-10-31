@@ -10,6 +10,7 @@ import {
   fetchCurrentRace,
   fetchRaceLog,
   fetchBattleLog,
+  fetchClanMembers,
 } from "@clash/clash-royale/clashApi.js";
 import { recordSnapshot } from "../backend/services/snapshot.js";
 import { recordWarMatchupSamples } from "../backend/services/matchupPerformance.js";
@@ -66,10 +67,23 @@ async function buildBattleLogsByTag(participants = []) {
 
       const battleLogsByTag = await buildBattleLogsByTag(participants);
 
+      // Les participants de la course incluent les anciens membres de la
+      // semaine : seule la liste des membres dit qui est présent au reset.
+      // En cas d'échec, rosterAtDayEnd() retombe sur les participants.
+      let memberTags = null;
+      if (snapshotType === "pre-reset") {
+        try {
+          memberTags = (await fetchClanMembers(clanTag)).map((m) => m.tag);
+        } catch (err) {
+          console.error("fetchClanMembers error for", clanTag, err.message || err);
+        }
+      }
+
       await recordSnapshot(clanTag, participants, weekId, {
         snapshotType,
         periodType: race.periodType,
         battleLogsByTag,
+        memberTags,
       });
       console.log(
         `Recorded snapshot for ${clanTag} week ${weekId} (${participants.length} players) [type=${snapshotType}, periodType=${race.periodType}]`,
