@@ -1378,7 +1378,7 @@ Adaptation de Punto (Bernhard Weber) en duel. `/punto adversaire:bot|1v1` (optio
 
 Duel de collecte inspiré du 6 qui prend (Wolfgang Kramer), au tour par tour. `/six adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Punto (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
 
-- Code : `jeux/services/sixRules.js` (règles pures et Kévina, tests `sixRules.test.js`), `jeux/services/sixDuel.js` (Redis, tests `sixDuel.test.js`), `jeux/discord/handlers/sixDuel.js` (Discord). Cartes : celles de Punto (`jeux/services/puntoCartes.js`, voir « Cartes de Punto »), aucun emoji propre. Config `jeux/data/six/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `marge_kevina` (2).
+- Code : `jeux/services/sixRules.js` (règles pures et Kévina, tests `sixRules.test.js`), `jeux/services/sixDuel.js` (Redis, tests `sixDuel.test.js`), `jeux/discord/handlers/sixDuel.js` (Discord). Cartes : celles de Punto (`jeux/services/puntoCartes.js`, voir « Cartes de Punto »), aucun emoji propre. Config `jeux/data/six/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `marge_kevina` (1,5).
 - Redis : `sixduel:<discordId>` (contre Kévina), `sixduel:pvp`, verrous `sixduel:lock:*`, séries `sixduel:series:bot` / `sixduel:series:pvp`, records `sixduel:records`.
 - `custom_id` : `sixduel_jouer:<colonne>:<vue>` contre Kévina, `sixduel_jouer:<colonne>:<vue>:pvp` en 1v1 (`<colonne>` 0 à 3 ; `<vue>` = `d.vue` affiché, +1 à chaque coup) : un clic sur une vue dépassée est refusé avec « Le plateau a changé depuis », `sixduel_ouvrir`, `sixduel_regles`, `sixduel_abandon[:pvp]`, `sixduel_abandon_ok[:pvp]` / `sixduel_abandon_non[:pvp]`.
 
@@ -1406,7 +1406,7 @@ Duel de collecte inspiré du 6 qui prend (Wolfgang Kramer), au tour par tour. `/
 
 #### Outils (`jeux/outils/six/`, à lancer à la main)
 
-- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `simple` = bon sens : le plus de points tout de suite puis la plus petite marche, sans regarder ce que l'adversaire pourra fermer, `kevina[m<marge>]`, ex. `kevinam2` = réglage de production). Repères (3 000 parties) : « bon joueur » `kevina` contre Kévina de production ~71 % / ~28 % ; `simple` contre elle ~36 % / ~64 % (ne pas regarder l'adversaire coûte cher) ; `simple` contre `simple` ~50/50 ; ~4 fermetures et ~13 coups par joueur entre Kévinas, ~95 % des parties finies au seuil.
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `simple` = bon sens : le plus de points tout de suite puis la plus petite marche, sans regarder ce que l'adversaire pourra fermer, `kevina[m<marge>]`, ex. `kevinam1.5` = réglage de production). Repères (4 000 parties) : « bon joueur » `kevina` contre Kévina de production ~59 % / ~39 % ; `simple` contre elle ~27 % / ~73 % (ne pas regarder l'adversaire coûte cher) ; marge 2 jugée trop facile (~71 % pour le bon joueur), marge 1 : ~55 %, marge 0 : ~48 % ; `simple` contre `simple` ~50/50 ; ~4 fermetures et ~13 coups par joueur entre Kévinas, ~95 % des parties finies au seuil.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/six/e2eDuel.mjs`).
 
 ---
