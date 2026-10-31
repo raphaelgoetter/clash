@@ -561,7 +561,7 @@ const commands = [
   {
     name: "six",
     description:
-      "Six : ferme les colonnes riches en cartes de ta couleur, contre Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
+      "Six : ferme les colonnes de ta couleur contre Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING
