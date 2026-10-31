@@ -46,6 +46,7 @@ import {
   coupsPossibles,
   jouer,
   prochaine,
+  prochaineDe,
 } from "../../services/sixRules.js";
 import { formatCarte } from "../../services/puntoCartes.js";
 import {
@@ -344,7 +345,7 @@ function vueFin(d, { moi, A, raison }) {
       ? d.gagnant === moi
         ? `${A.Sujet} n'a pas joué à temps.`
         : "Tu n'as pas joué à temps."
-      : `${d.fin === "seuil" ? `${SEUIL} points atteints` : "La pioche est vide"} : tu marques ${pts(d.points[moi])}, ${A.Sujet} ${pts(d.points[adversaire(moi)])}.`;
+      : `${d.fin === "seuil" ? `${SEUIL} points atteints` : "Les paquets sont vides"} : tu marques ${pts(d.points[moi])}, ${A.Sujet} ${pts(d.points[adversaire(moi)])}.`;
   const issue =
     d.gagnant === "nul"
       ? "c'est un match nul."
@@ -387,14 +388,18 @@ function boutonsCoups(d, monTour, sfx) {
 }
 
 // « Ta carte : 🟦7 » en titre H1 (carte agrandie) à son tour, avec en
-// petit dessous la prochaine carte de la pioche (celle de l'adversaire) ;
-// « Carte de Kévina : 🟥3 » sinon.
+// petit dessous la prochaine carte de l'adversaire et sa propre carte
+// suivante (« (Kévina : 🟥4 · ta suivante : 🟦8) ») ; « Carte de Kévina :
+// 🟥3 » sinon.
 function ligneCarte(d, moi, A) {
   if (!d.carte) return null;
   const carte = (c) => carteTexte(c, moi);
   if (d.actif !== moi) return `Carte de ${A.Sujet} : ${carte(d.carte)}`;
-  const suivante = prochaine(d);
-  return [`# Ta carte : ${carte(d.carte)}`, ...(suivante ? [`-# (prochaine : ${carte(suivante)})`] : [])].join("\n");
+  const infos = [
+    prochaine(d) ? `${A.Sujet} : ${carte(prochaine(d))}` : null,
+    prochaineDe(d, moi) ? `ta suivante : ${carte(prochaineDe(d, moi))}` : null,
+  ].filter(Boolean);
+  return [`# Ta carte : ${carte(d.carte)}`, ...(infos.length ? [`-# (${infos.join(" · ")})`] : [])].join("\n");
 }
 
 // Vue d'un joueur : plateau, résultat de la dernière action
@@ -438,14 +443,14 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles de Six",
     description: [
-      `${NB_COLONNES} colonnes et une pioche commune de 45 cartes de 1 à 9 : tes cartes sont **bleues**, celles de ton adversaire **rouges** (18 chacun), 9 cartes **orange** sont neutres.`,
+      `${NB_COLONNES} colonnes. Chacun a son paquet de 22 cartes : 18 de sa couleur (1 à 9 en double) et 4 **orange** neutres. Tes cartes sont **bleues**, celles de ton adversaire **rouges**.`,
       "",
-      "**🃏 À ton tour**, tu retournes la carte du dessus de la pioche :",
+      "**🃏 À ton tour**, tu retournes la carte du dessus de ton paquet :",
       "• tu la poses sur une colonne dont la dernière carte est **plus faible** (au choix s'il y en a plusieurs) ;",
       "• plus forte nulle part : tu la poses où tu veux.",
-      "La prochaine carte, celle de ton adversaire, est visible.",
+      "La prochaine carte de ton adversaire et ta carte suivante sont visibles.",
       `• **6ᵉ carte** d'une colonne : tu la **fermes** et marques **1 point par carte bleue** parmi les 5 autres, ta carte reste.`,
-      `**🏆 Victoire** : le premier à ${SEUIL} points. Si la pioche est vide avant, le plus de points gagne (égalité : match nul).`,
+      `**🏆 Victoire** : le premier à ${SEUIL} points. Si les paquets sont vides avant, le plus de points gagne (égalité : match nul).`,
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
       `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,

@@ -1,15 +1,15 @@
 // ============================================================
 // sixRules.js — Règles pures de Six (`/six`), duel de collecte inspiré du
-// 6 qui prend : pioche commune de 45 cartes de 1 à 9 (cartes de Punto) en
-// 3 couleurs : celle du premier joueur et celle du second (en double),
-// neutre (une fois). 4 colonnes. À son tour, on retourne la carte du
-// dessus de la pioche et on la pose sur une colonne dont la dernière carte
-// est plus faible (au choix s'il y en a plusieurs) ; plus forte nulle
-// part, elle va sur la colonne de son choix (pose libre). La 6e carte
-// d'une colonne la ferme : on marque 1 point par carte de SA couleur parmi
-// les 5 ramassées, la 6e reste. La prochaine carte (celle de l'adversaire)
-// est visible. Premier à SEUIL points gagne ; pioche vide avant : le plus
-// de points gagne.
+// 6 qui prend : chaque joueur a son paquet de 22 cartes (cartes de Punto) :
+// 18 de sa couleur (1 à 9 en double) et 4 neutres. 4 colonnes. À son tour,
+// on retourne la carte du dessus de SON paquet et on la pose sur une
+// colonne dont la dernière carte est plus faible (au choix s'il y en a
+// plusieurs) ; plus forte nulle part, elle va sur la colonne de son choix
+// (pose libre). La 6e carte d'une colonne la ferme : on marque 1 point par
+// carte de SA couleur parmi les 5 ramassées, la 6e reste. Visibles de
+// tous : la prochaine carte de l'adversaire et la suivante du joueur
+// actif. Premier à SEUIL points gagne ; paquet vide avant : le plus de
+// points gagne.
 // Aucune I/O : la couche Redis lit le duel, appelle ces fonctions sous
 // verrou puis le réécrit. `rng` injectable (tests, simulation).
 //
@@ -28,8 +28,10 @@ export const VALEUR_MAX = 9;
 // Couleurs du moteur : celle de chaque joueur, et la neutre
 export const COULEUR = { joueur: 0, bot: 1 };
 export const NEUTRE = 2;
-// Exemplaires de chaque valeur par couleur (joueur, bot, neutre)
-const EXEMPLAIRES = [2, 2, 1];
+// Paquet de chaque joueur : valeurs 1 à 9 de sa couleur en EXEMPLAIRES
+// exemplaires, plus ces cartes neutres (mêmes valeurs pour les deux)
+const EXEMPLAIRES = 2;
+const NEUTRES = [2, 4, 6, 8];
 // Points qui font gagner
 export const SEUIL = 5;
 
@@ -43,13 +45,11 @@ function melanger(cartes, rng) {
   return cartes;
 }
 
-// Pioche commune : valeurs 1 à 9, 2 exemplaires dans la couleur de chaque
-// joueur, 1 en neutre (45 cartes), mélangée. Carte : { k (couleur), v }.
-function pioche(rng) {
-  const cartes = [];
-  EXEMPLAIRES.forEach((n, k) => {
-    for (let v = 1; v <= VALEUR_MAX; v++) for (let e = 0; e < n; e++) cartes.push({ k, v });
-  });
+// Paquet de `id`, mélangé : 18 cartes de sa couleur et 4 neutres (22).
+// Carte : { k (couleur), v }.
+function paquet(id, rng) {
+  const cartes = NEUTRES.map((v) => ({ k: NEUTRE, v }));
+  for (let v = 1; v <= VALEUR_MAX; v++) for (let e = 0; e < EXEMPLAIRES; e++) cartes.push({ k: COULEUR[id], v });
   return melanger(cartes, rng);
 }
 
@@ -86,18 +86,21 @@ export function coupsPossibles(d, carte = d.carte, id = d.actif) {
   });
 }
 
-// Prochaine carte de la pioche (celle de l'adversaire au tour suivant),
-// visible de tous ; null si la pioche est vide.
-export const prochaine = (d) => d.pioche[d.pioche.length - 1] ?? null;
+// Prochaine carte du paquet de `id` (visible de tous) ; null s'il est vide.
+export const prochaineDe = (d, id) => d.paquets[id][d.paquets[id].length - 1] ?? null;
+// Prochaine carte de l'adversaire du joueur actif (celle qu'il jouera au
+// tour suivant).
+export const prochaine = (d) => prochaineDe(d, adversaire(d.actif));
 
 export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
-  const cartes = pioche(rng);
-  const colonnes = Array.from({ length: NB_COLONNES }, () => [cartes.pop()]);
+  const paquets = { joueur: paquet("joueur", rng), bot: paquet("bot", rng) };
+  // Colonnes de départ : 2 cartes de chaque paquet, en alternance
+  const colonnes = Array.from({ length: NB_COLONNES }, (_, i) => [paquets[IDS[i % 2]].pop()]);
   return {
     colonnes,
-    pioche: cartes,
+    paquets,
     // Carte à poser par le joueur actif (visible de tous)
-    carte: cartes.pop(),
+    carte: paquets[commence].pop(),
     actif: commence,
     points: { joueur: 0, bot: 0 },
     // Cartes marquées par chaque joueur (de sa couleur), dans l'ordre
@@ -111,13 +114,15 @@ export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
     dernier: null,
     termine: false,
     gagnant: null,
-    // Fin : "seuil" (un joueur a atteint SEUIL points) ou "pioche" (vide)
+    // Fin : "seuil" (un joueur a atteint SEUIL points) ou "pioche" (paquet
+    // du joueur suivant vide)
     fin: null,
   };
 }
 
 // Pose la carte du joueur actif `id` sur la colonne `c`, puis fin de
-// partie (seuil atteint ou pioche vide) ou tour adverse (carte retournée).
+// partie (seuil atteint ou paquet adverse vide) ou tour adverse (carte
+// retournée de son paquet).
 export function jouer(d, id, c) {
   if (d.termine) return { erreur: "Partie terminée." };
   if (d.actif !== id) return { erreur: "Ce n'est pas ton tour." };
@@ -135,15 +140,16 @@ export function jouer(d, id, c) {
   d.vue += 1;
   d.dernier = { id, carte, colonne: c, type, ramassees: prises, gain: marquees.length };
 
-  if (d.points[id] >= SEUIL || !d.pioche.length) {
+  const adv = adversaire(id);
+  if (d.points[id] >= SEUIL || !d.paquets[adv].length) {
     d.termine = true;
     d.fin = d.points[id] >= SEUIL ? "seuil" : "pioche";
     d.carte = null;
     const { joueur, bot } = d.points;
     d.gagnant = joueur === bot ? "nul" : joueur > bot ? "joueur" : "bot";
   } else {
-    d.actif = adversaire(id);
-    d.carte = d.pioche.pop();
+    d.actif = adv;
+    d.carte = d.paquets[adv].pop();
   }
   return { carte, type, gain: marquees.length };
 }

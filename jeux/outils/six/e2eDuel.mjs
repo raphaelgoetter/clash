@@ -153,7 +153,7 @@ await h.handleSixRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
-const exemple = vues.find((v) => rangees(v).length === 2 && texte(v).includes("Kévina joue") && texte(v).includes("prochaine"));
+const exemple = vues.find((v) => rangees(v).length === 2 && texte(v).includes("Kévina joue") && texte(v).includes("ta suivante"));
 console.log("\n--- Vue contre Kévina ---\n" + texte(exemple));
 console.log(
   "Boutons :\n" +
