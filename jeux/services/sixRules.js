@@ -1,16 +1,16 @@
 // ============================================================
-// sixRules.js — Règles pures de Six (`/six`), duel inspiré du 6 qui prend :
-// pioche commune de 36 cartes (4 couleurs de 1 à 9, celles de Punto),
-// 4 colonnes. À son tour, on retourne la carte du dessus de la pioche et
-// on la pose sur une colonne dont la dernière carte est plus faible (au
-// choix s'il y en a plusieurs) ; plus forte sur aucune colonne, elle va
-// sur la colonne de son choix (pose libre). 6e carte d'une colonne : on
-// ramasse les 5 premières, elle reste. Échange (ECHANGES par joueur et par
-// partie) : on peut donner sa carte à l'adversaire (elle devient la
-// prochaine carte) et jouer la prochaine.
-// Une colonne ramassée coûte 1 point par carte, plus PENALITE_MAUDITE par
-// carte de la couleur maudite. Fin dès qu'un joueur atteint SEUIL points
-// ou quand la pioche est vide : le moins de points gagne.
+// sixRules.js — Règles pures de Six (`/six`), duel de collecte inspiré du
+// 6 qui prend : pioche commune de 45 cartes de 1 à 9 (cartes de Punto) en
+// 3 couleurs : celle du premier joueur et celle du second (en double),
+// neutre (une fois). 4 colonnes. À son tour, on retourne la carte du
+// dessus de la pioche et on la pose sur une colonne dont la dernière carte
+// est plus faible (au choix s'il y en a plusieurs) ; plus forte nulle
+// part, elle va sur la colonne de son choix (pose libre). La 6e carte
+// d'une colonne la ferme : on marque 1 point par carte de SA couleur parmi
+// les 5 ramassées, la 6e reste. Réserve : chaque joueur a une carte de
+// côté, visible de tous ; avant de poser, il peut l'échanger avec sa carte
+// du tour. Premier à SEUIL points gagne ; pioche vide avant : le plus de
+// points gagne.
 // Aucune I/O : la couche Redis lit le duel, appelle ces fonctions sous
 // verrou puis le réécrit. `rng` injectable (tests, simulation).
 //
@@ -23,18 +23,16 @@
 
 export const IDS = ["joueur", "bot"];
 export const NB_COLONNES = 4;
-// La 6e carte d'une colonne la fait ramasser
+// La 6e carte d'une colonne la ferme
 export const LIMITE = 6;
-export const NB_COULEURS = 4;
 export const VALEUR_MAX = 9;
-// Couleur maudite (indice dans le moteur, rouge à l'affichage)
-export const COULEUR_MAUDITE = 2;
-export const PENALITE_CARTE = 1;
-export const PENALITE_MAUDITE = 3;
-// Points perdus qui terminent la partie
-export const SEUIL = 15;
-// Échanges par joueur et par partie
-export const ECHANGES = 1;
+// Couleurs du moteur : celle de chaque joueur, et la neutre
+export const COULEUR = { joueur: 0, bot: 1 };
+export const NEUTRE = 2;
+// Exemplaires de chaque valeur par couleur (joueur, bot, neutre)
+const EXEMPLAIRES = [2, 2, 1];
+// Points qui font gagner
+export const SEUIL = 5;
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
 
@@ -46,48 +44,46 @@ function melanger(cartes, rng) {
   return cartes;
 }
 
-// Pioche commune : 4 couleurs × valeurs 1 à 9, mélangée.
-// Carte : { k (couleur 0 à 3), v (valeur) }.
+// Pioche commune : valeurs 1 à 9, 2 exemplaires dans la couleur de chaque
+// joueur, 1 en neutre (45 cartes), mélangée. Carte : { k (couleur), v }.
 function pioche(rng) {
   const cartes = [];
-  for (let k = 0; k < NB_COULEURS; k++) {
-    for (let v = 1; v <= VALEUR_MAX; v++) cartes.push({ k, v });
-  }
+  EXEMPLAIRES.forEach((n, k) => {
+    for (let v = 1; v <= VALEUR_MAX; v++) for (let e = 0; e < n; e++) cartes.push({ k, v });
+  });
   return melanger(cartes, rng);
 }
 
-export const maudite = (carte) => carte.k === COULEUR_MAUDITE;
-
-// Points perdus en ramassant `cartes`
-export const penalite = (cartes) =>
-  cartes.reduce((total, c) => total + PENALITE_CARTE + (maudite(c) ? PENALITE_MAUDITE : 0), 0);
+// Cartes de la couleur de `id` parmi `cartes` (celles qui lui rapportent)
+export const sesCartes = (cartes, id) => cartes.filter((c) => c.k === COULEUR[id]);
 
 const derniere = (colonne) => colonne[colonne.length - 1];
 
-// Type du coup « `carte` sur la colonne `c` » : "pose", "libre",
-// "sixieme" (ramasse les 5 premières), ou null si la colonne est
-// interdite (carte pas plus forte ici alors qu'elle l'est ailleurs).
+// Type du coup « `carte` sur la colonne `c` » : "pose", "libre", "fermeture"
+// (6e carte : ramasse les 5 premières), ou null si la colonne est interdite
+// (carte pas plus forte ici alors qu'elle l'est ailleurs).
 export function typeCoup(colonnes, carte, c) {
   const monte = (col) => carte.v > derniere(col).v;
   if (!monte(colonnes[c]) && colonnes.some(monte)) return null;
-  if (colonnes[c].length === LIMITE - 1) return "sixieme";
+  if (colonnes[c].length === LIMITE - 1) return "fermeture";
   return monte(colonnes[c]) ? "pose" : "libre";
 }
 
-// Cartes ramassées par un coup de ce type sur `colonne` ([] sans ramassage)
-const ramassees = (colonne, type) => (type === "sixieme" ? [...colonne] : []);
+// Cartes ramassées par un coup de ce type sur `colonne` ([] sans fermeture)
+const ramassees = (colonne, type) => (type === "fermeture" ? [...colonne] : []);
 
 // Colonnes après le coup (copie, `colonnes` intact)
 function appliquer(colonnes, carte, c, type) {
-  return colonnes.map((col, i) => (i !== c ? col : ramassees(col, type).length ? [carte] : [...col, carte]));
+  return colonnes.map((col, i) => (i !== c ? col : type === "fermeture" ? [carte] : [...col, carte]));
 }
 
-// Les coups permis de `carte` (par défaut celle du joueur actif), un par
-// colonne autorisée : { c, type, penalite }.
-export function coupsPossibles(d, carte = d.carte) {
+// Les coups permis de `carte` (par défaut celle du joueur actif) pour `id`
+// (par défaut le joueur actif), un par colonne autorisée :
+// { c, type, gain (points marqués) }.
+export function coupsPossibles(d, carte = d.carte, id = d.actif) {
   return d.colonnes.flatMap((col, c) => {
     const type = typeCoup(d.colonnes, carte, c);
-    return type ? [{ c, type, penalite: penalite(ramassees(col, type)) }] : [];
+    return type ? [{ c, type, gain: sesCartes(ramassees(col, type), id).length }] : [];
   });
 }
 
@@ -98,24 +94,26 @@ export const prochaine = (d) => d.pioche[d.pioche.length - 1] ?? null;
 export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
   const cartes = pioche(rng);
   const colonnes = Array.from({ length: NB_COLONNES }, () => [cartes.pop()]);
+  // Carte de réserve de chaque joueur (visible de tous)
+  const reserves = { joueur: cartes.pop(), bot: cartes.pop() };
   return {
     colonnes,
+    reserves,
     pioche: cartes,
     // Carte à poser par le joueur actif (visible de tous)
     carte: cartes.pop(),
     actif: commence,
     points: { joueur: 0, bot: 0 },
-    // Cartes ramassées par chaque joueur, dans l'ordre (récapitulatif de fin)
-    ramassees: { joueur: [], bot: [] },
-    // Échanges restants de chaque joueur ; `echangeCeTour` : le joueur
-    // actif a échangé sa carte ce tour-ci
-    echanges: { joueur: ECHANGES, bot: ECHANGES },
+    // Cartes marquées par chaque joueur (de sa couleur), dans l'ordre
+    // (récapitulatif de fin)
+    marquees: { joueur: [], bot: [] },
+    // Le joueur actif a échangé sa carte avec sa réserve ce tour-ci
     echangeCeTour: false,
     coups: 0,
     // Numéro de l'état affiché, +1 à chaque action (coup ou échange) :
     // écarte un clic sur une vue dépassée
     vue: 0,
-    // Dernier coup : { id, carte, colonne, type, ramassees, penalite, echange }
+    // Dernier coup : { id, carte, colonne, type, ramassees, gain, echange }
     dernier: null,
     termine: false,
     gagnant: null,
@@ -135,13 +133,13 @@ export function jouer(d, id, c) {
   const type = typeCoup(d.colonnes, carte, c);
   if (!type) return { erreur: "Colonne interdite." };
   const prises = ramassees(d.colonnes[c], type);
-  const points = penalite(prises);
+  const marquees = sesCartes(prises, id);
   d.colonnes = appliquer(d.colonnes, carte, c, type);
-  d.points[id] += points;
-  d.ramassees[id].push(...prises);
+  d.points[id] += marquees.length;
+  d.marquees[id].push(...marquees);
   d.coups += 1;
   d.vue += 1;
-  d.dernier = { id, carte, colonne: c, type, ramassees: prises, penalite: points, echange: d.echangeCeTour };
+  d.dernier = { id, carte, colonne: c, type, ramassees: prises, gain: marquees.length, echange: d.echangeCeTour };
   d.echangeCeTour = false;
 
   if (d.points[id] >= SEUIL || !d.pioche.length) {
@@ -149,78 +147,79 @@ export function jouer(d, id, c) {
     d.fin = d.points[id] >= SEUIL ? "seuil" : "pioche";
     d.carte = null;
     const { joueur, bot } = d.points;
-    d.gagnant = joueur === bot ? "nul" : joueur < bot ? "joueur" : "bot";
+    d.gagnant = joueur === bot ? "nul" : joueur > bot ? "joueur" : "bot";
   } else {
     d.actif = adversaire(id);
     d.carte = d.pioche.pop();
   }
-  return { carte, type, penalite: points };
+  return { carte, type, gain: marquees.length };
 }
 
-// Échange permis au joueur actif `id` : il lui en reste, pas déjà fait ce
-// tour-ci, et une prochaine carte existe.
+// Échange avec la réserve permis au joueur actif `id` : une fois par tour
+// (rééchanger reviendrait au même), sans limite sur la partie.
 export function echangePermis(d, id) {
-  return !d.termine && d.actif === id && d.echanges?.[id] > 0 && !d.echangeCeTour && d.pioche.length > 0;
+  return !d.termine && d.actif === id && !d.echangeCeTour && Boolean(d.reserves?.[id]);
 }
 
-// Échange : la carte du joueur actif devient la prochaine carte (celle de
-// l'adversaire), il joue la prochaine à la place.
+// Échange : le joueur actif joue sa réserve, sa carte du tour la remplace.
 export function echanger(d, id) {
   if (!echangePermis(d, id)) return { erreur: "Échange impossible." };
-  const donnee = d.carte;
-  d.carte = d.pioche.pop();
-  d.pioche.push(donnee);
-  d.echanges[id] -= 1;
+  const gardee = d.carte;
+  d.carte = d.reserves[id];
+  d.reserves[id] = gardee;
   d.echangeCeTour = true;
   d.vue += 1;
-  return { donnee, recue: d.carte };
+  return { gardee, jouee: d.carte };
 }
 
 // ── Kévina ────────────────────────────────────────────────────────
 
-// Coût fictif d'un échange pour Kévina (ressource rare : seulement s'il
-// rapporte nettement)
-const COUT_ECHANGE = 2;
-
-// Points que l'adversaire perdra au mieux à son tour avec `carte` (la
-// prochaine, visible de tous ; 0 sans carte).
-function penaliteAdverse(colonnes, carte) {
-  if (!carte) return 0;
-  return Math.min(...coupsPossibles({ colonnes }, carte).map((x) => x.penalite));
+// Points que `id` marquera au mieux à son tour, avec la prochaine carte ou
+// sa réserve (visibles de tous).
+function gainAdverse(colonnes, id, cartes) {
+  const gains = cartes
+    .filter(Boolean)
+    .flatMap((carte) => coupsPossibles({ colonnes }, carte, id).map((x) => x.gain));
+  return gains.length ? Math.max(...gains) : 0;
 }
 
-// Valeurs des coups de `carte` (l'adversaire recevra `suivante`) : points
-// perdus moins ceux que l'adversaire perdra au mieux à son tour suivant.
-function valeurs(d, carte, suivante) {
-  return coupsPossibles(d, carte).map((coup) => {
-    const apres = appliquer(d.colonnes, carte, coup.c, coup.type);
-    return { c: coup.c, v: coup.penalite - penaliteAdverse(apres, suivante) };
-  });
+// Coups possibles du joueur actif `id`, sa carte du tour puis (si l'échange
+// est permis) sa réserve : { echange, carte, c, type, gain }.
+function coupsAvecReserve(d, id) {
+  const coups = coupsPossibles(d).map((x) => ({ ...x, echange: false, carte: d.carte }));
+  if (!echangePermis(d, id)) return coups;
+  const reserve = d.reserves[id];
+  return [...coups, ...coupsPossibles(d, reserve).map((x) => ({ ...x, echange: true, carte: reserve }))];
 }
 
-// Kévina minimise ses points perdus moins ceux que l'adversaire perdra au
-// mieux à son tour suivant avec la prochaine carte (visible de tous), sans
-// anticipation plus lointaine. Elle échange si c'est nettement meilleur
-// (COUT_ECHANGE). `marge` : colonne tirée au sort parmi celles à `marge`
-// points au plus de la meilleure (variété, et des erreurs qui laissent sa
-// chance au joueur). Réglage : `marge_kevina` de duel.json.
-// Renvoie { echange, c } : échanger d'abord si `echange`, puis jouer `c`
-// (colonne choisie pour la carte reçue).
+// Kévina maximise ses points marqués moins ceux que l'adversaire marquera
+// au mieux à son tour suivant (prochaine carte ou sa réserve), sans
+// anticipation plus lointaine ; elle joue sa carte ou sa réserve selon ce
+// calcul, à égalité la plus petite marche (garde les colonnes souples).
+// `marge` : coup tiré au sort parmi ceux à `marge` points au plus du
+// meilleur (variété, et des erreurs qui laissent sa chance au joueur).
+// Réglage : `marge_kevina` de duel.json.
+// Renvoie { echange, c } : échanger d'abord si `echange`, puis jouer `c`.
 export function choixKevina(d, id, { marge = 0, rng = Math.random } = {}) {
-  const sansEchange = valeurs(d, d.carte, prochaine(d));
-  const avecEchange = echangePermis(d, id) ? valeurs(d, prochaine(d), d.carte) : [];
-  const min = (vs) => Math.min(...vs.map((x) => x.v));
-  const echange = avecEchange.length > 0 && min(avecEchange) + COUT_ECHANGE < min(sansEchange);
-  const choix = echange ? avecEchange : sansEchange;
-  const meilleurs = choix.filter((x) => x.v <= min(choix) + marge);
-  return { echange, c: meilleurs[Math.floor(rng() * meilleurs.length)].c };
+  const adv = adversaire(id);
+  const valeurs = coupsAvecReserve(d, id).map((x) => {
+    const apres = appliquer(d.colonnes, x.carte, x.c, x.type);
+    const marche = x.type === "pose" ? (x.carte.v - derniere(d.colonnes[x.c]).v) / 100 : 0.2;
+    return { ...x, v: x.gain - gainAdverse(apres, adv, [prochaine(d), d.reserves?.[adv]]) - marche };
+  });
+  const max = Math.max(...valeurs.map((x) => x.v));
+  const meilleurs = valeurs.filter((x) => x.v >= max - marge);
+  const { echange, c } = meilleurs[Math.floor(rng() * meilleurs.length)];
+  return { echange, c };
 }
 
-// Joueur « de bon sens » (simulation) : le moins de points perdus, puis
-// la plus petite marche au-dessus de la dernière carte.
+// Joueur « de bon sens » (simulation) : le plus de points tout de suite
+// avec sa carte ou sa réserve, puis la plus petite marche ; ne regarde pas
+// ce que l'adversaire pourra fermer. Renvoie { echange, c }.
 export function choixSimple(d) {
-  const cle = (x) => x.penalite * 100 + (x.type === "pose" ? d.carte.v - derniere(d.colonnes[x.c]).v : 20);
-  return coupsPossibles(d).reduce((b, x) => (cle(x) < cle(b) ? x : b)).c;
+  const cle = (x) => -x.gain * 100 + (x.type === "pose" ? x.carte.v - derniere(d.colonnes[x.c]).v : 20);
+  const { echange, c } = coupsAvecReserve(d, d.actif).reduce((b, x) => (cle(x) < cle(b) ? x : b));
+  return { echange, c };
 }
 
 export function choixHasard(d, rng = Math.random) {

@@ -1,6 +1,6 @@
 // Simulation d'équilibrage de Six sur les vraies règles
-// (jeux/services/sixRules.js) : profils hasard, simple (bon sens : le moins
-// de points perdus) ou kevina[m<marge>].
+// (jeux/services/sixRules.js) : profils hasard, simple (bon sens : le plus
+// de points tout de suite, sans regarder l'adversaire) ou kevina[m<marge>].
 // Usage : node jeux/outils/six/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
 // ex. : node jeux/outils/six/simulateDuel.mjs 4000 kevina kevinam1
 // (« bon joueur » contre la Kévina de production). Le « joueur » commence
@@ -11,9 +11,9 @@ const PARTIES = Number(process.argv[2] || 2000);
 const PROFILS = { joueur: process.argv[3] || "kevina", bot: process.argv[4] || "kevina" };
 
 function choix(profil) {
-  // hasard et simple n'échangent jamais
+  // hasard ne touche jamais à sa réserve
   if (profil === "hasard") return (d) => ({ echange: false, c: choixHasard(d) });
-  if (profil === "simple") return (d) => ({ echange: false, c: choixSimple(d) });
+  if (profil === "simple") return (d) => choixSimple(d);
   const m = /^kevina(?:m([\d.]+))?$/.exec(profil);
   if (!m) throw new Error(`Profil inconnu : ${profil} (hasard, simple, kevina[m<marge>])`);
   const reglages = { marge: Number(m[1] ?? 0) };
@@ -50,7 +50,7 @@ const parPartie = (n) => ((n ?? 0) / PARTIES).toFixed(1);
 console.log(`${PARTIES} parties, joueur (commence) = ${PROFILS.joueur}, bot = ${PROFILS.bot}`);
 console.log(`Victoires joueur ${pct(res.joueur)} | bot ${pct(res.bot)} | nuls ${pct(res.nul)}`);
 console.log(
-  `Par partie : ${parPartie(types.sixieme)} ramassages à la 6e carte, ${parPartie(types.libre)} poses libres, ${(points / PARTIES / 2).toFixed(1)} points par joueur`,
+  `Par partie : ${parPartie(types.fermeture)} fermetures, ${parPartie(types.libre)} poses libres, ${(points / PARTIES / 2).toFixed(1)} points par joueur`,
 );
-console.log(`${(echanges / PARTIES).toFixed(1)} échanges par partie, ${(coups / PARTIES / 2).toFixed(1)} coups par joueur, ${pct(fins.seuil ?? 0)} des parties finies au seuil de points`);
+console.log(`${(echanges / PARTIES).toFixed(1)} échanges avec la réserve par partie, ${(coups / PARTIES / 2).toFixed(1)} coups par joueur, ${pct(fins.seuil ?? 0)} des parties finies au seuil de points`);
 console.log(`Temps moyen par partie ${((Date.now() - debut) / PARTIES).toFixed(1)} ms`);

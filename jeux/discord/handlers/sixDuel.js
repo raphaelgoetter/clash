@@ -38,7 +38,8 @@ import {
 import {
   LIMITE,
   NB_COLONNES,
-  PENALITE_MAUDITE,
+  COULEUR,
+  NEUTRE,
   SEUIL,
   adversaire,
   choixKevina,
@@ -60,15 +61,14 @@ const TITRE = "6️⃣ Six";
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 
-// Cartes de Punto, communes aux deux joueurs ; indice = couleur de la
-// carte (0 à 3) dans le moteur, le rouge est la couleur maudite
-// (COULEUR_MAUDITE)
-const COULEURS = ["bleu", "vert", "rouge", "orange"];
+// Cartes de Punto : chacun voit SES cartes en bleu, celles de
+// l'adversaire en rouge (messages publics : premier joueur en bleu), les
+// neutres en orange
 const NOMS_COLONNES = ["A", "B", "C", "D"].slice(0, NB_COLONNES);
 // En-têtes des colonnes, à la largeur des cartes
 const ENTETES = ["🇦", "🇧", "🇨", "🇩"].slice(0, NB_COLONNES);
-// Emplacement vide de la 6e carte (celle qui fait ramasser)
-const SIXIEME = "💀";
+// Emplacement vide de la 6e carte (celle qui ferme la colonne)
+const SIXIEME = "🎯";
 // Étape d'explosion (6e carte, comme La Grille) : les 5 cartes ramassées
 // remplacées par 💥 sous la carte posée, affichées un court instant avant
 // le plateau suivant
@@ -222,34 +222,35 @@ function nomsAdv(partie, moi) {
   return nomsJoueur(partie.noms[partie.sieges[adversaire(moi)]] ?? "?");
 }
 
-// Carte en emoji (couleurs de Punto)
-const carteTexte = (carte) => formatCarte(COULEURS[carte.k], carte.v);
+// Carte en emoji vue par le siège `moi` : ses cartes en bleu, celles de
+// l'adversaire en rouge, les neutres en orange
+const couleurVue = (carte, moi) => (carte.k === NEUTRE ? "orange" : carte.k === COULEUR[moi] ? "bleu" : "rouge");
+const carteTexte = (carte, moi = "joueur") => formatCarte(couleurVue(carte, moi), carte.v);
 const pts = (n) => plural(n, "point");
-// « 0 point perdu », « 1 point perdu », « 12 points perdus »
-const perdus = (n) => `${pts(n)} ${n > 1 ? "perdus" : "perdu"}`;
 
-// Récapitulatif de fin (messages publics) : cartes ramassées par chaque
-// joueur, sur une rangée (titre H3), à la place du plateau.
-function lignesRamassees(d, nomJoueur, nomBot) {
+// Récapitulatif de fin (messages publics, premier joueur en bleu) : cartes
+// marquées par chaque joueur, sur une rangée (titre H3), à la place du
+// plateau.
+function lignesMarquees(d, nomJoueur, nomBot) {
   return [
     ["joueur", nomJoueur],
     ["bot", nomBot],
   ].flatMap(([id, nom]) => {
-    const cartes = d.ramassees?.[id] ?? [];
-    return [`**${nom}** : ${perdus(d.points[id])}`, cartes.length ? `### ${cartes.map(carteTexte).join(" ")}` : "Aucune carte ramassée."];
+    const cartes = d.marquees?.[id] ?? [];
+    return [`**${nom}** : ${pts(d.points[id])}`, cartes.length ? `### ${cartes.map((c) => carteTexte(c)).join(" ")}` : "Aucune carte marquée."];
   });
 }
 
-// Plateau : les colonnes à la verticale sous leurs en-têtes, la plus
-// ancienne carte en haut ; emplacements libres gris, 6e emplacement 💀
-// (la carte qui y tomberait fait ramasser). Une rangée par ligne, en titre
-// H1 dans la vue du joueur (plus grande taille d'emoji possible, comme La
-// Grille), H3 dans les messages publics (`titre`).
-function plateau(d, titre = "#") {
+// Plateau vu par le siège `moi` : les colonnes à la verticale sous leurs
+// en-têtes, la plus ancienne carte en haut ; emplacements libres gris, 6e
+// emplacement 🎯 (la carte qui y tombe ferme la colonne). Une rangée par
+// ligne, en titre H1 dans la vue du joueur (plus grande taille d'emoji
+// possible, comme La Grille), H3 dans les messages publics (`titre`).
+function plateau(d, titre = "#", moi = "joueur") {
   const rangees = [`${titre} ${ENTETES.join(" ")}`];
   for (let r = 0; r < LIMITE; r++) {
     const cases = d.colonnes.map((col) =>
-      col[r] === EXPLOSION ? EXPLOSION : col[r] ? carteTexte(col[r]) : r === LIMITE - 1 ? SIXIEME : formatCarte("vide"),
+      col[r] === EXPLOSION ? EXPLOSION : col[r] ? carteTexte(col[r], moi) : r === LIMITE - 1 ? SIXIEME : formatCarte("vide"),
     );
     rangees.push(`${titre} ${cases.join(" ")}`);
   }
@@ -257,35 +258,35 @@ function plateau(d, titre = "#") {
 }
 
 // Étape d'explosion après une 6e carte (`d.dernier`), null sinon : copie
-// du duel dont la colonne ramassée montre 💥 à la place des 5 cartes, la
+// du duel dont la colonne fermée montre 💥 à la place des 5 cartes, la
 // carte posée dessous ; ni carte à jouer ni fin (le récapitulatif suit).
 function etatExplosion(d) {
   const x = d.dernier;
-  if (x?.type !== "sixieme") return null;
+  if (x?.type !== "fermeture") return null;
   const etat = structuredClone(d);
   etat.colonnes[x.colonne] = [...x.ramassees.map(() => EXPLOSION), x.carte];
   return Object.assign(etat, { explosion: true, termine: false, carte: null });
 }
 
-// « 💥 Kévina ramasse la colonne B (−11) ! » (étape d'explosion, messages publics)
+// « 💥 Kévina ferme la colonne B (+2) ! » (étape d'explosion, messages publics)
 const ligneExplosion = (d, nom) =>
-  `💥 ${nom(d.dernier.id)} ramasse la colonne ${NOMS_COLONNES[d.dernier.colonne]} (−${pts(d.dernier.penalite)}) !`;
+  `💥 ${nom(d.dernier.id)} ferme la colonne ${NOMS_COLONNES[d.dernier.colonne]} (+${d.dernier.gain}) !`;
 
-// Plateau neutre (message public) : cartes plus petites que dans la vue du
-// joueur, puis le score de la partie en cours (premier joueur d'abord).
+// Plateau neutre (message public, premier joueur en bleu) : cartes plus
+// petites que dans la vue du joueur, puis le score en cours.
 function plateauPublic(d, nomJoueur, nomBot) {
-  return [...plateau(d, "###"), `Score en cours : **${nomJoueur} ${d.points.joueur}** · ${nomBot} ${d.points.bot}`];
+  return [...plateau(d, "###"), `Score en cours : 🟦 **${nomJoueur} ${d.points.joueur}** · 🟥 ${nomBot} ${d.points.bot}`];
 }
 
 // Récit du dernier coup vu par `moi`, sans point final : « Tu joues 🟦7
-// en A », « Kévina joue 🟥2 en B (💥 −5) » (6e carte, colonne ramassée),
-// « Kévina échange et joue 🟥2 en B » (après un échange).
+// en A », « Kévina joue 🟥2 en B (💥 +2) » (6e carte, colonne fermée),
+// « Kévina joue sa réserve 🟥2 en B » (après un échange).
 function recit(d, moi, A) {
   const x = d.dernier;
   if (!x) return null;
   const toi = x.id === moi;
-  const verbe = toi ? (x.echange ? "Tu échanges et joues" : "Tu joues") : `${A.Sujet} ${x.echange ? "échange et joue" : "joue"}`;
-  return `${verbe} ${carteTexte(x.carte)} en ${NOMS_COLONNES[x.colonne]}${x.type === "sixieme" ? ` (💥 −${x.penalite})` : ""}`;
+  const verbe = toi ? (x.echange ? "Tu joues ta réserve" : "Tu joues") : `${A.Sujet} ${x.echange ? "joue sa réserve" : "joue"}`;
+  return `${verbe} ${carteTexte(x.carte, moi)} en ${NOMS_COLONNES[x.colonne]}${x.type === "fermeture" ? ` (💥 +${x.gain})` : ""}`;
 }
 
 const ERREURS = {
@@ -347,7 +348,7 @@ function vueFin(d, { moi, A, raison }) {
       ? d.gagnant === moi
         ? `${A.Sujet} n'a pas joué à temps.`
         : "Tu n'as pas joué à temps."
-      : `${d.fin === "seuil" ? `${SEUIL} points atteints` : "La pioche est vide"} : tu perds ${pts(d.points[moi])}, ${A.Sujet} ${pts(d.points[adversaire(moi)])}.`;
+      : `${d.fin === "seuil" ? `${SEUIL} points atteints` : "La pioche est vide"} : tu marques ${pts(d.points[moi])}, ${A.Sujet} ${pts(d.points[adversaire(moi)])}.`;
   const issue =
     d.gagnant === "nul"
       ? "c'est un match nul."
@@ -398,14 +399,21 @@ function boutonsCoups(d, monTour, sfx) {
   ];
 }
 
-// « Ta carte : 🟦7 » en titre H1 (carte agrandie) à son tour, avec la
-// prochaine carte de la pioche (celle de l'adversaire) en petit dessous ;
-// « Carte de Kévina : 🟥3 » en texte sinon.
+// « Ta carte : 🟦7 » en titre H1 (carte agrandie) à son tour, avec en
+// petit dessous sa réserve, la prochaine carte de la pioche (celle de
+// l'adversaire) et la réserve adverse ; « Carte de Kévina : 🟥3 » sinon.
 function ligneCarte(d, moi, A) {
   if (!d.carte) return null;
-  if (d.actif !== moi) return `Carte de ${A.Sujet} : ${carteTexte(d.carte)}`;
+  const carte = (c) => carteTexte(c, moi);
+  if (d.actif !== moi) return `Carte de ${A.Sujet} : ${carte(d.carte)}`;
   const suivante = prochaine(d);
-  return [`# Ta carte : ${carteTexte(d.carte)}`, ...(suivante ? [`-# (prochaine : ${carteTexte(suivante)})`] : [])].join("\n");
+  const reserveAdv = d.reserves?.[adversaire(moi)];
+  const infos = [
+    d.reserves?.[moi] ? `ta réserve : ${carte(d.reserves[moi])}` : null,
+    suivante ? `prochaine : ${carte(suivante)}` : null,
+    reserveAdv ? `réserve de ${A.Sujet} : ${carte(reserveAdv)}` : null,
+  ].filter(Boolean);
+  return [`# Ta carte : ${carte(d.carte)}`, ...(infos.length ? [`-# ${infos.join(" · ")}`] : [])].join("\n");
 }
 
 // Vue d'un joueur : plateau, résultat de la dernière action
@@ -422,7 +430,7 @@ function buildVue(
   const sfx = pvp ? ":pvp" : "";
   const lignes = [
     ...(confirmerAbandon ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite.", ""] : []),
-    ...plateau(d),
+    ...plateau(d, "#", moi),
     ...(confirmerAbandon
       ? []
       : [
@@ -449,16 +457,15 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles de Six",
     description: [
-      `${NB_COLONNES} colonnes et une pioche commune de 36 cartes (4 couleurs, de 1 à 9). But : perdre le moins de points.`,
+      `${NB_COLONNES} colonnes et une pioche commune de 45 cartes de 1 à 9 : tes cartes sont **bleues**, celles de ton adversaire **rouges** (18 chacun), 9 cartes **orange** sont neutres.`,
       "",
       "**🃏 À ton tour**, tu retournes la carte du dessus de la pioche :",
       "• tu la poses sur une colonne dont la dernière carte est **plus faible** (au choix s'il y en a plusieurs) ;",
       "• plus forte nulle part : tu la poses où tu veux.",
-      "La prochaine carte, celle de ton adversaire, est visible.",
-      "• 🔄 **Échange** (1 par partie) : tu peux donner ta carte à ton adversaire (elle devient sa prochaine carte) et jouer la prochaine à la place.",
-      `• ${SIXIEME} **6ᵉ carte** d'une colonne : tu ramasses les 5 autres, ta carte reste.`,
-      `**💸 Points perdus** : 1 par carte ramassée, ${1 + PENALITE_MAUDITE} par carte **rouge** (maudite).`,
-      `**🏆 Fin** : dès qu'un joueur atteint ${SEUIL} points perdus, ou quand la pioche est vide. Le moins de points gagne, égalité : match nul.`,
+      "• 🔄 **Réserve** : tu as une carte de côté. Avant de poser, tu peux l'échanger avec ta carte du tour : tu joues ta réserve, ta carte la remplace.",
+      "Les réserves et la prochaine carte (celle de ton adversaire) sont visibles.",
+      `• ${SIXIEME} **6ᵉ carte** d'une colonne : tu la **fermes** et marques **1 point par carte bleue** parmi les 5 autres, ta carte reste.`,
+      `**🏆 Victoire** : le premier à ${SEUIL} points. Si la pioche est vide avant, le plus de points gagne (égalité : match nul).`,
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
       `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
@@ -498,7 +505,7 @@ function messageSolo(d, pseudo) {
             ? ligneExplosion(d, (id) => (id === "bot" ? "Kévina" : pseudo))
             : d.actif === "bot"
               ? "⏳ Kévina réfléchit…"
-              : `Au tour de **${pseudo}**, carte : ${carteTexte(d.carte)}`,
+              : `Au tour de **${pseudo}**, carte : ${carteTexte(d.carte)}, réserve : ${carteTexte(d.reserves.joueur)}`,
           "",
           ...plateauPublic(d, pseudo, "🤖 Kévina"),
           "",
@@ -583,15 +590,15 @@ function messageFinalSolo(d, pseudo) {
   const resultat = d.abandon
     ? `🏳️ ${pseudo} abandonne face à Kévina.`
     : d.gagnant === "nul"
-      ? `🤝 Match nul entre ${pseudo} et Kévina (${perdus(joueur)} chacun).`
+      ? `🤝 Match nul entre ${pseudo} et Kévina (${pts(joueur)} chacun).`
       : d.gagnant === "joueur"
-        ? `🏆 ${pseudo} bat Kévina : ${perdus(joueur)} contre ${bot} !`
-        : `🤖 Kévina bat ${pseudo} : ${perdus(bot)} contre ${joueur}.`;
+        ? `🏆 ${pseudo} bat Kévina : ${joueur} à ${bot} !`
+        : `🤖 Kévina bat ${pseudo} : ${bot} à ${joueur}.`;
   return {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [resultat, "", ...lignesRamassees(d, pseudo, "🤖 Kévina"), ...(series.length ? ["", ...series] : [])]
+        description: [resultat, "", ...lignesMarquees(d, pseudo, "🤖 Kévina"), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
         color: SIX_COLOR,
@@ -769,7 +776,7 @@ function messagePublic(partie, config, etat = null) {
         description: [
           d.explosion
             ? ligneExplosion(d, nom)
-            : `Au tour de **${nom(d.actif)}**, carte : ${carteTexte(d.carte)}, limite <t:${echeanceDe(partie, config)}:R>`,
+            : `Au tour de **${nom(d.actif)}**, carte : ${carteTexte(d.carte)}, réserve : ${carteTexte(d.reserves[d.actif])}, limite <t:${echeanceDe(partie, config)}:R>`,
           "",
           ...plateauPublic(d, nom("joueur"), nom("bot")),
         ].join("\n").slice(0, 4096),
@@ -796,10 +803,10 @@ function messageFinal(partie) {
     partie.raisonFin === "abandon"
       ? `🏳️ ${nom(adversaire(g))} abandonne : ${nom(g)} remporte le duel.`
       : g === "nul"
-      ? `🤝 Match nul entre ${nom("joueur")} et ${nom("bot")} (${perdus(d.points.joueur)} chacun).`
+      ? `🤝 Match nul entre ${nom("joueur")} et ${nom("bot")} (${pts(d.points.joueur)} chacun).`
       : partie.raisonFin === "delai"
         ? `🏆 ${nom(g)} remporte le duel : ${nom(adversaire(g))} n'a pas joué à temps.`
-        : `🏆 ${nom(g)} bat ${nom(adversaire(g))} : ${perdus(d.points[g])} contre ${d.points[adversaire(g)]} !`;
+        : `🏆 ${nom(g)} bat ${nom(adversaire(g))} : ${d.points[g]} à ${d.points[adversaire(g)]} !`;
   const s = partie.series;
   const series = s
     ? lignesSeries({
@@ -814,7 +821,7 @@ function messageFinal(partie) {
     embeds: [
       {
         title: `${TITRE} · ${titreGagnant(g, nom)}`,
-        description: [resultat, "", ...lignesRamassees(d, nom("joueur"), nom("bot")), ...(series.length ? ["", ...series] : [])]
+        description: [resultat, "", ...lignesMarquees(d, nom("joueur"), nom("bot")), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
         color: SIX_COLOR,
@@ -1049,15 +1056,15 @@ export async function handleSixAbandon(webhookUrl, discordId, etape, { pvp = fal
 // [🔄] : échange de la carte du joueur avec la prochaine (`vue` : d.vue
 // affiché), puis vue rééditée (il choisit ensuite sa colonne) ; en 1v1,
 // vue adverse et message public aussi (sa prochaine carte change).
-function actionEchanger(d, moi, vue, A) {
+function actionEchanger(d, moi, vue) {
   if (!d.termine && vue !== d.vue) return { erreur: "perime" };
   const r = echanger(d, moi);
   if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "echange" };
-  return { texte: `🔄 Tu échanges : ${carteTexte(r.donnee)} part chez ${A.Sujet}.` };
+  return { texte: `🔄 Tu prends ta réserve ${carteTexte(r.jouee, moi)}, ${carteTexte(r.gardee, moi)} passe en réserve.` };
 }
 
 async function echangerSolo(webhookUrl, discordId, vue, { pseudo } = {}) {
-  const { duel, resultat } = await agirDuel(discordId, (d) => actionEchanger(d, "joueur", vue, BOT), { nom: pseudo });
+  const { duel, resultat } = await agirDuel(discordId, (d) => actionEchanger(d, "joueur", vue), { nom: pseudo });
   if (!duel) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
     return;
@@ -1074,7 +1081,7 @@ async function echangerPvp(webhookUrl, discordId, vue) {
     if (!moi) return { erreur: p.statut === "lobby" ? "lobby" : "pasJoueur" };
     memoriserWebhook(p, discordId, webhookUrl);
     if (p.statut !== "enCours") return { erreur: "termine" };
-    const r = actionEchanger(p.duel, moi, vue, nomsAdv(p, moi));
+    const r = actionEchanger(p.duel, moi, vue);
     return r.erreur ? r : { ...r, echange: true };
   });
   if (!partie) {

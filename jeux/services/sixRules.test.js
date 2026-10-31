@@ -4,190 +4,168 @@ import {
   jouer,
   typeCoup,
   coupsPossibles,
-  penalite,
   choixKevina,
   echangePermis,
   echanger,
-  COULEUR_MAUDITE,
-  PENALITE_MAUDITE,
-  SEUIL,
   prochaine,
+  COULEUR,
+  NEUTRE,
+  SEUIL,
 } from "./sixRules.js";
 
-// Colonnes de test : une chaîne de valeurs par colonne ("147" = 1, 4, 7),
-// couleur 0 ; `maudites` : valeurs de la couleur maudite, par colonne.
-const col = (valeurs, maudites = "") =>
-  [...valeurs].map((v) => ({ k: maudites.includes(v) ? COULEUR_MAUDITE : 0, v: Number(v) }));
+// Cartes de test : `j` = couleur du joueur, `b` = couleur du bot, `n` = neutre
+const K = { j: COULEUR.joueur, b: COULEUR.bot, n: NEUTRE };
+const carte = (code) => ({ k: K[code[0]], v: Number(code[1]) });
+// Colonne : codes séparés par des espaces (« j1 b2 n3 »)
+const col = (codes) => codes.split(" ").map(carte);
 
-function duelTest(colonnes, carte, { pioche = null, actif = "joueur" } = {}) {
+function duelTest(colonnes, aJouer, { pioche = null, actif = "joueur", reserves = null } = {}) {
   const d = creerDuel({ commence: actif, rng: () => 0 });
   d.colonnes = colonnes;
-  d.carte = { k: 1, v: carte };
-  if (pioche) d.pioche = pioche;
+  d.carte = carte(aJouer);
+  if (pioche) d.pioche = pioche.map(carte);
+  if (reserves) d.reserves = { joueur: carte(reserves[0]), bot: carte(reserves[1]) };
   return d;
 }
 
 function main() {
-  // ── Mise en place : 4 colonnes d'une carte, 1 carte à poser, 31 en pioche ──
+  // ── Mise en place : 45 cartes (18 joueur, 18 bot, 9 neutres), 4 colonnes, 2 réserves ──
   {
     const d = creerDuel();
     assert.strictEqual(d.colonnes.length, 4);
     assert.ok(d.colonnes.every((c) => c.length === 1));
-    assert.ok(d.carte);
-    assert.strictEqual(d.pioche.length, 31);
-    const toutes = [...d.pioche, d.carte, ...d.colonnes.flat()].map((c) => `${c.k}${c.v}`);
-    assert.strictEqual(new Set(toutes).size, 36);
+    assert.ok(d.carte && d.reserves.joueur && d.reserves.bot);
+    assert.strictEqual(d.pioche.length, 45 - 4 - 2 - 1);
+    const toutes = [...d.pioche, d.carte, d.reserves.joueur, d.reserves.bot, ...d.colonnes.flat()];
+    const parCouleur = (k) => toutes.filter((c) => c.k === k).length;
+    assert.deepStrictEqual([parCouleur(K.j), parCouleur(K.b), parCouleur(K.n)], [18, 18, 9]);
     assert.strictEqual(d.actif, "joueur");
   }
 
-  // ── Pénalité : 1 par carte, + PENALITE_MAUDITE par carte maudite ──
-  assert.strictEqual(penalite(col("123")), 3);
-  assert.strictEqual(penalite(col("123", "2")), 3 + PENALITE_MAUDITE);
-
   // ── Types de coup ──
   {
-    const colonnes = [col("3"), col("8"), col("12345"), col("9")];
-    const c = (v) => ({ k: 0, v });
+    const colonnes = [col("n3"), col("n8"), col("j1 j2 j3 j4 j5"), col("n9")];
+    const c = (v) => ({ k: K.n, v });
     assert.strictEqual(typeCoup(colonnes, c(5), 0), "pose");
     // Plus faible ici, plus forte sur la colonne 0 : interdit
     assert.strictEqual(typeCoup(colonnes, c(5), 1), null);
-    // 6e carte : ramasse
-    assert.strictEqual(typeCoup(colonnes, c(9), 2), "sixieme");
-    // Égalité : ne monte pas
-    assert.strictEqual(typeCoup(colonnes, c(8), 1), null);
+    // 6e carte : fermeture
+    assert.strictEqual(typeCoup(colonnes, c(9), 2), "fermeture");
     // Plus forte nulle part : pose libre, sauf 6e carte
-    const hautes = [col("9"), col("8"), col("12348"), col("7")];
+    const hautes = [col("n9"), col("n8"), col("n1 n2 n3 n4 n8"), col("n7")];
     assert.strictEqual(typeCoup(hautes, c(2), 0), "libre");
-    assert.strictEqual(typeCoup(hautes, c(2), 2), "sixieme");
+    assert.strictEqual(typeCoup(hautes, c(2), 2), "fermeture");
   }
 
-  // ── Coups possibles : colonnes permises seulement, pénalité annoncée ──
+  // ── Coups possibles : colonnes permises seulement, gain annoncé pour le joueur actif ──
   {
-    const d = duelTest([col("3"), col("8", "8"), col("12345"), col("9")], 6);
+    const d = duelTest([col("n3"), col("n8"), col("j1 b2 j3 n4 j5"), col("n9")], "n6");
     assert.deepStrictEqual(coupsPossibles(d), [
-      { c: 0, type: "pose", penalite: 0 },
-      { c: 2, type: "sixieme", penalite: 5 },
+      { c: 0, type: "pose", gain: 0 },
+      { c: 2, type: "fermeture", gain: 3 },
     ]);
-    // Colonne interdite refusée, partie intacte
+    // Même coup vu par le bot : ses cartes seulement
+    assert.strictEqual(coupsPossibles(d, d.carte, "bot")[1].gain, 1);
     assert.ok(jouer(d, "joueur", 1).erreur);
     assert.strictEqual(d.coups, 0);
   }
 
-  // ── Prochaine carte : le dessus de la pioche ──
-  {
-    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [{ k: 0, v: 2 }, { k: 3, v: 7 }] });
-    assert.deepStrictEqual(prochaine(d), { k: 3, v: 7 });
-    jouer(d, "joueur", 0);
-    assert.deepStrictEqual(d.carte, { k: 3, v: 7 });
-    assert.deepStrictEqual(prochaine(d), { k: 0, v: 2 });
-  }
-
   // ── Jouer : pose, puis carte retournée pour l'adversaire ──
   {
-    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5);
-    const restantes = d.pioche.length;
+    const d = duelTest([col("n3"), col("n8"), col("n1"), col("n2")], "j5", { pioche: ["n2", "b7"] });
     const r = jouer(d, "joueur", 0);
-    assert.deepStrictEqual(r, { carte: { k: 1, v: 5 }, type: "pose", penalite: 0 });
-    assert.deepStrictEqual(d.colonnes[0].map((c) => c.v), [3, 5]);
+    assert.deepStrictEqual(r, { carte: carte("j5"), type: "pose", gain: 0 });
+    assert.deepStrictEqual(d.colonnes[0], col("n3 j5"));
     assert.strictEqual(d.actif, "bot");
-    assert.ok(d.carte);
-    assert.strictEqual(d.pioche.length, restantes - 1);
-    assert.strictEqual(d.coups, 1);
+    assert.deepStrictEqual(d.carte, carte("b7"));
+    assert.deepStrictEqual(prochaine(d), carte("n2"));
+    assert.strictEqual(d.vue, 1);
     assert.ok(jouer(d, "joueur", 0).erreur);
     assert.ok(jouer(d, "bot", 4).erreur);
   }
 
-  // ── Ramassage à la 6e carte : 5 cartes ramassées, la 6e reste ──
+  // ── Fermeture : 1 point par carte de sa couleur parmi les 5, la 6e reste ──
   {
-    const d = duelTest([col("12345", "2"), col("8"), col("9"), col("9")], 7);
-    jouer(d, "joueur", 0);
-    assert.deepStrictEqual(d.colonnes[0], [{ k: 1, v: 7 }]);
-    assert.strictEqual(d.points.joueur, 5 + PENALITE_MAUDITE);
-    assert.strictEqual(d.dernier.ramassees.length, 5);
-    assert.strictEqual(d.dernier.type, "sixieme");
-    assert.deepStrictEqual(d.ramassees.joueur.map((c) => c.v), [1, 2, 3, 4, 5]);
-    assert.deepStrictEqual(d.ramassees.bot, []);
+    const d = duelTest([col("j1 b2 j3 n4 j5"), col("n8"), col("n9"), col("n9")], "b7");
+    d.actif = "bot";
+    jouer(d, "bot", 0);
+    assert.deepStrictEqual(d.colonnes[0], [carte("b7")]);
+    assert.strictEqual(d.points.bot, 1);
+    assert.deepStrictEqual(d.marquees.bot, [carte("b2")]);
+    assert.strictEqual(d.dernier.type, "fermeture");
+    assert.strictEqual(d.dernier.gain, 1);
   }
 
-  // ── Pose libre : aucune colonne où monter, aucun point ──
+  // ── Pose libre : aucune colonne où monter ──
   {
-    const d = duelTest([col("9"), col("78"), col("6"), col("5")], 2);
+    const d = duelTest([col("n9"), col("n7 n8"), col("n6"), col("n5")], "j2");
     jouer(d, "joueur", 1);
-    assert.deepStrictEqual(d.colonnes[1].map((c) => c.v), [7, 8, 2]);
-    assert.strictEqual(d.points.joueur, 0);
+    assert.deepStrictEqual(d.colonnes[1], col("n7 n8 j2"));
     assert.strictEqual(d.dernier.type, "libre");
   }
 
-  // ── Fin : pioche vide après le coup, le moins de points gagne ──
+  // ── Fin au seuil : le premier à SEUIL points gagne ──
   {
-    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [] });
-    d.points = { joueur: 4, bot: 6 };
+    const d = duelTest([col("j1 j2 j3 n4 n5"), col("n8"), col("n9"), col("n9")], "n7");
+    d.points = { joueur: SEUIL - 3, bot: 4 };
     jouer(d, "joueur", 0);
     assert.strictEqual(d.termine, true);
+    assert.strictEqual(d.fin, "seuil");
+    assert.strictEqual(d.gagnant, "joueur");
+  }
+
+  // ── Fin pioche vide : le plus de points gagne, égalité = nul ──
+  {
+    const d = duelTest([col("n3"), col("n8"), col("n1"), col("n2")], "n5", { pioche: [] });
+    d.points = { joueur: 2, bot: 1 };
+    jouer(d, "joueur", 0);
     assert.strictEqual(d.fin, "pioche");
     assert.strictEqual(d.gagnant, "joueur");
-    assert.ok(jouer(d, "bot", 0).erreur);
   }
   {
-    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [] });
-    d.points = { joueur: 6, bot: 6 };
+    const d = duelTest([col("n3"), col("n8"), col("n1"), col("n2")], "n5", { pioche: [] });
+    d.points = { joueur: 2, bot: 2 };
     jouer(d, "joueur", 0);
     assert.strictEqual(d.gagnant, "nul");
   }
 
-  // ── Fin au seuil : dès qu'un joueur atteint SEUIL points ──
+  // ── Réserve : échange une fois par tour, sans limite sur la partie ──
   {
-    const d = duelTest([col("12345"), col("8"), col("9"), col("9")], 7);
-    d.points = { joueur: SEUIL - 5, bot: 3 };
+    const d = duelTest([col("n3"), col("n8"), col("n1"), col("n2")], "j5", { pioche: ["n2", "b7", "j4"], reserves: ["j9", "b1"] });
+    assert.strictEqual(echangePermis(d, "bot"), false); // pas son tour
+    assert.deepStrictEqual(echanger(d, "joueur"), { gardee: carte("j5"), jouee: carte("j9") });
+    assert.deepStrictEqual(d.carte, carte("j9"));
+    assert.deepStrictEqual(d.reserves.joueur, carte("j5"));
+    assert.strictEqual(d.vue, 1);
+    assert.ok(echanger(d, "joueur").erreur); // une fois par tour
     jouer(d, "joueur", 0);
-    assert.strictEqual(d.termine, true);
-    assert.strictEqual(d.fin, "seuil");
-    assert.strictEqual(d.gagnant, "bot");
+    assert.strictEqual(d.dernier.echange, true);
+    assert.strictEqual(echangePermis(d, "bot"), true);
+    jouer(d, "bot", coupsPossibles(d)[0].c);
+    // Nouveau tour du joueur : de nouveau permis
+    assert.strictEqual(echangePermis(d, "joueur"), true);
   }
 
-  // ── Partie complète : au plus 32 coups ──
+  // ── Partie complète ──
   {
     const d = creerDuel({ rng: () => 0.3 });
     while (!d.termine) jouer(d, d.actif, coupsPossibles(d)[0].c);
-    assert.ok(d.coups <= 32);
+    assert.ok(d.termine && d.gagnant);
   }
 
-  // ── Kévina : évite de ramasser ──
+  // ── Kévina : ferme la colonne qui lui rapporte, n'offre pas de fermeture ──
   {
-    // Le 9 sur la colonne 2 (5 cartes) ramasserait, ailleurs il se pose
-    const d = duelTest([col("2"), col("8"), col("12345"), col("1")], 9, { actif: "bot", pioche: [{ k: 0, v: 1 }] });
-    const choix = choixKevina(d, "bot");
-    const carte = choix.echange ? prochaine(d) : d.carte;
-    assert.strictEqual(coupsPossibles(d, carte).find((x) => x.c === choix.c).penalite, 0);
-  }
-
-  // ── Échange : libre, même pour éviter un ramassage, 1 par partie ──
-  {
-    // Le 7 ne peut aller que sur la colonne 0 (5 cartes) : il ferait ramasser
-    const d = duelTest([col("12345"), col("8"), col("9"), col("9")], 7, { pioche: [{ k: 0, v: 2 }, { k: 3, v: 4 }] });
-    assert.strictEqual(echangePermis(d, "joueur"), true);
-    assert.ok(!echanger(d, "joueur").erreur);
+    // Le 6 rouge ferme la colonne 2 (3 cartes du bot) ; ailleurs, rien
+    const d = duelTest([col("n2"), col("n8"), col("b1 b2 b3 n4 n5"), col("n1")], "b6", { actif: "bot", pioche: ["n1"] });
+    d.actif = "bot";
+    assert.deepStrictEqual(choixKevina(d, "bot"), { echange: false, c: 2 });
   }
   {
-    // Pioche vide : pas d'échange
-    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [] });
-    assert.strictEqual(echangePermis(d, "joueur"), false);
-  }
-  {
-    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [{ k: 0, v: 2 }, { k: 3, v: 7 }] });
-    assert.strictEqual(echangePermis(d, "bot"), false); // pas son tour
-    const r = echanger(d, "joueur");
-    assert.deepStrictEqual(r, { donnee: { k: 1, v: 5 }, recue: { k: 3, v: 7 } });
-    assert.deepStrictEqual(d.carte, { k: 3, v: 7 });
-    assert.deepStrictEqual(prochaine(d), { k: 1, v: 5 });
-    assert.strictEqual(d.echanges.joueur, 0);
-    assert.strictEqual(d.vue, 1);
-    assert.ok(echanger(d, "joueur").erreur); // un seul par tour (et plus aucun)
-    jouer(d, "joueur", 0);
-    assert.strictEqual(d.dernier.echange, true);
-    // L'adversaire reçoit la carte donnée
-    assert.deepStrictEqual(d.carte, { k: 1, v: 5 });
-    assert.strictEqual(echangePermis(d, "bot"), true);
+    // Poser le 5 en colonne 0 offrirait au joueur (prochaine carte j9) une
+    // fermeture rapportant 4 points : Kévina joue ailleurs
+    const d = duelTest([col("j1 j2 j3 j4"), col("n3"), col("n9"), col("n9")], "b5", { actif: "bot", pioche: ["j9"], reserves: ["n1", "n1"] });
+    d.actif = "bot";
+    assert.notStrictEqual(choixKevina(d, "bot").c, 0);
   }
 }
 

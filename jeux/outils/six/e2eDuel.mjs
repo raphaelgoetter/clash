@@ -88,7 +88,7 @@ for (let g = 0; g < 5; g++) {
     await h.handleSixJouer(W, ID, auHasard(d), d.vue, { channelId: "salon", pseudo: "Testeur" });
   }
 }
-if (echanges && !vues.some((v) => texte(v).includes("🔄 Tu échanges"))) throw new Error("échange non raconté");
+if (echanges && !vues.some((v) => texte(v).includes("🔄 Tu prends ta réserve"))) throw new Error("échange non raconté");
 // Par partie : plateau public (lancement) puis récapitulatif
 const posts = salon.filter((m) => m.method === "POST");
 console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${echanges} échanges du joueur, ${posts.length} messages publiés`);
@@ -157,7 +157,7 @@ console.log("Abandon : " + texte(salon.filter((m) => m.method === "POST").at(-1)
 // (rangée du plateau en titre H1 contenant 💥)
 const explosions = vues.filter((v) => /^# .*💥/m.test(texte(v)));
 if (!explosions.length) throw new Error("aucune étape d'explosion affichée");
-if (!salon.some((m) => texte(m).includes("ramasse la colonne"))) throw new Error("explosion absente du plateau public");
+if (!salon.some((m) => texte(m).includes("ferme la colonne"))) throw new Error("explosion absente du plateau public");
 vues.forEach(verifier);
 salon.forEach(verifier);
 await h.handleSixRegles(W);
