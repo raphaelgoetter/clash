@@ -401,7 +401,7 @@ Objectif : ne pas pénaliser dans les listes d'échec les membres arrivés penda
 | `1` avec `day1Decks ≥ 1`, ou `≥ 2` | | installé |
 
 - `hasLateArrivalDailyPattern(daily)` (même fichier) : arrivé si les 2 premiers jours au moins sont sans donnée de snapshot (cas d'un départ puis retour dans la semaine, que le streak masque).
-- `rosterAtDayEnd(dayEntry)` / `wasInClanAtDayEnd(roster, tag)` (même fichier) : membres présents à la fin d'une journée, d'après la liste des membres capturée avant le reset (`membersPreReset`, enregistrée par `collectSnapshots.js` en `SNAPSHOT_TYPE=pre-reset`). Les participants de la course ne suffisent pas : ils incluent aussi les joueurs partis dans la semaine (à 0). À défaut de `membersPreReset`, repli sur ces participants (`_cumulFamePreReset`, à défaut `_cumulPreReset`), qui écartent seulement les arrivés après la journée. Un joueur absent du roster n'est jamais compté en échec pour la journée ; sans capture pré-reset, aucun filtrage.
+- `rosterAtDayEnd(dayEntry)` / `wasInClanAtDayEnd(roster, tag)` (même fichier) : membres présents à la fin d'une journée, d'après la liste des membres capturée avant le reset (`membersPreReset`, enregistrée par `preResetSnapshot.js`). Les participants de la course ne suffisent pas : ils incluent aussi les joueurs partis dans la semaine (à 0). À défaut de `membersPreReset`, repli sur ces participants (`_cumulFamePreReset`, à défaut `_cumulPreReset`), qui écartent seulement les arrivés après la journée. Un joueur absent du roster n'est jamais compté en échec pour la journée ; sans capture pré-reset, aucun filtrage.
 
 | Usage | Règle |
 | --- | --- |
@@ -443,7 +443,7 @@ Objectif : ne pas pénaliser dans les listes d'échec les membres arrivés penda
 
 | Terme | Définition | Où trouver la valeur |
 | --- | --- | --- |
-| Snapshot | État de guerre persisté pour reconstituer les deltas journaliers | Redis `snapshots:<TAG>` via `backend/services/snapshot.js` ; produits par `collectSnapshots.js` et `preResetSnapshot.js`. Champs : `snapshotTime` (ou `snapshotBackupTime`), `decks`, `decksPreReset`, `_cumul`, `_cumulFame`, `snapshotPreResetTime` |
+| Snapshot | État de guerre persisté pour reconstituer les deltas journaliers | Redis `snapshots:<TAG>` via `backend/services/snapshot.js` ; produits par `collectSnapshots.js` et `preResetSnapshot.js`. Champs : `snapshotTime` (ou `snapshotBackupTime`), `decks`, `decksPreReset`, `_cumul`, `_cumulFame`, `snapshotPreResetTime`, `membersPreReset` |
 | Decks cumul (semaine) | Decks joués depuis le début de la semaine | Live `currentRace.clan.participants[].decksUsed` ; persisté `_cumul` ; historique `warHistory.weeks[].decksUsed` |
 | Decks du jour (live) | Decks joués aujourd'hui | `participants[].decksUsedToday` (aussi `currentRace.clans[i]` pour tout le groupe, sans appel supplémentaire) |
 | Decks journaliers (passés) | Decks d'une journée terminée | `decks` du snapshot du jour (max avec `decksPreReset`), sinon delta entre cumuls ; `warSnapshotDays` pour la vue joueur |

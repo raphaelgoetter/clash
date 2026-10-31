@@ -17,6 +17,7 @@ import {
   fetchCurrentRace,
   fetchRaceLog,
   fetchBattleLog,
+  fetchClanMembers,
 } from "@clash/clash-royale/clashApi.js";
 import { recordSnapshot } from "../backend/services/snapshot.js";
 import {
@@ -129,6 +130,16 @@ async function takePreResetSnapshot(clanTag) {
   const participants = race?.clan?.participants ?? [];
   if (participants.length === 0) return;
 
+  // Les participants incluent les joueurs partis dans la semaine : seule la
+  // liste des membres dit qui est présent au reset (rosterAtDayEnd). En cas
+  // d'échec, repli sur les participants.
+  let memberTags = null;
+  try {
+    memberTags = (await fetchClanMembers(clanTag)).map((m) => m.tag);
+  } catch (err) {
+    console.warn(`[${clanTag}] Membres indisponibles : ${err.message || err}`);
+  }
+
   const WAR_ACTIVE_TYPES = ["warDay", "colosseum"];
   const weekId = !WAR_ACTIVE_TYPES.includes(race?.periodType)
     ? computePrevWeekId(raceLog)
@@ -157,6 +168,7 @@ async function takePreResetSnapshot(clanTag) {
     battleLogsByTag,
     periodLogs: race?.periodLogs,
     periodPoints: race?.clan?.periodPoints,
+    memberTags,
   });
   console.log(`[${clanTag}] Snapshot pré-reset enregistré.`);
 }
