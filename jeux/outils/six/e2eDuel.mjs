@@ -174,5 +174,8 @@ console.log(
       .join("\n"),
 );
 console.log("\n--- Étape d'explosion ---\n" + texte(explosions[0]));
+const recapSolo = salon.find((m) => m.method === "POST" && /bat (Kévina|Testeur)/.test(texte(m)));
+if (!recapSolo || !texte(recapSolo).includes("### ")) throw new Error("cartes ramassées absentes du récapitulatif");
+console.log("\n--- Récap contre Kévina ---\n" + texte(recapSolo));
 console.log("\n--- Récap 1v1 ---\n" + texte(salon.filter((m) => m.method === "POST").at(-1)));
 console.log("\n--- Règles ---\n" + texte(vues.at(-1)));

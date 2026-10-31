@@ -225,6 +225,20 @@ function nomsAdv(partie, moi) {
 // Carte en emoji (couleurs de Punto)
 const carteTexte = (carte) => formatCarte(COULEURS[carte.k], carte.v);
 const pts = (n) => plural(n, "point");
+// « 0 point perdu », « 1 point perdu », « 12 points perdus »
+const perdus = (n) => `${pts(n)} ${n > 1 ? "perdus" : "perdu"}`;
+
+// Récapitulatif de fin (messages publics) : cartes ramassées par chaque
+// joueur, sur une rangée (titre H3), à la place du plateau.
+function lignesRamassees(d, nomJoueur, nomBot) {
+  return [
+    ["joueur", nomJoueur],
+    ["bot", nomBot],
+  ].flatMap(([id, nom]) => {
+    const cartes = d.ramassees?.[id] ?? [];
+    return [`**${nom}** : ${perdus(d.points[id])}`, cartes.length ? `### ${cartes.map(carteTexte).join(" ")}` : "Aucune carte ramassée."];
+  });
+}
 
 // Plateau : les colonnes à la verticale sous leurs en-têtes, la plus
 // ancienne carte en haut ; emplacements libres gris, 6e emplacement 💀
@@ -569,15 +583,15 @@ function messageFinalSolo(d, pseudo) {
   const resultat = d.abandon
     ? `🏳️ ${pseudo} abandonne face à Kévina.`
     : d.gagnant === "nul"
-      ? `🤝 Match nul entre ${pseudo} et Kévina (${pts(joueur)} perdus chacun).`
+      ? `🤝 Match nul entre ${pseudo} et Kévina (${perdus(joueur)} chacun).`
       : d.gagnant === "joueur"
-        ? `🏆 ${pseudo} bat Kévina : ${pts(joueur)} perdus contre ${bot} !`
-        : `🤖 Kévina bat ${pseudo} : ${pts(bot)} perdus contre ${joueur}.`;
+        ? `🏆 ${pseudo} bat Kévina : ${perdus(joueur)} contre ${bot} !`
+        : `🤖 Kévina bat ${pseudo} : ${perdus(bot)} contre ${joueur}.`;
   return {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [resultat, "", ...plateau(d, "###"), ...(series.length ? ["", ...series] : [])]
+        description: [resultat, "", ...lignesRamassees(d, pseudo, "🤖 Kévina"), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
         color: SIX_COLOR,
@@ -782,10 +796,10 @@ function messageFinal(partie) {
     partie.raisonFin === "abandon"
       ? `🏳️ ${nom(adversaire(g))} abandonne : ${nom(g)} remporte le duel.`
       : g === "nul"
-      ? `🤝 Match nul entre ${nom("joueur")} et ${nom("bot")} (${pts(d.points.joueur)} perdus chacun).`
+      ? `🤝 Match nul entre ${nom("joueur")} et ${nom("bot")} (${perdus(d.points.joueur)} chacun).`
       : partie.raisonFin === "delai"
         ? `🏆 ${nom(g)} remporte le duel : ${nom(adversaire(g))} n'a pas joué à temps.`
-        : `🏆 ${nom(g)} bat ${nom(adversaire(g))} : ${pts(d.points[g])} perdus contre ${d.points[adversaire(g)]} !`;
+        : `🏆 ${nom(g)} bat ${nom(adversaire(g))} : ${perdus(d.points[g])} contre ${d.points[adversaire(g)]} !`;
   const s = partie.series;
   const series = s
     ? lignesSeries({
@@ -800,7 +814,7 @@ function messageFinal(partie) {
     embeds: [
       {
         title: `${TITRE} · ${titreGagnant(g, nom)}`,
-        description: [resultat, "", ...plateau(d, "###"), ...(series.length ? ["", ...series] : [])]
+        description: [resultat, "", ...lignesRamassees(d, nom("joueur"), nom("bot")), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
         color: SIX_COLOR,

@@ -105,6 +105,8 @@ function main() {
     assert.strictEqual(d.points.joueur, 5 + PENALITE_MAUDITE);
     assert.strictEqual(d.dernier.ramassees.length, 5);
     assert.strictEqual(d.dernier.type, "sixieme");
+    assert.deepStrictEqual(d.ramassees.joueur.map((c) => c.v), [1, 2, 3, 4, 5]);
+    assert.deepStrictEqual(d.ramassees.bot, []);
   }
 
   // ── Pose libre : aucune colonne où monter, aucun point ──

@@ -105,6 +105,8 @@ export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
     carte: cartes.pop(),
     actif: commence,
     points: { joueur: 0, bot: 0 },
+    // Cartes ramassées par chaque joueur, dans l'ordre (récapitulatif de fin)
+    ramassees: { joueur: [], bot: [] },
     // Échanges restants de chaque joueur ; `echangeCeTour` : le joueur
     // actif a échangé sa carte ce tour-ci
     echanges: { joueur: ECHANGES, bot: ECHANGES },
@@ -136,6 +138,7 @@ export function jouer(d, id, c) {
   const points = penalite(prises);
   d.colonnes = appliquer(d.colonnes, carte, c, type);
   d.points[id] += points;
+  d.ramassees[id].push(...prises);
   d.coups += 1;
   d.vue += 1;
   d.dernier = { id, carte, colonne: c, type, ramassees: prises, penalite: points, echange: d.echangeCeTour };
