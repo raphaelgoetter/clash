@@ -1,6 +1,6 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /six et leurs boutons (blackjackduel_*, gobeletduel_*,
-// grilleduel_*, quatreduel_*, puntoduel_*, sixduel_*).
+// /quatre, /punto, /pilepoil, Six (archivé) et leurs boutons (blackjackduel_*,
+// gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*, pilepoilduel_*, sixduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -71,6 +71,18 @@ import {
   handleSixRegles,
   handleSixAbandon,
 } from "../handlers/sixDuel.js";
+import {
+  memberHasMiniJeuxRole as pilepoilMemberHasMiniJeuxRole,
+  extractMember as pilepoilExtractMember,
+  handlePilePoilRoleRejected,
+  handlePilePoilCommand,
+  handlePilePoilPvpCommand,
+  handlePilePoilOuvrir,
+  handlePilePoilJouer,
+  handlePilePoilChangerDe,
+  handlePilePoilRegles,
+  handlePilePoilAbandon,
+} from "../handlers/pilepoilDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 // /blackjack et /gobelet : `adversaire:bot|1v1` comme les autres duels ;
@@ -313,6 +325,71 @@ export async function routeDuels(body, res) {
       // Le suffixe :pvp est en 2ᵉ position
       const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: sixExtractMember(body).username };
       runBackground(() => handleSixAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /pilepoil adversaire:bot : Pile-Poil contre Kévina (plateau public,
+  // plateau et boutons dans une vue éphémère) ; adversaire:1v1 : contre un
+  // joueur (message public). Réservé au rôle MINI-JEUX pour lancer, même
+  // principe que /blackjack.
+  if (body.type === 2 && body.data?.name === "pilepoil") {
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await pilepoilMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handlePilePoilRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handlePilePoilPvpCommand(webhookUrl, body);
+      else await handlePilePoilCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Pile-Poil : composants. pilepoilduel_jouer:<pile>:<vue>[:pvp] et
+  // pilepoilduel_de:<vue>[:pvp] (🔄) éditent la vue en place ;
+  // pilepoilduel_ouvrir (Jouer du message public 1v1) et pilepoilduel_regles :
+  // nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("pilepoilduel_")) {
+    const [action, arg, ...suite] = body.data.custom_id.split(":");
+    if (action === "pilepoilduel_regles" || action === "pilepoilduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "pilepoilduel_regles") runBackground(() => handlePilePoilRegles(webhookUrl));
+      else runBackground(() => handlePilePoilOuvrir(webhookUrl, body));
+      return;
+    }
+    if (action === "pilepoilduel_jouer") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Contre Kévina, le résultat final est publié dans le salon du clic
+      const [coup, mode] = suite;
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: pilepoilExtractMember(body).username };
+      runBackground(() => handlePilePoilJouer(webhookUrl, discordId, Number(arg), Number(coup), opts));
+      return;
+    }
+    if (action === "pilepoilduel_de") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      const opts = { pvp: suite[0] === "pvp", pseudo: pilepoilExtractMember(body).username };
+      runBackground(() => handlePilePoilChangerDe(webhookUrl, discordId, Number(arg), opts));
+      return;
+    }
+    // [🏳️] : pilepoilduel_abandon[:pvp] (confirmation), pilepoilduel_abandon_ok /
+    // pilepoilduel_abandon_non[:pvp], tous édités en place
+    const ETAPES_ABANDON = { pilepoilduel_abandon: "demande", pilepoilduel_abandon_ok: "ok", pilepoilduel_abandon_non: "non" };
+    if (ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Le suffixe :pvp est en 2ᵉ position
+      const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: pilepoilExtractMember(body).username };
+      runBackground(() => handlePilePoilAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

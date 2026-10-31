@@ -1,0 +1,47 @@
+// Simulation d'équilibrage de Pile-Poil sur les vraies règles
+// (jeux/services/pilepoilRules.js) : profils hasard, simple (bon sens : le
+// meilleur bilan immédiat, sans regarder le dé laissé à l'adversaire) ou
+// kevina[m<marge>].
+// Usage : node jeux/outils/pilepoil/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
+// ex. : node jeux/outils/pilepoil/simulateDuel.mjs 3000 kevina kevinam1
+// (« bon joueur » contre la Kévina de production). Le « joueur » commence
+// toujours. Par défaut : marge 0.
+import { creerDuel, jouer, changerDe, choixKevina, choixSimple, choixHasard } from "../../services/pilepoilRules.js";
+
+const PARTIES = Number(process.argv[2] || 2000);
+const PROFILS = { joueur: process.argv[3] || "kevina", bot: process.argv[4] || "kevina" };
+
+function choix(profil) {
+  if (profil === "hasard") return (d) => choixHasard(d);
+  if (profil === "simple") return (d) => choixSimple(d);
+  const m = /^kevina(?:m([\d.]+))?$/.exec(profil);
+  if (!m) throw new Error(`Profil inconnu : ${profil} (hasard, simple, kevina[m<marge>])`);
+  const reglages = { marge: Number(m[1] ?? 0) };
+  return (d, id) => choixKevina(d, id, reglages);
+}
+const CHOIX = { joueur: choix(PROFILS.joueur), bot: choix(PROFILS.bot) };
+
+const res = { joueur: 0, bot: 0, nul: 0 };
+const types = {};
+let coups = 0;
+let explosions = 0;
+const debut = Date.now();
+for (let i = 0; i < PARTIES; i++) {
+  const d = creerDuel();
+  while (!d.termine) {
+    const { choix: de, k } = CHOIX[d.actif](d, d.actif);
+    if (de !== d.choix) changerDe(d, d.actif);
+    jouer(d, d.actif, k);
+    types[d.dernier.type] = (types[d.dernier.type] ?? 0) + 1;
+    explosions += d.dernier.explosions.length;
+  }
+  res[d.gagnant]++;
+  coups += d.coups;
+}
+
+const pct = (n) => `${((100 * n) / PARTIES).toFixed(1)} %`;
+const parPartie = (n) => ((n ?? 0) / PARTIES).toFixed(1);
+console.log(`${PARTIES} parties, joueur (commence) = ${PROFILS.joueur}, bot = ${PROFILS.bot}`);
+console.log(`Victoires joueur ${pct(res.joueur)} | bot ${pct(res.bot)} | nuls ${pct(res.nul)}`);
+console.log(`Par partie : ${parPartie(explosions)} explosions, ${parPartie(types.sautee)} piles sautées faute de coup, ${(coups / PARTIES / 2).toFixed(1)} coups par joueur`);
+console.log(`Temps moyen par partie ${((Date.now() - debut) / PARTIES).toFixed(1)} ms`);

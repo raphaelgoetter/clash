@@ -29,6 +29,7 @@ const JEUX_COMMANDS = new Set([
   "grille",
   "quatre",
   "punto",
+  "pilepoil",
   "blackjack",
   "gobelet",
 ]);
@@ -544,6 +545,23 @@ const commands = [
     name: "punto",
     description:
       "Punto : aligne 4 cartes d'une couleur avant Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
+        required: true,
+        choices: [
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "pilepoil",
+    description:
+      "Pile-Poil : fais exploser les piles à 10 contre Kévina ou un joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING

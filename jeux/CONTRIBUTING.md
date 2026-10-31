@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto` et leurs boutons de duel (plus ceux de Six, archivé) |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/pilepoil` et leurs boutons de duel (plus ceux de Six, archivé) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -1215,14 +1215,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Cinq duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Six duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/pilepoil` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `pilepoilduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `pilepoilduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Pile-Poil 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (contre Kévina / solo, ou en 1v1)
 
@@ -1373,6 +1373,38 @@ Adaptation de Punto (Bernhard Weber) en duel. `/punto adversaire:bot|1v1` (optio
 
 - `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina[d<defense>][p<prudence>][s<solidite>][m<marge>]`, ex. `kevinam10` = réglage de production). Repères (2 000 à 4 000 parties) : hasard contre Kévina ~0,3 % ; « bon joueur » `kevinap1s0.5` contre Kévina de production ~70 % / ~30 %, `kevina` (gloutonne sans marge) contre elle ~64 % / ~36 % ; `kevinam10` contre elle-même ~53 % / ~47 % (léger avantage au premier), ~9,5 coups par joueur en médiane (90e centile ~14). Entre bots corrects, le meilleur ne gagne que ~55 à 60 % : le tirage des cartes pèse, mais jouer au hasard perd toujours.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/punto/e2eDuel.mjs`).
+
+### Pile-Poil (contre Kévina ou en 1v1)
+
+Duel de dés à explosions. `/pilepoil adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Punto (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
+
+- Code : `jeux/services/pilepoilRules.js` (règles pures et Kévina, tests `pilepoilRules.test.js`), `jeux/services/pilepoilDuel.js` (Redis, tests `pilepoilDuel.test.js`), `jeux/discord/handlers/pilepoilDuel.js` (Discord). Tuiles : cartes de Punto (`jeux/services/puntoCartes.js`) ; dés : faces communes (`jeux/services/dices.js`, bleu et rouge). Aucun emoji propre. Config `jeux/data/pilepoil/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `marge_kevina` (0,75).
+- Redis : `pilepoilduel:<discordId>` (contre Kévina), `pilepoilduel:pvp`, verrous `pilepoilduel:lock:*`, séries `pilepoilduel:series:bot` / `pilepoilduel:series:pvp`, records `pilepoilduel:records`.
+- `custom_id` : `pilepoilduel_jouer:<pile>:<vue>[:pvp]` (`<pile>` 0 à 2), `pilepoilduel_de:<vue>[:pvp]` (🔄 changer de dé) ; `<vue>` = `d.vue` affiché (+1 à chaque coup ou changement de dé) : un clic sur une vue dépassée est refusé avec « Le plateau a changé depuis » ; `pilepoilduel_ouvrir`, `pilepoilduel_regles`, `pilepoilduel_abandon[:pvp]`, `pilepoilduel_abandon_ok[:pvp]` / `pilepoilduel_abandon_non[:pvp]`.
+
+#### Règles
+
+- **3 piles communes** A, B, C (`d.piles`, `NB_PILES`), à 0 au départ, à amener **exactement à 10** (`CIBLE`).
+- **À son tour**, le joueur actif a **2 dés** : son lancer (`d.de`) et le dé laissé par l'adversaire (`d.laisse` ; au premier tour, un second lancer). Il en sélectionne un (`d.choix`, 🔄 `changerDe()`) et le pose sur une pile **sans dépasser 10** (`jouer()`) ; **l'autre dé passe à l'adversaire**, qui lance le sien. En début de tour, le lancer est présélectionné, sauf s'il ne rentre nulle part alors que le dé laissé rentre (`choixInitial()`).
+- **Explosion** (`resoudre()`) : une pile à 10 explose, **+1 point**, elle repart à 0 et son **souffle +3** (`SOUFFLE`) touche les piles **voisines** non vides (A↔B, B↔C ; B touche A et C). Une voisine qui tombe pile sur 10 explose à son tour (+1 pour le même joueur, en chaîne) ; une voisine qui dépasse **saute** (à 0, **+1 pour l'adversaire**).
+- **Bloqué** (`bloque()`) : aucun des 2 dés ne rentre sur aucune pile : le joueur fait sauter la pile de son choix (à 0, +1 pour l'adversaire).
+- **Victoire** : le premier à **6 points** (`SEUIL`). Si les deux l'atteignent sur le même coup : le plus de points, à égalité celui qui a joué (`d.gagnant`). Pas de match nul.
+- **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
+- **Kévina** (`choixKevina()`, renvoie `{ choix, k }`) : maximise son bilan du coup (points marqués − points donnés) moins le bilan moyen du meilleur coup adverse au tour suivant (avec le dé qu'elle lui laisse et un lancer quelconque), sans anticipation plus lointaine. `marge_kevina` : coup tiré au sort parmi ceux à `marge` points au plus du meilleur. ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
+- Pourquoi ces règles (simulations exactes, joueur parfait calculé sur tous les états) : avec un seul dé, presque 9 tours sur 10 le choix de pile ne change rien ; le dé passé crée de vrais dilemmes (~25 % des tours). Souffle limité aux voisines : un peu plus de dilemmes et une dimension de position (B, la pile centrale, souffle des deux côtés). Cible 10 plutôt que 15 : partie plus courte (~15 coups par joueur au lieu de ~22) et moins de tours sans enjeu ; piles chargées au départ : sans effet. Aucun avantage au premier joueur.
+
+#### Affichage
+
+- **Plateau** : en-têtes `🇦 🇧 🇨`, puis **une tuile par pile indiquant ce qu'il lui manque pour atteindre 10** (`tuile()`, cartes de Punto) : **rouge** de 1 à 3, **orange** de 4 à 6 (un dé peut la faire exploser), **verte** de 7 à 9, grise si la pile est vide. Pas de total à calculer. Titres **H1** dans la vue du joueur, **H3** dans les messages publics.
+- **Dés** : chacun voit les dés venus de lui en **bleu** et ceux de l'adversaire en **rouge** (messages publics : premier joueur en bleu).
+- **Vue éphémère** : titre avec le score (« 🎯 Pile-Poil · Toi 2 – 3 Kévina », « · À toi ! » en 1v1), plateau, récit du dernier coup en une ligne (« Tu joues ⚄ en A (💥 +1), Kévina joue ⚂ en B (💥 +2, 💨 +1 pour toi). » ; 💥 = explosions, 💨 = piles sautées), puis « **Ton dé : ⚄** » en titre H1 et « -# (autre dé : ⚂) ». **Boutons [A] [B] [C] [🔄]**, à son tour seulement, tous gris ; les piles où le dé choisi dépasserait 10 sont **désactivées** (toutes actives si le joueur est bloqué). Après 🔄, seule sa vue est rééditée.
+- **Explosion** (comme La Grille) : étape intermédiaire de 0,9 s (`etatExplosion()`) où les piles explosées montrent 💥 et les piles sautées 💨, sur la vue du joueur, celle de l'adversaire en 1v1 et le message public (« 💥 Kévina fait exploser B (+1) ! »). Contre Kévina : explosion du coup du joueur, réflexion de Kévina, puis explosion de son coup ; montrée aussi quand le coup termine la partie.
+- **Messages publics** : dés du joueur au trait, plateau et « Score : 🟦 X 2 · 🟥 Kévina 1 » ; récapitulatif de fin : résultat (« 🏆 X bat Kévina : 6 à 4 ! ») et séries, **sans plateau** (presque toujours vide en fin de partie).
+
+#### Outils (`jeux/outils/pilepoil/`, à lancer à la main)
+
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `simple` = bon sens : le meilleur bilan immédiat puis laisser le moins de piles explosables, sans regarder le dé laissé à l'adversaire, `kevina[m<marge>]`, ex. `kevinam0.75` = réglage de production). Repères (3 000 parties) : « bon joueur » `kevina` contre Kévina de production ~60 % / ~40 % ; `simple` contre elle ~47 % / ~53 % ; hasard contre elle ~10 % ; `kevina` contre `kevina` ~49/51 ; ~5 explosions, ~2,5 piles sautées faute de coup et ~15 coups par joueur entre Kévinas. Marge 1 : bon joueur ~71 % (trop facile, comme pour Six).
+- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/pilepoil/e2eDuel.mjs`).
 
 ---
 
