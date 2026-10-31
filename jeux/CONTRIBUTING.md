@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/six` et leurs boutons de duel |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto` et leurs boutons de duel (plus ceux de Six, archivé) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -745,7 +745,7 @@ Service `jeux/services/pions.js` : `formatPion(couleur, { gagnant })` (texte, ti
 
 ## Cartes de Punto
 
-Service `jeux/services/puntoCartes.js` : `formatCarte(couleur, valeur, { gagnant })` (texte, titre), `carteButtonEmoji(couleur, valeur)` (boutons du plateau). Même principe que les faces de dé et les pions. Également utilisées par Six (mêmes variantes, aucun emoji à uploader).
+Service `jeux/services/puntoCartes.js` : `formatCarte(couleur, valeur, { gagnant })` (texte, titre), `carteButtonEmoji(couleur, valeur)` (boutons du plateau). Même principe que les faces de dé et les pions. Également utilisées par Six (archivé).
 
 - **Source** : `jeux/data/punto/carte.svg` (carré arrondi plein, sans marge : la carte remplit l'emoji) ; les chiffres 1 à 9 sont des **tracés** blancs à bouts arrondis (`CHIFFRES`, style afficheur), jamais du texte SVG : le rendu ne dépend d'aucune police.
 - **Config** `jeux/data/punto/cartes.json` : `couleurs` (`bleu` et `vert` = ses cartes, `rouge` et `orange` = cartes adverses), `contours` (`normal` blanc, `gagnant` jaune, trois fois plus épais), `vide` (gris de la case libre) et `emojis` (`variante → id`). Variantes : `<couleur>_<valeur>`, `<couleur>_<valeur>_gagnant`, `vide`, `jouable` (case vide où la carte peut aller : même gris, fin liseré clair) : 74 en tout. Repli sur les keycaps 1️⃣ à 9️⃣ (couleur perdue), ⬛ et 🔲 pour les cases vides tant qu'un ID manque ; dans les boutons, la valeur (ou `·`, `+`) en libellé.
@@ -1215,14 +1215,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Six duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/six`. Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Cinq duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
 - **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Six 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (contre Kévina / solo, ou en 1v1)
 
@@ -1374,41 +1374,6 @@ Adaptation de Punto (Bernhard Weber) en duel. `/punto adversaire:bot|1v1` (optio
 - `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina[d<defense>][p<prudence>][s<solidite>][m<marge>]`, ex. `kevinam10` = réglage de production). Repères (2 000 à 4 000 parties) : hasard contre Kévina ~0,3 % ; « bon joueur » `kevinap1s0.5` contre Kévina de production ~70 % / ~30 %, `kevina` (gloutonne sans marge) contre elle ~64 % / ~36 % ; `kevinam10` contre elle-même ~53 % / ~47 % (léger avantage au premier), ~9,5 coups par joueur en médiane (90e centile ~14). Entre bots corrects, le meilleur ne gagne que ~55 à 60 % : le tirage des cartes pèse, mais jouer au hasard perd toujours.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/punto/e2eDuel.mjs`).
 
-### Six (contre Kévina ou en 1v1)
-
-Duel de collecte inspiré du 6 qui prend (Wolfgang Kramer), au tour par tour. `/six adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Punto (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
-
-- Code : `jeux/services/sixRules.js` (règles pures et Kévina, tests `sixRules.test.js`), `jeux/services/sixDuel.js` (Redis, tests `sixDuel.test.js`), `jeux/discord/handlers/sixDuel.js` (Discord). Cartes : celles de Punto (`jeux/services/puntoCartes.js`, voir « Cartes de Punto »), aucun emoji propre. Config `jeux/data/six/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `marge_kevina` (1,5).
-- Redis : `sixduel:<discordId>` (contre Kévina), `sixduel:pvp`, verrous `sixduel:lock:*`, séries `sixduel:series:bot` / `sixduel:series:pvp`, records `sixduel:records`.
-- `custom_id` : `sixduel_jouer:<colonne>:<vue>` contre Kévina, `sixduel_jouer:<colonne>:<vue>:pvp` en 1v1 (`<colonne>` 0 à 3 ; `<vue>` = `d.vue` affiché, +1 à chaque coup) : un clic sur une vue dépassée est refusé avec « Le plateau a changé depuis », `sixduel_ouvrir`, `sixduel_regles`, `sixduel_abandon[:pvp]`, `sixduel_abandon_ok[:pvp]` / `sixduel_abandon_non[:pvp]`.
-
-#### Règles
-
-- **Un paquet par joueur** (`d.paquets.joueur`, `d.paquets.bot`, carte `{ k, v }`) : 22 cartes, ses 18 cartes de 1 à 9 en double dans sa couleur (`COULEUR.joueur` = 0, `COULEUR.bot` = 1) et 4 neutres (`NEUTRE` = 2, valeurs `NEUTRES` = 2, 4, 6, 8, les mêmes pour les deux). On ne pose donc jamais les cartes de l'adversaire.
-- **4 colonnes** (`d.colonnes`, `NB_COLONNES`), chacune commence par une carte, 2 de chaque paquet en alternance.
-- **À son tour**, le joueur actif retourne la carte du dessus de **son** paquet (`d.carte`, visible de tous) et la pose (`typeCoup()`, `coupsPossibles()`) :
-  - sur une colonne dont la dernière carte est **plus faible** (strictement), au choix s'il y en a plusieurs (`pose`) ; les autres colonnes sont **interdites** (`typeCoup()` renvoie `null`, `jouer()` refuse) ;
-  - plus forte sur aucune colonne : **pose libre** sur la colonne de son choix (`libre`) ;
-  - **6e carte** d'une colonne (`LIMITE`), par une pose ou une pose libre : elle **ferme** la colonne (`fermeture`). Le joueur marque **1 point par carte de sa couleur** parmi les 5 ramassées (`sesCartes()`, `d.marquees`), sa carte reste seule. Les cartes adverses et neutres ramassées ne comptent pour personne.
-- **Cartes visibles** : la prochaine carte de l'adversaire (`prochaine(d)`) et la carte suivante du joueur actif (`prochaineDe(d, id)`, dessus de son paquet).
-- **Fin** (`d.fin`) : le premier à **5 points** (`SEUIL`, `"seuil"`, ~80 % des parties) gagne ; paquet du joueur suivant vide avant (`"pioche"`, ~40 coups au plus) : le plus de points gagne, égalité = match nul (~5 % entre bons joueurs, qui se bloquent mutuellement).
-- **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1. Pas d'avantage au premier ni au second joueur (~50/50 en simulation).
-- **Kévina** (`choixKevina()`, renvoie la colonne) : maximise ses points moins ceux que l'adversaire marquera au mieux à son tour suivant avec la prochaine carte, sans anticipation plus lointaine ; à égalité, la plus petite marche. `marge_kevina` : colonne tirée au sort parmi celles à `marge` points au plus de la meilleure. ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
-- Pourquoi ces règles (simulations) : un paquet par joueur plutôt qu'une pioche commune de 45 cartes (choix de Raphael) : même part de hasard mesurée, mais on ne pose jamais une carte qui sert l'adversaire, et on peut compter ce qu'il reste dans chaque paquet ; voir sa propre carte suivante rend l'anticipation plus payante (~70 % contre ~63 %). Couleur neutre « maudite » (−1 par carte) écartée : parties plus longues, ~10 % de nuls, colonnes que personne ne veut fermer. Pas de réserve (carte de côté échangeable, essayée puis retirée) : elle n'ajoutait qu'un peu de profondeur mesurée (~90 % contre ~82 % pour le joueur qui anticipe) et rendait le jeu imprévisible en partie réelle (deux cartes possibles chez l'adversaire) ; sans elle, la carte de l'adversaire est connue (la prochaine) et chaque coup se calcule. La version « éviter de ramasser » (points perdus, couleur maudite) n'avait pas de vraie stratégie sur plusieurs coups (remplir la colonne la moins risquée jusqu'à être forcé) et, avec la réserve, donnait un net avantage au second joueur (~61 %) par la parité des cartes posées. En collecte, fermer une colonne devient souhaitable : équilibre 50/50, le joueur qui regarde ce que l'adversaire pourra fermer bat celui qui ne voit que son gain à ~80 %, et anticiper 2 coups paie (~60 %). Une seule couleur par joueur à 36 cartes : trop peu de points, trop de nuls ; d'où ses cartes en double (45 cartes). 1 point par carte (plus lisible que la valeur des cartes, au prix de ~5 % de nuls entre bons joueurs). Pas de ramassage volontaire ; pose libre plutôt que la règle d'origine « carte trop basse = ramasser une colonne » (avec des valeurs de 1 à 9, elle fait ramasser une petite colonne un coup sur deux).
-
-#### Affichage
-
-- Cartes en emojis de Punto, vues par chaque joueur : **ses cartes en bleu, celles de l'adversaire en rouge, les neutres en orange** (`couleurVue()`). Messages publics : premier joueur en bleu.
-- **Plateau en texte** : en-têtes `🇦 🇧 🇨 🇩`, puis 5 rangées d'emojis, les colonnes à la verticale (plus ancienne carte en haut), emplacements libres gris ; pas de 6e rangée (le plateau ne tenait pas sur mobile). Chaque rangée est un titre **H1** dans la vue du joueur (plus grande taille d'emoji, comme La Grille), **H3** dans les messages publics (cartes plus petites).
-- **Vue éphémère, minimale** : plateau, récit du dernier coup en une ligne (« Tu joues 🟦1 en A, Kévina joue 🟥2 en B (💥 +3). » ; 💥 = fermeture), puis « **Ta carte : 🟦7** » en titre H1 à son tour, avec en petit dessous `-# (Kévina : 🟥4 · ta suivante : 🟦8)`. Pas de score : il est dans le message public. **Toujours 4 boutons A à D**, à son tour seulement ; ceux des colonnes interdites sont **désactivés** (grisés). Tous gris (`style: 2`), sans indication de gain. Jamais de bouton coloré.
-- **Explosion** (fermeture, comme La Grille) : étape intermédiaire de 0,9 s (`DELAI_EXPLOSION_MS`, `etatExplosion()`) sur la vue du joueur, celle de l'adversaire en 1v1 et le message public : la colonne fermée montre `💥` à la place des 5 cartes (la carte qui ferme apparaît ensuite, en tête de la colonne qui repart) ; ni carte à jouer ni boutons de coup, et « 💥 Kévina ferme la colonne B (+2) ! » dans le message public. Contre Kévina : explosion du coup du joueur, réflexion de Kévina, puis explosion de son coup. Montrée aussi quand le coup termine la partie, avant le récapitulatif.
-- **Messages publics** : carte du joueur au trait, plateau en texte et « Score en cours : 🟦 X 2 · 🟥 Kévina 1 » ; le récapitulatif de fin donne le score dans sa phrase de résultat (« 🏆 X bat Kévina : 5 à 3 ! ») puis, **à la place du plateau**, les cartes marquées par chaque joueur (`d.marquees`) : « **Pseudo** : 5 points » puis une rangée de cartes en titre H3 (« Aucune carte marquée. » sinon).
-
-#### Outils (`jeux/outils/six/`, à lancer à la main)
-
-- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `simple` = bon sens : le plus de points tout de suite puis la plus petite marche, sans regarder ce que l'adversaire pourra fermer, `kevina[m<marge>]`, ex. `kevinam1.5` = réglage de production). Repères (3 000 parties) : « bon joueur » `kevina` contre Kévina de production ~61 % / ~37 % ; `simple` contre elle ~29 % / ~70 % (ne pas regarder l'adversaire coûte cher) ; marge 2 jugée trop facile (~71 % pour le bon joueur) ; `kevina` contre `kevina` ~50/48 ; `simple` contre `simple` ~56/43 (léger avantage au premier entre joueurs naïfs) ; ~4 fermetures et ~14 coups par joueur entre Kévinas, ~93 % des parties finies au seuil.
-- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/six/e2eDuel.mjs`).
-
 ---
 
 ## Sondage public (sondages natifs Discord)
@@ -1486,6 +1451,18 @@ Jeux retirés de `/mini-jeux` (`archived: true` dans `SPECIAL_GAMES`, `jeux/disc
 - Jeu de survie de 7 jours inspiré d'Exploding Kittens : pioche commune truffée de Gobelins explosifs, cartes d'action (Gang, Malédiction, Voleuse, Moine, Fût, Sarbacane), Bravoure pour départager les survivants ; score = nombre de joueurs classés derrière.
 - Code : `jeux/services/bang.js`, `bangRules.js` (tests `bangRules.test.js`), `bangImage.js`, `jeux/discord/handlers/bang.js`, `jeux/scripts/postBang.js`, `resetBang.js`, `bangStatus.js` ; données `jeux/data/bang/` ; assets Blob (`npm run assets:upload-blob -- bang`) et routes `/api/bang/*` ; Redis `bang:*` ; workflow `.github/workflows/bang.yml` ; scripts `npm run bang:*` ; outils `jeux/outils/bang/`.
 - Les manches publiques restent dans `/mini-jeux-history` et le bouton « 📊 Stats ».
+
+### Duels
+
+Duels retirés des commandes slash (absents de `JEUX_COMMANDS` et de la liste de `scripts/registerCommands.js` : la commande disparaît de Discord au prochain enregistrement). Code, route, tests et outils sont conservés.
+
+**Pour relancer** : rajouter la commande dans `scripts/registerCommands.js` (nom dans `JEUX_COMMANDS` et définition, description de 100 caractères au plus), la ligne de `AGENTS.md`, puis réenregistrer les commandes.
+
+#### Six (archivé le 31/10/2026)
+
+- Duel de collecte inspiré du 6 qui prend : un paquet par joueur (18 cartes de sa couleur, 4 neutres), 4 colonnes, carte posée sur une colonne dont la dernière carte est plus faible (sinon pose libre), la 6e carte ferme la colonne (+1 point par carte de sa couleur), premier à 5 points.
+- Archivé parce que le concept reste trop aléatoire en partie réelle : avec une carte tirée et un placement contraint par sa valeur, le joueur n'a qu'un ou deux vrais choix par tour. Variantes essayées sans succès : points perdus et couleur maudite, carte passée, ramassage volontaire, échange, réserve, couleurs fétiches, cartes visibles, main de 3 avec placement automatique. Le détail est dans l'historique git de ce document.
+- Code : `jeux/services/sixRules.js` (tests `sixRules.test.js`), `jeux/services/sixDuel.js` (tests `sixDuel.test.js`), `jeux/discord/handlers/sixDuel.js`, route dans `jeux/discord/routes/duels.js` (boutons des anciens messages) ; config `jeux/data/six/duel.json` ; Redis `sixduel:*` ; outils `jeux/outils/six/` (`simulateDuel.mjs`, `e2eDuel.mjs`) ; cartes de Punto (`jeux/services/puntoCartes.js`).
 
 ### Mini-jeux hebdomadaires (retirés par la refonte de novembre 2026)
 
