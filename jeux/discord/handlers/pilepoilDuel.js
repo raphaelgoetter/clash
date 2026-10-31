@@ -11,9 +11,9 @@
 //   partie à la fois, comme Quatre à la suite.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
-// custom_id : pilepoilduel_jouer:<pile>:<vue> (contre Kévina),
-// pilepoilduel_jouer:<pile>:<vue>:pvp (1v1 ; <pile> 0 à 2), pilepoilduel_de:<vue>[:pvp]
-// (🔄 : changer de dé) ; <vue> = d.vue à l'affichage, un clic sur une vue
+// custom_id : pilepoilduel_valeur:<valeur>:<vue>[:pvp] (1er clic : choisir une
+// valeur de sa main, 1 à 6), pilepoilduel_jouer:<pile>:<vue>[:pvp] (2e clic :
+// la poser, <pile> 0 à 2) ; <vue> = d.vue à l'affichage, un clic sur une vue
 // dépassée est refusé ; pilepoilduel_ouvrir (bouton Jouer du message public), pilepoilduel_regles, pilepoilduel_abandon[:pvp] (🏳️, demande
 // confirmation), pilepoilduel_abandon_ok[:pvp] / pilepoilduel_abandon_non[:pvp].
 //
@@ -40,16 +40,15 @@ import {
   NB_PILES,
   SEUIL,
   SOUFFLE,
+  VALEUR_MAX,
   adversaire,
-  changerDe,
+  choisirValeur,
   choixKevina,
   coupsPossibles,
-  deAutre,
-  deJoue,
   jouer,
 } from "../../services/pilepoilRules.js";
 import { formatCarte } from "../../services/puntoCartes.js";
-import { formatDie } from "../../services/dices.js";
+import { dieButtonEmoji, formatDie } from "../../services/dices.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -293,13 +292,15 @@ function recit(d, moi, A) {
   const toi = x.id === moi;
   const fx = effets(x, moi, A);
   if (x.type === "sautee") return `${toi ? "Tu fais" : `${A.Sujet} fait`} sauter ${NOMS_PILES[x.pile]} (${fx})`;
-  return `${toi ? "Tu joues" : `${A.Sujet} joue`} ${de(x.de, x.id, moi)} en ${NOMS_PILES[x.pile]}${fx ? ` (${fx})` : ""}`;
+  return `${toi ? "Tu joues" : `${A.Sujet} joue`} ${de(x.valeur, x.id, moi)} en ${NOMS_PILES[x.pile]}${fx ? ` (${fx})` : ""}`;
 }
 
 const ERREURS = {
   termine: "La partie est terminée.",
   pasTonTour: "Ce n'est pas ton tour.",
-  interdite: "Ce dé dépasserait 10 sur cette pile.",
+  interdite: `Cette valeur dépasserait ${CIBLE} sur cette pile.`,
+  sansValeur: "Choisis d'abord un dé de ta main.",
+  dejaJouee: "Ce dé est déjà joué.",
   perime: "Le plateau a changé depuis : rejoue sur celui-ci.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
@@ -374,39 +375,55 @@ function vueFin(d, { moi, A, raison }) {
   };
 }
 
-// Boutons de coup, à son tour seulement : une pile par bouton (A, B, C),
-// celles où le dé choisi dépasserait 10 désactivées (grisées ; joueur
-// bloqué : toutes actives, à faire sauter), puis 🔄 (changer de dé). Tous
-// gris, sans indication de gain. Le numéro de vue dans le custom_id écarte
-// un clic sur une vue dépassée (pendant la réflexion de Kévina, par exemple).
-function boutonsCoups(d, monTour, sfx) {
+// Boutons de coup, à son tour seulement : sa main en 2 rangées de dés
+// (1 à 3, 4 à 6 ; dés déjà joués désactivés, dé choisi marqué ✓), puis une
+// pile par bouton (A, B, C), actives une fois un dé choisi et s'il ne
+// dépasse pas la cible (joueur bloqué : toutes, à faire sauter). Tous gris,
+// sans indication de gain. Le numéro de vue dans le custom_id écarte un
+// clic sur une vue dépassée (pendant la réflexion de Kévina, par exemple).
+function boutonsCoups(d, monTour, moi, sfx) {
   if (!monTour) return [];
+  const main = d.mains[moi];
+  const bouton = (v) => {
+    const emoji = dieButtonEmoji(v, "bleu");
+    const coche = d.choix === v ? "✓" : null;
+    return {
+      type: 2,
+      style: 2,
+      // Repli tant que les emojis ne sont pas uploadés : la valeur en texte
+      ...(emoji ? { emoji, ...(coche ? { label: coche } : {}) } : { label: coche ? `${v} ✓` : String(v) }),
+      disabled: !main.includes(v),
+      custom_id: `pilepoilduel_valeur:${v}:${d.vue}${sfx}`,
+    };
+  };
+  const valeurs = Array.from({ length: VALEUR_MAX }, (_, i) => i + 1);
+  const moitie = Math.ceil(VALEUR_MAX / 2);
   const permises = new Set(coupsPossibles(d).map((x) => x.k));
   return [
+    { type: 1, components: valeurs.slice(0, moitie).map(bouton) },
+    { type: 1, components: valeurs.slice(moitie).map(bouton) },
     {
       type: 1,
-      components: [
-        ...NOMS_PILES.map((nom, k) => ({
-          type: 2,
-          style: 2,
-          label: nom,
-          disabled: !permises.has(k),
-          custom_id: `pilepoilduel_jouer:${k}:${d.vue}${sfx}`,
-        })),
-        { type: 2, style: 2, emoji: { name: "🔄" }, custom_id: `pilepoilduel_de:${d.vue}${sfx}` },
-      ],
+      components: NOMS_PILES.map((nom, k) => ({
+        type: 2,
+        style: 2,
+        label: nom,
+        disabled: !permises.has(k),
+        custom_id: `pilepoilduel_jouer:${k}:${d.vue}${sfx}`,
+      })),
     },
   ];
 }
 
-// À son tour : « Ton dé : ⚄ » en titre H1 (dé choisi, agrandi), l'autre
-// en petit dessous ; sinon « Dés de Kévina : ⚂ ⚄ ».
-function ligneDes(d, moi, A) {
-  if (d.actif !== moi) return `Dés de ${A.Sujet} : ${de(d.de, d.actif, moi)} ${de(d.laisse, adversaire(d.actif), moi)}`;
-  // Le lancer vient du joueur, le dé laissé de son adversaire
-  const origine = (choix) => (choix === "laisse" ? adversaire(d.actif) : d.actif);
-  const autreChoix = d.choix === "laisse" ? "lancer" : "laisse";
-  return [`# Ton dé : ${de(deJoue(d), origine(d.choix), moi)}`, `-# (autre dé : ${de(deAutre(d), origine(autreChoix), moi)})`].join("\n");
+// Main d'un joueur en dés (couleur vue par `moi`)
+const mainTexte = (d, id, moi) => d.mains[id].map((v) => de(v, id, moi)).join(" ");
+
+// À son tour : « Ton dé : ⚄ » en titre H1 (dé choisi, agrandi) ou « Choisis
+// un dé », puis la main de l'adversaire en petit ; sinon « Main de Kévina ».
+function ligneMain(d, moi, A) {
+  const adv = adversaire(moi);
+  if (d.actif !== moi) return `Main de ${A.Sujet} : ${mainTexte(d, adv, moi)}`;
+  return [d.choix ? `# Ton dé : ${de(d.choix, moi, moi)}` : "# Choisis un dé", `-# ${A.Sujet} a encore : ${mainTexte(d, adv, moi)}`].join("\n");
 }
 
 // Vue d'un joueur : plateau, résultat de la dernière action
@@ -433,7 +450,7 @@ function buildVue(
             : [
                 "",
                 ...(monTour ? [] : [`⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
-                ligneDes(d, moi, A),
+                ligneMain(d, moi, A),
               ]),
         ]),
   ].filter((l) => l !== null);
@@ -444,7 +461,7 @@ function buildVue(
   if (d.explosion) return { embeds: [embed], components: boutonsFin() };
   // Contre Kévina, ce n'est jamais son tour qu'en pleine réflexion : pas d'abandon
   const regles = { type: 1, components: [BOUTON_REGLES, ...(monTour || pvp ? [boutonAbandon(sfx)] : [])] };
-  return { embeds: [embed], components: [...boutonsCoups(d, monTour, sfx), regles] };
+  return { embeds: [embed], components: [...boutonsCoups(d, monTour, moi, sfx), regles] };
 }
 
 function buildReglesEmbed(config) {
@@ -452,11 +469,11 @@ function buildReglesEmbed(config) {
     title: "📖 Règles de Pile-Poil",
     description: [
       `${NB_PILES} piles communes, A, B et C, qui partent de 0. But : en amener une **pile à ${CIBLE}** pour la faire exploser.`,
-      `Chaque pile montre les dés posés dessus, et les **+${SOUFFLE}** du souffle (carré orange).`,
+      `Chaque pile montre les dés posés dessus, et les **+${SOUFFLE}** du souffle (carré orange). Aucun hasard : tout est visible.`,
       "",
-      "**🎲 À ton tour**, tu as 2 dés : ton lancer et le dé laissé par ton adversaire. Tu en joues un sur une pile, sans dépasser " + CIBLE + " ; **l'autre part chez ton adversaire**. 🔄 change le dé joué.",
+      `**🎲 À ton tour** : chacun a une main de ${VALEUR_MAX} dés, de 1 à ${VALEUR_MAX}, visible de tous. Choisis un dé de ta main, puis la pile où le poser, sans dépasser ${CIBLE}. Un dé joué est utilisé ; quand ta main est vide, elle se recharge.`,
       `**💥 Explosion** : une pile qui tombe pile sur ${CIBLE} explose. Tu marques 1 point, elle repart à 0, et son souffle ajoute **+${SOUFFLE}** aux piles voisines non vides (A et B, B et C). Une voisine qui tombe pile explose aussi (+1 pour toi), une voisine qui dépasse saute (+1 pour ton adversaire).`,
-      `**${RATEE} Bloqué** : si aucun de tes dés ne rentre nulle part, tu fais sauter la pile de ton choix (+1 pour ton adversaire).`,
+      `**${RATEE} Bloqué** : si aucun de tes dés ne rentre nulle part, tu en défausses un et tu fais sauter la pile de ton choix (+1 pour ton adversaire).`,
       `**🏆 Victoire** : le premier à ${SEUIL} points.`,
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
@@ -471,14 +488,14 @@ function buildReglesEmbed(config) {
 function actionJouer(d, moi, k, vue) {
   if (!d.termine && vue !== d.vue) return { erreur: "perime" };
   const r = jouer(d, moi, k);
-  if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "interdite" };
+  if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : !d.choix ? "sansValeur" : "interdite" };
   return {};
 }
 
-function actionChangerDe(d, moi, vue) {
+function actionChoisir(d, moi, v, vue) {
   if (!d.termine && vue !== d.vue) return { erreur: "perime" };
-  const r = changerDe(d, moi);
-  if (r.erreur) return { erreur: d.termine ? "termine" : "pasTonTour" };
+  const r = choisirValeur(d, moi, v);
+  if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "dejaJouee" };
   return {};
 }
 
@@ -504,7 +521,7 @@ function messageSolo(d, pseudo) {
             ? ligneExplosion(d, (id) => (id === "bot" ? "Kévina" : pseudo))
             : d.actif === "bot"
               ? "⏳ Kévina réfléchit…"
-              : `Au tour de **${pseudo}**, dés : ${de(d.de, "joueur")} ${de(d.laisse, "bot")}`,
+              : `Au tour de **${pseudo}**, main : ${mainTexte(d, "joueur", "joueur")}`,
           "",
           ...plateauPublic(d, pseudo, "🤖 Kévina"),
           "",
@@ -625,8 +642,12 @@ async function executerSolo(webhookUrl, discordId, c, coup, { channelId, pseudo 
     // Kévina joue dans la foulée (sous le même verrou)
     if (!d.termine) {
       etapes.push({ duel: structuredClone(d), texte: texteJoueur, reflexion: true });
-      const choix = choixKevina(d, "bot", { marge: config.marge_kevina });
-      if (choix.choix !== d.choix) changerDe(d, "bot");
+      const choix = choixKevina(d, "bot", {
+        profondeur: config.profondeur_kevina,
+        erreur: config.erreur_kevina,
+        marge: config.marge_kevina,
+      });
+      choisirValeur(d, "bot", choix.v);
       jouer(d, "bot", choix.k);
       lignes.push(recit(d, "joueur", BOT));
       const explosionKevina = etatExplosion(d);
@@ -776,7 +797,7 @@ function messagePublic(partie, config, etat = null) {
         description: [
           d.explosion
             ? ligneExplosion(d, nom)
-            : `Au tour de **${nom(d.actif)}**, dés : ${de(d.de, d.actif)} ${de(d.laisse, adversaire(d.actif))}, limite <t:${echeanceDe(partie, config)}:R>`,
+            : `Au tour de **${nom(d.actif)}**, main : ${mainTexte(d, d.actif, "joueur")}, limite <t:${echeanceDe(partie, config)}:R>`,
           "",
           ...plateauPublic(d, nom("joueur"), nom("bot")),
         ].join("\n").slice(0, 4096),
@@ -1054,10 +1075,11 @@ export async function handlePilePoilAbandon(webhookUrl, discordId, etape, { pvp 
   }
 }
 
-// [🔄] : le joueur change de dé, sa vue est rééditée (seule la sienne :
-// le choix ne change rien pour l'adversaire tant qu'il n'a pas joué).
-async function changerDeSolo(webhookUrl, discordId, vue, { pseudo } = {}) {
-  const { duel, resultat } = await agirDuel(discordId, (d) => actionChangerDe(d, "joueur", vue), { nom: pseudo });
+// [dé de sa main] (1er clic) : le joueur choisit une valeur, sa vue est
+// rééditée (seule la sienne : le choix ne change rien pour l'adversaire
+// tant qu'il n'a pas joué).
+async function choisirSolo(webhookUrl, discordId, v, vue, { pseudo } = {}) {
+  const { duel, resultat } = await agirDuel(discordId, (d) => actionChoisir(d, "joueur", v, vue), { nom: pseudo });
   if (!duel) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
     return;
@@ -1066,13 +1088,13 @@ async function changerDeSolo(webhookUrl, discordId, vue, { pseudo } = {}) {
   await patchOriginal(webhookUrl, buildVue(duel, { texte }));
 }
 
-async function changerDePvp(webhookUrl, discordId, vue) {
+async function choisirPvp(webhookUrl, discordId, v, vue) {
   const { partie, config, resultat } = await agirPvp((p) => {
     const moi = siegeDe(p, discordId);
     if (!moi) return { erreur: p.statut === "lobby" ? "lobby" : "pasJoueur" };
     memoriserWebhook(p, discordId, webhookUrl);
     if (p.statut !== "enCours") return { erreur: "termine" };
-    return actionChangerDe(p.duel, moi, vue);
+    return actionChoisir(p.duel, moi, v, vue);
   });
   if (!partie) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
@@ -1092,12 +1114,14 @@ async function changerDePvp(webhookUrl, discordId, vue) {
 
 // ── Points d'entrée des composants ───────────────────────────────────
 
-export async function handlePilePoilChangerDe(webhookUrl, discordId, vue, { pvp = false, pseudo } = {}) {
+// `v` : valeur choisie, `vue` : numéro de vue affiché par la vue cliquée.
+export async function handlePilePoilChoisir(webhookUrl, discordId, v, vue, { pvp = false, pseudo } = {}) {
   try {
-    if (pvp) await changerDePvp(webhookUrl, discordId, vue);
-    else await changerDeSolo(webhookUrl, discordId, vue, { pseudo });
+    if (!Number.isInteger(v) || v < 1 || v > VALEUR_MAX) return;
+    if (pvp) await choisirPvp(webhookUrl, discordId, v, vue);
+    else await choisirSolo(webhookUrl, discordId, v, vue, { pseudo });
   } catch (err) {
-    console.error("[Pile-Poil] Échec changer de dé:", err.message);
+    console.error("[Pile-Poil] Échec choix de dé:", err.message);
   }
 }
 

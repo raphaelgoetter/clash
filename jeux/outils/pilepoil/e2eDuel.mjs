@@ -33,13 +33,10 @@ globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 
 const h = await import("../../discord/handlers/pilepoilDuel.js");
 const { readDuel, readPvp } = await import("../../services/pilepoilDuel.js");
-const { coupsPossibles, CIBLE, deJoue } = await import("../../services/pilepoilRules.js");
+const { choixHasard } = await import("../../services/pilepoilRules.js");
 
-// Pile permise au hasard (avec le dé sélectionné)
-const auHasard = (d) => {
-  const coups = coupsPossibles(d);
-  return coups[Math.floor(Math.random() * coups.length)].k;
-};
+// Coup au hasard : { v (valeur de sa main), k (pile) }
+const auHasard = (d) => choixHasard(d);
 
 // Messages en Components V2 : texte (type 10) et rangées de boutons
 // (type 1), éventuellement dans un conteneur (type 17).
@@ -69,7 +66,7 @@ const ID = "joueur-e2e";
 const W = "https://discord.test/webhook";
 const lancement = { member: { user: { id: ID, username: "Testeur" } }, channel_id: "salon" };
 const resultats = {};
-let changements = 0;
+let choix = 0;
 for (let g = 0; g < 5; g++) {
   await h.handlePilePoilCommand(W, lancement);
   for (let k = 0; ; k++) {
@@ -79,29 +76,24 @@ for (let g = 0; g < 5; g++) {
       resultats[d.gagnant] = (resultats[d.gagnant] || 0) + 1;
       break;
     }
-    // Change de dé une fois sur trois (s'il reste un coup avec l'autre)
-    if (Math.random() < 0.33) {
-      await h.handlePilePoilChangerDe(W, ID, d.vue, { pseudo: "Testeur" });
-      changements++;
-      if (!coupsPossibles(await readDuel(ID)).length) await h.handlePilePoilChangerDe(W, ID, d.vue + 1, { pseudo: "Testeur" });
-      continue;
-    }
-    await h.handlePilePoilJouer(W, ID, auHasard(d), d.vue, { channelId: "salon", pseudo: "Testeur" });
+    // Deux clics : la valeur, puis la pile
+    const { v, k: pile } = auHasard(d);
+    await h.handlePilePoilChoisir(W, ID, v, d.vue, { pseudo: "Testeur" });
+    choix++;
+    await h.handlePilePoilJouer(W, ID, pile, d.vue + 1, { channelId: "salon", pseudo: "Testeur" });
   }
 }
 // Par partie : plateau public (lancement) puis récapitulatif
 const posts = salon.filter((m) => m.method === "POST");
-console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${changements} changements de dé, ${posts.length} messages publiés`);
+console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${choix} coups en deux clics, ${posts.length} messages publiés`);
 if (posts.length !== 10) throw new Error("plateau public et résultat attendus pour chaque partie");
 if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfléchit"))) throw new Error("plateau public non suivi");
 
-// Pile interdite (le dé dépasserait la cible) : avertissement, partie intacte
+// Pile sans valeur choisie : avertissement, partie intacte ; valeur déjà jouée refusée
 await h.handlePilePoilCommand(W, lancement);
-const dInterdit = await readDuel(ID);
-if (dInterdit.piles.every((p) => p + deJoue(dInterdit) <= CIBLE)) {
-  // Piles vides au départ : rien d'interdit, on vérifie seulement l'absence de coup
-  if (dInterdit.coups !== 0) throw new Error("coup joué au lancement");
-}
+await h.handlePilePoilJouer(W, ID, 0, 0, { channelId: "salon", pseudo: "Testeur" });
+if (!texte(vues.at(-1)).includes("Choisis d'abord un dé")) throw new Error("pose sans valeur acceptée");
+if ((await readDuel(ID)).coups !== 0) throw new Error("coup joué sans valeur");
 // Vue dépassée (numéro de vue ancien) : refusée
 await h.handlePilePoilJouer(W, ID, 0, 5, { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("Le plateau a changé")) throw new Error("clic sur une vue dépassée accepté");
@@ -122,11 +114,13 @@ for (let k = 0; ; k++) {
     break;
   }
   const actif = p.sieges[p.duel.actif];
-  const c = auHasard(p.duel);
+  const { v, k: c } = auHasard(p.duel);
+  const url = `https://discord.test/${actif === "A" ? "a" : "b"}`;
   // Clic hors tour : refusé sans effet
-  await h.handlePilePoilJouer(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", c, p.duel.vue, { pvp: true });
-  if ((await readPvp()).duel.coups !== p.duel.coups) throw new Error("coup hors tour joué");
-  await h.handlePilePoilJouer(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, c, p.duel.vue, { pvp: true });
+  await h.handlePilePoilChoisir(`https://discord.test/${actif === "A" ? "b" : "a"}`, actif === "A" ? "B" : "A", v, p.duel.vue, { pvp: true });
+  if ((await readPvp()).duel.vue !== p.duel.vue) throw new Error("choix hors tour accepté");
+  await h.handlePilePoilChoisir(url, actif, v, p.duel.vue, { pvp: true });
+  await h.handlePilePoilJouer(url, actif, c, p.duel.vue + 1, { pvp: true });
 }
 
 // ── Abandon (🏳️ puis confirmation) ──
@@ -134,7 +128,7 @@ await h.handlePilePoilCommand(W, lancement);
 await h.handlePilePoilAbandon(W, ID, "demande", { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("Abandonner la partie ?")) throw new Error("confirmation d'abandon absente");
 await h.handlePilePoilAbandon(W, ID, "non", { channelId: "salon", pseudo: "Testeur" });
-if (rangees(vues.at(-1)).length !== 2) throw new Error("Annuler ne rend pas les boutons de coup");
+if (rangees(vues.at(-1)).length !== 4) throw new Error("Annuler ne rend pas les boutons de coup");
 await h.handlePilePoilAbandon(W, ID, "ok", { channelId: "salon", pseudo: "Testeur" });
 if (!(await readDuel(ID)).abandon) throw new Error("abandon contre Kévina non enregistré");
 if (!texte(salon.at(-1)).includes("abandonne face à Kévina")) throw new Error("abandon contre Kévina non publié");
@@ -159,12 +153,12 @@ await h.handlePilePoilRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
-const exemple = vues.find((v) => rangees(v).length === 2 && texte(v).includes("Kévina joue") && texte(v).includes("autre dé"));
+const exemple = vues.find((v) => rangees(v).length === 4 && texte(v).includes("Kévina joue") && texte(v).includes("Ton dé"));
 console.log("\n--- Vue contre Kévina ---\n" + texte(exemple));
 console.log(
   "Boutons :\n" +
     rangees(exemple)
-      .slice(0, 1)
+      .slice(0, 3)
       .map((r) => r.components.map((c) => `[${c.label ?? c.emoji?.name}]`).join(" "))
       .join("\n"),
 );

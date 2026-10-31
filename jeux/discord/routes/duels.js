@@ -79,7 +79,7 @@ import {
   handlePilePoilPvpCommand,
   handlePilePoilOuvrir,
   handlePilePoilJouer,
-  handlePilePoilChangerDe,
+  handlePilePoilChoisir,
   handlePilePoilRegles,
   handlePilePoilAbandon,
 } from "../handlers/pilepoilDuel.js";
@@ -349,8 +349,8 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── Pile-Poil : composants. pilepoilduel_jouer:<pile>:<vue>[:pvp] et
-  // pilepoilduel_de:<vue>[:pvp] (🔄) éditent la vue en place ;
+  // ── Pile-Poil : composants. pilepoilduel_valeur:<valeur>:<vue>[:pvp] et
+  // pilepoilduel_jouer:<pile>:<vue>[:pvp] éditent la vue en place ;
   // pilepoilduel_ouvrir (Jouer du message public 1v1) et pilepoilduel_regles :
   // nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("pilepoilduel_")) {
@@ -372,12 +372,13 @@ export async function routeDuels(body, res) {
       runBackground(() => handlePilePoilJouer(webhookUrl, discordId, Number(arg), Number(coup), opts));
       return;
     }
-    if (action === "pilepoilduel_de") {
+    if (action === "pilepoilduel_valeur") {
       const discordId = body.member?.user?.id;
       res.status(200).json({ type: 6 });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      const opts = { pvp: suite[0] === "pvp", pseudo: pilepoilExtractMember(body).username };
-      runBackground(() => handlePilePoilChangerDe(webhookUrl, discordId, Number(arg), opts));
+      const [vue, mode] = suite;
+      const opts = { pvp: mode === "pvp", pseudo: pilepoilExtractMember(body).username };
+      runBackground(() => handlePilePoilChoisir(webhookUrl, discordId, Number(arg), Number(vue), opts));
       return;
     }
     // [🏳️] : pilepoilduel_abandon[:pvp] (confirmation), pilepoilduel_abandon_ok /
