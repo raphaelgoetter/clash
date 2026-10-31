@@ -26,13 +26,13 @@ function duelTest(colonnes, carte, { pioche = null, actif = "joueur" } = {}) {
 }
 
 function main() {
-  // ── Mise en place : 4 colonnes d'une carte, 1 carte à poser, 31 en pioche ──
+  // ── Mise en place : 3 colonnes d'une carte, 1 carte à poser, 32 en pioche ──
   {
     const d = creerDuel();
-    assert.strictEqual(d.colonnes.length, 4);
+    assert.strictEqual(d.colonnes.length, 3);
     assert.ok(d.colonnes.every((c) => c.length === 1));
     assert.ok(d.carte);
-    assert.strictEqual(d.pioche.length, 31);
+    assert.strictEqual(d.pioche.length, 32);
     const toutes = [...d.pioche, d.carte, ...d.colonnes.flat()].map((c) => `${c.k}${c.v}`);
     assert.strictEqual(new Set(toutes).size, 36);
     assert.strictEqual(d.actif, "joueur");
@@ -92,7 +92,7 @@ function main() {
     assert.strictEqual(d.pioche.length, restantes - 1);
     assert.strictEqual(d.coups, 1);
     assert.ok(jouer(d, "joueur", 0).erreur);
-    assert.ok(jouer(d, "bot", 4).erreur);
+    assert.ok(jouer(d, "bot", 3).erreur);
   }
 
   // ── Ramassage à la 6e carte : 5 cartes ramassées, la 6e reste ──
@@ -141,11 +141,11 @@ function main() {
     assert.strictEqual(d.gagnant, "bot");
   }
 
-  // ── Partie complète : au plus 16 coups chacun ──
+  // ── Partie complète : au plus 33 coups ──
   {
     const d = creerDuel({ rng: () => 0.3 });
     while (!d.termine) jouer(d, d.actif, coupsPossibles(d)[0].c);
-    assert.ok(d.coups <= 32);
+    assert.ok(d.coups <= 33);
   }
 
   // ── Kévina : évite de ramasser ──

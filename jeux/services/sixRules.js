@@ -1,7 +1,7 @@
 // ============================================================
 // sixRules.js — Règles pures de Six (`/six`), duel inspiré du 6 qui prend :
 // pioche commune de 36 cartes (4 couleurs de 1 à 9, celles de Punto),
-// 4 colonnes. À son tour, on retourne la carte du dessus de la pioche et
+// 3 colonnes. À son tour, on retourne la carte du dessus de la pioche et
 // on la pose sur une colonne dont la dernière carte est plus faible (au
 // choix s'il y en a plusieurs) ; plus forte sur aucune colonne, elle va
 // sur la colonne de son choix (pose libre). 6e carte d'une colonne : on
@@ -20,7 +20,7 @@
 // ============================================================
 
 export const IDS = ["joueur", "bot"];
-export const NB_COLONNES = 4;
+export const NB_COLONNES = 3;
 // La 6e carte d'une colonne la fait ramasser
 export const LIMITE = 6;
 export const NB_COULEURS = 4;

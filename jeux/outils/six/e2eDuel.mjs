@@ -90,7 +90,7 @@ if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfl�
 // Colonne interdite : avertissement, partie intacte
 await h.handleSixCommand(W, lancement);
 const dInterdit = await readDuel(ID);
-const interdite = [0, 1, 2, 3].find((c) => !coupsPossibles(dInterdit).some((x) => x.c === c));
+const interdite = [0, 1, 2].find((c) => !coupsPossibles(dInterdit).some((x) => x.c === c));
 if (interdite !== undefined) {
   await h.handleSixJouer(W, ID, interdite, 0, { channelId: "salon", pseudo: "Testeur" });
   if (!texte(vues.at(-1)).includes("ne peut pas aller dans cette colonne")) throw new Error("colonne interdite acceptée");

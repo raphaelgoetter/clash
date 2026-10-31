@@ -62,9 +62,9 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 // carte (0 à 3) dans le moteur, le rouge est la couleur maudite
 // (COULEUR_MAUDITE)
 const COULEURS = ["bleu", "vert", "rouge", "orange"];
-const NOMS_COLONNES = ["A", "B", "C", "D"];
+const NOMS_COLONNES = ["A", "B", "C", "D"].slice(0, NB_COLONNES);
 // En-têtes des colonnes, à la largeur des cartes
-const ENTETES = ["🇦", "🇧", "🇨", "🇩"];
+const ENTETES = ["🇦", "🇧", "🇨", "🇩"].slice(0, NB_COLONNES);
 // Emplacement vide de la 6e carte (celle qui fait ramasser)
 const SIXIEME = "💀";
 // Étape d'explosion (6e carte, comme La Grille) : les 5 cartes ramassées
@@ -224,7 +224,7 @@ function nomsAdv(partie, moi) {
 const carteTexte = (carte) => formatCarte(COULEURS[carte.k], carte.v);
 const pts = (n) => plural(n, "point");
 
-// Plateau : les 4 colonnes à la verticale sous leurs en-têtes, la plus
+// Plateau : les colonnes à la verticale sous leurs en-têtes, la plus
 // ancienne carte en haut ; emplacements libres gris, 6e emplacement 💀
 // (la carte qui y tomberait fait ramasser). Une rangée par ligne, en titre
 // H1 dans la vue du joueur (plus grande taille d'emoji possible, comme La
@@ -348,7 +348,7 @@ function vueFin(d, { moi, A, raison }) {
   };
 }
 
-// Boutons de coup, à son tour seulement : toujours les 4 colonnes, celles
+// Boutons de coup, à son tour seulement : toujours toutes les colonnes, celles
 // où la carte ne peut pas aller désactivées (grisées) ; tous gris et sans
 // indication de perte (le récit du coup la donne). Le numéro du coup dans
 // le custom_id écarte un clic sur une vue dépassée (pendant la réflexion
