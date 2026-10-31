@@ -22,9 +22,9 @@
 
 export const IDS = ["joueur", "bot"];
 export const NB_PILES = 3;
-export const CIBLE = 10;
+export const CIBLE = 11;
 export const SOUFFLE = 3;
-export const SEUIL = 6;
+export const SEUIL = 3;
 const FACES = 6;
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");

@@ -561,7 +561,7 @@ const commands = [
   {
     name: "pilepoil",
     description:
-      "Pile-Poil : fais exploser les piles à 10 contre Kévina ou un joueur — réservé au rôle MINI-JEUX.",
+      "Pile-Poil : fais exploser les piles à 11 contre Kévina ou un joueur — réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING
