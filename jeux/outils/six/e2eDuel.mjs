@@ -33,7 +33,7 @@ globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 
 const h = await import("../../discord/handlers/sixDuel.js");
 const { readDuel, readPvp } = await import("../../services/sixDuel.js");
-const { coupsPossibles, echangePermis } = await import("../../services/sixRules.js");
+const { coupsPossibles } = await import("../../services/sixRules.js");
 
 // Colonne permise au hasard
 const auHasard = (d) => {
@@ -69,7 +69,6 @@ const ID = "joueur-e2e";
 const W = "https://discord.test/webhook";
 const lancement = { member: { user: { id: ID, username: "Testeur" } }, channel_id: "salon" };
 const resultats = {};
-let echanges = 0;
 for (let g = 0; g < 5; g++) {
   await h.handleSixCommand(W, lancement);
   for (let k = 0; ; k++) {
@@ -79,19 +78,12 @@ for (let g = 0; g < 5; g++) {
       resultats[d.gagnant] = (resultats[d.gagnant] || 0) + 1;
       break;
     }
-    // Échange une fois sur deux quand il est permis
-    if (echangePermis(d, "joueur") && Math.random() < 0.5) {
-      await h.handleSixEchanger(W, ID, d.vue, { pseudo: "Testeur" });
-      echanges++;
-      continue;
-    }
     await h.handleSixJouer(W, ID, auHasard(d), d.vue, { channelId: "salon", pseudo: "Testeur" });
   }
 }
-if (echanges && !vues.some((v) => texte(v).includes("🔄 Tu prends ta réserve"))) throw new Error("échange non raconté");
 // Par partie : plateau public (lancement) puis récapitulatif
 const posts = salon.filter((m) => m.method === "POST");
-console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${echanges} échanges du joueur, ${posts.length} messages publiés`);
+console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${posts.length} messages publiés`);
 if (posts.length !== 10) throw new Error("plateau public et résultat attendus pour chaque partie");
 if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfléchit"))) throw new Error("plateau public non suivi");
 
@@ -104,9 +96,6 @@ if (interdite !== undefined) {
   if (!texte(vues.at(-1)).includes("ne peut pas aller dans cette colonne")) throw new Error("colonne interdite acceptée");
   if ((await readDuel(ID)).coups !== 0) throw new Error("coup interdit joué");
 }
-// Échange refusé sur une vue dépassée
-await h.handleSixEchanger(W, ID, 5, { pseudo: "Testeur" });
-if (!texte(vues.at(-1)).includes("Le plateau a changé")) throw new Error("échange sur une vue dépassée accepté");
 // Vue dépassée (numéro de vue ancien) : refusée
 await h.handleSixJouer(W, ID, 0, 5, { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("Le plateau a changé")) throw new Error("clic sur une vue dépassée accepté");

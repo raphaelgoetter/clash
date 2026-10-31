@@ -68,7 +68,6 @@ import {
   handleSixPvpCommand,
   handleSixOuvrir,
   handleSixJouer,
-  handleSixEchanger,
   handleSixRegles,
   handleSixAbandon,
 } from "../handlers/sixDuel.js";
@@ -282,8 +281,8 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── Six : composants. sixduel_jouer:<colonne>:<vue>[:pvp] et
-  // sixduel_echanger:<vue>[:pvp] éditent la vue en place ; sixduel_ouvrir (Jouer du message public 1v1) et
+  // ── Six : composants. sixduel_jouer:<colonne>:<vue>[:pvp] édite la vue
+  // en place ; sixduel_ouvrir (Jouer du message public 1v1) et
   // sixduel_regles : nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("sixduel_")) {
     const [action, arg, ...suite] = body.data.custom_id.split(":");
@@ -302,14 +301,6 @@ export async function routeDuels(body, res) {
       const [coup, mode] = suite;
       const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: sixExtractMember(body).username };
       runBackground(() => handleSixJouer(webhookUrl, discordId, Number(arg), Number(coup), opts));
-      return;
-    }
-    if (action === "sixduel_echanger") {
-      const discordId = body.member?.user?.id;
-      res.status(200).json({ type: 6 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      const opts = { pvp: suite[0] === "pvp", pseudo: sixExtractMember(body).username };
-      runBackground(() => handleSixEchanger(webhookUrl, discordId, Number(arg), opts));
       return;
     }
     // [🏳️] : sixduel_abandon[:pvp] (confirmation), sixduel_abandon_ok /
