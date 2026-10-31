@@ -6,8 +6,8 @@
 // choix s'il y en a plusieurs) ; plus forte sur aucune colonne, elle va
 // sur la colonne de son choix (pose libre). 6e carte d'une colonne : on
 // ramasse les 5 premières, elle reste. Échange (ECHANGES par joueur et par
-// partie) : si sa carte peut être posée sans ramasser, on peut la donner à
-// l'adversaire (elle devient la prochaine carte) et jouer la prochaine.
+// partie) : on peut donner sa carte à l'adversaire (elle devient la
+// prochaine carte) et jouer la prochaine.
 // Une colonne ramassée coûte 1 point par carte, plus PENALITE_MAUDITE par
 // carte de la couleur maudite. Fin dès qu'un joueur atteint SEUIL points
 // ou quand la pioche est vide : le moins de points gagne.
@@ -158,17 +158,9 @@ export function jouer(d, id, c) {
 }
 
 // Échange permis au joueur actif `id` : il lui en reste, pas déjà fait ce
-// tour-ci, une prochaine carte existe, et sa carte peut être posée sans
-// ramasser (l'échange sert à piéger l'adversaire, pas à se sauver).
+// tour-ci, et une prochaine carte existe.
 export function echangePermis(d, id) {
-  return (
-    !d.termine &&
-    d.actif === id &&
-    d.echanges?.[id] > 0 &&
-    !d.echangeCeTour &&
-    d.pioche.length > 0 &&
-    coupsPossibles(d).some((x) => x.penalite === 0)
-  );
+  return !d.termine && d.actif === id && d.echanges?.[id] > 0 && !d.echangeCeTour && d.pioche.length > 0;
 }
 
 // Échange : la carte du joueur actif devient la prochaine carte (celle de

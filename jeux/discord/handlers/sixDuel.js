@@ -455,7 +455,7 @@ function buildReglesEmbed(config) {
       "• tu la poses sur une colonne dont la dernière carte est **plus faible** (au choix s'il y en a plusieurs) ;",
       "• plus forte nulle part : tu la poses où tu veux.",
       "La prochaine carte, celle de ton adversaire, est visible.",
-      "• 🔄 **Échange** (1 par partie) : si ta carte peut être posée sans rien ramasser, tu peux la donner à ton adversaire (elle devient sa prochaine carte) et jouer la prochaine à la place.",
+      "• 🔄 **Échange** (1 par partie) : tu peux donner ta carte à ton adversaire (elle devient sa prochaine carte) et jouer la prochaine à la place.",
       `• ${SIXIEME} **6ᵉ carte** d'une colonne : tu ramasses les 5 autres, ta carte reste.`,
       `**💸 Points perdus** : 1 par carte ramassée, ${1 + PENALITE_MAUDITE} par carte **rouge** (maudite).`,
       `**🏆 Fin** : dès qu'un joueur atteint ${SEUIL} points perdus, ou quand la pioche est vide. Le moins de points gagne, égalité : match nul.`,

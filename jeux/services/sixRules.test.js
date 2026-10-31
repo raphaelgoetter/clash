@@ -161,12 +161,17 @@ function main() {
     assert.strictEqual(coupsPossibles(d, carte).find((x) => x.c === choix.c).penalite, 0);
   }
 
-  // ── Échange : seulement si sa carte passe sans ramasser, 1 par partie ──
+  // ── Échange : libre, même pour éviter un ramassage, 1 par partie ──
   {
     // Le 7 ne peut aller que sur la colonne 0 (5 cartes) : il ferait ramasser
     const d = duelTest([col("12345"), col("8"), col("9"), col("9")], 7, { pioche: [{ k: 0, v: 2 }, { k: 3, v: 4 }] });
+    assert.strictEqual(echangePermis(d, "joueur"), true);
+    assert.ok(!echanger(d, "joueur").erreur);
+  }
+  {
+    // Pioche vide : pas d'échange
+    const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [] });
     assert.strictEqual(echangePermis(d, "joueur"), false);
-    assert.ok(echanger(d, "joueur").erreur);
   }
   {
     const d = duelTest([col("3"), col("8"), col("1"), col("2")], 5, { pioche: [{ k: 0, v: 2 }, { k: 3, v: 7 }] });
