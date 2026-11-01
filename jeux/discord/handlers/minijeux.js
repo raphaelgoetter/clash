@@ -118,7 +118,7 @@ import {
 import { BANDES as MEOW_BANDES, jourDe as meowJourDe, horloge as meowHorloge } from "../../services/meowRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 
-import { getCurrentSeasonBounds, seasonIdForDate } from "../../services/saison.js";
+import { deMois, getCurrentSeasonBounds, seasonIdForDate } from "../../services/saison.js";
 import { getWiredGame } from "../../services/refonte.js";
 import { computeMiniJeuxStats } from "../../services/miniJeuxStats.js";
 
@@ -1001,13 +1001,13 @@ function buildStatsSpecialBlock(parties) {
   return `## 🎲 Jeux spéciaux\n${lines.join("\n")}`;
 }
 
-function buildStatsAssidusBlock({ totalRounds, tiers }) {
+function buildStatsAssidusBlock({ seasonId, totalRounds, tiers }) {
   if (!tiers.length) return null;
   const lines = tiers.map(({ played, names }) => {
     const who = names.length > ASSIDUS_MAX_NAMES ? formatJoueurs(names.length) : names.join(", ");
     return `**${played}/${totalRounds}** : ${who}`;
   });
-  return `## 🏅 Les assidus cette saison\n${lines.join("\n")}`;
+  return `## 🏅 Les assidus de la saison ${deMois(seasonId)}\n${lines.join("\n")}`;
 }
 
 export async function buildStatsEmbed(now = new Date()) {

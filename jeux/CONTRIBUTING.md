@@ -20,7 +20,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 | Module | Contenu |
 | --- | --- |
-| `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux), `/mini-jeux-history` |
+| `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
 | `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule` et leurs boutons de duel (plus ceux de Six, archivé) |
 

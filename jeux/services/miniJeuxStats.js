@@ -12,11 +12,13 @@
 //   (`nbJoueurs` ou `ranking`) sont comptées — Tamagotchi, Robinson, Boss
 //   Raid, Goblin Hunters et les parties Mario Clash archivées avant le
 //   18/10/2026 n'archivent qu'un résultat collectif ou un vainqueur.
-// - Assidus : manches hebdomadaires de la saison mini-jeux en cours
-//   (calendaire, cf. getCurrentSeasonBounds), via la date de publication.
+// - Assidus : manches hebdomadaires d'une saison mini-jeux (calendaire,
+//   rangées par date de publication). Saison précédente tant qu'une de ses
+//   manches court encore (7 jours après sa publication), saison en cours
+//   ensuite.
 // ============================================================
 
-import { getCurrentSeasonBounds } from "./saison.js";
+import { seasonIdForDate } from "./saison.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
@@ -42,6 +44,9 @@ import { listManches as listMeowManches } from "./meow.js";
 // Au-delà des 3 premiers paliers, un palier d'assidus n'est affiché que s'il
 // compte au plus ce nombre de joueurs (l'affichage s'arrête au premier trop peuplé).
 const ASSIDUS_LOWER_MAX = 6;
+
+// Durée d'une manche hebdomadaire (de sa publication à la suivante).
+const ROUND_DURATION_MS = 7 * 24 * 3600 * 1000;
 
 const WEEKLY_GAMES = [
   { key: "frame", title: "🎬 Trouve le film !", fetch: getFrameResults },
@@ -75,17 +80,10 @@ function mancheParticipantCount(manche) {
   return Array.isArray(manche.ranking) ? manche.ranking.length : null;
 }
 
-function inBounds(dateStr, { start, end }) {
-  if (!dateStr) return false;
-  const date = new Date(dateStr);
-  return date >= start && date < end;
-}
-
-// Classement des jeux hebdomadaires + manches de la saison en cours.
-async function collectWeekly(seasonBounds, players, dates) {
+// Classement des jeux hebdomadaires + assidus (voir pickAssidusSeason).
+async function collectWeekly(now, players, dates) {
   const games = [];
-  const seasonRounds = new Set();
-  const seasonPlayers = new Map(); // discordId → { pseudo, rounds: Set }
+  const seasons = new Map(); // seasonId → { rounds: Set, players: Map, lastPostedAt }
 
   const results = await Promise.all(WEEKLY_GAMES.map((game) => game.fetch()));
   WEEKLY_GAMES.forEach((game, index) => {
@@ -101,13 +99,18 @@ async function collectWeekly(seasonBounds, players, dates) {
 
       const dateStr = r.postedAt || r.solvedAt;
       if (dateStr) dates.push(dateStr);
-      if (inBounds(dateStr, seasonBounds)) {
+      if (dateStr) {
+        const postedAt = new Date(dateStr);
+        const seasonId = seasonIdForDate(postedAt);
+        if (!seasons.has(seasonId)) seasons.set(seasonId, { rounds: new Set(), players: new Map(), lastPostedAt: postedAt });
+        const season = seasons.get(seasonId);
+        if (postedAt > season.lastPostedAt) season.lastPostedAt = postedAt;
         const seasonRoundKey = `${game.key}:${roundKey}`;
-        seasonRounds.add(seasonRoundKey);
-        const entry = seasonPlayers.get(r.discordId) || { pseudo: r.pseudo, rounds: new Set() };
+        season.rounds.add(seasonRoundKey);
+        const entry = season.players.get(r.discordId) || { pseudo: r.pseudo, rounds: new Set() };
         entry.pseudo = r.pseudo || entry.pseudo;
         entry.rounds.add(seasonRoundKey);
-        seasonPlayers.set(r.discordId, entry);
+        season.players.set(r.discordId, entry);
       }
     }
     if (rounds.size === 0) return;
@@ -125,6 +128,8 @@ async function collectWeekly(seasonBounds, players, dates) {
   // Assidus : nombre de manches jouées sur le total de la saison, du plus
   // assidu au moins assidu. Les 3 premiers paliers sont toujours affichés ;
   // les suivants tant qu'ils comptent au plus ASSIDUS_LOWER_MAX joueurs.
+  const seasonId = pickAssidusSeason(seasons, now);
+  const { rounds: seasonRounds, players: seasonPlayers } = seasons.get(seasonId) || { rounds: new Set(), players: new Map() };
   const totalRounds = seasonRounds.size;
   const tiers = [];
   for (let played = totalRounds; played >= 1; played--) {
@@ -136,7 +141,17 @@ async function collectWeekly(seasonBounds, players, dates) {
     if (names.length) tiers.push({ played, names });
   }
 
-  return { games, assidus: { totalRounds, tiers } };
+  return { games, assidus: { seasonId, totalRounds, tiers } };
+}
+
+// Saison précédente tant que sa dernière manche publiée n'est pas terminée
+// (les manches de fin de mois débordent sur le mois suivant), saison en
+// cours ensuite.
+function pickAssidusSeason(seasons, now) {
+  const currentId = seasonIdForDate(now);
+  const previous = seasons.get(currentId - 1);
+  if (previous && previous.lastPostedAt.getTime() + ROUND_DURATION_MS > now.getTime()) return currentId - 1;
+  return currentId;
 }
 
 async function collectSpecial(players, dates) {
@@ -170,7 +185,7 @@ export async function computeMiniJeuxStats({ now = new Date(), live = null } = {
   const players = new Set();
   const dates = [];
   const [weekly, parties] = await Promise.all([
-    collectWeekly(getCurrentSeasonBounds(now), players, dates),
+    collectWeekly(now, players, dates),
     collectSpecial(players, dates),
   ]);
 
