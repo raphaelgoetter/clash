@@ -1,22 +1,34 @@
 // Simulation d'équilibrage de Tourneboule sur les vraies règles
-// (jeux/services/tourneboulRules.js) : profils hasard ou
-// kevina[p<profondeur>][e<erreur>][m<marge>] (recherche à <profondeur>
-// coups, erreur = probabilité de jouer un coup à <marge> pions du meilleur).
+// (jeux/services/tourneboulRules.js) : profils hasard, coins (« coins puis
+// bords » sans calcul : le plus gros retournement, coins puis bords
+// d'abord) ou kevina[p<profondeur>][e<erreur>][m<marge>] (recherche
+// positionnelle à <profondeur> coups, erreur = probabilité de jouer un coup
+// à <marge> points d'évaluation du meilleur).
 // Usage : node jeux/outils/tourneboule/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
 // ex. : node jeux/outils/tourneboule/simulateDuel.mjs 200 kevinap4 kevinap3e0.2
 // (« bon joueur » contre la Kévina de production). Le « joueur » commence
 // toujours. Par défaut : profondeur 3, sans erreur, marge 2.
-import { creerDuel, poser, choixKevina, choixHasard } from "../../services/tourneboulRules.js";
+import { COINS, TAILLE, casesJouables, choixHasard, choixKevina, creerDuel, poser, retournements } from "../../services/tourneboulRules.js";
 
 const PARTIES = Number(process.argv[2] || 200);
 const PROFILS = { joueur: process.argv[3] || "kevina", bot: process.argv[4] || "kevina" };
 
 function choix(profil) {
   if (profil === "hasard") return (d) => choixHasard(d);
+  if (profil === "coins") return coinsPuisBords;
   const m = /^kevina(?:p(\d+))?(?:e([\d.]+))?(?:m([\d.]+))?$/.exec(profil);
-  if (!m) throw new Error(`Profil inconnu : ${profil} (hasard, kevina[p<profondeur>][e<erreur>][m<marge>])`);
+  if (!m) throw new Error(`Profil inconnu : ${profil} (hasard, coins, kevina[p<profondeur>][e<erreur>][m<marge>])`);
   const reglages = { profondeur: Number(m[1] ?? 3), erreur: Number(m[2] ?? 0), marge: Number(m[3] ?? 2) };
   return (d, id) => choixKevina(d, id, reglages);
+}
+const bord = (i) => [0, TAILLE - 1].includes(Math.floor(i / TAILLE)) || [0, TAILLE - 1].includes(i % TAILLE);
+function coinsPuisBords(d) {
+  const cle = (i) => {
+    const g = [...d.grille];
+    g[i] = d.actif;
+    return retournements(g, i, d.actif).length * 10 + (COINS.includes(i) ? 50 : bord(i) ? 5 : 0) + Math.random();
+  };
+  return casesJouables(d.grille).reduce((a, b) => (cle(b) > cle(a) ? b : a));
 }
 const CHOIX = { joueur: choix(PROFILS.joueur), bot: choix(PROFILS.bot) };
 

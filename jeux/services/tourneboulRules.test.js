@@ -7,6 +7,7 @@ import {
   casesLibres,
   casesJouables,
   choixKevina,
+  evaluer,
   DEPART,
   NB_CASES,
   ROC,
@@ -99,6 +100,26 @@ function main() {
     const d = creerDuel({ commence: "bot" });
     d.grille = grilleDe(["BJJJ.", ".....", "..R..", ".....", "....."]);
     assert.strictEqual(choixKevina(d, "bot", { profondeur: 1 }), 4);
+  }
+
+  // ── Évaluation positionnelle : coin 8, bord 2, intérieur 1, pion voisin
+  // d'un coin vide −4 ──
+  {
+    const g = grilleDe(["J....", ".....", "..R..", ".....", "....."]);
+    assert.strictEqual(evaluer(g, "joueur"), 8);
+    assert.strictEqual(evaluer(g, "bot"), -8);
+    const g2 = grilleDe([".J...", ".....", "..R..", ".....", "....."]);
+    assert.strictEqual(evaluer(g2, "joueur"), 2 - 4);
+    const g3 = grilleDe([".....", ".....", "..R..", "...J.", "....."]);
+    assert.strictEqual(evaluer(g3, "joueur"), 1 - 4);
+  }
+
+  // ── Kévina ne donne pas un coin : à profondeur 2, elle évite la case qui
+  // ouvre un coin à l'adversaire ──
+  {
+    const d = creerDuel({ commence: "bot" });
+    d.grille = grilleDe([".....", "..J..", "..R..", "..B..", "....."]);
+    for (let k = 0; k < 20; k++) assert.ok(![6, 8, 16, 18].includes(choixKevina(d, "bot", { profondeur: 2 })));
   }
 }
 

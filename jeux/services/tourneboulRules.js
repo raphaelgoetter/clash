@@ -151,8 +151,44 @@ export function poser(d, id, i) {
 
 const VICTOIRE = 1000;
 
-// Negamax alpha-bêta pour `id` (au trait) sur `grille` ; feuilles : écart
-// de pions. Coups qui retournent le plus examinés d'abord.
+// Évaluation positionnelle : un coin vaut 8 pions, une case de bord 2 (plus
+// difficiles à reprendre) ; un pion voisin d'un coin encore vide coûte 4
+// (il ouvre ce coin à l'adversaire). Sans elle, « coins puis bords » battait
+// Kévina.
+const POIDS = Array.from({ length: NB_CASES }, (_, i) => {
+  const r = Math.floor(i / TAILLE);
+  const c = i % TAILLE;
+  if (COINS.includes(i)) return 8;
+  return r === 0 || c === 0 || r === TAILLE - 1 || c === TAILLE - 1 ? 2 : 1;
+});
+const ACCES = 4;
+const VOISINS_COIN = COINS.map((coin) => {
+  const r0 = Math.floor(coin / TAILLE);
+  const c0 = coin % TAILLE;
+  return DIRECTIONS.filter(([dr, dc]) => dansGrille(r0 + dr, c0 + dc)).map(([dr, dc]) => (r0 + dr) * TAILLE + c0 + dc);
+});
+
+// Valeur de `grille` pour `id` (positive : avantage à `id`)
+export function evaluer(grille, id) {
+  const adv = adversaire(id);
+  let v = 0;
+  for (let i = 0; i < NB_CASES; i++) {
+    if (grille[i] === id) v += POIDS[i];
+    else if (grille[i] === adv) v -= POIDS[i];
+  }
+  COINS.forEach((coin, k) => {
+    if (grille[coin] !== null) return;
+    for (const x of VOISINS_COIN[k]) {
+      if (grille[x] === id) v -= ACCES;
+      else if (grille[x] === adv) v += ACCES;
+    }
+  });
+  return v;
+}
+
+// Negamax alpha-bêta pour `id` (au trait) sur `grille` ; feuilles :
+// évaluation positionnelle (`evaluer()`). Coups qui retournent le plus
+// examinés d'abord.
 function negamax(grille, id, dernierRet, prof, alpha, beta) {
   const libres = casesLibres(grille);
   if (!libres.length) {
@@ -160,7 +196,7 @@ function negamax(grille, id, dernierRet, prof, alpha, beta) {
     const ecart = compter(grille, id) - compter(grille, adversaire(id));
     return gagnant === "nul" ? 0 : gagnant === id ? VICTOIRE + ecart : -VICTOIRE + ecart;
   }
-  if (prof === 0) return compter(grille, id) - compter(grille, adversaire(id));
+  if (prof === 0) return evaluer(grille, id);
   const fils = casesJouables(grille)
     .map((i) => {
       const g = [...grille];
@@ -195,7 +231,7 @@ export function evaluerCoups(d, profondeur) {
 
 // Kévina : recherche à `profondeur` coups (le sien compris), meilleur coup
 // tiré au sort parmi les ex aequo. Avec la probabilité `erreur`, coup tiré
-// au sort parmi ceux à `marge` pions au plus du meilleur : des erreurs qui
+// au sort parmi ceux à `marge` points d'évaluation au plus du meilleur : des erreurs qui
 // laissent sa chance au joueur, jamais un coup qui perd ou rate une
 // victoire en vue. Réglages : `profondeur_kevina`, `erreur_kevina`,
 // `marge_kevina` de duel.json. Renvoie la case.
