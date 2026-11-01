@@ -35,7 +35,7 @@ import {
   rejoindrePvp,
   siegeDe,
 } from "../../services/tourneboulDuel.js";
-import { NB_CASES, ROC, TAILLE, adversaire, choixKevina, compter, poser } from "../../services/tourneboulRules.js";
+import { NB_CASES, ROC, TAILLE, adversaire, casesJouables, choixKevina, compter, poser } from "../../services/tourneboulRules.js";
 import { formatPion, pionButtonEmoji } from "../../services/pions.js";
 import {
   getRoleIdByName,
@@ -262,6 +262,7 @@ const ERREURS = {
   termine: "La partie est terminée.",
   pasTonTour: "Ce n'est pas ton tour.",
   occupee: "Cette case est déjà prise.",
+  sansVoisin: "Pose ton pion à côté d'un pion déjà posé (côté ou coin).",
   perime: "Le plateau a changé depuis : rejoue sur celui-ci.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
@@ -337,12 +338,15 @@ function vueFin(d, { moi, A, raison }) {
 }
 
 // Plateau en boutons (5 rangées de 5), comme Punto : chaque bouton montre
-// le pion (ou la case vide, ou 🌀 pendant un retournement). Tous gris et
-// jamais désactivés (Discord estompe un bouton désactivé, emoji compris),
-// sauf le rocher central ; un clic sur une case prise ou hors de son tour
+// le pion (ou la case vide, ou 🌀 pendant un retournement). Tous gris ;
+// désactivés (grisés) : le rocher central et, à son tour, les cases vides
+// sans voisin (non jouables). Les pions ne sont jamais désactivés (Discord
+// estomperait l'emoji) : un clic sur une case prise ou hors de son tour
 // donne un avertissement. Le numéro de vue dans le custom_id écarte un clic
 // sur une vue dépassée (pendant la réflexion de Kévina, par exemple).
 function boutonsPlateau(d, moi, sfx) {
+  const jouables = new Set(d.actif === moi && !d.retournement ? casesJouables(d.grille) : []);
+  const monTour = d.actif === moi && !d.retournement;
   const rangees = [];
   for (let r = 0; r < TAILLE; r++) {
     const components = [];
@@ -356,6 +360,7 @@ function boutonsPlateau(d, moi, sfx) {
         const emoji = pionButtonEmoji(!x ? "vide" : x === moi ? MOI : ADV);
         // Repli tant que les emojis ne sont pas uploadés
         bouton.emoji = emoji ?? { name: caseTexte(x, moi) };
+        if (!x && monTour && !jouables.has(i)) bouton.disabled = true;
       }
       components.push(bouton);
     }
@@ -397,11 +402,11 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles de Tourneboule",
     description: [
-      `Un plateau de ${TAILLE}×${TAILLE} cases, vide au départ, dont la case centrale ${ROCHER} est bloquée. Aucun hasard : tout est visible. Tes pions sont bleus, ceux de ton adversaire rouges.`,
+      `Un plateau de ${TAILLE}×${TAILLE} cases dont la case centrale ${ROCHER} est bloquée. Au départ, un pion chacun à côté du centre : celui qui commence au-dessus, l'autre en dessous. Aucun hasard : tout est visible. Tes pions sont bleus, ceux de ton adversaire rouges.`,
       "",
-      "**🔵 À ton tour**, tu poses un pion sur une case vide (pas de déplacement, pions illimités).",
-      `**${TOURNE} Retournement** : chaque ligne **horizontale ou verticale** de pions adverses que ton pion encadre avec un autre de tes pions change de camp. Pas en diagonale.`,
-      `**🏆 Fin** : quand le plateau est plein (12 coups chacun), le plus de pions gagne. Égalité : le plus de coins, puis celui qui a retourné des pions en dernier.`,
+      "**🔵 À ton tour**, tu poses un pion sur une case vide **à côté d'un pion déjà posé** (côté ou coin) ou du rocher. Pas de déplacement, pions illimités. Les cases grisées ne sont pas jouables.",
+      `**${TOURNE} Retournement** : chaque ligne **horizontale, verticale ou diagonale** de pions adverses que ton pion encadre avec un autre de tes pions change de camp.`,
+      `**🏆 Fin** : quand le plateau est plein (11 coups chacun), le plus de pions gagne. Égalité : le plus de coins, puis celui qui a retourné des pions en dernier.`,
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
       `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
@@ -415,7 +420,7 @@ function buildReglesEmbed(config) {
 function actionPoser(d, moi, i, vue) {
   if (!d.termine && vue !== d.vue) return { erreur: "perime" };
   const r = poser(d, moi, i);
-  if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : "occupee" };
+  if (r.erreur) return { erreur: d.termine ? "termine" : d.actif !== moi ? "pasTonTour" : d.grille[i] !== null ? "occupee" : "sansVoisin" };
   return {};
 }
 

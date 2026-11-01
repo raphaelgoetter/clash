@@ -33,7 +33,7 @@ globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 
 const h = await import("../../discord/handlers/tourneboulDuel.js");
 const { readDuel, readPvp } = await import("../../services/tourneboulDuel.js");
-const { choixHasard, ROC } = await import("../../services/tourneboulRules.js");
+const { choixHasard, ROC, DEPART } = await import("../../services/tourneboulRules.js");
 
 // Case libre au hasard
 const auHasard = (d) => choixHasard(d);
@@ -86,12 +86,14 @@ console.log(`Contre Kévina : 5 parties ${JSON.stringify(resultats)}, ${coups} c
 if (posts.length !== 10) throw new Error("plateau public et résultat attendus pour chaque partie");
 if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfléchit"))) throw new Error("plateau public non suivi");
 
-// Case prise : avertissement, partie intacte
+// Case prise ou sans voisin : avertissement, partie intacte
 await h.handleTournebouleCommand(W, lancement);
-await h.handleTourneboulePoser(W, ID, 0, 0, { channelId: "salon", pseudo: "Testeur" });
 const dPris = await readDuel(ID);
+await h.handleTourneboulePoser(W, ID, DEPART.joueur, dPris.vue, { channelId: "salon", pseudo: "Testeur" });
+if (!texte(vues.at(-1)).includes("déjà prise")) throw new Error("case prise acceptée");
 await h.handleTourneboulePoser(W, ID, 0, dPris.vue, { channelId: "salon", pseudo: "Testeur" });
-if (!texte(vues.at(-1)).includes("déjà prise") && dPris.actif === "joueur") throw new Error("case prise acceptée");
+if (!texte(vues.at(-1)).includes("à côté d'un pion")) throw new Error("case sans voisin acceptée");
+if ((await readDuel(ID)).coups !== 0) throw new Error("coup interdit joué");
 // Le rocher central n'est jamais jouable
 await h.handleTourneboulePoser(W, ID, ROC, dPris.vue, { channelId: "salon", pseudo: "Testeur" });
 if ((await readDuel(ID)).grille[ROC] !== "roc") throw new Error("rocher joué");

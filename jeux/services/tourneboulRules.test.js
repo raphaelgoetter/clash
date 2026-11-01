@@ -5,7 +5,9 @@ import {
   retournements,
   resultat,
   casesLibres,
+  casesJouables,
   choixKevina,
+  DEPART,
   NB_CASES,
   ROC,
 } from "./tourneboulRules.js";
@@ -16,12 +18,25 @@ const grilleDe = (lignes) =>
   lignes.join("").split("").map((x) => ({ J: "joueur", B: "bot", R: "roc", ".": null })[x]);
 
 function main() {
-  // ── Mise en place : plateau vide, centre bloqué, 24 cases libres ──
+  // ── Mise en place : centre bloqué, un pion chacun à côté du centre, 22 cases libres ──
   {
     const d = creerDuel();
     assert.strictEqual(d.grille[ROC], "roc");
-    assert.strictEqual(casesLibres(d.grille).length, NB_CASES - 1);
+    assert.deepStrictEqual([d.grille[DEPART.joueur], d.grille[DEPART.bot]], ["joueur", "bot"]);
+    assert.deepStrictEqual([DEPART.joueur, DEPART.bot], [7, 17]);
+    assert.strictEqual(casesLibres(d.grille).length, NB_CASES - 3);
     assert.strictEqual(d.actif, "joueur");
+  }
+
+  // ── Cases jouables : voisines (côté ou coin) d'un pion ou du rocher ──
+  {
+    const d = creerDuel();
+    const jouables = casesJouables(d.grille);
+    // Les coins ne sont pas jouables au départ
+    for (const coin of [0, 4, 20, 24]) assert.ok(!jouables.includes(coin));
+    assert.ok(jouables.includes(1) && jouables.includes(11));
+    assert.ok(poser(d, "joueur", 0).erreur);
+    assert.strictEqual(d.coups, 0);
   }
 
   // ── Retournements : lignes orthogonales encadrées, pas en diagonale ──
@@ -37,8 +52,12 @@ function main() {
     assert.deepStrictEqual(retournements([...g.slice(0, 3), "joueur", ...g.slice(4)], 3, "joueur"), [2, 1]);
     // J en 5 (ligne 1, colonne 0) : encadre B (case 10) avec J en 15
     assert.deepStrictEqual(retournements(g, 5, "joueur"), [10]);
-    // Pas de diagonale : J en 6 n'encadre rien
+    // J en 6 : aucune ligne encadrée
     assert.deepStrictEqual(retournements(g, 6, "joueur"), []);
+    // Le rocher coupe une diagonale : J en 0, B en 6, J posé en 18 → rien
+    assert.deepStrictEqual(retournements(grilleDe(["J....", ".B...", "..R..", ".....", "....."]), 18, "joueur"), []);
+    // Diagonale : J en 1, B en 7, J posé en 13 → 7 est encadré (1 → 7 → 13)
+    assert.deepStrictEqual(retournements(grilleDe([".J...", "..B..", "..R.J", ".....", "....."]), 13, "joueur"), [7]);
     // Le rocher ferme une ligne sans encadrer
     assert.deepStrictEqual(retournements(grilleDe(["..B..", "..B..", "..R..", ".....", "....."]), 7 - 5, "joueur"), []);
   }
@@ -47,7 +66,7 @@ function main() {
   {
     const d = creerDuel();
     d.grille = grilleDe(["JB...", ".....", "..R..", ".....", "....."]);
-    const r = poser(d, "joueur", 2);
+    const r = poser(d, "joueur", 2); // voisine du B en 1
     assert.deepStrictEqual(r, { case: 2, retournes: [1] });
     assert.deepStrictEqual(d.grille.slice(0, 3), ["joueur", "joueur", "joueur"]);
     assert.deepStrictEqual([d.actif, d.vue, d.dernierRetournement], ["bot", 1, "joueur"]);
@@ -67,11 +86,11 @@ function main() {
     assert.deepStrictEqual(resultat(pleine(["JJJJB", "JJJJJ", "JJRBB", "BBBBB", "BBBBJ"]), null), { gagnant: "nul", fin: "nul" });
   }
 
-  // ── Partie complète : 24 coups, puis fin ──
+  // ── Partie complète : 22 coups, puis fin ──
   {
     const d = creerDuel();
-    while (!d.termine) poser(d, d.actif, casesLibres(d.grille)[0]);
-    assert.strictEqual(d.coups, NB_CASES - 1);
+    while (!d.termine) poser(d, d.actif, casesJouables(d.grille)[0]);
+    assert.strictEqual(d.coups, NB_CASES - 3);
     assert.ok(["joueur", "bot", "nul"].includes(d.gagnant));
   }
 

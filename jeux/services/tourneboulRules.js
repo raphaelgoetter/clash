@@ -1,12 +1,14 @@
 // ============================================================
 // tourneboulRules.js — Règles pures de Tourneboule (`/tourneboule`), jeu de
-// réflexion sans hasard : plateau 5×5 dont la case centrale est bloquée
-// (24 cases libres), vide au départ. À son tour, le joueur pose un pion
-// sur une case vide (réserve illimitée, pas de déplacement). Chaque ligne
-// horizontale ou verticale de pions adverses que le pion posé encadre avec
-// un autre de ses pions change de camp. Plateau plein (12 coups chacun) :
-// le plus de pions gagne ; égalité : le plus de coins, puis l'auteur du
-// dernier retournement ; sinon match nul.
+// réflexion sans hasard : plateau 5×5 dont la case centrale est bloquée ;
+// au départ, un pion de chaque joueur à côté du centre (le premier joueur
+// au-dessus, le second en dessous). À son tour, le joueur pose un pion sur
+// une case vide VOISINE (côté ou coin) d'un pion ou du rocher (réserve
+// illimitée, pas de déplacement). Chaque ligne horizontale, verticale ou
+// diagonale de pions adverses que le pion posé encadre avec un autre de ses
+// pions change de camp. Plateau plein (11 coups chacun) : le plus de pions
+// gagne ; égalité : le plus de coins, puis l'auteur du dernier
+// retournement ; sinon match nul.
 // Aucune I/O : la couche Redis lit le duel, appelle ces fonctions sous
 // verrou puis le réécrit. `rng` injectable (variété de Kévina, tests).
 //
@@ -23,11 +25,20 @@ export const NB_CASES = TAILLE * TAILLE;
 // Case centrale bloquée
 export const ROC = (NB_CASES - 1) / 2;
 export const COINS = [0, TAILLE - 1, NB_CASES - TAILLE, NB_CASES - 1];
+// Pions de départ, à côté du rocher : premier joueur au-dessus, second en
+// dessous (loin des coins ; un départ en diagonale du rocher rendait les
+// coins accessibles dès le premier coup)
+export const DEPART = { joueur: ROC - TAILLE, bot: ROC + TAILLE };
+// Lignes de retournement et voisinage : 8 directions (côtés et coins)
 const DIRECTIONS = [
   [0, 1],
   [1, 0],
   [0, -1],
   [-1, 0],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
 ];
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
@@ -35,8 +46,8 @@ export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
 const dansGrille = (r, c) => r >= 0 && c >= 0 && r < TAILLE && c < TAILLE;
 
 // Pions adverses retournés si `id` pose en `i` : toutes les lignes
-// horizontales ou verticales de pions adverses contiguës, fermées par un
-// pion de `id`.
+// (horizontales, verticales, diagonales) de pions adverses contiguës,
+// fermées par un pion de `id`.
 export function retournements(grille, i, id) {
   const adv = adversaire(id);
   const r0 = Math.floor(i / TAILLE);
@@ -56,14 +67,32 @@ export function retournements(grille, i, id) {
   return retournes;
 }
 
-// Cases où le joueur actif peut poser
+// Cases vides
 export const casesLibres = (grille) => grille.flatMap((x, i) => (x === null ? [i] : []));
+
+// Case voisine (côté ou coin) d'un pion ou du rocher
+function aUnVoisin(grille, i) {
+  const r0 = Math.floor(i / TAILLE);
+  const c0 = i % TAILLE;
+  return DIRECTIONS.some(([dr, dc]) => dansGrille(r0 + dr, c0 + dc) && grille[(r0 + dr) * TAILLE + c0 + dc] !== null);
+}
+
+// Cases où le joueur actif peut poser : vides et voisines d'un pion ou du
+// rocher (toutes les cases vides s'il n'y en a aucune, cas théorique)
+export function casesJouables(grille) {
+  const libres = casesLibres(grille);
+  const voisines = libres.filter((i) => aUnVoisin(grille, i));
+  return voisines.length ? voisines : libres;
+}
 
 export const compter = (grille, id) => grille.filter((x) => x === id).length;
 
 export function creerDuel({ commence = "joueur" } = {}) {
   const grille = Array(NB_CASES).fill(null);
   grille[ROC] = "roc";
+  // Le premier joueur (« joueur », qui commence toujours) au-dessus du centre
+  grille[DEPART.joueur] = "joueur";
+  grille[DEPART.bot] = "bot";
   return {
     // Case : null (vide), "roc" (centre bloqué), "joueur" ou "bot"
     grille,
@@ -99,6 +128,7 @@ export function poser(d, id, i) {
   if (d.termine) return { erreur: "Partie terminée." };
   if (d.actif !== id) return { erreur: "Ce n'est pas ton tour." };
   if (!Number.isInteger(i) || i < 0 || i >= NB_CASES || d.grille[i] !== null) return { erreur: "Case occupée." };
+  if (!casesJouables(d.grille).includes(i)) return { erreur: "Case sans voisin." };
 
   d.grille[i] = id;
   const retournes = retournements(d.grille, i, id);
@@ -131,7 +161,7 @@ function negamax(grille, id, dernierRet, prof, alpha, beta) {
     return gagnant === "nul" ? 0 : gagnant === id ? VICTOIRE + ecart : -VICTOIRE + ecart;
   }
   if (prof === 0) return compter(grille, id) - compter(grille, adversaire(id));
-  const fils = libres
+  const fils = casesJouables(grille)
     .map((i) => {
       const g = [...grille];
       g[i] = id;
@@ -154,7 +184,7 @@ function negamax(grille, id, dernierRet, prof, alpha, beta) {
 // coups (le sien compris) : [{ i, score }].
 export function evaluerCoups(d, profondeur) {
   const id = d.actif;
-  return casesLibres(d.grille).map((i) => {
+  return casesJouables(d.grille).map((i) => {
     const g = [...d.grille];
     g[i] = id;
     const ret = retournements(g, i, id);
@@ -178,6 +208,6 @@ export function choixKevina(d, id, { profondeur = 3, erreur = 0, marge = 2, rng 
 }
 
 export function choixHasard(d, rng = Math.random) {
-  const libres = casesLibres(d.grille);
-  return libres[Math.floor(rng() * libres.length)];
+  const cases = casesJouables(d.grille);
+  return cases[Math.floor(rng() * cases.length)];
 }
