@@ -1,6 +1,7 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /pilepoil, Six (archivé) et leurs boutons (blackjackduel_*,
-// gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*, pilepoilduel_*, sixduel_*).
+// /quatre, /punto, /pilepoil, /tourneboule, Six (archivé) et leurs boutons
+// (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
+// pilepoilduel_*, tourneboulduel_*, sixduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -83,6 +84,17 @@ import {
   handlePilePoilRegles,
   handlePilePoilAbandon,
 } from "../handlers/pilepoilDuel.js";
+import {
+  memberHasMiniJeuxRole as tourneboulMemberHasMiniJeuxRole,
+  extractMember as tourneboulExtractMember,
+  handleTournebouleRoleRejected,
+  handleTournebouleCommand,
+  handleTourneboulePvpCommand,
+  handleTournebouleOuvrir,
+  handleTourneboulePoser,
+  handleTournebouleRegles,
+  handleTournebouleAbandon,
+} from "../handlers/tourneboulDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 // /blackjack et /gobelet : `adversaire:bot|1v1` comme les autres duels ;
@@ -391,6 +403,62 @@ export async function routeDuels(body, res) {
       // Le suffixe :pvp est en 2ᵉ position
       const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: pilepoilExtractMember(body).username };
       runBackground(() => handlePilePoilAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /tourneboule adversaire:bot : Tourneboule contre Kévina (plateau
+  // public, plateau en boutons dans une vue éphémère) ; adversaire:1v1 :
+  // contre un joueur (message public). Réservé au rôle MINI-JEUX pour
+  // lancer, même principe que /blackjack.
+  if (body.type === 2 && body.data?.name === "tourneboule") {
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await tourneboulMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleTournebouleRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handleTourneboulePvpCommand(webhookUrl, body);
+      else await handleTournebouleCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Tourneboule : composants. tourneboulduel_poser:<case>:<vue>[:pvp]
+  // édite la vue en place ; tourneboulduel_ouvrir (Jouer du message public
+  // 1v1) et tourneboulduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("tourneboulduel_")) {
+    const [action, arg, ...suite] = body.data.custom_id.split(":");
+    if (action === "tourneboulduel_regles" || action === "tourneboulduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "tourneboulduel_regles") runBackground(() => handleTournebouleRegles(webhookUrl));
+      else runBackground(() => handleTournebouleOuvrir(webhookUrl, body));
+      return;
+    }
+    if (action === "tourneboulduel_poser") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Contre Kévina, le résultat final est publié dans le salon du clic
+      const [vue, mode] = suite;
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: tourneboulExtractMember(body).username };
+      runBackground(() => handleTourneboulePoser(webhookUrl, discordId, Number(arg), Number(vue), opts));
+      return;
+    }
+    // [🏳️] : tourneboulduel_abandon[:pvp] (confirmation), tourneboulduel_abandon_ok /
+    // tourneboulduel_abandon_non[:pvp], tous édités en place
+    const ETAPES_ABANDON = { tourneboulduel_abandon: "demande", tourneboulduel_abandon_ok: "ok", tourneboulduel_abandon_non: "non" };
+    if (ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // Le suffixe :pvp est en 2ᵉ position
+      const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: tourneboulExtractMember(body).username };
+      runBackground(() => handleTournebouleAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

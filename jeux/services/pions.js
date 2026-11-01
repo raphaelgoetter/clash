@@ -58,6 +58,14 @@ export function formatPion(couleur, { gagnant = false } = {}) {
   return id ? `<:${emojiName(variante)}:${id}>` : REPLI[variante];
 }
 
+// Objet `emoji` d'un bouton Discord (plateau en boutons de Tourneboule),
+// ou null si la variante n'est pas uploadée (à l'appelant de choisir son
+// repli).
+export function pionButtonEmoji(couleur) {
+  const id = loadPionsConfig().emojis?.[couleur] ?? null;
+  return id ? { id, name: emojiName(couleur) } : null;
+}
+
 // SVG coloré prêt à rendre (script d'upload, aperçus). Le contour est
 // dessiné à l'intérieur du disque (rayon réduit de la demi-épaisseur) :
 // même taille de pion pour toutes les variantes.

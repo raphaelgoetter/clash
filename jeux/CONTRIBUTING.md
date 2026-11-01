@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/pilepoil` et leurs boutons de duel (plus ceux de Six, archivé) |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/pilepoil`, `/tourneboule` et leurs boutons de duel (plus ceux de Six, archivé) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -737,7 +737,7 @@ Faces utilisées par La Grille (le Gobelet et Gobelet Duel gardent keycaps et bo
 
 ## Pions de Quatre à la suite
 
-Service `jeux/services/pions.js` : `formatPion(couleur, { gagnant })` (texte, titre). Même principe que les faces de dé.
+Service `jeux/services/pions.js` : `formatPion(couleur, { gagnant })` (texte, titre), `pionButtonEmoji(couleur)` (boutons du plateau de Tourneboule, `null` si la variante n'est pas uploadée). Même principe que les faces de dé. Utilisés par Quatre à la suite et Tourneboule.
 
 - **Source** : `jeux/data/pions/pion.svg`. Les pions sont **toujours ronds**, même sur une grille de cases carrées : disque plein coloré et seulement un contour extérieur (pas d'anneau intérieur, qui réduit la part colorée).
 - **Config** `jeux/data/pions/pions.json` : `couleurs` (`bleu` = ses pions, `rouge` = pions adverses), `contours` (`normal` blanc, `gagnant` jaune, trois fois plus épais) `vide` (gris de la case libre) et `emojis` (`variante → id`, variantes `bleu`, `rouge`, `bleu_gagnant`, `rouge_gagnant`, `vide` : disque gris sans contour, même taille que les pions). Le contour est tracé à l'intérieur du disque : même taille de pion pour toutes les variantes. Repli sur 🔵 🔴 (🟦 🟥 pour l'alignement gagnant, ⚫ pour la case vide) tant qu'un ID vaut `null`.
@@ -1215,14 +1215,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Six duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/pilepoil` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Sept duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/pilepoil`, `/tourneboule` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `pilepoilduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `pilepoilduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `pilepoilduel:*`, `tourneboulduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `pilepoilduel_*`, `tourneboulduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Pile-Poil 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Pile-Poil 1v1, Tourneboule 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (contre Kévina / solo, ou en 1v1)
 
@@ -1406,6 +1406,35 @@ Duel de réflexion pure, sans hasard, à explosions. `/pilepoil adversaire:bot|1
 
 - `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina[p<profondeur>][e<erreur>][m<marge>]`, ex. `kevinap2e0.1` = réglage de production). Repères (200 parties) : joueur qui vérifie la réponse adverse (`kevinap2`) contre Kévina de production ~60 % ; joueur qui calcule 4 coups (`kevinap4`) ~76 % ; joueur qui ne regarde que son coup (`kevinap1`) ~7 % ; `kevinap4` contre lui-même ~50/50. Erreur 0,2 ou 0,3 : le joueur qui calcule 4 coups gagne ~85 %. Moins d'une milliseconde par coup à profondeur 4.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/pilepoil/e2eDuel.mjs`).
+
+### Tourneboule (contre Kévina ou en 1v1)
+
+Duel de réflexion pure, sans hasard : poser des pions et retourner ceux qu'on encadre. `/tourneboule adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Pile-Poil (modes, sièges, verrous, délai, messages publics, abandon, séries et records, étape intermédiaire) : seules les différences sont décrites ici.
+
+- Code : `jeux/services/tourneboulRules.js` (règles pures et Kévina, tests `tourneboulRules.test.js`), `jeux/services/tourneboulDuel.js` (Redis, tests `tourneboulDuel.test.js`), `jeux/discord/handlers/tourneboulDuel.js` (Discord). Pions : ceux de Quatre à la suite (`jeux/services/pions.js`, voir « Pions de Quatre à la suite »). Config `jeux/data/tourneboule/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `profondeur_kevina` (2), `erreur_kevina` (0,25), `marge_kevina` (2, en pions).
+- Redis : `tourneboulduel:<discordId>` (contre Kévina), `tourneboulduel:pvp`, verrous `tourneboulduel:lock:*`, séries `tourneboulduel:series:bot` / `tourneboulduel:series:pvp`, records `tourneboulduel:records`.
+- `custom_id` : `tourneboulduel_poser:<case>:<vue>[:pvp]` (case 0 à 24, ligne × 5 + colonne ; `<vue>` = `d.vue` affiché, +1 à chaque coup : un clic sur une vue dépassée est refusé avec « Le plateau a changé depuis »), `tourneboulduel_ouvrir`, `tourneboulduel_regles`, `tourneboulduel_abandon[:pvp]`, `tourneboulduel_abandon_ok[:pvp]` / `tourneboulduel_abandon_non[:pvp]`.
+
+#### Règles
+
+- **Plateau 5×5** (`d.grille` : `null` vide, `"roc"`, `"joueur"`, `"bot"`), **case centrale bloquée** (`ROC`, 🪨) : 24 cases libres. **Vide au départ.**
+- **À son tour**, le joueur pose un pion sur une case vide (`poser()`) : pions illimités, pas de déplacement.
+- **Retournement** (`retournements()`) : chaque ligne **horizontale ou verticale** de pions adverses contigus que le pion posé encadre avec un autre pion du joueur **change de camp** (plusieurs directions à la fois possibles). Pas en diagonale. Le rocher ferme une ligne sans encadrer. Poser sans retourner est permis.
+- **Fin** : plateau plein (24 coups, 12 chacun) ; le plus de pions gagne (`resultat()`, `d.fin` = `"majorite"`). Égalité 12-12 : le plus de **coins** (`"coins"`), puis l'**auteur du dernier retournement** (`d.dernierRetournement`, `"retournement"`) ; sinon match nul.
+- **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
+- **Kévina** (`choixKevina()`, renvoie la case) : recherche negamax alpha-bêta sur `profondeur_kevina` coups (feuilles : écart de pions, coups qui retournent le plus d'abord ; `evaluerCoups()`). Avec la probabilité `erreur_kevina`, case tirée au sort parmi celles à `marge_kevina` pions du meilleur (jamais un coup qui perd ou rate une victoire en vue). ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
+- Pourquoi ces règles (simulations, joueurs negamax à profondeur 2 à 5) : issu du « Sandwich tactique » (prise par encadrement, pose ou déplacement), qui finissait presque toujours nul entre joueurs prudents (se protéger de l'encadrement est trop facile ; 63 à 100 % de nuls selon les variantes : 5 à 8 pions, pions illimités, victoire à 1 à 3 prises). La **conversion d'une ligne** au lieu de la prise et la **pose obligatoire** jusqu'au plateau plein règlent ce blocage. **Centre bloqué** : sur 25 cases, celui qui pose le dernier pion (le premier joueur) gagne ~65 % ; à 24 cases, la parité est corrigée. Départ **sans pion** (choix de Raphael) : 12 coups chacun au lieu de 10 avec 2 pions chacun en croix (plus équilibré, ~49/48, mais plus court). Avec ce départ, à profondeur 4 : ~46/48 et ~7 % d'égalités parfaites (avant départage), léger avantage au second joueur à niveau moyen (~55 %) ; mieux calculer gagne à chaque niveau (~84 à 91 %). Écartés : premier pion au bord (premier joueur ~74 %), départ dans les coins (~81 %), retrait des pions encadrés (toujours nul).
+
+#### Affichage
+
+- **Vue éphémère** : titre avec le score en pions (« 🌀 Tourneboule · Toi 7 – 6 Kévina », « · À toi ! » en 1v1), légende des couleurs, récit du dernier coup (« Tu poses un pion et retournes 2 pions 🌀, Kévina pose un pion. »), puis le **plateau en boutons** (5 rangées de 5, comme Punto) : pion bleu (le sien), rouge (l'adversaire), case vide grise, 🪨 désactivé au centre. Boutons gris et jamais désactivés (sauf le rocher) ; un clic sur une case prise ou hors de son tour donne un avertissement. ⚠️ 6 rangées de boutons (5 du plateau + Règles/🏳️) : Components V2 obligatoires (40 composants au plus, vérifié par l'e2e).
+- **Retournement** : étape intermédiaire de 0,9 s (`etatRetournement()`) où les pions retournés montrent **🌀**, sur la vue du joueur, celle de l'adversaire en 1v1 et le message public (« 🌀 Kévina retourne 3 pions ! »). Contre Kévina : retournement du coup du joueur, réflexion de Kévina, puis le sien ; montré aussi quand le coup termine la partie.
+- **Messages publics** : plateau en texte (une rangée d'emojis par ligne, titres H3, premier joueur en bleu) et « Score : 🔵 X 7 · 🔴 Kévina 6 » ; récapitulatif de fin : résultat (« 🏆 X bat Kévina : 14 à 10 ! »), plateau final et séries.
+
+#### Outils (`jeux/outils/tourneboule/`, à lancer à la main)
+
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `kevina[p<profondeur>][e<erreur>][m<marge>]`, ex. `kevinap2e0.25` = réglage de production). Repères (200 parties) : joueur qui calcule 2 coups (`kevinap2`) contre Kévina de production ~58 % ; joueur qui calcule 3 coups ~85 % ; hasard ~10 %. Kévina sans erreur à profondeur 2 : ~42 % pour le joueur qui calcule 2 coups ; à profondeur 3 : ~9 %. ~3 ms par coup à profondeur 4.
+- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/tourneboule/e2eDuel.mjs`).
 
 ---
 

@@ -30,6 +30,7 @@ const JEUX_COMMANDS = new Set([
   "quatre",
   "punto",
   "pilepoil",
+  "tourneboule",
   "blackjack",
   "gobelet",
 ]);
@@ -562,6 +563,23 @@ const commands = [
     name: "pilepoil",
     description:
       "Pile-Poil : fais exploser les piles à 11 contre Kévina ou un joueur — réservé au rôle MINI-JEUX.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
+        required: true,
+        choices: [
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "tourneboule",
+    description:
+      "Tourneboule : encadre et retourne les pions adverses, contre Kévina ou un joueur — rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING
