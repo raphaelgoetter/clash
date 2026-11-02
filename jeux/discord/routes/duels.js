@@ -1,7 +1,7 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /tourneboule, Six (archivé) et leurs boutons
+// /quatre, /punto, /tourneboule, /mascarade, Six (archivé) et leurs boutons
 // (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
-// tourneboulduel_*, sixduel_*).
+// tourneboulduel_*, mascaradeduel_*, sixduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -83,6 +83,17 @@ import {
   handleTournebouleRegles,
   handleTournebouleAbandon,
 } from "../handlers/tourneboulDuel.js";
+import {
+  memberHasMiniJeuxRole as mascaradeMemberHasMiniJeuxRole,
+  extractMember as mascaradeExtractMember,
+  handleMascaradeRoleRejected,
+  handleMascaradeCommand,
+  handleMascaradePvpCommand,
+  handleMascaradeOuvrir,
+  handleMascaradeAction,
+  handleMascaradeRegles,
+  handleMascaradeAbandon,
+} from "../handlers/mascaradeDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 // /blackjack et /gobelet : `adversaire:bot|1v1` comme les autres duels ;
@@ -381,6 +392,62 @@ export async function routeDuels(body, res) {
       // Le suffixe :pvp est en 2ᵉ position
       const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: tourneboulExtractMember(body).username };
       runBackground(() => handleTournebouleAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /mascarade adversaire:bot : Mascarade contre Kévina (table publique,
+  // main et boutons dans une vue éphémère) ; adversaire:1v1 : contre un
+  // joueur (message public). Réservé au rôle MINI-JEUX pour lancer.
+  if (body.type === 2 && body.data?.name === "mascarade") {
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await mascaradeMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleMascaradeRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handleMascaradePvpCommand(webhookUrl, body);
+      else await handleMascaradeCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Mascarade : composants. mascaradeduel_<jouer|bdf|choix>:<arg>:<vue>[:pvp]
+  // et mascaradeduel_retour:<vue>[:pvp] éditent la vue en place ;
+  // mascaradeduel_ouvrir (Jouer du message public 1v1) et mascaradeduel_regles :
+  // nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("mascaradeduel_")) {
+    const [action, ...args] = body.data.custom_id.split(":");
+    if (action === "mascaradeduel_regles" || action === "mascaradeduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "mascaradeduel_regles") runBackground(() => handleMascaradeRegles(webhookUrl));
+      else runBackground(() => handleMascaradeOuvrir(webhookUrl, body));
+      return;
+    }
+    const TYPES = { mascaradeduel_jouer: "jouer", mascaradeduel_bdf: "bdf", mascaradeduel_choix: "choix", mascaradeduel_retour: "retour" };
+    if (TYPES[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      // retour n'a pas d'argument : <vue>[:pvp] directement
+      const [arg, vue, mode] = action === "mascaradeduel_retour" ? [null, ...args] : args;
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: mascaradeExtractMember(body).username };
+      runBackground(() => handleMascaradeAction(webhookUrl, discordId, TYPES[action], arg, Number(vue), opts));
+      return;
+    }
+    // [🏳️] : mascaradeduel_abandon[:pvp] (confirmation), mascaradeduel_abandon_ok /
+    // mascaradeduel_abandon_non[:pvp], tous édités en place
+    const ETAPES_ABANDON = { mascaradeduel_abandon: "demande", mascaradeduel_abandon_ok: "ok", mascaradeduel_abandon_non: "non" };
+    if (ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      const opts = { pvp: args[0] === "pvp", channelId: body.channel_id, pseudo: mascaradeExtractMember(body).username };
+      runBackground(() => handleMascaradeAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

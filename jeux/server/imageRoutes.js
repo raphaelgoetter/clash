@@ -34,6 +34,7 @@ import {
   getCarteImage as getMeowCarteImage,
   getIllustrationImage as getMeowIllustrationImage,
 } from "../services/meowImage.js";
+import { decodeTable as decodeMascaradeTable, getTableImage as getMascaradeTableImage } from "../services/mascaradeImage.js";
 
 const router = express.Router();
 
@@ -260,6 +261,17 @@ router.get("/api/quiestce/illustration", async (req, res) => {
 router.get("/api/meow/carte", async (req, res) => {
   const coins = decodeMeowCarte(req.query.d);
   const image = coins ? await getMeowCarteImage(coins).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Mascarade : table (cartes écartées, jouées, main d'un joueur), rendu sans
+// état à partir de l'état encodé dans l'URL (d, voir encodeTable).
+router.get("/api/mascarade/table", async (req, res) => {
+  const table = decodeMascaradeTable(req.query.d);
+  const image = table ? await getMascaradeTableImage(table).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");

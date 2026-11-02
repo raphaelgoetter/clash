@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule` et leurs boutons de duel (plus ceux de Six, archivé) |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade` et leurs boutons de duel (plus ceux de Six, archivé) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -1215,14 +1215,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Six duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Sept duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `mascaradeduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `mascaradeduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Tourneboule 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Tourneboule 1v1, Mascarade 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (contre Kévina / solo, ou en 1v1)
 
@@ -1403,6 +1403,51 @@ Duel de réflexion pure, sans hasard : poser des pions et retourner ceux qu'on e
 
 - `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `coins` (« coins puis bords » sans calcul), `kevina[p<profondeur>][e<erreur>][m<marge>]` (positionnel), ex. `kevinap2e0.5m10` = réglage de production). Repères contre Kévina de production (150 parties) : hasard ~1 % ; « coins puis bords » ~17 % ; joueur positionnel qui calcule 1 coup ~54 %, 2 coups ~85 %, 3 coups ~79 %. Kévina sans erreur bat « coins puis bords » 100 %. Quelques millisecondes par coup à profondeur 4.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/tourneboule/e2eDuel.mjs`).
+
+### Mascarade (contre Kévina ou en 1v1)
+
+Duel de cartes à information cachée : chacun garde **une carte secrète** en main, on pioche, on joue l'une de ses deux cartes, on déduit celle de l'adversaire. `/mascarade adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Tourneboule (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici. Jeu original de la famille « une carte en main, pioche, joue », ce n'est pas la reproduction d'un jeu existant : ne pas reprendre les rôles d'un jeu publié.
+
+- Code : `jeux/services/mascaradeRules.js` (règles pures et Kévina, tests `mascaradeRules.test.js`), `jeux/services/mascaradeDuel.js` (Redis, tests `mascaradeDuel.test.js`), `jeux/services/mascaradeImage.js` (image de la table), `jeux/discord/handlers/mascaradeDuel.js` (Discord). Config `jeux/data/mascarade/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `mondes_kevina` (40), `erreur_kevina` (0,25).
+- Redis : `mascaradeduel:<discordId>` (contre Kévina), `mascaradeduel:pvp`, verrous `mascaradeduel:lock:*`, séries `mascaradeduel:series:bot` / `mascaradeduel:series:pvp`, records `mascaradeduel:records`.
+- `custom_id` (`<vue>` = `d.vue` affiché, +1 à chaque action : un clic sur une vue dépassée est refusé avec « La table a changé depuis ») : `mascaradeduel_jouer:<carte>:<vue>[:pvp]` (Boule de feu : ouvre le choix du coût, sans rien jouer), `mascaradeduel_bdf:<coût>:<vue>[:pvp]`, `mascaradeduel_retour:<vue>[:pvp]` (quitte le choix du coût), `mascaradeduel_choix:<laisser|dessous|0|1>:<vue>[:pvp]` (Squelettes, Méga chevalier), `mascaradeduel_ouvrir`, `mascaradeduel_regles`, `mascaradeduel_abandon[:pvp]`, `mascaradeduel_abandon_ok[:pvp]` / `mascaradeduel_abandon_non[:pvp]`.
+
+#### Règles
+
+- **Paquet de 17 cartes Clash Royale** (`CARTES`, `PAQUET`), **valeur = coût en élixir** :
+
+| Élixir | Carte | Nb | Effet quand on la joue |
+|---|---|---|---|
+| 1 | Squelettes | 4 | Regarde la carte du dessus de la pioche, puis la laisse ou la glisse sous la pioche |
+| 2 | Gobelins | 2 | Regarde la carte adverse |
+| 2 | Bûche | 2 | L'adversaire défausse sa carte et en pioche une autre (la Réserve si la pioche est vide ; rien à piocher : il perd la manche) |
+| 3 | Chevalier | 2 | Les effets adverses ne te touchent pas jusqu'à ton prochain tour |
+| 3 | Tornade | 1 | Échange ta carte avec celle de l'adversaire |
+| 4 | Boule de feu | 2 | Annonce un coût (3, 4, 5, 7 ou 9, `COUTS_ANNONCE`) : si la carte adverse coûte autant, il perd la manche |
+| 4 | Gel | 1 | À son prochain tour, l'adversaire doit jouer la carte qu'il pioche |
+| 5 | Prince | 1 | Comparez vos cartes : la moins chère perd la manche (égalité : rien) |
+| 7 | Méga chevalier | 1 | Prends la Réserve, puis remets-y face cachée l'une de tes deux cartes (au choix, Trois mousquetaires compris, sans perdre) |
+| 9 | Trois mousquetaires | 1 | Aucun effet. Si elle quitte ta main (jouée, défaussée par une Bûche), tu perds la manche |
+
+- **Manche** (`nouvelleManche()`) : 1 carte mise de côté face cachée (la **Réserve**), 2 cartes **écartées face visible**, 1 carte chacun ; 12 cartes à piocher.
+- **À son tour** : on pioche (`debutTour()`), puis on joue l'une de ses deux cartes (`jouer()`) : son coût s'ajoute à l'élixir dépensé (`d.elixir`). Squelettes et Méga chevalier laissent un **choix en attente** (`d.attente`), résolu par `choisir()`. Les Trois mousquetaires ne sont jamais jouables, sauf imposés par le Gel (`cartesJouables()`).
+- **Fin de manche** : un joueur perd (Boule de feu, Prince, Trois mousquetaires défaussés ou joués, Bûche sans rien à piocher), ou la pioche est vide après un tour : la carte la plus chère en main gagne ; égalité : le plus d'élixir dépensé ; sinon manche nulle. Le **perdant commence** la manche suivante (manche nulle : on alterne). **Premier à 3 manches** (`MANCHES_GAGNANTES`). `d.historique` garde chaque manche (gagnant, fin, mains, table) pour l'affichage.
+- **Information** (pour Kévina et les vues) : `d.connu[id]` carte adverse connue (Gobelins, Prince, Tornade, carte vue au sommet par ses Squelettes puis piochée et gardée par l'adversaire), `d.reserveConnue[id]` carte qu'il a remise dans la Réserve.
+- **Qui commence** : le joueur contre Kévina ; tiré au sort en 1v1.
+- **Kévina** (`choixKevina()`, `choixAttenteKevina()`) : recherche par **mondes possibles** : `mondes_kevina` tirages des cartes qu'elle n'a pas vues (pioche, Réserve, carte adverse si inconnue), chaque coup joué dans chacun puis la manche finie avec un jeu simple (`coupSimple()` : garde sa carte la plus chère 70 % du temps) ; elle garde le coup qui gagne le plus souvent la manche. Avec la probabilité `erreur_kevina`, coup au hasard (jamais les Trois mousquetaires). ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
+- Pourquoi ces règles (simulations entre bots qui tiennent le compte des cartes) : équilibre ~50/50 entre sièges, toutes les cartes jouées entre ~40 % et ~80 % du temps quand on les tient (sauf les Trois mousquetaires), fins variées (Prince ~34 %, Boule de feu ~26 %, pioche vide ~21 %, Trois mousquetaires défaussés ~16 %), aucune règle simple ne bat la déduction (prudent, agressif, Boule de feu sur le coût le plus probable : 30 à 45 %). **4 Squelettes** (paquet de 17) : manches d'environ 8 cartes jouées. **Méga chevalier qui remet une carte dans la Réserve** (plutôt que la défausser) : permet de cacher les Trois mousquetaires (~22 % des Méga chevalier joués), sans déséquilibre. Squelettes qui montrent les Trois mousquetaires au sommet (~10 % des manches) : les laisser donne ~50 % de la manche, les glisser dessous ~39 % : pas trop fortes.
+
+#### Affichage
+
+- **Image de la table** (`/api/mascarade/table?d=`, `mascaradeImage.js`, rendu sans état encodé dans l'URL, `encodeTable()`) : cartes écartées, Réserve et pioche (dos, nombre de cartes), cartes jouées de chacun dans l'ordre (adversaire en haut, la dernière jouée encadrée) et, dans la vue d'un joueur seulement, **sa main**. Chaque carte montre son illustration (`cardImage.js`) et son coût en élixir. Pas d'emoji dans les noms dessinés (la police embarquée n'en a pas). Galerie Components V2 (type 12) dans le conteneur.
+- **Vue éphémère** : titre avec le score en manches (« 🎭 Mascarade · Toi 1 – 0 Kévina », « · À toi ! » en 1v1), manche en cours, récit du tour (son coup puis celui de Kévina, sans rien révéler de caché : « Kévina joue **Gobelins** (2) et regarde ta carte 👁️ »), informations (« 👁️ Kévina a **Prince** (5) », Gel, protection), consigne, image, puis les **boutons** : une carte par bouton (« Bûche (2) »), grisée si injouable (Gel, Trois mousquetaires) ; Boule de feu : choix du coût (5 boutons + ↩️ Retour) ; Squelettes : « Laisser au sommet » / « Glisser dessous » ; Méga chevalier : « Garder X » / « Garder Y ».
+- **Fin de manche** : étape de 2,5 s sans boutons (vue, vue adverse en 1v1, message public) : récit du dernier coup, « 🏁 Manche 2 pour Kévina (Prince : Kévina **Méga chevalier** (7), toi **Chevalier** (3)) » et la table de la manche terminée. Contre Kévina : sa réflexion (1,5 à 3,5 s) avant chacun de ses coups.
+- **Messages publics** : score, récit neutre (aucune carte cachée : Prince « cartes comparées en secret », Méga chevalier « échange avec la Réserve »), au tour de qui, table sans les mains ; récapitulatif de fin : résultat en manches, une ligne par manche, séries.
+
+#### Outils (`jeux/outils/mascarade/`, à lancer à la main)
+
+- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `prudent` (joue sa carte la moins chère), `kevina[m<mondes>][e<erreur>]`, ex. `kevinam40e0.25` = réglage de production) : victoires, fins de manche, part jouée de chaque carte. Repères contre Kévina de production (400 parties) : joueur qui déduit (`kevina`) ~59 %, prudent ~29 %, hasard ~26 %. Kévina sans erreur : ~50 % contre elle-même, ~17-19 % pour prudent ou hasard. Quelques dizaines de millisecondes par partie.
+- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés, images décodées (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/mascarade/e2eDuel.mjs`).
 
 ---
 
