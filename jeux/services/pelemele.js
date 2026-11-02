@@ -713,30 +713,37 @@ export async function submitWord(gameId, discordId, username, entry, length, max
 // (seasonKey, ZSET) est lui déjà à jour en continu via submitWord — ce
 // n'est qu'un instantané pour l'historique détaillé (getAllArchivedResults).
 async function finalizeRound(previousState) {
-  const participants = await hgetallJson(participantsKey(previousState.gameId));
   const archKey = archivedKey(previousState.seasonId);
-
-  for (const participant of Object.values(participants)) {
-    if (!participant?.foundWords?.length) continue;
-    const field = `${previousState.gameId}:${participant.discordId}`;
-    const result = {
-      gameId: previousState.gameId,
-      seasonId: previousState.seasonId,
-      reponse: participant.foundWords.join(", "),
-      // Lettres du tirage de CETTE manche — redondant entre les enregistrements
-      // de plusieurs joueurs d'une même manche (même gameId), mais c'est le
-      // seul endroit où cette donnée survit après remplacement de la manche
-      // (state.letters n'existe que tant que la manche est active) ; sert au
-      // récap de fin de saison (voir getSeasonManchesPlayed, handler Discord).
-      letters: previousState.letters.join(""),
-      postedAt: previousState.startedAt,
-      discordId: participant.discordId,
-      pseudo: participant.username,
-      score: participant.score,
-      solvedAt: participant.lastFoundAt,
-    };
+  for (const [field, result] of await roundResults(previousState)) {
     await getRedis().hsetnx(archKey, field, toJson(result));
   }
+}
+
+// Résultats d'une manche, au format archivé : [champ, résultat] par joueur
+// ayant trouvé au moins une carte.
+async function roundResults(state) {
+  const participants = await hgetallJson(participantsKey(state.gameId));
+  return Object.values(participants)
+    .filter((participant) => participant?.foundWords?.length)
+    .map((participant) => [
+      `${state.gameId}:${participant.discordId}`,
+      {
+        gameId: state.gameId,
+        seasonId: state.seasonId,
+        reponse: participant.foundWords.join(", "),
+        // Lettres du tirage de CETTE manche — redondant entre les enregistrements
+        // de plusieurs joueurs d'une même manche (même gameId), mais c'est le
+        // seul endroit où cette donnée survit après remplacement de la manche
+        // (state.letters n'existe que tant que la manche est active) ; sert au
+        // récap de fin de saison (voir getSeasonManchesPlayed, handler Discord).
+        letters: state.letters.join(""),
+        postedAt: state.startedAt,
+        discordId: participant.discordId,
+        pseudo: participant.username,
+        score: participant.score,
+        solvedAt: participant.lastFoundAt,
+      },
+    ]);
 }
 
 export async function getPlayerSeasonResults(seasonId, discordId) {
@@ -746,11 +753,25 @@ export async function getPlayerSeasonResults(seasonId, discordId) {
     .map(([, result]) => result);
 }
 
+// Inclut la manche en cours (ou la dernière, tant qu'aucune autre ne l'a
+// remplacée) : elle n'est archivée qu'à son remplacement, qui n'arrive qu'à
+// la prochaine saison de Pêle-mêle sous l'alternance.
 export async function getAllArchivedResults() {
   const keys = await scanKeys("pelemele:archived:*");
-  if (keys.length === 0) return [];
   const hashes = await Promise.all(keys.map((key) => hgetallJson(key)));
-  return hashes.flatMap((hash) => Object.values(hash));
+  const archived = hashes.flatMap((hash) => Object.values(hash));
+
+  const state = await readState();
+  if (!state?.gameId || !state.letters) return archived;
+  const archivedFields = new Set(
+    archived
+      .filter((r) => r.seasonId === state.seasonId)
+      .map((r) => `${r.gameId}:${r.discordId}`),
+  );
+  const pending = (await roundResults(state))
+    .filter(([field]) => !archivedFields.has(field))
+    .map(([, result]) => result);
+  return [...archived, ...pending];
 }
 
 export async function getSeasonManches(seasonId) {

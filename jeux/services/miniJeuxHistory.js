@@ -13,20 +13,20 @@
 
 import { getCurrentSeasonBounds, getSeasonBoundsById, seasonIdForDate } from "./saison.js";
 import { groupLabelForDate, isRefonteSeason } from "./refonte.js";
-import { getAllArchivedResults as getFrameResults } from "./frames.js";
-import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
-import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
-import { getAllArchivedResults as getIntrusResults } from "./intrus.js";
-import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
-import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
-import { getAllArchivedResults as getConceptResults } from "./concept.js";
-import { getAllArchivedResults as getSynopsisResults } from "./synopsis.js";
-import { getAllArchivedResults as getZoomResults } from "./zoom.js";
-import { getAllArchivedResults as getZoom2Results } from "./zoom2.js";
-import { getAllArchivedResults as getPlatPaysResults } from "./platpays.js";
-import { getAllArchivedResults as getPaletteResults } from "./palette.js";
-import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
-import { getAllArchivedResults as getLaJusteCarteResults } from "./lajustecarte.js";
+import { getAllArchivedResults as getFrameResults, readState as readFrameState } from "./frames.js";
+import { getAllArchivedResults as getTriviaResults, readState as readTriviaState } from "./trivia.js";
+import { getAllArchivedResults as getTriviaGeekResults, readState as readTriviaGeekState } from "./triviageek.js";
+import { getAllArchivedResults as getIntrusResults, readState as readIntrusState } from "./intrus.js";
+import { getAllArchivedResults as getAnagramResults, readState as readAnagramState } from "./anagrams.js";
+import { getAllArchivedResults as getPeleMeleResults, readState as readPeleMeleState } from "./pelemele.js";
+import { getAllArchivedResults as getConceptResults, readState as readConceptState } from "./concept.js";
+import { getAllArchivedResults as getSynopsisResults, readState as readSynopsisState } from "./synopsis.js";
+import { getAllArchivedResults as getZoomResults, readState as readZoomState } from "./zoom.js";
+import { getAllArchivedResults as getZoom2Results, readState as readZoom2State } from "./zoom2.js";
+import { getAllArchivedResults as getPlatPaysResults, readState as readPlatPaysState } from "./platpays.js";
+import { getAllArchivedResults as getPaletteResults, readState as readPaletteState } from "./palette.js";
+import { getAllArchivedResults as getBlindRoyaleResults, readState as readBlindRoyaleState } from "./blindroyale.js";
+import { getAllArchivedResults as getLaJusteCarteResults, readState as readLaJusteCarteState } from "./lajustecarte.js";
 import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
@@ -72,6 +72,23 @@ function splitAtClash(fetchFn, { clash }) {
     });
 }
 
+// Une manche hebdomadaire court 7 jours après sa publication (même durée que
+// miniJeuxStats.js).
+const ROUND_DURATION_MS = 7 * 24 * 3600 * 1000;
+
+// Saison de la dernière manche publiée d'un jeu si elle court encore, null
+// sinon. `clash` : même découpage que splitAtClash.
+function openRound(readStateFn, { clash } = {}) {
+  return async (now) => {
+    const state = await readStateFn();
+    if (!state?.startedAt || state.seasonId == null) return null;
+    if (new Date(state.startedAt).getTime() + ROUND_DURATION_MS <= now.getTime()) return null;
+    const seasonId = Number(state.seasonId);
+    if (clash != null && isRefonteSeason("clash", seasonId) !== clash) return null;
+    return seasonId;
+  };
+}
+
 // Jeux réguliers : une entrée archivée = un joueur ayant résolu une manche.
 // Le score se cumule sur toute la saison mini-jeux.
 //
@@ -95,9 +112,14 @@ function splitAtClash(fetchFn, { clash }) {
 // (septembre 2026) peut donc afficher un total fusionnant les deux jeux
 // pour cette période de transition, contrairement aux saisons suivantes où
 // un seul des deux aura tourné.
+//
+// openRounds : manche en cours de chaque jeu du groupe. Tant que l'une court
+// encore, le groupe n'a pas de vainqueur pour la saison de cette manche (la
+// dernière manche d'un mois déborde sur le suivant).
 const SCORE_GAMES = [
   {
     key: "culture",
+    openRounds: [openRound(readFrameState), openRound(readTriviaState, { clash: false }), openRound(readSynopsisState)],
     // Libellé selon la saison : ancien nom avant la refonte (voir refonte.js).
     labelFor: (seasonStart) => groupLabelForDate("culture", seasonStart),
     fetch: async () => [
@@ -108,6 +130,7 @@ const SCORE_GAMES = [
   },
   {
     key: "lettres",
+    openRounds: [openRound(readAnagramState), openRound(readPeleMeleState), openRound(readConceptState)],
     labelFor: (seasonStart) => groupLabelForDate("lettres", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getAnagramResults, "Anagram")()),
@@ -117,6 +140,12 @@ const SCORE_GAMES = [
   },
   {
     key: "visuels",
+    openRounds: [
+      openRound(readZoomState, { clash: false }),
+      openRound(readPaletteState),
+      openRound(readZoom2State),
+      openRound(readPlatPaysState),
+    ],
     labelFor: (seasonStart) => groupLabelForDate("visuels", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(splitAtClash(getZoomResults, { clash: false }), "Zoom carte")()),
@@ -127,6 +156,12 @@ const SCORE_GAMES = [
   },
   {
     key: "aveugle",
+    openRounds: [
+      openRound(readBlindRoyaleState),
+      openRound(readLaJusteCarteState),
+      openRound(readTriviaGeekState),
+      openRound(readIntrusState),
+    ],
     labelFor: (seasonStart) => groupLabelForDate("aveugle", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getBlindRoyaleResults, "Blind Royale")()),
@@ -137,6 +172,7 @@ const SCORE_GAMES = [
   },
   {
     key: "clash",
+    openRounds: [openRound(readTriviaState, { clash: true }), openRound(readZoomState, { clash: true })],
     labelFor: (seasonStart) => groupLabelForDate("clash", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(splitAtClash(getTriviaResults, { clash: true }), "Trivia")()),
@@ -222,7 +258,7 @@ function addToTotal(entry, id, name, amount) {
   entry.totals.set(id, current);
 }
 
-async function bucketScoreGames(seasonMap) {
+async function bucketScoreGames(seasonMap, now) {
   for (const game of SCORE_GAMES) {
     const results = await game.fetch();
     for (const r of results) {
@@ -231,6 +267,11 @@ async function bucketScoreGames(seasonMap) {
       const entry = getOrCreateGameEntry(getOrCreateSeason(seasonMap, dateStr, r.seasonId), game);
       if (r.subGame) entry.subGames.add(r.subGame);
       addToTotal(entry, r.discordId, r.pseudo, Number(r.score) || 0);
+    }
+    const openSeasonIds = await Promise.all(game.openRounds.map((open) => open(now)));
+    for (const seasonId of openSeasonIds) {
+      if (seasonId == null) continue;
+      seasonMap.get(getSeasonBoundsById(seasonId).start.toISOString())?.games.delete(game.key);
     }
   }
 }
@@ -271,17 +312,19 @@ function pickWinners(entry) {
 }
 
 // Historique complet, trié de la saison la plus récente déjà terminée à la
-// plus ancienne. La saison en cours est toujours exclue : ses résultats sont
-// encore partiels, désigner un "vainqueur" serait trompeur avant sa clôture.
-export async function getSeasonWinnersHistory() {
+// plus ancienne. La saison en cours est toujours exclue, tout comme un groupe
+// hebdomadaire dont une manche de la saison précédente court encore : ses
+// résultats sont encore partiels, désigner un "vainqueur" serait trompeur
+// avant sa clôture.
+export async function getSeasonWinnersHistory(now = new Date()) {
   const seasonMap = new Map();
   await Promise.all([
-    bucketScoreGames(seasonMap),
+    bucketScoreGames(seasonMap, now),
     bucketMancheScoreGames(seasonMap),
     bucketMancheWinGames(seasonMap),
   ]);
 
-  const currentSeasonKey = getCurrentSeasonBounds(new Date()).start.toISOString();
+  const currentSeasonKey = getCurrentSeasonBounds(now).start.toISOString();
   seasonMap.delete(currentSeasonKey);
 
   return [...seasonMap.values()]
