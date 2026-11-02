@@ -1413,8 +1413,13 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
 
     runBackground(async () => {
       try {
-        const { fetchRaceLog } =
+        const { fetchRaceLog, fetchClanMembers } =
           await import("@clash/clash-royale/clashApi.js");
+        // L'analyse "fast" peut dater de plusieurs heures : la liste des
+        // membres est relue en direct pour signaler les départs récents.
+        const liveMembersPromise = fetchClanMembers(`#${resolved.tag}`).catch(
+          () => null,
+        );
         const apiUrl = `https://trustroyale.vercel.app/api/clan/${encodeURIComponent(resolved.tag)}/analysis?includeTopPlayers=false&includeUncomplete=true&fast=true`;
         const apiResp = await fetch(apiUrl);
         if (!apiResp.ok) {
@@ -1437,7 +1442,14 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           weekIdFromLog,
         );
         const uncompleteAll = analysis.uncomplete?.players || [];
-        const uncomplete = uncompleteAll.filter((p) => p.inClan);
+        const liveMembers = await liveMembersPromise;
+        const liveTags = liveMembers
+          ? new Set(liveMembers.map((m) => m.tag))
+          : null;
+        // Membre au moment du cache ou maintenant ; `left` = plus dans le clan
+        const uncomplete = uncompleteAll
+          .filter((p) => p.inClan || liveTags?.has(p.tag))
+          .map((p) => ({ ...p, left: liveTags ? !liveTags.has(p.tag) : false }));
         // 12 si la ligne d'arrivée a été franchie au reset du J4 (journées
         // suivantes sans aucun point, donc non attendues), 16 sinon.
         const maxDecks = analysis.uncomplete?.maxDecks ?? 16;
@@ -1470,9 +1482,10 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           regular.slice(0, MAX_REGULAR).forEach((p, i) => {
             const playerUrl = trustPlayerUrl(p.tag);
             const isNew = p.isNew ? " 🆕" : "";
-            const role = formatDiscordRole(p.role);
+            const left = p.left ? " 🚪" : "";
+            const role = p.left ? "(parti)" : formatDiscordRole(p.role);
             allRows.push(
-              `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`,
+              `${i + 1}. [${p.name}](${playerUrl})${isNew}${left} • ${role} • **${p.decks} decks**`,
             );
           });
         }
@@ -1483,9 +1496,10 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
           arrived.slice(0, MAX_ARRIVED).forEach((p, i) => {
             const playerUrl = trustPlayerUrl(p.tag);
             const isNew = p.isNew ? " 🆕" : "";
-            const role = formatDiscordRole(p.role);
+            const left = p.left ? " 🚪" : "";
+            const role = p.left ? "(parti)" : formatDiscordRole(p.role);
             allRows.push(
-              `${i + 1}. [${p.name}](${playerUrl})${isNew} • ${role} • **${p.decks} decks**`,
+              `${i + 1}. [${p.name}](${playerUrl})${isNew}${left} • ${role} • **${p.decks} decks**`,
             );
           });
         }
@@ -1496,6 +1510,9 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
             : earlyWinByDay3
               ? "Joueurs n'ayant pas joué 16/16 decks car il y a eu une victoire anticipée dès le jour 3"
               : "Joueurs n'ayant pas joué 16/16 decks";
+        if (sorted.some((p) => p.left)) {
+          allRows.push("", "🚪 a quitté le clan");
+        }
         let description = `${demoteHeader}\n${allRows.join("\n")}`;
         // Discord limite les embeds à 4096 caractères pour description
         if (description.length > 4090) {

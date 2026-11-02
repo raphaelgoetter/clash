@@ -406,7 +406,7 @@ Objectif : ne pas pénaliser dans les listes d'échec les membres arrivés penda
 | Usage | Règle |
 | --- | --- |
 | `notifyWarSummary.js` (résumé quotidien) | `isJoinedThisWar()` pour ne pas compter les arrivants comme manquants ; combats et duels manquants limités aux présents en fin de journée (`wasInClanAtDayEnd()`) |
-| `/demote` | Sépare arrivés et réguliers via `joinedThisWeek`, calculé dans `backend/routes/clan.js` : `lateArrival` ou streak 0 ou (streak 1 et pas de donnée J1) ou `hasLateArrivalDailyPattern()` |
+| `/demote` | Sépare arrivés et réguliers via `joinedThisWeek`, calculé dans `backend/routes/clan.js` : `lateArrival` ou streak 0 ou (streak 1 et pas de donnée J1) ou `hasLateArrivalDailyPattern()` ; la liste des membres est relue en direct (`fetchClanMembers`, l'analyse `fast` pouvant dater de plusieurs heures) et un joueur parti depuis est marqué 🚪 `(parti)` |
 | `/fail` | N'exclut pas les arrivants présents en fin de journée : ils sont listés et annotés 🆕 si `arrivalTotalWeeks ≤ 1` ; les arrivés après la journée sont écartés (`wasInClanAtDayEnd()`) |
 
 ---
