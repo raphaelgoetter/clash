@@ -347,10 +347,18 @@ function monde(d, id, rng) {
   return t;
 }
 
-// Jeu simple des fins de manche simulées : garde sa carte la plus chère
-// (70 %), sinon un coup au hasard ; choix en attente faits au plus simple.
+// Jeu simple des fins de manche simulées : carte adverse connue, Boule de
+// feu dessus (ou Bûche si on tient plus cher) ; sinon garde sa carte la plus
+// chère (70 %) ou joue au hasard ; choix en attente faits au plus simple.
 function coupSimple(d, id, rng) {
   const cs = cartesJouables(d, id);
+  // Carte adverse connue : Boule de feu dessus, ou Bûche si on tient plus cher
+  const k = d.connu[id];
+  const autre = (c) => d.main[id].find((x, i) => x !== c || d.main[id].indexOf(c) !== i);
+  if (k && !d.protege[adversaire(id)]) {
+    if (cs.includes("bdf") && COUTS_ANNONCE.includes(cout(k))) return { carte: "bdf", cible: cout(k) };
+    if (cs.includes("buche") && cout(autre("buche")) > cout(k)) return { carte: "buche", cible: null };
+  }
   let carte;
   if (rng() < 0.7) {
     const min = Math.min(...cs.map(cout));
