@@ -116,6 +116,15 @@ if ((await readDuel(ID)).vue !== d0.vue) throw new Error("coup interdit joué");
 await h.handleMascaradeAction(W, ID, "retour", null, d0.vue, opts);
 if (!texte(vues.at(-1)).includes("joue une de tes deux cartes")) throw new Error("retour à la vue normale absent");
 
+// Délai dépassé contre Kévina : défaite publiée au clic suivant
+{
+  const d = await readDuel(ID);
+  await new Redis({}).set(`mascaradeduel:${ID}`, JSON.stringify({ ...d, tourDepuis: Date.now() - 120_000 }));
+  await h.handleMascaradeAction(W, ID, "jouer", d.main.joueur[0], d.vue, opts);
+  if (!texte(salon.at(-1)).includes("n'a pas joué à temps")) throw new Error("délai dépassé contre Kévina non publié");
+  if (!(await readDuel(ID)).delai) throw new Error("délai contre Kévina non enregistré");
+}
+
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });
 await h.handleMascaradePvpCommand("https://discord.test/a", body("A", "Alice"));

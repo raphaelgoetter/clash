@@ -29,7 +29,6 @@ import {
   agirDuel,
   agirPvp,
   enregistrerMessagePvp,
-  INACTIVITE_SECONDES,
   loadDuelConfig,
   nouveauDuel,
   ouvrirPvp,
@@ -210,7 +209,7 @@ const sujet = (toi, A) => (toi ? "Tu" : A.Sujet);
 
 // Image de la table vue par `moi` (adversaire en haut, `moi` en bas) ; sa
 // main s'il en a une à montrer. `table` : manche terminée (historique).
-function urlTable(d, moi, A, { avecMain = true, table = null, nomMoi = "Toi" } = {}) {
+function urlTable(d, moi, A, { avecMain = true, table = null, nomMoi = "toi" } = {}) {
   const adv = adversaire(moi);
   const t = table ?? { ecartees: d.ecartees, reserve: d.reserve, pioche: d.pioche.length, defausse: d.defausse };
   const main = d.attente?.type === "mega" && d.attente.id === moi ? d.attente.cartes : d.main[moi];
@@ -225,6 +224,7 @@ function urlTable(d, moi, A, { avecMain = true, table = null, nomMoi = "Toi" } =
     nomHaut: A.image,
     nomBas: nomMoi,
     main: avecMain && !table && main.length ? main : null,
+    sommet: avecMain && !table && d.attente?.type === "squelettes" && d.attente.id === moi ? d.attente.carte : null,
     derniere,
   });
   return `${TRUST_ROYALE_URL}/api/mascarade/table?d=${param}`;
@@ -243,16 +243,16 @@ function recit(d, moi, A) {
   if (e.protege) return `${joue} : sans effet, ${toi ? `${A.Sujet} est protégée` : "tu es protégé"} 🛡️`;
   switch (x.carte) {
     case "squelettes":
-      if (d.attente?.id === x.id) return toi ? `${joue} : sommet de la pioche, ${carteTxt(d.attente.carte)}` : `${joue} et regarde le sommet de la pioche`;
+      if (d.attente?.id === x.id) return toi ? joue : `${joue} et regarde le sommet de la pioche`;
       if (e.dessous === undefined) return `${joue} : la pioche est vide`;
       return toi
         ? `${joue} et ${e.dessous ? "glisses la carte du sommet sous la pioche" : "laisses la carte au sommet"}`
         : `${joue} : ${e.dessous ? "elle glisse la carte du sommet sous la pioche" : "elle laisse la carte au sommet"}`;
     case "gobelins":
       return toi ? `${joue} : ${A.Sujet} a ${carteTxt(e.vu)} 👁️` : `${joue} et regarde ta carte 👁️`;
-    case "buche":
-      if (e.defaussee === "triple") return `${joue} : ${toi ? `${A.Sujet} défausse` : "tu défausses"} ${carteTxt("triple")} 🪵`;
-      return `${joue} : ${toi ? `${A.Sujet} défausse` : "tu défausses"} ${carteTxt(e.defaussee)}${e.sansCarte ? ", et plus rien à piocher" : ""} 🪵`;
+    case "prince":
+      if (e.defaussee === "triple") return `${joue} : ${toi ? `${A.Sujet} défausse` : "tu défausses"} ${carteTxt("triple")} 🤴`;
+      return `${joue} : ${toi ? `${A.Sujet} défausse` : "tu défausses"} ${carteTxt(e.defaussee)}${e.sansCarte ? ", et plus rien à piocher" : ""} 🤴`;
     case "chevalier":
       return `${joue} : ${toi ? "tu es protégé" : `${A.Sujet} est protégée`} jusqu'à ${toi ? "ton" : "son"} prochain tour 🛡️`;
     case "tornade":
@@ -261,9 +261,9 @@ function recit(d, moi, A) {
       return `${joue} sur ${x.cible} : ${e.touche ? `touché, ${toi ? A.Sujet : "tu"} ${toi ? "avait" : "avais"} ${carteTxt(e.carte)} 💥` : "raté"}`;
     case "gel":
       return `${joue} : ${toi ? `${A.Sujet} devra` : "tu devras"} jouer ${toi ? "sa" : "ta"} prochaine carte piochée 🧊`;
-    case "prince": {
+    case "buche": {
       const [a, b] = [e.cartes[moi], e.cartes[adversaire(moi)]];
-      return `${joue} : toi ${carteTxt(a)} contre ${A.Sujet} ${carteTxt(b)}${cout(a) === cout(b) ? ", égalité" : ""} 🤴`;
+      return `${joue} : toi ${carteTxt(a)} contre ${A.Sujet} ${carteTxt(b)}${cout(a) === cout(b) ? ", égalité" : ""} 🪵`;
     }
     case "mega":
       if (e.sansReserve) return `${joue} : la Réserve est vide`;
@@ -290,8 +290,8 @@ function recitPublic(d, nomDe) {
       return `${joue} et regarde le sommet de la pioche`;
     case "gobelins":
       return `${joue} et regarde la carte de ${nomDe(adversaire(x.id))} 👁️`;
-    case "buche":
-      return `${joue} : ${nomDe(adversaire(x.id))} défausse ${carteTxt(e.defaussee)} 🪵`;
+    case "prince":
+      return `${joue} : ${nomDe(adversaire(x.id))} défausse ${carteTxt(e.defaussee)} 🤴`;
     case "chevalier":
       return `${joue} et se protège 🛡️`;
     case "tornade":
@@ -300,8 +300,8 @@ function recitPublic(d, nomDe) {
       return `${joue} sur ${x.cible} : ${e.touche ? "touché 💥" : "raté"}`;
     case "gel":
       return `${joue} : ${nomDe(adversaire(x.id))} devra jouer sa prochaine carte piochée 🧊`;
-    case "prince":
-      return `${joue} : cartes comparées en secret 🤴`;
+    case "buche":
+      return `${joue} : cartes comparées en secret 🪵`;
     case "mega":
       return e.sansReserve ? joue : `${joue} et échange avec la Réserve`;
     default:
@@ -314,13 +314,13 @@ function ligneManche(h, numero, nomDe) {
   if (h.gagnant === "nul") return `🏁 Manche ${numero} : égalité parfaite, manche nulle`;
   const g = nomDe(h.gagnant);
   const p = nomDe(adversaire(h.gagnant));
-  // Une main peut être vide (Bûche sans rien à repiocher)
+  // Une main peut être vide (Prince sans rien à repiocher)
   const main = (id) => (h.mains[id] ? carteTxt(h.mains[id]) : "aucune carte");
   const mains = () => `${g} ${main(h.gagnant)}, ${p} ${main(adversaire(h.gagnant))}`;
   const raisons = {
     bdf: () => `Boule de feu sur ${main(adversaire(h.gagnant))}`,
-    prince: () => `Prince : ${mains()}`,
-    buche: () => `${p} défausse les ${nom("triple")}`,
+    comparaison: () => `Bûche : ${mains()}`,
+    defausse: () => `${p} défausse les ${nom("triple")}`,
     triple: () => `${p} joue les ${nom("triple")}`,
     sansCarte: () => `${p} n'a plus rien à piocher`,
     pioche: () => `pioche vide : ${mains()}`,
@@ -403,7 +403,7 @@ function boutonsAction(d, moi, sfx, { choixCout = false } = {}) {
       components: cartes.map((c) => ({
         type: 2,
         style: 2,
-        label: `${nom(c)} (${cout(c)})`,
+        label: nom(c),
         custom_id: `mascaradeduel_jouer:${c}:${v}${sfx}`,
         disabled: !jouables.has(c),
       })),
@@ -473,13 +473,14 @@ function buildVue(
   const consigne = !monTour
     ? `⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`
     : d.attente?.type === "squelettes"
-      ? "Laisses-tu cette carte au sommet (l'adversaire la piochera) ou la glisses-tu sous la pioche ?"
+      ? "Sommet de la pioche : le laisser (l'adversaire le piochera) ou le glisser dessous ?"
       : d.attente?.type === "mega"
         ? "Quelle carte gardes-tu ? L'autre retourne face cachée dans la Réserve."
         : choixCout
           ? "🔥 Quel coût annonces-tu ? Si la carte adverse coûte autant, elle perd la manche."
           : "À toi : joue une de tes deux cartes.";
-  const lignes = [`Manche **${d.numero}** · premier à ${MANCHES_GAGNANTES}`, ...(texte ? ["", texte] : []), ...(infos.length ? ["", ...infos] : []), "", consigne];
+  const limite = monTour && echeance ? [`⏰ Limite <t:${echeance}:R>`] : [];
+  const lignes = [`Manche **${d.numero}** · premier à ${MANCHES_GAGNANTES}`, ...(texte ? ["", texte] : []), ...(infos.length ? ["", ...infos] : []), "", consigne, ...limite];
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), image: { url: urlTable(d, moi, A) }, color: MASCARADE_COLOR };
   // Contre Kévina, ce n'est jamais son tour qu'en pleine réflexion : pas d'abandon
   const regles = { type: 1, components: [BOUTON_REGLES, ...(monTour || pvp ? [boutonAbandon(sfx)] : [])] };
@@ -500,10 +501,10 @@ function buildReglesEmbed(config) {
       "",
       cartes,
       "",
-      "Une Bûche alors qu'il ne reste rien à piocher (ni pioche ni Réserve) élimine l'adversaire.",
+      "Un Prince alors qu'il ne reste rien à piocher (ni pioche ni Réserve) élimine l'adversaire.",
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
-      `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
+      `⏰ ${plural(config.delai_tour_minutes, "minute")} par action, sinon défaite.`,
     ].join("\n"),
     color: MASCARADE_COLOR,
   };
@@ -535,14 +536,13 @@ export async function handleMascaradeRoleRejected(webhookUrl) {
 
 // Table publique d'une partie contre Kévina : suivie par le salon (sans les
 // mains), le joueur joue depuis sa vue éphémère.
-function messageSolo(d, pseudo, recitPub = null) {
-  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
+function messageSolo(d, pseudo, config, recitPub = null) {
   const nomDe = (id) => (id === "bot" ? "Kévina" : pseudo);
   const etat = d.etapeManche
     ? ligneManche(d.etapeManche, d.etapeManche.numero, nomDe)
     : (d.attente ? d.attente.id : d.actif) === "bot"
       ? "⏳ Kévina réfléchit…"
-      : `Au tour de **${pseudo}**.`;
+      : `Au tour de **${pseudo}**, limite <t:${echeanceSolo(d, config)}:R>.`;
   return {
     embeds: [
       {
@@ -552,8 +552,6 @@ function messageSolo(d, pseudo, recitPub = null) {
           ...(recitPub ? ["", recitPub] : []),
           "",
           etat,
-          "",
-          `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
         ]
           .join("\n")
           .slice(0, 4096),
@@ -565,9 +563,9 @@ function messageSolo(d, pseudo, recitPub = null) {
   };
 }
 
-async function majSalonSolo(d, pseudo) {
+async function majSalonSolo(d, pseudo, config) {
   const recitPub = d.dernier?.manche === d.numero || d.etapeManche ? recitPublic(d, (id) => (id === "bot" ? "Kévina" : pseudo)) : null;
-  if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?", recitPub));
+  if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?", config, recitPub));
 }
 
 // Lance une nouvelle partie : table publique dans le salon, puis vue
@@ -578,15 +576,17 @@ export async function handleMascaradeCommand(webhookUrl, body) {
     const { discordId, username } = extractMember(body);
     const { duel, ancien } = await nouveauDuel(discordId);
     if (ancien?.salon && !ancien.termine) await messageSalon("DELETE", ancien.salon.channelId, ancien.salon.messageId);
-    const message = await messageSalon("POST", body.channel_id, null, messageSolo(duel, username));
+    const config = await loadDuelConfig();
+    const message = await messageSalon("POST", body.channel_id, null, messageSolo(duel, username, config));
     const enregistre = message?.id
       ? await agirDuel(discordId, (d) => {
           d.salon = { channelId: body.channel_id, messageId: message.id };
         })
       : null;
-    const vue = buildVue(enregistre?.duel ?? duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." });
-    if (enregistre && (await supprimerOriginal(webhookUrl)) && (await envoyerEphemere(webhookUrl, vue))) return;
-    await patchOriginal(webhookUrl, vue);
+    const d = enregistre?.duel ?? duel;
+    const vue = vueSolo(d, config, { texte: "Nouvelle partie contre Kévina ! Tu commences." });
+    if (!(enregistre && (await supprimerOriginal(webhookUrl)) && (await envoyerEphemere(webhookUrl, vue)))) await patchOriginal(webhookUrl, vue);
+    await surveillerDelaiSolo(webhookUrl, discordId, d, config, { channelId: body.channel_id, pseudo: username });
   } catch (err) {
     console.error("[Mascarade] Échec lancement:", err.message);
   }
@@ -607,11 +607,8 @@ function lignesSeries({ gagnant, perdant, record, libelleSerie, libelleRecord })
   return lignes;
 }
 
-// Manches de la partie, une ligne chacune
-const lignesManches = (d, nomDe) => d.historique.map((h, i) => ligneManche(h, i + 1, nomDe));
-
-// Fin d'une partie contre Kévina : message public (non éphémère), résultat,
-// manches et série. Pseudo en clair, jamais de mention.
+// Fin d'une partie contre Kévina : message public (non éphémère), résultat
+// et série. Pseudo en clair, jamais de mention.
 function messageFinalSolo(d, pseudo) {
   const s = d.series;
   const series = s
@@ -626,15 +623,16 @@ function messageFinalSolo(d, pseudo) {
   const [j, b] = [d.manches.joueur, d.manches.bot];
   const resultat = d.abandon
     ? `🏳️ ${pseudo} abandonne face à Kévina.`
-    : d.gagnant === "joueur"
+    : d.delai
+      ? `⏰ ${pseudo} n'a pas joué à temps : Kévina gagne.`
+      : d.gagnant === "joueur"
       ? `🏆 ${pseudo} bat Kévina : ${j} manches à ${b} !`
       : `🤖 Kévina bat ${pseudo} : ${b} manches à ${j}.`;
-  const nomDe = (id) => (id === "bot" ? "Kévina" : pseudo);
   return {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [resultat, "", ...lignesManches(d, nomDe), ...(series.length ? ["", ...series] : [])].join("\n").slice(0, 4096),
+        description: [resultat, ...(series.length ? ["", ...series] : [])].join("\n").slice(0, 4096),
         color: MASCARADE_COLOR,
       },
     ],
@@ -657,6 +655,7 @@ async function executerSolo(webhookUrl, discordId, action, vue, { channelId, pse
       const r = agir(d, "joueur", action, vue);
       if (r.erreur) return r;
       const etapes = [];
+      const reflexion = () => REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min);
       // Récit du tour : coup du joueur puis ceux de Kévina (repart à zéro à chaque manche)
       let lignes = [recit(d, "joueur", BOT)];
       const texte = () => `${lignes.join(".\n")}.`;
@@ -666,7 +665,7 @@ async function executerSolo(webhookUrl, discordId, action, vue, { channelId, pse
       }
       // Kévina joue dans la foulée (sous le même verrou), y compris ses choix
       for (let k = 0; k < 20 && !d.termine && !(d.attente?.id === "joueur") && (d.attente?.id === "bot" || (!d.attente && d.actif === "bot")); k++) {
-        etapes.push({ duel: structuredClone(d), texte: lignes.length ? texte() : null, reflexion: true });
+        etapes.push({ duel: structuredClone(d), texte: lignes.length ? texte() : null, pause: reflexion() });
         const n = d.historique.length;
         if (d.attente) choisir(d, "bot", choixAttenteKevina(d, "bot", reglages));
         else {
@@ -681,7 +680,9 @@ async function executerSolo(webhookUrl, discordId, action, vue, { channelId, pse
         }
       }
       // Nouvelle manche sans coup joué : rien à raconter
-      return { texte: lignes.length ? texte() : d.historique.length > avant ? "Nouvelle manche !" : null, vientDeFinir: d.termine, etapes };
+      // Chrono du joueur relancé après l'affichage des étapes
+      const decalageMs = etapes.reduce((t, e) => t + e.pause, 0);
+      return { texte: lignes.length ? texte() : d.historique.length > avant ? "Nouvelle manche !" : null, vientDeFinir: d.termine, etapes, coup: true, decalageMs };
     },
     { nom: pseudo },
   );
@@ -690,18 +691,34 @@ async function executerSolo(webhookUrl, discordId, action, vue, { channelId, pse
     return;
   }
   if (resultat.choixCout) {
-    await patchOriginal(webhookUrl, buildVue(duel, { choixCout: true }));
+    await patchOriginal(webhookUrl, vueSolo(duel, config, { choixCout: true }));
     return;
   }
   for (const etape of resultat.etapes ?? []) {
-    await Promise.all([patchOriginal(webhookUrl, buildVue(etape.duel, { texte: etape.texte })), majSalonSolo(etape.duel, pseudo)]);
-    await pause(etape.reflexion ? REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min) : etape.pause);
+    await Promise.all([patchOriginal(webhookUrl, buildVue(etape.duel, { texte: etape.texte })), majSalonSolo(etape.duel, pseudo, config)]);
+    await pause(etape.pause);
   }
-  if (resultat.vientDeFinir && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
+  if ((resultat.vientDeFinir || resultat.delai) && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
   await Promise.all([
-    patchOriginal(webhookUrl, buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
-    ...(resultat.erreur || duel.termine ? [] : [majSalonSolo(duel, pseudo)]),
+    patchOriginal(webhookUrl, vueSolo(duel, config, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
+    ...(resultat.erreur || duel.termine ? [] : [majSalonSolo(duel, pseudo, config)]),
   ]);
+  if (resultat.coup) await surveillerDelaiSolo(webhookUrl, discordId, duel, config, { channelId, pseudo });
+}
+
+// Échéance de l'action du joueur contre Kévina (secondes)
+const echeanceSolo = (d, config) => Math.floor(((d.tourDepuis ?? Date.now()) + config.delai_tour_minutes * 60_000) / 1000);
+
+// Vue du joueur contre Kévina : limite de l'action, raison de la fin.
+const vueSolo = (d, config, opts = {}) => buildVue(d, { ...opts, echeance: echeanceSolo(d, config), raison: d.delai ? "delai" : null });
+
+// Fin au délai sans attendre un clic : l'invocation attend l'échéance puis
+// clôt la partie si le joueur n'a pas joué (comme surveillerDelai() en 1v1).
+async function surveillerDelaiSolo(webhookUrl, discordId, d, config, { channelId, pseudo }) {
+  if (d.termine) return;
+  await pause(Math.max(0, echeanceSolo(d, config) * 1000 - Date.now()) + 1000);
+  const { duel, resultat } = await agirDuel(discordId, () => ({}), { nom: pseudo });
+  if (duel && resultat.delai && !(await publierFinSolo(webhookUrl, channelId, duel, pseudo))) await patchOriginal(webhookUrl, vueSolo(duel, config));
 }
 
 const AUCUNE_PARTIE_SOLO = {
@@ -739,7 +756,7 @@ async function abandonSolo(webhookUrl, discordId, { channelId, pseudo } = {}) {
     return;
   }
   if (!resultat.erreur && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
-  await patchOriginal(webhookUrl, buildVue(duel));
+  await patchOriginal(webhookUrl, vueSolo(duel, await loadDuelConfig()));
 }
 
 // ── 1v1 ──────────────────────────────────────────────────────────────
@@ -851,7 +868,7 @@ function messageFinal(partie) {
     embeds: [
       {
         title: `${TITRE} · ${titreGagnant(g, nomDe)}`,
-        description: [resultat, "", ...lignesManches(d, nomDe), ...(series.length ? ["", ...series] : [])].join("\n").slice(0, 4096),
+        description: [resultat, ...(series.length ? ["", ...series] : [])].join("\n").slice(0, 4096),
         color: MASCARADE_COLOR,
       },
     ],
@@ -1049,7 +1066,7 @@ export async function handleMascaradeAbandon(webhookUrl, discordId, etape, { pvp
     const confirmerAbandon = etape === "demande";
     if (!pvp) {
       const duel = await readDuel(discordId);
-      await patchOriginal(webhookUrl, duel ? buildVue(duel, { confirmerAbandon }) : AUCUNE_PARTIE_SOLO);
+      await patchOriginal(webhookUrl, duel ? vueSolo(duel, await loadDuelConfig(), { confirmerAbandon }) : AUCUNE_PARTIE_SOLO);
       return;
     }
     const partie = await readPvp();
@@ -1091,7 +1108,7 @@ export async function handleMascaradeAction(webhookUrl, discordId, type, arg, vu
         if (partie && siegeDe(partie, discordId)) await patchOriginal(webhookUrl, vuePvp(partie, await loadDuelConfig(), discordId));
       } else {
         const duel = await readDuel(discordId);
-        await patchOriginal(webhookUrl, duel ? buildVue(duel) : AUCUNE_PARTIE_SOLO);
+        await patchOriginal(webhookUrl, duel ? vueSolo(duel, await loadDuelConfig()) : AUCUNE_PARTIE_SOLO);
       }
       return;
     }

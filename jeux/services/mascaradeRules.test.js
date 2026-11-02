@@ -51,28 +51,29 @@ function main() {
     assert.strictEqual(d.actif, "joueur");
   }
 
-  // ── Bûche : l'adversaire défausse et repioche ; Trois mousquetaires défaussés = manche perdue ──
+  // ── Prince : l'adversaire défausse et repioche ; Trois mousquetaires défaussés = manche perdue ──
   {
-    const d = duelDe({ joueur: ["buche", "squelettes"], bot: ["prince"] });
-    jouer(d, "joueur", "buche");
-    assert.deepStrictEqual(d.defausse.bot, ["prince"]);
+    assert.deepStrictEqual([CARTES.prince.nb, CARTES.buche.nb], [2, 1]);
+    const d = duelDe({ joueur: ["prince", "squelettes"], bot: ["gel"] });
+    jouer(d, "joueur", "prince");
+    assert.deepStrictEqual(d.defausse.bot, ["gel"]);
     // Le bot a repioché puis pioché son tour : 2 cartes
     assert.strictEqual(d.main.bot.length, 2);
     assert.strictEqual(d.actif, "bot");
 
-    const t = duelDe({ joueur: ["buche", "squelettes"], bot: ["triple"] });
-    jouer(t, "joueur", "buche");
+    const t = duelDe({ joueur: ["prince", "squelettes"], bot: ["triple"] });
+    jouer(t, "joueur", "prince");
     const h = t.historique[0];
-    assert.deepStrictEqual([h.gagnant, h.fin, h.mains, h.reserve], ["joueur", "buche", { joueur: "squelettes", bot: null }, "gobelins"]);
-    assert.deepStrictEqual(h.defausse, { joueur: ["buche"], bot: ["triple"] });
+    assert.deepStrictEqual([h.gagnant, h.fin, h.mains, h.reserve], ["joueur", "defausse", { joueur: "squelettes", bot: null }, "gobelins"]);
+    assert.deepStrictEqual(h.defausse, { joueur: ["prince"], bot: ["triple"] });
     assert.strictEqual(t.manches.joueur, 1);
     assert.strictEqual(t.numero, 2);
   }
 
-  // ── Bûche sans rien à piocher (pioche et Réserve vides) : éliminé ──
+  // ── Prince sans rien à piocher (pioche et Réserve vides) : éliminé ──
   {
-    const d = duelDe({ joueur: ["buche", "gobelins"], bot: ["prince"], pioche: [], reserve: null });
-    jouer(d, "joueur", "buche");
+    const d = duelDe({ joueur: ["prince", "gobelins"], bot: ["gel"], pioche: [], reserve: null });
+    jouer(d, "joueur", "prince");
     assert.strictEqual(d.historique[0].fin, "sansCarte");
     assert.strictEqual(d.historique[0].gagnant, "joueur");
   }
@@ -91,10 +92,10 @@ function main() {
 
   // ── Chevalier : protégé jusqu'à son prochain tour ──
   {
-    const d = duelDe({ joueur: ["chevalier", "triple"], bot: ["buche"], pioche: ["squelettes", "gobelins", "gobelins"] });
+    const d = duelDe({ joueur: ["chevalier", "triple"], bot: ["prince"], pioche: ["squelettes", "gobelins", "gobelins"] });
     jouer(d, "joueur", "chevalier");
-    // Le bot pioche des Squelettes, joue la Bûche : sans effet
-    jouer(d, "bot", "buche");
+    // Le bot pioche des Squelettes, joue le Prince : sans effet
+    jouer(d, "bot", "prince");
     assert.strictEqual(d.dernier.effet.protege, true);
     assert.ok(d.main.joueur.includes("triple"));
     assert.strictEqual(d.historique.length, 0);
@@ -102,14 +103,14 @@ function main() {
     assert.strictEqual(d.protege.joueur, false);
   }
 
-  // ── Prince : la carte la moins chère perd la manche ; égalité : rien ──
+  // ── Bûche : la carte la moins chère perd la manche ; égalité : rien ──
   {
-    const d = duelDe({ joueur: ["prince", "mega"], bot: ["chevalier"] });
-    jouer(d, "joueur", "prince");
-    assert.strictEqual(d.historique[0].fin, "prince");
+    const d = duelDe({ joueur: ["buche", "mega"], bot: ["chevalier"] });
+    jouer(d, "joueur", "buche");
+    assert.strictEqual(d.historique[0].fin, "comparaison");
     assert.strictEqual(d.historique[0].gagnant, "joueur");
-    const egal = duelDe({ joueur: ["prince", "gel"], bot: ["bdf"] });
-    jouer(egal, "joueur", "prince");
+    const egal = duelDe({ joueur: ["buche", "gel"], bot: ["bdf"] });
+    jouer(egal, "joueur", "buche");
     assert.strictEqual(egal.historique.length, 0);
     assert.strictEqual(egal.connu.bot, "gel");
   }
@@ -192,8 +193,8 @@ function main() {
   {
     const d = creerDuel({ rng: rngFixe(3) });
     d.manches.joueur = MANCHES_GAGNANTES - 1;
-    Object.assign(d, { main: { joueur: ["prince", "mega"], bot: ["squelettes"] }, actif: "joueur", piochee: "mega", attente: null });
-    jouer(d, "joueur", "prince");
+    Object.assign(d, { main: { joueur: ["buche", "mega"], bot: ["squelettes"] }, actif: "joueur", piochee: "mega", attente: null });
+    jouer(d, "joueur", "buche");
     assert.strictEqual(d.termine, true);
     assert.strictEqual(d.gagnant, "joueur");
     assert.deepStrictEqual(jouer(d, "bot", "squelettes"), { erreur: "termine" });

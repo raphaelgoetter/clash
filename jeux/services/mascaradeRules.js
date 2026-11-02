@@ -22,18 +22,18 @@
 // ============================================================
 
 export const IDS = ["joueur", "bot"];
-export const MANCHES_GAGNANTES = 3;
+export const MANCHES_GAGNANTES = 2;
 
 // `cle` : carte Clash Royale (jeux/data/cardNames.json), pour l'illustration
 export const CARTES = {
   squelettes: { nom: "Squelettes", cle: "Skeletons", cout: 1, nb: 4, effet: "Regarde la carte du dessus de la pioche ; tu peux la glisser dessous." },
   gobelins: { nom: "Gobelins", cle: "Goblins", cout: 2, nb: 2, effet: "Regarde la carte de l'adversaire." },
-  buche: { nom: "Bûche", cle: "The Log", cout: 2, nb: 2, effet: "L'adversaire défausse sa carte et en pioche une autre." },
+  buche: { nom: "Bûche", cle: "The Log", cout: 2, nb: 1, effet: "Comparez vos cartes : la moins chère perd la manche (égalité : rien)." },
   chevalier: { nom: "Chevalier", cle: "Knight", cout: 3, nb: 2, effet: "Les effets adverses ne te touchent pas jusqu'à ton prochain tour." },
   tornade: { nom: "Tornade", cle: "Tornado", cout: 3, nb: 1, effet: "Échange ta carte avec celle de l'adversaire." },
   bdf: { nom: "Boule de feu", cle: "Fireball", cout: 4, nb: 2, effet: "Annonce un coût : si la carte adverse coûte autant, il perd la manche." },
   gel: { nom: "Gel", cle: "Freeze", cout: 4, nb: 1, effet: "À son prochain tour, l'adversaire doit jouer la carte qu'il pioche." },
-  prince: { nom: "Prince", cle: "Prince", cout: 5, nb: 1, effet: "Comparez vos cartes : la moins chère perd la manche (égalité : rien)." },
+  prince: { nom: "Prince", cle: "Prince", cout: 5, nb: 2, effet: "L'adversaire défausse sa carte et en pioche une autre." },
   mega: { nom: "Méga chevalier", cle: "Mega Knight", cout: 7, nb: 1, effet: "Prends la Réserve, puis remets-y face cachée l'une de tes deux cartes." },
   triple: { nom: "Trois mousquetaires", cle: "Three Musketeers", cout: 9, nb: 1, effet: "Aucun effet. Si elle quitte ta main (jouée ou défaussée), tu perds la manche." },
 };
@@ -84,7 +84,7 @@ function nouvelleManche(d, commence, rng) {
     elixir: { joueur: 0, bot: 0 },
     protege: { joueur: false, bot: false },
     gele: { joueur: false, bot: false },
-    // Carte adverse connue de chacun (Gobelins, Prince, Tornade, Squelettes)
+    // Carte adverse connue de chacun (Gobelins, Bûche, Tornade, Squelettes)
     connu: { joueur: null, bot: null },
     // Carte remise dans la Réserve, connue de celui qui l'y a mise
     reserveConnue: { joueur: null, bot: null },
@@ -184,12 +184,12 @@ export function jouer(d, id, carte, { cible = null } = {}) {
         d.connu[id] = d.main[q][0];
         effet.vu = d.main[q][0];
         break;
-      case "buche": {
+      case "prince": {
         const jetee = d.main[q].pop();
         d.defausse[q].push(jetee);
         d.connu[id] = null;
         effet.defaussee = jetee;
-        if (jetee === "triple") eliminer(d, q, "buche");
+        if (jetee === "triple") eliminer(d, q, "defausse");
         else {
           const n = piocherRemplacement(d);
           if (n) d.main[q].push(n);
@@ -223,12 +223,12 @@ export function jouer(d, id, carte, { cible = null } = {}) {
       case "gel":
         d.gele[q] = true;
         break;
-      case "prince": {
+      case "buche": {
         const [a, b] = [d.main[id][0], d.main[q][0]];
         d.connu[id] = b;
         d.connu[q] = a;
         effet.cartes = { [id]: a, [q]: b };
-        if (cout(a) !== cout(b)) eliminer(d, cout(a) < cout(b) ? id : q, "prince");
+        if (cout(a) !== cout(b)) eliminer(d, cout(a) < cout(b) ? id : q, "comparaison");
         break;
       }
       case "mega":

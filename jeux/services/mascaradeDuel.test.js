@@ -1,6 +1,6 @@
 import assert from "assert";
 import { Redis } from "@upstash/redis";
-import { agirDuel, isNewRecord, lireRecord, nouveauDuel, serieApres } from "./mascaradeDuel.js";
+import { agirDuel, isNewRecord, lireRecord, nouveauDuel, serieApres, verifierDelaiSolo } from "./mascaradeDuel.js";
 
 // ── serieApres : +1 par victoire, 0 par défaite, intacte sur un nul ──
 assert.strictEqual(serieApres(3, "victoire"), 4);
@@ -12,6 +12,17 @@ assert.strictEqual(isNewRecord(null, 1), true);
 assert.strictEqual(isNewRecord(null, 0), false);
 assert.strictEqual(isNewRecord({ serie: 7 }, 7), false); // égalité : le détenteur garde le record
 assert.strictEqual(isNewRecord({ serie: 7 }, 8), true);
+
+// ── verifierDelaiSolo : action contre Kévina en retard = défaite ──
+{
+  const config = { delai_tour_minutes: 1 };
+  const d = { termine: false, tourDepuis: 1_000_000, attente: null };
+  assert.strictEqual(verifierDelaiSolo(d, config, 1_000_000 + 60_000), false);
+  assert.strictEqual(verifierDelaiSolo(d, config, 1_000_000 + 60_001), true);
+  assert.deepStrictEqual([d.termine, d.gagnant, d.delai], [true, "bot", true]);
+  // Chrono décalé dans le futur (étapes encore affichées) : pas de délai
+  assert.strictEqual(verifierDelaiSolo({ termine: false, tourDepuis: 2_000_000 }, config, 1_990_000), false);
+}
 
 // ── Contre Kévina (Redis en mémoire) ──
 if (Redis.isFake) {
