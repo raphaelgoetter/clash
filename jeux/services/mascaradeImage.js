@@ -176,24 +176,22 @@ export async function getTableImage(t) {
 // ── Résultat final ──────────────────────────────────────────────────
 // Grille : une ligne par joueur (vainqueur de la partie en haut), une
 // colonne par manche ; dans chaque colonne, les deux cartes qui ont décidé
-// de la manche, celle du perdant de la manche en noir et blanc. Discord
-// étire l'image à la largeur du message : des cartes petites à l'écran
-// passent par une toile large (bloc centré), pas par des cartes plus petites.
+// de la manche, celle du perdant de la manche en noir et blanc. Image
+// compacte, sans place vide : Discord l'ajuste à l'espace du message, le
+// rapport entre cartes et image fixe leur taille à l'écran.
 // { n: [nom du haut, nom du bas] (sans emoji), m: [[carte haut, carte bas,
 //   gagnant de la manche (0 haut, 1 bas), numéro], …] }
 
-const RES_W = 80;
+const RES_W = 70;
 const RES_H = Math.round(RES_W * RATIO_CARTE);
-const RES_NOMS = 250;
-const RES_COL = RES_W + 40;
+const RES_PAD = 16;
+const RES_NOMS = 150;
+const RES_COL = RES_W + 16;
 const RES_MAX_MANCHES = 3;
-// Discord étire l'image à la largeur du message : toile large, bloc centré
-const RES_LARGEUR = 1000;
-const RES_X0 = (RES_LARGEUR - RES_NOMS - RES_MAX_MANCHES * RES_COL) / 2;
 
 export function encodeResultat({ noms, manches }) {
   const idx = (c) => IDS.indexOf(c);
-  const d = { n: noms.map((x) => tronquer(String(x), 14)), m: manches.map(({ haut, bas, gagnant, numero }) => [idx(haut), idx(bas), gagnant, numero]) };
+  const d = { n: noms.map((x) => tronquer(String(x), 16)), m: manches.map(({ haut, bas, gagnant, numero }) => [idx(haut), idx(bas), gagnant, numero]) };
   return Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
 }
 
@@ -210,25 +208,30 @@ export function decodeResultat(param) {
   }
 }
 
+// Largeur selon le nombre de manches : aucune place vide, l'image remplit
+// l'espace que Discord lui donne
+const largeurResultat = (r) => RES_PAD * 2 + RES_NOMS + r.manches.length * RES_COL - (RES_COL - RES_W);
+
 async function buildResultatSvg(r) {
   const cles = [...new Set(r.manches.flatMap((m) => [m.haut, m.bas]))];
   const dataUrls = await loadDataUrls(cles.map((c) => ({ key: CARTES[c].cle })));
-  const yLignes = [PADDING + 34, PADDING + 34 + RES_H + GAP * 2];
-  const parts = r.noms.map((nom, i) => texte(RES_X0, yLignes[i] + RES_H / 2 + 9, nom, { size: 26, fill: i === 0 ? COULEUR_DERNIERE : "#f2f3f5" }));
+  const largeur = largeurResultat(r);
+  const yLignes = [RES_PAD + 26, RES_PAD + 26 + RES_H + 12];
+  const parts = r.noms.map((nom, i) => texte(RES_PAD, yLignes[i] + RES_H / 2 + 6, nom, { size: 17, fill: i === 0 ? COULEUR_DERNIERE : "#f2f3f5" }));
   r.manches.forEach((m, k) => {
-    const x = RES_X0 + RES_NOMS + k * RES_COL + (RES_COL - RES_W) / 2;
-    parts.push(texte(x + RES_W / 2, PADDING + 20, `Manche ${m.numero}`, { size: 20, anchor: "middle", fill: "#80848e" }));
+    const x = RES_PAD + RES_NOMS + k * RES_COL;
+    parts.push(texte(x + RES_W / 2, RES_PAD + 12, `Manche ${m.numero}`, { size: 14, anchor: "middle", fill: "#80848e" }));
     [m.haut, m.bas].forEach((c, i) => parts.push(carteSvg(c, dataUrls, x, yLignes[i], RES_W, { encadree: m.gagnant === i, gris: m.gagnant !== i })));
   });
-  const hauteur = yLignes[1] + RES_H + PADDING;
+  const hauteur = yLignes[1] + RES_H + RES_PAD;
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${RES_LARGEUR}" height="${hauteur}" viewBox="0 0 ${RES_LARGEUR} ${hauteur}" xmlns="http://www.w3.org/2000/svg">
+<svg width="${largeur}" height="${hauteur}" viewBox="0 0 ${largeur} ${hauteur}" xmlns="http://www.w3.org/2000/svg">
   ${FILTRE_GRIS}
-  <rect x="0" y="0" width="${RES_LARGEUR}" height="${hauteur}" rx="18" fill="#1e1f22"/>
+  <rect x="0" y="0" width="${largeur}" height="${hauteur}" rx="14" fill="#1e1f22"/>
   ${parts.join("\n")}
 </svg>`;
 }
 
 export async function getResultatImage(r) {
-  return { buffer: await rasterize(await buildResultatSvg(r), RES_LARGEUR), mimeType: "image/png" };
+  return { buffer: await rasterize(await buildResultatSvg(r), largeurResultat(r)), mimeType: "image/png" };
 }
