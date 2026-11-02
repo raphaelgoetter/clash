@@ -247,8 +247,8 @@ function cartesDecisives(h) {
   return cartes && cartes.every((c) => CARTES[c]) ? cartes : null;
 }
 
-// Image du résultat final : une ligne par manche gagnée (manches nulles
-// omises), cartes décisives côte à côte, vainqueur de la partie à gauche.
+// Image du résultat final : une colonne par manche gagnée (manches nulles
+// omises), cartes décisives en colonne, vainqueur de la partie en haut.
 // null si la partie n'a pas fini sur une manche (abandon, délai).
 function urlResultat(d, nomDe) {
   const cotes = [d.gagnant, adversaire(d.gagnant)];
@@ -259,8 +259,8 @@ function urlResultat(d, nomDe) {
       const cartes = cartesDecisives(h);
       if (!cartes) return null;
       const gagnant = cotes.indexOf(h.gagnant);
-      const [gauche, droite] = gagnant === 0 ? cartes : [cartes[1], cartes[0]];
-      return { gauche, droite, gagnant, numero: h.numero };
+      const [haut, bas] = gagnant === 0 ? cartes : [cartes[1], cartes[0]];
+      return { haut, bas, gagnant, numero: h.numero };
     });
   if (!manches.length || manches.includes(null)) return null;
   const param = encodeResultat({ noms: cotes.map(nomDe), manches });

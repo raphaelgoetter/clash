@@ -10,8 +10,9 @@
 //
 // Rendu sans état : la table est passée dans l'URL (encodeTable) ; l'URL
 // change avec l'état, ce qui contourne le cache d'images de Discord.
-// Image du résultat final (encodeResultat) : pour chaque manche, les deux
-// cartes qui l'ont décidée (celle du perdant en noir et blanc).
+// Image du résultat final (encodeResultat) : grille joueurs × manches, les
+// deux cartes qui ont décidé de chaque manche (celle du perdant en noir et
+// blanc).
 // ============================================================
 
 import { cardSvg, loadDataUrls, rasterize, RATIO_CARTE } from "@clash/clash-royale/cardImage.js";
@@ -173,21 +174,24 @@ export async function getTableImage(t) {
 }
 
 // ── Résultat final ──────────────────────────────────────────────────
-// Une ligne par manche : les deux cartes qui l'ont décidée, celle du
-// perdant de la manche en noir et blanc. Colonnes fixes : vainqueur de la
-// partie à gauche.
-// { n: [nom de gauche, nom de droite] (sans emoji), m: [[carte gauche,
-//   carte droite, gagnant de la manche (0 gauche, 1 droite), numéro], …] }
+// Grille : une ligne par joueur (vainqueur de la partie en haut), une
+// colonne par manche ; dans chaque colonne, les deux cartes qui ont décidé
+// de la manche, celle du perdant de la manche en noir et blanc. Largeur
+// fixe (3 manches) : Discord étire l'image à la largeur du message, des
+// cartes plus petites passent par une image plus large.
+// { n: [nom du haut, nom du bas] (sans emoji), m: [[carte haut, carte bas,
+//   gagnant de la manche (0 haut, 1 bas), numéro], …] }
 
 const RES_W = 96;
 const RES_H = Math.round(RES_W * RATIO_CARTE);
-const RES_VS = 70;
-const RES_LARGEUR = PADDING * 2 + RES_W * 2 + RES_VS;
-const RES_MAX_MANCHES = 5;
+const RES_NOMS = 190;
+const RES_COL = RES_W + 36;
+const RES_MAX_MANCHES = 3;
+const RES_LARGEUR = PADDING * 2 + RES_NOMS + RES_MAX_MANCHES * RES_COL;
 
 export function encodeResultat({ noms, manches }) {
   const idx = (c) => IDS.indexOf(c);
-  const d = { n: noms.map((x) => tronquer(String(x), 14)), m: manches.map(({ gauche, droite, gagnant, numero }) => [idx(gauche), idx(droite), gagnant, numero]) };
+  const d = { n: noms.map((x) => tronquer(String(x), 14)), m: manches.map(({ haut, bas, gagnant, numero }) => [idx(haut), idx(bas), gagnant, numero]) };
   return Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
 }
 
@@ -196,8 +200,8 @@ export function decodeResultat(param) {
   try {
     const d = JSON.parse(Buffer.from(String(param), "base64url").toString("utf8"));
     if (!Array.isArray(d.m) || !d.m.length) return null;
-    const manches = d.m.slice(0, RES_MAX_MANCHES).map(([a, b, g, n], k) => ({ gauche: IDS[Number(a)], droite: IDS[Number(b)], gagnant: g === 1 ? 1 : 0, numero: Number(n) || k + 1 }));
-    if (manches.some((m) => !m.gauche || !m.droite)) return null;
+    const manches = d.m.slice(0, RES_MAX_MANCHES).map(([a, b, g, n], k) => ({ haut: IDS[Number(a)], bas: IDS[Number(b)], gagnant: g === 1 ? 1 : 0, numero: Number(n) || k + 1 }));
+    if (manches.some((m) => !m.haut || !m.bas)) return null;
     return { noms: [String(d.n?.[0] ?? "?"), String(d.n?.[1] ?? "?")], manches };
   } catch {
     return null;
@@ -205,19 +209,18 @@ export function decodeResultat(param) {
 }
 
 async function buildResultatSvg(r) {
-  const cles = [...new Set(r.manches.flatMap((m) => [m.gauche, m.droite]))];
+  const cles = [...new Set(r.manches.flatMap((m) => [m.haut, m.bas]))];
   const dataUrls = await loadDataUrls(cles.map((c) => ({ key: CARTES[c].cle })));
-  const xs = [PADDING, PADDING + RES_W + RES_VS];
-  const parts = xs.map((x, i) => texte(x + RES_W / 2, PADDING + 20, r.noms[i], { size: 17, anchor: "middle", fill: i === 0 ? COULEUR_DERNIERE : "#f2f3f5" }));
-  let y = PADDING + 26;
-  r.manches.forEach((m) => {
-    parts.push(texte(RES_LARGEUR / 2, y + 20, `Manche ${m.numero}`, { size: 15, anchor: "middle", fill: "#80848e" }));
-    const yc = y + 32;
-    [m.gauche, m.droite].forEach((c, i) => parts.push(carteSvg(c, dataUrls, xs[i], yc, RES_W, { encadree: m.gagnant === i, gris: m.gagnant !== i })));
-    parts.push(texte(RES_LARGEUR / 2, yc + RES_H / 2 + 9, "vs", { size: 24, anchor: "middle", fill: "#f2f3f5" }));
-    y = yc + RES_H + GAP;
+  const yLignes = [PADDING + 34, PADDING + 34 + RES_H + GAP * 2];
+  const parts = r.noms.map((nom, i) => texte(PADDING, yLignes[i] + RES_H / 2 + 7, nom, { size: 20, fill: i === 0 ? COULEUR_DERNIERE : "#f2f3f5" }));
+  // Colonnes centrées dans la place des 3 manches
+  const x0 = PADDING + RES_NOMS + ((RES_MAX_MANCHES - r.manches.length) * RES_COL) / 2;
+  r.manches.forEach((m, k) => {
+    const x = x0 + k * RES_COL + (RES_COL - RES_W) / 2;
+    parts.push(texte(x + RES_W / 2, PADDING + 18, `Manche ${m.numero}`, { size: 16, anchor: "middle", fill: "#80848e" }));
+    [m.haut, m.bas].forEach((c, i) => parts.push(carteSvg(c, dataUrls, x, yLignes[i], RES_W, { encadree: m.gagnant === i, gris: m.gagnant !== i })));
   });
-  const hauteur = y + PADDING - GAP;
+  const hauteur = yLignes[1] + RES_H + PADDING;
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${RES_LARGEUR}" height="${hauteur}" viewBox="0 0 ${RES_LARGEUR} ${hauteur}" xmlns="http://www.w3.org/2000/svg">
   ${FILTRE_GRIS}
