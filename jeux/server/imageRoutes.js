@@ -34,7 +34,12 @@ import {
   getCarteImage as getMeowCarteImage,
   getIllustrationImage as getMeowIllustrationImage,
 } from "../services/meowImage.js";
-import { decodeTable as decodeMascaradeTable, getTableImage as getMascaradeTableImage } from "../services/mascaradeImage.js";
+import {
+  decodeResultat as decodeMascaradeResultat,
+  decodeTable as decodeMascaradeTable,
+  getResultatImage as getMascaradeResultatImage,
+  getTableImage as getMascaradeTableImage,
+} from "../services/mascaradeImage.js";
 
 const router = express.Router();
 
@@ -272,6 +277,16 @@ router.get("/api/meow/carte", async (req, res) => {
 router.get("/api/mascarade/table", async (req, res) => {
   const table = decodeMascaradeTable(req.query.d);
   const image = table ? await getMascaradeTableImage(table).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Mascarade : cartes décisives de la dernière manche (message de fin).
+router.get("/api/mascarade/resultat", async (req, res) => {
+  const resultat = decodeMascaradeResultat(req.query.d);
+  const image = resultat ? await getMascaradeResultatImage(resultat).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");

@@ -29,7 +29,7 @@ globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 const h = await import("../../discord/handlers/mascaradeDuel.js");
 const { readDuel, readPvp } = await import("../../services/mascaradeDuel.js");
 const { cartesJouables, COUTS_ANNONCE } = await import("../../services/mascaradeRules.js");
-const { decodeTable } = await import("../../services/mascaradeImage.js");
+const { decodeResultat, decodeTable } = await import("../../services/mascaradeImage.js");
 
 function aplatir(composants = []) {
   return composants.flatMap((c) => (c.type === 17 ? [c, ...aplatir(c.components)] : c.type === 1 ? [c, ...c.components] : [c]));
@@ -54,7 +54,8 @@ function verifier(v) {
   }
   const url = imageDe(v);
   if (url) {
-    const t = decodeTable(new URL(url).searchParams.get("d"));
+    const u = new URL(url);
+    const t = (u.pathname.endsWith("/resultat") ? decodeResultat : decodeTable)(u.searchParams.get("d"));
     if (!t) throw new Error(`image illisible : ${url}`);
   }
 }
@@ -63,6 +64,11 @@ function verifier(v) {
 // jouable (Boule de feu : coût au hasard, après la vue du choix du coût).
 async function jouerAuHasard(W, discordId, d, moi, opts) {
   const v = d.vue;
+  if (d.pauseManche) {
+    if (!opts.pvp && !boutons(vues.at(-1)).some((b) => b.custom_id.startsWith("mascaradeduel_suivante"))) throw new Error("bouton Manche suivante absent");
+    await h.handleMascaradeAction(W, discordId, "suivante", null, v, opts);
+    return;
+  }
   if (d.attente) {
     const choix = d.attente.type === "squelettes" ? (Math.random() < 0.5 ? "laisser" : "dessous") : String(Math.floor(Math.random() * 2));
     await h.handleMascaradeAction(W, discordId, "choix", choix, v, opts);
@@ -101,7 +107,7 @@ const posts = salon.filter((m) => m.method === "POST");
 console.log(`Contre Kévina : 4 parties ${JSON.stringify(resultats)}, ${actions} actions du joueur, ${posts.length} messages publiés`);
 if (posts.length !== 8) throw new Error("table publique et résultat attendus pour chaque partie");
 if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfléchit"))) throw new Error("table publique non suivie");
-if (!vues.some((v) => texte(v).includes("🏁 Manche"))) throw new Error("fin de manche jamais affichée");
+if (!vues.some((v) => texte(v).includes("🏁 Manche") && boutons(v).some((b) => b.custom_id.startsWith("mascaradeduel_suivante")))) throw new Error("pause de fin de manche jamais affichée");
 
 // Vue dépassée, carte absente, Trois mousquetaires refusés : partie intacte
 await h.handleMascaradeCommand(W, lancement);
@@ -173,5 +179,7 @@ const fin = vues.find((v) => texte(v).includes("🏁 Manche"));
 console.log("\n--- Fin de manche ---\n" + texte(fin));
 const recapSolo = salon.find((m) => m.method === "POST" && /bat (Kévina|Testeur)/.test(texte(m)));
 console.log("\n--- Récap contre Kévina ---\n" + texte(recapSolo));
+if (!imageDe(recapSolo)?.includes("/api/mascarade/resultat")) throw new Error("image du résultat absente");
+console.log("Image : " + JSON.stringify(decodeResultat(new URL(imageDe(recapSolo)).searchParams.get("d"))));
 console.log("\n--- Récap 1v1 ---\n" + texte(salon.filter((m) => m.method === "POST" && texte(m).includes("Alice")).at(-1)));
 console.log("\n--- Règles ---\n" + texte(vues.at(-1)));

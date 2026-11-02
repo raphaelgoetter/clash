@@ -49,7 +49,7 @@ import {
   cout,
   jouer,
 } from "../../services/mascaradeRules.js";
-import { encodeTable } from "../../services/mascaradeImage.js";
+import { encodeResultat, encodeTable } from "../../services/mascaradeImage.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 
 // Violet masqué
@@ -230,6 +230,43 @@ function urlTable(d, moi, A, { avecMain = true, table = null, nomMoi = "toi" } =
   return `${TRUST_ROYALE_URL}/api/mascarade/table?d=${param}`;
 }
 
+// Cartes qui ont décidé de la manche `h` : [du gagnant, du perdant] (null
+// si inconnues).
+function cartesDecisives(h) {
+  const g = h.gagnant;
+  const p = adversaire(g);
+  const cartes = {
+    bdf: ["bdf", h.mains[p]],
+    comparaison: [h.mains[g], h.mains[p]],
+    pioche: [h.mains[g], h.mains[p]],
+    elixir: [h.mains[g], h.mains[p]],
+    defausse: ["prince", "triple"],
+    triple: ["gel", "triple"],
+    sansCarte: ["prince", h.defausse?.[p]?.at(-1)],
+  }[h.fin];
+  return cartes && cartes.every((c) => CARTES[c]) ? cartes : null;
+}
+
+// Image du résultat final : une ligne par manche gagnée (manches nulles
+// omises), cartes décisives côte à côte, vainqueur de la partie à gauche.
+// null si la partie n'a pas fini sur une manche (abandon, délai).
+function urlResultat(d, nomDe) {
+  const cotes = [d.gagnant, adversaire(d.gagnant)];
+  const manches = d.historique
+    .map((h, i) => ({ ...h, numero: i + 1 }))
+    .filter((h) => h.gagnant !== "nul")
+    .map((h) => {
+      const cartes = cartesDecisives(h);
+      if (!cartes) return null;
+      const gagnant = cotes.indexOf(h.gagnant);
+      const [gauche, droite] = gagnant === 0 ? cartes : [cartes[1], cartes[0]];
+      return { gauche, droite, gagnant, numero: h.numero };
+    });
+  if (!manches.length || manches.includes(null)) return null;
+  const param = encodeResultat({ noms: cotes.map(nomDe), manches });
+  return `${TRUST_ROYALE_URL}/api/mascarade/resultat?d=${param}`;
+}
+
 // Récit de la dernière action (`d.dernier`) vue par `moi`, sans point final.
 // Rien de ce que `moi` ne doit pas savoir : la carte vue par des Gobelins
 // adverses, la carte remise dans la Réserve par l'adversaire, etc.
@@ -341,6 +378,7 @@ const ERREURS = {
   cible: "Choisis un coût à annoncer.",
   choix: "Choix impossible.",
   perime: "La table a changé depuis : rejoue sur celle-ci.",
+  pause: "Lance d'abord la manche suivante.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
 };
@@ -443,6 +481,7 @@ function buildVue(
   { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null, confirmerAbandon = false, choixCout = false } = {},
 ) {
   if (d.termine && !d.etapeManche) return vueFin(d, { moi, A, raison });
+  if (d.pauseManche && !d.etapeManche && !confirmerAbandon) return vuePause(d, { texte, moi, A, pvp, echeance });
   const monTour = !d.etapeManche && (d.attente ? d.attente.id === moi : d.actif === moi);
   const sfx = pvp ? ":pvp" : "";
   const titre = `${TITRE} · ${score(d, moi, A)}${pvp && monTour ? " · À toi !" : ""}`;
@@ -487,6 +526,33 @@ function buildVue(
   return { embeds: [embed], components: [...(monTour ? boutonsAction(d, moi, sfx, { choixCout }) : []), regles] };
 }
 
+// Pause de fin de manche (`d.pauseManche`) : récit du dernier coup, résultat
+// et table de la manche finie ; bouton « Manche suivante » pour celui qui la
+// lance (sa limite d'action court).
+function vuePause(d, { texte, moi, A, pvp, echeance }) {
+  const lanceur = lanceurManche(d, moi);
+  const sfx = pvp ? ":pvp" : "";
+  const h = { ...d.historique[d.pauseManche - 1], numero: d.pauseManche };
+  const attente = lanceur
+    ? echeance
+      ? [`⏰ Limite <t:${echeance}:R>`]
+      : []
+    : [`⏳ ${A.Sujet} lance la manche suivante${echeance ? `, limite <t:${echeance}:R>` : ""}.`];
+  const lignes = [...(texte ? [texte, ""] : []), ligneManche(h, h.numero, (id) => (id === moi ? "toi" : A.Sujet)), ...(attente.length ? ["", ...attente] : [])];
+  const suivante = { type: 2, style: 2, label: "Manche suivante", emoji: { name: "▶️" }, custom_id: `mascaradeduel_suivante:${d.vue}${sfx}` };
+  return {
+    embeds: [
+      {
+        title: `${TITRE} · ${score(d, moi, A)}${pvp && lanceur ? " · À toi !" : ""}`,
+        description: lignes.join("\n").slice(0, 4096),
+        image: { url: urlTable(d, moi, A, { table: h }) },
+        color: MASCARADE_COLOR,
+      },
+    ],
+    components: [{ type: 1, components: [...(lanceur ? [suivante] : []), BOUTON_REGLES, boutonAbandon(sfx)] }],
+  };
+}
+
 function buildReglesEmbed(config) {
   const cartes = Object.values(CARTES)
     .map((c) => `- **${c.nom}** (${c.cout}, ×${c.nb}) : ${c.effet}`)
@@ -516,9 +582,30 @@ function buildReglesEmbed(config) {
 // "choix", choix } ; `vue` : numéro de la vue cliquée.
 function agir(d, moi, a, vue) {
   if (!d.termine && vue !== d.vue) return { erreur: "perime" };
+  if (a.type === "suivante") {
+    if (d.termine || !d.pauseManche) return { erreur: d.termine ? "termine" : "perime" };
+    if (!lanceurManche(d, moi)) return { erreur: "pasTonTour" };
+    d.pauseManche = null;
+    d.vue += 1;
+    return {};
+  }
+  if (d.pauseManche) return { erreur: "pause" };
+  const avant = d.historique.length;
   const r = a.type === "jouer" ? jouer(d, moi, a.carte, { cible: a.cible }) : choisir(d, moi, a.choix);
-  return r.erreur ? r : {};
+  if (r.erreur) return r;
+  marquerPause(d, avant);
+  return {};
 }
+
+// Manche terminée sans finir la partie : pause sur son résultat jusqu'au
+// clic sur « Manche suivante » (`d.pauseManche` : numéro de la manche finie).
+function marquerPause(d, avant) {
+  if (d.historique.length > avant && !d.termine) d.pauseManche = d.historique.length;
+}
+
+// Qui lance la manche suivante : contre Kévina, toujours le joueur ; en 1v1,
+// celui qui la commence (le perdant de la manche).
+const lanceurManche = (d, moi) => (d.pvp ? d.actif === moi : moi === "joueur");
 
 // Copie du duel pour l'étape de fin de manche `numero` (table et main
 // figées de la manche terminée).
@@ -564,6 +651,7 @@ function messageSolo(d, pseudo, config, recitPub = null) {
 }
 
 async function majSalonSolo(d, pseudo, config) {
+  if (d.pauseManche && !d.etapeManche && !d.termine) d = etapeFinManche(d, d.pauseManche);
   const recitPub = d.dernier?.manche === d.numero || d.etapeManche ? recitPublic(d, (id) => (id === "bot" ? "Kévina" : pseudo)) : null;
   if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?", config, recitPub));
 }
@@ -621,6 +709,7 @@ function messageFinalSolo(d, pseudo) {
       })
     : [];
   const [j, b] = [d.manches.joueur, d.manches.bot];
+  const image = d.abandon || d.delai ? null : urlResultat(d, (id) => (id === "bot" ? "Kévina" : pseudo));
   const resultat = d.abandon
     ? `🏳️ ${pseudo} abandonne face à Kévina.`
     : d.delai
@@ -633,6 +722,7 @@ function messageFinalSolo(d, pseudo) {
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
         description: [resultat, ...(series.length ? ["", ...series] : [])].join("\n").slice(0, 4096),
+        ...(image ? { image: { url: image } } : {}),
         color: MASCARADE_COLOR,
       },
     ],
@@ -657,14 +747,15 @@ async function executerSolo(webhookUrl, discordId, action, vue, { channelId, pse
       const etapes = [];
       const reflexion = () => REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min);
       // Récit du tour : coup du joueur puis ceux de Kévina (repart à zéro à chaque manche)
-      let lignes = [recit(d, "joueur", BOT)];
+      let lignes = action.type === "suivante" ? [] : [recit(d, "joueur", BOT)];
       const texte = () => `${lignes.join(".\n")}.`;
-      if (d.historique.length > avant) {
+      // Fin de partie : étape de la dernière manche avant le récapitulatif
+      if (d.termine && d.historique.length > avant) {
         etapes.push({ duel: etapeFinManche(d, avant + 1), texte: texte(), pause: DELAI_FIN_MANCHE_MS });
         lignes = [];
       }
       // Kévina joue dans la foulée (sous le même verrou), y compris ses choix
-      for (let k = 0; k < 20 && !d.termine && !(d.attente?.id === "joueur") && (d.attente?.id === "bot" || (!d.attente && d.actif === "bot")); k++) {
+      for (let k = 0; k < 20 && !d.termine && !d.pauseManche && !(d.attente?.id === "joueur") && (d.attente?.id === "bot" || (!d.attente && d.actif === "bot")); k++) {
         etapes.push({ duel: structuredClone(d), texte: lignes.length ? texte() : null, pause: reflexion() });
         const n = d.historique.length;
         if (d.attente) choisir(d, "bot", choixAttenteKevina(d, "bot", reglages));
@@ -674,15 +765,15 @@ async function executerSolo(webhookUrl, discordId, action, vue, { channelId, pse
           if (d.attente?.id === "bot") choisir(d, "bot", choixAttenteKevina(d, "bot", reglages));
         }
         lignes.push(recit(d, "joueur", BOT));
-        if (d.historique.length > n) {
+        marquerPause(d, n);
+        if (d.termine && d.historique.length > n) {
           etapes.push({ duel: etapeFinManche(d, n + 1), texte: texte(), pause: DELAI_FIN_MANCHE_MS });
           lignes = [];
         }
       }
-      // Nouvelle manche sans coup joué : rien à raconter
       // Chrono du joueur relancé après l'affichage des étapes
       const decalageMs = etapes.reduce((t, e) => t + e.pause, 0);
-      return { texte: lignes.length ? texte() : d.historique.length > avant ? "Nouvelle manche !" : null, vientDeFinir: d.termine, etapes, coup: true, decalageMs };
+      return { texte: lignes.length ? texte() : null, vientDeFinir: d.termine, etapes, coup: true, decalageMs };
     },
     { nom: pseudo },
   );
@@ -792,7 +883,7 @@ function vuePvp(partie, config, discordId, texte = null, { confirmerAbandon = fa
   const d = etat ?? partie.duel;
   return buildVue(d, {
     // Pas de récit d'une manche précédente
-    texte: texte ?? (d.dernier?.manche === d.numero && !d.etapeManche ? `${recit(d, moi, A)}.` : null),
+    texte: texte ?? ((d.dernier?.manche === d.numero || d.pauseManche) && !d.etapeManche ? `${recit(d, moi, A)}.` : null),
     moi,
     A,
     pvp: true,
@@ -819,7 +910,8 @@ function messagePublic(partie, config, etat = null) {
       components: [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }],
     };
   }
-  const d = etat ?? partie.duel;
+  let d = etat ?? partie.duel;
+  if (d.pauseManche && !d.etapeManche && !d.termine) d = etapeFinManche(d, d.pauseManche);
   const nomDe = (siege) => partie.noms[partie.sieges[siege]] ?? "?";
   const qui = d.attente ? d.attente.id : d.actif;
   return {
@@ -854,6 +946,7 @@ function messageFinal(partie) {
       : partie.raisonFin === "delai"
         ? `🏆 ${nomDe(g)} remporte le duel : ${nomDe(adversaire(g))} n'a pas joué à temps.`
         : `🏆 ${nomDe(g)} bat ${nomDe(adversaire(g))} : ${d.manches[g]} manches à ${d.manches[adversaire(g)]} !`;
+  const image = partie.raisonFin === "jeu" ? urlResultat(d, nomDe) : null;
   const s = partie.series;
   const series = s
     ? lignesSeries({
@@ -869,6 +962,7 @@ function messageFinal(partie) {
       {
         title: `${TITRE} · ${titreGagnant(g, nomDe)}`,
         description: [resultat, ...(series.length ? ["", ...series] : [])].join("\n").slice(0, 4096),
+        ...(image ? { image: { url: image } } : {}),
         color: MASCARADE_COLOR,
       },
     ],
@@ -1004,8 +1098,9 @@ async function executerPvp(webhookUrl, discordId, action, vue, { choixCout = fal
     const avant = p.duel.historique.length;
     const r = agir(p.duel, moi, action, vue);
     if (r.erreur) return r;
-    const etape = p.duel.historique.length > avant ? etapeFinManche(p.duel, avant + 1) : null;
-    return { texte: `${recit(p.duel, moi, nomsAdv(p, moi))}.`, coup: true, etape };
+    // Fin de partie : étape de la dernière manche avant le récapitulatif
+    const etape = p.duel.termine && p.duel.historique.length > avant ? etapeFinManche(p.duel, avant + 1) : null;
+    return { texte: action.type === "suivante" ? null : `${recit(p.duel, moi, nomsAdv(p, moi))}.`, coup: true, etape };
   });
   if (!partie) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
@@ -1100,6 +1195,7 @@ export async function handleMascaradeAction(webhookUrl, discordId, type, arg, vu
       else action = { type: "jouer", carte: arg };
     } else if (type === "bdf") action = { type: "jouer", carte: "bdf", cible: Number(arg) };
     else if (type === "choix") action = { type: "choix", choix: ["0", "1"].includes(arg) ? Number(arg) : arg };
+    else if (type === "suivante") action = { type: "suivante" };
     else if (type !== "retour") return;
     if (type === "retour") {
       // Retour à la vue normale, sans rien jouer

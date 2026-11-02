@@ -323,6 +323,8 @@ export function rejoindrePvp(partie, discordId, nom, { rng = Math.random } = {})
   const [premier, second] = rng() < 0.5 ? [partie.lanceur, discordId] : [discordId, partie.lanceur];
   partie.sieges = { joueur: premier, bot: second };
   partie.duel = creerDuel({ commence: "joueur" });
+  // 1v1 : la manche suivante est lancée par celui qui la commence
+  partie.duel.pvp = true;
   partie.statut = "enCours";
   partie.dernierCoupAt = Date.now();
 }

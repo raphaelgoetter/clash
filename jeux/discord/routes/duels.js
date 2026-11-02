@@ -416,7 +416,7 @@ export async function routeDuels(body, res) {
   }
 
   // ── Mascarade : composants. mascaradeduel_<jouer|bdf|choix>:<arg>:<vue>[:pvp]
-  // et mascaradeduel_retour:<vue>[:pvp] éditent la vue en place ;
+  // et mascaradeduel_<retour|suivante>:<vue>[:pvp] éditent la vue en place ;
   // mascaradeduel_ouvrir (Jouer du message public 1v1) et mascaradeduel_regles :
   // nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("mascaradeduel_")) {
@@ -428,13 +428,13 @@ export async function routeDuels(body, res) {
       else runBackground(() => handleMascaradeOuvrir(webhookUrl, body));
       return;
     }
-    const TYPES = { mascaradeduel_jouer: "jouer", mascaradeduel_bdf: "bdf", mascaradeduel_choix: "choix", mascaradeduel_retour: "retour" };
+    const TYPES = { mascaradeduel_jouer: "jouer", mascaradeduel_bdf: "bdf", mascaradeduel_choix: "choix", mascaradeduel_retour: "retour", mascaradeduel_suivante: "suivante" };
     if (TYPES[action]) {
       const discordId = body.member?.user?.id;
       res.status(200).json({ type: 6 });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      // retour n'a pas d'argument : <vue>[:pvp] directement
-      const [arg, vue, mode] = action === "mascaradeduel_retour" ? [null, ...args] : args;
+      // retour et suivante n'ont pas d'argument : <vue>[:pvp] directement
+      const [arg, vue, mode] = action === "mascaradeduel_retour" || action === "mascaradeduel_suivante" ? [null, ...args] : args;
       const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: mascaradeExtractMember(body).username };
       runBackground(() => handleMascaradeAction(webhookUrl, discordId, TYPES[action], arg, Number(vue), opts));
       return;
