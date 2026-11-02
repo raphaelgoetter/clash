@@ -107,6 +107,15 @@ export function getCurrentSeasonBounds(now = new Date()) {
   };
 }
 
+/** Bornes [start, end) de la saison `seasonId`. */
+export function getSeasonBoundsById(seasonId) {
+  const { annee, moisIndex } = moisDeSaison(seasonId);
+  return {
+    start: debutDuMois(annee, moisIndex),
+    end: debutDuMois(annee, moisIndex + 1),
+  };
+}
+
 /** Nombre d'occurrences du jour de semaine `weekday` (0 = dimanche … 6 =
  * samedi, jours UTC) dans [start, end). */
 export function countWeekdayOccurrencesInRange(start, end, weekday) {

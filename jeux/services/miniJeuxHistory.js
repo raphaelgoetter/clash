@@ -3,13 +3,15 @@
 // mini-jeux (calendaire, cf. getCurrentSeasonBounds) à partir des archives
 // déjà tenues par chaque jeu. Il n'existe aucun registre dédié "vainqueur de
 // saison" (contrairement au registre des Champions GDC) : ce module relit à
-// la demande les archives Redis de chaque jeu et les regroupe par saison via
-// la date réelle de chaque résultat (solvedAt/resolvedAt), jamais via le
-// seasonId stocké : les archives antérieures à novembre 2026 portent encore
-// l'ancien seasonId calé sur Clash Royale (bornes au 1er lundi du mois).
+// la demande les archives Redis de chaque jeu et les regroupe par saison de
+// la manche (seasonId stocké), comme le classement de saison du jeu : la
+// dernière manche d'une saison peut se résoudre au début de la suivante. Les
+// archives antérieures à novembre 2026 portent l'ancien seasonId calé sur
+// Clash Royale (bornes au 1er lundi du mois), dont le numéro désigne le même
+// mois. Date réelle (solvedAt/resolvedAt) à défaut de seasonId.
 // ============================================================
 
-import { getCurrentSeasonBounds, seasonIdForDate } from "./saison.js";
+import { getCurrentSeasonBounds, getSeasonBoundsById, seasonIdForDate } from "./saison.js";
 import { groupLabelForDate, isRefonteSeason } from "./refonte.js";
 import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
@@ -182,12 +184,15 @@ const MANCHE_WIN_GAMES = [
   },
 ];
 
-function seasonBoundsFor(dateStr) {
-  return getCurrentSeasonBounds(new Date(dateStr));
+// Saison de la manche si connue, sinon celle de la date du résultat.
+function seasonBoundsFor(dateStr, seasonId) {
+  return seasonId != null
+    ? getSeasonBoundsById(Number(seasonId))
+    : getCurrentSeasonBounds(new Date(dateStr));
 }
 
-function getOrCreateSeason(seasonMap, dateStr) {
-  const { start, end } = seasonBoundsFor(dateStr);
+function getOrCreateSeason(seasonMap, dateStr, seasonId = null) {
+  const { start, end } = seasonBoundsFor(dateStr, seasonId);
   const key = start.toISOString();
   let season = seasonMap.get(key);
   if (!season) {
@@ -223,7 +228,7 @@ async function bucketScoreGames(seasonMap) {
     for (const r of results) {
       const dateStr = r.solvedAt || r.postedAt;
       if (!dateStr) continue;
-      const entry = getOrCreateGameEntry(getOrCreateSeason(seasonMap, dateStr), game);
+      const entry = getOrCreateGameEntry(getOrCreateSeason(seasonMap, dateStr, r.seasonId), game);
       if (r.subGame) entry.subGames.add(r.subGame);
       addToTotal(entry, r.discordId, r.pseudo, Number(r.score) || 0);
     }
