@@ -176,18 +176,20 @@ export async function getTableImage(t) {
 // ── Résultat final ──────────────────────────────────────────────────
 // Grille : une ligne par joueur (vainqueur de la partie en haut), une
 // colonne par manche ; dans chaque colonne, les deux cartes qui ont décidé
-// de la manche, celle du perdant de la manche en noir et blanc. Largeur
-// fixe (3 manches) : Discord étire l'image à la largeur du message, des
-// cartes plus petites passent par une image plus large.
+// de la manche, celle du perdant de la manche en noir et blanc. Discord
+// étire l'image à la largeur du message : des cartes petites à l'écran
+// passent par une toile large (bloc centré), pas par des cartes plus petites.
 // { n: [nom du haut, nom du bas] (sans emoji), m: [[carte haut, carte bas,
 //   gagnant de la manche (0 haut, 1 bas), numéro], …] }
 
-const RES_W = 96;
+const RES_W = 80;
 const RES_H = Math.round(RES_W * RATIO_CARTE);
-const RES_NOMS = 190;
-const RES_COL = RES_W + 36;
+const RES_NOMS = 250;
+const RES_COL = RES_W + 40;
 const RES_MAX_MANCHES = 3;
-const RES_LARGEUR = PADDING * 2 + RES_NOMS + RES_MAX_MANCHES * RES_COL;
+// Discord étire l'image à la largeur du message : toile large, bloc centré
+const RES_LARGEUR = 1000;
+const RES_X0 = (RES_LARGEUR - RES_NOMS - RES_MAX_MANCHES * RES_COL) / 2;
 
 export function encodeResultat({ noms, manches }) {
   const idx = (c) => IDS.indexOf(c);
@@ -212,12 +214,10 @@ async function buildResultatSvg(r) {
   const cles = [...new Set(r.manches.flatMap((m) => [m.haut, m.bas]))];
   const dataUrls = await loadDataUrls(cles.map((c) => ({ key: CARTES[c].cle })));
   const yLignes = [PADDING + 34, PADDING + 34 + RES_H + GAP * 2];
-  const parts = r.noms.map((nom, i) => texte(PADDING, yLignes[i] + RES_H / 2 + 7, nom, { size: 20, fill: i === 0 ? COULEUR_DERNIERE : "#f2f3f5" }));
-  // Colonnes centrées dans la place des 3 manches
-  const x0 = PADDING + RES_NOMS + ((RES_MAX_MANCHES - r.manches.length) * RES_COL) / 2;
+  const parts = r.noms.map((nom, i) => texte(RES_X0, yLignes[i] + RES_H / 2 + 9, nom, { size: 26, fill: i === 0 ? COULEUR_DERNIERE : "#f2f3f5" }));
   r.manches.forEach((m, k) => {
-    const x = x0 + k * RES_COL + (RES_COL - RES_W) / 2;
-    parts.push(texte(x + RES_W / 2, PADDING + 18, `Manche ${m.numero}`, { size: 16, anchor: "middle", fill: "#80848e" }));
+    const x = RES_X0 + RES_NOMS + k * RES_COL + (RES_COL - RES_W) / 2;
+    parts.push(texte(x + RES_W / 2, PADDING + 20, `Manche ${m.numero}`, { size: 20, anchor: "middle", fill: "#80848e" }));
     [m.haut, m.bas].forEach((c, i) => parts.push(carteSvg(c, dataUrls, x, yLignes[i], RES_W, { encadree: m.gagnant === i, gris: m.gagnant !== i })));
   });
   const hauteur = yLignes[1] + RES_H + PADDING;
