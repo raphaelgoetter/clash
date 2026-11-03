@@ -6,13 +6,16 @@
   "framework": null,
   "functions": {
     "api/index.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "excludeFiles": "jeux/data/card-sounds/**"
     },
     "api/discord/interactions.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "excludeFiles": "jeux/data/card-sounds/**"
     },
     "api/discord/jeux.js": {
-      "maxDuration": 120
+      "maxDuration": 120,
+      "excludeFiles": "jeux/data/card-sounds/**"
     }
   },
   "redirects": [

@@ -26,9 +26,11 @@ import { fileURLToPath } from "url";
 import { createTriviaService } from "./triviaEngine.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(__dirname, "..", "data", "jeux-visuels", "intrus");
-const OBJETS_PATH = path.join(DATA_DIR, "objets.json");
-const MANCHES_PATH = path.join(DATA_DIR, "intrus.json");
+// Chemins de fichiers explicites, sans constante de répertoire : @vercel/nft
+// embarque tout dossier référencé (images comprises, servies par Blob) dans
+// chaque fonction et chaque déploiement retenu (Functions Storage).
+const OBJETS_PATH = path.resolve(__dirname, "..", "data", "jeux-visuels", "intrus", "objets.json");
+const MANCHES_PATH = path.resolve(__dirname, "..", "data", "jeux-visuels", "intrus", "intrus.json");
 
 export const DIFFICULTES = {
   facile: "Facile",

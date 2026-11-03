@@ -130,6 +130,7 @@ Clés communes (`<p>` = préfixe du jeu) :
 - ⚠️ `gameId` épingle l'image de **cette** manche (sinon les anciens messages affichent la manche en cours quand le proxy Discord revalide son cache). La route refuse tout `gameId` jamais posté (registre `<p>:posted_games` ou équivalent), donc aucune manche future devinable. `v` n'est qu'un cache-buster.
 - Aucun asset de jeu n'est exposé statiquement (rien sous `frontend/public/`).
 - ⚠️ Zoom carte, Zoom logo, Plat Pays, Intrus de l'inventaire et Palette (images, surlignages) et la police `data/fonts/Inter-Bold.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- <préfixe>`, avec le préfixe le plus précis possible (ex. `jeux-visuels/platpays`) : le script n'envoie que les chemins qui commencent par ce préfixe, et `jeux-visuels` seul renvoie plus de 400 fichiers.
+- ⚠️ Un service ne déclare jamais de constante pointant sur un **dossier** de `jeux/data/` (ex. `DATA_DIR = path.resolve(…, "intrus")` puis `path.join(DATA_DIR, "x.json")`) : `@vercel/nft` embarque alors le dossier entier, images comprises, dans chacune des 3 fonctions et chaque déploiement retenu (quota Functions Storage). Écrire le chemin complet de chaque fichier lu (`path.resolve(__dirname, "..", "data", "intrus", "objets.json")`).
 - ⚠️ Rendu SVG → PNG par `@resvg/resvg-js` : tout texte exige la police embarquée (`fontFiles` + `loadSystemFonts: false`), sinon il est invisible sur Vercel, sans erreur.
 
 ### Récapitulatif de fin de saison
@@ -1610,3 +1611,4 @@ Hors de toute paire depuis la bascule (`REFONTE_PAIRS`, `jeux/services/refonte.j
 - Jeux à l'aveugle (lundi), en alternance avec La Juste Carte. Extrait audio en pièce jointe `carte-mystere.mp3`, réponse via Modal, indice « rareté », DM de fin de manche.
 - Barème : `max(1, 10 − 2 × erreurs − (indice ? 3 : 0))`.
 - Code : `jeux/services/blindroyale.js`, handler `jeux/discord/handlers/blindroyale.js` ; sons `jeux/data/card-sounds/` ; Redis `blindroyale:*`.
+- Les sons ne sont lus qu'à la publication (scripts GitHub Actions) : `jeux/data/card-sounds/**` est exclu des fonctions Vercel (`excludeFiles` dans `vercel.json`).

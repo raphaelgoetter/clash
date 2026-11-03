@@ -27,14 +27,10 @@ import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const GOBLINHUNTERS_DIR = path.resolve(
-  __dirname,
-  "..",
-  "data",
-  "goblinhunters",
-);
-const CONFIG_JSON_PATH = path.join(GOBLINHUNTERS_DIR, "goblinhunters.json");
-const NARRATIFS_JSON_PATH = path.join(GOBLINHUNTERS_DIR, "narratifs.json");
+// Chemins de fichiers explicites, sans constante de répertoire : @vercel/nft
+// embarquerait tout le dossier (images servies par Blob) dans chaque fonction.
+const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "goblinhunters", "goblinhunters.json");
+const NARRATIFS_JSON_PATH = path.resolve(__dirname, "..", "data", "goblinhunters", "narratifs.json");
 
 let _redis = null;
 function getRedis() {
