@@ -1,6 +1,7 @@
 import assert from "assert";
 import { Redis } from "@upstash/redis";
-import { agirDuel, enregistrerContestation, isNewRecord, lireContestations, lireRecord, nouveauDuel, pvpAbandonnee, serieApres, viderContestations, INACTIVITE_PVP_MS } from "./bacDuel.js";
+import { valider } from "./bacRules.js";
+import { accepterMots, agirDuel, chargerAjouts, enregistrerContestation, retirerAjouts, isNewRecord, lireContestations, lireRecord, nouveauDuel, pvpAbandonnee, serieApres, viderContestations, INACTIVITE_PVP_MS } from "./bacDuel.js";
 
 // ── serieApres : +1 par victoire, 0 par défaite, intacte sur un nul ──
 assert.strictEqual(serieApres(3, "victoire"), 4);
@@ -47,6 +48,20 @@ if (Redis.isFake) {
   assert.deepStrictEqual([c.champ, c.nb, c.joueurs, c.lettres], ["acteurs:pattinson", 2, ["A", "B"], ["P"]]);
   await viderContestations([c.champ]);
   assert.deepStrictEqual(await lireContestations(), []);
+}
+
+// ── Mots acceptés : valables tout de suite, contestation retirée ──
+if (Redis.isFake) {
+  assert.strictEqual(valider("fruits", "R", "rhubarbe").ok, false);
+  await enregistrerContestation({ theme: "fruits", lettre: "R", mot: "rhubarbe", pseudo: "A", now: new Date(0) });
+  await accepterMots([{ theme: "fruits", mot: "Rhubarbe" }, { theme: "musique", mot: "Rim'K" }]);
+  assert.deepStrictEqual(await lireContestations(), []);
+  assert.deepStrictEqual(await chargerAjouts(), { fruits: ["Rhubarbe"], musique: ["Rim'K"] });
+  assert.strictEqual(valider("fruits", "R", "rhubarbes").ok, true);
+  assert.strictEqual(valider("musique", "R", "rimk").ok, true); // personne : nom complet
+  await retirerAjouts(["fruits:rhubarbe", "musique:rimk"]);
+  await chargerAjouts();
+  assert.strictEqual(valider("fruits", "R", "rhubarbe").ok, false);
 }
 
 console.log("bacDuel.test.js OK");

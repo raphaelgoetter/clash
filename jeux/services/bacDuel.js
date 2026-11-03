@@ -22,7 +22,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { creerDuel, normaliser } from "./bacRules.js";
+import { creerDuel, definirAjouts, normaliser } from "./bacRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "bac", "duel.json");
@@ -112,6 +112,7 @@ export async function agirDuel(discordId, fn, { nom = null, now = new Date() } =
   return withLock(discordId, async () => {
     const duel = await readDuel(discordId);
     if (!duel) return { duel: null };
+    await chargerAjouts();
     const finiAvant = duel.termine;
     const resultat = (await fn(duel)) || {};
     if (!finiAvant && duel.termine) duel.series = await finSerieSolo(discordId, nom, duel.gagnant, now);
@@ -196,8 +197,7 @@ async function finSeriesPvp(partie, now) {
 // ── Mots contestés ──────────────────────────────────────────────────
 // Un joueur conteste un mot refusé (« pas dans la liste ») : il reste
 // refusé, mais il est noté pour vérification à la main (outil
-// jeux/outils/bac/contestations.mjs, puis ajout dans
-// jeux/outils/bac/ajouts/<thème>.txt). Hash `bacduel:contestations` :
+// jeux/outils/bac/contestations.mjs, puis accepterMots()). Hash `bacduel:contestations` :
 // `<thème>:<mot normalisé>` → { theme, mot, lettres, nb, joueurs, derniere }.
 
 const CLE_CONTESTATIONS = "bacduel:contestations";
@@ -218,15 +218,49 @@ export async function enregistrerContestation({ theme, lettre, mot, pseudo, now 
   });
 }
 
-export async function lireContestations() {
-  const h = (await getRedis().hgetall(CLE_CONTESTATIONS)) ?? {};
+// Paires [champ, valeur] d'un hash
+async function lireHash(cle) {
+  const h = (await getRedis().hgetall(cle)) ?? {};
   // Upstash renvoie un objet, ou une liste [champ, valeur, …] sans désérialisation
-  const paires = Array.isArray(h) ? h.reduce((a, v, i) => (i % 2 ? a : [...a, [v, h[i + 1]]]), []) : Object.entries(h);
-  return paires.map(([champ, v]) => ({ champ, ...fromJson(v) }));
+  return Array.isArray(h) ? h.reduce((a, v, i) => (i % 2 ? a : [...a, [v, h[i + 1]]]), []) : Object.entries(h);
+}
+
+export async function lireContestations() {
+  return (await lireHash(CLE_CONTESTATIONS)).map(([champ, v]) => ({ champ, ...fromJson(v) }));
 }
 
 export async function viderContestations(champs) {
   if (champs.length) await getRedis().hdel(CLE_CONTESTATIONS, ...champs);
+}
+
+// ── Mots ajoutés sans redéploiement ──────────────────────────────────
+// Mots contestés acceptés après vérification (outil contestations.mjs
+// --accepter) : valables dès l'action suivante, sans commit ni déploiement.
+// Hash `bacduel:ajouts` : `<thème>:<mot normalisé>` → mot (personnes : nom
+// complet). Relu avant chaque action (agirDuel(), agirPvp()) et passé à
+// bacRules.js (definirAjouts()).
+
+const CLE_AJOUTS = "bacduel:ajouts";
+
+// { thème: [mots] }
+export async function chargerAjouts() {
+  const ajouts = {};
+  for (const [champ, mot] of await lireHash(CLE_AJOUTS)) (ajouts[champ.split(":")[0]] ??= []).push(mot);
+  for (const l of Object.values(ajouts)) l.sort();
+  definirAjouts(ajouts);
+  return ajouts;
+}
+
+// `mots` : [{ theme, mot }]. Retire aussi leur contestation.
+export async function accepterMots(mots) {
+  if (!mots.length) return;
+  const champs = mots.map(({ theme, mot }) => `${theme}:${normaliser(mot)}`);
+  await getRedis().hset(CLE_AJOUTS, Object.fromEntries(champs.map((c, i) => [c, mots[i].mot])));
+  await viderContestations(champs);
+}
+
+export async function retirerAjouts(champs) {
+  if (champs.length) await getRedis().hdel(CLE_AJOUTS, ...champs);
 }
 
 // ── 1v1 (`/bac adversaire:1v1`) ────────────────────────────────────────────
@@ -304,6 +338,7 @@ export async function agirPvp(fn) {
   return withLock(VERROU_PVP, async () => {
     const partie = await readPvp();
     if (!partie) return { partie: null, config };
+    await chargerAjouts();
     const finiAvant = partie.statut === "fini";
     const resultat = (await fn(partie, config)) || {};
     if (resultat.coup) partie.dernierCoupAt = Date.now();

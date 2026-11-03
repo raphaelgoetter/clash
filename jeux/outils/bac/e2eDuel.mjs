@@ -100,6 +100,8 @@ await h.handleBacCommand(W, lancement);
   if (!texte(vues.at(-1)).includes("signalé")) throw new Error("contestation non confirmée");
   if (boutons(vues.at(-1)).some((b) => b.custom_id.startsWith("bacduel_contester"))) throw new Error("bouton Contester encore là");
   if (!(await lireContestations()).some((c) => c.mot === `${m.lettre}zzzt`)) throw new Error("contestation non enregistrée");
+  await h.handleBacAbandon(W, ID, "ok", opts);
+  if (!texte(salon.filter((x) => x.method === "POST").at(-1)).includes(`🚩 Contesté : **${m.lettre}zzzt**`)) throw new Error("mot contesté absent du récapitulatif");
 }
 
 // Manche passée et temps écoulé : refusés, la manche se clôt

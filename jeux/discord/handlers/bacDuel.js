@@ -645,8 +645,16 @@ function faitsMarquants(d, nomDe) {
   return lignes;
 }
 
+// Mots contestés pendant la partie (restés refusés, signalés pour vérification)
+function ligneContestes(d, nomDe) {
+  const l = d.manches.flatMap((m) =>
+    ["joueur", "bot"].flatMap((id) => (m.contestes?.[id] ?? []).map((mot) => `**${mot}** (${THEMES[m.theme].replace(/\s*\(.*\)/, "")}, ${nomDe(id)})`)),
+  );
+  return l.length ? [`🚩 Contesté${l.length > 1 ? "s" : ""} : ${l.join(", ")}`] : [];
+}
+
 function messageFinal(d, nomDe, series) {
-  const faits = faitsMarquants(d, nomDe);
+  const faits = [...faitsMarquants(d, nomDe), ...ligneContestes(d, nomDe)];
   return {
     embeds: [
       {

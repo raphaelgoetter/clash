@@ -130,6 +130,7 @@ assert.strictEqual(Object.values(NIVEAUX).flat().length, Object.keys(THEMES).len
   assert.deepStrictEqual(contester(d, "joueur", 1), { mot: "kzzzt", theme: "animaux", lettre: "K" });
   assert.deepStrictEqual(contester(d, "joueur", 1), { erreur: "contestation" });
   assert.strictEqual(mancheCourante(d).reponses.joueur, null); // reste refusé
+  assert.deepStrictEqual(mancheCourante(d).contestes, { joueur: ["kzzzt"] }); // pour le récapitulatif
 }
 
 // ── Points : 1 par bonne réponse, 0,5 chacun pour la même ──

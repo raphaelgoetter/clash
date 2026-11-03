@@ -120,9 +120,22 @@ function singuliers(cle) {
 
 const _themes = new Map();
 
+// Mots ajoutés sans redéploiement ({ thème: [mots] }, Redis
+// `bacduel:ajouts`, lus par bacDuel.js chargerAjouts()) : fusionnés à la
+// liste au chargement du thème (personnes : nom complet). Un thème dont les
+// ajouts changent est rechargé.
+let _ajouts = {};
+export function definirAjouts(ajouts) {
+  for (const id of new Set([...Object.keys(_ajouts), ...Object.keys(ajouts)])) {
+    if (JSON.stringify(_ajouts[id] ?? []) !== JSON.stringify(ajouts[id] ?? [])) _themes.delete(id);
+  }
+  _ajouts = ajouts;
+}
+
 export function chargerTheme(id) {
   if (!_themes.has(id)) {
     const t = JSON.parse(fs.readFileSync(path.join(DOSSIER, `${id}.json`), "utf8"));
+    for (const m of _ajouts[id] ?? []) (t.personnes?.length ? t.personnes : t.mots).push(m);
     const cles = new Map();
     // Avec et sans article de tête (« Le Havre » : aussi « Havre »)
     for (const m of t.mots) for (const f of [m, sansArticle(m)]) if (normaliser(f) && !cles.has(normaliser(f))) cles.set(normaliser(f), m);
@@ -305,6 +318,8 @@ export function contester(d, id, numero) {
   const mot = m?.contestable?.[id];
   if (!mot) return { erreur: "contestation" };
   m.contestable[id] = null;
+  // Gardé pour le récapitulatif public
+  m.contestes = { ...m.contestes, [id]: [...(m.contestes?.[id] ?? []), mot] };
   d.vue += 1;
   return { mot, theme: m.theme, lettre: m.lettre };
 }
