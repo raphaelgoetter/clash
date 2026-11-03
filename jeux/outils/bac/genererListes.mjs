@@ -339,8 +339,11 @@ const THEMES = {
     const mythique = /divinit|déesse|dieu|déité|titan|mytholog|devî|créature|chimère|monstre|dragon|nymphe|géant|légendaire|héros|olympien/i;
     const exclu = /bible|ange|archange|être humain|personnage historique/i;
     const kevina = connus.filter((x) => (classes[x.id] ?? []).some((c) => mythique.test(c)) && !(classes[x.id] ?? []).some((c) => exclu.test(c)));
-    // Mots acceptés : au moins 2 langues (écarte les entrées très obscures)
-    return { nom: "Mythologie", mots: nomsPropres(tous.filter((x) => x.liens >= 2).map((x) => x.fr)), kevina: nomsPropres(kevina.map((x) => x.fr)) };
+    // Mots acceptés : au moins 5 langues (taille de la liste), plus les
+    // animaux imaginaires du Wiktionnaire (licorne, banshee : absents des
+    // classes Wikidata)
+    const imaginaires = reduire(await wiktionnaire("animaux-imaginaires", [["Animaux imaginaires en français", 0]]));
+    return { nom: "Mythologie", mots: nomsPropres([...tous.filter((x) => x.liens >= 5).map((x) => x.fr), ...imaginaires]), kevina: nomsPropres(kevina.map((x) => x.fr)) };
   },
 
   async jeuxvideo() {
@@ -361,7 +364,8 @@ const THEMES = {
         ${LIBELLE}
       }`,
     );
-    const noms = [...persos, ...pokemon].flatMap((x) => [x.fr, x.en]).filter(Boolean);
+    // Personnages : au moins 2 langues (taille de la liste) ; Pokémon : tous
+    const noms = [...persos.filter((x) => x.liens >= 2), ...pokemon].flatMap((x) => [x.fr, x.en]).filter(Boolean);
     const derniers = noms.map((n) => n.replace(/\s*\(.*?\)\s*/g, " ").trim().split(/\s+/)).filter((m) => m.length > 1).map((m) => m.at(-1));
     return {
       nom: "Personnages de jeu vidéo",
@@ -401,7 +405,13 @@ const THEMES = {
       while (SUFFIXES.test(m)) m = m.replace(SUFFIXES, "");
       return m.trim();
     };
-    const noms = l.flatMap((x) => [x.fr, x.en]).filter(Boolean);
+    // Au moins 3 langues (taille de la liste), plus la « Liste des marques de
+    // voitures » de Wikipédia, faite à la main (Tesla, Lada : absents des
+    // classes Wikidata ; liens vers des pays écartés)
+    const pays = new Set(JSON.parse(fs.readFileSync(path.join(SORTIE, "pays.json"), "utf8")).mots.map(normaliser));
+    const liste = (await liens("Liste des marques de voitures", "fr.wikipedia.org")).filter((t) => !/^(Liste|Histoire|Automobile|Constructeur|Voiture|Industrie|Formule|Europe|Allemagne de|Automatisme)/.test(t) && !pays.has(normaliser(t)));
+    // Liste : aussi le premier mot (« Lada Vesta » : « Lada »)
+    const noms = [...l.filter((x) => x.liens >= 3).flatMap((x) => [x.fr, x.en]), ...liste, ...liste.map((t) => t.split(" ")[0])].filter(Boolean);
     const formes = noms.flatMap((n) => [n, court(n), court(n).split("-")[0]]);
     const connus = [...new Map(l.filter((x) => x.liens >= 30).map((x) => [x.id, x])).values()];
     const classes = await classesDirectes("autos", connus.map((x) => x.id));
