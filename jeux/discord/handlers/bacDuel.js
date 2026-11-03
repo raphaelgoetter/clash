@@ -54,7 +54,6 @@ import {
   passer,
   proposer,
   tempsEcoule,
-  themeDePersonnes,
 } from "../../services/bacRules.js";
 import {
   getRoleIdByName,
@@ -443,9 +442,8 @@ function buildVue(
           .filter(Boolean)
           .join(" · "),
       ];
-  const consigne = themeDePersonnes(m.theme)
-    ? ["👤 Seul le nom de famille compte."]
-    : [];
+  const precision = PRECISIONS[m.theme];
+  const consigne = precision ? [`${precision[0]} ${precision[1].charAt(0).toUpperCase()}${precision[1].slice(1)}.`] : [];
   const lignes = [
     entete,
     `## ${intitule(m)}`,
@@ -527,6 +525,18 @@ export function buildModalMot(manche, themeId, lettre, pvp) {
   };
 }
 
+// Limites d'un thème, rappelées dans la vue et dans les règles (sources :
+// jeux/outils/bac/genererListes.mjs)
+const PRECISIONS = {
+  villes: ["🏙️", "100 000 habitants et plus, 20 000 en France (pas de villages)"],
+  prenoms: ["👶", "donnés au moins 500 fois en France depuis 1900"],
+  acteurs: ["👤", "les plus connus, seul le nom de famille compte"],
+  musique: ["👤", "les plus connus, seul le nom de famille compte"],
+  autos: ["🚗", "marques, pas les modèles"],
+  clash: ["🃏", "noms en français ou en anglais"],
+  jeuxvideo: ["🎮", "noms en français ou en anglais"],
+};
+
 function buildReglesEmbed(config) {
   return {
     title: "📖 Règles du Petit Bac",
@@ -540,12 +550,16 @@ function buildReglesEmbed(config) {
       "**Points** : 1 par bonne réponse, 0,5 chacun si vous avez trouvé le même mot.",
       "Majuscules, accents, pluriel et article (le, la, l') sont tolérés.",
       "",
-      "**Difficulté croissante** : manches 1 à 3 sur un thème facile, 4 à 6 sur un thème moyen, 7 et 8 sur un thème difficile ; la 3ᵉ, la 6ᵉ et la 8ᵉ manche tirent une lettre moins courante. Acteurs et musique : seul le nom de famille compte.",
+      "**Difficulté croissante** : manches 1 à 3 sur un thème facile, 4 à 6 sur un thème moyen, 7 et 8 sur un thème difficile ; la 3ᵉ, la 6ᵉ et la 8ᵉ manche tirent une lettre moins courante.",
       "",
       ...Object.entries(NIVEAUX).map(
         ([n, l]) =>
           `**${n.charAt(0).toUpperCase() + n.slice(1)}** : ${l.map((id) => THEMES[id]).join(", ")}.`,
       ),
+      "",
+      "**Précisions**",
+      ...Object.entries(PRECISIONS).map(([id, [emoji, texte]]) => `${emoji} ${THEMES[id]} : ${texte}.`),
+      "",
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
     ].join("\n"),
     color: BAC_COLOR,

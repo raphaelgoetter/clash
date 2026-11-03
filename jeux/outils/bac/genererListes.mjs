@@ -242,6 +242,9 @@ function tete(entree) {
 // Wiktionnaire, et masculins possibles d'un féminin
 const SUFFIXES_FEMININS = ["ale", "ane", "ante", "elle", "enne", "ère", "esse", "euse", "ine", "onne", "rice"];
 const MASCULINS = [[/ière$/, "ier"], [/ère$/, "er"], [/euse$/, "eur"], [/rice$/, "eur"], [/eresse$/, "eur"], [/esse$/, "e"], [/esse$/, ""], [/enne$/, "en"], [/onne$/, "on"], [/elle$/, "el"], [/ine$/, "in"], [/(ale|ane|ante)$/, (x) => x.slice(0, -1)]];
+// Outils de la liste dont le sens courant n'est pas un outil
+const SEUIL_FREQ_OUTILS = 0.2;
+const AMBIGUS_OUTILS = new Set(["appareil", "barre", "broche", "canne", "châsse", "croc", "fer", "fil", "filière", "griffe", "instrument", "lampe", "langue", "perche", "pied", "pierre", "pistolet", "plane", "polka", "pompe", "raclette", "rondelle", "têtu", "tour", "bol", "chasse", "chaîne", "fiche", "foret", "fraise", "lame", "moule", "pointe", "valet", "verre"]);
 const RUBRIQUES_ANNEXE_METIERS = new Set(["accueil", "agronomie", "alimentation", "armée", "artisanat", "audiovisuel", "bâtiment", "commerce", "culture", "droit", "éducation", "entreprise", "étudiant", "étudiante", "finances", "gestion", "logistique", "musique", "politique", "propreté", "religion", "santé", "sécurité", "spectacle", "sport", "technologies", "transports"]);
 const masculinsDe = (f) => MASCULINS.filter(([r]) => r.test(f)).map(([r, v]) => f.replace(r, v));
 
@@ -334,6 +337,49 @@ const THEMES = {
     const suffixes = await wiktionnaire("metiers-suffixes", SUFFIXES_FEMININS.map((s) => [`Mots en français suffixés avec -${s}`, 0]));
     const mots = reduire([...e, ...annexe, ...suffixes.filter((f) => masculinsDe(f).some((m) => masculins.has(normaliser(m))))]);
     return { nom: "Métiers", mots, kevina: await kevinaDepuis(mots, [["Annexe:Métiers en français"]], { courant: true }) };
+  },
+
+  async fromages() {
+    // Fromages de Wikidata (classe fromage et ses sous-classes, article dans
+    // au moins 2 langues) et de la catégorie du Wiktionnaire, sans les types
+    // génériques (« fromage frais », « fromage à pâte molle ») ni les
+    // suffixes d'appellation (« Taleggio AOP » : « Taleggio », « Colby
+    // cheese » : « Colby »). Kévina : article dans au moins 20 langues, ou
+    // au moins 10 et présent au Wiktionnaire.
+    const wd = await sparql(
+      "fromages",
+      `SELECT ?x ?fr ?en ?liens WHERE {
+        ?x (wdt:P31|wdt:P279)/wdt:P279* wd:Q10943 ; wikibase:sitelinks ?liens .
+        ${LIBELLE}
+      }`,
+    );
+    const nom = (n) => n && n.replace(/\s+(AOP|AOC|PAT|DOP|cream cheese|cheese)$/i, "").trim();
+    const generique = (n) => /^(fromages?|cheese)\b|^cream$|cookbook|manufacture|smažený/i.test(n);
+    const wikt = (await wiktionnaire("fromages", [["Fromages en français", 1]])).filter((m) => !generique(m));
+    const connus = new Set(wikt.map(normaliser));
+    const tous = wd.filter((x) => x.liens >= 2).flatMap((x) => [x.fr, x.en]).map(nom).filter((n) => n && !generique(n));
+    const kevina = wd.filter((x) => x.liens >= 20 || (x.liens >= 10 && connus.has(normaliser(nom(x.fr))))).map((x) => nom(x.fr)).filter((n) => n && !generique(n));
+    return { nom: "Fromages", mots: nomsPropres([...tous, ...wikt]), kevina: nomsPropres(kevina) };
+  },
+
+  async outils() {
+    // Catégorie « Outils » du Wiktionnaire (instruments de mesure compris,
+    // sans les récipients ni les ustensiles de cuisine) et « Liste d'outils »
+    // de Wikipédia (sans les précisions entre parenthèses). Noms composés
+    // gardés entiers : leur premier mot n'est souvent pas un outil (« pied à
+    // coulisse », « tête de… »). Kévina : outils des deux sources, d'usage
+    // courant, sans les mots ambigus (`AMBIGUS_OUTILS`).
+    const entiers = (l) => [...new Map(l.map((m) => m.replace(/\s*\(.*?\)\s*/g, " ").trim()).filter((m) => /^[\p{L}\s'’-]+$/u.test(m) && normaliser(m).length >= 2).map((m) => [normaliser(m), m])).values()];
+    const wikt = entiers(await wiktionnaire("outils", [["Outils en français", 1]], ["Récipients en français", "Ustensiles de cuisine en français"]));
+    const wp = entiers(await liens("Liste d'outils", "fr.wikipedia.org"));
+    const mots = entiers([...wikt, ...wp]).sort((a, b) => a.localeCompare(b, "fr"));
+    // Outils d'un mot de la liste de Wikipédia aussi au Wiktionnaire (mot de
+    // tête des noms composés compris : « clé » de « clé à molette »), même
+    // peu fréquents dans Lexique (rabot, gouge : moins de 1 par million)
+    const dansWikt = new Set(reduire(wikt).map(normaliser));
+    const seulsWp = wp.filter((m) => !/\s/.test(m)).map((m) => m.toLowerCase());
+    const kevina = (await courants(seulsWp, SEUIL_FREQ_OUTILS)).filter((m) => dansWikt.has(normaliser(m)) && !AMBIGUS_OUTILS.has(m));
+    return { nom: "Outils", mots, kevina };
   },
 
   async sports() {

@@ -67,7 +67,11 @@ assert.strictEqual(valider("jeuxvideo", "P", "Peach").ok, true); // dernier mot 
 assert.strictEqual(valider("jeuxvideo", "M", "Master Chief").ok, true); // nom anglais
 assert.strictEqual(valider("transports", "T", "trottinette").ok, true);
 assert.strictEqual(valider("autos", "M", "Mercedes").ok, true); // forme courte de « Mercedes-Benz »
-assert.strictEqual(valider("musique", "B", "The Beatles").ok, true); // groupe : son nom, sans « The »
+assert.strictEqual(valider("musique", "B", "The Beatles").ok, true);
+assert.strictEqual(valider("fromages", "T", "Taleggio AOP").ok, true); // suffixe d'appellation
+assert.strictEqual(valider("fromages", "F", "fromage").ok, false); // pas le mot générique
+assert.strictEqual(valider("outils", "P", "pied à coulisse").ok, true);
+assert.strictEqual(valider("outils", "P", "pied").ok, false); // nom composé gardé entier // groupe : son nom, sans « The »
 
 // ── Personnes : seul le nom de famille compte ──
 assert.deepStrictEqual(nomsDeFamille("Robert De Niro"), ["Niro", "De Niro"]);

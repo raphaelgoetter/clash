@@ -47,12 +47,14 @@ export const THEMES = {
   acteurs: "Acteurs et actrices",
   musique: "Musique (chanteurs et groupes)",
   inventions: "Inventions",
+  fromages: "Fromages",
+  outils: "Outils",
 };
 
 // Niveau de chaque thème, et niveau de chaque manche (difficulté croissante)
 export const NIVEAUX = {
   facile: ["animaux", "pays", "prenoms", "fruits", "metiers", "transports"],
-  moyen: ["villes", "sports", "autos", "acteurs", "musique"],
+  moyen: ["villes", "sports", "autos", "acteurs", "musique", "fromages", "outils"],
   difficile: ["mythologie", "jeuxvideo", "clash", "inventions"],
 };
 // Déroulé d'une partie, difficulté croissante : niveau du thème et lettres
