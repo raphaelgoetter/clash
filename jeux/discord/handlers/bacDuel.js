@@ -60,6 +60,9 @@ import {
 
 const BAC_COLOR = 0x2e86c1;
 const TITRE = "🔤 Petit Bac";
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+// Illustration du message public de fin de partie (bacImage.js)
+const URL_ILLUSTRATION = `${TRUST_ROYALE_URL}/api/bac/illustration`;
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -105,6 +108,8 @@ export function versV2({
       accent_color: embed.color ?? BAC_COLOR,
       components: [
         { type: 10, content: texte.slice(0, TEXTE_MAX) },
+        // Image : galerie sous le texte
+        ...(embed.image?.url ? [{ type: 12, items: [{ media: { url: embed.image.url } }] }] : []),
         ...components,
       ],
     });
@@ -592,6 +597,7 @@ function messageFinal(d, nomDe, series) {
           resultat(d, nomDe),
           ...(series.length ? ["", ...series] : []),
         ].join("\n"),
+        image: { url: URL_ILLUSTRATION },
         color: BAC_COLOR,
       },
     ],

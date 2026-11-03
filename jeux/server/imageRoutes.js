@@ -34,6 +34,7 @@ import {
   getCarteImage as getMeowCarteImage,
   getIllustrationImage as getMeowIllustrationImage,
 } from "../services/meowImage.js";
+import { getIllustrationImage as getBacIllustrationImage } from "../services/bacImage.js";
 import {
   decodeResultat as decodeMascaradeResultat,
   decodeTable as decodeMascaradeTable,
@@ -299,6 +300,15 @@ router.get("/api/meow/illustration", async (req, res) => {
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Petit Bac : illustration statique du message de fin de partie.
+router.get("/api/bac/illustration", async (req, res) => {
+  const image = await getBacIllustrationImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
   res.send(image.buffer);
 });
 
