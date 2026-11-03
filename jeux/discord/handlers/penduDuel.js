@@ -319,21 +319,16 @@ function buildVue(partie, discordId, { texte = null, config, confirmerAbandon = 
   const A = solo ? null : nomDe(partie)(adversaire(moi));
   const titre = solo ? `${TITRE} · solo` : `${TITRE} · contre ${A}`;
   const j = d.joueurs[moi];
+  // Partie finie : l'issue seule, le détail (mot, potences, séries) est dans
+  // le récapitulatif public juste en dessous
   if (d.termine) {
-    const issue = solo
-      ? d.gagnant === moi ? "🏆 Bravo !" : "💀 Perdu…"
-      : d.gagnant === "nul" ? "🤝 Égalité !" : d.gagnant === moi ? "🏆 Victoire !" : "💀 Défaite…";
-    return {
-      embeds: [
-        {
-          title: titre,
-          description: [...(texte ? [texte, ""] : []), resultat(partie), `Le mot était **${motAffiche(d)}**.`, "", `${issue} La partie est terminée.`].join("\n"),
-          image: { url: d.abandon ? urlVue(d, moi) : urlFinal(partie) },
-          color: PENDU_COLOR,
-        },
-      ],
-      components: boutonsFin(),
-    };
+    const issue =
+      d.abandon === moi
+        ? "🏳️ Tu abandonnes."
+        : solo
+          ? d.gagnant === moi ? "🏆 Bravo !" : "💀 Perdu…"
+          : d.gagnant === "nul" ? "🤝 Égalité !" : d.gagnant === moi ? "🏆 Victoire !" : "💀 Défaite…";
+    return { embeds: [{ description: `${issue} La partie est terminée.`, color: PENDU_COLOR }], components: [] };
   }
   if (confirmerAbandon) {
     return {
