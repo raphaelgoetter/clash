@@ -1,4 +1,4 @@
-// Test de bout en bout du handler du Pendu (1v1), sur Redis en mémoire ;
+// Test de bout en bout du handler du Pendu (solo et 1v1), sur Redis en mémoire ;
 // TOUS les appels Discord sont interceptés (aucun message réel). Vérifie
 // les limites Discord des vues, que le mot n'apparaît nulle part avant la
 // fin (textes, adresses des images), et affiche des exemples.
@@ -67,7 +67,7 @@ const W = (id) => `https://discord.test/${id.toLowerCase()}`;
 
 async function partie(strategie) {
   const debut = { vues: vues.length, salon: salon.length };
-  await h.handlePenduCommand(W("A"), body("A", "Alice"));
+  await h.handlePenduPvpCommand(W("A"), body("A", "Alice"));
   await h.handlePenduOuvrir(W("B"), body("B", "Bob"));
   const p0 = await readPvp();
   const cible = p0.duel.cible;
@@ -93,11 +93,11 @@ async function partie(strategie) {
 }
 
 // Stratégie : lettres dans l'ordre de fréquence (A propose le mot vers la fin)
-const frequence = (aleaMot) => async (id, j, cible) => {
+const frequence = (aleaMot, opts = {}) => async (id, j, cible) => {
   const restantes = ordre.filter((l) => !j.lettres.includes(l));
-  if (aleaMot && [...cible].filter((c) => j.lettres.includes(c)).length >= cible.length - 2) return h.handlePenduMot(W(id), id, cible.toLowerCase());
+  if (aleaMot && [...cible].filter((c) => j.lettres.includes(c)).length >= cible.length - 2) return h.handlePenduMot(W(id), id, cible.toLowerCase(), opts);
   // Un peu de hasard : parties différentes pour les deux joueurs
-  return h.handlePenduLettre(W(id), id, Math.random() < 0.3 ? restantes[Math.floor(Math.random() * restantes.length)] : restantes[0]);
+  return h.handlePenduLettre(W(id), id, Math.random() < 0.3 ? restantes[Math.floor(Math.random() * restantes.length)] : restantes[0], opts);
 };
 
 const resultats = {};
@@ -113,7 +113,7 @@ console.log("\nExemple de récapitulatif :\n" + texte(finals.at(-1)));
 
 // Boutons : voyelles et menu des consonnes, lettres jouées retirées
 {
-  await h.handlePenduCommand(W("A"), body("A", "Alice"));
+  await h.handlePenduPvpCommand(W("A"), body("A", "Alice"));
   await h.handlePenduOuvrir(W("B"), body("B", "Bob"));
   await h.handlePenduLettre(W("A"), "A", "E");
   await h.handlePenduLettre(W("A"), "A", "B");
@@ -152,6 +152,42 @@ console.log("\nExemple de récapitulatif :\n" + texte(finals.at(-1)));
   const p = await readPvp();
   if (p.statut !== "fini" || p.duel.abandon === null) throw new Error("abandon non pris en compte");
   console.log("\nAbandon :", texte(salon.filter((m) => m.method === "POST").at(-1)).split("\n")[1]);
+}
+
+// ── Solo ──
+{
+  const { readPartie } = await import("../../services/penduDuel.js");
+  const S = "S";
+  const resultatsSolo = {};
+  for (let g = 0; g < 4; g++) {
+    await h.handlePenduSoloCommand(W(S), body(S, "Sam"));
+    const cible = (await readPartie(S)).duel.cible;
+    for (let k = 0; ; k++) {
+      if (k > 40) throw new Error("partie solo bloquée");
+      const p = await readPartie(S);
+      if (p.statut === "fini") {
+        resultatsSolo[p.duel.gagnant ?? "pendu"] = (resultatsSolo[p.duel.gagnant ?? "pendu"] || 0) + 1;
+        break;
+      }
+      const v = vues.at(-1);
+      if (p.duel.joueurs.joueur.lettres.length && !composants(v).some((c) => c.custom_id === "penduduel_proposer:solo")) throw new Error("boutons solo sans :solo");
+      sansFuite(v, cible);
+      await frequence(g % 2 === 0, { solo: true })(S, p.duel.joueurs.joueur, cible);
+    }
+  }
+  console.log("\n4 parties solo :", resultatsSolo);
+  const fin = salon.filter((m) => m.method === "POST" && texte(m).includes("en solo") && texte(m).includes("Le mot était")).at(-1);
+  if (!fin) throw new Error("récapitulatif solo absent");
+  console.log("Exemple de récapitulatif solo :\n" + texte(fin));
+  // Ma vue solo, abandon solo
+  await h.handlePenduSoloCommand(W(S), body(S, "Sam"));
+  await h.handlePenduOuvrir(W(S), body(S, "Sam"), { solo: true });
+  if (!texte(vues.at(-1)).includes("Pendu · solo")) throw new Error("Ma vue solo absente");
+  await h.handlePenduAbandon(W(S), S, "ok", { solo: true });
+  if ((await readPartie(S)).statut !== "fini") throw new Error("abandon solo non pris en compte");
+  // Le 1v1 en cours n'est pas touché par le solo
+  await h.handlePenduOuvrir(W("X"), body("X", "Xavier"), { solo: true });
+  if (!texte(vues.at(-1)).includes("Aucune partie solo")) throw new Error("solo sans partie mal géré");
 }
 
 console.log("\ne2e Pendu OK");

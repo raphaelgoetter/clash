@@ -1,7 +1,9 @@
 import assert from "assert";
 import { Redis } from "@upstash/redis";
 import { proposerMot } from "./penduRules.js";
-import { agirPvp, isNewRecord, lireRecord, ouvrirPvp, pvpAbandonnee, readPvp, rejoindrePvp, serieApres, INACTIVITE_PVP_MS } from "./penduDuel.js";
+import { agir, isNewRecord, lireRecord, nouvelleSolo, ouvrirPvp, pvpAbandonnee, readPvp, rejoindrePvp, serieApres, INACTIVITE_PVP_MS } from "./penduDuel.js";
+
+const agirPvp = (fn, o) => agir("pvp", fn, o);
 
 // ── serieApres : +1 par victoire, 0 par défaite, intacte sur un nul ──
 assert.strictEqual(serieApres(3, "victoire"), 4);
@@ -36,10 +38,38 @@ if (Redis.isFake) {
   assert.deepStrictEqual(resultat.delais, ["bot"]);
   assert.strictEqual(resultat.vientDeFinir, true);
   assert.deepStrictEqual([fin.statut, fin.duel.gagnant, fin.series.joueur.serie, fin.series.bot.serie], ["fini", "joueur", 1, 0]);
-  assert.strictEqual((await lireRecord()).username, "Alice");
+  assert.strictEqual((await lireRecord("pvp")).username, "Alice");
 
   // Partie finie : une nouvelle peut s'ouvrir
   assert.strictEqual((await ouvrirPvp({ channelId: "salon", lanceur: "C", nom: "Chloé" })).partie.statut, "lobby");
+}
+
+// ── Solo : série de mots trouvés, partie remplacée = défaite ──
+if (Redis.isFake) {
+  const t0 = Date.parse("2026-11-03T21:00:00Z");
+  const trouver = () =>
+    agir("S", (x) => {
+      proposerMot(x.duel, "joueur", x.duel.mot, { now: t0 });
+      return { coup: true };
+    }, { now: t0 });
+  const { partie } = await nouvelleSolo({ channelId: "salon", discordId: "S", nom: "Sam", now: t0 });
+  assert.deepStrictEqual([partie.mode, partie.statut, Object.keys(partie.duel.joueurs)], ["solo", "enCours", ["joueur"]]);
+  let r = await trouver();
+  assert.deepStrictEqual([r.partie.statut, r.partie.duel.gagnant, r.partie.series.joueur.serie], ["fini", "joueur", 1]);
+  await nouvelleSolo({ channelId: "salon", discordId: "S", nom: "Sam", now: t0 });
+  r = await trouver();
+  assert.strictEqual(r.partie.series.joueur.serie, 2);
+  assert.strictEqual((await lireRecord("solo")).serie, 2);
+  // Relancée sans finir : défaite, série remise à 0
+  const { ancienne } = await nouvelleSolo({ channelId: "salon", discordId: "S", nom: "Sam", now: t0 });
+  assert.strictEqual(ancienne, null); // la précédente était finie
+  await nouvelleSolo({ channelId: "salon", discordId: "S", nom: "Sam", now: t0 });
+  r = await trouver();
+  assert.deepStrictEqual([r.partie.series.joueur.avant, r.partie.series.joueur.serie], [0, 1]);
+  // Délai dépassé : pendu, défaite
+  await nouvelleSolo({ channelId: "salon", discordId: "S", nom: "Sam", now: t0 });
+  r = await agir("S", () => ({}), { now: t0 + 61_000 });
+  assert.deepStrictEqual([r.resultat.delais, r.partie.statut, r.partie.duel.gagnant, r.partie.series.joueur.serie], [["joueur"], "fini", null, 0]);
 }
 
 console.log("penduDuel.test.js OK");

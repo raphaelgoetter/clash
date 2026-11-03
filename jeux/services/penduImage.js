@@ -49,7 +49,7 @@ const texte = (x, y, contenu, { size = 22, fill = CRAIE, anchor = "start" } = {}
 //   s: fin ("" en jeu, "t" trouvé, "p" pendu, "d" délai dépassé) }.
 // Final : { w: mot (accents compris), j: [{ n: pseudo (sans emoji : la
 //   police embarquée n'en a pas), e: erreurs, l: lettres découvertes,
-//   s: fin }] × 2, g: index du gagnant (-1 : nul) }.
+//   s: fin }] × 2 (× 1 en solo), g: index du gagnant (-1 : nul, solo) }.
 
 const FINS = { trouve: "t", pendu: "p", temps: "d" };
 const FINS_INV = { t: "trouve", p: "pendu", d: "temps" };
@@ -86,7 +86,7 @@ export function encodeFinal({ mot, joueurs, gagnant }) {
 
 export function decodeFinal(param) {
   const d = depuisUrl(param);
-  if (!d || typeof d.w !== "string" || d.w.length < 1 || d.w.length > 15 || !Array.isArray(d.j) || d.j.length !== 2) return null;
+  if (!d || typeof d.w !== "string" || d.w.length < 1 || d.w.length > 15 || !Array.isArray(d.j) || ![1, 2].includes(d.j.length)) return null;
   return {
     mot: d.w,
     joueurs: d.j.map((j) => ({ nom: String(j.n ?? "?"), erreurs: borner(j.e, ERREURS_MAX), decouvertes: borner(j.l, 15), fin: FINS_INV[j.s] ?? null })),
@@ -182,9 +182,10 @@ export function buildVueSvg({ motif, fausses, erreurs, fin }) {
   return cadre(LARGEUR, hauteur, contenu);
 }
 
+// Deux potences côte à côte (1v1), une seule au centre (solo)
 export function buildFinalSvg({ mot, joueurs, gagnant }) {
   const hauteur = 470;
-  const moitie = LARGEUR / 2;
+  const moitie = LARGEUR / joueurs.length;
   const panneaux = joueurs.map((j, i) => {
     const x0 = i * moitie;
     const perdu = j.fin === "pendu" || j.fin === "temps";
@@ -197,7 +198,7 @@ export function buildFinalSvg({ mot, joueurs, gagnant }) {
       texte(x0 + moitie / 2, PADDING + 326, detail, { size: 18, fill: GRIS, anchor: "middle" }),
     ].join("\n");
   });
-  const separateur = `<line x1="${moitie}" y1="${PADDING}" x2="${moitie}" y2="${PADDING + 330}" stroke="${BORD}" stroke-width="2"/>`;
+  const separateur = joueurs.length > 1 ? `<line x1="${moitie}" y1="${PADDING}" x2="${moitie}" y2="${PADDING + 330}" stroke="${BORD}" stroke-width="2"/>` : "";
   const lettres = [...mot.toUpperCase()];
   const taille = lettres.length > 10 ? 50 : 54;
   return cadre(LARGEUR, hauteur, [...panneaux, separateur, tuilesSvg(lettres, LARGEUR / 2, 380, { taille })].join("\n"));

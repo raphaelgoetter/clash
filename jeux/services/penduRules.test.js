@@ -90,6 +90,24 @@ const duel = () => creerDuel({ mot: "éléphant", now });
   assert.deepStrictEqual([d.termine, d.gagnant], [true, "joueur"]);
 }
 
+// ── Solo : un seul siège, gagné si trouvé ──
+{
+  const d = creerDuel({ mot: "jazz", now, sieges: ["joueur"] });
+  assert.deepStrictEqual(Object.keys(d.joueurs), ["joueur"]);
+  for (const l of "EASIO") proposerLettre(d, "joueur", l);
+  proposerMot(d, "joueur", "jizz");
+  assert.deepStrictEqual([d.joueurs.joueur.fin, d.termine, d.gagnant], ["pendu", true, null]);
+  const e = creerDuel({ mot: "jazz", now, sieges: ["joueur"] });
+  for (const l of "JAZ") proposerLettre(e, "joueur", l);
+  assert.deepStrictEqual([e.termine, e.gagnant], [true, "joueur"]);
+  const f = creerDuel({ mot: "jazz", now, sieges: ["joueur"] });
+  assert.deepStrictEqual(appliquerDelais(f, 60_000, now + 60_001), ["joueur"]);
+  assert.deepStrictEqual([f.termine, f.gagnant], [true, null]);
+  const g = creerDuel({ mot: "jazz", now, sieges: ["joueur"] });
+  abandonner(g, "joueur");
+  assert.deepStrictEqual([g.termine, g.gagnant], [true, null]);
+}
+
 // ── Abandon : défaite immédiate ──
 {
   const d = duel();
@@ -109,6 +127,8 @@ const duel = () => creerDuel({ mot: "éléphant", now });
   assert.strictEqual(decodeVue("n'importe quoi"), null);
   const final = { mot: "éléphant", joueurs: [{ nom: "Alice 🎉", erreurs: 2, decouvertes: 8, fin: "trouve" }, { nom: "Bob", erreurs: 6, decouvertes: 3, fin: "pendu" }], gagnant: 0 };
   assert.deepStrictEqual(decodeFinal(encodeFinal(final)), { ...final, joueurs: [{ ...final.joueurs[0], nom: "Alice" }, final.joueurs[1]] });
+  const solo = { mot: "jazz", joueurs: [final.joueurs[1]], gagnant: -1 };
+  assert.deepStrictEqual(decodeFinal(encodeFinal(solo)), solo);
 }
 
 console.log("penduRules.test.js OK");

@@ -1,12 +1,13 @@
 // ============================================================
-// penduRules.js — Règles pures du Pendu en duel (`/pendu`, 1v1 seulement) :
-// les deux joueurs cherchent le MÊME mot, chacun de son côté, sans voir
-// l'avancement de l'autre ; le mot et les deux potences ne sont dévoilés
-// qu'une fois les deux parties finies.
+// penduRules.js — Règles pures du Pendu (`/pendu`), en solo ou en 1v1 :
+// en 1v1, les deux joueurs cherchent le MÊME mot, chacun de son côté, sans
+// voir l'avancement de l'autre ; le mot et les deux potences ne sont
+// dévoilés qu'une fois les deux parties finies. Solo : un seul siège.
 //
 // Duel : { mot (forme affichée, accents compris), cible (lettres A-Z sans
 // accent), joueurs: { joueur, bot } (sièges du moteur, comme les autres
-// duels), termine, gagnant: "joueur" | "bot" | "nul" | null, abandon }.
+// duels ; solo : { joueur } seul), termine, gagnant: "joueur" | "bot" |
+// "nul" | null (solo : "joueur" si trouvé, sinon null), abandon }.
 // Joueur : { lettres: [proposées, dans l'ordre], erreurs, motsFaux: [mots
 // proposés à tort], fin: null | "trouve" | "pendu" | "temps", dernierCoupAt }.
 //
@@ -51,12 +52,13 @@ export function tirerMot({ rng = Math.random } = {}) {
 
 const nouveauJoueur = (now) => ({ lettres: [], erreurs: 0, motsFaux: [], fin: null, dernierCoupAt: now });
 
-export function creerDuel({ mot = null, now = Date.now(), rng = Math.random } = {}) {
+// `sieges` : SIEGES en 1v1, ["joueur"] en solo
+export function creerDuel({ mot = null, now = Date.now(), rng = Math.random, sieges = SIEGES } = {}) {
   const m = mot ?? tirerMot({ rng });
   return {
     mot: m,
     cible: normaliser(m),
-    joueurs: { joueur: nouveauJoueur(now), bot: nouveauJoueur(now) },
+    joueurs: Object.fromEntries(sieges.map((s) => [s, nouveauJoueur(now)])),
     termine: false,
     gagnant: null,
     abandon: null,
@@ -75,6 +77,10 @@ export const lettresFausses = (d, siege) => d.joueurs[siege].lettres.filter((l) 
 
 // Lettres du mot découvertes (positions), départage de deux pendus
 export const lettresDecouvertes = (d, siege) => [...motif(d, siege)].filter((c) => c !== "_").length;
+
+// Sièges de la partie (un seul en solo)
+export const siegesDe = (d) => Object.keys(d.joueurs);
+export const estSolo = (d) => siegesDe(d).length === 1;
 
 export const enCours = (d, siege) => !d.termine && d.joueurs[siege].fin === null;
 
@@ -121,7 +127,7 @@ export function proposerMot(d, siege, mot, { now = Date.now() } = {}) {
 // "temps"). Renvoie les sièges concernés.
 export function appliquerDelais(d, delaiMs, now = Date.now()) {
   if (d.termine) return [];
-  const sieges = SIEGES.filter((s) => enCours(d, s) && now - d.joueurs[s].dernierCoupAt > delaiMs);
+  const sieges = siegesDe(d).filter((s) => enCours(d, s) && now - d.joueurs[s].dernierCoupAt > delaiMs);
   for (const s of sieges) d.joueurs[s].fin = "temps";
   finirSiPossible(d);
   return sieges;
@@ -132,8 +138,9 @@ export const echeance = (d, siege, delaiMs) => (enCours(d, siege) ? d.joueurs[si
 
 // Départage, une fois les deux parties finies : le mot trouvé l'emporte ;
 // deux mots trouvés : le moins d'erreurs (égalité : nul) ; deux pendus :
-// le plus de lettres découvertes (égalité : nul).
+// le plus de lettres découvertes (égalité : nul). Solo : gagné si trouvé.
 export function departager(d) {
+  if (estSolo(d)) return d.joueurs.joueur.fin === "trouve" ? "joueur" : null;
   const [a, b] = SIEGES.map((s) => d.joueurs[s]);
   const trouveA = a.fin === "trouve";
   const trouveB = b.fin === "trouve";
@@ -143,7 +150,7 @@ export function departager(d) {
 }
 
 function finirSiPossible(d) {
-  if (d.termine || SIEGES.some((s) => d.joueurs[s].fin === null)) return;
+  if (d.termine || siegesDe(d).some((s) => d.joueurs[s].fin === null)) return;
   d.termine = true;
   d.gagnant = departager(d);
 }
@@ -151,6 +158,6 @@ function finirSiPossible(d) {
 // Abandon : défaite immédiate, quelle que soit la partie de l'adversaire
 export function abandonner(d, siege) {
   if (d.termine) return { erreur: "termine" };
-  Object.assign(d, { termine: true, gagnant: adversaire(siege), abandon: siege });
+  Object.assign(d, { termine: true, gagnant: estSolo(d) ? null : adversaire(siege), abandon: siege });
   return { ok: true };
 }

@@ -111,7 +111,8 @@ import {
   memberHasMiniJeuxRole as penduMemberHasMiniJeuxRole,
   buildModalMot as buildPenduModalMot,
   handlePenduRoleRejected,
-  handlePenduCommand,
+  handlePenduSoloCommand,
+  handlePenduPvpCommand,
   handlePenduOuvrir,
   handlePenduLettre,
   handlePenduMot,
@@ -539,9 +540,10 @@ export async function routeDuels(body, res) {
     }
   }
 
-  // ── /pendu : Pendu en 1v1 seulement (même mot pour les deux, chacun de
-  // son côté). Réservé au rôle MINI-JEUX pour lancer.
+  // ── /pendu mode:solo|1v1 : Pendu seul, ou en 1v1 (même mot pour les
+  // deux, chacun de son côté). Réservé au rôle MINI-JEUX pour lancer.
   if (body.type === 2 && body.data?.name === "pendu") {
+    const solo = body.data.options?.find((o) => o.name === "mode")?.value !== "1v1";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(async () => {
@@ -549,35 +551,40 @@ export async function routeDuels(body, res) {
         await handlePenduRoleRejected(webhookUrl);
         return;
       }
-      await handlePenduCommand(webhookUrl, body);
+      if (solo) await handlePenduSoloCommand(webhookUrl, body);
+      else await handlePenduPvpCommand(webhookUrl, body);
     });
     return;
   }
 
   // ── Pendu : fenêtre de saisie soumise (body.type 5 = MODAL_SUBMIT),
   // vue éditée en place (réponse 6, la fenêtre vient d'un bouton de la vue)
-  if (body.type === 5 && body.data?.custom_id === "penduduel_mot") {
+  if (body.type === 5 && typeof body.data?.custom_id === "string" && body.data.custom_id.split(":")[0] === "penduduel_mot") {
     const mot = body.data.components?.[0]?.components?.[0]?.value ?? "";
     const discordId = body.member?.user?.id;
+    const solo = body.data.custom_id.endsWith(":solo");
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handlePenduMot(webhookUrl, discordId, mot));
+    runBackground(() => handlePenduMot(webhookUrl, discordId, mot, { solo }));
     return;
   }
 
-  // ── Pendu : composants. penduduel_proposer ouvre la fenêtre de saisie
+  // ── Pendu : composants (suffixe `:solo` : partie solo de celui qui
+  // clique, sinon le 1v1). penduduel_proposer ouvre la fenêtre de saisie
   // (réponse synchrone 9, sans rien lire) ; penduduel_lettre:<lettre>
   // (voyelles), penduduel_consonne (menu) et l'abandon éditent la vue en
   // place ; penduduel_ouvrir (Jouer / Ma vue) et penduduel_regles : nouvel
   // éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("penduduel_")) {
-    const [action, arg] = body.data.custom_id.split(":");
-    if (action === "penduduel_proposer") return res.status(200).json({ type: 9, data: buildPenduModalMot() });
+    const [action, ...args] = body.data.custom_id.split(":");
+    const solo = args.at(-1) === "solo";
+    const opts = { solo };
+    if (action === "penduduel_proposer") return res.status(200).json({ type: 9, data: buildPenduModalMot(solo) });
     if (action === "penduduel_regles" || action === "penduduel_ouvrir") {
       res.status(200).json({ type: 5, data: { flags: 64 } });
       const webhookUrl = buildDiscordWebhookUrl(body);
       if (action === "penduduel_regles") runBackground(() => handlePenduRegles(webhookUrl));
-      else runBackground(() => handlePenduOuvrir(webhookUrl, body));
+      else runBackground(() => handlePenduOuvrir(webhookUrl, body, opts));
       return;
     }
     const ETAPES_ABANDON = { penduduel_abandon: "demande", penduduel_abandon_ok: "ok", penduduel_abandon_non: "non" };
@@ -585,8 +592,8 @@ export async function routeDuels(body, res) {
       const discordId = body.member?.user?.id;
       res.status(200).json({ type: 6 });
       const webhookUrl = buildDiscordWebhookUrl(body);
-      if (ETAPES_ABANDON[action]) runBackground(() => handlePenduAbandon(webhookUrl, discordId, ETAPES_ABANDON[action]));
-      else runBackground(() => handlePenduLettre(webhookUrl, discordId, action === "penduduel_lettre" ? arg : body.data.values?.[0]));
+      if (ETAPES_ABANDON[action]) runBackground(() => handlePenduAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      else runBackground(() => handlePenduLettre(webhookUrl, discordId, action === "penduduel_lettre" ? args[0] : body.data.values?.[0], opts));
       return;
     }
   }

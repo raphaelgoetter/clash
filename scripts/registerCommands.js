@@ -614,7 +614,19 @@ const commands = [
   },
   {
     name: "pendu",
-    description: "Pendu en 1v1 : le même mot pour les deux, chacun de son côté. Le moins d'erreurs gagne.",
+    description: "Pendu : trouve le mot seul, ou en 1v1 (le même mot pour les deux, chacun de son côté).",
+    options: [
+      {
+        type: 3, // STRING
+        name: "mode",
+        description: "Seul ou contre un joueur ?",
+        required: true,
+        choices: [
+          { name: "Solo", value: "solo" },
+          { name: "1v1", value: "1v1" },
+        ],
+      },
+    ],
   },
   {
     name: "blackjack",

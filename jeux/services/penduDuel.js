@@ -1,7 +1,11 @@
 // ============================================================
-// penduDuel.js — Pendu (`/pendu`), 1v1 seulement : message public + vue
-// éphémère par joueur, une seule partie à la fois (`penduduel:pvp`).
-// Règles pures dans penduRules.js.
+// penduDuel.js — Pendu (`/pendu`) : message public + vue éphémère par
+// joueur. Solo (`/pendu mode:solo`) : une partie par joueur
+// (`penduduel:solo:<discordId>`), plusieurs en même temps. 1v1 : une seule
+// partie à la fois (`penduduel:pvp`). Règles pures dans penduRules.js.
+//
+// Une partie est désignée par son identifiant `id` : "pvp", ou le
+// discordId du joueur en solo.
 //
 // Chaque écriture relance l'expiration : sans action pendant
 // `INACTIVITE_SECONDES`, la partie disparaît. Seules les séries de
@@ -72,11 +76,14 @@ async function withLock(nom, fn) {
 }
 
 // ── Séries de victoires ───────────────────────────────────────────────────
-// Une série par joueur : +1 par victoire, remise à 0 par une défaite,
-// intacte sur un match nul. Record : plus longue série, JAMAIS effacé.
+// Une série par joueur et par mode (solo : mots trouvés d'affilée ; 1v1 :
+// victoires d'affilée) : +1 par victoire, remise à 0 par une défaite,
+// intacte sur un match nul. En solo, une partie abandonnée ou remplacée
+// compte comme une défaite (`enCours` encore vrai au lancement suivant).
+// Record de chaque mode : plus longue série, JAMAIS effacé.
 
-const CLE_SERIES = "penduduel:series";
-const CLE_RECORD = "penduduel:record";
+const CLE_SERIES = { solo: "penduduel:series:solo", pvp: "penduduel:series:pvp" };
+const CLE_RECORDS = "penduduel:records";
 
 // Pure : série après une partie (issue "victoire" | "defaite" | "nul").
 export function serieApres(serie, issue) {
@@ -92,56 +99,66 @@ export function isNewRecord(actuel, serie) {
 
 const issueDe = (gagnant, siege) => (gagnant === "nul" ? "nul" : gagnant === siege ? "victoire" : "defaite");
 
-async function lireSerie(discordId) {
-  return fromJson(await getRedis().hget(CLE_SERIES, discordId)) ?? { serie: 0 };
+async function lireSerie(mode, discordId) {
+  return fromJson(await getRedis().hget(CLE_SERIES[mode], discordId)) ?? { serie: 0 };
 }
 
-export async function lireRecord() {
-  return fromJson(await getRedis().get(CLE_RECORD));
+async function ecrireSerie(mode, discordId, serie) {
+  await getRedis().hset(CLE_SERIES[mode], { [discordId]: JSON.stringify(serie) });
 }
 
-// Renvoie le record à jour (nouveau ou inchangé), null sans record.
-async function majRecord(discordId, username, serie, now) {
-  return withLock("record", async () => {
-    const actuel = await lireRecord();
+export async function lireRecord(mode) {
+  return fromJson(await getRedis().hget(CLE_RECORDS, mode));
+}
+
+// Renvoie le record du mode à jour (nouveau ou inchangé), null sans record.
+async function majRecord(mode, discordId, username, serie, now) {
+  return withLock(`record:${mode}`, async () => {
+    const actuel = await lireRecord(mode);
     if (!isNewRecord(actuel, serie)) return actuel;
     const record = { discordId, username: username || null, serie, at: now.toISOString() };
-    await getRedis().set(CLE_RECORD, JSON.stringify(record));
+    await getRedis().hset(CLE_RECORDS, { [mode]: JSON.stringify(record) });
     return record;
   });
 }
 
-// Fin de partie : { joueur: { avant, serie }, bot: { … }, record } (sièges
-// du moteur).
+// Fin de partie : { joueur: { avant, serie }, bot: { … } (1v1), record }
+// (sièges du moteur).
 async function finSeries(partie, now) {
   const series = {};
   for (const [siege, id] of Object.entries(partie.sieges)) {
-    const { serie: avant } = await lireSerie(id);
+    const { serie: avant } = await lireSerie(partie.mode, id);
     const serie = serieApres(avant, issueDe(partie.duel.gagnant, siege));
-    await getRedis().hset(CLE_SERIES, { [id]: JSON.stringify({ serie }) });
+    await ecrireSerie(partie.mode, id, { serie, enCours: false });
     series[siege] = { avant, serie };
   }
   const g = partie.duel.gagnant;
-  series.record = g === "nul" ? await lireRecord() : await majRecord(partie.sieges[g], partie.noms[partie.sieges[g]], series[g].serie, now);
+  series.record =
+    g && g !== "nul"
+      ? await majRecord(partie.mode, partie.sieges[g], partie.noms[partie.sieges[g]], series[g].serie, now)
+      : await lireRecord(partie.mode);
   return series;
 }
 
 // ── Partie ────────────────────────────────────────────────────────────────
-// Partie : { statut: "lobby" | "enCours" | "fini", channelId, messageId,
-// lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
-// moteur → discordId), duel, webhooks: { discordId: { url, at } } (vue
-// éphémère de chaque joueur, rééditée à la fin de la partie), dernierCoupAt,
-// raisonFin: "jeu" | "abandon", series (en fin de partie, voir finSeries()) }.
+// Partie : { mode: "solo" | "pvp", statut: "lobby" | "enCours" | "fini",
+// channelId, messageId, lanceur, noms: { discordId: pseudo }, sieges:
+// { joueur, bot } (siège du moteur → discordId ; solo : { joueur }), duel,
+// webhooks: { discordId: { url, at } } (vue éphémère de chaque joueur,
+// rééditée à la fin de la partie), dernierCoupAt, raisonFin: "jeu" |
+// "abandon", series (en fin de partie, voir finSeries()) }.
 
-const CLE_PVP = "penduduel:pvp";
-const VERROU_PVP = "pvp";
+const ID_PVP = "pvp";
+const clePartie = (id) => (id === ID_PVP ? "penduduel:pvp" : `penduduel:solo:${id}`);
 
-export async function readPvp() {
-  return fromJson(await getRedis().get(CLE_PVP));
+export async function readPartie(id) {
+  return fromJson(await getRedis().get(clePartie(id)));
 }
 
-async function writePvp(partie) {
-  await getRedis().set(CLE_PVP, JSON.stringify(partie), { ex: INACTIVITE_SECONDES });
+export const readPvp = () => readPartie(ID_PVP);
+
+async function writePartie(id, partie) {
+  await getRedis().set(clePartie(id), JSON.stringify(partie), { ex: INACTIVITE_SECONDES });
 }
 
 // Siège d'un joueur dans la partie (null s'il n'y joue pas).
@@ -161,12 +178,13 @@ export const pvpAbandonnee = (partie, now = Date.now()) => partie.statut === "en
 // partie abandonnée sont remplacés : `ancienne` est renvoyée pour supprimer
 // son message public.
 export async function ouvrirPvp({ channelId, lanceur, nom }) {
-  return withLock(VERROU_PVP, async () => {
+  return withLock(ID_PVP, async () => {
     const enCours = await readPvp();
     const lobbyLibre = enCours?.statut === "lobby" && (enCours.lanceur === lanceur || Date.now() - enCours.dernierCoupAt > 60_000);
     if (enCours && enCours.statut !== "fini" && !lobbyLibre && !pvpAbandonnee(enCours)) return { dejaEnCours: enCours };
     const ancienne = enCours && enCours.statut !== "fini" ? enCours : null;
     const partie = {
+      mode: "pvp",
       statut: "lobby",
       channelId,
       messageId: null,
@@ -178,17 +196,43 @@ export async function ouvrirPvp({ channelId, lanceur, nom }) {
       dernierCoupAt: Date.now(),
       raisonFin: null,
     };
-    await writePvp(partie);
+    await writePartie(ID_PVP, partie);
     return { partie, ancienne };
   });
 }
 
-export async function enregistrerMessagePvp(messageId) {
-  return withLock(VERROU_PVP, async () => {
-    const partie = await readPvp();
+// Nouvelle partie solo (remplace une éventuelle partie en cours du joueur,
+// renvoyée dans `ancienne` pour supprimer son message public).
+export async function nouvelleSolo({ channelId, discordId, nom, now = Date.now(), rng = Math.random }) {
+  return withLock(discordId, async () => {
+    const ancienne = await readPartie(discordId);
+    const s = await lireSerie("solo", discordId);
+    // Partie précédente abandonnée ou remplacée : comptée comme une défaite
+    await ecrireSerie("solo", discordId, { serie: s.enCours ? 0 : s.serie, enCours: true });
+    const partie = {
+      mode: "solo",
+      statut: "enCours",
+      channelId,
+      messageId: null,
+      lanceur: discordId,
+      noms: { [discordId]: nom },
+      sieges: { joueur: discordId },
+      duel: creerDuel({ now, rng, sieges: ["joueur"] }),
+      webhooks: {},
+      dernierCoupAt: now,
+      raisonFin: null,
+    };
+    await writePartie(discordId, partie);
+    return { partie, ancienne: ancienne?.statut === "enCours" ? ancienne : null };
+  });
+}
+
+export async function enregistrerMessage(id, messageId) {
+  return withLock(id, async () => {
+    const partie = await readPartie(id);
     if (!partie) return;
     partie.messageId = messageId;
-    await writePvp(partie);
+    await writePartie(id, partie);
   });
 }
 
@@ -197,10 +241,10 @@ export async function enregistrerMessagePvp(messageId) {
 // action depuis `delai_action_secondes` : pendu ; `resultat.delais` : sièges
 // concernés). Une action (`resultat.coup`) note l'heure (`dernierCoupAt`).
 // Renvoie { partie, config, resultat } ou { partie: null }.
-export async function agirPvp(fn, { now = Date.now() } = {}) {
+export async function agir(id, fn, { now = Date.now() } = {}) {
   const config = await loadDuelConfig();
-  return withLock(VERROU_PVP, async () => {
-    const partie = await readPvp();
+  return withLock(id, async () => {
+    const partie = await readPartie(id);
     if (!partie) return { partie: null, config };
     const finiAvant = partie.statut === "fini";
     const delais = partie.statut === "enCours" ? appliquerDelais(partie.duel, config.delai_action_secondes * 1000, now) : [];
@@ -213,7 +257,7 @@ export async function agirPvp(fn, { now = Date.now() } = {}) {
     }
     resultat.vientDeFinir = !finiAvant && partie.statut === "fini";
     if (resultat.vientDeFinir) partie.series = await finSeries(partie, new Date(now));
-    await writePvp(partie);
+    await writePartie(id, partie);
     return { partie, config, resultat };
   });
 }
