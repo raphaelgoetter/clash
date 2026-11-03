@@ -155,7 +155,7 @@ const fin = vues.find((v) => boutons(v).some((b) => b.custom_id.startsWith("bacd
 console.log("\n--- Fin de manche ---\n" + texte(fin));
 const recap = salon.find((m) => m.method === "POST" && /bat|Égalité/.test(texte(m)));
 if (!JSON.stringify(recap).includes("/api/bac/illustration")) throw new Error("illustration absente du récapitulatif");
-if (!texte(recap).includes("Dernière manche")) throw new Error("fait marquant absent du récapitulatif");
+if (!/a fait la différence|Même mot/.test(texte(recap))) throw new Error("fait marquant absent du récapitulatif");
 console.log("\n--- Récapitulatif ---\n" + texte(recap));
 console.log("\n--- Règles ---\n" + texte(vues.at(-1)));
 console.log("\n--- Fenêtre ---\n" + JSON.stringify(h.buildModalMot(2, "animaux", "K", false)));

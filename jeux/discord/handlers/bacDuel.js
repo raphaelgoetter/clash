@@ -628,15 +628,17 @@ function messageTable(d, nomDe, config) {
   };
 }
 
-// Faits marquants du récapitulatif (2 lignes au plus, pas le déroulé) :
-// la dernière manche (la plus difficile) et les mots trouvés par les deux.
+// Faits marquants du récapitulatif (pas le déroulé) : les manches où un
+// joueur a trouvé un mot et pas l'autre, par joueur, et les mots trouvés
+// par les deux.
+const enumerer = (l) => (l.length > 1 ? `${l.slice(0, -1).join(", ")} et ${l.at(-1)}` : l[0]);
+
 function faitsMarquants(d, nomDe) {
   if (d.abandon) return [];
   const lignes = [];
-  const m = mancheCourante(d);
-  if (m.points) {
-    const rep = (id) => (m.reponses[id] ? `**${m.reponses[id].mot}**` : "rien");
-    lignes.push(`🔤 Dernière manche, ${intitule(m)} : ${nomDe("joueur")} ${rep("joueur")}, ${nomDe("bot")} ${rep("bot")}`);
+  for (const id of ["joueur", "bot"]) {
+    const seul = d.manches.filter((m) => m.points?.[id] === 1 && m.points[adversaire(id)] === 0);
+    if (seul.length) lignes.push(`🎯 ${nomDe(id)} a fait la différence en ${enumerer(seul.map((m) => `${THEMES[m.theme].replace(/\s*\(.*\)/, "")} (**${m.reponses[id].mot}**)`))}.`);
   }
   const memes = d.manches.filter((x) => x.points?.joueur === 0.5).map((x) => `**${x.reponses.joueur.mot}**`);
   if (memes.length) lignes.push(`🤝 Même mot : ${memes.join(", ")}`);
