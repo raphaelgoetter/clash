@@ -56,17 +56,17 @@ export const NIVEAUX = {
   difficile: ["mythologie", "jeuxvideo", "clash", "inventions"],
 };
 // Déroulé d'une partie, difficulté croissante : niveau du thème et lettres
-// de chaque manche (« courantes » : moitié la plus fournie des lettres
-// jouables du thème, « rares » : l'autre moitié, « toutes »)
+// de chaque manche (« toutes » les lettres jouables du thème, ou seulement
+// les « rares » : la moitié la moins fournie ; « courantes » : l'autre)
 export const MANCHES = [
-  { niveau: "facile", lettres: "courantes" },
-  { niveau: "facile", lettres: "courantes" },
+  { niveau: "facile", lettres: "toutes" },
+  { niveau: "facile", lettres: "toutes" },
   { niveau: "facile", lettres: "rares" },
-  { niveau: "moyen", lettres: "courantes" },
-  { niveau: "moyen", lettres: "courantes" },
+  { niveau: "moyen", lettres: "toutes" },
+  { niveau: "moyen", lettres: "toutes" },
   { niveau: "moyen", lettres: "rares" },
   { niveau: "difficile", lettres: "toutes" },
-  { niveau: "difficile", lettres: "toutes" },
+  { niveau: "difficile", lettres: "rares" },
 ];
 export const NB_MANCHES = MANCHES.length;
 export const niveauDe = (themeId) => Object.keys(NIVEAUX).find((n) => NIVEAUX[n].includes(themeId));
@@ -260,6 +260,8 @@ function nouvelleManche(d, rng, now) {
     // Réponse acceptée : { mot, cle } ; dernière refusée : { mot, raison }
     reponses: { joueur: null, bot: null },
     refus: { joueur: null, bot: null },
+    // Dernier mot refusé « pas dans la liste », que le joueur peut contester
+    contestable: { joueur: null, bot: null },
     essais: { joueur: 0, bot: 0 },
     // Réponse figée (2 propositions, Passer, fin du temps)
     fige: { joueur: false, bot: false },
@@ -283,7 +285,10 @@ export function proposer(d, id, mot) {
   if (v.ok) {
     m.reponses[id] = { mot: affichage(mot), cle: v.cle };
     m.refus[id] = null;
-  } else m.refus[id] = { mot: String(mot ?? "").trim().slice(0, 40), raison: v.raison };
+  } else {
+    m.refus[id] = { mot: String(mot ?? "").trim().slice(0, 40), raison: v.raison };
+    if (v.raison === "inconnu") m.contestable = { ...m.contestable, [id]: m.refus[id].mot };
+  }
   if (m.essais[id] >= PROPOSITIONS_MAX) m.fige[id] = true;
   d.vue += 1;
   if (m.fige.joueur && m.fige.bot) cloreManche(d);
@@ -291,6 +296,19 @@ export function proposer(d, id, mot) {
 }
 
 // « Passer » : la réponse de `id` est figée (sa réponse acceptée compte).
+// « Contester » le dernier mot refusé « pas dans la liste » de la manche
+// `numero` : il reste refusé, mais il est signalé pour vérification
+// (bacDuel.js, enregistrerContestation()). Renvoie { erreur } ou
+// { mot, theme, lettre } ; une seule contestation par mot.
+export function contester(d, id, numero) {
+  const m = d.manches[numero - 1];
+  const mot = m?.contestable?.[id];
+  if (!mot) return { erreur: "contestation" };
+  m.contestable[id] = null;
+  d.vue += 1;
+  return { mot, theme: m.theme, lettre: m.lettre };
+}
+
 export function passer(d, id) {
   if (d.termine) return { erreur: "termine" };
   const m = mancheCourante(d);

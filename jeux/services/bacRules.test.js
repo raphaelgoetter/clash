@@ -6,6 +6,7 @@ import {
   PROPOSITIONS_MAX,
   THEMES,
   cloreManche,
+  contester,
   creerDuel,
   jouerKevina,
   lettresDeManche,
@@ -98,13 +99,14 @@ assert.strictEqual(Object.values(NIVEAUX).flat().length, Object.keys(THEMES).len
     cloreManche(d);
     if (!d.termine) mancheSuivante(d, { rng: rngFixe(k), now: 0 });
   }
-  // Animaux : S (très fourni) en manches 1 et 2, pas en manche 3 (lettres rares)
-  assert.ok(lettresDeManche("animaux", 1).includes("S"));
-  assert.ok(!lettresDeManche("animaux", 3).includes("S"));
-  const toutes = lettresJouables("animaux");
-  assert.deepStrictEqual([...lettresDeManche("animaux", 1), ...lettresDeManche("animaux", 3)].sort(), [...toutes].sort());
-  // Manches 7 et 8 : toutes les lettres
-  assert.deepStrictEqual(lettresDeManche("mythologie", 8), lettresJouables("mythologie"));
+  // Manches 1, 2, 4, 5, 7 : toutes les lettres ; 3, 6, 8 : lettres rares seulement
+  assert.deepStrictEqual(lettresDeManche("animaux", 1), lettresJouables("animaux"));
+  assert.ok(!lettresDeManche("animaux", 3).includes("S")); // S, très fourni
+  assert.ok(lettresDeManche("villes", 4).includes("S"));
+  assert.ok(!lettresDeManche("villes", 6).includes("S"));
+  const toutes = lettresJouables("mythologie");
+  assert.deepStrictEqual(lettresDeManche("mythologie", 7), toutes);
+  assert.deepStrictEqual(lettresDeManche("mythologie", 8), toutes.slice(Math.ceil(toutes.length / 2)));
 }
 
 // ── Propositions : acceptée remplace, refusée ne change rien, la 2e fige ──
@@ -117,6 +119,17 @@ assert.strictEqual(Object.values(NIVEAUX).flat().length, Object.keys(THEMES).len
   assert.strictEqual(m.fige.joueur, true);
   assert.strictEqual(PROPOSITIONS_MAX, 2);
   assert.deepStrictEqual(proposer(d, "joueur", "kiwi"), { erreur: "fige" });
+}
+
+// ── Contester : le dernier mot refusé « pas dans la liste », une fois ──
+{
+  const d = duelSur("animaux", "K");
+  proposer(d, "joueur", "chat"); // mauvaise lettre : pas contestable
+  assert.deepStrictEqual(contester(d, "joueur", 1), { erreur: "contestation" });
+  proposer(d, "joueur", "kzzzt");
+  assert.deepStrictEqual(contester(d, "joueur", 1), { mot: "kzzzt", theme: "animaux", lettre: "K" });
+  assert.deepStrictEqual(contester(d, "joueur", 1), { erreur: "contestation" });
+  assert.strictEqual(mancheCourante(d).reponses.joueur, null); // reste refusé
 }
 
 // ── Points : 1 par bonne réponse, 0,5 chacun pour la même ──

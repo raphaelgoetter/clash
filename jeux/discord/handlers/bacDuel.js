@@ -26,6 +26,7 @@
 import {
   agirDuel,
   agirPvp,
+  enregistrerContestation,
   enregistrerMessagePvp,
   loadDuelConfig,
   nouveauDuel,
@@ -36,12 +37,14 @@ import {
   siegeDe,
 } from "../../services/bacDuel.js";
 import {
+  MANCHES,
   NB_MANCHES,
   NIVEAUX,
   PROPOSITIONS_MAX,
   THEMES,
   adversaire,
   cloreManche,
+  contester,
   formatPoints,
   jouerKevina,
   mancheCourante,
@@ -253,6 +256,7 @@ function ligneReponse(m, id, qui) {
 }
 
 const ERREURS = {
+  contestation: "Rien à contester.",
   termine: "La partie est terminée.",
   close: "La manche est terminée.",
   fige: "Ta réponse est déjà figée pour cette manche.",
@@ -305,7 +309,7 @@ function boutonsConfirmation(sfx) {
 }
 
 // Fin de partie : résultat de la dernière manche et score final.
-function vueFin(d, { moi, A }) {
+function vueFin(d, { moi, A, texte = null, sfx = "" }) {
   const m = mancheCourante(d);
   const issue = d.abandon
     ? d.gagnant === moi
@@ -328,14 +332,33 @@ function vueFin(d, { moi, A }) {
     embeds: [
       {
         title: `${TITRE} · ${score(d, moi, A)}`,
-        description: [...derniere, `${issue} La partie est terminée.`].join(
-          "\n",
-        ),
+        description: [
+          ...(texte ? [texte, ""] : []),
+          ...derniere,
+          `${issue} La partie est terminée.`,
+        ].join("\n"),
         color: BAC_COLOR,
       },
     ],
-    components: [],
+    components: boutonContester(m, moi, d.manches.length, sfx).length
+      ? [{ type: 1, components: boutonContester(m, moi, d.manches.length, sfx) }]
+      : [],
   };
+}
+
+// [🚩 Contester] : le dernier mot refusé « pas dans la liste » de la manche
+// est signalé pour vérification (il reste refusé)
+function boutonContester(m, moi, n, sfx) {
+  if (!m.contestable?.[moi]) return [];
+  return [
+    {
+      type: 2,
+      style: 2,
+      label: "Contester",
+      emoji: { name: "🚩" },
+      custom_id: `bacduel_contester:${n}${sfx}`,
+    },
+  ];
 }
 
 // Vue d'un joueur : manche en cours (thème, lettre, sa réponse, boutons)
@@ -352,8 +375,8 @@ function buildVue(
     confirmerAbandon = false,
   } = {},
 ) {
-  if (d.termine) return vueFin(d, { moi, A });
   const sfx = pvp ? ":pvp" : "";
+  if (d.termine) return vueFin(d, { moi, A, texte, sfx });
   const m = mancheCourante(d);
   const n = d.manches.length;
   const titre = `${TITRE} · ${score(d, moi, A)}`;
@@ -390,7 +413,15 @@ function buildVue(
         { title: titre, description: lignes.join("\n"), color: BAC_COLOR },
       ],
       components: [
-        { type: 1, components: [suivante, BOUTON_REGLES, boutonAbandon(sfx)] },
+        {
+          type: 1,
+          components: [
+            suivante,
+            ...boutonContester(m, moi, n, sfx),
+            BOUTON_REGLES,
+            boutonAbandon(sfx),
+          ],
+        },
       ],
     };
   }
@@ -458,7 +489,15 @@ function buildVue(
       },
     ],
     components: [
-      { type: 1, components: [...actions, BOUTON_REGLES, boutonAbandon(sfx)] },
+      {
+        type: 1,
+        components: [
+          ...actions,
+          ...boutonContester(m, moi, n, sfx),
+          BOUTON_REGLES,
+          boutonAbandon(sfx),
+        ],
+      },
     ],
   };
 }
@@ -496,11 +535,12 @@ function buildReglesEmbed(config) {
       "",
       `✏️ **${PROPOSITIONS_MAX} propositions** possibles par manche, résultat immédiat : un mot accepté remplace le précédent, un mot refusé ne change rien.`,
       "⏭️ **Passer** (ou ✅ **Valider**) fige ta réponse pour la manche.",
+      "🚩 **Contester** : un mot refusé à tort est signalé pour être vérifié et ajouté (il reste refusé pour la partie).",
       "",
       "**Points** : 1 par bonne réponse, 0,5 chacun si vous avez trouvé le même mot.",
       "Majuscules, accents, pluriel et article (le, la, l') sont tolérés.",
       "",
-      "**Difficulté croissante** : manches 1 à 3 sur un thème facile, 4 à 6 sur un thème moyen, 7 et 8 sur un thème difficile ; la 3ᵉ et la 6ᵉ manche tirent une lettre moins courante. Acteurs et musique : seul le nom de famille compte.",
+      "**Difficulté croissante** : manches 1 à 3 sur un thème facile, 4 à 6 sur un thème moyen, 7 et 8 sur un thème difficile ; la 3ᵉ, la 6ᵉ et la 8ᵉ manche tirent une lettre moins courante. Acteurs et musique : seul le nom de famille compte.",
       "",
       ...Object.entries(NIVEAUX).map(
         ([n, l]) =>
@@ -588,13 +628,30 @@ function messageTable(d, nomDe, config) {
   };
 }
 
+// Faits marquants du récapitulatif (2 lignes au plus, pas le déroulé) :
+// la dernière manche (la plus difficile) et les mots trouvés par les deux.
+function faitsMarquants(d, nomDe) {
+  if (d.abandon) return [];
+  const lignes = [];
+  const m = mancheCourante(d);
+  if (m.points) {
+    const rep = (id) => (m.reponses[id] ? `**${m.reponses[id].mot}**` : "rien");
+    lignes.push(`🔤 Dernière manche, ${intitule(m)} : ${nomDe("joueur")} ${rep("joueur")}, ${nomDe("bot")} ${rep("bot")}`);
+  }
+  const memes = d.manches.filter((x) => x.points?.joueur === 0.5).map((x) => `**${x.reponses.joueur.mot}**`);
+  if (memes.length) lignes.push(`🤝 Même mot : ${memes.join(", ")}`);
+  return lignes;
+}
+
 function messageFinal(d, nomDe, series) {
+  const faits = faitsMarquants(d, nomDe);
   return {
     embeds: [
       {
         title: `${TITRE} · ${nomDe("joueur")} contre ${nomDe("bot")}`,
         description: [
           resultat(d, nomDe),
+          ...(faits.length ? ["", ...faits] : []),
           ...(series.length ? ["", ...series] : []),
         ].join("\n"),
         image: { url: URL_ILLUSTRATION },
@@ -627,7 +684,16 @@ const AUCUNE_PARTIE_SOLO = {
 
 const nomDeSolo = (pseudo) => (id) =>
   id === "bot" ? "Kévina" : (pseudo ?? "?");
-const reglagesKevina = (config) => ({ trouve: config.trouve_kevina });
+// Chance de Kévina de trouver un mot : selon le niveau du thème de la manche
+// en cours, moins sur les lettres moins courantes
+function reglagesKevina(config, d) {
+  const m = mancheCourante(d);
+  const rares = MANCHES[d.manches.length - 1]?.lettres === "rares";
+  const base = config.trouve_kevina[niveauDe(m.theme)] ?? 0.8;
+  return { trouve: Math.max(0, base - (rares ? config.malus_lettres_rares : 0)) };
+}
+
+const texteContestation = (mot) => `🚩 **${mot}** signalé : il sera vérifié. Merci !`;
 
 async function majSalonSolo(d, pseudo, config) {
   if (d.salon)
@@ -730,7 +796,7 @@ export async function handleBacCommand(webhookUrl, body) {
     const { discordId, username } = extractMember(body);
     const config = await loadDuelConfig();
     const { duel, ancien } = await nouveauDuel(discordId, {
-      preparer: (d) => jouerKevina(d, "bot", reglagesKevina(config)),
+      preparer: (d) => jouerKevina(d, "bot", reglagesKevina(config, d)),
     });
     if (ancien?.salon && !ancien.termine)
       await messageSalon(
@@ -781,12 +847,17 @@ async function executerSolo(
   const { duel, resultat: r } = await agirDuel(
     discordId,
     (d) => {
+      // Contestation : possible même manche close ou partie finie
+      if (action.type === "contester") {
+        const c = contester(d, "joueur", n);
+        return c.erreur ? c : { conteste: c };
+      }
       if (d.termine) return { erreur: "termine" };
       if (action.type === "suivante") {
         if (d.manches.length !== n) return { erreur: "perime" };
         const e = mancheSuivante(d, { now: Date.now() });
         if (e.erreur) return e;
-        jouerKevina(d, "bot", reglagesKevina(config));
+        jouerKevina(d, "bot", reglagesKevina(config, d));
         return { nouvelle: true };
       }
       if (d.manches.length !== n) return { erreur: "perime" };
@@ -809,6 +880,11 @@ async function executerSolo(
   );
   if (!duel) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
+    return;
+  }
+  if (r.conteste) {
+    await enregistrerContestation({ ...r.conteste, pseudo });
+    await patchOriginal(webhookUrl, buildVue(duel, { texte: texteContestation(r.conteste.mot), config }));
     return;
   }
   const texte = r.erreur ? avertissement(r.erreur) : r.texte;
@@ -1142,6 +1218,11 @@ async function executerPvp(webhookUrl, discordId, action, n) {
     const moi = siegeDe(p, discordId);
     if (!moi) return { erreur: p.statut === "lobby" ? "lobby" : "pasJoueur" };
     memoriserWebhook(p, discordId, webhookUrl);
+    // Contestation : possible même manche close ou partie finie
+    if (action.type === "contester" && p.duel) {
+      const c = contester(p.duel, moi, n);
+      return c.erreur ? c : { conteste: c };
+    }
     if (p.statut !== "enCours") return { erreur: "termine" };
     const d = p.duel;
     if (d.manches.length !== n) return { erreur: "perime" };
@@ -1170,6 +1251,11 @@ async function executerPvp(webhookUrl, discordId, action, n) {
   }
   if (r.erreur === "pasJoueur") {
     await patchOriginal(webhookUrl, { content: avertissement("pasJoueur") });
+    return;
+  }
+  if (r.conteste) {
+    await enregistrerContestation({ ...r.conteste, pseudo: partie.noms?.[discordId] });
+    await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texteContestation(r.conteste.mot)));
     return;
   }
   const texte = r.erreur ? avertissement(r.erreur) : r.texte;
@@ -1243,7 +1329,8 @@ export async function handleBacMot(
   }
 }
 
-// [⏭️ Passer] / [✅ Valider] (type "passer") et [▶️ Manche suivante] (type "suivante")
+// [⏭️ Passer] / [✅ Valider] (type "passer"), [▶️ Manche suivante] (type
+// "suivante") et [🚩 Contester] (type "contester")
 export async function handleBacAction(
   webhookUrl,
   discordId,
@@ -1252,7 +1339,7 @@ export async function handleBacAction(
   { pvp = false, channelId, pseudo } = {},
 ) {
   try {
-    if (!["passer", "suivante"].includes(type)) return;
+    if (!["passer", "suivante", "contester"].includes(type)) return;
     if (pvp) await executerPvp(webhookUrl, discordId, { type }, n);
     else
       await executerSolo(webhookUrl, discordId, { type }, n, {

@@ -1,6 +1,6 @@
 import assert from "assert";
 import { Redis } from "@upstash/redis";
-import { agirDuel, isNewRecord, lireRecord, nouveauDuel, pvpAbandonnee, serieApres, INACTIVITE_PVP_MS } from "./bacDuel.js";
+import { agirDuel, enregistrerContestation, isNewRecord, lireContestations, lireRecord, nouveauDuel, pvpAbandonnee, serieApres, viderContestations, INACTIVITE_PVP_MS } from "./bacDuel.js";
 
 // ── serieApres : +1 par victoire, 0 par défaite, intacte sur un nul ──
 assert.strictEqual(serieApres(3, "victoire"), 4);
@@ -36,6 +36,17 @@ if (Redis.isFake) {
   await nouveauDuel("1");
   const { duel } = await finir("joueur");
   assert.deepStrictEqual([duel.series.avant, duel.series.serie], [0, 1]);
+}
+
+// ── Contestations : regroupées par thème et mot normalisé ──
+if (Redis.isFake) {
+  const now = new Date("2026-11-03T20:00:00Z");
+  await enregistrerContestation({ theme: "acteurs", lettre: "P", mot: "Pattinson", pseudo: "A", now });
+  await enregistrerContestation({ theme: "acteurs", lettre: "P", mot: "pattinson", pseudo: "B", now });
+  const [c] = await lireContestations();
+  assert.deepStrictEqual([c.champ, c.nb, c.joueurs, c.lettres], ["acteurs:pattinson", 2, ["A", "B"], ["P"]]);
+  await viderContestations([c.champ]);
+  assert.deepStrictEqual(await lireContestations(), []);
 }
 
 console.log("bacDuel.test.js OK");

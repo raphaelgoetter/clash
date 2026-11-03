@@ -25,7 +25,7 @@ const setTimeoutReel = globalThis.setTimeout;
 globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 
 const h = await import("../../discord/handlers/bacDuel.js");
-const { readDuel, readPvp } = await import("../../services/bacDuel.js");
+const { readDuel, readPvp, lireContestations } = await import("../../services/bacDuel.js");
 const { chargerTheme, mancheCourante } = await import("../../services/bacRules.js");
 
 function aplatir(composants = []) {
@@ -90,6 +90,18 @@ if (!vues.some((v) => texte(v).includes("accepté"))) throw new Error("mot accep
 if (!vues.some((v) => texte(v).includes("refusé"))) throw new Error("mot refusé jamais affiché");
 if (!vues.some((v) => boutons(v).some((b) => b.custom_id.startsWith("bacduel_suivante")))) throw new Error("bouton Manche suivante absent");
 
+// Contester un mot refusé « pas dans la liste » : bouton, signalement enregistré
+await h.handleBacCommand(W, lancement);
+{
+  const m = mancheCourante(await readDuel(ID));
+  await h.handleBacMot(W, ID, 1, `${m.lettre}zzzt`, opts);
+  if (!boutons(vues.at(-1)).some((b) => b.custom_id === "bacduel_contester:1")) throw new Error("bouton Contester absent");
+  await h.handleBacAction(W, ID, "contester", 1, opts);
+  if (!texte(vues.at(-1)).includes("signalé")) throw new Error("contestation non confirmée");
+  if (boutons(vues.at(-1)).some((b) => b.custom_id.startsWith("bacduel_contester"))) throw new Error("bouton Contester encore là");
+  if (!(await lireContestations()).some((c) => c.mot === `${m.lettre}zzzt`)) throw new Error("contestation non enregistrée");
+}
+
 // Manche passée et temps écoulé : refusés, la manche se clôt
 await h.handleBacCommand(W, lancement);
 await h.handleBacMot(W, ID, 9, "kiwi", opts);
@@ -143,6 +155,7 @@ const fin = vues.find((v) => boutons(v).some((b) => b.custom_id.startsWith("bacd
 console.log("\n--- Fin de manche ---\n" + texte(fin));
 const recap = salon.find((m) => m.method === "POST" && /bat|Égalité/.test(texte(m)));
 if (!JSON.stringify(recap).includes("/api/bac/illustration")) throw new Error("illustration absente du récapitulatif");
+if (!texte(recap).includes("Dernière manche")) throw new Error("fait marquant absent du récapitulatif");
 console.log("\n--- Récapitulatif ---\n" + texte(recap));
 console.log("\n--- Règles ---\n" + texte(vues.at(-1)));
 console.log("\n--- Fenêtre ---\n" + JSON.stringify(h.buildModalMot(2, "animaux", "K", false)));

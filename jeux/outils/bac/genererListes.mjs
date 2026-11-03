@@ -622,9 +622,26 @@ const ALIAS_PAYS = [
   "Palestine",
 ];
 
+// Ajouts à la main (mots contestés par les joueurs puis vérifiés, voir
+// contestations.mjs) : jeux/outils/bac/ajouts/<thème>.txt, un mot par ligne
+// (personnes : nom complet), lignes « # » ignorées.
+function ajouter(id, t) {
+  const f = path.join(__dirname, "ajouts", `${id}.txt`);
+  if (!fs.existsSync(f)) return t;
+  const lignes = fs
+    .readFileSync(f, "utf8")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("#"));
+  const champ = t.personnes ? "personnes" : "mots";
+  const u = new Map(t[champ].map((m) => [normaliser(m), m]));
+  for (const m of lignes) if (!u.has(normaliser(m))) u.set(normaliser(m), m);
+  return { ...t, [champ]: [...u.values()].sort((a, b) => a.localeCompare(b, "fr")) };
+}
+
 const demandes = process.argv.slice(2);
 for (const id of demandes.length ? demandes : Object.keys(THEMES)) {
-  const t = await THEMES[id]();
+  const t = ajouter(id, await THEMES[id]());
   fs.writeFileSync(path.join(SORTIE, `${id}.json`), `${JSON.stringify(t, null, 0)}\n`);
   console.log(`${id} : ${t.mots.length} mots acceptés, ${t.kevina.length} pour Kévina`);
 }

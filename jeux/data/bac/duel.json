@@ -1,4 +1,9 @@
 {
   "delai_manche_secondes": 60,
-  "trouve_kevina": 0.8
+  "trouve_kevina": {
+    "facile": 0.9,
+    "moyen": 0.7,
+    "difficile": 0.5
+  },
+  "malus_lettres_rares": 0.1
 }

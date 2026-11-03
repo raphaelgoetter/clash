@@ -22,7 +22,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
-import { creerDuel } from "./bacRules.js";
+import { creerDuel, normaliser } from "./bacRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "bac", "duel.json");
@@ -191,6 +191,42 @@ async function finSeriesPvp(partie, now) {
       ? await lireRecord("pvp")
       : await majRecord("pvp", partie.sieges[g], partie.noms[partie.sieges[g]], series[g].serie, now);
   return series;
+}
+
+// ── Mots contestés ──────────────────────────────────────────────────
+// Un joueur conteste un mot refusé (« pas dans la liste ») : il reste
+// refusé, mais il est noté pour vérification à la main (outil
+// jeux/outils/bac/contestations.mjs, puis ajout dans
+// jeux/outils/bac/ajouts/<thème>.txt). Hash `bacduel:contestations` :
+// `<thème>:<mot normalisé>` → { theme, mot, lettres, nb, joueurs, derniere }.
+
+const CLE_CONTESTATIONS = "bacduel:contestations";
+
+export async function enregistrerContestation({ theme, lettre, mot, pseudo, now = new Date() }) {
+  return withLock("contestations", async () => {
+    const champ = `${theme}:${normaliser(mot)}`;
+    const avant = fromJson(await getRedis().hget(CLE_CONTESTATIONS, champ)) ?? { theme, mot, lettres: [], nb: 0, joueurs: [] };
+    const apres = {
+      ...avant,
+      nb: avant.nb + 1,
+      lettres: [...new Set([...avant.lettres, lettre])],
+      joueurs: [...new Set([...avant.joueurs, pseudo ?? "?"])].slice(0, 10),
+      derniere: now.toISOString(),
+    };
+    await getRedis().hset(CLE_CONTESTATIONS, { [champ]: JSON.stringify(apres) });
+    return apres;
+  });
+}
+
+export async function lireContestations() {
+  const h = (await getRedis().hgetall(CLE_CONTESTATIONS)) ?? {};
+  // Upstash renvoie un objet, ou une liste [champ, valeur, …] sans désérialisation
+  const paires = Array.isArray(h) ? h.reduce((a, v, i) => (i % 2 ? a : [...a, [v, h[i + 1]]]), []) : Object.entries(h);
+  return paires.map(([champ, v]) => ({ champ, ...fromJson(v) }));
+}
+
+export async function viderContestations(champs) {
+  if (champs.length) await getRedis().hdel(CLE_CONTESTATIONS, ...champs);
 }
 
 // ── 1v1 (`/bac adversaire:1v1`) ────────────────────────────────────────────

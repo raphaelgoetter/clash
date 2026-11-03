@@ -499,7 +499,7 @@ export async function routeDuels(body, res) {
 
   // ── Petit Bac : composants. bacduel_proposer:<manche>:<thème>:<lettre>[:pvp]
   // ouvre la fenêtre de saisie (réponse synchrone 9, sans rien lire) ;
-  // bacduel_<passer|suivante>:<manche>[:pvp] et l'abandon éditent la vue en
+  // bacduel_<passer|suivante|contester>:<manche>[:pvp] et l'abandon éditent la vue en
   // place ; bacduel_ouvrir (Jouer du 1v1) et bacduel_regles : nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bacduel_")) {
     const [action, ...args] = body.data.custom_id.split(":");
@@ -514,7 +514,7 @@ export async function routeDuels(body, res) {
       else runBackground(() => handleBacOuvrir(webhookUrl, body));
       return;
     }
-    const TYPES = { bacduel_passer: "passer", bacduel_suivante: "suivante" };
+    const TYPES = { bacduel_passer: "passer", bacduel_suivante: "suivante", bacduel_contester: "contester" };
     const ETAPES_ABANDON = { bacduel_abandon: "demande", bacduel_abandon_ok: "ok", bacduel_abandon_non: "non" };
     if (TYPES[action] || ETAPES_ABANDON[action]) {
       const discordId = body.member?.user?.id;
