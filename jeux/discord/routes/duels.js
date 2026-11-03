@@ -573,7 +573,7 @@ export async function routeDuels(body, res) {
   // clique, sinon le 1v1). penduduel_proposer ouvre la fenêtre de saisie
   // (réponse synchrone 9, sans rien lire) ; penduduel_lettre:<lettre>
   // (voyelles), penduduel_consonne (menu) et l'abandon éditent la vue en
-  // place ; penduduel_ouvrir (Jouer / Ma vue) et penduduel_regles : nouvel
+  // place ; penduduel_ouvrir (Jouer / Reprendre ma partie) et penduduel_regles : nouvel
   // éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("penduduel_")) {
     const [action, ...args] = body.data.custom_id.split(":");

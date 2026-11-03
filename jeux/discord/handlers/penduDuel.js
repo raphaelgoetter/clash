@@ -3,7 +3,7 @@
 // message public et une vue éphémère par joueur :
 // - solo (`/pendu mode:solo`) : une partie par joueur, sans adversaire ;
 // - 1v1 (`/pendu mode:1v1`) : bouton Jouer dans le lobby (rejoindre), puis
-//   Ma vue. Les deux joueurs cherchent le même mot, chacun de son côté : le
+//   Reprendre ma partie. Les deux joueurs cherchent le même mot, chacun de son côté : le
 //   message public dit seulement qui est encore en jeu et qui a terminé ; le
 //   mot et les deux potences sont dévoilés à la fin.
 // 1 minute par action, sinon pendu : l'invocation de chaque action attend
@@ -15,7 +15,7 @@
 // penduduel_consonne[:solo] (menu, lettre dans values),
 // penduduel_proposer[:solo] (ouvre la fenêtre de saisie, réponse synchrone
 // dans la route), penduduel_mot[:solo] (fenêtre soumise),
-// penduduel_ouvrir[:solo] (Jouer / Ma vue du message public),
+// penduduel_ouvrir[:solo] (Jouer / Reprendre ma partie du message public),
 // penduduel_regles, penduduel_abandon[:solo] (🏳️, confirmation),
 // penduduel_abandon_ok[:solo] / penduduel_abandon_non[:solo].
 //
@@ -441,7 +441,7 @@ function lignesSeries(partie) {
 
 // ── Message public ───────────────────────────────────────────────────
 
-const boutonMaVue = (sfx) => ({ type: 2, style: 2, label: "Ma vue", emoji: { name: "🎮" }, custom_id: `penduduel_ouvrir${sfx}` });
+const boutonMaVue = (sfx) => ({ type: 2, style: 2, label: "Reprendre ma partie", emoji: { name: "🎮" }, custom_id: `penduduel_ouvrir${sfx}` });
 const BOUTON_JOUER = { type: 2, style: 3, label: "Jouer", custom_id: "penduduel_ouvrir" };
 
 function messagePublic(partie) {
@@ -490,7 +490,7 @@ function messagePublic(partie) {
         color: PENDU_COLOR,
       },
     ],
-    // [🎮 Ma vue] renvoie sa vue au joueur (vue perdue plus haut dans le
+    // [🎮 Reprendre ma partie] renvoie sa vue au joueur (vue perdue plus haut dans le
     // salon, autre appareil)
     components: [{ type: 1, components: [boutonMaVue(sfxDe(partie)), BOUTON_REGLES] }],
   };
@@ -550,6 +550,12 @@ async function surveiller(id, partie, config, sieges) {
   const r = await agir(id, () => ({}));
   if (r.partie && (r.resultat.delais.length || r.resultat.vientDeFinir)) await diffuser(r.partie, r.config, optionsDelais(r.resultat));
 }
+
+// Reprendre ma partie d'une partie solo qui n'est pas celle de celui qui clique
+const PAS_TA_PARTIE = {
+  embeds: [{ description: "Cette partie n'est pas la tienne : lance la tienne avec `/pendu` (solo) !", color: PENDU_COLOR }],
+  components: [],
+};
 
 const aucunePartie = (solo) => ({
   embeds: [
@@ -624,15 +630,19 @@ export async function handlePenduPvpCommand(webhookUrl, body) {
   }
 }
 
-// [Jouer] / [🎮 Ma vue] du message public : rejoindre (2ᵉ joueur du 1v1),
+// [Jouer] / [🎮 Reprendre ma partie] du message public : rejoindre (2ᵉ joueur du 1v1),
 // sinon afficher sa vue (nouvel éphémère, mémorisé ; l'ancienne vue est
-// supprimée). Solo : la partie de celui qui clique.
+// supprimée). Solo : la partie de celui qui clique, seulement si c'est
+// celle du message cliqué (pas le Reprendre ma partie de la partie d'un autre). Partie
+// finie : simple avertissement, le récapitulatif n'est jamais reposté.
 export async function handlePenduOuvrir(webhookUrl, body, { solo = false } = {}) {
   try {
     const { discordId, username } = extractMember(body);
     const id = idDe(solo, discordId);
     let ancienneVue = null;
     const { partie, config, resultat: r } = await agir(id, (p) => {
+      if (solo && p.messageId && body.message?.id && body.message.id !== p.messageId) return { erreur: "pasTaPartie" };
+      if (p.statut === "fini") return { erreur: "termine" };
       if (p.statut === "lobby" && discordId !== p.lanceur) {
         rejoindrePvp(p, discordId, username);
         memoriserWebhook(p, discordId, webhookUrl);
@@ -645,6 +655,14 @@ export async function handlePenduOuvrir(webhookUrl, body, { solo = false } = {})
     });
     if (!partie) {
       await patchOriginal(webhookUrl, aucunePartie(solo));
+      return;
+    }
+    if (r.erreur === "pasTaPartie") {
+      await patchOriginal(webhookUrl, PAS_TA_PARTIE);
+      return;
+    }
+    if (r.erreur === "termine") {
+      await patchOriginal(webhookUrl, { content: avertissement("termine") });
       return;
     }
     if (r.erreur) {

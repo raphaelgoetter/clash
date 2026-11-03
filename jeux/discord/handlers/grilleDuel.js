@@ -622,9 +622,9 @@ const BOUTON_JOUER = {
 
 // Message public : lobby, puis plateau en direct (au tour de qui, délai,
 // plateau neutre à petits dés, explosions comprises).
-// [🎮 Ma vue] pendant la partie : même action que Jouer (un joueur assis
+// [🎮 Reprendre ma partie] pendant la partie : même action que Jouer (un joueur assis
 // reçoit sa vue)
-const BOUTON_MA_VUE = { type: 2, style: 2, label: "Ma vue", emoji: { name: "🎮" }, custom_id: "grilleduel_ouvrir" };
+const BOUTON_MA_VUE = { type: 2, style: 2, label: "Reprendre ma partie", emoji: { name: "🎮" }, custom_id: "grilleduel_ouvrir" };
 
 function messagePublic(partie, config, grilles = null) {
   if (partie.statut === "lobby") {
@@ -656,7 +656,7 @@ function messagePublic(partie, config, grilles = null) {
         color: GRILLE_COLOR,
       },
     ],
-    // Partie lancée : [🎮 Ma vue] renvoie sa vue éphémère à chaque joueur
+    // Partie lancée : [🎮 Reprendre ma partie] renvoie sa vue éphémère à chaque joueur
     // (vue du lanceur postée au défi, plus haut dans le salon ; autre appareil)
     components: [{ type: 1, components: [BOUTON_MA_VUE, BOUTON_REGLES] }],
   };

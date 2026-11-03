@@ -997,7 +997,7 @@ function vuePvp(
   });
 }
 
-const BOUTON_MA_VUE = { type: 2, style: 2, label: "Ma vue", emoji: { name: "🎮" }, custom_id: "bacduel_ouvrir" };
+const BOUTON_MA_VUE = { type: 2, style: 2, label: "Reprendre ma partie", emoji: { name: "🎮" }, custom_id: "bacduel_ouvrir" };
 const BOUTON_JOUER = {
   type: 2,
   style: 3,
@@ -1018,7 +1018,7 @@ function messagePublic(partie, config) {
       components: [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }],
     };
   }
-  // Partie en cours : [🎮 Ma vue] renvoie sa vue à chaque joueur (vue
+  // Partie en cours : [🎮 Reprendre ma partie] renvoie sa vue à chaque joueur (vue
   // perdue plus haut dans le salon, autre appareil)
   const table = messageTable(partie.duel, nomDePvp(partie), config);
   return partie.statut === "enCours" ? { ...table, components: [{ type: 1, components: [BOUTON_MA_VUE, BOUTON_REGLES] }] } : table;

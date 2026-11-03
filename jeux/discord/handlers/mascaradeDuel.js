@@ -897,9 +897,9 @@ function vuePvp(partie, config, discordId, texte = null, { confirmerAbandon = fa
 const BOUTON_JOUER = { type: 2, style: 3, label: "Jouer", custom_id: "mascaradeduel_ouvrir" };
 
 // Message public : lobby, puis table en direct (sans les mains).
-// [🎮 Ma vue] pendant la partie : même action que Jouer (un joueur assis
+// [🎮 Reprendre ma partie] pendant la partie : même action que Jouer (un joueur assis
 // reçoit sa vue)
-const BOUTON_MA_VUE = { type: 2, style: 2, label: "Ma vue", emoji: { name: "🎮" }, custom_id: "mascaradeduel_ouvrir" };
+const BOUTON_MA_VUE = { type: 2, style: 2, label: "Reprendre ma partie", emoji: { name: "🎮" }, custom_id: "mascaradeduel_ouvrir" };
 
 function messagePublic(partie, config, etat = null) {
   if (partie.statut === "lobby") {
