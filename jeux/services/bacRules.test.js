@@ -6,6 +6,7 @@ import {
   cloreManche,
   creerDuel,
   jouerKevina,
+  lettresDeManche,
   lettresJouables,
   mancheCourante,
   mancheOuverte,
@@ -58,11 +59,21 @@ assert.strictEqual(valider("sports", "T", "tennis").ok, true);
 // ── Chaque thème a assez de lettres jouables pour une partie ──
 for (const id of Object.keys(THEMES)) assert.ok(lettresJouables(id).length >= 5, `${id} : trop peu de lettres`);
 
-// ── Partie : 5 thèmes différents ──
+// ── Partie : 5 thèmes différents, lettres moins courantes sur les 2 dernières manches ──
 {
   const d = creerDuel({ rng: rngFixe(3), now: 0 });
   assert.strictEqual(new Set(d.themes).size, NB_MANCHES);
-  assert.ok(lettresJouables(mancheCourante(d).theme).includes(mancheCourante(d).lettre));
+  for (let k = 1; k <= NB_MANCHES; k++) {
+    const m = mancheCourante(d);
+    assert.ok(lettresDeManche(m.theme, k).includes(m.lettre), `manche ${k} : ${m.lettre}`);
+    cloreManche(d);
+    if (!d.termine) mancheSuivante(d, { rng: rngFixe(k), now: 0 });
+  }
+  // Animaux : S (très fourni) au début, jamais à la fin
+  assert.ok(lettresDeManche("animaux", 1).includes("S"));
+  assert.ok(!lettresDeManche("animaux", 5).includes("S"));
+  const toutes = lettresJouables("animaux");
+  assert.deepStrictEqual([...lettresDeManche("animaux", 1), ...lettresDeManche("animaux", 5)].sort(), [...toutes].sort());
 }
 
 // ── Propositions : acceptée remplace, refusée ne change rien, la 2e fige ──

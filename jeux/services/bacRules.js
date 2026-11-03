@@ -31,6 +31,10 @@ export const PROPOSITIONS_MAX = 2;
 // la liste au moins MOTS_MIN_ACCEPTES : pas de manche injouable
 export const MOTS_MIN_KEVINA = 2;
 export const MOTS_MIN_ACCEPTES = 10;
+// Difficulté croissante : les MANCHES_DIFFICILES dernières manches tirent
+// leur lettre parmi la moitié la moins fournie des lettres jouables du
+// thème, les autres parmi la moitié la plus fournie
+export const MANCHES_DIFFICILES = 2;
 
 export const THEMES = {
   animaux: "Animaux",
@@ -100,13 +104,22 @@ export function chargerTheme(id) {
   return _themes.get(id);
 }
 
-// Lettres jouables d'un thème (assez de mots pour Kévina et pour le joueur)
+// Lettres jouables d'un thème (assez de mots pour Kévina et pour le joueur),
+// de la plus fournie à la moins fournie (nombre de mots acceptés)
 export function lettresJouables(themeId) {
   const t = chargerTheme(themeId);
   return [...t.kevina]
     .filter(([l, mots]) => mots.length >= MOTS_MIN_KEVINA && (t.parLettre.get(l) ?? 0) >= MOTS_MIN_ACCEPTES)
     .map(([l]) => l)
-    .sort();
+    .sort((a, b) => t.parLettre.get(b) - t.parLettre.get(a) || a.localeCompare(b));
+}
+
+// Lettres possibles pour la manche `numero` (1 à NB_MANCHES) : courantes
+// d'abord, moins courantes sur les dernières manches
+export function lettresDeManche(themeId, numero) {
+  const l = lettresJouables(themeId);
+  const moitie = Math.ceil(l.length / 2);
+  return numero > NB_MANCHES - MANCHES_DIFFICILES ? l.slice(moitie) : l.slice(0, moitie);
 }
 
 // Clé de liste d'une forme : la forme entière, son mot principal (et la
@@ -173,10 +186,10 @@ export function creerDuel({ rng = Math.random, now = Date.now(), pvp = false } =
   return d;
 }
 
-// Manche : thème suivant, lettre tirée parmi les lettres jouables.
+// Manche : thème suivant, lettre tirée selon la difficulté de la manche.
 function nouvelleManche(d, rng, now) {
   const theme = d.themes[d.manches.length];
-  const lettres = lettresJouables(theme);
+  const lettres = lettresDeManche(theme, d.manches.length + 1);
   d.manches.push({
     theme,
     lettre: lettres[Math.floor(rng() * lettres.length)],

@@ -264,7 +264,7 @@ const THEMES = {
 
   async villes() {
     // Villes du monde de 100 000 habitants et plus (Wikidata, nom français
-    // et anglais) et communes de France de 5 000 habitants et plus. Kévina :
+    // et anglais) et communes de France de 20 000 habitants et plus. Kévina :
     // villes connues (article dans au moins 150 langues de Wikipédia) et
     // communes de France de 100 000 habitants et plus.
     const f = path.join(CACHE, "villes-wikidata.json");
@@ -288,7 +288,7 @@ const THEMES = {
     };
     return {
       nom: "Villes",
-      mots: tri([...monde.flatMap((v) => [v.fr, v.en]), ...communes.filter((c) => c.population >= 5000).map((c) => c.nom)]),
+      mots: tri([...monde.flatMap((v) => [v.fr, v.en]), ...communes.filter((c) => c.population >= 20000).map((c) => c.nom)]),
       kevina: tri([...monde.filter((v) => v.liens >= 150).map((v) => v.fr), ...communes.filter((c) => c.population >= 100000).map((c) => c.nom)]),
     };
   },
