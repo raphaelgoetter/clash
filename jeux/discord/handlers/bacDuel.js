@@ -1089,6 +1089,23 @@ async function diffuserPvp(
       messagePublic(partie, config),
     ),
   ]);
+  await rattraperPvp(partie, config);
+}
+
+// Les PATCH d'invocations concurrentes (les deux joueurs jouent en même
+// temps) arrivent dans n'importe quel ordre : une vue peut être écrasée par
+// un état plus ancien. Après sa diffusion, l'invocation relit la partie :
+// si elle a changé entre-temps, vues et message public sont rééditées avec
+// l'état frais.
+const empreinte = ({ webhooks, ...etat }) => JSON.stringify(etat);
+
+async function rattraperPvp(partie, config) {
+  const fraiche = await readPvp();
+  if (fraiche?.statut !== "enCours" || empreinte(fraiche) === empreinte(partie)) return;
+  await Promise.all([
+    ...Object.values(fraiche.sieges).map((id) => patchOriginal(webhookValide(fraiche, id), vuePvp(fraiche, config, id))),
+    messageSalon("PATCH", fraiche.channelId, fraiche.messageId, messagePublic(fraiche, config)),
+  ]);
 }
 
 // Fin du temps de la manche en cours sans clic (voir surveillerMancheSolo)
@@ -1213,7 +1230,6 @@ export async function handleBacOuvrir(webhookUrl, body) {
       }
       return {};
     });
-    await supprimerOriginal(ancienneVue);
     if (!partie) {
       await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
       return;
@@ -1237,10 +1253,15 @@ export async function handleBacOuvrir(webhookUrl, body) {
       return;
     }
     if (r.clos || r.vientDeFinir) {
+      await supprimerOriginal(ancienneVue);
       await diffuserPvp(partie, config, discordId, webhookUrl, "⏰ Temps écoulé !");
       return;
     }
+    // Ancienne vue supprimée APRÈS l'édition de la nouvelle (aller-retour
+    // Discord de moins avant d'afficher le bon état), puis rattrapage
     await patchOriginal(webhookUrl, vuePvp(partie, config, discordId));
+    await supprimerOriginal(ancienneVue);
+    await rattraperPvp(partie, config);
     // La manche en cours se clôt aussi depuis cette invocation (relais)
     await surveillerManchePvp(partie, config, discordId, webhookUrl);
   } catch (err) {

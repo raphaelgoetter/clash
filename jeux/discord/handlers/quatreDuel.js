@@ -751,6 +751,23 @@ async function diffuserPvp(partie, config, discordId, webhookUrl, texte) {
     ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(partie, config, id))),
   ]);
   await messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(partie, config));
+  await rattraperPvp(partie, config);
+}
+
+// Les PATCH d'invocations concurrentes arrivent dans n'importe quel ordre :
+// une vue peut être écrasée par un état plus ancien (le joueur au trait
+// voit alors « au tour de l'adversaire », sans boutons, jusqu'au délai).
+// Après sa diffusion, l'invocation relit la partie : si elle a changé
+// entre-temps, vues et message public sont rééditées avec l'état frais.
+const empreinte = ({ webhooks, ...etat }) => JSON.stringify(etat);
+
+async function rattraperPvp(partie, config) {
+  const fraiche = await readPvp();
+  if (fraiche?.statut !== "enCours" || empreinte(fraiche) === empreinte(partie)) return;
+  await Promise.all([
+    ...Object.values(fraiche.sieges).map((id) => patchOriginal(webhookValide(fraiche, id), vuePvp(fraiche, config, id))),
+    messageSalon("PATCH", fraiche.channelId, fraiche.messageId, messagePublic(fraiche, config)),
+  ]);
 }
 
 // Fin au délai sans attendre un clic : sinon le message public reste figé
@@ -829,7 +846,6 @@ export async function handleQuatreOuvrir(webhookUrl, body) {
       memoriserWebhook(p, discordId, webhookUrl);
       return {};
     });
-    await supprimerOriginal(ancienneVue);
     if (!partie) {
       await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
       return;
@@ -842,6 +858,7 @@ export async function handleQuatreOuvrir(webhookUrl, body) {
       return;
     }
     if (resultat.rejoint || resultat.vientDeFinir) {
+      await supprimerOriginal(ancienneVue);
       const texte = resultat.rejoint
         ? `⚔️ ${username} relève le défi ! Tirage au sort : ${partie.noms[partie.sieges.joueur]} commence.`
         : null;
@@ -850,7 +867,11 @@ export async function handleQuatreOuvrir(webhookUrl, body) {
       if (resultat.rejoint) await surveillerDelai(partie, config, discordId, webhookUrl);
       return;
     }
+    // Ancienne vue supprimée APRÈS l'édition de la nouvelle (aller-retour
+    // Discord de moins avant d'afficher le bon état), puis rattrapage
     await patchOriginal(webhookUrl, vuePvp(partie, config, discordId));
+    await supprimerOriginal(ancienneVue);
+    await rattraperPvp(partie, config);
   } catch (err) {
     console.error("[Quatre] Échec Jouer 1v1:", err.message);
   }

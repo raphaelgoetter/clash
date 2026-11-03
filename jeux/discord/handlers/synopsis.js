@@ -59,7 +59,10 @@ const VARIANTE_PHRASES = {
   "Leboncoin": "On dirait une annonce Leboncoin.",
   "Avis 1 étoile": "On dirait un avis client à 1 étoile.",
   "Gros titre": "On dirait un gros titre de journal.",
-  "Patch notes": "On dirait les notes de mise à jour d'un jeu vidéo.",
+  "Administratif": "On dirait un document administratif.",
+  "Le truc là": "On dirait quelqu'un qui a oublié tous les noms.",
+  "Théorie du complot": "On dirait un complotiste qui a tout compris.",
+  "Sortie d'anesthésie": "On dirait quelqu'un qui se réveille d'une anesthésie.",
 };
 
 // ── Embed / composants du post ────────────────────────────────

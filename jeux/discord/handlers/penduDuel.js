@@ -648,7 +648,6 @@ export async function handlePenduOuvrir(webhookUrl, body, { solo = false } = {})
       memoriserWebhook(p, discordId, webhookUrl);
       return {};
     });
-    await supprimerOriginal(ancienneVue);
     if (!partie) {
       await patchOriginal(webhookUrl, aucunePartie(solo));
       return;
@@ -668,9 +667,12 @@ export async function handlePenduOuvrir(webhookUrl, body, { solo = false } = {})
     }
     if (partie.statut === "lobby") {
       await patchOriginal(webhookUrl, { content: "⏳ En attente d'un adversaire." });
+      await supprimerOriginal(ancienneVue);
       return;
     }
+    // Ancienne vue supprimée APRÈS l'édition de la nouvelle
     await diffuser(partie, config, { auteur: discordId, webhookUrl, ...optionsDelais(r) });
+    await supprimerOriginal(ancienneVue);
   } catch (err) {
     console.error("[Pendu] Échec Jouer:", err.message);
   }
