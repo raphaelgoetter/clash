@@ -1,5 +1,5 @@
 // ============================================================
-// bacRules.js — Règles pures du Petit Bac en duel (`/bac`) : 5 manches,
+// bacRules.js — Règles pures du Petit Bac en duel (`/bac`) : 8 manches,
 // un thème et une lettre par manche, les deux joueurs répondent en même
 // temps (réponses cachées jusqu'à la fin de la manche). Jusqu'à 2
 // propositions par manche, résultat immédiat ; une proposition acceptée
@@ -25,16 +25,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOSSIER = path.resolve(__dirname, "..", "data", "bac");
 
 export const IDS = ["joueur", "bot"];
-export const NB_MANCHES = 5;
 export const PROPOSITIONS_MAX = 2;
 // Lettre tirée seulement si Kévina en connaît au moins MOTS_MIN_KEVINA et
 // la liste au moins MOTS_MIN_ACCEPTES : pas de manche injouable
 export const MOTS_MIN_KEVINA = 2;
 export const MOTS_MIN_ACCEPTES = 10;
-// Difficulté croissante : les MANCHES_DIFFICILES dernières manches tirent
-// leur lettre parmi la moitié la moins fournie des lettres jouables du
-// thème, les autres parmi la moitié la plus fournie
-export const MANCHES_DIFFICILES = 2;
 
 export const THEMES = {
   animaux: "Animaux",
@@ -45,7 +40,36 @@ export const THEMES = {
   metiers: "Métiers",
   sports: "Sports",
   clash: "Cartes Clash Royale",
+  mythologie: "Mythologie",
+  jeuxvideo: "Personnages de jeu vidéo",
+  transports: "Moyens de transport",
+  autos: "Marques automobiles",
+  acteurs: "Acteurs et actrices",
+  musique: "Musique (chanteurs et groupes)",
+  inventions: "Inventions",
 };
+
+// Niveau de chaque thème, et niveau de chaque manche (difficulté croissante)
+export const NIVEAUX = {
+  facile: ["animaux", "pays", "prenoms", "fruits", "metiers", "transports"],
+  moyen: ["villes", "sports", "autos", "acteurs", "musique"],
+  difficile: ["mythologie", "jeuxvideo", "clash", "inventions"],
+};
+// Déroulé d'une partie, difficulté croissante : niveau du thème et lettres
+// de chaque manche (« courantes » : moitié la plus fournie des lettres
+// jouables du thème, « rares » : l'autre moitié, « toutes »)
+export const MANCHES = [
+  { niveau: "facile", lettres: "courantes" },
+  { niveau: "facile", lettres: "courantes" },
+  { niveau: "facile", lettres: "rares" },
+  { niveau: "moyen", lettres: "courantes" },
+  { niveau: "moyen", lettres: "courantes" },
+  { niveau: "moyen", lettres: "rares" },
+  { niveau: "difficile", lettres: "toutes" },
+  { niveau: "difficile", lettres: "toutes" },
+];
+export const NB_MANCHES = MANCHES.length;
+export const niveauDe = (themeId) => Object.keys(NIVEAUX).find((n) => NIVEAUX[n].includes(themeId));
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
 
@@ -68,8 +92,21 @@ export const MOTS_VIDES_TETE = new Set(
   ["le", "la", "les", "l", "un", "une", "des", "du", "de", "d", "grand", "grande", "petit", "petite", "gros", "grosse", "faux", "fausse", "vrai", "vraie", "demi", "jeune", "vieux", "vieille"].map(normaliser),
 );
 
-// Article de tête retiré (« le Mali », « l'Inde »)
-const sansArticle = (s) => s.replace(/^\s*(le|la|les|un|une|des)\s+/i, "").replace(/^\s*l['’]\s*/i, "");
+// Article de tête retiré (« le Mali », « l'Inde », « The Beatles »)
+const sansArticle = (s) => s.replace(/^\s*(le|la|les|un|une|des|the)\s+/i, "").replace(/^\s*l['’]\s*/i, "");
+
+// Personnes (acteurs, chanteurs) : seul le nom de famille compte. Formes du
+// nom : le dernier mot, et la particule avec la suite (« De Niro », « de
+// Havilland », « Van Damme ») ; un nom d'un seul mot (« Cher ») est son nom.
+const PARTICULES = new Set(["de", "du", "des", "di", "da", "del", "della", "van", "von", "der", "den", "le", "la", "mac", "o"]);
+export function nomsDeFamille(nom) {
+  const mots = nom.trim().split(/\s+/);
+  if (mots.length === 1) return [nom.trim()];
+  const formes = [mots.at(-1)];
+  const k = mots.findIndex((m, i) => i > 0 && PARTICULES.has(normaliser(m)));
+  if (k > 0 && k < mots.length - 1) formes.push(mots.slice(k).join(" "));
+  return formes;
+}
 
 // Variantes au singulier d'une clé (« kiwis », « chevaux »)
 function singuliers(cle) {
@@ -89,20 +126,35 @@ export function chargerTheme(id) {
     const cles = new Map();
     // Avec et sans article de tête (« Le Havre » : aussi « Havre »)
     for (const m of t.mots) for (const f of [m, sansArticle(m)]) if (normaliser(f) && !cles.has(normaliser(f))) cles.set(normaliser(f), m);
+    // Personnes : nom complet et noms de famille → { nom, initiales }
+    const personnes = new Map();
+    const familles = new Map();
+    for (const p of t.personnes ?? []) {
+      const e = { nom: p, initiales: new Set(nomsDeFamille(p).map((f) => normaliser(f)[0]?.toUpperCase()).filter(Boolean)) };
+      personnes.set(normaliser(p), e);
+      for (const f of nomsDeFamille(p)) if (!familles.has(normaliser(f))) familles.set(normaliser(f), e);
+    }
+    // Initiale(s) d'un mot de Kévina : nom de famille pour une personne
+    const initiales = (m) => (personnes.has(normaliser(m)) ? [...personnes.get(normaliser(m)).initiales] : [normaliser(sansArticle(m))[0]?.toUpperCase()].filter(Boolean));
     const kevina = new Map();
     for (const m of t.kevina) {
-      const l = normaliser(sansArticle(m))[0]?.toUpperCase();
-      if (!l) continue;
-      if (!kevina.has(l)) kevina.set(l, []);
-      kevina.get(l).push(m);
+      for (const l of initiales(m)) {
+        if (!kevina.has(l)) kevina.set(l, []);
+        kevina.get(l).push(m);
+      }
     }
-    // Mots acceptés par initiale
+    // Mots acceptés par initiale (noms de famille pour les personnes)
     const parLettre = new Map();
-    for (const c of cles.keys()) parLettre.set(c[0].toUpperCase(), (parLettre.get(c[0].toUpperCase()) ?? 0) + 1);
-    _themes.set(id, { id, nom: t.nom, cles, kevina, parLettre });
+    const compter = (l) => parLettre.set(l, (parLettre.get(l) ?? 0) + 1);
+    for (const c of cles.keys()) compter(c[0].toUpperCase());
+    for (const e of personnes.values()) for (const l of e.initiales) compter(l);
+    _themes.set(id, { id, nom: t.nom, cles, personnes, familles, kevina, parLettre });
   }
   return _themes.get(id);
 }
+
+// Thème de personnes (seul le nom de famille compte)
+export const themeDePersonnes = (themeId) => chargerTheme(themeId).personnes.size > 0;
 
 // Lettres jouables d'un thème (assez de mots pour Kévina et pour le joueur),
 // de la plus fournie à la moins fournie (nombre de mots acceptés)
@@ -114,12 +166,12 @@ export function lettresJouables(themeId) {
     .sort((a, b) => t.parLettre.get(b) - t.parLettre.get(a) || a.localeCompare(b));
 }
 
-// Lettres possibles pour la manche `numero` (1 à NB_MANCHES) : courantes
-// d'abord, moins courantes sur les dernières manches
+// Lettres possibles pour la manche `numero` (1 à NB_MANCHES), selon MANCHES
 export function lettresDeManche(themeId, numero) {
   const l = lettresJouables(themeId);
   const moitie = Math.ceil(l.length / 2);
-  return numero > NB_MANCHES - MANCHES_DIFFICILES ? l.slice(moitie) : l.slice(0, moitie);
+  const { lettres } = MANCHES[numero - 1];
+  return lettres === "courantes" ? l.slice(0, moitie) : lettres === "rares" ? l.slice(moitie) : l;
 }
 
 // Clé de liste d'une forme : la forme entière, son mot principal (et la
@@ -135,12 +187,17 @@ function cleDans(t, forme) {
 }
 
 // Validation d'une réponse : { ok, cle, raison } (raison : "vide",
-// "lettre", "inconnu"). La forme avec ou sans article de tête peut porter
-// la lettre (« La Rochelle » vaut pour L et R).
+// "lettre", "nom", "inconnu"). La forme avec ou sans article de tête peut
+// porter la lettre (« La Rochelle » vaut pour L et R). Personne : nom
+// complet ou nom de famille seul, et c'est le nom de famille qui porte la
+// lettre (« Depardieu » ou « Gérard Depardieu » pour D, pas pour G).
 export function valider(themeId, lettre, mot) {
   const t = chargerTheme(themeId);
   const brut = String(mot ?? "").trim();
   if (!normaliser(brut)) return { ok: false, raison: "vide" };
+  const L = lettre.toUpperCase();
+  const personne = t.personnes.get(normaliser(brut)) ?? t.familles.get(normaliser(brut));
+  if (personne) return personne.initiales.has(L) ? { ok: true, cle: normaliser(personne.nom) } : { ok: false, raison: "nom" };
   const formes = [...new Set([brut, sansArticle(brut)])].filter((f) => normaliser(f));
   const bonnesLettres = formes.filter((f) => normaliser(f)[0] === lettre.toLowerCase());
   if (!bonnesLettres.length) return { ok: false, raison: "lettre" };
@@ -168,11 +225,17 @@ function melange(a, rng) {
   return t;
 }
 
-// Nouvelle partie : 5 thèmes différents tirés d'avance, la 1re manche
-// commence (`now` : début de la manche, pour le chrono).
+// Thèmes de la partie : un par manche, du niveau de la manche, tous différents
+function tirerThemes(rng) {
+  const restants = Object.fromEntries(Object.entries(NIVEAUX).map(([n, l]) => [n, melange(l, rng)]));
+  return MANCHES.map((m) => restants[m.niveau].pop());
+}
+
+// Nouvelle partie : 8 thèmes différents tirés d'avance (du plus facile au
+// plus difficile), la 1re manche commence (`now` : début de la manche, pour le chrono).
 export function creerDuel({ rng = Math.random, now = Date.now(), pvp = false } = {}) {
   const d = {
-    themes: melange(Object.keys(THEMES), rng).slice(0, NB_MANCHES),
+    themes: tirerThemes(rng),
     manches: [],
     scores: { joueur: 0, bot: 0 },
     // Numéro de l'état affiché, +1 à chaque action : écarte un clic sur une

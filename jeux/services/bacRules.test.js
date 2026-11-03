@@ -1,6 +1,8 @@
 import assert from "assert";
 import {
   NB_MANCHES,
+  NIVEAUX,
+  MANCHES,
   PROPOSITIONS_MAX,
   THEMES,
   cloreManche,
@@ -11,6 +13,8 @@ import {
   mancheCourante,
   mancheOuverte,
   mancheSuivante,
+  niveauDe,
+  nomsDeFamille,
   normaliser,
   passer,
   proposer,
@@ -55,25 +59,52 @@ assert.strictEqual(valider("clash", "B", "Bébé dragon").ok, true);
 assert.strictEqual(valider("fruits", "P", "Pommes").ok, true);
 assert.strictEqual(valider("metiers", "B", "boulanger").ok, true);
 assert.strictEqual(valider("sports", "T", "tennis").ok, true);
+assert.strictEqual(valider("mythologie", "Z", "zeus").ok, true);
+assert.strictEqual(valider("mythologie", "H", "Hydre de Lerne").ok, true);
+assert.strictEqual(valider("jeuxvideo", "P", "Pikachu").ok, true);
+assert.strictEqual(valider("jeuxvideo", "P", "Peach").ok, true); // dernier mot de « Princesse Peach »
+assert.strictEqual(valider("jeuxvideo", "M", "Master Chief").ok, true); // nom anglais
+assert.strictEqual(valider("transports", "T", "trottinette").ok, true);
+assert.strictEqual(valider("autos", "M", "Mercedes").ok, true); // forme courte de « Mercedes-Benz »
+assert.strictEqual(valider("musique", "B", "The Beatles").ok, true); // groupe : son nom, sans « The »
 
-// ── Chaque thème a assez de lettres jouables pour une partie ──
-for (const id of Object.keys(THEMES)) assert.ok(lettresJouables(id).length >= 5, `${id} : trop peu de lettres`);
+// ── Personnes : seul le nom de famille compte ──
+assert.deepStrictEqual(nomsDeFamille("Robert De Niro"), ["Niro", "De Niro"]);
+assert.deepStrictEqual(nomsDeFamille("Madonna"), ["Madonna"]);
+assert.deepStrictEqual(valider("acteurs", "D", "Depardieu"), { ok: true, cle: "gerarddepardieu" });
+assert.deepStrictEqual(valider("acteurs", "D", "gérard depardieu"), { ok: true, cle: "gerarddepardieu" });
+assert.deepStrictEqual(valider("acteurs", "G", "Gérard Depardieu"), { ok: false, raison: "nom" });
+assert.strictEqual(valider("acteurs", "N", "De Niro").ok, true);
+assert.strictEqual(valider("acteurs", "D", "De Niro").ok, true);
+assert.strictEqual(valider("musique", "D", "Céline Dion").ok, true);
+assert.strictEqual(valider("musique", "M", "Madonna").ok, true);
 
-// ── Partie : 5 thèmes différents, lettres moins courantes sur les 2 dernières manches ──
+// ── Chaque thème a assez de lettres jouables et un niveau ──
+for (const id of Object.keys(THEMES)) {
+  assert.ok(lettresJouables(id).length >= 5, `${id} : trop peu de lettres`);
+  assert.ok(niveauDe(id), `${id} : sans niveau`);
+}
+assert.strictEqual(Object.values(NIVEAUX).flat().length, Object.keys(THEMES).length);
+
+// ── Partie : 8 thèmes différents, difficulté croissante (MANCHES) ──
 {
   const d = creerDuel({ rng: rngFixe(3), now: 0 });
   assert.strictEqual(new Set(d.themes).size, NB_MANCHES);
+  // Du plus facile au plus difficile
+  assert.deepStrictEqual(d.themes.map(niveauDe), MANCHES.map((m) => m.niveau));
   for (let k = 1; k <= NB_MANCHES; k++) {
     const m = mancheCourante(d);
     assert.ok(lettresDeManche(m.theme, k).includes(m.lettre), `manche ${k} : ${m.lettre}`);
     cloreManche(d);
     if (!d.termine) mancheSuivante(d, { rng: rngFixe(k), now: 0 });
   }
-  // Animaux : S (très fourni) au début, jamais à la fin
+  // Animaux : S (très fourni) en manches 1 et 2, pas en manche 3 (lettres rares)
   assert.ok(lettresDeManche("animaux", 1).includes("S"));
-  assert.ok(!lettresDeManche("animaux", 5).includes("S"));
+  assert.ok(!lettresDeManche("animaux", 3).includes("S"));
   const toutes = lettresJouables("animaux");
-  assert.deepStrictEqual([...lettresDeManche("animaux", 1), ...lettresDeManche("animaux", 5)].sort(), [...toutes].sort());
+  assert.deepStrictEqual([...lettresDeManche("animaux", 1), ...lettresDeManche("animaux", 3)].sort(), [...toutes].sort());
+  // Manches 7 et 8 : toutes les lettres
+  assert.deepStrictEqual(lettresDeManche("mythologie", 8), lettresJouables("mythologie"));
 }
 
 // ── Propositions : acceptée remplace, refusée ne change rien, la 2e fige ──

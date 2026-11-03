@@ -198,7 +198,7 @@ async function finSeriesPvp(partie, now) {
 // lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
 // moteur → discordId ; "joueur" commence), duel, webhooks: { discordId:
 // { url, at } } (vue éphémère de chaque joueur, rééditée après chaque coup
-// adverse), dernierCoupAt, raisonFin: "jeu" (5 manches jouées) | "abandon",
+// adverse), dernierCoupAt, raisonFin: "jeu" (8 manches jouées) | "abandon",
 // series (en fin de partie, voir finSeriesPvp()) }.
 
 const CLE_PVP = "bacduel:pvp";

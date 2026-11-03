@@ -74,7 +74,7 @@ const resultats = {};
 for (let g = 0; g < 4; g++) {
   await h.handleBacCommand(W, lancement);
   for (let k = 0; ; k++) {
-    if (k > 60) throw new Error("partie bloquée");
+    if (k > 150) throw new Error("partie bloquée");
     const d = await readDuel(ID);
     if (d.termine) {
       resultats[d.gagnant] = (resultats[d.gagnant] || 0) + 1;
@@ -110,7 +110,7 @@ await h.handleBacOuvrir("https://discord.test/b", body("B", "Bob"));
 await h.handleBacOuvrir("https://discord.test/c", body("C", "Chloé"));
 if (!texte(vues.at(-1)).includes("Ce duel oppose")) throw new Error("3e joueur non refusé");
 for (let k = 0; ; k++) {
-  if (k > 120) throw new Error("1v1 bloqué");
+  if (k > 300) throw new Error("1v1 bloqué");
   const p = await readPvp();
   if (p.statut === "fini") {
     console.log(`1v1 : fini, gagnant ${p.duel.gagnant}, scores ${JSON.stringify(p.duel.scores)}`);

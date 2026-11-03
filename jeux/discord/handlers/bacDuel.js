@@ -37,6 +37,7 @@ import {
 } from "../../services/bacDuel.js";
 import {
   NB_MANCHES,
+  NIVEAUX,
   PROPOSITIONS_MAX,
   THEMES,
   adversaire,
@@ -46,9 +47,11 @@ import {
   mancheCourante,
   mancheOuverte,
   mancheSuivante,
+  niveauDe,
   passer,
   proposer,
   tempsEcoule,
+  themeDePersonnes,
 } from "../../services/bacRules.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 
@@ -164,7 +167,12 @@ const intitule = (m) => `${THEMES[m.theme]} en ${m.lettre}`;
 const echeanceDe = (m, config) => Math.floor((m.debut + config.delai_manche_secondes * 1000) / 1000);
 const score = (d, moi, A) => `Toi ${fp(d.scores[moi])} – ${fp(d.scores[adversaire(moi)])} ${A.Sujet}`;
 
-const RAISONS = { lettre: (m) => `ne commence pas par ${m.lettre}`, inconnu: () => "pas dans la liste", vide: () => "mot vide" };
+const RAISONS = {
+  lettre: (m) => `ne commence pas par ${m.lettre}`,
+  nom: (m) => `le nom de famille doit commencer par ${m.lettre}`,
+  inconnu: () => "pas dans la liste",
+  vide: () => "mot vide",
+};
 
 // Résultat de la dernière proposition de `moi`
 function retour(m, moi, r) {
@@ -240,7 +248,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, confi
   if (confirmerAbandon) {
     return { embeds: [{ title: titre, description: "🏳️ **Abandonner la partie ?** Ce sera une défaite.", color: BAC_COLOR }], components: boutonsConfirmation(sfx) };
   }
-  const entete = `Manche **${n}**/${NB_MANCHES}`;
+  const entete = `Manche **${n}**/${NB_MANCHES} · ${niveauDe(m.theme)}`;
   if (!mancheOuverte(d)) {
     const lignes = [entete, `## ${intitule(m)}`, ...(texte ? [texte] : []), ligneReponse(m, moi, "Toi"), ligneReponse(m, adversaire(moi), A.Sujet)];
     const suivante = { type: 2, style: 2, label: "Manche suivante", emoji: { name: "▶️" }, custom_id: `bacduel_suivante:${n}${sfx}` };
@@ -251,7 +259,8 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, confi
   const etat = m.fige[moi]
     ? [rep ? `Ta réponse : **${rep.mot}**` : "Pas de réponse pour cette manche.", `⏳ En attente de ${A.Sujet}…`]
     : [[rep ? `Ta réponse : **${rep.mot}**` : null, plural(reste, "proposition") + (reste > 1 ? " possibles" : " possible")].filter(Boolean).join(" · ")];
-  const lignes = [entete, `## ${intitule(m)}`, ...(texte ? [texte] : []), ...etat, `⏰ Fin de la manche <t:${echeanceDe(m, config)}:R>`];
+  const consigne = themeDePersonnes(m.theme) ? ["👤 Seul le nom de famille compte."] : [];
+  const lignes = [entete, `## ${intitule(m)}`, ...consigne, ...(texte ? [texte] : []), ...etat, `⏰ Fin de la manche <t:${echeanceDe(m, config)}:R>`];
   const actions = m.fige[moi]
     ? []
     : [
@@ -288,7 +297,9 @@ function buildReglesEmbed(config) {
       "**Points** : 1 par bonne réponse, 0,5 chacun si vous avez trouvé le même mot.",
       "Majuscules, accents, pluriel et article (le, la, l') sont tolérés.",
       "",
-      `Thèmes : ${Object.values(THEMES).join(", ")}.`,
+      "**Difficulté croissante** : manches 1 à 3 sur un thème facile, 4 à 6 sur un thème moyen, 7 et 8 sur un thème difficile ; la 3ᵉ et la 6ᵉ manche tirent une lettre moins courante. Acteurs et musique : seul le nom de famille compte.",
+      "",
+      ...Object.entries(NIVEAUX).map(([n, l]) => `**${n.charAt(0).toUpperCase() + n.slice(1)}** : ${l.map((id) => THEMES[id]).join(", ")}.`),
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
     ].join("\n"),
     color: BAC_COLOR,

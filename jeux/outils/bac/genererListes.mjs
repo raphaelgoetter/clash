@@ -9,6 +9,10 @@
 // - villes : villes du monde de Wikidata (population, nom français) et
 //   communes de France de l'API geo.api.gouv.fr ;
 // - prénoms : fichier des prénoms de l'INSEE (naissances depuis 1900) ;
+// - mythologie, personnages de jeu vidéo : Wikidata (classes, notoriété =
+//   nombre de langues de Wikipédia, première apparition) ;
+// - inventions : liste relue à la main (inventions.txt), candidats tirés de
+//   Wikidata et des listes d'inventions de Wikipédia ;
 // - cartes Clash : jeux/data/cardNames.json (noms français).
 // Fréquence d'usage (choix de Kévina) : Lexique 3.83 (lexique.org).
 //
@@ -122,6 +126,76 @@ async function kevinaDepuis(mots, pages, { courant = false } = {}) {
   const choisis = new Set();
   for (const [titre, hote] of pages) for (const l of await liens(titre, hote)) choisis.add(normaliser(l));
   return (courant ? await courants(mots, SEUIL_FREQ) : mots).filter((m) => choisis.has(normaliser(m)));
+}
+
+// ── Wikidata (requêtes SPARQL, en cache) ──
+
+async function sparql(cle, requete) {
+  const f = path.join(CACHE, `wd-${cle}.json`);
+  if (!fs.existsSync(f)) {
+    for (let essai = 0; ; essai++) {
+      const r = await fetch(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(requete)}`, { headers: { ...UA, Accept: "application/sparql-results+json" } });
+      const t = await r.text();
+      try {
+        JSON.parse(t);
+        fs.writeFileSync(f, t);
+        break;
+      } catch {
+        if (essai >= 3) throw new Error(`Wikidata (${cle}) : ${t.slice(0, 100)}`);
+        await pause(10000);
+      }
+    }
+  }
+  return JSON.parse(fs.readFileSync(f, "utf8")).results.bindings.map((b) => ({
+    id: b.x.value.split("/").pop(),
+    fr: b.fr.value,
+    en: b.en?.value ?? null,
+    liens: Number(b.liens?.value ?? 0),
+  }));
+}
+
+// Éléments d'une classe (et de ses sous-classes) avec leur nom français,
+// anglais et le nombre de langues de Wikipédia qui ont un article
+const deClasse = (cle, classe) =>
+  sparql(
+    cle,
+    `SELECT ?x ?fr ?en ?liens WHERE {
+      ?x wdt:P31/wdt:P279* wd:${classe} ; wikibase:sitelinks ?liens .
+      ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
+      OPTIONAL { ?x rdfs:label ?en . FILTER(LANG(?en) = "en") }
+    }`,
+  );
+
+// Libellés français des classes directes de chaque élément
+async function classesDirectes(cle, ids) {
+  const f = path.join(CACHE, `wd-classes-${cle}.json`);
+  if (!fs.existsSync(f)) {
+    const out = {};
+    for (let i = 0; i < ids.length; i += 150) {
+      await pause(1000);
+      const v = ids
+        .slice(i, i + 150)
+        .map((x) => `wd:${x}`)
+        .join(" ");
+      const q = `SELECT ?x ?cl WHERE { VALUES ?x { ${v} } ?x wdt:P31 ?c . ?c rdfs:label ?cl . FILTER(LANG(?cl) = "fr") }`;
+      const r = await fetch(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(q)}`, { headers: { ...UA, Accept: "application/sparql-results+json" } });
+      for (const b of JSON.parse(await r.text()).results.bindings) (out[b.x.value.split("/").pop()] ??= []).push(b.cl.value);
+    }
+    fs.writeFileSync(f, JSON.stringify(out));
+  }
+  return JSON.parse(fs.readFileSync(f, "utf8"));
+}
+
+// Noms propres (personnages, villes, groupes) : sans parenthèses (« Steve
+// (Minecraft) »), lettres, chiffres, espaces, apostrophes, points, tirets et
+// « & / ! + » (« AC/DC », « Simon & Garfunkel ») seulement ; doublons à la normalisation près retirés, triés.
+function nomsPropres(liste) {
+  const u = new Map();
+  for (const brut of liste) {
+    const m = brut && brut.replace(/\s*\(.*?\)\s*/g, " ").trim();
+    if (m && /^[\p{L}\d\s'’.&/!+-]+$/u.test(m) && normaliser(m).length >= 2 && !u.has(normaliser(m))) u.set(normaliser(m), m);
+  }
+  return [...u.values()].sort((a, b) => a.localeCompare(b, "fr"));
 }
 
 // ── Lexique 3.83 : fréquence (par million de mots, films + livres) ──
@@ -243,6 +317,149 @@ const THEMES = {
     return { nom: "Sports", mots, kevina: await kevinaDepuis(mots, [["Annexe:Sports en français"], ["Annexe:Sports olympiques"]]) };
   },
 
+  async mythologie() {
+    // Divinités, personnages mythologiques et créatures légendaires (Wikidata).
+    // Kévina : article dans au moins 40 langues, classe divine, héroïque ou
+    // créature, jamais un personnage biblique ni un ange (les personnages
+    // mythologiques de Wikidata en comptent beaucoup).
+    const tous = [
+      ...(await deClasse("divinites", "Q178885")),
+      ...(await deClasse("personnages-mythologiques", "Q4271324")),
+      ...(await deClasse("creatures-legendaires", "Q2239243")),
+    ];
+    const connus = [...new Map(tous.filter((x) => x.liens >= 40).map((x) => [x.id, x])).values()];
+    const classes = await classesDirectes("mythologie", connus.map((x) => x.id));
+    const mythique = /divinit|déesse|dieu|déité|titan|mytholog|devî|créature|chimère|monstre|dragon|nymphe|géant|légendaire|héros|olympien/i;
+    const exclu = /bible|ange|archange|être humain|personnage historique/i;
+    const kevina = connus.filter((x) => (classes[x.id] ?? []).some((c) => mythique.test(c)) && !(classes[x.id] ?? []).some((c) => exclu.test(c)));
+    // Mots acceptés : au moins 2 langues (écarte les entrées très obscures)
+    return { nom: "Mythologie", mots: nomsPropres(tous.filter((x) => x.liens >= 2).map((x) => x.fr)), kevina: nomsPropres(kevina.map((x) => x.fr)) };
+  },
+
+  async jeuxvideo() {
+    // Personnages de jeu vidéo et Pokémon (Wikidata), noms français et
+    // anglais, plus le dernier mot des noms composés (« Princesse Peach » :
+    // « Peach », « Lara Croft » : « Croft »). Kévina : personnages nés dans
+    // un jeu vidéo (première apparition), article dans au moins 10 langues,
+    // et Pokémon dans au moins 30 (Pikachu, Salamèche…). Les personnages de
+    // films ou de BD qui ont eu leur jeu (Mickey, Luke Skywalker) restent
+    // acceptés mais Kévina ne les donne pas.
+    const persos = await deClasse("personnages-jeu-video", "Q1569167");
+    const pokemon = await deClasse("pokemon", "Q3966183");
+    const nes = await sparql(
+      "personnages-nes-jeu-video",
+      `SELECT DISTINCT ?x ?fr ?liens WHERE {
+        ?x wdt:P31/wdt:P279* wd:Q1569167 ; wikibase:sitelinks ?liens ; wdt:P4584 ?w .
+        ?w wdt:P31/wdt:P279* wd:Q7889 .
+        ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
+      }`,
+    );
+    const noms = [...persos, ...pokemon].flatMap((x) => [x.fr, x.en]).filter(Boolean);
+    const derniers = noms.map((n) => n.replace(/\s*\(.*?\)\s*/g, " ").trim().split(/\s+/)).filter((m) => m.length > 1).map((m) => m.at(-1));
+    return {
+      nom: "Personnages de jeu vidéo",
+      mots: nomsPropres([...noms, ...derniers]),
+      kevina: nomsPropres([...nes.filter((x) => x.liens >= 10), ...pokemon.filter((x) => x.liens >= 30)].map((x) => x.fr)),
+    };
+  },
+
+  async transports() {
+    // Wiktionnaire : véhicules, bateaux, engins de glisse et vélos. Kévina : mots des thésaurus
+    // (véhicule, bateau, avion), faits à la main (la catégorie « Véhicules »
+    // contient des sens secondaires : « visa », « pelle »).
+    const vehicules = await wiktionnaire("vehicules", [["Véhicules en français", 1]]);
+    // Engins de glisse (trottinette, skateboard) et vélos, acceptés aussi
+    const glisse = await wiktionnaire("glisse-velos", [["Sports de glisse en français", 0], ["Vélos en français", 0]]);
+    const bateaux = await wiktionnaire("bateaux", [["Bateaux en français", 0]]);
+    // Thésaurus : filtre des mots de Kévina seulement (ils contiennent aussi
+    // du vocabulaire associé : « ancre », « pilote », « mer »)
+    const thesaurus = [["Thésaurus:véhicule/français"], ["Thésaurus:bateau/français"], ["Thésaurus:avion/français"], ["Thésaurus:train/français"]];
+    const mots = reduire([...vehicules, ...bateaux, ...glisse]);
+    // Mots des thésaurus qui ne désignent pas un véhicule en usage courant
+    const AMBIGUS = new Set(["aile", "annexe", "batterie", "piste", "plate", "voile", "nacelle", "véhicule", "bâtiment", "nef", "pointu", "corsaire", "vapeur", "char", "vaisseau"]);
+    const kevina = (await kevinaDepuis(mots, thesaurus, { courant: true })).filter((m) => !AMBIGUS.has(m.toLowerCase()));
+    return { nom: "Moyens de transport", mots, kevina };
+  },
+
+  async autos() {
+    // Constructeurs et marques automobiles (Wikidata), noms français et
+    // anglais, et formes courtes : sans suffixe d'entreprise (« Ford Motor
+    // Company » : « Ford »), partie avant le trait d'union (« Mercedes-Benz » :
+    // « Mercedes »). Kévina : article dans au moins 30 langues, ni camions,
+    // ni motos, ni groupes (classes Wikidata).
+    const l = [...(await deClasse("constructeurs-automobiles", "Q786820")), ...(await deClasse("marques-automobiles", "Q44294"))];
+    const SUFFIXES = /\s+(Group|Groupe|Motor Company|Motor Corporation|Motors?|Automobiles?|Automotive|Corporation|Company|Cars|AG|S\.p\.A\.|SpA|S\.A\.|SA|Ltd\.?|Inc\.?|GmbH|Holding|North America)$/i;
+    const court = (n) => {
+      let m = n;
+      while (SUFFIXES.test(m)) m = m.replace(SUFFIXES, "");
+      return m.trim();
+    };
+    const noms = l.flatMap((x) => [x.fr, x.en]).filter(Boolean);
+    const formes = noms.flatMap((n) => [n, court(n), court(n).split("-")[0]]);
+    const connus = [...new Map(l.filter((x) => x.liens >= 30).map((x) => [x.id, x])).values()];
+    const classes = await classesDirectes("autos", connus.map((x) => x.id));
+    const horsSujet = /camion|poids lourd|moto|bus|autocar|tracteur|utilitaire|groupe|conglomérat|holding|société mère|filiale|division|armement|aéronautique/i;
+    // Kévina : nom d'usage (sans suffixe juridique, « General Motors » gardé
+    // entier), ni usines (« Zavod »), ni écuries de course
+    const juridique = /\s+(AG|S\.p\.A\.|SpA|S\.A\.|SA|Ltd\.?|Limited|Inc\.?|GmbH|Corporation|Company)$/i;
+    const kevina = connus
+      .filter((x) => !(classes[x.id] ?? []).some((c) => horsSujet.test(c)) && !/\b(Group|Groupe|Holding|Stellantis|Zavod|Avtomobilny|F1|Team|Racing)\b/i.test(x.fr))
+      .map((x) => x.fr.replace(juridique, "").trim());
+    return { nom: "Marques automobiles", mots: nomsPropres(formes), kevina: nomsPropres(kevina) };
+  },
+
+  async inventions() {
+    // Liste relue à la main (jeux/outils/bac/inventions.txt, une invention
+    // par ligne ; candidats tirés de Wikidata et des listes d'inventions de
+    // Wikipédia, aucune source propre n'existant). Kévina : inventions d'un
+    // seul mot, d'usage courant.
+    const lignes = fs
+      .readFileSync(path.join(__dirname, "inventions.txt"), "utf8")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith("#"));
+    const uniques = new Map();
+    for (const m of lignes) if (!uniques.has(normaliser(m))) uniques.set(normaliser(m), m);
+    const mots = [...uniques.values()].sort((a, b) => a.localeCompare(b, "fr"));
+    return { nom: "Inventions", mots, kevina: await courants(mots, SEUIL_FREQ) };
+  },
+
+  async acteurs() {
+    // Acteurs et actrices les plus connus (Wikidata : acteur de cinéma,
+    // article dans au moins 40 langues, au moins 5 films). Seul le nom de
+    // famille compte (bacRules.js) : `personnes` = noms complets. Kévina :
+    // au moins 70 langues et 10 films, ni chanteurs (au moins 10 œuvres
+    // interprétées) ni réalisateurs.
+    const acteurs = await acteursConnus();
+    const chanteurs = new Set((await chanteursConnus()).filter((x) => x.oeuvres >= 10).map((x) => x.id));
+    const cineastes = new Set((await realisateurs()).map((x) => x.id));
+    const kevina = acteurs.filter((x) => x.liens >= 70 && x.films >= 10 && !chanteurs.has(x.id) && !cineastes.has(x.id));
+    return { nom: "Acteurs et actrices", mots: [], personnes: nomsPropres(acteurs.filter((x) => x.films >= 5).map((x) => x.fr)), kevina: nomsPropres(kevina.map((x) => x.fr)) };
+  },
+
+  async musique() {
+    // Chanteurs, chanteuses et rappeurs (au moins 5 œuvres interprétées ;
+    // seul le nom de famille compte) et groupes (leur nom) les plus connus
+    // (Wikidata, article dans au moins 40 langues). Kévina : au moins 70
+    // langues et 10 œuvres, pas les acteurs (au moins 10 films).
+    const chanteurs = await chanteursConnus();
+    const acteurs = new Set((await acteursConnus()).filter((x) => x.films >= 10).map((x) => x.id));
+    const groupes = await sparql(
+      "groupes",
+      `SELECT DISTINCT ?x ?fr ?liens WHERE {
+        ?x wdt:P31/wdt:P279* wd:Q215380 ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
+        ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
+      }`,
+    );
+    const kevina = [...chanteurs.filter((x) => x.liens >= 70 && x.oeuvres >= 10 && !acteurs.has(x.id)), ...groupes.filter((x) => x.liens >= 70)];
+    return {
+      nom: "Musique (chanteurs et groupes)",
+      mots: nomsPropres(groupes.map((x) => x.fr)),
+      personnes: nomsPropres(chanteurs.filter((x) => x.oeuvres >= 5).map((x) => x.fr)),
+      kevina: nomsPropres(kevina.map((x) => x.fr)),
+    };
+  },
+
   async pays() {
     const monde = JSON.parse(fs.readFileSync(await telecharger("https://raw.githubusercontent.com/mledoze/countries/master/countries.json", "countries.json"), "utf8"));
     const cldr = JSON.parse(fs.readFileSync(await telecharger("https://raw.githubusercontent.com/umpirsky/country-list/master/data/fr/country.json", "cldr-fr.json"), "utf8"));
@@ -315,6 +532,45 @@ const THEMES = {
     return { nom: "Cartes Clash Royale", mots, kevina: fr };
   },
 };
+
+// Acteurs de cinéma connus (Wikidata) et leur nombre de films (distribution)
+async function acteursConnus() {
+  const l = await sparql(
+    "acteurs",
+    `SELECT ?x ?fr ?liens (COUNT(?f) AS ?n) WHERE {
+      ?x wdt:P106 wd:Q10800557 ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
+      ?f wdt:P161 ?x .
+      ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
+    } GROUP BY ?x ?fr ?liens`,
+  );
+  const n = JSON.parse(fs.readFileSync(path.join(CACHE, "wd-acteurs.json"), "utf8")).results.bindings.map((b) => Number(b.n.value));
+  return l.map((x, i) => ({ ...x, films: n[i] }));
+}
+
+// Chanteurs et rappeurs connus (Wikidata) et leur nombre d'œuvres interprétées
+async function chanteursConnus() {
+  const l = await sparql(
+    "chanteurs",
+    `SELECT ?x ?fr ?liens (COUNT(?o) AS ?n) WHERE {
+      VALUES ?m { wd:Q177220 wd:Q2252262 }
+      ?x wdt:P106 ?m ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
+      ?o wdt:P175 ?x .
+      ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
+    } GROUP BY ?x ?fr ?liens`,
+  );
+  const n = JSON.parse(fs.readFileSync(path.join(CACHE, "wd-chanteurs.json"), "utf8")).results.bindings.map((b) => Number(b.n.value));
+  return l.map((x, i) => ({ ...x, oeuvres: n[i] }));
+}
+
+// Réalisateurs de cinéma connus (pour les écarter des acteurs de Kévina)
+const realisateurs = () =>
+  sparql(
+    "realisateurs",
+    `SELECT DISTINCT ?x ?fr WHERE {
+      ?x wdt:P106 wd:Q2526255 ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
+      ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
+    }`,
+  );
 
 // Noms d'usage absents des listes officielles (nations constitutives,
 // anciens noms, formes courtes)
