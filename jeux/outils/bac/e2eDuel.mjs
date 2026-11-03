@@ -121,6 +121,15 @@ await h.handleBacPvpCommand("https://discord.test/a", body("A", "Alice"));
 await h.handleBacOuvrir("https://discord.test/b", body("B", "Bob"));
 await h.handleBacOuvrir("https://discord.test/c", body("C", "Chloé"));
 if (!texte(vues.at(-1)).includes("Ce duel oppose")) throw new Error("3e joueur non refusé");
+if (!boutons(salon.filter((m) => m.method === "PATCH").at(-1)).some((b) => b.custom_id === "bacduel_ouvrir")) throw new Error("bouton Ma vue absent du message public");
+// « Ma vue » d'un joueur assis, temps écoulé : la manche se clôt
+{
+  const p = await readPvp();
+  mancheCourante(p.duel).debut -= 120_000;
+  await new Redis({}).set("bacduel:pvp", JSON.stringify(p));
+  await h.handleBacOuvrir("https://discord.test/a2", body("A", "Alice"));
+  if (mancheCourante((await readPvp()).duel).points === null) throw new Error("Ma vue : manche au temps écoulé non close");
+}
 for (let k = 0; ; k++) {
   if (k > 300) throw new Error("1v1 bloqué");
   const p = await readPvp();

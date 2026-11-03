@@ -897,11 +897,11 @@ async function executerSolo(
     config,
     vientDeFinir: r.vientDeFinir,
   });
-  if (r.nouvelle)
-    await surveillerMancheSolo(webhookUrl, discordId, duel, config, {
-      channelId,
-      pseudo,
-    });
+  // Toute action relaie la surveillance de la fin du temps
+  await surveillerMancheSolo(webhookUrl, discordId, duel, config, {
+    channelId,
+    pseudo,
+  });
 }
 
 async function abandonSolo(webhookUrl, discordId, { channelId, pseudo }) {
@@ -975,6 +975,7 @@ function vuePvp(
   });
 }
 
+const BOUTON_MA_VUE = { type: 2, style: 2, label: "Ma vue", emoji: { name: "🎮" }, custom_id: "bacduel_ouvrir" };
 const BOUTON_JOUER = {
   type: 2,
   style: 3,
@@ -995,7 +996,10 @@ function messagePublic(partie, config) {
       components: [{ type: 1, components: [BOUTON_JOUER, BOUTON_REGLES] }],
     };
   }
-  return messageTable(partie.duel, nomDePvp(partie), config);
+  // Partie en cours : [🎮 Ma vue] renvoie sa vue à chaque joueur (vue
+  // perdue plus haut dans le salon, autre appareil)
+  const table = messageTable(partie.duel, nomDePvp(partie), config);
+  return partie.statut === "enCours" ? { ...table, components: [{ type: 1, components: [BOUTON_MA_VUE, BOUTON_REGLES] }] } : table;
 }
 
 function messageFinalPvp(partie) {
@@ -1170,7 +1174,7 @@ export async function handleBacOuvrir(webhookUrl, body) {
       partie,
       config,
       resultat: r,
-    } = await agirPvp((p) => {
+    } = await agirPvp((p, config) => {
       if (p.statut === "lobby" && discordId !== p.lanceur) {
         rejoindrePvp(p, discordId, username);
         memoriserWebhook(p, discordId, webhookUrl);
@@ -1180,6 +1184,11 @@ export async function handleBacOuvrir(webhookUrl, body) {
         return { erreur: "pasJoueur" };
       ancienneVue = webhookValide(p, discordId);
       memoriserWebhook(p, discordId, webhookUrl);
+      // Temps de la manche écoulé sans clôture : clôturée ici
+      if (p.statut === "enCours" && tempsEcoule(p.duel, config.delai_manche_secondes * 1000)) {
+        cloreManche(p.duel);
+        return { clos: true, coup: true };
+      }
       return {};
     });
     await supprimerOriginal(ancienneVue);
@@ -1205,7 +1214,13 @@ export async function handleBacOuvrir(webhookUrl, body) {
       await surveillerManchePvp(partie, config, discordId, webhookUrl);
       return;
     }
+    if (r.clos || r.vientDeFinir) {
+      await diffuserPvp(partie, config, discordId, webhookUrl, "⏰ Temps écoulé !");
+      return;
+    }
     await patchOriginal(webhookUrl, vuePvp(partie, config, discordId));
+    // La manche en cours se clôt aussi depuis cette invocation (relais)
+    await surveillerManchePvp(partie, config, discordId, webhookUrl);
   } catch (err) {
     console.error("[Petit Bac] Échec Jouer 1v1:", err.message);
   }
@@ -1265,8 +1280,9 @@ async function executerPvp(webhookUrl, discordId, action, n) {
     await diffuserPvp(partie, config, discordId, webhookUrl, texte, {
       lesDeux: r.lesDeux || r.vientDeFinir,
     });
-    if (r.nouvelle)
-      await surveillerManchePvp(partie, config, discordId, webhookUrl);
+    // Toute action relaie la surveillance de la fin du temps (une seule
+    // invocation qui attend peut s'arrêter avant l'échéance)
+    await surveillerManchePvp(partie, config, discordId, webhookUrl);
     return;
   }
   await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, texte));
