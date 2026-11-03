@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade` et leurs boutons de duel (plus ceux de Six, archivé) |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac` et leurs boutons de duel (plus ceux de Six, archivé) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -1216,14 +1216,14 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Sept duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Huit duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `mascaradeduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `mascaradeduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `mascaradeduel:*`, `bacduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `mascaradeduel_*`, `bacduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Tourneboule 1v1, Mascarade 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Tourneboule 1v1, Mascarade 1v1, Petit Bac 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
 
 ### Blackjack Duel et Gobelet Duel (contre Kévina / solo, ou en 1v1)
 
@@ -1450,6 +1450,42 @@ Duel de cartes à information cachée : chacun garde **une carte secrète** en m
 
 - `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `prudent` (joue sa carte la moins chère), `kevina[m<mondes>][e<erreur>]`, ex. `kevinam40e0.25` = réglage de production) : victoires, fins de manche, part jouée de chaque carte. Repères contre Kévina de production (400 parties) : joueur qui déduit (`kevina`) ~55 %, prudent ~21 %, hasard ~24 %. Kévina sans erreur : ~50 % contre elle-même. Ce qui renforce Kévina : un meilleur jeu simple dans les manches simulées (Boule de feu et Bûche sur la carte connue : +6 points contre l'ancienne version) ; ce qui ne change rien : plus de mondes (150 au lieu de 40), déduire la carte adverse de ses coups (« garde sa carte chère »). Quelques dizaines de millisecondes par partie.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés, images décodées (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/mascarade/e2eDuel.mjs`).
+
+### Petit Bac (contre Kévina ou en 1v1)
+
+Jeu rapide et léger : un thème, une lettre, une minute pour trouver un mot. `/bac adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Mascarade (modes, verrous, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
+
+- Code : `jeux/services/bacRules.js` (règles pures, validation et Kévina, tests `bacRules.test.js`), `jeux/services/bacDuel.js` (Redis, tests `bacDuel.test.js`), `jeux/discord/handlers/bacDuel.js` (Discord). Config `jeux/data/bac/duel.json` : `delai_manche_secondes` (60), `trouve_kevina` (0,8). Listes de mots : `jeux/data/bac/<thème>.json` (environ 300 Ko en tout).
+- Redis : `bacduel:<discordId>` (contre Kévina), `bacduel:pvp`, verrous `bacduel:lock:*`, séries `bacduel:series:bot` / `bacduel:series:pvp`, records `bacduel:records`.
+- `custom_id` (`<manche>` = numéro de la manche affichée : une action sur une manche passée est refusée) : `bacduel_proposer:<manche>:<thème>:<lettre>[:pvp]` (ouvre la fenêtre de saisie : réponse synchrone 9, thème et lettre lus dans le `custom_id`, rien lu dans Redis), `bacduel_mot:<manche>[:pvp]` (fenêtre soumise, MODAL_SUBMIT, réponse 6 : la vue est rééditée en place), `bacduel_passer:<manche>[:pvp]`, `bacduel_suivante:<manche>[:pvp]`, `bacduel_ouvrir`, `bacduel_regles`, `bacduel_abandon[:pvp]`, `bacduel_abandon_ok[:pvp]` / `bacduel_abandon_non[:pvp]`.
+
+#### Règles
+
+- **5 manches** (`NB_MANCHES`), **5 thèmes différents** tirés en début de partie parmi 8 (`THEMES` : Animaux, Pays, Villes, Prénoms, Fruits et légumes, Métiers, Sports, Cartes Clash Royale). **Lettre** tirée parmi celles où Kévina connaît au moins `MOTS_MIN_KEVINA` (2) mots et la liste en compte au moins `MOTS_MIN_ACCEPTES` (10) (`lettresJouables()`) : pas de manche injouable.
+- Les deux joueurs répondent **en même temps** ; réponses cachées jusqu'à la fin de la manche. **`delai_manche_secondes` (60 s) par manche** (`debut` de la manche, `tempsEcoule()`).
+- **2 propositions** par manche (`PROPOSITIONS_MAX`), **résultat immédiat** (« ✅ **Koala** accepté », « ❌ **Kzzt** refusé : pas dans la liste », « … : ne commence pas par K ») : une proposition acceptée **remplace** la précédente, une refusée ne change rien. La 2e proposition fige la réponse. **Passer** (« ✅ Valider » si un mot est accepté) fige la réponse : le mot accepté compte, sinon 0.
+- **Fin de manche** : les deux réponses figées, ou temps écoulé (réponses figées en l'état). **Points** (`cloreManche()`) : 1 par bonne réponse, **0,5 chacun pour la même** (même clé de liste : « Kangourous » et « kangourou » sont la même réponse). Après 5 manches, le plus de points gagne ; égalité possible (série intacte, comme un nul).
+- **Validation** (`valider()`) tolérante : casse, accents et ligatures, séparateurs (tirets, espaces, apostrophes), article de tête (le, la, les, l', un, une, des ; « La Rochelle » vaut pour L et R), pluriel (-s, -x, -aux → -al) ; une réponse composée est acceptée si son **mot principal** est dans la liste (premier mot hors articles et adjectifs de tête `MOTS_VIDES_TETE`, ou partie avant un trait d'union : « merle de Lawrence » → « merle », « grand ara bleu » → « ara »). La lettre est celle de la réponse saisie (avec ou sans article).
+- **Kévina** (`jouerKevina()`) : en début de manche, un mot **courant** du thème au hasard (liste `kevina` du thème), trouvé avec la probabilité `trouve_kevina`, sinon rien ; sa réponse est figée aussitôt.
+- **Inactivité** : contre Kévina, partie expirée après 1 h sans action (relancée = défaite) ; en 1v1, partie abandonnée après 5 min sans action (`INACTIVITE_PVP_MS`), remplacée par le prochain `/bac adversaire:1v1`, sans résultat. Pas de défaite au temps : la manche se clôt seule.
+
+#### Listes de mots (`jeux/data/bac/<thème>.json`)
+
+- Format : `{ nom, mots: [mots acceptés], kevina: [mots courants, ceux que Kévina peut répondre] }`. Générées par `jeux/outils/bac/genererListes.mjs` depuis des **sources publiques vérifiables**, jamais de mémoire : catégories du Wiktionnaire (Animaux, Fruits et légumes, Métiers, Sports ; articles seulement, pas les pages « Annexe: » ni « Thésaurus: » ; sous-catégories hors sujet exclues, comme « Criminels et délinquants » ; mots faits de lettres, espaces, tirets et apostrophes seulement), pays de mledoze/countries et de la CLDR (umpirsky/country-list) plus quelques noms d'usage (`ALIAS_PAYS` : Angleterre, Hollande…) et les îles sans « Île(s) » (« Pitcairn », « Tokelau », « Maurice »), villes du monde de 100 000 habitants et plus de Wikidata (nom français et anglais) et communes de France de l'API geo.api.gouv.fr, fichier des prénoms de l'INSEE, noms des cartes de `jeux/data/cardNames.json` (français et anglais acceptés).
+- **Taille contenue** : entrées composées réduites à leur mot principal (retirées s'il est déjà présent) ; **villes du monde de 100 000 habitants et plus** (environ 4 000) et **communes de France de 5 000 habitants et plus** (environ 2 300 sur 35 000) ; **prénoms d'au moins 500 naissances** depuis 1900 (environ 5 000).
+- **Mots de Kévina** : jamais les catégories du Wiktionnaire seules (sens secondaires : « bois » ou « lune » parmi les animaux, mots grossiers parmi les fruits) mais les mots acceptés présents dans des **listes faites à la main** : annexes du Wiktionnaire « Animaux communs » et « Métiers » (et d'usage courant : fréquence d'au moins 1 par million dans Lexique 3.83, pour écarter « cria », « garbon »), « Sports » et « Sports olympiques », listes de fruits et de légumes de Wikipédia ; pays membres de l'ONU ; villes connues (article dans au moins 150 langues de Wikipédia) et communes de France de 100 000 habitants et plus ; prénoms d'au moins 20 000 naissances ; cartes en français.
+- Un mot valide refusé : l'ajouter en régénérant la liste (source corrigée, ou alias dans le script), jamais à la main dans le JSON.
+
+#### Affichage
+
+- **Vue éphémère** : titre avec le score (« 🔤 Petit Bac · Toi 2 – 1,5 Kévina »), « Manche 2/5 », le thème et la lettre en titre (« ## Animaux en K »), résultat de la dernière proposition, réponse en cours et propositions restantes, « ⏰ Fin de la manche dans … » ; boutons **✏️ Proposer un mot** (« Changer de mot » une fois un mot accepté, ouvre la fenêtre « Animaux en K »), **⏭️ Passer** (« ✅ Valider » une fois un mot accepté), 📖, 🏳️. Réponse figée : « ⏳ En attente de X… ».
+- **Fin de manche** : les deux réponses et leurs points (« Toi : **Kangourou** +0,5 »), bouton **▶️ Manche suivante** (contre Kévina : le joueur ; en 1v1 : l'un ou l'autre, la manche démarre pour les deux). Fin du temps sans clic : l'invocation qui a ouvert la manche attend l'échéance puis la clôt (`surveillerMancheSolo()` / `surveillerManchePvp()`, dans le `maxDuration` de 120 s).
+- **Message public** : manche, thème et lettre, score, « ⏳ Manche en cours, fin dans … » et qui a déjà répondu (sans le mot), puis les réponses à la fin de la manche ; récapitulatif de fin dans un nouveau message : résultat (« 🏆 X bat Kévina : 3,5 à 2 ! », « 🤝 Égalité… ») et séries. La vue garde la dernière manche et le score final.
+
+#### Outils (`jeux/outils/bac/`, à lancer à la main)
+
+- `genererListes.mjs [thème…]` : régénère les listes (réseau ; téléchargements en cache dans le dossier temporaire, le Wiktionnaire est lent : plusieurs minutes).
+- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/bac/e2eDuel.mjs`).
 
 ---
 

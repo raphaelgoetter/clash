@@ -1,0 +1,41 @@
+import assert from "assert";
+import { Redis } from "@upstash/redis";
+import { agirDuel, isNewRecord, lireRecord, nouveauDuel, pvpAbandonnee, serieApres, INACTIVITE_PVP_MS } from "./bacDuel.js";
+
+// ── serieApres : +1 par victoire, 0 par défaite, intacte sur un nul ──
+assert.strictEqual(serieApres(3, "victoire"), 4);
+assert.strictEqual(serieApres(3, "defaite"), 0);
+assert.strictEqual(serieApres(3, "nul"), 3);
+
+// ── isNewRecord : record strictement battu, jamais une série nulle ──
+assert.strictEqual(isNewRecord(null, 1), true);
+assert.strictEqual(isNewRecord(null, 0), false);
+assert.strictEqual(isNewRecord({ serie: 7 }, 7), false);
+assert.strictEqual(isNewRecord({ serie: 7 }, 8), true);
+
+// ── 1v1 abandonné après INACTIVITE_PVP_MS sans action ──
+assert.strictEqual(pvpAbandonnee({ statut: "enCours", dernierCoupAt: 0 }, INACTIVITE_PVP_MS), false);
+assert.strictEqual(pvpAbandonnee({ statut: "enCours", dernierCoupAt: 0 }, INACTIVITE_PVP_MS + 1), true);
+assert.strictEqual(pvpAbandonnee({ statut: "lobby", dernierCoupAt: 0 }, INACTIVITE_PVP_MS + 1), false);
+
+// ── Contre Kévina (Redis en mémoire) ──
+if (Redis.isFake) {
+  const now = new Date("2026-11-03T20:00:00Z");
+  const finir = (gagnant) => agirDuel("1", (d) => Object.assign(d, { termine: true, gagnant }), { nom: "libertade", now });
+
+  await nouveauDuel("1", { preparer: (d) => (d.prepare = true) });
+  assert.strictEqual((await finir("joueur")).duel.prepare, true);
+  await nouveauDuel("1");
+  assert.strictEqual((await finir("nul")).duel.series.serie, 1); // nul : série intacte
+  await nouveauDuel("1");
+  assert.strictEqual((await finir("joueur")).duel.series.serie, 2);
+  assert.strictEqual((await lireRecord("bot")).serie, 2);
+
+  // Partie abandonnée (relance sans finir) : comptée comme une défaite
+  await nouveauDuel("1");
+  await nouveauDuel("1");
+  const { duel } = await finir("joueur");
+  assert.deepStrictEqual([duel.series.avant, duel.series.serie], [0, 1]);
+}
+
+console.log("bacDuel.test.js OK");

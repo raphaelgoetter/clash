@@ -1,7 +1,7 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /tourneboule, /mascarade, Six (archivé) et leurs boutons
+// /quatre, /punto, /tourneboule, /mascarade, /bac, Six (archivé) et leurs boutons
 // (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
-// tourneboulduel_*, mascaradeduel_*, sixduel_*).
+// tourneboulduel_*, mascaradeduel_*, bacduel_*, sixduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -94,6 +94,19 @@ import {
   handleMascaradeRegles,
   handleMascaradeAbandon,
 } from "../handlers/mascaradeDuel.js";
+import {
+  memberHasMiniJeuxRole as bacMemberHasMiniJeuxRole,
+  extractMember as bacExtractMember,
+  buildModalMot as buildBacModalMot,
+  handleBacRoleRejected,
+  handleBacCommand,
+  handleBacPvpCommand,
+  handleBacOuvrir,
+  handleBacMot,
+  handleBacAction,
+  handleBacRegles,
+  handleBacAbandon,
+} from "../handlers/bacDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 // /blackjack et /gobelet : `adversaire:bot|1v1` comme les autres duels ;
@@ -448,6 +461,69 @@ export async function routeDuels(body, res) {
       const webhookUrl = buildDiscordWebhookUrl(body);
       const opts = { pvp: args[0] === "pvp", channelId: body.channel_id, pseudo: mascaradeExtractMember(body).username };
       runBackground(() => handleMascaradeAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /bac adversaire:bot : Petit Bac contre Kévina (table publique, vue
+  // éphémère) ; adversaire:1v1 : contre un joueur. Réservé au rôle MINI-JEUX
+  // pour lancer.
+  if (body.type === 2 && body.data?.name === "bac") {
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      if (!(await bacMemberHasMiniJeuxRole(body))) {
+        await handleBacRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handleBacPvpCommand(webhookUrl, body);
+      else await handleBacCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Petit Bac : fenêtre de saisie soumise (body.type 5 = MODAL_SUBMIT,
+  // à ne pas confondre avec la réponse de type 5) : bacduel_mot:<manche>[:pvp],
+  // vue éditée en place (réponse 6, la fenêtre vient d'un bouton de la vue)
+  if (body.type === 5 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bacduel_mot:")) {
+    const [, manche, mode] = body.data.custom_id.split(":");
+    const mot = body.data.components?.[0]?.components?.[0]?.value ?? "";
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: bacExtractMember(body).username };
+    runBackground(() => handleBacMot(webhookUrl, discordId, Number(manche), mot, opts));
+    return;
+  }
+
+  // ── Petit Bac : composants. bacduel_proposer:<manche>:<thème>:<lettre>[:pvp]
+  // ouvre la fenêtre de saisie (réponse synchrone 9, sans rien lire) ;
+  // bacduel_<passer|suivante>:<manche>[:pvp] et l'abandon éditent la vue en
+  // place ; bacduel_ouvrir (Jouer du 1v1) et bacduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("bacduel_")) {
+    const [action, ...args] = body.data.custom_id.split(":");
+    if (action === "bacduel_proposer") {
+      const [manche, theme, lettre, mode] = args;
+      return res.status(200).json({ type: 9, data: buildBacModalMot(manche, theme, lettre, mode === "pvp") });
+    }
+    if (action === "bacduel_regles" || action === "bacduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "bacduel_regles") runBackground(() => handleBacRegles(webhookUrl));
+      else runBackground(() => handleBacOuvrir(webhookUrl, body));
+      return;
+    }
+    const TYPES = { bacduel_passer: "passer", bacduel_suivante: "suivante" };
+    const ETAPES_ABANDON = { bacduel_abandon: "demande", bacduel_abandon_ok: "ok", bacduel_abandon_non: "non" };
+    if (TYPES[action] || ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      const pvp = args.at(-1) === "pvp";
+      const opts = { pvp, channelId: body.channel_id, pseudo: bacExtractMember(body).username };
+      if (TYPES[action]) runBackground(() => handleBacAction(webhookUrl, discordId, TYPES[action], Number(args[0]), opts));
+      else runBackground(() => handleBacAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

@@ -138,6 +138,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/punto adversaire:bot\|1v1` | Punto (aligner 4 cartes de même couleur) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/tourneboule adversaire:bot\|1v1` | Tourneboule (réflexion sans hasard : poser des pions sur un 5×5, à côté d'un pion existant, et retourner les lignes adverses encadrées, diagonales comprises) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/mascarade adversaire:bot\|1v1` | Mascarade (duel de cartes Clash à information cachée : une carte secrète en main, piocher puis jouer l'une de ses deux cartes, déduire celle de l'adversaire, premier à 2 manches) contre Kévina, le bot (table suivie dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
+| `/bac adversaire:bot\|1v1` | Petit Bac (5 manches, un thème et une lettre par manche, 1 minute pour trouver un mot, 2 propositions) contre Kévina, le bot (table suivie dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 
 ## Sous-agents
 
