@@ -154,6 +154,14 @@ async function sparql(cle, requete) {
   }));
 }
 
+// Nom d'un élément : français, sinon multilingue (Wikidata range désormais
+// le nom de beaucoup de personnes dans « mul », sans libellé « fr » :
+// Arnold Schwarzenegger, Leonardo DiCaprio), sinon anglais ; `?en` : anglais.
+const LIBELLE = `OPTIONAL { ?x rdfs:label ?lfr . FILTER(LANG(?lfr) = "fr") }
+      OPTIONAL { ?x rdfs:label ?lmul . FILTER(LANG(?lmul) = "mul") }
+      OPTIONAL { ?x rdfs:label ?en . FILTER(LANG(?en) = "en") }
+      BIND(COALESCE(?lfr, ?lmul, ?en) AS ?fr) FILTER(BOUND(?fr))`;
+
 // Éléments d'une classe (et de ses sous-classes) avec leur nom français,
 // anglais et le nombre de langues de Wikipédia qui ont un article
 const deClasse = (cle, classe) =>
@@ -161,8 +169,7 @@ const deClasse = (cle, classe) =>
     cle,
     `SELECT ?x ?fr ?en ?liens WHERE {
       ?x wdt:P31/wdt:P279* wd:${classe} ; wikibase:sitelinks ?liens .
-      ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
-      OPTIONAL { ?x rdfs:label ?en . FILTER(LANG(?en) = "en") }
+      ${LIBELLE}
     }`,
   );
 
@@ -351,7 +358,7 @@ const THEMES = {
       `SELECT DISTINCT ?x ?fr ?liens WHERE {
         ?x wdt:P31/wdt:P279* wd:Q1569167 ; wikibase:sitelinks ?liens ; wdt:P4584 ?w .
         ?w wdt:P31/wdt:P279* wd:Q7889 .
-        ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
+        ${LIBELLE}
       }`,
     );
     const noms = [...persos, ...pokemon].flatMap((x) => [x.fr, x.en]).filter(Boolean);
@@ -425,37 +432,41 @@ const THEMES = {
   },
 
   async acteurs() {
-    // Acteurs et actrices les plus connus (Wikidata : acteur de cinéma,
-    // article dans au moins 40 langues, au moins 5 films). Seul le nom de
-    // famille compte (bacRules.js) : `personnes` = noms complets. Kévina :
-    // au moins 70 langues et 10 films, ni chanteurs (au moins 10 œuvres
-    // interprétées) ni réalisateurs.
-    const acteurs = await acteursConnus();
-    const chanteurs = new Set((await chanteursConnus()).filter((x) => x.oeuvres >= 10).map((x) => x.id));
-    const cineastes = new Set((await realisateurs()).map((x) => x.id));
-    const kevina = acteurs.filter((x) => x.liens >= 70 && x.films >= 10 && !chanteurs.has(x.id) && !cineastes.has(x.id));
-    return { nom: "Acteurs et actrices", mots: [], personnes: nomsPropres(acteurs.filter((x) => x.films >= 5).map((x) => x.fr)), kevina: nomsPropres(kevina.map((x) => x.fr)) };
+    // Acteurs et actrices (Wikidata : acteur, de cinéma ou de télévision ;
+    // article dans au moins 25 langues). Seul le nom de famille compte
+    // (bacRules.js) : `personnes` = noms complets. Kévina : au moins 70
+    // langues et 10 films, ni chanteurs (au moins 10 œuvres interprétées)
+    // ni réalisateurs.
+    const acteurs = await personnesDeMetiers("acteurs", ACTEUR, 25);
+    const connus = acteurs.filter((x) => x.liens >= 70);
+    const films = await compter("films", connus.map((x) => x.id), "P161");
+    const oeuvres = await compter("oeuvres", connus.map((x) => x.id), "P175");
+    const cineastes = new Set((await personnesDeMetiers("realisateurs", REALISATEUR, 40)).map((x) => x.id));
+    const kevina = connus.filter((x) => films[x.id] >= 10 && oeuvres[x.id] < 10 && !cineastes.has(x.id));
+    return { nom: "Acteurs et actrices", mots: [], personnes: nomsPropres(acteurs.map((x) => x.fr)), kevina: nomsPropres(kevina.map((x) => x.fr)) };
   },
 
   async musique() {
-    // Chanteurs, chanteuses et rappeurs (au moins 5 œuvres interprétées ;
-    // seul le nom de famille compte) et groupes (leur nom) les plus connus
-    // (Wikidata, article dans au moins 40 langues). Kévina : au moins 70
-    // langues et 10 œuvres, pas les acteurs (au moins 10 films).
-    const chanteurs = await chanteursConnus();
-    const acteurs = new Set((await acteursConnus()).filter((x) => x.films >= 10).map((x) => x.id));
+    // Chanteurs, chanteuses, rappeurs (seul le nom de famille compte) et
+    // groupes (leur nom), article dans au moins 25 langues (groupes : 40).
+    // Kévina : au moins 70 langues et 10 œuvres interprétées, pas les
+    // acteurs (au moins 10 films).
+    const chanteurs = await personnesDeMetiers("chanteurs", CHANTEUR, 25);
+    const connus = chanteurs.filter((x) => x.liens >= 70);
+    const oeuvres = await compter("oeuvres", connus.map((x) => x.id), "P175");
+    const films = await compter("films", connus.map((x) => x.id), "P161");
     const groupes = await sparql(
       "groupes",
       `SELECT DISTINCT ?x ?fr ?liens WHERE {
         ?x wdt:P31/wdt:P279* wd:Q215380 ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
-        ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
+        ${LIBELLE}
       }`,
     );
-    const kevina = [...chanteurs.filter((x) => x.liens >= 70 && x.oeuvres >= 10 && !acteurs.has(x.id)), ...groupes.filter((x) => x.liens >= 70)];
+    const kevina = [...connus.filter((x) => oeuvres[x.id] >= 10 && films[x.id] < 10), ...groupes.filter((x) => x.liens >= 70)];
     return {
       nom: "Musique (chanteurs et groupes)",
       mots: nomsPropres(groupes.map((x) => x.fr)),
-      personnes: nomsPropres(chanteurs.filter((x) => x.oeuvres >= 5).map((x) => x.fr)),
+      personnes: nomsPropres(chanteurs.map((x) => x.fr)),
       kevina: nomsPropres(kevina.map((x) => x.fr)),
     };
   },
@@ -484,19 +495,14 @@ const THEMES = {
     // et anglais) et communes de France de 20 000 habitants et plus. Kévina :
     // villes connues (article dans au moins 150 langues de Wikipédia) et
     // communes de France de 100 000 habitants et plus.
-    const f = path.join(CACHE, "villes-wikidata.json");
-    if (!fs.existsSync(f)) {
-      const q = `SELECT ?ville ?fr ?en ?liens WHERE {
-        ?ville wdt:P31/wdt:P279* wd:Q515 ; wdt:P1082 ?pop ; wikibase:sitelinks ?liens .
+    const monde = await sparql(
+      "villes",
+      `SELECT ?x ?fr ?en ?liens WHERE {
+        ?x wdt:P31/wdt:P279* wd:Q515 ; wdt:P1082 ?pop ; wikibase:sitelinks ?liens .
         FILTER(?pop >= 100000)
-        ?ville rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
-        OPTIONAL { ?ville rdfs:label ?en . FILTER(LANG(?en) = "en") }
-      }`;
-      const r = await fetch(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(q)}`, { headers: { ...UA, Accept: "application/sparql-results+json" } });
-      if (!r.ok) throw new Error(`Wikidata : ${r.status}`);
-      fs.writeFileSync(f, await r.text());
-    }
-    const monde = JSON.parse(fs.readFileSync(f, "utf8")).results.bindings.map((b) => ({ fr: b.fr.value, en: b.en?.value, liens: Number(b.liens.value) }));
+        ${LIBELLE}
+      }`,
+    );
     const communes = JSON.parse(fs.readFileSync(await telecharger("https://geo.api.gouv.fr/communes?fields=nom,population&format=json", "communes.json"), "utf8"));
     const tri = (l) => {
       const u = new Map();
@@ -533,44 +539,50 @@ const THEMES = {
   },
 };
 
-// Acteurs de cinéma connus (Wikidata) et leur nombre de films (distribution)
-async function acteursConnus() {
-  const l = await sparql(
-    "acteurs",
-    `SELECT ?x ?fr ?liens (COUNT(?f) AS ?n) WHERE {
-      ?x wdt:P106 wd:Q10800557 ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
-      ?f wdt:P161 ?x .
-      ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
-    } GROUP BY ?x ?fr ?liens`,
-  );
-  const n = JSON.parse(fs.readFileSync(path.join(CACHE, "wd-acteurs.json"), "utf8")).results.bindings.map((b) => Number(b.n.value));
-  return l.map((x, i) => ({ ...x, films: n[i] }));
+// Personnes ayant l'un des métiers (P106) et un article dans au moins `min`
+// langues : une requête par métier et par tranche de notoriété (une requête
+// unique dépasse le délai de Wikidata et revient tronquée).
+const TRANCHES = [15, 20, 25, 30, 40, 60, 100, 100000];
+async function personnesDeMetiers(cle, metiers, min) {
+  const tous = new Map();
+  for (const o of metiers) {
+    for (let k = 0; k < TRANCHES.length - 1; k++) {
+      const [a, b] = [TRANCHES[k], TRANCHES[k + 1]];
+      if (b <= min) continue;
+      const l = await sparql(
+        `${cle}-${o}-${a}`,
+        `SELECT DISTINCT ?x ?fr ?liens WHERE {
+          ?x wdt:P106 wd:${o} ; wikibase:sitelinks ?liens . FILTER(?liens >= ${Math.max(a, min)} && ?liens < ${b})
+          ${LIBELLE}
+        }`,
+      );
+      for (const x of l) if (!tous.has(x.id)) tous.set(x.id, x);
+    }
+  }
+  return [...tous.values()];
 }
 
-// Chanteurs et rappeurs connus (Wikidata) et leur nombre d'œuvres interprétées
-async function chanteursConnus() {
-  const l = await sparql(
-    "chanteurs",
-    `SELECT ?x ?fr ?liens (COUNT(?o) AS ?n) WHERE {
-      VALUES ?m { wd:Q177220 wd:Q2252262 }
-      ?x wdt:P106 ?m ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
-      ?o wdt:P175 ?x .
-      ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
-    } GROUP BY ?x ?fr ?liens`,
-  );
-  const n = JSON.parse(fs.readFileSync(path.join(CACHE, "wd-chanteurs.json"), "utf8")).results.bindings.map((b) => Number(b.n.value));
-  return l.map((x, i) => ({ ...x, oeuvres: n[i] }));
+// Nombre d'éléments qui renvoient à chaque personne par `propriete` (P161 :
+// films où elle joue, P175 : œuvres qu'elle interprète), par lots.
+async function compter(cle, ids, propriete) {
+  const f = path.join(CACHE, `wd-compte-${cle}.json`);
+  const out = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : {};
+  const manquants = ids.filter((id) => !(id in out));
+  for (let i = 0; i < manquants.length; i += 100) {
+    await pause(500);
+    const lot = manquants.slice(i, i + 100);
+    const q = `SELECT ?x (COUNT(DISTINCT ?f) AS ?n) WHERE { VALUES ?x { ${lot.map((x) => `wd:${x}`).join(" ")} } ?f wdt:${propriete} ?x } GROUP BY ?x`;
+    const r = await fetch(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(q)}`, { headers: { ...UA, Accept: "application/sparql-results+json" } });
+    for (const id of lot) out[id] = 0;
+    for (const b of JSON.parse(await r.text()).results.bindings) out[b.x.value.split("/").pop()] = Number(b.n.value);
+  }
+  fs.writeFileSync(f, JSON.stringify(out));
+  return out;
 }
 
-// Réalisateurs de cinéma connus (pour les écarter des acteurs de Kévina)
-const realisateurs = () =>
-  sparql(
-    "realisateurs",
-    `SELECT DISTINCT ?x ?fr WHERE {
-      ?x wdt:P106 wd:Q2526255 ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
-      ?x rdfs:label ?fr . FILTER(LANG(?fr) = "fr")
-    }`,
-  );
+const ACTEUR = ["Q33999", "Q10800557", "Q10798782"]; // acteur, de cinéma, de télévision
+const CHANTEUR = ["Q177220", "Q2252262", "Q488205"]; // chanteur, rappeur, auteur-compositeur-interprète
+const REALISATEUR = ["Q2526255"];
 
 // Noms d'usage absents des listes officielles (nations constitutives,
 // anciens noms, formes courtes)
