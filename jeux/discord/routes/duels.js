@@ -1,7 +1,7 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /tourneboule, /mascarade, /bac, Six (archivé) et leurs boutons
-// (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
-// tourneboulduel_*, mascaradeduel_*, bacduel_*, sixduel_*).
+// /quatre, /punto, /tourneboule, /mascarade, /bac, /pendu, Six (archivé) et leurs
+// boutons (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
+// tourneboulduel_*, mascaradeduel_*, bacduel_*, penduduel_*, sixduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -107,6 +107,17 @@ import {
   handleBacRegles,
   handleBacAbandon,
 } from "../handlers/bacDuel.js";
+import {
+  memberHasMiniJeuxRole as penduMemberHasMiniJeuxRole,
+  buildModalMot as buildPenduModalMot,
+  handlePenduRoleRejected,
+  handlePenduCommand,
+  handlePenduOuvrir,
+  handlePenduLettre,
+  handlePenduMot,
+  handlePenduRegles,
+  handlePenduAbandon,
+} from "../handlers/penduDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 // /blackjack et /gobelet : `adversaire:bot|1v1` comme les autres duels ;
@@ -524,6 +535,58 @@ export async function routeDuels(body, res) {
       const opts = { pvp, channelId: body.channel_id, pseudo: bacExtractMember(body).username };
       if (TYPES[action]) runBackground(() => handleBacAction(webhookUrl, discordId, TYPES[action], Number(args[0]), opts));
       else runBackground(() => handleBacAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /pendu : Pendu en 1v1 seulement (même mot pour les deux, chacun de
+  // son côté). Réservé au rôle MINI-JEUX pour lancer.
+  if (body.type === 2 && body.data?.name === "pendu") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      if (!(await penduMemberHasMiniJeuxRole(body))) {
+        await handlePenduRoleRejected(webhookUrl);
+        return;
+      }
+      await handlePenduCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Pendu : fenêtre de saisie soumise (body.type 5 = MODAL_SUBMIT),
+  // vue éditée en place (réponse 6, la fenêtre vient d'un bouton de la vue)
+  if (body.type === 5 && body.data?.custom_id === "penduduel_mot") {
+    const mot = body.data.components?.[0]?.components?.[0]?.value ?? "";
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePenduMot(webhookUrl, discordId, mot));
+    return;
+  }
+
+  // ── Pendu : composants. penduduel_proposer ouvre la fenêtre de saisie
+  // (réponse synchrone 9, sans rien lire) ; penduduel_lettre:<lettre>
+  // (voyelles), penduduel_consonne (menu) et l'abandon éditent la vue en
+  // place ; penduduel_ouvrir (Jouer / Ma vue) et penduduel_regles : nouvel
+  // éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("penduduel_")) {
+    const [action, arg] = body.data.custom_id.split(":");
+    if (action === "penduduel_proposer") return res.status(200).json({ type: 9, data: buildPenduModalMot() });
+    if (action === "penduduel_regles" || action === "penduduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "penduduel_regles") runBackground(() => handlePenduRegles(webhookUrl));
+      else runBackground(() => handlePenduOuvrir(webhookUrl, body));
+      return;
+    }
+    const ETAPES_ABANDON = { penduduel_abandon: "demande", penduduel_abandon_ok: "ok", penduduel_abandon_non: "non" };
+    if (action === "penduduel_lettre" || action === "penduduel_consonne" || ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (ETAPES_ABANDON[action]) runBackground(() => handlePenduAbandon(webhookUrl, discordId, ETAPES_ABANDON[action]));
+      else runBackground(() => handlePenduLettre(webhookUrl, discordId, action === "penduduel_lettre" ? arg : body.data.values?.[0]));
       return;
     }
   }

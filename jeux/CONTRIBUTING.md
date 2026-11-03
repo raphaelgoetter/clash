@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac` et leurs boutons de duel (plus ceux de Six, archivé) |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac`, `/pendu` et leurs boutons de duel (plus ceux de Six, archivé) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -1217,15 +1217,15 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Huit duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Neuf duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac`, `/pendu` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `mascaradeduel:*`, `bacduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `mascaradeduel_*`, `bacduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `mascaradeduel:*`, `bacduel:*`, `penduduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `mascaradeduel_*`, `bacduel_*`, `penduduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Tourneboule 1v1, Mascarade 1v1, Petit Bac 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
-- **1v1 en cours : bouton 🎮 Ma vue** sur le message public (La Grille, Quatre à la suite, Punto, Tourneboule, Mascarade, Petit Bac ; même action que Jouer, `<jeu>duel_ouvrir`) : un joueur assis reçoit sa vue éphémère juste en dessous (l'ancienne est supprimée). Sans lui, le lanceur perd sa vue, postée au moment du défi plus haut dans le salon, et ne peut plus jouer ; sert aussi à changer d'appareil.
+- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Tourneboule 1v1, Mascarade 1v1, Petit Bac 1v1, Pendu). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **1v1 en cours : bouton 🎮 Ma vue** sur le message public (La Grille, Quatre à la suite, Punto, Tourneboule, Mascarade, Petit Bac, Pendu ; même action que Jouer, `<jeu>duel_ouvrir`) : un joueur assis reçoit sa vue éphémère juste en dessous (l'ancienne est supprimée). Sans lui, le lanceur perd sa vue, postée au moment du défi plus haut dans le salon, et ne peut plus jouer ; sert aussi à changer d'appareil.
 
 ### Blackjack Duel et Gobelet Duel (contre Kévina / solo, ou en 1v1)
 
@@ -1494,6 +1494,40 @@ Jeu rapide et léger : un thème, une lettre, une minute pour trouver un mot. `/
 - `contestations.mjs` : mots contestés (voir Règles).
 - `genererListes.mjs [thème…]` : régénère les listes (en y fusionnant `ajouts/<thème>.txt`) (réseau ; téléchargements en cache dans le dossier temporaire, le Wiktionnaire est lent : plusieurs minutes).
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/bac/e2eDuel.mjs`).
+
+### Pendu (1v1 seulement)
+
+Les deux joueurs cherchent **le même mot**, chacun de son côté, sans voir les lettres ni l'avancement de l'adversaire ; le mot et les deux potences ne sont dévoilés qu'une fois les deux parties finies. `/pendu` (sans option : **pas de mode contre Kévina**). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que le 1v1 du Petit Bac (lobby, sièges, verrous, messages publics, Ma vue, abandon) : seules les différences sont décrites ici.
+
+- Code : `jeux/services/penduRules.js` (règles pures, tests `penduRules.test.js`), `jeux/services/penduDuel.js` (Redis, tests `penduDuel.test.js`), `jeux/services/penduImage.js` (images), `jeux/discord/handlers/penduDuel.js` (Discord). Config `jeux/data/pendu/duel.json` : `delai_action_secondes` (60).
+- Redis : `penduduel:pvp` (une seule partie à la fois), verrous `penduduel:lock:*`, séries `penduduel:series` (hash `discordId` → `{ serie }`), record `penduduel:record` (plus longue série, jamais effacé).
+- `custom_id` : `penduduel_lettre:<lettre>` (voyelles), `penduduel_consonne` (menu, lettre dans `values`), `penduduel_proposer` (ouvre la fenêtre de saisie : réponse synchrone 9, rien lu dans Redis), `penduduel_mot` (fenêtre soumise, MODAL_SUBMIT, réponse 6), `penduduel_ouvrir` (Jouer, puis Ma vue), `penduduel_regles`, `penduduel_abandon`, `penduduel_abandon_ok` / `penduduel_abandon_non`.
+
+#### Règles
+
+- **Mot** : tiré au hasard dans `jeux/data/pendu/mots.json` (environ 5 350 noms communs de 4 à 11 lettres), le même pour les deux joueurs. Pas d'indice de thème. **Accents ignorés** : lettres comparées sans accent (`normaliser()`), « E » révèle É, È, Ê.
+- **Lettre** (`proposerLettre()`) : absente du mot, 1 erreur. **Mot entier** (`proposerMot()`, à tout moment, accents et casse ignorés) : juste, le mot est trouvé ; faux, `ERREURS_MOT_FAUX` (2) erreurs. **`ERREURS_MAX` (6) erreurs : pendu.**
+- **Délai** : `delai_action_secondes` (60 s) **par action et par joueur** (`dernierCoupAt` de chacun), dépassé = pendu (fin `temps`, `appliquerDelais()`, appelée par `agirPvp()` avant chaque action). Sans clic, l'invocation de chaque action attend l'échéance de son auteur puis applique le délai (`surveiller()`) ; à l'arrivée du second joueur, l'invocation surveille les deux chronos.
+- **Fin de partie** : quand les deux joueurs ont fini (trouvé, pendu ou délai dépassé). **Départage** (`departager()`) : le mot trouvé bat le pendu ; deux mots trouvés : le moins d'erreurs ; deux pendus : le plus de lettres du mot découvertes (positions, `lettresDecouvertes()`) ; sinon match nul (série intacte).
+- **Abandon** : défaite immédiate, même si l'adversaire joue encore ; impossible une fois sa propre partie finie.
+- Pourquoi 6 erreurs (simulation : un joueur qui choisit ses lettres par fréquence parmi les mots qu'il connaît et reconnaît le mot aux deux tiers ou aux trois quarts dévoilé) : 63 à 84 % de mots trouvés, erreurs réparties de 0 à 5, d'où un départage qui compte.
+
+#### Liste de mots (`jeux/data/pendu/mots.json`)
+
+- Générée par `jeux/outils/pendu/genererMots.mjs`, jamais modifiée à la main : union des listes du Petit Bac dont les mots sont des noms communs (animaux, métiers, inventions, fruits et légumes, outils, sports, transports) d'usage courant (fréquence d'au moins 1 par million dans Lexique 3.83, films + livres) et des noms communs de Lexique d'au moins 5 par million ; dans les deux cas nom commun au singulier dans Lexique (forme = lemme), 4 à 11 lettres, lettres seules (accents admis, ni œ ni æ, ni tiret ni espace).
+- **Mots courts gardés exprès** (4 et 5 lettres, environ 1 300) : ce sont les plus durs (une lettre juste en révèle peu, beaucoup partagent le même motif : bosse, fosse, gosse) ; dans la simulation, un joueur fort est pendu sur 18 % des mots de 4 lettres et 6 % de ceux de 5, jamais sur ceux de 6 lettres et plus. Une lettre rare (K, W, Z…) ne rend pas difficile un mot long, et les mots longs ou composés rendent le jeu plus facile : pas de mots de plus de 11 lettres ni à trait d'union.
+- Mots écartés : `jeux/outils/pendu/exclus.txt` (un mot par ligne : grossiers, injurieux ou sexuels, désignations ethniques ou religieuses, anglais et abréviations), puis régénérer.
+
+#### Affichage
+
+- **Vue éphémère** : « 🪢 Pendu · contre X », « Mot de N lettres · E erreurs sur 6 », résultat de la dernière proposition, mots refusés barrés, « ⏰ Prochaine lettre avant … » ; **image de la vue** (`/api/pendu/vue?d=`, `encodeVue()`, rendu sans état) : potence (bonhomme en 6 parties, parties restantes en fantôme, yeux en croix au pendu), lettres fausses barrées, mot avec les seules lettres trouvées. ⚠️ L'adresse de l'image ne contient **jamais le mot**, seulement le motif (« EL_PH_NT ») ; un joueur pendu ne voit le mot qu'à la fin de la partie.
+- **Boutons** : rangée 1 A E I O U, rangée 2 Y, ✏️ Proposer le mot, 📖, 🏳️ (lettres jouées grisées), rangée 3 menu des consonnes restantes (20 au plus). Partie finie de son côté : « ⏳ En attente de X… », sans bouton de jeu.
+- **Message public pendant la partie** : longueur du mot et, pour chaque joueur, seulement « en cours » ou « a terminé » ; boutons 🎮 Ma vue et 📖. **Récapitulatif** (nouveau message) : résultat, « Le mot était **…** », séries, **image finale** (`/api/pendu/final?d=`, `encodeFinal()`) : les deux potences côte à côte (vainqueur marqué d'une étoile), « Trouvé ! » et erreurs ou « Pendu ! » / « Temps écoulé » et lettres trouvées, le mot en tuiles. Pas d'image finale après un abandon.
+
+#### Outils (`jeux/outils/pendu/`, à lancer à la main)
+
+- `genererMots.mjs` : régénère la liste de mots (Lexique téléchargé une fois, dans le même cache que le Petit Bac).
+- `e2eDuel.mjs` : handler sur Redis en mémoire, tous les appels Discord interceptés ; vérifie les limites Discord et que le mot n'apparaît nulle part avant la fin (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/pendu/e2eDuel.mjs`).
 
 ---
 

@@ -32,6 +32,7 @@ const JEUX_COMMANDS = new Set([
   "tourneboule",
   "mascarade",
   "bac",
+  "pendu",
   "blackjack",
   "gobelet",
 ]);
@@ -610,6 +611,10 @@ const commands = [
         ],
       },
     ],
+  },
+  {
+    name: "pendu",
+    description: "Pendu en 1v1 : le même mot pour les deux, chacun de son côté. Le moins d'erreurs gagne.",
   },
   {
     name: "blackjack",

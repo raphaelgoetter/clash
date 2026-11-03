@@ -41,6 +41,12 @@ import {
   getResultatImage as getMascaradeResultatImage,
   getTableImage as getMascaradeTableImage,
 } from "../services/mascaradeImage.js";
+import {
+  decodeFinal as decodePenduFinal,
+  decodeVue as decodePenduVue,
+  getFinalImage as getPenduFinalImage,
+  getVueImage as getPenduVueImage,
+} from "../services/penduImage.js";
 
 const router = express.Router();
 
@@ -288,6 +294,27 @@ router.get("/api/mascarade/table", async (req, res) => {
 router.get("/api/mascarade/resultat", async (req, res) => {
   const resultat = decodeMascaradeResultat(req.query.d);
   const image = resultat ? await getMascaradeResultatImage(resultat).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Pendu : vue d'un joueur (motif sans le mot, lettres fausses, potence),
+// rendu sans état à partir de l'état encodé dans l'URL (d, voir encodeVue).
+router.get("/api/pendu/vue", async (req, res) => {
+  const vue = decodePenduVue(req.query.d);
+  const image = vue ? await getPenduVueImage(vue).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Pendu : les deux potences et le mot dévoilé (fin de partie).
+router.get("/api/pendu/final", async (req, res) => {
+  const final = decodePenduFinal(req.query.d);
+  const image = final ? await getPenduFinalImage(final).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
