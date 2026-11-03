@@ -238,6 +238,13 @@ function tete(entree) {
 // retirés si celui-ci est déjà présent. Seulement des lettres, espaces,
 // tirets et apostrophes (ni chiffres, ni « : » ou « / » de pages annexes),
 // au moins 2 lettres.
+// Suffixes des sous-catégories des « Noms de métiers féminisés » du
+// Wiktionnaire, et masculins possibles d'un féminin
+const SUFFIXES_FEMININS = ["ale", "ane", "ante", "elle", "enne", "ère", "esse", "euse", "ine", "onne", "rice"];
+const MASCULINS = [[/ière$/, "ier"], [/ère$/, "er"], [/euse$/, "eur"], [/rice$/, "eur"], [/eresse$/, "eur"], [/esse$/, "e"], [/esse$/, ""], [/enne$/, "en"], [/onne$/, "on"], [/elle$/, "el"], [/ine$/, "in"], [/(ale|ane|ante)$/, (x) => x.slice(0, -1)]];
+const RUBRIQUES_ANNEXE_METIERS = new Set(["accueil", "agronomie", "alimentation", "armée", "artisanat", "audiovisuel", "bâtiment", "commerce", "culture", "droit", "éducation", "entreprise", "étudiant", "étudiante", "finances", "gestion", "logistique", "musique", "politique", "propreté", "religion", "santé", "sécurité", "spectacle", "sport", "technologies", "transports"]);
+const masculinsDe = (f) => MASCULINS.filter(([r]) => r.test(f)).map(([r, v]) => f.replace(r, v));
+
 function reduire(entrees) {
   const valide = (m) => m && /^[\p{L}\s'’-]+$/u.test(m) && normaliser(m).length >= 2;
   const simples = entrees.filter((e) => !/\s/.test(e) && valide(e));
@@ -309,12 +316,23 @@ const THEMES = {
   },
 
   async metiers() {
+    // Profondeur 3 : musiciens, métiers de l'informatique
     const e = await wiktionnaire(
       "metiers",
-      [["Métiers en français", 2]],
-      ["Criminels et délinquants en français", "Mots en français suffixés avec -rice", "Diminutifs de métiers en français"],
+      [["Métiers en français", 3]],
+      // Sous-catégories de suffixes des « Noms de métiers féminisés » : tous
+      // les mots du suffixe, métiers ou non (allégresse, albumine)
+      ["Criminels et délinquants en français", "Diminutifs de métiers en français", "Ordres religieux en français", ...SUFFIXES_FEMININS.map((s) => `Mots en français suffixés avec -${s}`)],
     );
-    const mots = reduire(e);
+    // Métiers de l'annexe (pianiste, comptable, libraire : absents des
+    // catégories), sans ses intitulés de rubrique
+    const annexe = (await liens("Annexe:Métiers en français")).filter((m) => !RUBRIQUES_ANNEXE_METIERS.has(m));
+    // Masculins connus : catégories, annexe, ajouts à la main (ajouts/metiers.txt)
+    const masculins = new Set(ajouter("metiers", { mots: [...e, ...annexe] }).mots.map(normaliser));
+    // Féminins des suffixes repris quand leur masculin est un métier connu
+    // (guérisseuse : guérisseur)
+    const suffixes = await wiktionnaire("metiers-suffixes", SUFFIXES_FEMININS.map((s) => [`Mots en français suffixés avec -${s}`, 0]));
+    const mots = reduire([...e, ...annexe, ...suffixes.filter((f) => masculinsDe(f).some((m) => masculins.has(normaliser(m))))]);
     return { nom: "Métiers", mots, kevina: await kevinaDepuis(mots, [["Annexe:Métiers en français"]], { courant: true }) };
   },
 
