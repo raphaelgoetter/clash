@@ -10,7 +10,7 @@
 import "../env.js";
 
 import { loadMeowConfig, readState, readPartie } from "../services/meow.js";
-import { BANDES, horloge, jourDe, rattraper, classementBandes } from "../services/meowRules.js";
+import { BANDES, horloge, jourDe, rattraper, classementBandes, actionsDuJour, texteActions } from "../services/meowRules.js";
 
 (async () => {
   const state = await readState();
@@ -31,28 +31,8 @@ import { BANDES, horloge, jourDe, rattraper, classementBandes } from "../service
   const points = classementBandes(partie).map((r) => `${BANDES[r.b].nom} ${r.points}`).join(" · ");
   console.log(`Salon ${state.isPublic ? "public" : "de test"} · Jour ${Math.min(jour, config.duree_jours)}/${config.duree_jours}${partie.termine ? " (terminée)" : ""} · ${points}`);
 
-  // Appels et squats du jour d'après le journal ; un squat en plein combat
-  // n'y est pas encore, il compte quand même.
-  const compte = (id, k) => partie.journal.filter((e) => e.p === id && e.k === k && e.j === jour).length;
-  // Déplacements faits avant l'ajout de `deplacementsJour` : repli sur le
-  // compteur depuis la distribution, s'il date d'aujourd'hui.
-  const deplacementsDuJour = (j) => {
-    if (j.deplacementsJour) return j.deplacementsJour.jour === jour ? j.deplacementsJour.n : 0;
-    return j.jourActif === jour ? (j.deplacements ?? 0) : 0;
-  };
-
   BANDES.forEach((bd, b) => {
     console.log(`\n${bd.nom} :`);
-    const joueurs = Object.entries(partie.joueurs)
-      .filter(([, j]) => j.bande === b)
-      .sort(([, x], [, y]) => x.username.localeCompare(y.username));
-    for (const [id, j] of joueurs) {
-      const faites = [
-        ["appel", compte(id, "appel")],
-        ["squat", compte(id, "squat") + (partie.combats[id] ? 1 : 0)],
-        ["déplacement", deplacementsDuJour(j)],
-      ].filter(([, n]) => n > 0);
-      console.log(`- ${j.username} : ${faites.map(([nom, n]) => `${nom} ${"√".repeat(n)}`).join(" ") || "aucune action"}`);
-    }
+    for (const a of actionsDuJour(partie, b, jour)) console.log(`- ${a.username} : ${texteActions(a)}`);
   });
 })();

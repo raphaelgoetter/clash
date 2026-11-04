@@ -753,6 +753,37 @@ export function classementCaid(partie, config) {
     .sort((x, y) => y.score - x.score || y.coinsPris - x.coinsPris || x.username.localeCompare(y.username));
 }
 
+// Actions du jour `jour` de chaque joueur de la bande `b` (Journal de bande,
+// `npm run meow:status`) : appels et squats d'après le journal (un squat en
+// plein combat compte déjà), déplacements d'après `deplacementsJour`
+// (repli, pour une partie lancée avant ce compteur, sur le compteur depuis
+// la distribution s'il date de ce jour). Ordre alphabétique.
+export function actionsDuJour(partie, b, jour) {
+  const compte = (id, k) => partie.journal.filter((e) => e.p === id && e.k === k && e.j === jour).length;
+  return Object.entries(partie.joueurs)
+    .filter(([, j]) => j.bande === b)
+    .sort(([, x], [, y]) => x.username.localeCompare(y.username))
+    .map(([id, j]) => ({
+      discordId: id,
+      username: j.username,
+      appel: compte(id, "appel"),
+      squat: compte(id, "squat") + (partie.combats[id] ? 1 : 0),
+      deplacement: j.deplacementsJour ? (j.deplacementsJour.jour === jour ? j.deplacementsJour.n : 0) : j.jourActif === jour ? (j.deplacements ?? 0) : 0,
+    }));
+}
+
+// « appel √ squat √√ », actions faites seulement
+export function texteActions(a) {
+  return [
+    ["appel", a.appel],
+    ["squat", a.squat],
+    ["déplacement", a.deplacement],
+  ]
+    .filter(([, n]) => n > 0)
+    .map(([nom, n]) => `${nom} ${"√".repeat(n)}`)
+    .join(" ") || "aucune action";
+}
+
 // Activité : actions cumulées par bande, de la plus active à la moins
 // active, avec l'écart en % par rapport à la première.
 export function activiteBandes(partie) {

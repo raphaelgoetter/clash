@@ -240,7 +240,7 @@ Groupe « Jeux de mots » (samedi 18:00 UTC) à partir de la refonte, en alterna
 - Réponse : un terme `accepte` doit apparaître **en mots entiers** dans la réponse normalisée (`normalizeConcept` : `normalizeAnswer` + ligatures œ/æ), aucun terme `refuse`.
 - Barème : `max(1, 10 − 2 × tentatives incorrectes − 3 × indice)`. La catégorie est affichée d'office ; le seul indice (éphémère) est le masque de `solution` (`buildMasque` : une case par lettre, ponctuation visible, nombre de lettres par mot). Score figé à la résolution.
 - Redis (`concept:*`) : `state`, `participants:<gameId>`, `usernames:<gameId>`, `hint:<gameId>:<discordId>`, `attempts:<gameId>:<discordId>` (purgés à la manche suivante), `season:<id>` (+ `pseudos`, `manche_seq`, `manche_numbers`), `archived:<id>`.
-- Boutons `concept_hint:`, `concept_answer:` (Modal `concept_answer_modal:`). Pas de commande de scores : « Ma participation » de `/mini-jeux`.
+- Boutons `concept_hint:`, `concept_answer:` (Modal `concept_answer_modal:`). Classement joueur : « Ma participation » de `/mini-jeux`.
 - Scripts : `concept:test`, `concept:test:dry`, `concept:reset`.
 
 ---
@@ -256,8 +256,8 @@ Groupe « Ciné-club » (mercredi 18:00 UTC) à partir de la refonte, en alterna
 - Réponse : système de Frame (`checkAnswer` réexporté de `frames.js`) : un terme `accepte` en sous-chaîne de la réponse normalisée, aucun terme `refuse` (suites, autres épisodes). Les termes `accepte` font au moins 4 caractères (« up » validerait « super ») ; le titre complet doit toujours être accepté (vérifié par `synopsis.test.js`).
 - Barème de Frame : `max(1, 10 − 2 × tentatives incorrectes − 3 × indices utilisés)`, score figé à la résolution.
 - Redis (`synopsis:*`) : `state`, `participants:<gameId>`, `usernames:<gameId>`, `hints:<gameId>:<discordId>` (ensemble), `attempts:<gameId>:<discordId>` (purgés à la manche suivante), `season:<id>` (+ `pseudos`, `manche_seq`, `manche_numbers`), `archived:<id>`.
-- Boutons `synopsis_hint1:`, `synopsis_hint2:`, `synopsis_answer:` (Modal `synopsis_answer_modal:`). Pas de commande de scores : « Ma participation » de `/mini-jeux`.
-- Scripts : `synopsis:test`, `synopsis:test:dry`, `synopsis:reset`.
+- Boutons `synopsis_hint1:`, `synopsis_hint2:`, `synopsis_answer:` (Modal `synopsis_answer_modal:`). Classement joueur : « Ma participation » de `/mini-jeux`.
+- Scripts : `synopsis:test`, `synopsis:test:dry`, `synopsis:scores`, `synopsis:reset`.
 
 ---
 
@@ -362,7 +362,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 - Recadrage : formule de Zoom carte, mais **fond blanc** (beaucoup de logos sont noirs sur fond transparent) et zooms par défaut `×3,5` (post public) / `×1,8` (indice), point focal `(0.5, 0.45)`. Réglage logo par logo validé visuellement avant l'ajout au catalogue ; la révélation (`stage=reveal`) est le logo entier centré sur fond blanc.
 - Images dans `jeux/data/jeux-visuels/zoom2/images/`, servies depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/zoom2`.
 - Redis (`zoom2:*`) : schéma commun avec `zoom2:posted_games` et `zoom2:hint:<gameId>:<discordId>` (flag `SETNX`) ; `zoom2:reset` purge aussi `posted_games`.
-- Boutons `zoom2_hint:`, `zoom2_answer:` (Modal `zoom2_answer_modal:`), route `/api/zoom2/image`. Pas de commande de scores : « Ma participation » de `/mini-jeux`.
+- Boutons `zoom2_hint:`, `zoom2_answer:` (Modal `zoom2_answer_modal:`), route `/api/zoom2/image`. Classement joueur : « Ma participation » de `/mini-jeux`.
 - Scripts : `zoom2:test`, `zoom2:test:dry`, `zoom2:reset`.
 
 ---
@@ -377,7 +377,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 - Plats : origine incontestée de préférence, au plus 2 plats par pays, pas d'évidence (pizza, sushi, croissant…). Si deux pays revendiquent le plat, le second va dans `accepte` et le champ optionnel `origine` (« Mali ou Sénégal ») remplace `pays` à l'affichage (réponse, DM, récap) : mafé, lamington.
 - Photos : Wikimedia Commons sous licence libre. Le post n'affiche que « Photo : Wikimedia Commons (licence) » : le nom de l'auteur (écriture, langue) peut trahir le pays. Le crédit complet (auteur, licence, page Commons) est donné dans la réponse « Bravo » et le DM de fin de manche. Fichiers nommés d'après le `gameId` (`p001.webp`), jamais d'après le plat, WebP de 835 px de large sans métadonnées (l'EXIF peut contenir le titre de la photo), crédit sans lieu (« from Santiago, Chile » trahirait le pays), et servis uniquement par `/api/platpays/image?gameId=`, gardé par `platpays:posted_games` : aucune URL ne trahit la réponse. Images dans `jeux/data/jeux-visuels/platpays/images/`, lues depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/platpays`.
 - Redis (`platpays:*`) : schéma commun avec `platpays:posted_games` et `platpays:hints:<gameId>:<discordId>` (SET des indices pris) ; `platpays:reset` purge aussi `posted_games`.
-- Boutons `platpays_hint1:`, `platpays_hint2:`, `platpays_answer:` (Modal `platpays_answer_modal:`). Pas de commande de scores : « Ma participation » de `/mini-jeux`.
+- Boutons `platpays_hint1:`, `platpays_hint2:`, `platpays_answer:` (Modal `platpays_answer_modal:`). Classement joueur : « Ma participation » de `/mini-jeux`.
 - Scripts : `platpays:test`, `platpays:test:dry`, `platpays:reset`.
 
 ---
@@ -973,7 +973,7 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 - **Message officiel** (réédité après chaque appel et fin de squat, `rafraichirMessage()`) : intro au J1, **🏆 Classement des bandes** (« 42 pts (8 territoires) »), **💥 Aujourd'hui** (bilan des squats, puis les 5 derniers territoires changés de main et « … et N autres plus tôt »), mercenaires le cas échéant, carte jointe. Boutons **Jouer**, **Ma bande**, **Règles**, **Journal**.
 - **Jouer** (`buildJouerView()`, éphémère sans image) : bande, réserve, squats restants, compte à rebours avant la prochaine distribution (avertissement si réserve pleine), sieste, croquettes ; menus « 🐱 Appeler », « 😼 Squatter » (« Carton → Canapé · 4 chats contre 2 chats errants · 79 % de réussite », `pVictoire()` en jouant jusqu'au bout), « 🚚 Déplacer », toujours affichés et grisés quand l'action est impossible (réserve vide, sieste, quota atteint). Pendant un combat : vue Crêpage de poils (dés, chances, 2 boutons). Après un squat : titre « 🎉 Victoire ! », « 😿 Raté » ou « 🏃 Retraite » (`TITRES_ISSUE`).
 - **💬 Ma bande** : messagerie signée réservée à la bande (`posterMessage()`, `messagesBande()`). Affiche les `messages_affiches` (15) derniers ; **Écrire** ouvre une fenêtre Discord (`type: 9`, `message_max` 200 caractères, espaces compactés) ; `messages_par_jour` (10) par joueur et par jour de jeu, revérifié à l'envoi ; 30 messages gardés par bande ; ouvrir la vue marque comme lu (`marquerLus()`), libellé « Ma bande (N) » en vert s'il y a du nouveau (`nouveauxMessages()`). Pas de ping.
-- **Journal** : aujourd'hui et hier, ce qui concerne sa bande (territoires pris, perdus, retraites), du plus récent au plus ancien avec l'heure ; croquettes regroupées par jour.
+- **Journal** : en tête, **Ont joué aujourd'hui** (`actionsDuJour()`, `texteActions()` : chaque membre de sa bande et ses actions du jour, « appel √ squat √ déplacement √ » ou « aucune action », comme `meow:status`), puis aujourd'hui et hier, ce qui concerne sa bande (territoires pris, perdus, retraites), du plus récent au plus ancien avec l'heure ; croquettes regroupées par jour.
 - **Fin** : classement des bandes, **📰 La partie en bref** (`compteRendu()` : déroulé de la course, record de territoires, plus bel exploit `partie.exploit` si moins de 50 % de chances, effet des mercenaires ; chaque phrase omise si la donnée manque), **🐾 Actions cumulées par bande** (`activiteBandes()` : appels, squats lancés et déplacements comptés dans `partie.actions`, écart en % avec la bande la plus active), 3 premiers du Caïd (classement complet archivé dans la manche), manches précédentes, illustration.
 - **Ping** `@MINI-JEUX` : ouverture des inscriptions, annulation et fin seulement.
 

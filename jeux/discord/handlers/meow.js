@@ -39,6 +39,8 @@ import {
   PIECE_DE,
   compteRendu,
   activiteBandes,
+  actionsDuJour,
+  texteActions,
   COINS,
   ERRANTS,
   nomCoin,
@@ -1583,6 +1585,15 @@ export async function handleJournal(webhookUrl, discordId) {
           ...b.lignes,
         ].join("\n"),
       );
+    // Qui a joué aujourd'hui dans sa bande (demande des joueurs)
+    blocs.unshift(
+      [
+        "**Ont joué aujourd'hui**",
+        ...actionsDuJour(partie, j.bande, jourCourant).map(
+          (a) => `- ${a.username} : ${texteActions(a)}`,
+        ),
+      ].join("\n"),
+    );
     const description = blocs.join("\n\n").slice(0, 4000);
     await patchOriginal(webhookUrl, {
       embeds: [
