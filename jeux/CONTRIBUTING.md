@@ -989,7 +989,7 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 | Clé | Type | Contenu |
 | --- | ---- | ------- |
 | `meow:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, openedAt, cloture }` |
-| `meow:partie` | STRING | `{ demarree, termine, joueurs, coins, combats, messages, points, decomptes, journal, exploit, mercenaires, jourDebut, debut, curseur, decalage, seqInscription, pnjActifs }` (`messages` : 3 listes de `{ p, t, txt }` ; `journal` : 400 entrées au plus ; `curseur` : instant du dernier rattrapage) ; joueur : `{ username, arrivee, bande, stock, frac, squats, deplacements, coinsPris, chatsDeloges, jourActif, nuit, messagesJour: { jour, n }, vuMessages }` ; coin : `{ b, n }` |
+| `meow:partie` | STRING | `{ demarree, termine, joueurs, coins, combats, messages, points, decomptes, journal, exploit, mercenaires, jourDebut, debut, curseur, decalage, seqInscription, pnjActifs }` (`messages` : 3 listes de `{ p, t, txt }` ; `journal` : 400 entrées au plus ; `curseur` : instant du dernier rattrapage) ; joueur : `{ username, arrivee, bande, stock, frac, squats, deplacements, coinsPris, chatsDeloges, jourActif, nuit, messagesJour: { jour, n }, deplacementsJour: { jour, n }, vuMessages }` ; coin : `{ b, n }` |
 | `meow:lock` | STRING | verrou (10 s) |
 | `meow:manches` / `meow:manche_seq` | HASH / compteur | `{ manche, vainqueur, points, nbJoueurs, bandes, ranking, resolvedAt }`, jamais nettoyé sauf `--manches` |
 
@@ -1000,6 +1000,7 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 | `npm run meow:test` | Salon de test : 1er lancement = inscriptions, 2e = Jour 1 immédiat (clôture forcée) avec des **PNJ** pour atteindre l'effectif, qui jouent seuls à chaque distribution (`jouerPnj()`, `partie.pnjActifs` : chats sur le coin le plus menacé, sinon le plus garni, squats tant qu'une cible offre ≥ 60 %). Ensuite un jour par lancement : la partie de test suit sa propre horloge (`horloge()` = heure réelle + `partie.decalage`), avancée au lendemain 8h22 (`avancerHorloge()`), événements sautés rattrapés. |
 | `npm run meow:test:distribution` | Salon de test : avance seulement jusqu'à la prochaine distribution (8h05 ou 20h05). |
 | `npm run meow:test:dry` / `meow:public:dry` | Aperçus console |
+| `npm run meow:status` | Résumé organisateur sans Discord : points des bandes et, par bande, actions du jour de chaque joueur (un √ par appel, squat ou déplacement) ; rattrape les événements en mémoire seulement |
 | `npm run meow:public` | Salon public (heure réelle) ; ne republie jamais deux fois le même jour sans `--force`. |
 | `npm run meow:reset` / `meow:reset:manches` | **Destructif** (le second efface aussi l'archive) |
 

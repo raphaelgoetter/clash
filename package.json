@@ -247,6 +247,7 @@
     "meow:test:distribution": "node jeux/scripts/postMeow.js --distribution",
     "meow:public": "node jeux/scripts/postMeow.js --public",
     "meow:public:dry": "node jeux/scripts/postMeow.js --public --dry-run",
+    "meow:status": "node jeux/scripts/meowStatus.js",
     "meow:reset": "node jeux/scripts/resetMeow.js",
     "meow:reset:manches": "node jeux/scripts/resetMeow.js --manches",
     "test": "node --import @clash/commun/testing/registerFakeRedis.js --test \"backend/**/*.test.js\" \"jeux/**/*.test.js\" \"packages/**/*.test.js\""

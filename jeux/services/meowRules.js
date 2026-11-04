@@ -501,6 +501,8 @@ export function deplacer(partie, discordId, s, t, { config, now = horloge(partie
   partie.coins[t].n += 1;
   j.deplacements = (j.deplacements ?? 0) + 1;
   j.jourActif = jourDe(partie, now);
+  // Déplacements du jour (non journalisés), pour `npm run meow:status`
+  j.deplacementsJour = { jour: j.jourActif, n: (j.deplacementsJour?.jour === j.jourActif ? j.deplacementsJour.n : 0) + 1 };
   return { ok: true };
 }
 
