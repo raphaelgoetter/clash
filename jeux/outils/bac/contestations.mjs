@@ -1,8 +1,9 @@
 // Mots contestés par les joueurs du Petit Bac (refusés « pas dans la
 // liste », signalés par 🚩 Contester), groupés par thème, les plus signalés
 // d'abord. Après vérification : accepter les bons mots (Redis
-// `bacduel:ajouts`, valables tout de suite, sans commit ni déploiement ; leur
-// contestation est retirée), retirer les autres.
+// `bacduel:ajouts`, valables tout de suite, sans commit ni déploiement) ;
+// toutes les contestations sont alors écartées (les autres mots restent
+// refusés), et celles qui n'étaient pas acceptées sont affichées.
 // Usage (Redis de production, lecture seule par défaut) :
 //   node --env-file=.env jeux/outils/bac/contestations.mjs
 //   node --env-file=.env jeux/outils/bac/contestations.mjs --accepter <thème>:<mot> [...]
@@ -28,6 +29,10 @@ if (args[0] === "--accepter") {
   const mots = args.slice(1).map(lire);
   await accepterMots(mots);
   console.log(`${mots.length} mots acceptés : ${mots.map((m) => `${m.mot} (${m.theme})`).join(", ")}`);
+  // Les contestations restantes sont refusées : écartées pour ne pas les revoir
+  const refusees = await lireContestations();
+  await viderContestations(refusees.map((c) => c.champ));
+  if (refusees.length) console.log(`${refusees.length} contestations écartées : ${refusees.map((c) => `${c.mot} (${c.theme})`).join(", ")}`);
 } else if (args[0] === "--ajouts") {
   const ajouts = await chargerAjouts();
   if (!Object.keys(ajouts).length) console.log("Aucun mot ajouté.");

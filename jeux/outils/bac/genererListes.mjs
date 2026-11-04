@@ -14,6 +14,7 @@
 // - inventions : liste relue à la main (inventions.txt), candidats tirés de
 //   Wikidata et des listes d'inventions de Wikipédia ;
 // - cartes Clash : jeux/data/cardNames.json (noms français).
+// - transports : aussi la liste de listedemots.com (faite à la main).
 // Fréquence d'usage (choix de Kévina) : Lexique 3.83 (lexique.org).
 //
 // Chaque fichier : { nom, mots: [mots acceptés], kevina: [mots courants,
@@ -115,6 +116,15 @@ async function liens(titre, hote = "fr.wiktionary.org") {
   } while (cont);
   fs.writeFileSync(f, JSON.stringify(out));
   return out;
+}
+
+// Liste de listedemots.com (`page` : « liste-moyens-transport ») : les
+// entrées de la section « Tous les … par ordre alphabétique », en cache.
+async function listeDeMots(page) {
+  const html = fs.readFileSync(await telecharger(`https://www.listedemots.com/${page}`, `listedemots-${page}.html`), "utf8");
+  const section = html.split(/<h2>Tous les /)[1]?.split(/<div class="post">/)[0];
+  if (!section) throw new Error(`listedemots.com (${page}) : liste introuvable`);
+  return [...section.matchAll(/<li>([^<]+)<\/li>/g)].map((m) => m[1].trim());
 }
 
 // Mots de Kévina : les mots acceptés présents dans des listes faites à la
@@ -439,20 +449,36 @@ const THEMES = {
   },
 
   async transports() {
-    // Wiktionnaire : véhicules, bateaux, engins de glisse et vélos. Kévina : mots des thésaurus
-    // (véhicule, bateau, avion), faits à la main (la catégorie « Véhicules »
-    // contient des sens secondaires : « visa », « pelle »).
-    const vehicules = await wiktionnaire("vehicules", [["Véhicules en français", 1]]);
-    // Engins de glisse (trottinette, skateboard) et vélos, acceptés aussi
-    const glisse = await wiktionnaire("glisse-velos", [["Sports de glisse en français", 0], ["Vélos en français", 0]]);
-    const bateaux = await wiktionnaire("bateaux", [["Bateaux en français", 0]]);
-    // Thésaurus : filtre des mots de Kévina seulement (ils contiennent aussi
-    // du vocabulaire associé : « ancre », « pilote », « mer »)
-    const thesaurus = [["Thésaurus:véhicule/français"], ["Thésaurus:bateau/français"], ["Thésaurus:avion/français"], ["Thésaurus:train/français"]];
-    const mots = reduire([...vehicules, ...bateaux, ...glisse]);
-    // Mots des thésaurus qui ne désignent pas un véhicule en usage courant
-    const AMBIGUS = new Set(["aile", "annexe", "batterie", "piste", "plate", "voile", "nacelle", "véhicule", "bâtiment", "nef", "pointu", "corsaire", "vapeur", "char", "vaisseau"]);
-    const kevina = (await kevinaDepuis(mots, thesaurus, { courant: true })).filter((m) => !AMBIGUS.has(m.toLowerCase()));
+    // Wiktionnaire : véhicules (voitures et avions compris), bateaux et vélos
+    // (pas les sports de glisse : « hockey », « curling »), sans noms propres
+    // (modèles et marques : « Clio », « Audi » ; sigles de 3 lettres et plus
+    // gardés : « TGV », « VTT »). Plus la liste de listedemots.com, faite à
+    // la main (montures comprises : cheval, éléphant ; remontées mécaniques).
+    // Noms composés gardés entiers : leur premier mot n'est souvent pas un
+    // véhicule (« grande échelle », « poids lourd », « esprit de mort »).
+    // Sans les mots dont le sens courant n'est pas un véhicule (sens
+    // secondaires des catégories, adjectifs substantivés : « coupe »,
+    // « chaise », « italienne ») : réponses faciles à toute lettre.
+    const pasNomPropre = (m) => !/^\p{Lu}/u.test(m) || /^[\p{Lu}\d-]{3,}$/u.test(m);
+    const HORS_SUJET = new Set(["allemande", "américaine", "ancienne", "annexe", "automatique", "bent", "berrichon", "bicoque", "boot", "candi", "carcasse", "cayenne", "chaise", "chatte", "chiotte", "combiné", "coupante", "coupe", "couffe", "dragon", "électrique", "familiale", "gotha", "hirondelle", "intégrale", "italienne", "japonaise", "jardinière", "lin", "litière", "malle", "manivelle", "manuelle", "meule", "panse", "phase", "pingre", "plate", "pointu", "semi", "sphérique", "sportive", "tacos", "technical", "tire", "topo", "transat", "vespasienne", "vinaigrette", "wurst"]);
+    const wikt = [
+      ...(await wiktionnaire("vehicules", [["Véhicules en français", 1]])),
+      ...(await wiktionnaire("bateaux", [["Bateaux en français", 0]])),
+      ...(await wiktionnaire("velos", [["Vélos en français", 0]])),
+    ].filter((m) => pasNomPropre(m) && !HORS_SUJET.has(m));
+    const listeMain = (await listeDeMots("liste-moyens-transport")).map((m) => (/^[\p{Lu}\d-]+$/u.test(m) ? m : m.toLowerCase()));
+    const entiers = (l) => [...new Map(l.filter((m) => /^[\p{L}\s'’-]+$/u.test(m) && normaliser(m).length >= 2).map((m) => [normaliser(m), m])).values()];
+    const mots = entiers([...listeMain, ...wikt]).sort((a, b) => a.localeCompare(b, "fr"));
+    // Kévina : mots d'un seul mot des thésaurus du Wiktionnaire (véhicule,
+    // bateau, avion, train) et de listedemots.com, d'usage courant. Les
+    // thésaurus filtrent seulement (ils contiennent aussi du vocabulaire
+    // associé : « ancre », « pilote », « mer »).
+    const thesaurus = ["Thésaurus:véhicule/français", "Thésaurus:bateau/français", "Thésaurus:avion/français", "Thésaurus:train/français"];
+    const choisis = new Set(listeMain.map(normaliser));
+    for (const t of thesaurus) for (const l of await liens(t)) choisis.add(normaliser(l));
+    // Mots qui ne désignent pas un véhicule en usage courant
+    const AMBIGUS = new Set(["aile", "annexe", "batterie", "piste", "plate", "voile", "nacelle", "véhicule", "bâtiment", "nef", "pointu", "corsaire", "vapeur", "char", "vaisseau", "parachute", "ascenseur", "échasses"]);
+    const kevina = (await courants(mots, SEUIL_FREQ)).filter((m) => choisis.has(normaliser(m)) && !AMBIGUS.has(m.toLowerCase()));
     return { nom: "Moyens de transport", mots, kevina };
   },
 
