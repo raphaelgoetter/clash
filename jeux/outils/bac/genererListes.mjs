@@ -258,7 +258,7 @@ const AMBIGUS_OUTILS = new Set(["appareil", "barre", "broche", "canne", "châsse
 const RUBRIQUES_ANNEXE_METIERS = new Set(["accueil", "agronomie", "alimentation", "armée", "artisanat", "audiovisuel", "bâtiment", "commerce", "culture", "droit", "éducation", "entreprise", "étudiant", "étudiante", "finances", "gestion", "logistique", "musique", "politique", "propreté", "religion", "santé", "sécurité", "spectacle", "sport", "technologies", "transports"]);
 const masculinsDe = (f) => MASCULINS.filter(([r]) => r.test(f)).map(([r, v]) => f.replace(r, v));
 
-function reduire(entrees) {
+async function reduire(entrees) {
   const valide = (m) => m && /^[\p{L}\s'’-]+$/u.test(m) && normaliser(m).length >= 2;
   const simples = entrees.filter((e) => !/\s/.test(e) && valide(e));
   const vus = new Set(simples.map(normaliser));
@@ -269,9 +269,14 @@ function reduire(entrees) {
     vus.add(normaliser(t));
     out.push(t);
   }
-  // Doublons à la normalisation près (casse, accents) : la première forme
+  // Doublons à la normalisation près (casse, accents, trait d'union) : la
+  // forme la plus fréquente dans Lexique, sinon la première (« football »
+  // plutôt que « foot-ball », « chauve-souris » plutôt que « chauvesouris » :
+  // c'est elle que Kévina affiche)
+  const freq = await frequences();
+  const f = (m) => freq.get(m.toLowerCase()) ?? 0;
   const uniques = new Map();
-  for (const m of out) if (!uniques.has(normaliser(m))) uniques.set(normaliser(m), m);
+  for (const m of out) if (!uniques.has(normaliser(m)) || f(m) > f(uniques.get(normaliser(m)))) uniques.set(normaliser(m), m);
   return [...uniques.values()].sort((a, b) => a.localeCompare(b, "fr"));
 }
 
@@ -314,7 +319,7 @@ const THEMES = {
       ],
       ["Mammifères fossiles en français"],
     );
-    const mots = reduire(e);
+    const mots = await reduire(e);
     return { nom: "Animaux", mots, kevina: await kevinaDepuis(mots, [["Annexe:Animaux communs en français"]], { courant: true }) };
   },
 
@@ -323,7 +328,7 @@ const THEMES = {
       ["Fruits en français", 1],
       ["Légumes en français", 1],
     ]);
-    const mots = reduire(e);
+    const mots = await reduire(e);
     const wp = "fr.wikipedia.org";
     return { nom: "Fruits et légumes", mots, kevina: await kevinaDepuis(mots, [["Liste de fruits", wp], ["Liste de légumes", wp]]) };
   },
@@ -345,7 +350,7 @@ const THEMES = {
     // Féminins des suffixes repris quand leur masculin est un métier connu
     // (guérisseuse : guérisseur)
     const suffixes = await wiktionnaire("metiers-suffixes", SUFFIXES_FEMININS.map((s) => [`Mots en français suffixés avec -${s}`, 0]));
-    const mots = reduire([...e, ...annexe, ...suffixes.filter((f) => masculinsDe(f).some((m) => masculins.has(normaliser(m))))]);
+    const mots = await reduire([...e, ...annexe, ...suffixes.filter((f) => masculinsDe(f).some((m) => masculins.has(normaliser(m))))]);
     return { nom: "Métiers", mots, kevina: await kevinaDepuis(mots, [["Annexe:Métiers en français"]], { courant: true }) };
   },
 
@@ -386,16 +391,26 @@ const THEMES = {
     // Outils d'un mot de la liste de Wikipédia aussi au Wiktionnaire (mot de
     // tête des noms composés compris : « clé » de « clé à molette »), même
     // peu fréquents dans Lexique (rabot, gouge : moins de 1 par million)
-    const dansWikt = new Set(reduire(wikt).map(normaliser));
+    const dansWikt = new Set((await reduire(wikt)).map(normaliser));
     const seulsWp = wp.filter((m) => !/\s/.test(m)).map((m) => m.toLowerCase());
     const kevina = (await courants(seulsWp, SEUIL_FREQ_OUTILS)).filter((m) => dansWikt.has(normaliser(m)) && !AMBIGUS_OUTILS.has(m));
     return { nom: "Outils", mots, kevina };
   },
 
   async sports() {
+    // Catégorie du Wiktionnaire, plus l'annexe « Sports en français », faite
+    // à la main (danse, judo, escalade y manquent à la catégorie) ; ses noms
+    // composés gardés entiers (« krav maga », pas « krav »)
     const e = await wiktionnaire("sports", [["Sports en français", 2]]);
-    const mots = reduire(e);
-    return { nom: "Sports", mots, kevina: await kevinaDepuis(mots, [["Annexe:Sports en français"], ["Annexe:Sports olympiques"]]) };
+    const cat = await reduire(e);
+    const vus = new Set(cat.map(normaliser));
+    const annexe = (await liens("Annexe:Sports en français")).filter((m) => /^[\p{L}\s'’-]+$/u.test(m) && normaliser(m).length >= 2 && !vus.has(normaliser(m)));
+    const mots = [...cat, ...annexe].sort((a, b) => a.localeCompare(b, "fr"));
+    // Kévina : mots de la catégorie présents dans les annexes, et mots
+    // simples de l'annexe d'usage courant, sans les véhicules (montgolfière)
+    const VEHICULES = new Set(["montgolfière", "motoneige", "quad", "traîneau"]);
+    const kevina = [...(await kevinaDepuis(cat, [["Annexe:Sports en français"], ["Annexe:Sports olympiques"]])), ...(await courants(annexe, SEUIL_FREQ)).filter((m) => !VEHICULES.has(m))];
+    return { nom: "Sports", mots, kevina: kevina.sort((a, b) => a.localeCompare(b, "fr")) };
   },
 
   async mythologie() {
@@ -416,7 +431,7 @@ const THEMES = {
     // Mots acceptés : au moins 5 langues (taille de la liste), plus les
     // animaux imaginaires du Wiktionnaire (licorne, banshee : absents des
     // classes Wikidata)
-    const imaginaires = reduire(await wiktionnaire("animaux-imaginaires", [["Animaux imaginaires en français", 0]]));
+    const imaginaires = await reduire(await wiktionnaire("animaux-imaginaires", [["Animaux imaginaires en français", 0]]));
     return { nom: "Mythologie", mots: nomsPropres([...tous.filter((x) => x.liens >= 5).map((x) => x.fr), ...imaginaires]), kevina: nomsPropres(kevina.map((x) => x.fr)) };
   },
 
