@@ -49,13 +49,16 @@ export const THEMES = {
   inventions: "Inventions",
   fromages: "Fromages",
   outils: "Outils",
+  boissons: "Boissons",
+  ecrivains: "Écrivains",
+  scientifiques: "Scientifiques",
 };
 
 // Niveau de chaque thème, et niveau de chaque manche (difficulté croissante)
 export const NIVEAUX = {
   facile: ["animaux", "prenoms", "fruits", "metiers", "transports"],
-  moyen: ["pays", "villes", "sports", "autos", "acteurs", "musique", "fromages", "outils"],
-  difficile: ["mythologie", "jeuxvideo", "clash", "inventions"],
+  moyen: ["pays", "villes", "sports", "autos", "acteurs", "musique", "fromages", "outils", "boissons"],
+  difficile: ["mythologie", "jeuxvideo", "clash", "inventions", "ecrivains", "scientifiques"],
 };
 // Déroulé d'une partie selon la difficulté choisie, difficulté croissante :
 // niveau du thème et lettres de chaque manche (« toutes » les lettres
@@ -115,10 +118,13 @@ const sansArticle = (s) => s.replace(/^\s*(le|la|les|un|une|des|the)\s+/i, "").r
 // Personnes (acteurs, chanteurs) : seul le nom de famille compte. Formes du
 // nom : le dernier mot, et la particule avec la suite (« De Niro », « de
 // Havilland », « Van Damme ») ; un nom d'un seul mot (« Cher ») est son nom.
+// Numéro ou suffixe final ignoré (« Ahmet Ier » : A, « Pie II » : P, pas I).
 const PARTICULES = new Set(["de", "du", "des", "di", "da", "del", "della", "van", "von", "der", "den", "le", "la", "mac", "o"]);
+const SUFFIXE_NOM = /^([IVXLC]+|Ier|1er|Jr\.?|Sr\.?)$/;
 export function nomsDeFamille(nom) {
   const mots = nom.trim().split(/\s+/);
-  if (mots.length === 1) return [nom.trim()];
+  while (mots.length > 1 && SUFFIXE_NOM.test(mots.at(-1))) mots.pop();
+  if (mots.length === 1) return [mots[0]];
   const formes = [mots.at(-1)];
   const k = mots.findIndex((m, i) => i > 0 && PARTICULES.has(normaliser(m)));
   if (k > 0 && k < mots.length - 1) formes.push(mots.slice(k).join(" "));

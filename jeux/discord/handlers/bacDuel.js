@@ -537,7 +537,10 @@ const PRECISIONS = {
   prenoms: ["👶", "donnés au moins 500 fois en France depuis 1900"],
   acteurs: ["👤", "les plus connus, seul le nom de famille compte"],
   musique: ["👤", "les plus connus, seul le nom de famille compte"],
+  ecrivains: ["👤", "les plus connus, seul le nom de famille compte"],
+  scientifiques: ["👤", "les plus connus, seul le nom de famille compte"],
   autos: ["🚗", "marques, pas les modèles"],
+  boissons: ["🍺", "marques de bière célèbres comprises"],
   clash: ["🃏", "noms en français ou en anglais"],
   jeuxvideo: ["🎮", "noms en français ou en anglais"],
 };

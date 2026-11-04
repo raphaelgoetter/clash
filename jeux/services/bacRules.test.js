@@ -76,6 +76,9 @@ assert.strictEqual(valider("outils", "P", "pied").ok, false); // nom composé ga
 // ── Personnes : seul le nom de famille compte ──
 assert.deepStrictEqual(nomsDeFamille("Robert De Niro"), ["Niro", "De Niro"]);
 assert.deepStrictEqual(nomsDeFamille("Madonna"), ["Madonna"]);
+assert.deepStrictEqual(nomsDeFamille("Ahmet Ier"), ["Ahmet"]);
+assert.deepStrictEqual(nomsDeFamille("Léon XIV"), ["Léon"]);
+assert.deepStrictEqual(nomsDeFamille("Martin Luther King Jr."), ["King"]);
 assert.deepStrictEqual(valider("acteurs", "D", "Depardieu"), { ok: true, cle: "gerarddepardieu" });
 assert.deepStrictEqual(valider("acteurs", "D", "gérard depardieu"), { ok: true, cle: "gerarddepardieu" });
 assert.deepStrictEqual(valider("acteurs", "G", "Gérard Depardieu"), { ok: false, raison: "nom" });

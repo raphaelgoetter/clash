@@ -144,14 +144,16 @@ async function sparql(cle, requete) {
   const f = path.join(CACHE, `wd-${cle}.json`);
   if (!fs.existsSync(f)) {
     for (let essai = 0; ; essai++) {
-      const r = await fetch(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(requete)}`, { headers: { ...UA, Accept: "application/sparql-results+json" } });
-      const t = await r.text();
+      // Délai maximal : une requête sans réponse bloquerait la génération
+      const t = await fetch(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(requete)}`, { headers: { ...UA, Accept: "application/sparql-results+json" }, signal: AbortSignal.timeout(90_000) })
+        .then((r) => r.text())
+        .catch((err) => `délai dépassé (${err.name})`);
       try {
         JSON.parse(t);
         fs.writeFileSync(f, t);
         break;
       } catch {
-        if (essai >= 3) throw new Error(`Wikidata (${cle}) : ${t.slice(0, 100)}`);
+        if (essai >= 5) throw new Error(`Wikidata (${cle}) : ${t.slice(0, 100)}`);
         await pause(10000);
       }
     }
@@ -195,8 +197,18 @@ async function classesDirectes(cle, ids) {
         .map((x) => `wd:${x}`)
         .join(" ");
       const q = `SELECT ?x ?cl WHERE { VALUES ?x { ${v} } ?x wdt:P31 ?c . ?c rdfs:label ?cl . FILTER(LANG(?cl) = "fr") }`;
-      const r = await fetch(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(q)}`, { headers: { ...UA, Accept: "application/sparql-results+json" } });
-      for (const b of JSON.parse(await r.text()).results.bindings) (out[b.x.value.split("/").pop()] ??= []).push(b.cl.value);
+      // Délai maximal et réessais, comme sparql()
+      let bindings = null;
+      for (let essai = 0; !bindings; essai++) {
+        try {
+          const r = await fetch(`https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(q)}`, { headers: { ...UA, Accept: "application/sparql-results+json" }, signal: AbortSignal.timeout(90_000) });
+          bindings = JSON.parse(await r.text()).results.bindings;
+        } catch (err) {
+          if (essai >= 5) throw new Error(`Wikidata (classes ${cle}) : ${err.message}`);
+          await pause(10000);
+        }
+      }
+      for (const b of bindings) (out[b.x.value.split("/").pop()] ??= []).push(b.cl.value);
     }
     fs.writeFileSync(f, JSON.stringify(out));
   }
@@ -278,6 +290,21 @@ async function reduire(entrees) {
   const uniques = new Map();
   for (const m of out) if (!uniques.has(normaliser(m)) || f(m) > f(uniques.get(normaliser(m)))) uniques.set(normaliser(m), m);
   return [...uniques.values()].sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+// Sans les noms composés dont le mot principal est déjà dans la liste : la
+// validation les accepte par ce mot (bacRules.js, cleDans() : « bière de
+// mars » par « bière », « beaujolais-villages » par « beaujolais »). Les
+// mots de Kévina (`garder`) restent : leur réponse garde sa propre clé.
+function sansRedondants(mots, garder = []) {
+  const cles = new Set(mots.map(normaliser));
+  const gardes = new Set(garder.map(normaliser));
+  return mots.filter((m) => {
+    if (gardes.has(normaliser(m))) return true;
+    const t = tete(m);
+    const essais = [/\s/.test(m) ? t : null, t?.includes("-") ? t.split("-")[0] : null].filter((e) => e && normaliser(e) !== normaliser(m));
+    return !essais.some((e) => cles.has(normaliser(e)));
+  });
 }
 
 // Mots courants (Kévina) : mots simples assez fréquents
@@ -394,7 +421,7 @@ const THEMES = {
     const dansWikt = new Set((await reduire(wikt)).map(normaliser));
     const seulsWp = wp.filter((m) => !/\s/.test(m)).map((m) => m.toLowerCase());
     const kevina = (await courants(seulsWp, SEUIL_FREQ_OUTILS)).filter((m) => dansWikt.has(normaliser(m)) && !AMBIGUS_OUTILS.has(m));
-    return { nom: "Outils", mots, kevina };
+    return { nom: "Outils", mots: sansRedondants(mots, kevina), kevina };
   },
 
   async sports() {
@@ -410,7 +437,7 @@ const THEMES = {
     // simples de l'annexe d'usage courant, sans les véhicules (montgolfière)
     const VEHICULES = new Set(["montgolfière", "motoneige", "quad", "traîneau"]);
     const kevina = [...(await kevinaDepuis(cat, [["Annexe:Sports en français"], ["Annexe:Sports olympiques"]])), ...(await courants(annexe, SEUIL_FREQ)).filter((m) => !VEHICULES.has(m))];
-    return { nom: "Sports", mots, kevina: kevina.sort((a, b) => a.localeCompare(b, "fr")) };
+    return { nom: "Sports", mots: sansRedondants(mots, kevina), kevina: kevina.sort((a, b) => a.localeCompare(b, "fr")) };
   },
 
   async mythologie() {
@@ -494,7 +521,7 @@ const THEMES = {
     // Mots qui ne désignent pas un véhicule en usage courant
     const AMBIGUS = new Set(["aile", "annexe", "batterie", "piste", "plate", "voile", "nacelle", "véhicule", "bâtiment", "nef", "pointu", "corsaire", "vapeur", "char", "vaisseau", "parachute", "ascenseur", "échasses"]);
     const kevina = (await courants(mots, SEUIL_FREQ)).filter((m) => choisis.has(normaliser(m)) && !AMBIGUS.has(m.toLowerCase()));
-    return { nom: "Moyens de transport", mots, kevina };
+    return { nom: "Moyens de transport", mots: sansRedondants(mots, kevina), kevina };
   },
 
   async autos() {
@@ -548,11 +575,12 @@ const THEMES = {
 
   async acteurs() {
     // Acteurs et actrices (Wikidata : acteur, de cinéma ou de télévision ;
-    // article dans au moins 25 langues). Seul le nom de famille compte
+    // article dans au moins 25 langues ; les PLAFOND_PERSONNES plus connus,
+    // plus tous les Français). Seul le nom de famille compte
     // (bacRules.js) : `personnes` = noms complets. Kévina : au moins 70
     // langues et 10 films, ni chanteurs (au moins 10 œuvres interprétées)
     // ni réalisateurs.
-    const acteurs = await personnesDeMetiers("acteurs", ACTEUR, 25);
+    const acteurs = plafonner(await personnesDeMetiers("acteurs", ACTEUR, 25), await personnesDeMetiers("acteurs-fr", ACTEUR, 25, { francais: true }));
     const connus = acteurs.filter((x) => x.liens >= 70);
     const films = await compter("films", connus.map((x) => x.id), "P161");
     const oeuvres = await compter("oeuvres", connus.map((x) => x.id), "P175");
@@ -563,20 +591,25 @@ const THEMES = {
 
   async musique() {
     // Chanteurs, chanteuses, rappeurs (seul le nom de famille compte) et
-    // groupes (leur nom), article dans au moins 25 langues (groupes : 40).
+    // groupes (leur nom), article dans au moins 25 langues (groupes : 40) ;
+    // les PLAFOND_PERSONNES plus connus des deux, plus tous les chanteurs
+    // français.
     // Kévina : au moins 70 langues et 10 œuvres interprétées, pas les
     // acteurs (au moins 10 films).
-    const chanteurs = await personnesDeMetiers("chanteurs", CHANTEUR, 25);
-    const connus = chanteurs.filter((x) => x.liens >= 70);
-    const oeuvres = await compter("oeuvres", connus.map((x) => x.id), "P175");
-    const films = await compter("films", connus.map((x) => x.id), "P161");
-    const groupes = await sparql(
+    const tousChanteurs = await personnesDeMetiers("chanteurs", CHANTEUR, 25);
+    const tousGroupes = await sparql(
       "groupes",
       `SELECT DISTINCT ?x ?fr ?liens WHERE {
         ?x wdt:P31/wdt:P279* wd:Q215380 ; wikibase:sitelinks ?liens . FILTER(?liens >= 40)
         ${LIBELLE}
       }`,
     );
+    const ids = new Set(plafonner([...tousChanteurs, ...tousGroupes], await personnesDeMetiers("chanteurs-fr", CHANTEUR, 25, { francais: true })).map((x) => x.id));
+    const chanteurs = tousChanteurs.filter((x) => ids.has(x.id));
+    const groupes = tousGroupes.filter((x) => ids.has(x.id));
+    const connus = chanteurs.filter((x) => x.liens >= 70);
+    const oeuvres = await compter("oeuvres", connus.map((x) => x.id), "P175");
+    const films = await compter("films", connus.map((x) => x.id), "P161");
     const kevina = [...connus.filter((x) => oeuvres[x.id] >= 10 && films[x.id] < 10), ...groupes.filter((x) => x.liens >= 70)];
     return {
       nom: "Musique (chanteurs et groupes)",
@@ -584,6 +617,70 @@ const THEMES = {
       personnes: nomsPropres(chanteurs.map((x) => x.fr)),
       kevina: nomsPropres(kevina.map((x) => x.fr)),
     };
+  },
+
+  async ecrivains() {
+    // Écrivains, romanciers, poètes, dramaturges (Wikidata, article dans au
+    // moins 25 langues ; les PLAFOND_PERSONNES plus connus, plus tous les
+    // Français). Seul le nom de famille compte. Kévina : romanciers, poètes
+    // et dramaturges d'au moins 70 langues (pas Trump), ni monarques, ni
+    // militaires (politiciens gardés : Victor Hugo), ni scientifiques, ni
+    // acteurs, chanteurs, réalisateurs,
+    // peintres, sportifs ou papes (Wikidata dit « écrivain » de quiconque a
+    // publié : Trump, Einstein, Madonna). Êtres humains seulement.
+    const ecrivains = await humains("ecrivains", plafonner(await personnesDeMetiers("ecrivains", ECRIVAIN, 25), await personnesDeMetiers("ecrivains-fr", ECRIVAIN, 25, { francais: true })));
+    const exclus = await exclusKevina(["monarques-militaires", MONARQUES_MILITAIRES], ["scientifiques", SCIENTIFIQUE], ["acteurs", ACTEUR], ["chanteurs", CHANTEUR], ["realisateurs", REALISATEUR], ["autres-arts", AUTRES_ARTS]);
+    const garde = new Set(ecrivains.map((x) => x.id));
+    const kevina = (await personnesDeMetiers("litteraires", LITTERAIRE, 70)).filter((x) => x.liens >= 70 && garde.has(x.id) && !exclus.has(x.id));
+    return { nom: "Écrivains", mots: [], personnes: nomsPropres(ecrivains.map((x) => x.fr)), kevina: nomsPropres(kevina.map((x) => x.fr)) };
+  },
+
+  async scientifiques() {
+    // Scientifiques, physiciens, chimistes, mathématiciens, biologistes,
+    // astronomes (Wikidata, article dans au moins 25 langues ; les
+    // PLAFOND_PERSONNES plus connus, plus tous les Français). Seul le nom de
+    // famille compte. Kévina : au moins 70 langues, ni politiciens, ni
+    // monarques, ni militaires (Merkel, Thatcher), ni romanciers, poètes ou
+    // dramaturges (Goethe), ni acteurs, chanteurs, réalisateurs, peintres,
+    // sportifs ou papes (Dolph Lundgren, Léon XIV). Êtres humains seulement
+    // (pas Hulk ni Spider-Man).
+    const scientifiques = await humains("scientifiques", plafonner(await personnesDeMetiers("scientifiques", SCIENTIFIQUE, 25), await personnesDeMetiers("scientifiques-fr", SCIENTIFIQUE, 25, { francais: true })));
+    const exclus = await exclusKevina(["pouvoir", POUVOIR], ["litteraires", LITTERAIRE], ["acteurs", ACTEUR], ["chanteurs", CHANTEUR], ["realisateurs", REALISATEUR], ["autres-arts", AUTRES_ARTS]);
+    const kevina = scientifiques.filter((x) => x.liens >= 70 && !exclus.has(x.id));
+    return { nom: "Scientifiques", mots: [], personnes: nomsPropres(scientifiques.map((x) => x.fr)), kevina: nomsPropres(kevina.map((x) => x.fr)) };
+  },
+
+  async boissons() {
+    // Catégorie « Boissons » du Wiktionnaire (alcools, bières, cocktails,
+    // vins, cafés), sans noms propres (marques : « Coke », « Byrrh ») ni
+    // mots dont le sens courant n'est pas une boisson (`HORS_SUJET`). Noms
+    // composés gardés entiers (« vin chaud », « thé vert »). Plus les bières
+    // célèbres (Wikidata) : marques de bière d'au moins 5 langues et
+    // brasseries d'au moins 10 (Carlsberg, Hoegaarden : rangées comme
+    // brasseries), sans « brasserie », « Brewery »…, ni abbayes, châteaux,
+    // musées ou groupes industriels. Kévina : mots simples du thésaurus
+    // « boisson », d'usage courant, et bières d'au moins 20 langues.
+    const HORS_SUJET = new Set(["amazone", "ambrée", "api", "ay", "baby", "blanche", "blonde", "bleue", "boite", "bou", "brune", "buse", "caucasien", "champ", "chypre", "coco", "colle", "constance", "cow-boy", "décaquer", "dodo", "état-major", "ganache", "hâ", "jacqueline", "kicher", "lin", "maintien", "malolactique", "mandarin", "marquise", "massique", "maya", "mendès", "momie", "œno-", "pernoter", "pigment", "piment", "prusse", "quicher", "ric", "schuss", "staline", "tan", "tango", "trempé", "twist", "valse", "vermillon", "verte"]);
+    const wikt = (await wiktionnaire("boissons", [["Boissons en français", 2]])).filter((m) => !/^\p{Lu}/u.test(m) && !HORS_SUJET.has(m));
+    const mots = [...new Map(wikt.filter((m) => /^[\p{L}\s'’-]+$/u.test(m) && normaliser(m).length >= 2).map((m) => [normaliser(m), m])).values()].sort((a, b) => a.localeCompare(b, "fr"));
+    // Mots du thésaurus qui ne désignent pas une boisson précise
+    const marques = (await deClasse("marques-biere", "Q15075508")).filter((x) => x.liens >= 5);
+    const PAS_BIERE = /abbaye|château|chartreuse|domaine|mairie|museum|tower|group|grupo|holding|ltd|inc\b|company|fomento|interbrew|anheuser|beverages|meierei|schloss|swinkels|rivera|moctezuma|suntory|quatre gats|hofbräuhaus|royal brewery/i;
+    // Noms réduits à un mot courant (« United Breweries » → « United ») : réponses trop faciles
+    const MOTS_COURANTS = new Set(["Bernard", "Falcon", "Imperial", "Regional", "Spencer", "Superior", "United", "Victoria"]);
+    const nomBiere = (n) =>
+      n
+        .replace(/\s*\(.*?\)\s*/g, " ")
+        .replace(/^(brasserie|brasseries|brouwerij|brauerei|privatbrauerei|pivovar|cervecería|birra)\s+(de\s+l['’]|de\s+|d['’]|du\s+)?/i, "")
+        .replace(/\s+(brewery|breweries|breweries limited|brewing company|brewing co\.?|brauerei|bryggeri|brauhaus|pivara|bière|beer)$/i, "")
+        .trim();
+    const brasseries = (await deClasse("brasseries", "Q131734")).filter((x) => x.liens >= 10 && !PAS_BIERE.test(x.fr));
+    const bieres = [...marques, ...brasseries].filter((x) => !PAS_BIERE.test(x.fr)).map((x) => ({ ...x, fr: nomBiere(x.fr) })).filter((x) => /^\p{L}/u.test(x.fr) && !MOTS_COURANTS.has(x.fr));
+    const AMBIGUS = new Set(["alcool", "blanc", "boisson", "cardinal", "cercueil", "cocktail", "distingué", "fine", "flip", "frappé", "indien", "mazout", "mousse", "perroquet", "rouge", "spiritueux", "tomate"]);
+    const choisis = new Set((await liens("Thésaurus:boisson/français")).map(normaliser));
+    const kevina = [...(await courants(mots, SEUIL_FREQ)).filter((m) => choisis.has(normaliser(m)) && !AMBIGUS.has(m)), ...nomsPropres(bieres.filter((x) => x.liens >= 20).map((x) => x.fr))];
+    const tous = [...new Map([...mots, ...nomsPropres(bieres.map((x) => x.fr))].map((m) => [normaliser(m), m])).values()].sort((a, b) => a.localeCompare(b, "fr"));
+    return { nom: "Boissons", mots: sansRedondants(tous, kevina), kevina };
   },
 
   async pays() {
@@ -658,7 +755,8 @@ const THEMES = {
 // langues : une requête par métier et par tranche de notoriété (une requête
 // unique dépasse le délai de Wikidata et revient tronquée).
 const TRANCHES = [15, 20, 25, 30, 40, 60, 100, 100000];
-async function personnesDeMetiers(cle, metiers, min) {
+// `francais` : seulement les personnes de nationalité française (P27).
+async function personnesDeMetiers(cle, metiers, min, { francais = false } = {}) {
   const tous = new Map();
   for (const o of metiers) {
     for (let k = 0; k < TRANCHES.length - 1; k++) {
@@ -668,6 +766,7 @@ async function personnesDeMetiers(cle, metiers, min) {
         `${cle}-${o}-${a}`,
         `SELECT DISTINCT ?x ?fr ?liens WHERE {
           ?x wdt:P106 wd:${o} ; wikibase:sitelinks ?liens . FILTER(?liens >= ${Math.max(a, min)} && ?liens < ${b})
+          ${francais ? "?x wdt:P27 wd:Q142 ." : ""}
           ${LIBELLE}
         }`,
       );
@@ -695,9 +794,45 @@ async function compter(cle, ids, propriete) {
   return out;
 }
 
+// Thèmes de personnes : au plus PLAFOND_PERSONNES noms, les plus connus
+// (nombre de langues de Wikipédia), plus tous les Français du seuil de
+// notoriété du thème (`francais`), gardés même au-delà du plafond.
+const PLAFOND_PERSONNES = 3000;
+function plafonner(liste, francais = []) {
+  const garde = new Map([...liste].sort((a, b) => b.liens - a.liens).slice(0, PLAFOND_PERSONNES).map((x) => [x.id, x]));
+  for (const x of francais) garde.set(x.id, x);
+  return [...garde.values()];
+}
+
 const ACTEUR = ["Q33999", "Q10800557", "Q10798782"]; // acteur, de cinéma, de télévision
 const CHANTEUR = ["Q177220", "Q2252262", "Q488205"]; // chanteur, rappeur, auteur-compositeur-interprète
 const REALISATEUR = ["Q2526255"];
+const ECRIVAIN = ["Q36180", "Q6625963", "Q49757", "Q214917"]; // écrivain, romancier, poète, dramaturge
+const LITTERAIRE = ["Q6625963", "Q49757", "Q214917"]; // romancier, poète, dramaturge
+// scientifique, physicien, chimiste, mathématicien, biologiste, astronome
+const SCIENTIFIQUE = ["Q901", "Q169470", "Q593644", "Q170790", "Q864503", "Q11063"];
+// Personnalités dont le métier principal n'est ni l'écriture ni la science
+// (Trump, Lincoln, Merkel, Thatcher ont publié) : jamais chez Kévina
+const POUVOIR = ["Q82955", "Q116", "Q47064"]; // politicien, monarque, militaire
+// Autres métiers qui font publier (Madonna, Picasso, Carl Lewis, Pie II) :
+// jamais chez Kévina pour les écrivains et les scientifiques
+// peintre, sportif, athlète d'athlétisme, footballeur, basketteur, joueur de tennis
+const AUTRES_ARTS = ["Q1028181", "Q2066131", "Q11513337", "Q937857", "Q3665646", "Q10833314"];
+const MONARQUES_MILITAIRES = ["Q116", "Q47064"];
+// Êtres humains seulement (Wikidata donne un métier aux personnages de
+// fiction : Hulk, Spider-Man sont scientifiques)
+async function humains(cle, liste) {
+  const classes = await classesDirectes(cle, liste.map((x) => x.id));
+  return liste.filter((x) => (classes[x.id] ?? []).includes("être humain"));
+}
+// Personnes à écarter de Kévina : ids des métiers `groupes` (au moins 70 langues)
+// et papes (fonction occupée P39, pas un métier : Pie II, Léon XIV).
+async function exclusKevina(...groupes) {
+  const ids = new Set();
+  for (const [cle, metiers] of groupes) for (const x of await personnesDeMetiers(cle, metiers, 70)) ids.add(x.id);
+  for (const x of await sparql("papes", `SELECT DISTINCT ?x ?fr WHERE { ?x wdt:P39 wd:Q19546 . ${LIBELLE} }`)) ids.add(x.id);
+  return ids;
+}
 
 // Noms d'usage absents des listes officielles (nations constitutives,
 // anciens noms, formes courtes)
