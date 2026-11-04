@@ -72,7 +72,7 @@ async function passage(id) {
   let e = lastEph(id);
   verifier(e, `jouer ${id}`);
   const appel = menu(e, "meow_appel_coin");
-  if (appel) {
+  if (appel && !appel.disabled) {
     await H.handleAppelCoin(`wh-${id}`, id, nom(id), appel.options[0].value);
     e = lastEph(id);
     verifier(e, `choix coin ${id}`);

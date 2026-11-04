@@ -1074,29 +1074,29 @@ function buildJouerView(
   ];
 
   const components = [];
-  if (j.stock > 0) {
-    const appelables = mesCoins.filter((c) => !verrous.has(c));
-    if (appelables.length) {
-      components.push({
-        type: 1,
-        components: [
-          {
-            type: 3,
-            custom_id: "meow_appel_coin",
-            placeholder: "🐱 Appeler",
-            options: appelables.slice(0, 25).map((c) => ({
+  // Menus : intitulé court (emoji + verbe), toujours affichés, grisés si
+  // l'action est impossible (réserve vide, sieste, quota atteint, rien de
+  // possible : expliqué dans les règles).
+  const appelables = mesCoins.filter((c) => !verrous.has(c));
+  components.push({
+    type: 1,
+    components: [
+      {
+        type: 3,
+        custom_id: "meow_appel_coin",
+        placeholder: "🐱 Appeler",
+        disabled: j.stock <= 0 || !appelables.length,
+        options: appelables.length
+          ? appelables.slice(0, 25).map((c) => ({
               label: `${nomCoin(c)} (${chats(partie.coins[c].n)})`,
               value: c,
               description: `${PIECES[PIECE_DE[c]].nom}${menace(partie, c) > 0 ? " · menacé" : ""}`,
-            })),
-          },
-        ],
-      });
-    }
-  }
+            }))
+          : [{ label: "Aucun territoire disponible", value: "aucun" }],
+      },
+    ],
+  });
   const squats = squatsPossibles(partie, j.bande);
-  // Menus : intitulé court (emoji + verbe), grisé si l'action est impossible
-  // (sieste, quota atteint, rien de possible : expliqué dans les règles).
   const squatBloque = sieste || restants <= 0 || !squats.length;
   components.push({
     type: 1,
