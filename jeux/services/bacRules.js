@@ -53,24 +53,39 @@ export const THEMES = {
 
 // Niveau de chaque thème, et niveau de chaque manche (difficulté croissante)
 export const NIVEAUX = {
-  facile: ["animaux", "pays", "prenoms", "fruits", "metiers", "transports"],
-  moyen: ["villes", "sports", "autos", "acteurs", "musique", "fromages", "outils"],
+  facile: ["animaux", "prenoms", "fruits", "metiers", "transports"],
+  moyen: ["pays", "villes", "sports", "autos", "acteurs", "musique", "fromages", "outils"],
   difficile: ["mythologie", "jeuxvideo", "clash", "inventions"],
 };
-// Déroulé d'une partie, difficulté croissante : niveau du thème et lettres
-// de chaque manche (« toutes » les lettres jouables du thème, ou seulement
-// les « rares » : la moitié la moins fournie ; « courantes » : l'autre)
-export const MANCHES = [
-  { niveau: "facile", lettres: "toutes" },
-  { niveau: "facile", lettres: "toutes" },
-  { niveau: "facile", lettres: "rares" },
-  { niveau: "moyen", lettres: "toutes" },
-  { niveau: "moyen", lettres: "toutes" },
-  { niveau: "moyen", lettres: "rares" },
-  { niveau: "difficile", lettres: "toutes" },
-  { niveau: "difficile", lettres: "rares" },
-];
-export const NB_MANCHES = MANCHES.length;
+// Déroulé d'une partie selon la difficulté choisie, difficulté croissante :
+// niveau du thème et lettres de chaque manche (« toutes » les lettres
+// jouables du thème, les « courantes » : la moitié la plus fournie, ou les
+// « rares » : l'autre moitié)
+export const DIFFICULTES = {
+  normal: [
+    { niveau: "facile", lettres: "courantes" },
+    { niveau: "facile", lettres: "courantes" },
+    { niveau: "facile", lettres: "toutes" },
+    { niveau: "moyen", lettres: "courantes" },
+    { niveau: "moyen", lettres: "toutes" },
+    { niveau: "moyen", lettres: "toutes" },
+    { niveau: "difficile", lettres: "courantes" },
+    { niveau: "difficile", lettres: "toutes" },
+  ],
+  difficile: [
+    { niveau: "facile", lettres: "toutes" },
+    { niveau: "facile", lettres: "rares" },
+    { niveau: "moyen", lettres: "toutes" },
+    { niveau: "moyen", lettres: "rares" },
+    { niveau: "moyen", lettres: "rares" },
+    { niveau: "difficile", lettres: "toutes" },
+    { niveau: "difficile", lettres: "rares" },
+    { niveau: "difficile", lettres: "rares" },
+  ],
+};
+export const NB_MANCHES = 8;
+// Manches d'une partie (sans `difficulte` : partie lancée avant les modes)
+export const manchesDe = (d) => DIFFICULTES[d.difficulte] ?? DIFFICULTES.normal;
 export const niveauDe = (themeId) => Object.keys(NIVEAUX).find((n) => NIVEAUX[n].includes(themeId));
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
@@ -181,11 +196,12 @@ export function lettresJouables(themeId) {
     .sort((a, b) => t.parLettre.get(b) - t.parLettre.get(a) || a.localeCompare(b));
 }
 
-// Lettres possibles pour la manche `numero` (1 à NB_MANCHES), selon MANCHES
-export function lettresDeManche(themeId, numero) {
+// Lettres possibles pour la manche `numero` (1 à NB_MANCHES) d'une partie
+// de difficulté `difficulte`, selon DIFFICULTES
+export function lettresDeManche(themeId, numero, difficulte = "normal") {
   const l = lettresJouables(themeId);
   const moitie = Math.ceil(l.length / 2);
-  const { lettres } = MANCHES[numero - 1];
+  const { lettres } = DIFFICULTES[difficulte][numero - 1];
   return lettres === "courantes" ? l.slice(0, moitie) : lettres === "rares" ? l.slice(moitie) : l;
 }
 
@@ -241,16 +257,18 @@ function melange(a, rng) {
 }
 
 // Thèmes de la partie : un par manche, du niveau de la manche, tous différents
-function tirerThemes(rng) {
+function tirerThemes(rng, manches) {
   const restants = Object.fromEntries(Object.entries(NIVEAUX).map(([n, l]) => [n, melange(l, rng)]));
-  return MANCHES.map((m) => restants[m.niveau].pop());
+  return manches.map((m) => restants[m.niveau].pop());
 }
 
 // Nouvelle partie : 8 thèmes différents tirés d'avance (du plus facile au
 // plus difficile), la 1re manche commence (`now` : début de la manche, pour le chrono).
-export function creerDuel({ rng = Math.random, now = Date.now(), pvp = false } = {}) {
+// `difficulte` : "normal" ou "difficile" (DIFFICULTES).
+export function creerDuel({ rng = Math.random, now = Date.now(), pvp = false, difficulte = "normal" } = {}) {
   const d = {
-    themes: tirerThemes(rng),
+    difficulte,
+    themes: tirerThemes(rng, DIFFICULTES[difficulte]),
     manches: [],
     scores: { joueur: 0, bot: 0 },
     // Numéro de l'état affiché, +1 à chaque action : écarte un clic sur une
@@ -267,7 +285,7 @@ export function creerDuel({ rng = Math.random, now = Date.now(), pvp = false } =
 // Manche : thème suivant, lettre tirée selon la difficulté de la manche.
 function nouvelleManche(d, rng, now) {
   const theme = d.themes[d.manches.length];
-  const lettres = lettresDeManche(theme, d.manches.length + 1);
+  const lettres = lettresDeManche(theme, d.manches.length + 1, DIFFICULTES[d.difficulte] ? d.difficulte : "normal");
   d.manches.push({
     theme,
     lettre: lettres[Math.floor(rng() * lettres.length)],

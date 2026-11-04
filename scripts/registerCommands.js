@@ -610,6 +610,16 @@ const commands = [
           { name: "2 joueurs", value: "1v1" },
         ],
       },
+      {
+        type: 3, // STRING
+        name: "difficulte",
+        description: "Normal par défaut, ou difficile (lettres moins courantes, Kévina plus forte)",
+        required: false,
+        choices: [
+          { name: "Normal", value: "normal" },
+          { name: "Difficile", value: "difficile" },
+        ],
+      },
     ],
   },
   {

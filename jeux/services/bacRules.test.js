@@ -2,7 +2,7 @@ import assert from "assert";
 import {
   NB_MANCHES,
   NIVEAUX,
-  MANCHES,
+  DIFFICULTES,
   PROPOSITIONS_MAX,
   THEMES,
   cloreManche,
@@ -91,26 +91,37 @@ for (const id of Object.keys(THEMES)) {
 }
 assert.strictEqual(Object.values(NIVEAUX).flat().length, Object.keys(THEMES).length);
 
-// ── Partie : 8 thèmes différents, difficulté croissante (MANCHES) ──
-{
-  const d = creerDuel({ rng: rngFixe(3), now: 0 });
-  assert.strictEqual(new Set(d.themes).size, NB_MANCHES);
-  // Du plus facile au plus difficile
-  assert.deepStrictEqual(d.themes.map(niveauDe), MANCHES.map((m) => m.niveau));
-  for (let k = 1; k <= NB_MANCHES; k++) {
-    const m = mancheCourante(d);
-    assert.ok(lettresDeManche(m.theme, k).includes(m.lettre), `manche ${k} : ${m.lettre}`);
-    cloreManche(d);
-    if (!d.termine) mancheSuivante(d, { rng: rngFixe(k), now: 0 });
+// ── Partie : 8 thèmes différents, difficulté croissante (DIFFICULTES) ──
+for (const difficulte of Object.keys(DIFFICULTES)) {
+  assert.strictEqual(DIFFICULTES[difficulte].length, NB_MANCHES);
+  for (const graine of [1, 3, 7]) {
+    const d = creerDuel({ rng: rngFixe(graine), now: 0, difficulte });
+    assert.strictEqual(d.difficulte, difficulte);
+    assert.strictEqual(new Set(d.themes).size, NB_MANCHES);
+    // Du plus facile au plus difficile
+    assert.deepStrictEqual(d.themes.map(niveauDe), DIFFICULTES[difficulte].map((m) => m.niveau));
+    for (let k = 1; k <= NB_MANCHES; k++) {
+      const m = mancheCourante(d);
+      assert.ok(lettresDeManche(m.theme, k, difficulte).includes(m.lettre), `${difficulte}, manche ${k} : ${m.lettre}`);
+      cloreManche(d);
+      if (!d.termine) mancheSuivante(d, { rng: rngFixe(k), now: 0 });
+    }
   }
-  // Manches 1, 2, 4, 5, 7 : toutes les lettres ; 3, 6, 8 : lettres rares seulement
-  assert.deepStrictEqual(lettresDeManche("animaux", 1), lettresJouables("animaux"));
-  assert.ok(!lettresDeManche("animaux", 3).includes("S")); // S, très fourni
-  assert.ok(lettresDeManche("villes", 4).includes("S"));
-  assert.ok(!lettresDeManche("villes", 6).includes("S"));
-  const toutes = lettresJouables("mythologie");
-  assert.deepStrictEqual(lettresDeManche("mythologie", 7), toutes);
-  assert.deepStrictEqual(lettresDeManche("mythologie", 8), toutes.slice(Math.ceil(toutes.length / 2)));
+}
+{
+  // Normal : jamais de lettre rare ; difficile : lettres rares dès la 2e manche
+  const toutes = lettresJouables("animaux");
+  const moitie = Math.ceil(toutes.length / 2);
+  assert.deepStrictEqual(lettresDeManche("animaux", 1, "normal"), toutes.slice(0, moitie));
+  assert.deepStrictEqual(lettresDeManche("animaux", 3, "normal"), toutes);
+  assert.deepStrictEqual(lettresDeManche("animaux", 1, "difficile"), toutes);
+  assert.deepStrictEqual(lettresDeManche("animaux", 2, "difficile"), toutes.slice(moitie));
+  assert.ok(!Object.values(DIFFICULTES.normal).some((m) => m.lettres === "rares"));
+  // Partie lancée avant les modes (sans `difficulte`) : déroulé normal
+  const d = creerDuel({ rng: rngFixe(2), now: 0 });
+  delete d.difficulte;
+  cloreManche(d);
+  assert.deepStrictEqual(mancheSuivante(d, { rng: rngFixe(4), now: 0 }), {});
 }
 
 // ── Propositions : acceptée remplace, refusée ne change rien, la 2e fige ──

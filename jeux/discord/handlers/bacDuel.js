@@ -37,7 +37,6 @@ import {
   siegeDe,
 } from "../../services/bacDuel.js";
 import {
-  MANCHES,
   NB_MANCHES,
   NIVEAUX,
   PROPOSITIONS_MAX,
@@ -47,6 +46,7 @@ import {
   contester,
   formatPoints,
   jouerKevina,
+  manchesDe,
   mancheCourante,
   mancheOuverte,
   mancheSuivante,
@@ -62,6 +62,11 @@ import {
 
 const BAC_COLOR = 0x2e86c1;
 const TITRE = "🔤 Petit Bac";
+// Titre d'une partie : la difficulté difficile est rappelée
+const titreDe = (d) => (d?.difficulte === "difficile" ? `${TITRE} difficile` : TITRE);
+// Option `difficulte` de `/bac` : "normal" par défaut
+const difficulteDe = (body) =>
+  body.data?.options?.find((o) => o.name === "difficulte")?.value === "difficile" ? "difficile" : "normal";
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // Illustration du message public de fin de partie (bacImage.js)
 const URL_ILLUSTRATION = `${TRUST_ROYALE_URL}/api/bac/illustration`;
@@ -330,7 +335,7 @@ function vueFin(d, { moi, A, texte = null, sfx = "" }) {
   return {
     embeds: [
       {
-        title: `${TITRE} · ${score(d, moi, A)}`,
+        title: `${titreDe(d)} · ${score(d, moi, A)}`,
         description: [
           ...(texte ? [texte, ""] : []),
           ...derniere,
@@ -378,7 +383,7 @@ function buildVue(
   if (d.termine) return vueFin(d, { moi, A, texte, sfx });
   const m = mancheCourante(d);
   const n = d.manches.length;
-  const titre = `${TITRE} · ${score(d, moi, A)}`;
+  const titre = `${titreDe(d)} · ${score(d, moi, A)}`;
   if (confirmerAbandon) {
     return {
       embeds: [
@@ -550,7 +555,8 @@ function buildReglesEmbed(config) {
       "**Points** : 1 par bonne réponse, 0,5 chacun si vous avez trouvé le même mot.",
       "Majuscules, accents, pluriel et article (le, la, l') sont tolérés.",
       "",
-      "**Difficulté croissante** : manches 1 à 3 sur un thème facile, 4 à 6 sur un thème moyen, 7 et 8 sur un thème difficile ; la 3ᵉ, la 6ᵉ et la 8ᵉ manche tirent une lettre moins courante.",
+      "**Difficulté croissante** : manches 1 à 3 sur un thème facile, 4 à 6 sur un thème moyen, 7 et 8 sur un thème difficile, lettres courantes au début de chaque niveau.",
+      "**Mode difficile** : manches 1 et 2 sur un thème facile, 3 à 5 sur un thème moyen, 6 à 8 sur un thème difficile, lettres moins courantes dès la 2ᵉ manche et Kévina plus forte. Séries et records comptés à part.",
       "",
       ...Object.entries(NIVEAUX).map(
         ([n, l]) =>
@@ -628,7 +634,7 @@ function messageTable(d, nomDe, config) {
   return {
     embeds: [
       {
-        title: `${TITRE} · ${nomDe("joueur")} contre ${nomDe("bot")}`,
+        title: `${titreDe(d)} · ${nomDe("joueur")} contre ${nomDe("bot")}`,
         description: [
           `Manche **${d.manches.length}**/${NB_MANCHES} : **${intitule(m)}**`,
           `Score : **${nomDe("joueur")} ${fp(d.scores.joueur)}** – ${fp(d.scores.bot)} ${nomDe("bot")}`,
@@ -672,7 +678,7 @@ function messageFinal(d, nomDe, series) {
   return {
     embeds: [
       {
-        title: `${TITRE} · ${nomDe("joueur")} contre ${nomDe("bot")}`,
+        title: `${titreDe(d)} · ${nomDe("joueur")} contre ${nomDe("bot")}`,
         description: [
           resultat(d, nomDe),
           ...(faits.length ? ["", ...faits] : []),
@@ -708,12 +714,13 @@ const AUCUNE_PARTIE_SOLO = {
 
 const nomDeSolo = (pseudo) => (id) =>
   id === "bot" ? "Kévina" : (pseudo ?? "?");
-// Chance de Kévina de trouver un mot : selon le niveau du thème de la manche
-// en cours, moins sur les lettres moins courantes
+// Chance de Kévina de trouver un mot : selon la difficulté de la partie et
+// le niveau du thème de la manche en cours, moins sur les lettres moins
+// courantes
 function reglagesKevina(config, d) {
   const m = mancheCourante(d);
-  const rares = MANCHES[d.manches.length - 1]?.lettres === "rares";
-  const base = config.trouve_kevina[niveauDe(m.theme)] ?? 0.8;
+  const rares = manchesDe(d)[d.manches.length - 1]?.lettres === "rares";
+  const base = (config.trouve_kevina[d.difficulte] ?? config.trouve_kevina.normal)[niveauDe(m.theme)] ?? 0.8;
   return { trouve: Math.max(0, base - (rares ? config.malus_lettres_rares : 0)) };
 }
 
@@ -743,7 +750,7 @@ async function publierFinSolo(webhookUrl, channelId, d, pseudo, config) {
         perdant: d.gagnant === "bot" ? { nom: pseudo, avant: s.avant } : null,
         record: s.record,
         libelleSerie: () => "Série",
-        libelleRecord: "Record",
+        libelleRecord: d.difficulte === "difficile" ? "Record (difficile)" : "Record",
       })
     : [];
   const final = messageFinal(d, nomDe, series);
@@ -820,6 +827,7 @@ export async function handleBacCommand(webhookUrl, body) {
     const { discordId, username } = extractMember(body);
     const config = await loadDuelConfig();
     const { duel, ancien } = await nouveauDuel(discordId, {
+      difficulte: difficulteDe(body),
       preparer: (d) => jouerKevina(d, "bot", reglagesKevina(config, d)),
     });
     if (ancien?.salon && !ancien.termine)
@@ -975,7 +983,7 @@ function vuePvp(
     return {
       embeds: [
         {
-          title: `${TITRE} · 1v1`,
+          title: `${titreDe(partie)} · 1v1`,
           description: [
             ...(texte ? [texte, ""] : []),
             "⏳ En attente d'un adversaire : le premier qui clique sur **Jouer** dans le salon relève le défi.",
@@ -1010,8 +1018,8 @@ function messagePublic(partie, config) {
     return {
       embeds: [
         {
-          title: `${TITRE} · 1v1`,
-          description: `${partie.noms?.[partie.lanceur] ?? "?"} lance un duel ! Qui relève le défi ? Clique sur **Jouer** pour l'affronter.`,
+          title: `${titreDe(partie)} · 1v1`,
+          description: `${partie.noms?.[partie.lanceur] ?? "?"} lance un duel${partie.difficulte === "difficile" ? " en mode difficile" : ""} ! Qui relève le défi ? Clique sur **Jouer** pour l'affronter.`,
           color: BAC_COLOR,
         },
       ],
@@ -1036,7 +1044,7 @@ function messageFinalPvp(partie) {
           perdant: { nom: nomDe(adversaire(g)), avant: s[adversaire(g)].avant },
           record: s.record,
           libelleSerie: (n) => `Série ${deNom(n)}`,
-          libelleRecord: "Record 1v1",
+          libelleRecord: d.difficulte === "difficile" ? "Record 1v1 (difficile)" : "Record 1v1",
         })
       : [];
   return messageFinal(d, nomDe, series);
@@ -1158,6 +1166,7 @@ export async function handleBacPvpCommand(webhookUrl, body) {
       channelId: body.channel_id,
       lanceur: discordId,
       nom: username,
+      difficulte: difficulteDe(body),
     });
     if (r.dejaEnCours) {
       await patchOriginal(webhookUrl, {

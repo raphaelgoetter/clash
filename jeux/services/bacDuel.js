@@ -9,7 +9,8 @@
 // 1v1 : une seule partie à la fois (`bacduel:pvp`).
 // Chaque écriture relance l'expiration : sans action pendant
 // `INACTIVITE_SECONDES`, la partie disparaît. Seules les séries de
-// victoires (et leurs records) sont conservées, une par mode.
+// victoires (et leurs records) sont conservées, une par mode et par
+// difficulté.
 //
 // ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
 // Petit Bac), source de vérité.
@@ -91,13 +92,14 @@ async function withLock(discordId, fn) {
 // Nouvelle partie contre Kévina (remplace une éventuelle partie en cours).
 // `preparer(duel)` : avant l'enregistrement (réponse de Kévina). `ancien` :
 // partie remplacée (ou null), pour retirer son plateau public du salon.
-export async function nouveauDuel(discordId, { preparer = null } = {}) {
+// `difficulte` : "normal" ou "difficile".
+export async function nouveauDuel(discordId, { preparer = null, difficulte = "normal" } = {}) {
   return withLock(discordId, async () => {
     const ancien = await readDuel(discordId);
-    const s = await lireSerie("bot", discordId);
+    const s = await lireSerie("bot", discordId, difficulte);
     // Partie précédente abandonnée ou remplacée : comptée comme une défaite
-    await ecrireSerie("bot", discordId, { serie: s.enCours ? 0 : s.serie, enCours: true });
-    const duel = creerDuel({ now: Date.now() });
+    await ecrireSerie("bot", discordId, difficulte, { serie: s.enCours ? 0 : s.serie, enCours: true });
+    const duel = creerDuel({ now: Date.now(), difficulte });
     preparer?.(duel);
     await writeDuel(discordId, duel);
     return { duel, ancien };
@@ -115,18 +117,19 @@ export async function agirDuel(discordId, fn, { nom = null, now = new Date() } =
     await chargerAjouts();
     const finiAvant = duel.termine;
     const resultat = (await fn(duel)) || {};
-    if (!finiAvant && duel.termine) duel.series = await finSerieSolo(discordId, nom, duel.gagnant, now);
+    if (!finiAvant && duel.termine) duel.series = await finSerieSolo(discordId, nom, duel, now);
     await writeDuel(discordId, duel);
     return { duel, resultat };
   });
 }
 
 // ── Séries de victoires ───────────────────────────────────────────────────
-// Une série par joueur et par mode (contre Kévina, 1v1) : +1 par victoire,
+// Une série par joueur, par mode (contre Kévina, 1v1) et par difficulté
+// (normal : clés historiques ; difficile : suffixe `:difficile`) : +1 par victoire,
 // remise à 0 par une défaite, intacte sur un match nul. Contre Kévina, une
 // partie abandonnée ou remplacée compte comme une défaite (`enCours` encore
-// vrai au lancement suivant). Record de chaque mode : plus longue série,
-// JAMAIS effacé.
+// vrai au lancement suivant). Record de chaque mode et difficulté : plus
+// longue série, JAMAIS effacé.
 
 const CLE_SERIES = { bot: "bacduel:series:bot", pvp: "bacduel:series:pvp" };
 const CLE_RECORDS = "bacduel:records";
@@ -145,52 +148,58 @@ export function isNewRecord(actuel, serie) {
 
 const issueDe = (gagnant, siege) => (gagnant === "nul" ? "nul" : gagnant === siege ? "victoire" : "defaite");
 
-async function lireSerie(mode, discordId) {
-  return fromJson(await getRedis().hget(CLE_SERIES[mode], discordId)) ?? { serie: 0 };
+// Suffixe de difficulté des clés (rien en normal : séries d'avant les modes)
+const sfxDifficulte = (difficulte) => (difficulte === "difficile" ? ":difficile" : "");
+
+async function lireSerie(mode, discordId, difficulte) {
+  return fromJson(await getRedis().hget(CLE_SERIES[mode] + sfxDifficulte(difficulte), discordId)) ?? { serie: 0 };
 }
 
-async function ecrireSerie(mode, discordId, serie) {
-  await getRedis().hset(CLE_SERIES[mode], { [discordId]: JSON.stringify(serie) });
+async function ecrireSerie(mode, discordId, difficulte, serie) {
+  await getRedis().hset(CLE_SERIES[mode] + sfxDifficulte(difficulte), { [discordId]: JSON.stringify(serie) });
 }
 
-export async function lireRecord(mode) {
-  return fromJson(await getRedis().hget(CLE_RECORDS, mode));
+export async function lireRecord(mode, difficulte = "normal") {
+  return fromJson(await getRedis().hget(CLE_RECORDS, mode + sfxDifficulte(difficulte)));
 }
 
-// Renvoie le record du mode à jour (nouveau ou inchangé), null sans record.
-async function majRecord(mode, discordId, username, serie, now) {
-  return withLock(`record:${mode}`, async () => {
-    const actuel = await lireRecord(mode);
+// Renvoie le record du mode et de la difficulté à jour (nouveau ou
+// inchangé), null sans record.
+async function majRecord(mode, difficulte, discordId, username, serie, now) {
+  const champ = mode + sfxDifficulte(difficulte);
+  return withLock(`record:${champ}`, async () => {
+    const actuel = await lireRecord(mode, difficulte);
     if (!isNewRecord(actuel, serie)) return actuel;
     const record = { discordId, username: username || null, serie, at: now.toISOString() };
-    await getRedis().hset(CLE_RECORDS, { [mode]: JSON.stringify(record) });
+    await getRedis().hset(CLE_RECORDS, { [champ]: JSON.stringify(record) });
     return record;
   });
 }
 
 // Fin d'une partie contre Kévina : { avant, serie, record }.
-async function finSerieSolo(discordId, nom, gagnant, now) {
-  const { serie: avant } = await lireSerie("bot", discordId);
-  const serie = serieApres(avant, issueDe(gagnant, "joueur"));
-  await ecrireSerie("bot", discordId, { serie, enCours: false });
-  return { avant, serie, record: await majRecord("bot", discordId, nom, serie, now) };
+async function finSerieSolo(discordId, nom, duel, now) {
+  const { serie: avant } = await lireSerie("bot", discordId, duel.difficulte);
+  const serie = serieApres(avant, issueDe(duel.gagnant, "joueur"));
+  await ecrireSerie("bot", discordId, duel.difficulte, { serie, enCours: false });
+  return { avant, serie, record: await majRecord("bot", duel.difficulte, discordId, nom, serie, now) };
 }
 
 // Fin d'une partie 1v1 : { joueur: { avant, serie }, bot: { … }, record }
 // (sièges du moteur).
 async function finSeriesPvp(partie, now) {
   const series = {};
+  const { difficulte } = partie.duel;
   for (const [siege, id] of Object.entries(partie.sieges)) {
-    const { serie: avant } = await lireSerie("pvp", id);
+    const { serie: avant } = await lireSerie("pvp", id, difficulte);
     const serie = serieApres(avant, issueDe(partie.duel.gagnant, siege));
-    await ecrireSerie("pvp", id, { serie });
+    await ecrireSerie("pvp", id, difficulte, { serie });
     series[siege] = { avant, serie };
   }
   const g = partie.duel.gagnant;
   series.record =
     g === "nul"
-      ? await lireRecord("pvp")
-      : await majRecord("pvp", partie.sieges[g], partie.noms[partie.sieges[g]], series[g].serie, now);
+      ? await lireRecord("pvp", difficulte)
+      : await majRecord("pvp", difficulte, partie.sieges[g], partie.noms[partie.sieges[g]], series[g].serie, now);
   return series;
 }
 
@@ -265,7 +274,7 @@ export async function retirerAjouts(champs) {
 
 // ── 1v1 (`/bac adversaire:1v1`) ────────────────────────────────────────────
 // Partie : { statut: "lobby" | "enCours" | "fini", channelId, messageId,
-// lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
+// lanceur, difficulte, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
 // moteur → discordId ; "joueur" commence), duel, webhooks: { discordId:
 // { url, at } } (vue éphémère de chaque joueur, rééditée après chaque coup
 // adverse), dernierCoupAt, raisonFin: "jeu" (8 manches jouées) | "abandon",
@@ -297,7 +306,7 @@ export const pvpAbandonnee = (partie, now = Date.now()) => partie.statut === "en
 // sans adversaire depuis 1 minute (ou relancé par son lanceur) et une
 // partie abandonnée sont remplacés : `ancienne` est renvoyée pour supprimer
 // son message public.
-export async function ouvrirPvp({ channelId, lanceur, nom }) {
+export async function ouvrirPvp({ channelId, lanceur, nom, difficulte = "normal" }) {
   return withLock(VERROU_PVP, async () => {
     const enCours = await readPvp();
     const lobbyLibre = enCours?.statut === "lobby" && (enCours.lanceur === lanceur || Date.now() - enCours.dernierCoupAt > 60_000);
@@ -308,6 +317,7 @@ export async function ouvrirPvp({ channelId, lanceur, nom }) {
       channelId,
       messageId: null,
       lanceur,
+      difficulte,
       noms: { [lanceur]: nom },
       sieges: null,
       duel: null,
@@ -358,7 +368,7 @@ export function rejoindrePvp(partie, discordId, nom, { rng = Math.random } = {})
   partie.noms[discordId] = nom;
   const [premier, second] = rng() < 0.5 ? [partie.lanceur, discordId] : [discordId, partie.lanceur];
   partie.sieges = { joueur: premier, bot: second };
-  partie.duel = creerDuel({ pvp: true, now: Date.now() });
+  partie.duel = creerDuel({ pvp: true, now: Date.now(), difficulte: partie.difficulte ?? "normal" });
   partie.statut = "enCours";
   partie.dernierCoupAt = Date.now();
 }

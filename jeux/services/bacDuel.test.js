@@ -37,6 +37,15 @@ if (Redis.isFake) {
   await nouveauDuel("1");
   const { duel } = await finir("joueur");
   assert.deepStrictEqual([duel.series.avant, duel.series.serie], [0, 1]);
+
+  // Difficile : série et record à part, la série normale reste intacte
+  await nouveauDuel("1", { difficulte: "difficile" });
+  const dif = (await finir("joueur")).duel;
+  assert.deepStrictEqual([dif.difficulte, dif.series.avant, dif.series.serie], ["difficile", 0, 1]);
+  assert.strictEqual((await lireRecord("bot", "difficile")).serie, 1);
+  assert.strictEqual((await lireRecord("bot")).serie, 2);
+  await nouveauDuel("1");
+  assert.strictEqual((await finir("joueur")).duel.series.serie, 2);
 }
 
 // ── Contestations : regroupées par thème et mot normalisé ──

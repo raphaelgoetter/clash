@@ -480,8 +480,10 @@ function messagePublic(partie) {
     embeds: [
       {
         title: titre,
+        // Solo : avancement du mot (lettres trouvées), sans la potence ; jamais en
+        // 1v1 (chacun cherche sans voir l'avancement de l'autre)
         description: solo
-          ? `Mot de **${d.cible.length} lettres**.\n\n⏳ En cours`
+          ? `Mot de **${d.cible.length} lettres** : \`${[...motif(d, siegesDe(d)[0])].join(" ")}\`\n\n⏳ En cours`
           : [
               `Mot de **${d.cible.length} lettres**, le même pour les deux.`,
               "",
@@ -705,7 +707,8 @@ async function executer(webhookUrl, discordId, action, solo) {
     const avant = finis(p);
     const res = action.type === "lettre" ? proposerLettre(p.duel, moi, action.lettre) : proposerMot(p.duel, moi, action.mot);
     if (res.erreur) return res;
-    return { coup: true, texte: retour(action, res), publicAussi: finis(p) !== avant };
+    // Solo : le message public suit l'avancement du mot à chaque coup
+    return { coup: true, texte: retour(action, res), publicAussi: estSolo(p.duel) || finis(p) !== avant };
   });
   if (!partie) {
     await patchOriginal(webhookUrl, aucunePartie(solo));

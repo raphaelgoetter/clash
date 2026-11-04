@@ -71,8 +71,11 @@ const W = "https://discord.test/webhook";
 const lancement = { member: { user: { id: ID, username: "Testeur" } }, channel_id: "salon" };
 const opts = { channelId: "salon", pseudo: "Testeur" };
 const resultats = {};
+// Une partie sur deux en mode difficile
+const difficile = { data: { options: [{ name: "adversaire", value: "bot" }, { name: "difficulte", value: "difficile" }] } };
 for (let g = 0; g < 4; g++) {
-  await h.handleBacCommand(W, lancement);
+  await h.handleBacCommand(W, g % 2 ? { ...lancement, ...difficile } : lancement);
+  if ((await readDuel(ID)).difficulte !== (g % 2 ? "difficile" : "normal")) throw new Error("difficulté non appliquée");
   for (let k = 0; ; k++) {
     if (k > 150) throw new Error("partie bloquée");
     const d = await readDuel(ID);
@@ -119,8 +122,10 @@ if (!texte(vues.at(-1)).includes("Cette manche est passée")) throw new Error("m
 
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });
-await h.handleBacPvpCommand("https://discord.test/a", body("A", "Alice"));
+await h.handleBacPvpCommand("https://discord.test/a", { ...body("A", "Alice"), ...difficile });
 await h.handleBacOuvrir("https://discord.test/b", body("B", "Bob"));
+if ((await readPvp()).duel.difficulte !== "difficile") throw new Error("1v1 : difficulté non appliquée");
+if (!texte(vues.at(-1)).includes("Petit Bac difficile")) throw new Error("1v1 : titre sans la difficulté");
 await h.handleBacOuvrir("https://discord.test/c", body("C", "Chloé"));
 if (!texte(vues.at(-1)).includes("Ce duel oppose")) throw new Error("3e joueur non refusé");
 if (!boutons(salon.filter((m) => m.method === "PATCH").at(-1)).some((b) => b.custom_id === "bacduel_ouvrir")) throw new Error("bouton Ma vue absent du message public");
