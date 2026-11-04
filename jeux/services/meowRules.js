@@ -465,8 +465,20 @@ export function appeler(partie, discordId, coin, n, { now = horloge(partie) } = 
   partie.coins[coin].n += k;
   j.stock -= k;
   j.jourActif = jourDe(partie, now);
+  compterAction(partie, j.bande);
   noter(partie, { t: now, k: "appel", p: discordId, coin, n: k });
   return { ok: true, n: k };
+}
+
+// Actions cumulées par bande (appels, squats lancés, déplacements), pour le
+// récapitulatif final. Partie lancée avant le compteur : amorcé d'après le
+// journal (appels et squats, les déplacements n'y figurent pas).
+function compterAction(partie, b) {
+  if (!partie.actions) {
+    partie.actions = [0, 0, 0];
+    for (const e of partie.journal) if ((e.k === "appel" || e.k === "squat") && partie.joueurs[e.p]) partie.actions[partie.joueurs[e.p].bande]++;
+  }
+  partie.actions[b]++;
 }
 
 // Déplacer : 1 chat d'un coin de sa bande vers un coin voisin de sa bande
@@ -501,6 +513,7 @@ export function deplacer(partie, discordId, s, t, { config, now = horloge(partie
   partie.coins[t].n += 1;
   j.deplacements = (j.deplacements ?? 0) + 1;
   j.jourActif = jourDe(partie, now);
+  compterAction(partie, j.bande);
   // Déplacements du jour (non journalisés), pour `npm run meow:status`
   j.deplacementsJour = { jour: j.jourActif, n: (j.deplacementsJour?.jour === j.jourActif ? j.deplacementsJour.n : 0) + 1 };
   return { ok: true };
@@ -542,6 +555,7 @@ export function lancerSquat(partie, discordId, s, t, { config, now = horloge(par
   partie.coins[s].n = 1;
   j.squats = (j.squats ?? 0) + 1;
   j.jourActif = jourDe(partie, now);
+  compterAction(partie, j.bande);
   return { ok: true, ...jouerManche(partie, discordId, { now, rng }) };
 }
 
@@ -737,6 +751,14 @@ export function classementCaid(partie, config) {
     .filter(([, j]) => j.bande != null)
     .map(([discordId, j]) => ({ discordId, username: j.username, bande: j.bande, score: scoreCaid(j, config), coinsPris: j.coinsPris, chatsDeloges: j.chatsDeloges }))
     .sort((x, y) => y.score - x.score || y.coinsPris - x.coinsPris || x.username.localeCompare(y.username));
+}
+
+// Activité : actions cumulées par bande, de la plus active à la moins
+// active, avec l'écart en % par rapport à la première.
+export function activiteBandes(partie) {
+  const actions = partie.actions ?? [0, 0, 0];
+  const tri = [0, 1, 2].map((b) => ({ b, actions: actions[b] })).sort((x, y) => y.actions - x.actions);
+  return tri.map((r) => ({ ...r, ecart: tri[0].actions ? Math.round((1 - r.actions / tri[0].actions) * 100) : 0 }));
 }
 
 // ── Compte-rendu final ──────────────────────────────────────────────

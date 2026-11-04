@@ -38,6 +38,7 @@ import {
   PIECES,
   PIECE_DE,
   compteRendu,
+  activiteBandes,
   COINS,
   ERRANTS,
   nomCoin,
@@ -294,7 +295,7 @@ function formatMancheLine(record, isCurrent) {
   return `Manche ${record.manche} : victoire des **${record.vainqueur}** (${plural(record.points, "pt")}, ${plural(record.nbJoueurs, "joueur")})${isCurrent ? " *(cette manche)*" : ""}`;
 }
 
-function buildFinEmbed(bandes, caids, manches, currentManche, resume = []) {
+function buildFinEmbed(bandes, caids, manches, currentManche, resume = [], activite = []) {
   const [premier, second] = bandes;
   const titre =
     premier.points === second.points &&
@@ -313,6 +314,16 @@ function buildFinEmbed(bandes, caids, manches, currentManche, resume = []) {
       ),
       "",
       ...(resume.length ? ["**📰 La partie en bref**", resume.join(" "), ""] : []),
+      ...(activite.length && activite[0].actions
+        ? [
+            "**🐾 Actions cumulées par bande**",
+            ...activite.map(
+              (r, i) =>
+                `${i + 1}. **${nomBande(r.b)}** : ${i === 0 ? plural(r.actions, "action") + " au total" : r.actions}${i > 0 && r.ecart > 0 ? ` (${r.ecart} % de moins)` : ""}`,
+            ),
+            "",
+          ]
+        : []),
       "**🏅 Caïd des coussins**",
       ...caids
         .slice(0, 3)
@@ -645,7 +656,7 @@ async function terminerPartie(state, partie, { dryRun = false } = {}) {
     });
   }
   const manches = await listManches({ limit: 10 });
-  const embed = buildFinEmbed(bandes, caids, manches, currentManche, compteRendu(partie));
+  const embed = buildFinEmbed(bandes, caids, manches, currentManche, compteRendu(partie), activiteBandes(partie));
   const components = [{ type: 1, components: [reglesButton()] }];
   if (dryRun) return { dryRun: true, final: true, embed };
   const result = await publishAndWriteState(state.channelId, state, {
