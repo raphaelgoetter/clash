@@ -1000,7 +1000,7 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 | `npm run meow:test` | Salon de test : 1er lancement = inscriptions, 2e = Jour 1 immédiat (clôture forcée) avec des **PNJ** pour atteindre l'effectif, qui jouent seuls à chaque distribution (`jouerPnj()`, `partie.pnjActifs` : chats sur le coin le plus menacé, sinon le plus garni, squats tant qu'une cible offre ≥ 60 %). Ensuite un jour par lancement : la partie de test suit sa propre horloge (`horloge()` = heure réelle + `partie.decalage`), avancée au lendemain 8h22 (`avancerHorloge()`), événements sautés rattrapés. |
 | `npm run meow:test:distribution` | Salon de test : avance seulement jusqu'à la prochaine distribution (8h05 ou 20h05). |
 | `npm run meow:test:dry` / `meow:public:dry` | Aperçus console |
-| `npm run meow:status` | Résumé organisateur sans Discord : points des bandes et, par bande, chats en jeu (carte et squats en cours, réserves exclues) et actions du jour de chaque joueur (un √ par appel, squat ou déplacement) ; rattrape les événements en mémoire seulement |
+| `npm run meow:status` | Résumé organisateur sans Discord : points des bandes et, par bande, chats en jeu (carte et squats en cours, réserves exclues) et actions du jour, puis le podium du Caïd des coussins de chaque joueur (un √ par appel, squat ou déplacement) ; rattrape les événements en mémoire seulement |
 | `npm run meow:public` | Salon public (heure réelle) ; ne republie jamais deux fois le même jour sans `--force`. |
 | `npm run meow:reset` / `meow:reset:manches` | **Destructif** (le second efface aussi l'archive) |
 

@@ -2,15 +2,16 @@
 // meowStatus.js
 // Résumé organisateur de Meow sans ouvrir Discord : jour, points des bandes,
 // chats en jeu de chaque bande et actions du jour de chaque joueur (un √
-// par appel, squat ou déplacement). Les événements horaires en retard sont
-// rattrapés en mémoire seulement (rien n'est réécrit).
+// par appel, squat ou déplacement), puis le Caïd des coussins (secret pour
+// les joueurs). Les événements horaires en retard sont rattrapés en
+// mémoire seulement (rien n'est réécrit).
 //
 // Usage : node jeux/scripts/meowStatus.js
 
 import "../env.js";
 
 import { loadMeowConfig, readState, readPartie } from "../services/meow.js";
-import { BANDES, horloge, jourDe, rattraper, classementBandes, coinsDe, actionsDuJour, texteActions } from "../services/meowRules.js";
+import { BANDES, horloge, jourDe, rattraper, classementBandes, classementCaid, coinsDe, actionsDuJour, texteActions } from "../services/meowRules.js";
 
 (async () => {
   const state = await readState();
@@ -39,4 +40,9 @@ import { BANDES, horloge, jourDe, rattraper, classementBandes, coinsDe, actionsD
     console.log(`\n${bd.nom} (${surCarte + enCombat} chats) :`);
     for (const a of actionsDuJour(partie, b, jour)) console.log(`- ${a.username} : ${texteActions(a)}`);
   });
+
+  // Podium du classement individuel (comme le message de fin), secret pour
+  // les joueurs jusqu'à la fin
+  console.log("\nCaïd des coussins (🚩 territoires pris · 💨 chats délogés) :");
+  classementCaid(partie, config).slice(0, 3).forEach((r, i) => console.log(`${i + 1}. ${r.username} ${BANDES[r.bande].emoji} : ${r.score} pt(s) (🚩 ${r.coinsPris ?? 0} · 💨 ${r.chatsDeloges ?? 0})`));
 })();
