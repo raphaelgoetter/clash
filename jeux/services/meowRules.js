@@ -657,8 +657,10 @@ export function jouerPnj(partie, id, { config, now, rng = Math.random }) {
 
 const MESSAGES_GARDES = 30;
 
-export function messagesBande(partie, b) {
-  return partie.messages?.[b] ?? [];
+// Messages du jour de jeu seulement : ceux de la veille encombrent la vue
+export function messagesBande(partie, b, { now = horloge(partie) } = {}) {
+  const jour = jourDe(partie, now);
+  return (partie.messages?.[b] ?? []).filter((m) => jourDe(partie, m.t) === jour);
 }
 
 export function messagesRestants(partie, discordId, { config, now = horloge(partie) }) {
@@ -668,10 +670,10 @@ export function messagesRestants(partie, discordId, { config, now = horloge(part
 }
 
 // Messages de la bande arrivés depuis la dernière lecture du joueur
-export function nouveauxMessages(partie, discordId) {
+export function nouveauxMessages(partie, discordId, { now = horloge(partie) } = {}) {
   const j = partie.joueurs[discordId];
   if (j?.bande == null) return 0;
-  return messagesBande(partie, j.bande).filter((m) => m.p !== discordId && m.t > (j.vuMessages ?? 0)).length;
+  return messagesBande(partie, j.bande, { now }).filter((m) => m.p !== discordId && m.t > (j.vuMessages ?? 0)).length;
 }
 
 export function marquerLus(partie, discordId, { now = horloge(partie) } = {}) {

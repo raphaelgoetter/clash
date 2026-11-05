@@ -372,18 +372,21 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   const noir = joueurDe(partie, 1);
   assert.strictEqual(posterMessage(partie, roux[0], "   ", { config: CONFIG, now: LANCEMENT }).erreur, "messageVide");
   assert.ok(posterMessage(partie, roux[0], "On  prend\nle Canapé ?", { config: CONFIG, now: LANCEMENT }).ok);
-  assert.deepStrictEqual(messagesBande(partie, 0).map((m) => m.txt), ["On prend le Canapé ?"]);
-  assert.strictEqual(messagesBande(partie, 1).length, 0, "invisible pour les autres bandes");
-  assert.strictEqual(nouveauxMessages(partie, roux[1]), 1);
-  assert.strictEqual(nouveauxMessages(partie, roux[0]), 0, "pas ses propres messages");
-  assert.strictEqual(nouveauxMessages(partie, noir), 0);
+  assert.deepStrictEqual(messagesBande(partie, 0, { now: LANCEMENT }).map((m) => m.txt), ["On prend le Canapé ?"]);
+  assert.strictEqual(messagesBande(partie, 1, { now: LANCEMENT }).length, 0, "invisible pour les autres bandes");
+  assert.strictEqual(nouveauxMessages(partie, roux[1], { now: LANCEMENT }), 1);
+  assert.strictEqual(nouveauxMessages(partie, roux[0], { now: LANCEMENT }), 0, "pas ses propres messages");
+  assert.strictEqual(nouveauxMessages(partie, noir, { now: LANCEMENT }), 0);
   marquerLus(partie, roux[1], { now: LANCEMENT + 1 });
-  assert.strictEqual(nouveauxMessages(partie, roux[1]), 0);
+  assert.strictEqual(nouveauxMessages(partie, roux[1], { now: LANCEMENT }), 0);
   assert.strictEqual(posterMessage(partie, roux[0], "x".repeat(500), { config: CONFIG, now: LANCEMENT }).ok, true);
-  assert.strictEqual(messagesBande(partie, 0).at(-1).txt.length, CONFIG.message_max);
+  assert.strictEqual(messagesBande(partie, 0, { now: LANCEMENT }).at(-1).txt.length, CONFIG.message_max);
   for (let i = 2; i < CONFIG.messages_par_jour; i++) posterMessage(partie, roux[0], `m${i}`, { config: CONFIG, now: LANCEMENT });
   assert.strictEqual(messagesRestants(partie, roux[0], { config: CONFIG, now: LANCEMENT }), 0);
   assert.strictEqual(posterMessage(partie, roux[0], "encore", { config: CONFIG, now: LANCEMENT }).erreur, "plafondMessages");
+  // Le lendemain, les messages de la veille ne sont plus affichés
+  assert.strictEqual(messagesBande(partie, 0, { now: LANCEMENT + 86_400_000 }).length, 0, "messages de la veille masqués");
+  assert.strictEqual(nouveauxMessages(partie, roux[2], { now: LANCEMENT + 86_400_000 }), 0);
   // Quota remis à zéro le lendemain
   const demain = parisInstant("2026-10-20", 10);
   assert.strictEqual(messagesRestants(partie, roux[0], { config: CONFIG, now: demain }), CONFIG.messages_par_jour);
