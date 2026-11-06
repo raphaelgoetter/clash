@@ -128,7 +128,7 @@ export async function routeAdmin(body, res) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds,
+            embeds: [embed],
             allowed_mentions: { parse: [] },
           }),
         });
@@ -409,7 +409,7 @@ export async function routeAdmin(body, res) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [embed],
+            embeds,
             allowed_mentions: { parse: [] },
           }),
         });
