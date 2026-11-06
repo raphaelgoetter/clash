@@ -10,7 +10,38 @@ import {
   setDiscordLinks,
 } from "../../../backend/services/discordLinks.js";
 import { handleBlacklistCommand } from "../_handlers/blacklist.js";
-import { runBackground, buildDiscordWebhookUrl } from "../_lib/commun.js";
+import {
+  runBackground,
+  buildDiscordWebhookUrl,
+  TRUST_ROYALE_URL,
+} from "../_lib/commun.js";
+
+// Tags (majuscules, avec #) des nouveaux membres du clan, d'après l'analyse
+// TrustRoyale. En cas d'échec ou de lenteur, renvoie un ensemble vide : le
+// 🆕 est un bonus, il ne doit pas bloquer /discord-check.
+async function fetchNewMemberTags(clanTag) {
+  try {
+    const resp = await fetch(
+      `${TRUST_ROYALE_URL}/api/clan/${encodeURIComponent(clanTag)}/analysis?fast=true`,
+      {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(20000),
+      },
+    );
+    if (!resp.ok) return new Set();
+    const data = await resp.json();
+    return new Set(
+      (Array.isArray(data.members) ? data.members : [])
+        .filter((m) => m.isNew)
+        .map((m) => {
+          const tag = String(m.tag || "").toUpperCase();
+          return tag.startsWith("#") ? tag : `#${tag}`;
+        }),
+    );
+  } catch {
+    return new Set();
+  }
+}
 
 export async function routeAdmin(body, res) {
   // Commande /help
@@ -97,7 +128,7 @@ export async function routeAdmin(body, res) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [embed],
+            embeds,
             allowed_mentions: { parse: [] },
           }),
         });
@@ -239,9 +270,10 @@ export async function routeAdmin(body, res) {
       try {
         const { fetchClanMembers } =
           await import("@clash/clash-royale/clashApi.js");
-        const [clanMembers, links] = await Promise.all([
+        const [clanMembers, links, newTags] = await Promise.all([
           fetchClanMembers(`#${resolved.tag}`),
           getDiscordLinks(),
+          fetchNewMemberTags(resolved.tag),
         ]);
 
         // Récupère tous les membres du serveur Discord (max 1 000)
@@ -272,7 +304,11 @@ export async function routeAdmin(body, res) {
           const normTag = m.tag.startsWith("#") ? m.tag : `#${m.tag}`;
           const discordId = links[normTag];
           if (!discordId) {
-            unlinked.push({ clash: m.name, tag: normTag });
+            unlinked.push({
+              clash: m.name,
+              tag: normTag,
+              isNew: newTags.has(normTag.toUpperCase()),
+            });
             continue;
           }
 
@@ -347,19 +383,27 @@ export async function routeAdmin(body, res) {
           lines.push(
             `❌ **Liés mais absents du serveur** (${absent.length}) : ${absent.map((e) => `${e.clash} ${e.tag}`).join(", ")}`,
           );
-        if (unlinked.length)
-          lines.push(
-            `❓ **Non liés** (${unlinked.length}) : ${unlinked.map((e) => e.clash).join(", ")}`,
-          );
 
-        const embed = {
-          title: `📋 Présence Discord — ${resolved.name}`,
-          color: 0x5865f2,
-          description: lines.join("\n\n") || "Aucun membre trouvé.",
-          footer: {
-            text: `${clanMembers.length} membres · ${present.length + absent.length} comptes Discord liés`,
+        const embeds = [
+          {
+            title: `📋 Présence Discord — ${resolved.name}`,
+            color: 0x5865f2,
+            description: lines.join("\n\n") || "Aucun membre lié.",
+            footer: {
+              text: `${clanMembers.length} membres · ${present.length + absent.length} comptes Discord liés`,
+            },
           },
-        };
+        ];
+        // Second embed : membres sans compte Discord lié, avec leur tag
+        if (unlinked.length) {
+          embeds.push({
+            title: `❓ Non liés (${unlinked.length})`,
+            color: 0x99aab5,
+            description: unlinked
+              .map((e) => `• ${e.clash}${e.isNew ? " 🆕" : ""} ${e.tag}`)
+              .join("\n"),
+          });
+        }
 
         await fetch(webhookUrl, {
           method: "POST",
