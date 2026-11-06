@@ -118,6 +118,7 @@ import {
   handlePenduMot,
   handlePenduRegles,
   handlePenduAbandon,
+  handlePenduGeneratorCommand,
 } from "../handlers/penduDuel.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
@@ -553,6 +554,21 @@ export async function routeDuels(body, res) {
       }
       if (solo) await handlePenduSoloCommand(webhookUrl, body);
       else await handlePenduPvpCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── /pendu-generator mot resultat [erreurs] [lettres] : image finale
+  // d'une partie fictive, postée par Kévina. Réservé au rôle MINI-JEUX.
+  if (body.type === 2 && body.data?.name === "pendu-generator") {
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      if (!(await penduMemberHasMiniJeuxRole(body))) {
+        await handlePenduRoleRejected(webhookUrl);
+        return;
+      }
+      await handlePenduGeneratorCommand(webhookUrl, body);
     });
     return;
   }

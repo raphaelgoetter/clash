@@ -13,7 +13,7 @@ import {
   proposerLettre,
   proposerMot,
 } from "./penduRules.js";
-import { decodeFinal, decodeVue, encodeFinal, encodeVue } from "./penduImage.js";
+import { buildFinalSvg, decodeFinal, decodeVue, encodeFinal, encodeVue, finalGenerateur, tailleTuiles } from "./penduImage.js";
 
 const now = 1_000_000;
 const duel = () => creerDuel({ mot: "éléphant", now });
@@ -129,6 +129,28 @@ const duel = () => creerDuel({ mot: "éléphant", now });
   assert.deepStrictEqual(decodeFinal(encodeFinal(final)), { ...final, joueurs: [{ ...final.joueurs[0], nom: "Alice" }, final.joueurs[1]] });
   const solo = { mot: "jazz", joueurs: [final.joueurs[1]], gagnant: -1 };
   assert.deepStrictEqual(decodeFinal(encodeFinal(solo)), solo);
+}
+
+// ── Générateur : mot choisi, gagné ou perdu ──
+{
+  const gagne = finalGenerateur({ mot: "Plâtre", resultat: "gagne", erreurs: 3, nom: "Alice" });
+  assert.deepStrictEqual(gagne, { mot: "plâtre", joueurs: [{ nom: "Alice", erreurs: 3, decouvertes: 6, fin: "trouve" }], gagnant: -1 });
+  const perdu = finalGenerateur({ mot: "photographe", resultat: "temps", lettres: 4, nom: "Bob" });
+  assert.deepStrictEqual(perdu.joueurs[0], { nom: "Bob", erreurs: ERREURS_MAX, decouvertes: 4, fin: "temps" });
+  assert.strictEqual(finalGenerateur({ mot: "jazz", resultat: "perdu", nom: "C" }, () => 0.99).joueurs[0].decouvertes, 3);
+  assert.strictEqual(finalGenerateur({ mot: "jazz", resultat: "gagne", erreurs: 9, nom: "C" }).joueurs[0].erreurs, ERREURS_MAX - 1);
+  assert.ok(finalGenerateur({ mot: "pomme de terre", resultat: "gagne", nom: "C" }).erreur);
+  assert.ok(finalGenerateur({ mot: "anticonstitutionnellement", resultat: "gagne", nom: "C" }).erreur);
+  // Mot long : accepté, tuiles réduites dans la largeur de l'image (700 - 2 × 24)
+  const long = finalGenerateur({ mot: "anticonstitutionnel", resultat: "gagne", nom: "C" });
+  assert.deepStrictEqual(decodeFinal(encodeFinal(long)).mot, "anticonstitutionnel");
+  assert.ok(buildFinalSvg(long).includes(`font-size="${Math.round(tailleTuiles(19).taille * 0.62)}"`));
+  for (let n = 1; n <= 20; n++) {
+    const { taille, ecart } = tailleTuiles(n);
+    assert.ok(n * taille + (n - 1) * ecart <= 652, `${n} lettres`);
+  }
+  assert.deepStrictEqual(tailleTuiles(8), { taille: 54, ecart: 8 });
+  assert.ok(decodeFinal(encodeFinal(gagne)));
 }
 
 console.log("penduRules.test.js OK");

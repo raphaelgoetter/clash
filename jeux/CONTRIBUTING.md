@@ -22,7 +22,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 | --- | --- |
 | `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac`, `/pendu` et leurs boutons de duel (plus ceux de Six, archivé) |
+| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Six, archivé) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -1529,6 +1529,12 @@ Jeu rapide et léger : un thème, une lettre, une minute pour trouver un mot. `/
 - **Vue éphémère** : « 🪢 Pendu · contre X », « Mot de N lettres · E erreurs sur 6 », résultat de la dernière proposition, mots refusés barrés, « ⏰ Prochaine lettre avant … » ; **image de la vue** (`/api/pendu/vue?d=`, `encodeVue()`, rendu sans état) : potence (bonhomme en 6 parties, parties restantes en fantôme, yeux en croix au pendu), lettres fausses barrées, mot avec les seules lettres trouvées. ⚠️ L'adresse de l'image ne contient **jamais le mot**, seulement le motif (« EL_PH_NT ») ; un joueur pendu ne voit le mot qu'à la fin de la partie.
 - **Boutons** : rangée 1 A E I O U, rangée 2 Y, ✏️ Proposer le mot, 📖, 🏳️ (lettres jouées grisées), rangée 3 menu des consonnes restantes (20 au plus). Partie finie de son côté : « ⏳ En attente de X… », sans bouton de jeu. Partie terminée : la vue ne garde que l'issue (« 🏆 Bravo ! La partie est terminée. », « 💀 Défaite… », « 🏳️ Tu abandonnes. »…), sans image ni bouton : mot, potences et séries sont dans le récapitulatif public.
 - **Message public pendant la partie** : « 🪢 Pendu · X en solo » ou « X contre Y », longueur du mot ; en solo, le motif (lettres trouvées, `_` ailleurs, sans la potence), mis à jour à chaque coup ; en 1v1, pour chaque joueur, seulement « en cours » ou « a terminé » ; boutons 🎮 Reprendre ma partie et 📖. **Récapitulatif** (nouveau message) : résultat, « Le mot était **…** », séries (solo : « 🔥 Série : N mots trouvés d'affilée », « Record solo » ; 1v1 : « Record 1v1 »), **image finale** (`/api/pendu/final?d=`, `encodeFinal()`) : les deux potences côte à côte (vainqueur marqué d'une étoile), une seule au centre en solo, « Trouvé ! » et erreurs ou « Pendu ! » / « Temps écoulé » et lettres trouvées, le mot en tuiles. Pas d'image finale après un abandon.
+
+#### Générateur d'image (`/pendu-generator`)
+
+- `/pendu-generator mot resultat:gagne|perdu|temps [erreurs] [lettres]`, réservé au rôle MINI-JEUX : poste dans le salon, par Kévina, l'**image finale solo** du Pendu (même rendu que le récapitulatif, `/api/pendu/final?d=`) d'une partie fictive, au nom du lanceur, sans texte ni bouton. Rien n'est écrit dans Redis, aucune série touchée.
+- `finalGenerateur()` (`penduImage.js`) : mot de lettres seules (accents admis, ni espace ni tiret), **20 lettres au plus** (`MOT_FINAL_MAX`, aussi limite de `decodeFinal()`) ; un mot trop long pour des tuiles de 50 px (12 lettres et plus) a des tuiles, un écart et une police réduits pour tenir dans la largeur de l'image (`tailleTuiles()`) ; gagné : « Trouvé ! » et `erreurs` (0 à 5) ; perdu : potence complète, « Pendu ! » (`perdu`) ou « Temps écoulé » (`temps`) et `lettres` trouvées (0 à longueur - 1). Option absente : valeur tirée au hasard.
+- Réponse différée éphémère : une erreur (mot invalide, rôle manquant) n'est vue que du lanceur ; supprimée une fois l'image postée.
 
 #### Outils (`jeux/outils/pendu/`, à lancer à la main)
 

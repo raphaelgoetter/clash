@@ -86,12 +86,34 @@ export function encodeFinal({ mot, joueurs, gagnant }) {
 
 export function decodeFinal(param) {
   const d = depuisUrl(param);
-  if (!d || typeof d.w !== "string" || d.w.length < 1 || d.w.length > 15 || !Array.isArray(d.j) || ![1, 2].includes(d.j.length)) return null;
+  if (!d || typeof d.w !== "string" || d.w.length < 1 || [...d.w].length > MOT_FINAL_MAX || !Array.isArray(d.j) || ![1, 2].includes(d.j.length)) return null;
   return {
     mot: d.w,
     joueurs: d.j.map((j) => ({ nom: String(j.n ?? "?"), erreurs: borner(j.e, ERREURS_MAX), decouvertes: borner(j.l, 15), fin: FINS_INV[j.s] ?? null })),
     gagnant: [0, 1].includes(d.g) ? d.g : -1,
   };
+}
+
+// ── Générateur (`/pendu-generator`) ─────────────────────────────────
+// Image finale solo d'une partie fictive : mot choisi, gagné ou perdu.
+// 20 lettres au plus (au-delà de 11, les tuiles rapetissent : tailleTuiles()).
+export const MOT_FINAL_MAX = 20;
+export const GENERATEUR_LETTRES_MAX = MOT_FINAL_MAX;
+
+// { erreur } si le mot est invalide, sinon les données de encodeFinal().
+// Non précisés : erreurs (gagné, 0 à 5) et lettres trouvées (perdu, 0 à
+// longueur - 1) tirées au hasard.
+export function finalGenerateur({ mot, resultat, erreurs = null, lettres = null, nom }, rand = Math.random) {
+  const m = String(mot ?? "").trim();
+  if (!/^\p{L}+$/u.test(m)) return { erreur: "Le mot ne doit contenir que des lettres (sans espace ni tiret)." };
+  const n = [...m].length;
+  if (n > GENERATEUR_LETTRES_MAX) return { erreur: `Le mot doit faire ${GENERATEUR_LETTRES_MAX} lettres au plus.` };
+  const hasard = (max) => Math.floor(rand() * (max + 1));
+  const gagne = resultat === "gagne";
+  const joueur = gagne
+    ? { nom, erreurs: erreurs === null ? hasard(ERREURS_MAX - 1) : borner(erreurs, ERREURS_MAX - 1), decouvertes: n, fin: "trouve" }
+    : { nom, erreurs: ERREURS_MAX, decouvertes: lettres === null ? hasard(n - 1) : borner(lettres, n - 1), fin: resultat === "temps" ? "temps" : "pendu" };
+  return { mot: m.toLowerCase(), joueurs: [joueur], gagnant: -1 };
 }
 
 // ── Dessin ──────────────────────────────────────────────────────────
@@ -182,6 +204,20 @@ export function buildVueSvg({ motif, fausses, erreurs, fin }) {
   return cadre(LARGEUR, hauteur, contenu);
 }
 
+// Tuiles du mot final : 54 px (50 au-delà de 10 lettres), réduites (écart
+// compris, police proportionnelle) pour que le mot tienne dans la largeur
+// utile de l'image (marges PADDING).
+export function tailleTuiles(n) {
+  const utile = LARGEUR - 2 * PADDING;
+  let taille = n > 10 ? 50 : 54;
+  let ecart = 8;
+  if (n * taille + (n - 1) * ecart > utile) {
+    ecart = n > 16 ? 4 : 6;
+    taille = Math.floor((utile - (n - 1) * ecart) / n);
+  }
+  return { taille, ecart };
+}
+
 // Deux potences côte à côte (1v1), une seule au centre (solo)
 export function buildFinalSvg({ mot, joueurs, gagnant }) {
   const hauteur = 470;
@@ -200,8 +236,10 @@ export function buildFinalSvg({ mot, joueurs, gagnant }) {
   });
   const separateur = joueurs.length > 1 ? `<line x1="${moitie}" y1="${PADDING}" x2="${moitie}" y2="${PADDING + 330}" stroke="${BORD}" stroke-width="2"/>` : "";
   const lettres = [...mot.toUpperCase()];
-  const taille = lettres.length > 10 ? 50 : 54;
-  return cadre(LARGEUR, hauteur, [...panneaux, separateur, tuilesSvg(lettres, LARGEUR / 2, 380, { taille })].join("\n"));
+  const { taille, ecart } = tailleTuiles(lettres.length);
+  // Tuiles plus petites : centrées sur la même ligne que les grandes
+  const y = 380 + (54 - taille) / 2;
+  return cadre(LARGEUR, hauteur, [...panneaux, separateur, tuilesSvg(lettres, LARGEUR / 2, y, { taille, ecart })].join("\n"));
 }
 
 async function rasterize(svg) {

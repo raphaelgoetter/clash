@@ -33,6 +33,7 @@ const JEUX_COMMANDS = new Set([
   "mascarade",
   "bac",
   "pendu",
+  "pendu-generator",
   "blackjack",
   "gobelet",
 ]);
@@ -635,6 +636,46 @@ const commands = [
           { name: "Solo", value: "solo" },
           { name: "1v1", value: "1v1" },
         ],
+      },
+    ],
+  },
+  {
+    name: "pendu-generator",
+    description: "Pendu : génère l'image de fin d'une partie avec le mot de ton choix — réservé au rôle MINI-JEUX.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "mot",
+        description: "Mot à afficher (lettres seules, 20 au plus)",
+        required: true,
+        max_length: 20,
+      },
+      {
+        type: 3, // STRING
+        name: "resultat",
+        description: "Gagné ou perdu ?",
+        required: true,
+        choices: [
+          { name: "Gagné", value: "gagne" },
+          { name: "Perdu (pendu)", value: "perdu" },
+          { name: "Perdu (temps écoulé)", value: "temps" },
+        ],
+      },
+      {
+        type: 4, // INTEGER
+        name: "erreurs",
+        description: "Si gagné : nombre d'erreurs (0 à 5, au hasard par défaut)",
+        required: false,
+        min_value: 0,
+        max_value: 5,
+      },
+      {
+        type: 4, // INTEGER
+        name: "lettres",
+        description: "Si perdu : nombre de lettres trouvées (au hasard par défaut)",
+        required: false,
+        min_value: 0,
+        max_value: 19,
       },
     ],
   },

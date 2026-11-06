@@ -50,7 +50,7 @@ import {
   proposerMot,
   siegesDe,
 } from "../../services/penduRules.js";
-import { encodeFinal, encodeVue } from "../../services/penduImage.js";
+import { encodeFinal, encodeVue, finalGenerateur } from "../../services/penduImage.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -799,4 +799,29 @@ export async function handlePenduRegles(webhookUrl) {
   } catch (err) {
     console.error("[Pendu] Échec Règles:", err.message);
   }
+}
+
+// ── /pendu-generator : image finale d'une partie fictive ─────────────
+// Mot choisi, gagné ou perdu : même image que le récapitulatif solo,
+// postée par Kévina dans le salon. Réponse différée éphémère (erreurs
+// visibles du seul lanceur), supprimée une fois l'image postée.
+export async function handlePenduGeneratorCommand(webhookUrl, body) {
+  const opt = (nom) => body.data?.options?.find((o) => o.name === nom)?.value ?? null;
+  const final = finalGenerateur({
+    mot: opt("mot"),
+    resultat: opt("resultat"),
+    erreurs: opt("erreurs"),
+    lettres: opt("lettres"),
+    nom: extractMember(body).username,
+  });
+  if (final.erreur) {
+    await patchOriginal(webhookUrl, { content: `⚠️ ${final.erreur}` });
+    return;
+  }
+  const image = `${TRUST_ROYALE_URL}/api/pendu/final?d=${encodeFinal(final)}`;
+  const ok = await messageSalon("POST", body.channel_id, null, {
+    components: [{ type: 17, accent_color: PENDU_COLOR, components: [{ type: 12, items: [{ media: { url: image } }] }] }],
+  });
+  if (ok) await supprimerOriginal(webhookUrl);
+  else await patchOriginal(webhookUrl, { content: "⚠️ Impossible de poster l'image dans ce salon." });
 }
