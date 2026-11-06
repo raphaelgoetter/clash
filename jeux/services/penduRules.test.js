@@ -131,27 +131,28 @@ const duel = () => creerDuel({ mot: "éléphant", now });
   assert.deepStrictEqual(decodeFinal(encodeFinal(solo)), solo);
 }
 
-// ── Générateur : mot choisi, gagné ou perdu ──
+// ── Générateur : mot choisi, gagné ou perdu, erreurs et lettres au hasard ──
 {
-  const gagne = finalGenerateur({ mot: "Plâtre", resultat: "gagne", erreurs: 3, nom: "Alice" });
+  const gagne = finalGenerateur({ mot: "Plâtre", resultat: "gagne", nom: "Alice" }, () => 0.5);
   assert.deepStrictEqual(gagne, { mot: "plâtre", joueurs: [{ nom: "Alice", erreurs: 3, decouvertes: 6, fin: "trouve" }], gagnant: -1 });
-  const perdu = finalGenerateur({ mot: "photographe", resultat: "temps", lettres: 4, nom: "Bob" });
-  assert.deepStrictEqual(perdu.joueurs[0], { nom: "Bob", erreurs: ERREURS_MAX, decouvertes: 4, fin: "temps" });
+  assert.strictEqual(finalGenerateur({ mot: "jazz", resultat: "gagne", nom: "C" }, () => 0.99).joueurs[0].erreurs, ERREURS_MAX - 1);
+  const perdu = finalGenerateur({ mot: "photographe", resultat: "temps", nom: "Bob" }, () => 0);
+  assert.deepStrictEqual(perdu.joueurs[0], { nom: "Bob", erreurs: ERREURS_MAX, decouvertes: 0, fin: "temps" });
   assert.strictEqual(finalGenerateur({ mot: "jazz", resultat: "perdu", nom: "C" }, () => 0.99).joueurs[0].decouvertes, 3);
-  // Jusqu'à 90 erreurs (gagné) ou lettres trouvées (perdu), même irréaliste
-  const irreel = finalGenerateur({ mot: "jazz", resultat: "gagne", erreurs: 90, nom: "C" });
-  assert.strictEqual(decodeFinal(encodeFinal(irreel)).joueurs[0].erreurs, 90);
-  // Yeux en croix (4 traits) seulement si pendu, pas si trouvé avec 6 erreurs ou plus
+  // Yeux en croix (4 traits) seulement si pendu
   const traits = (f) => buildFinalSvg(f).split("<line").length;
-  const pendu6 = finalGenerateur({ mot: "jazz", resultat: "perdu", lettres: 1, nom: "C" });
-  assert.strictEqual(traits(pendu6) - traits(irreel), 4);
-  assert.strictEqual(finalGenerateur({ mot: "jazz", resultat: "perdu", lettres: 95, nom: "C" }).joueurs[0].decouvertes, 90);
-  // Espaces et traits d'union admis (espaces multiples réduites), lettres seules comptées
+  assert.strictEqual(traits(finalGenerateur({ mot: "jazz", resultat: "perdu", nom: "C" })) - traits(finalGenerateur({ mot: "jazz", resultat: "gagne", nom: "C" }, () => 0.99)), 4);
+  // Espaces (multiples réduites) et ponctuation admis, lettres seules comptées
   const compose = finalGenerateur({ mot: " Pomme  de terre ", resultat: "gagne", nom: "C" });
   assert.deepStrictEqual([compose.mot, compose.joueurs[0].decouvertes], ["pomme de terre", 12]);
-  assert.strictEqual(finalGenerateur({ mot: "arc-en-ciel", resultat: "gagne", nom: "C" }).mot, "arc-en-ciel");
   assert.strictEqual(decodeFinal(encodeFinal(compose)).mot, "pomme de terre");
-  for (const faux of ["pomme--terre", "-arc", "arc-", "a1b", "l'arbre"]) assert.ok(finalGenerateur({ mot: faux, resultat: "gagne", nom: "C" }).erreur, faux);
+  const salut = finalGenerateur({ mot: "Bon week-end !", resultat: "gagne", nom: "C" });
+  assert.deepStrictEqual([salut.mot, salut.joueurs[0].decouvertes], ["bon week-end !", 10]);
+  assert.strictEqual(finalGenerateur({ mot: "L’arbre ?", resultat: "gagne", nom: "C" }).mot, "l'arbre ?");
+  // Ponctuation sur une tuile, comme une lettre ; espace sans tuile
+  const tuiles = (f) => buildFinalSvg(f).split(`fill="#f4e4bc"`).length;
+  assert.strictEqual(tuiles(salut) - tuiles(finalGenerateur({ mot: "bonweekend", resultat: "gagne", nom: "C" })), 2);
+  for (const faux of ["a1b", "!!!", "a/b", "a#b"]) assert.ok(finalGenerateur({ mot: faux, resultat: "gagne", nom: "C" }).erreur, faux);
   assert.ok(finalGenerateur({ mot: "anticonstitutionnellement", resultat: "gagne", nom: "C" }).erreur);
   // Mot long : accepté, tuiles réduites dans la largeur de l'image (700 - 2 × 24)
   const long = finalGenerateur({ mot: "anticonstitutionnel", resultat: "gagne", nom: "C" });

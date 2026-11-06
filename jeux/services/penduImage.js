@@ -89,34 +89,37 @@ export function decodeFinal(param) {
   if (!d || typeof d.w !== "string" || d.w.length < 1 || [...d.w].length > MOT_FINAL_MAX || !Array.isArray(d.j) || ![1, 2].includes(d.j.length)) return null;
   return {
     mot: d.w,
-    joueurs: d.j.map((j) => ({ nom: String(j.n ?? "?"), erreurs: borner(j.e, GENERATEUR_NOMBRE_MAX), decouvertes: borner(j.l, GENERATEUR_NOMBRE_MAX), fin: FINS_INV[j.s] ?? null })),
+    joueurs: d.j.map((j) => ({ nom: String(j.n ?? "?"), erreurs: borner(j.e, ERREURS_MAX), decouvertes: borner(j.l, MOT_FINAL_MAX), fin: FINS_INV[j.s] ?? null })),
     gagnant: [0, 1].includes(d.g) ? d.g : -1,
   };
 }
 
 // ── Générateur (`/pendu-generator`) ─────────────────────────────────
 // Image finale solo d'une partie fictive : mot choisi, gagné ou perdu.
-// 20 caractères au plus, espaces et traits d'union compris (au-delà de 11,
+// 20 caractères au plus, espaces et ponctuation compris (au-delà de 11,
 // les tuiles rapetissent : tailleTuiles()).
 export const MOT_FINAL_MAX = 20;
 export const GENERATEUR_LETTRES_MAX = MOT_FINAL_MAX;
-// Erreurs (gagné) et lettres trouvées (perdu) : jusqu'à 90, même irréaliste
-export const GENERATEUR_NOMBRE_MAX = 90;
+
+// Ponctuation admise dans le mot (sur une tuile, comme une lettre)
+const PONCTUATION = "-'!?.,:;…";
 
 // { erreur } si le mot est invalide, sinon les données de encodeFinal().
-// Mot : lettres, séparées au besoin par une espace ou un trait d'union
-// (espaces multiples réduites). Non précisés : erreurs (gagné, 0 à 5) et
-// lettres trouvées (perdu, 0 à nombre de lettres - 1) tirées au hasard.
-export function finalGenerateur({ mot, resultat, erreurs = null, lettres = null, nom }, rand = Math.random) {
-  const m = String(mot ?? "").trim().replace(/\s+/g, " ");
-  if (!/^\p{L}+(?:[ -]\p{L}+)*$/u.test(m)) return { erreur: "Le mot ne doit contenir que des lettres, des espaces et des traits d'union." };
+// Mot : lettres, espaces et ponctuation (PONCTUATION), au moins une lettre
+// (espaces multiples réduites, apostrophe typographique normalisée).
+// Tirés au hasard : erreurs (gagné, 0 à 5) et lettres trouvées (perdu, 0 à
+// nombre de lettres - 1).
+export function finalGenerateur({ mot, resultat, nom }, rand = Math.random) {
+  const m = String(mot ?? "").trim().replace(/\s+/g, " ").replace(/[’‘]/g, "'");
+  if (![...m].every((c) => /\p{L}/u.test(c) || c === " " || PONCTUATION.includes(c)) || !/\p{L}/u.test(m))
+    return { erreur: `Le mot ne doit contenir que des lettres, des espaces et la ponctuation ${[...PONCTUATION].join(" ")}` };
   if ([...m].length > GENERATEUR_LETTRES_MAX) return { erreur: `Le mot doit faire ${GENERATEUR_LETTRES_MAX} caractères au plus.` };
-  const n = [...m].filter((c) => c !== " " && c !== "-").length;
+  const n = [...m].filter((c) => /\p{L}/u.test(c)).length;
   const hasard = (max) => Math.floor(rand() * (max + 1));
   const gagne = resultat === "gagne";
   const joueur = gagne
-    ? { nom, erreurs: erreurs === null ? hasard(ERREURS_MAX - 1) : borner(erreurs, GENERATEUR_NOMBRE_MAX), decouvertes: n, fin: "trouve" }
-    : { nom, erreurs: ERREURS_MAX, decouvertes: lettres === null ? hasard(n - 1) : borner(lettres, GENERATEUR_NOMBRE_MAX), fin: resultat === "temps" ? "temps" : "pendu" };
+    ? { nom, erreurs: hasard(ERREURS_MAX - 1), decouvertes: n, fin: "trouve" }
+    : { nom, erreurs: ERREURS_MAX, decouvertes: hasard(n - 1), fin: resultat === "temps" ? "temps" : "pendu" };
   return { mot: m.toLowerCase(), joueurs: [joueur], gagnant: -1 };
 }
 
@@ -158,7 +161,8 @@ function potenceSvg(x, y, k, erreurs, { couleur = CRAIE, mort = erreurs >= ERREU
 }
 
 // Rangée de tuiles centrée sur `cx` : lettre trouvée sur tuile crème, case
-// vide soulignée sinon (espace : rien, trait d'union : trait seul) ; `manquees` (index) : lettres dévoilées à la fin,
+// vide soulignée sinon (espace : rien ; ponctuation : tuile comme une
+// lettre) ; `manquees` (index) : lettres dévoilées à la fin,
 // non trouvées, en gris.
 function tuilesSvg(lettres, cx, y, { taille = 52, ecart = 8, manquees = new Set() } = {}) {
   const total = lettres.length * taille + (lettres.length - 1) * ecart;
@@ -166,10 +170,8 @@ function tuilesSvg(lettres, cx, y, { taille = 52, ecart = 8, manquees = new Set(
   return lettres
     .map((c, i) => {
       const x = x0 + i * (taille + ecart);
-      // Espace : case laissée vide ; trait d'union : trait sans tuile
+      // Espace : case laissée vide
       if (c === " ") return "";
-      if (c === "-")
-        return `<line x1="${x + taille * 0.25}" y1="${y + taille / 2}" x2="${x + taille * 0.75}" y2="${y + taille / 2}" stroke="${TUILE}" stroke-width="${Math.max(3, taille * 0.1)}" stroke-linecap="round"/>`;
       if (c === "_")
         return `<rect x="${x}" y="${y}" width="${taille}" height="${taille}" rx="8" fill="${CASE_VIDE}"/>
   <line x1="${x + 10}" y1="${y + taille - 10}" x2="${x + taille - 10}" y2="${y + taille - 10}" stroke="${GRIS}" stroke-width="3" stroke-linecap="round"/>`;

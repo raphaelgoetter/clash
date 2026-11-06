@@ -646,7 +646,7 @@ const commands = [
       {
         type: 3, // STRING
         name: "mot",
-        description: "Mot à afficher (lettres, espaces et traits d'union, 20 caractères au plus)",
+        description: "Mot à afficher (lettres, espaces, ponctuation, 20 caractères au plus)",
         required: true,
         max_length: 20,
       },
@@ -660,22 +660,6 @@ const commands = [
           { name: "Perdu (pendu)", value: "perdu" },
           { name: "Perdu (temps écoulé)", value: "temps" },
         ],
-      },
-      {
-        type: 4, // INTEGER
-        name: "erreurs",
-        description: "Si gagné : nombre d'erreurs (0 à 90, au hasard de 0 à 5 par défaut)",
-        required: false,
-        min_value: 0,
-        max_value: 90,
-      },
-      {
-        type: 4, // INTEGER
-        name: "lettres",
-        description: "Si perdu : nombre de lettres trouvées (0 à 90, au hasard par défaut)",
-        required: false,
-        min_value: 0,
-        max_value: 90,
       },
     ],
   },

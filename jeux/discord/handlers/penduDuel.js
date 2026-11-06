@@ -802,16 +802,15 @@ export async function handlePenduRegles(webhookUrl) {
 }
 
 // ── /pendu-generator : image finale d'une partie fictive ─────────────
-// Mot choisi, gagné ou perdu : même image que le récapitulatif solo,
-// postée par Kévina dans le salon. Réponse différée éphémère (erreurs
-// visibles du seul lanceur), supprimée une fois l'image postée.
+// Mot choisi, gagné ou perdu : même image que le récapitulatif solo, au
+// pseudo Discord du lanceur, postée par Kévina dans le salon. Réponse
+// différée éphémère (erreurs visibles du seul lanceur), supprimée une fois
+// l'image postée.
 export async function handlePenduGeneratorCommand(webhookUrl, body) {
   const opt = (nom) => body.data?.options?.find((o) => o.name === nom)?.value ?? null;
   const final = finalGenerateur({
     mot: opt("mot"),
     resultat: opt("resultat"),
-    erreurs: opt("erreurs"),
-    lettres: opt("lettres"),
     nom: extractMember(body).username,
   });
   if (final.erreur) {
