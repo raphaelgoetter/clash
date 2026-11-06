@@ -544,6 +544,87 @@ async function buildLateTimingTagsByPlayer(playerTags) {
   return byTag;
 }
 
+// Decks de GDC joués depuis le reset du jour dans un AUTRE clan, pour les
+// retardataires arrivés récemment (🆕, ou statut inconnu si l'analyse n'a pas
+// répondu). Un joueur transféré après avoir joué ailleurs ne peut plus jouer
+// ces decks chez nous : on réduit son manque, et s'il ne lui reste rien on le
+// retire de `late` (donc pas de ping). Mute `late`, renvoie la liste retirée.
+// Lecture des battle logs best-effort : en cas d'échec, le joueur reste en retard.
+async function applyDecksPlayedElsewhere(late, analysisMap, clanTag, resetUtcMs) {
+  const ownClan = normalizeClanTag(clanTag);
+  const DAY_MS = 86400000;
+  const nowMs = Date.now();
+  const dayStartMs =
+    Math.floor((nowMs - resetUtcMs) / DAY_MS) * DAY_MS + resetUtcMs;
+  const candidates = late
+    .filter((pl) => {
+      const info = analysisMap.get(normalizeClanTag(pl.tag));
+      return !info || info.isNew;
+    })
+    .slice(0, 10);
+  if (!candidates.length) return [];
+
+  const [{ fetchBattleLog }, { filterWarBattles, expandDuelRounds }] =
+    await Promise.all([
+      import("@clash/clash-royale/clashApi.js"),
+      import("../../../backend/services/battleLogUtils.js"),
+    ]);
+
+  const elsewhereByTag = new Map();
+  await mapWithConcurrency(candidates, 5, async (pl) => {
+    try {
+      const log = await Promise.race([
+        fetchBattleLog(pl.tag),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout battlelog")), 8000),
+        ),
+      ]);
+      const rounds = expandDuelRounds(filterWarBattles(log || [])).filter(
+        (b) => {
+          const t = parseBattleTimestamp(b.battleTime)?.getTime();
+          const clan = normalizeClanTag(b.team?.[0]?.clan?.tag);
+          return t != null && t >= dayStartMs && clan && clan !== ownClan;
+        },
+      );
+      if (rounds.length) {
+        elsewhereByTag.set(pl.tag, {
+          decks: Math.min(4, rounds.length),
+          clanName: rounds[0].team?.[0]?.clan?.name || "un autre clan",
+        });
+      }
+    } catch {
+      // battle log indisponible : on laisse le joueur en retard
+    }
+  });
+
+  const removed = [];
+  for (let i = late.length - 1; i >= 0; i--) {
+    const pl = late[i];
+    const elsewhere = elsewhereByTag.get(pl.tag);
+    if (!elsewhere) continue;
+    pl.elsewhere = elsewhere;
+    pl.missing = Math.max(0, pl.missing - elsewhere.decks);
+    if (pl.missing === 0) removed.unshift(...late.splice(i, 1));
+  }
+  late.sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr"));
+  return removed;
+}
+
+// Section « Déjà joué dans un autre clan » (sans ping : rien à jouer chez nous).
+function pushPlayedElsewhereLines(descLines, playedElsewhere, analysisMap) {
+  if (!playedElsewhere.length) return;
+  descLines.push("");
+  descLines.push("**Déjà joué dans un autre clan aujourd'hui**");
+  for (const pl of playedElsewhere) {
+    const tag = normalizeClanTag(pl.tag);
+    const newTag = analysisMap.get(tag)?.isNew ? " 🆕" : "";
+    const n = pl.elsewhere.decks;
+    descLines.push(
+      `• [${pl.name}](${trustPlayerUrl(tag)})${newTag} (${n} deck${n > 1 ? "s" : ""} chez ${pl.elsewhere.clanName})`,
+    );
+  }
+}
+
 function buildLateSummary(participants, currentMembers, maxSlots = 50) {
   // Slots GDC : maximum 50 slots par journée. Un joueur occupe un slot dès
   // qu'il joue au moins 1 deck aujourd'hui, même s'il quitte le clan plus
@@ -695,6 +776,13 @@ async function buildLateReportPayload(resolved, clanVal) {
       .sort(
         (a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
       );
+
+    const playedElsewhere = await applyDecksPlayedElsewhere(
+      late,
+      analysisMap,
+      resolved.tag,
+      resetUtcMs,
+    );
 
     const lateTimingTagsByTag = await buildLateTimingTagsByPlayer(
       late.map((pl) => pl.tag),
@@ -867,12 +955,17 @@ async function buildLateReportPayload(resolved, clanVal) {
           const discordPart = guildMember ? ` <@${discordId}>` : "";
           const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
           const newTag = memberAnalysis.isNew ? " 🆕" : "";
+          const elsewhereTag = pl.elsewhere
+            ? ` (${pl.elsewhere.decks} joué${pl.elsewhere.decks > 1 ? "s" : ""} chez ${pl.elsewhere.clanName})`
+            : "";
           descLines.push(
-            `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
+            `• [${pl.name}](${playerUrl})${newTag}${elsewhereTag} ${roleText}${discordPart}`,
           );
         }
       }
     }
+
+    pushPlayedElsewhereLines(descLines, playedElsewhere, analysisMap);
 
     if (exClanPlayedToday.length > 0) {
       descLines.push("");
@@ -2389,6 +2482,13 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
               b.missing - a.missing || a.name.localeCompare(b.name, "fr"),
           );
 
+        const playedElsewhere = await applyDecksPlayedElsewhere(
+          late,
+          analysisMap,
+          resolved.tag,
+          resetUtcMs,
+        );
+
         const lateTimingTagsByTag = await buildLateTimingTagsByPlayer(
           late.map((pl) => pl.tag),
         );
@@ -2544,12 +2644,17 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
               }
               const memberAnalysis = analysisMap.get(tag.toUpperCase()) || {};
               const newTag = memberAnalysis.isNew ? " 🆕" : "";
+              const elsewhereTag = pl.elsewhere
+                ? ` (${pl.elsewhere.decks} joué${pl.elsewhere.decks > 1 ? "s" : ""} chez ${pl.elsewhere.clanName})`
+                : "";
               descLines.push(
-                `• [${pl.name}](${playerUrl})${newTag} ${roleText}${discordPart}`,
+                `• [${pl.name}](${playerUrl})${newTag}${elsewhereTag} ${roleText}${discordPart}`,
               );
             }
           }
         }
+
+        pushPlayedElsewhereLines(descLines, playedElsewhere, analysisMap);
 
         if (exClanPlayedToday.length > 0) {
           descLines.push("");
