@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // meowStatus.js
 // Résumé organisateur de Meow sans ouvrir Discord : jour, points des bandes,
-// chats en jeu de chaque bande et actions du jour de chaque joueur (un √
-// par appel, squat ou déplacement), puis le Caïd des coussins (secret pour
-// les joueurs). Les événements horaires en retard sont rattrapés en
+// chats en jeu et perdus au combat de chaque bande, actions du jour de
+// chaque joueur (un √ par appel, squat ou déplacement), puis le Caïd des
+// coussins (secret pour les joueurs). Les événements horaires en retard sont rattrapés en
 // mémoire seulement (rien n'est réécrit).
 //
 // Usage : node jeux/scripts/meowStatus.js
@@ -11,7 +11,7 @@
 import "../env.js";
 
 import { loadMeowConfig, readState, readPartie } from "../services/meow.js";
-import { BANDES, horloge, jourDe, rattraper, classementBandes, classementCaid, coinsDe, actionsDuJour, texteActions } from "../services/meowRules.js";
+import { BANDES, horloge, jourDe, rattraper, classementBandes, classementCaid, coinsDe, chatsPerdus, actionsDuJour, texteActions } from "../services/meowRules.js";
 
 (async () => {
   const state = await readState();
@@ -32,12 +32,13 @@ import { BANDES, horloge, jourDe, rattraper, classementBandes, classementCaid, c
   const points = classementBandes(partie).map((r) => `${BANDES[r.b].nom} ${r.points}`).join(" · ");
   console.log(`Salon ${state.isPublic ? "public" : "de test"} · Jour ${Math.min(jour, config.duree_jours)}/${config.duree_jours}${partie.termine ? " (terminée)" : ""} · ${points}`);
 
+  const pertes = chatsPerdus(partie);
   BANDES.forEach((bd, b) => {
     // Chats en jeu : sur la carte, plus ceux engagés dans un squat en cours
     // (réserves exclues)
     const surCarte = coinsDe(partie, b).reduce((s, c) => s + partie.coins[c].n, 0);
     const enCombat = Object.entries(partie.combats).filter(([id]) => partie.joueurs[id]?.bande === b).reduce((s, [, c]) => s + c.a, 0);
-    console.log(`\n${bd.nom} (${surCarte + enCombat} chats) :`);
+    console.log(`\n${bd.nom} (${surCarte + enCombat} chats / ${pertes[b]} perdus) :`);
     for (const a of actionsDuJour(partie, b, jour)) console.log(`- ${a.username} : ${texteActions(a)}`);
   });
 

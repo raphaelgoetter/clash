@@ -481,6 +481,21 @@ function compterAction(partie, b) {
   partie.actions[b]++;
 }
 
+// Chats perdus au combat par bande (attaque et défense, chats errants
+// exclus), pour `meow:status` et le récapitulatif final. Partie lancée
+// avant le compteur : amorcé d'après le journal.
+function ajouterPertes(pertes, e) {
+  pertes[e.b] += e.aInit - e.a;
+  if (e.def >= 0) pertes[e.def] += e.dInit - e.d;
+}
+
+export function chatsPerdus(partie) {
+  if (partie.pertes) return partie.pertes;
+  const pertes = [0, 0, 0];
+  for (const e of partie.journal) if (e.k === "squat") ajouterPertes(pertes, e);
+  return pertes;
+}
+
 // Déplacer : 1 chat d'un coin de sa bande vers un coin voisin de sa bande
 // (1 chat reste toujours sur place), `deplacements_par_distribution` fois
 // entre deux distributions (décision du 16/10), à toute heure.
@@ -614,6 +629,8 @@ function terminerCombat(partie, discordId, issue, now) {
     partie.coins[c.s].n += c.a;
   }
   const entree = { t: now, k: "squat", issue, p: discordId, b: j.bande, def: c.def, de: c.s, vers: c.t, aInit: c.aInit, dInit: c.dInit, a: c.a, d: c.d };
+  partie.pertes = chatsPerdus(partie);
+  ajouterPertes(partie.pertes, entree);
   noter(partie, entree);
   return entree;
 }
@@ -790,7 +807,8 @@ export function texteActions(a) {
 // active, avec l'écart en % par rapport à la première.
 export function activiteBandes(partie) {
   const actions = partie.actions ?? [0, 0, 0];
-  const tri = [0, 1, 2].map((b) => ({ b, actions: actions[b] })).sort((x, y) => y.actions - x.actions);
+  const pertes = chatsPerdus(partie);
+  const tri = [0, 1, 2].map((b) => ({ b, actions: actions[b], pertes: pertes[b] })).sort((x, y) => y.actions - x.actions);
   return tri.map((r) => ({ ...r, ecart: tri[0].actions ? Math.round((1 - r.actions / tri[0].actions) * 100) : 0 }));
 }
 

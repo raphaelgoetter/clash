@@ -326,6 +326,16 @@ function buildFinEmbed(bandes, caids, manches, currentManche, resume = [], activ
             "",
           ]
         : []),
+      ...(activite.some((r) => r.pertes)
+        ? [
+            "**😿 Chats perdus au combat**",
+            [...activite]
+              .sort((x, y) => y.pertes - x.pertes)
+              .map((r) => `**${nomBande(r.b)}** : ${r.pertes}`)
+              .join(" · "),
+            "",
+          ]
+        : []),
       "**🏅 Caïd des coussins**",
       ...caids
         .slice(0, 3)

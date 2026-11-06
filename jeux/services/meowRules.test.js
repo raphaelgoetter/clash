@@ -20,6 +20,7 @@ import {
   appeler,
   squatsPossibles,
   lancerSquat,
+  chatsPerdus,
   jouerManche,
   jusquauBout,
   retraite,
@@ -291,6 +292,21 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   assert.strictEqual(r.fin.issue, "retraite");
   assert.strictEqual(partie.coins.armoire.n, 4);
   assert.strictEqual(partie.joueurs[id].squats, 1);
+  // Chats perdus : 2 Roux, les errants ne comptent pour aucune bande
+  assert.deepStrictEqual(chatsPerdus(partie), [2, 0, 0]);
+}
+
+{
+  // Chats perdus en défense, et recalcul d'après le journal (partie
+  // lancée avant le compteur)
+  const partie = partieDe(12);
+  const id = joueurDe(partie, 0);
+  partie.coins.carton.n = 5;
+  partie.coins.canape = { b: 1, n: 2 };
+  lancerSquat(partie, id, "carton", "canape", { config: CONFIG, now: LANCEMENT, rng: des(6, 6, 6, 1, 1) });
+  assert.deepStrictEqual(chatsPerdus(partie), [0, 2, 0]);
+  delete partie.pertes;
+  assert.deepStrictEqual(chatsPerdus(partie), [0, 2, 0]);
 }
 
 {
