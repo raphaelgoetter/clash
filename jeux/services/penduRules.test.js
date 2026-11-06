@@ -138,8 +138,20 @@ const duel = () => creerDuel({ mot: "éléphant", now });
   const perdu = finalGenerateur({ mot: "photographe", resultat: "temps", lettres: 4, nom: "Bob" });
   assert.deepStrictEqual(perdu.joueurs[0], { nom: "Bob", erreurs: ERREURS_MAX, decouvertes: 4, fin: "temps" });
   assert.strictEqual(finalGenerateur({ mot: "jazz", resultat: "perdu", nom: "C" }, () => 0.99).joueurs[0].decouvertes, 3);
-  assert.strictEqual(finalGenerateur({ mot: "jazz", resultat: "gagne", erreurs: 9, nom: "C" }).joueurs[0].erreurs, ERREURS_MAX - 1);
-  assert.ok(finalGenerateur({ mot: "pomme de terre", resultat: "gagne", nom: "C" }).erreur);
+  // Jusqu'à 90 erreurs (gagné) ou lettres trouvées (perdu), même irréaliste
+  const irreel = finalGenerateur({ mot: "jazz", resultat: "gagne", erreurs: 90, nom: "C" });
+  assert.strictEqual(decodeFinal(encodeFinal(irreel)).joueurs[0].erreurs, 90);
+  // Yeux en croix (4 traits) seulement si pendu, pas si trouvé avec 6 erreurs ou plus
+  const traits = (f) => buildFinalSvg(f).split("<line").length;
+  const pendu6 = finalGenerateur({ mot: "jazz", resultat: "perdu", lettres: 1, nom: "C" });
+  assert.strictEqual(traits(pendu6) - traits(irreel), 4);
+  assert.strictEqual(finalGenerateur({ mot: "jazz", resultat: "perdu", lettres: 95, nom: "C" }).joueurs[0].decouvertes, 90);
+  // Espaces et traits d'union admis (espaces multiples réduites), lettres seules comptées
+  const compose = finalGenerateur({ mot: " Pomme  de terre ", resultat: "gagne", nom: "C" });
+  assert.deepStrictEqual([compose.mot, compose.joueurs[0].decouvertes], ["pomme de terre", 12]);
+  assert.strictEqual(finalGenerateur({ mot: "arc-en-ciel", resultat: "gagne", nom: "C" }).mot, "arc-en-ciel");
+  assert.strictEqual(decodeFinal(encodeFinal(compose)).mot, "pomme de terre");
+  for (const faux of ["pomme--terre", "-arc", "arc-", "a1b", "l'arbre"]) assert.ok(finalGenerateur({ mot: faux, resultat: "gagne", nom: "C" }).erreur, faux);
   assert.ok(finalGenerateur({ mot: "anticonstitutionnellement", resultat: "gagne", nom: "C" }).erreur);
   // Mot long : accepté, tuiles réduites dans la largeur de l'image (700 - 2 × 24)
   const long = finalGenerateur({ mot: "anticonstitutionnel", resultat: "gagne", nom: "C" });

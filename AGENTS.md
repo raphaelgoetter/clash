@@ -140,7 +140,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/mascarade adversaire:bot\|1v1` | Mascarade (duel de cartes Clash à information cachée : une carte secrète en main, piocher puis jouer l'une de ses deux cartes, déduire celle de l'adversaire, premier à 2 manches) contre Kévina, le bot (table suivie dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/bac adversaire:bot\|1v1 [difficulte:normal\|difficile]` | Petit Bac (8 manches de difficulté croissante, mode normal ou difficile, un thème et une lettre par manche, 1 minute pour trouver un mot, 2 propositions) contre Kévina, le bot (table suivie dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/pendu mode:solo\|1v1` | Pendu seul (série de mots trouvés) ou en 1v1 contre un joueur (salon) : le même mot pour les deux, chacun de son côté sans voir l'avancement de l'autre, mot et potences dévoilés à la fin, rôle MINI-JEUX |
-| `/pendu-generator mot resultat:gagne\|perdu\|temps [erreurs] [lettres]` | Image de fin du Pendu (solo) avec le mot choisi, gagné ou perdu, postée par Kévina dans le salon, rôle MINI-JEUX |
+| `/pendu-generator mot resultat:gagne\|perdu\|temps [erreurs] [lettres]` | Image de fin du Pendu (solo) avec le mot choisi (espaces et traits d'union admis), gagné ou perdu, postée par Kévina dans le salon, rôle MINI-JEUX |
 
 ## Sous-agents
 
