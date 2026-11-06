@@ -407,7 +407,7 @@ Objectif : ne pas pénaliser dans les listes d'échec les membres arrivés penda
 | --- | --- |
 | `notifyWarSummary.js` (résumé quotidien) | `isJoinedThisWar()` pour ne pas compter les arrivants comme manquants ; combats et duels manquants limités aux présents en fin de journée (`wasInClanAtDayEnd()`) |
 | `/demote` | Sépare arrivés et réguliers via `joinedThisWeek`, calculé dans `backend/routes/clan.js` : `lateArrival` ou streak 0 ou (streak 1 et pas de donnée J1) ou `hasLateArrivalDailyPattern()` ; la liste des membres est relue en direct (`fetchClanMembers`, l'analyse `fast` pouvant dater de plusieurs heures) et un joueur parti depuis est marqué 🚪 `(parti)` |
-| `/fail` | N'exclut pas les arrivants présents en fin de journée : ils sont listés et annotés 🆕 si `arrivalTotalWeeks ≤ 1` ; les arrivés après la journée sont écartés (`wasInClanAtDayEnd()`) |
+| `/fail` | N'exclut pas les arrivants présents en fin de journée : ils sont listés et annotés 🆕 si `arrivalTotalWeeks ≤ 1` ; les arrivés après la journée sont écartés (`wasInClanAtDayEnd()`). Pour les 🆕 ou inconnus du cache (10 max), les decks de GDC joués ailleurs pendant la journée (battle log, fenêtre `gdcPeriod` du snapshot) s'ajoutent : 4 au total → retiré, sinon mention « (N joués chez Clan) » |
 
 ---
 

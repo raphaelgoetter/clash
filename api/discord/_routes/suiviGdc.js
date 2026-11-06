@@ -544,6 +544,49 @@ async function buildLateTimingTagsByPlayer(playerTags) {
   return byTag;
 }
 
+// Decks de GDC joués dans un AUTRE clan que `clanTag` entre `startMs` et
+// `endMs` (inclus), lus dans les battle logs. Renvoie Map tag → { decks,
+// clanName }. Best-effort : un battle log indisponible n'ajoute rien, et un
+// battle log ne garde que les ~25 derniers combats.
+async function fetchWarDecksPlayedElsewhere(tags, clanTag, startMs, endMs) {
+  const ownClan = normalizeClanTag(clanTag);
+  const [{ fetchBattleLog }, { filterWarBattles, expandDuelRounds }] =
+    await Promise.all([
+      import("@clash/clash-royale/clashApi.js"),
+      import("../../../backend/services/battleLogUtils.js"),
+    ]);
+
+  const elsewhereByTag = new Map();
+  await mapWithConcurrency(tags, 5, async (tag) => {
+    try {
+      const log = await Promise.race([
+        fetchBattleLog(tag),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout battlelog")), 8000),
+        ),
+      ]);
+      const rounds = expandDuelRounds(filterWarBattles(log || [])).filter(
+        (b) => {
+          const t = parseBattleTimestamp(b.battleTime)?.getTime();
+          const clan = normalizeClanTag(b.team?.[0]?.clan?.tag);
+          return (
+            t != null && t >= startMs && t <= endMs && clan && clan !== ownClan
+          );
+        },
+      );
+      if (rounds.length) {
+        elsewhereByTag.set(tag, {
+          decks: Math.min(4, rounds.length),
+          clanName: rounds[0].team?.[0]?.clan?.name || "un autre clan",
+        });
+      }
+    } catch {
+      // battle log indisponible : rien de joué ailleurs n'est retenu
+    }
+  });
+  return elsewhereByTag;
+}
+
 // Decks de GDC joués depuis le reset du jour dans un AUTRE clan, pour les
 // retardataires arrivés récemment (🆕, ou statut inconnu si l'analyse n'a pas
 // répondu). Un joueur transféré après avoir joué ailleurs ne peut plus jouer
@@ -551,7 +594,6 @@ async function buildLateTimingTagsByPlayer(playerTags) {
 // retire de `late` (donc pas de ping). Mute `late`, renvoie la liste retirée.
 // Lecture des battle logs best-effort : en cas d'échec, le joueur reste en retard.
 async function applyDecksPlayedElsewhere(late, analysisMap, clanTag, resetUtcMs) {
-  const ownClan = normalizeClanTag(clanTag);
   const DAY_MS = 86400000;
   const nowMs = Date.now();
   const dayStartMs =
@@ -564,38 +606,12 @@ async function applyDecksPlayedElsewhere(late, analysisMap, clanTag, resetUtcMs)
     .slice(0, 10);
   if (!candidates.length) return [];
 
-  const [{ fetchBattleLog }, { filterWarBattles, expandDuelRounds }] =
-    await Promise.all([
-      import("@clash/clash-royale/clashApi.js"),
-      import("../../../backend/services/battleLogUtils.js"),
-    ]);
-
-  const elsewhereByTag = new Map();
-  await mapWithConcurrency(candidates, 5, async (pl) => {
-    try {
-      const log = await Promise.race([
-        fetchBattleLog(pl.tag),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("timeout battlelog")), 8000),
-        ),
-      ]);
-      const rounds = expandDuelRounds(filterWarBattles(log || [])).filter(
-        (b) => {
-          const t = parseBattleTimestamp(b.battleTime)?.getTime();
-          const clan = normalizeClanTag(b.team?.[0]?.clan?.tag);
-          return t != null && t >= dayStartMs && clan && clan !== ownClan;
-        },
-      );
-      if (rounds.length) {
-        elsewhereByTag.set(pl.tag, {
-          decks: Math.min(4, rounds.length),
-          clanName: rounds[0].team?.[0]?.clan?.name || "un autre clan",
-        });
-      }
-    } catch {
-      // battle log indisponible : on laisse le joueur en retard
-    }
-  });
+  const elsewhereByTag = await fetchWarDecksPlayedElsewhere(
+    candidates.map((pl) => pl.tag),
+    clanTag,
+    dayStartMs,
+    nowMs,
+  );
 
   const removed = [];
   for (let i = late.length - 1; i >= 0; i--) {
@@ -2124,7 +2140,7 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
         }
 
         const prevDayRoster = rosterAtDayEnd(prevDaySnap);
-        const failedPlayers = Array.from(snapshotMembersByTag.entries())
+        let failedPlayers = Array.from(snapshotMembersByTag.entries())
           .map(([normalizedTag, member]) => ({
             name: member.name || "Inconnu",
             tag: member.tag || `#${normalizedTag}`,
@@ -2164,6 +2180,35 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
               sensitivity: "base",
             }),
           );
+
+        // Un joueur arrivé récemment (🆕, ou absent du cache donc inconnu) a
+        // pu jouer ses decks de la journée dans son ancien clan avant le
+        // transfert : ces decks comptent, il n'est pas en échec pour eux.
+        const periodStartMs = Date.parse(prevDaySnap.gdcPeriod?.start ?? "");
+        const periodEndMs = Date.parse(prevDaySnap.gdcPeriod?.end ?? "");
+        if (Number.isFinite(periodStartMs) && Number.isFinite(periodEndMs)) {
+          const candidates = failedPlayers
+            .filter(
+              (p) =>
+                !Number.isFinite(p.arrivalWeeks) || p.arrivalWeeks <= 1,
+            )
+            .slice(0, 10);
+          if (candidates.length) {
+            const elsewhereByTag = await fetchWarDecksPlayedElsewhere(
+              candidates.map((p) => p.tag),
+              resolved.tag,
+              periodStartMs,
+              periodEndMs,
+            );
+            for (const p of candidates) {
+              const elsewhere = elsewhereByTag.get(p.tag);
+              if (!elsewhere) continue;
+              p.elsewhere = elsewhere;
+              p.decks = Math.min(4, p.decks + elsewhere.decks);
+            }
+            failedPlayers = failedPlayers.filter((p) => p.decks < 4);
+          }
+        }
 
         const warDayLabel =
           FAIL_WAR_DAY_SHORT_LABELS[prevDayIndex] || "jour précédent";
@@ -2244,7 +2289,10 @@ export async function routeSuiviGdc(body, res, { authorizedPingIds }) {
                 Number.isFinite(player.arrivalWeeks) &&
                 player.arrivalWeeks <= 1;
               const newTag = isNew ? " 🆕" : "";
-              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag} (${status}) manque ${4 - player.decks} :\n  Historique : ${decksLine}\n  Pts/deck moyen : ${avgPerDeck}`;
+              const elsewhereTag = player.elsewhere
+                ? ` (${player.elsewhere.decks} joué${player.elsewhere.decks > 1 ? "s" : ""} chez ${player.elsewhere.clanName})`
+                : "";
+              return `- [${player.name}](${trustPlayerUrl(tag)})${newTag}${elsewhereTag} (${status}) manque ${4 - player.decks} :\n  Historique : ${decksLine}\n  Pts/deck moyen : ${avgPerDeck}`;
             } catch (err) {
               const status = player.hasLeft
                 ? "Parti"
