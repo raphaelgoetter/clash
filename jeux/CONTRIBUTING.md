@@ -241,7 +241,7 @@ Groupe « Jeux de mots » (samedi 18:00 UTC) à partir de la refonte, en alterna
 - Barème : `max(1, 10 − 2 × tentatives incorrectes − 3 × indice)`. La catégorie est affichée d'office ; le seul indice (éphémère) est le masque de `solution` (`buildMasque` : une case par lettre, ponctuation visible, nombre de lettres par mot). Score figé à la résolution.
 - Redis (`concept:*`) : `state`, `participants:<gameId>`, `usernames:<gameId>`, `hint:<gameId>:<discordId>`, `attempts:<gameId>:<discordId>` (purgés à la manche suivante), `season:<id>` (+ `pseudos`, `manche_seq`, `manche_numbers`), `archived:<id>`.
 - Boutons `concept_hint:`, `concept_answer:` (Modal `concept_answer_modal:`). Classement joueur : « Ma participation » de `/mini-jeux`.
-- Scripts : `concept:test`, `concept:test:dry`, `concept:reset`.
+- Scripts : `concept:test`, `concept:test:dry`, `concept:scores`, `concept:reset` (`concept:scores` = `mancheScores.js concept`).
 
 ---
 
@@ -363,7 +363,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 - Images dans `jeux/data/jeux-visuels/zoom2/images/`, servies depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/zoom2`.
 - Redis (`zoom2:*`) : schéma commun avec `zoom2:posted_games` et `zoom2:hint:<gameId>:<discordId>` (flag `SETNX`) ; `zoom2:reset` purge aussi `posted_games`.
 - Boutons `zoom2_hint:`, `zoom2_answer:` (Modal `zoom2_answer_modal:`), route `/api/zoom2/image`. Classement joueur : « Ma participation » de `/mini-jeux`.
-- Scripts : `zoom2:test`, `zoom2:test:dry`, `zoom2:reset`.
+- Scripts : `zoom2:test`, `zoom2:test:dry`, `zoom2:scores` (alias `logo:scores`), `zoom2:reset` (`zoom2:scores` = `mancheScores.js zoom2`).
 
 ---
 
@@ -378,7 +378,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 - Photos : Wikimedia Commons sous licence libre. Le post n'affiche que « Photo : Wikimedia Commons (licence) » : le nom de l'auteur (écriture, langue) peut trahir le pays. Le crédit complet (auteur, licence, page Commons) est donné dans la réponse « Bravo » et le DM de fin de manche. Fichiers nommés d'après le `gameId` (`p001.webp`), jamais d'après le plat, WebP de 835 px de large sans métadonnées (l'EXIF peut contenir le titre de la photo), crédit sans lieu (« from Santiago, Chile » trahirait le pays), et servis uniquement par `/api/platpays/image?gameId=`, gardé par `platpays:posted_games` : aucune URL ne trahit la réponse. Images dans `jeux/data/jeux-visuels/platpays/images/`, lues depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/platpays`.
 - Redis (`platpays:*`) : schéma commun avec `platpays:posted_games` et `platpays:hints:<gameId>:<discordId>` (SET des indices pris) ; `platpays:reset` purge aussi `posted_games`.
 - Boutons `platpays_hint1:`, `platpays_hint2:`, `platpays_answer:` (Modal `platpays_answer_modal:`). Classement joueur : « Ma participation » de `/mini-jeux`.
-- Scripts : `platpays:test`, `platpays:test:dry`, `platpays:reset`.
+- Scripts : `platpays:test`, `platpays:test:dry`, `platpays:scores`, `platpays:reset` (`platpays:scores` = `mancheScores.js platpays`).
 
 ---
 

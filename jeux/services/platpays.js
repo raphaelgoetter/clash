@@ -401,6 +401,28 @@ export async function previewSeasonManche(seasonId) {
 
 // ── Classements ──────────────────────────────────────────────────
 
+// Joueurs ayant trouvé la manche : score décroissant, puis le plus rapide.
+export async function computeGameRanking(gameId) {
+  const all = await hgetallJson(participantsKey(gameId));
+  return Object.values(all)
+    .filter((p) => p?.solved)
+    .map((p) => ({ discordId: p.discordId, username: p.username, score: p.score, solvedAt: p.solvedAt }))
+    .sort((a, b) => b.score - a.score || new Date(a.solvedAt) - new Date(b.solvedAt));
+}
+
+// Joueurs ayant pris un indice ou tenté une réponse sans avoir encore trouvé.
+export async function listGamePlayersInProgress(gameId) {
+  const [participants, usernames] = await Promise.all([
+    hgetallJson(participantsKey(gameId)),
+    hgetallRaw(usernamesKey(gameId)),
+  ]);
+  const solvedIds = new Set(Object.values(participants).filter((p) => p?.solved).map((p) => p.discordId));
+  return Object.entries(usernames)
+    .filter(([discordId]) => !solvedIds.has(discordId))
+    .map(([discordId, username]) => ({ discordId, username }))
+    .sort((a, b) => a.username.localeCompare(b.username));
+}
+
 export async function computeSeasonRanking(seasonId) {
   const [flat, pseudos] = await Promise.all([
     getRedis().zrange(seasonKey(seasonId), 0, -1, { rev: true, withScores: true }),
