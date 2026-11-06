@@ -417,7 +417,7 @@ Objectif : ne pas pénaliser dans les listes d'échec les membres arrivés penda
 
 | Terme | Définition | Où trouver la valeur |
 | --- | --- | --- |
-| Reset times | Heure UTC de reset GDC propre à chaque clan (09:45, 09:51, 09:50) | `CLAN_RESET_TIMES`, `packages/clash-royale/dateUtils.js`. ⚠️ Ne jamais recalculer : passer par `warResetOffsetMs(clanTag)` |
+| Reset times | Heure UTC de reset GDC propre à chaque clan (09:33, 09:42, 09:50) | `CLAN_RESET_TIMES`, `packages/clash-royale/dateUtils.js`. ⚠️ Ne jamais recalculer : passer par `warResetOffsetMs(clanTag)` |
 | Saison | Cycle d'environ un mois commençant le premier lundi du mois après le reset ; 3 à 5 semaines de guerre | `seasonId` (API, `raceLog[0]`), `sectionIndex` (API, base 0) ; courants via `computeCurrentSeasonId()` / `computeCurrentWeekId(currentRace, raceLog)` ; numéro public = `toPublicSeasonId()` / `toPublicWeekId()` (`dateUtils.js`) |
 | Jours de GDC | Jeudi à dimanche, raisonnés en journée GDC (reset du clan), pas en journée civile UTC | `warDayKey()` (`dateUtils.js`), `buildCurrentWarDays()` (`playerAnalysis.js`), `getEndedWarDay()` (`scripts/notifyWarSummary.js`) |
 | `periodType` | Type de période renvoyé par l'API | `"warDay"` = GDC normale, `"colosseum"` = Colisée |
