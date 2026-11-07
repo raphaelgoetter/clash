@@ -39,7 +39,7 @@ import {
   PIECE_DE,
   compteRendu,
   activiteBandes,
-  actionsDuJour,
+  actionsDistribution,
   texteActions,
   COINS,
   ERRANTS,
@@ -47,6 +47,7 @@ import {
   jourDe,
   enSieste,
   prochaineDistribution,
+  derniereDistribution,
   coinsDe,
   coinsVerrouilles,
   piecesTenues,
@@ -1538,7 +1539,7 @@ export async function handleMessageSubmit(
 // ancien.
 export async function handleJournal(webhookUrl, discordId) {
   try {
-    const [state, partie] = await Promise.all([readState(), readPartie()]);
+    const [state, partie, config] = await Promise.all([readState(), readPartie(), loadMeowConfig()]);
     if (!state || state.phase !== "jour") {
       await patchOriginal(webhookUrl, {
         content: "Aucune partie de Meow en cours.",
@@ -1595,11 +1596,15 @@ export async function handleJournal(webhookUrl, discordId) {
           ...b.lignes,
         ].join("\n"),
       );
-    // Qui a joué aujourd'hui dans sa bande (demande des joueurs)
+    // Qui a joué dans sa bande depuis la dernière distribution (demande des
+    // joueurs) : par créneau et non par jour, le créneau de 20h passant minuit
+    const maintenant = horloge(partie);
+    const creneau = derniereDistribution(maintenant, config);
+    const suivante = prochaineDistribution(maintenant, config);
     blocs.unshift(
       [
-        "**Ont joué aujourd'hui**",
-        ...actionsDuJour(partie, j.bande, jourCourant).map(
+        `**Ont joué depuis la distribution de ${creneau.h}h** (prochaine à ${suivante.h}h)`,
+        ...actionsDistribution(partie, j.bande, creneau.t).map(
           (a) => `- ${a.username} : ${texteActions(a)}`,
         ),
       ].join("\n"),

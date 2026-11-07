@@ -170,6 +170,17 @@ export function evenementsEntre(de, a, config) {
   return out.sort((x, y) => x.t - y.t);
 }
 
+// Dernière distribution au plus tard à `ms` (début du créneau en cours)
+export function derniereDistribution(ms, config) {
+  const { date } = parisParts(ms);
+  for (const jour of [date, ajouterJours(date, -1)])
+    for (const h of [...config.distributions].reverse()) {
+      const t = parisInstant(jour, h);
+      if (t <= ms) return { t, h };
+    }
+  return null;
+}
+
 // Prochaine distribution après `ms` (pour l'affichage : « avant 20h »)
 export function prochaineDistribution(ms, config) {
   const { date } = parisParts(ms);
@@ -527,6 +538,7 @@ export function deplacer(partie, discordId, s, t, { config, now = horloge(partie
   partie.coins[s].n -= 1;
   partie.coins[t].n += 1;
   j.deplacements = (j.deplacements ?? 0) + 1;
+  j.deplacementT = now;
   j.jourActif = jourDe(partie, now);
   compterAction(partie, j.bande);
   // Déplacements du jour (non journalisés), pour `npm run meow:status`
@@ -628,7 +640,7 @@ function terminerCombat(partie, discordId, issue, now) {
   } else if (issue !== "defaite") {
     partie.coins[c.s].n += c.a;
   }
-  const entree = { t: now, k: "squat", issue, p: discordId, b: j.bande, def: c.def, de: c.s, vers: c.t, aInit: c.aInit, dInit: c.dInit, a: c.a, d: c.d };
+  const entree = { t: now, debut: c.debut, k: "squat", issue, p: discordId, b: j.bande, def: c.def, de: c.s, vers: c.t, aInit: c.aInit, dInit: c.dInit, a: c.a, d: c.d };
   partie.pertes = chatsPerdus(partie);
   ajouterPertes(partie.pertes, entree);
   noter(partie, entree);
@@ -791,6 +803,26 @@ export function actionsDuJour(partie, b, jour) {
     }));
 }
 
+// Actions de chaque joueur de la bande `b` depuis l'instant `depuis` (début
+// du créneau de distribution en cours, Journal de bande) : le créneau de 20h
+// passe minuit, un jour de jeu ne convient donc pas. Appels et squats d'après
+// le journal (un squat compte à son lancement, `debut`, et en plein combat),
+// déplacement d'après `deplacementT` (instant du dernier déplacement, le
+// compteur `deplacements` étant remis à zéro à chaque distribution).
+export function actionsDistribution(partie, b, depuis) {
+  const compte = (id, k) => partie.journal.filter((e) => e.p === id && e.k === k && (e.debut ?? e.t) >= depuis).length;
+  return Object.entries(partie.joueurs)
+    .filter(([, j]) => j.bande === b)
+    .sort(([, x], [, y]) => x.username.localeCompare(y.username))
+    .map(([id, j]) => ({
+      discordId: id,
+      username: j.username,
+      appel: compte(id, "appel"),
+      squat: compte(id, "squat") + (partie.combats[id]?.debut >= depuis ? 1 : 0),
+      deplacement: j.deplacementT >= depuis ? (j.deplacements ?? 0) : 0,
+    }));
+}
+
 // « appel √ squat √√ », actions faites seulement
 export function texteActions(a) {
   return [
@@ -800,7 +832,7 @@ export function texteActions(a) {
   ]
     .filter(([, n]) => n > 0)
     .map(([nom, n]) => `${nom} ${"√".repeat(n)}`)
-    .join(" ") || "aucune action";
+    .join(" ") || "pas encore joué";
 }
 
 // Activité : actions cumulées par bande, de la plus active à la moins

@@ -37,6 +37,9 @@ import {
   estPnj,
   deplacer,
   deplacementsPossibles,
+  derniereDistribution,
+  actionsDistribution,
+  texteActions,
 } from "./meowRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../data/meow/meow.json", import.meta.url), "utf8"));
@@ -231,6 +234,30 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 9) });
   partie.coins.arbre.n = 1;
   assert.strictEqual(deplacer(partie, id, "arbre", "perron", { config: CONFIG }).erreur, "deplacementImpossible", "1 chat reste sur place");
+}
+
+// ── Ont joué depuis la distribution (créneau de 20h passant minuit) ─────
+
+{
+  const partie = partieDe(12);
+  const id = joueurDe(partie, 1); // Chats noirs, Jardin
+  const soir = parisInstant("2026-10-20", 21);
+  rattraper(partie, { config: CONFIG, now: soir });
+  partie.coins.arbre.n = 3;
+  partie.joueurs[id].stock = 2;
+  assert.ok(appeler(partie, id, "arbre", 1, { now: soir }).ok);
+  assert.ok(deplacer(partie, id, "arbre", "perron", { config: CONFIG, now: soir }).ok);
+  const actions = (now) => actionsDistribution(partie, 1, derniereDistribution(now, CONFIG).t).find((a) => a.discordId === id);
+  // Après minuit (décompte, sieste) : toujours le créneau de 20h, coches gardées
+  const nuit = parisInstant("2026-10-21", 2);
+  rattraper(partie, { config: CONFIG, now: nuit });
+  assert.deepStrictEqual(derniereDistribution(nuit, CONFIG), { t: parisInstant("2026-10-20", 20), h: 20 });
+  assert.strictEqual(texteActions(actions(nuit)), "appel √ déplacement √");
+  // Distribution de 8h : nouveau créneau, coches remises à zéro
+  const matin = parisInstant("2026-10-21", 9);
+  rattraper(partie, { config: CONFIG, now: matin });
+  assert.strictEqual(derniereDistribution(matin, CONFIG).h, 8);
+  assert.strictEqual(texteActions(actions(matin)), "pas encore joué");
 }
 
 // ── Squatter ──────────────────────────────────────────────────────────
