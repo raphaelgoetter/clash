@@ -541,8 +541,6 @@ export function deplacer(partie, discordId, s, t, { config, now = horloge(partie
   j.deplacementT = now;
   j.jourActif = jourDe(partie, now);
   compterAction(partie, j.bande);
-  // Déplacements du jour (non journalisés), pour `npm run meow:status`
-  j.deplacementsJour = { jour: j.jourActif, n: (j.deplacementsJour?.jour === j.jourActif ? j.deplacementsJour.n : 0) + 1 };
   return { ok: true };
 }
 
@@ -782,25 +780,6 @@ export function classementCaid(partie, config) {
     .filter(([, j]) => j.bande != null)
     .map(([discordId, j]) => ({ discordId, username: j.username, bande: j.bande, score: scoreCaid(j, config), coinsPris: j.coinsPris, chatsDeloges: j.chatsDeloges }))
     .sort((x, y) => y.score - x.score || y.coinsPris - x.coinsPris || x.username.localeCompare(y.username));
-}
-
-// Actions du jour `jour` de chaque joueur de la bande `b` (Journal de bande,
-// `npm run meow:status`) : appels et squats d'après le journal (un squat en
-// plein combat compte déjà), déplacements d'après `deplacementsJour`
-// (repli, pour une partie lancée avant ce compteur, sur le compteur depuis
-// la distribution s'il date de ce jour). Ordre alphabétique.
-export function actionsDuJour(partie, b, jour) {
-  const compte = (id, k) => partie.journal.filter((e) => e.p === id && e.k === k && e.j === jour).length;
-  return Object.entries(partie.joueurs)
-    .filter(([, j]) => j.bande === b)
-    .sort(([, x], [, y]) => x.username.localeCompare(y.username))
-    .map(([id, j]) => ({
-      discordId: id,
-      username: j.username,
-      appel: compte(id, "appel"),
-      squat: compte(id, "squat") + (partie.combats[id] ? 1 : 0),
-      deplacement: j.deplacementsJour ? (j.deplacementsJour.jour === jour ? j.deplacementsJour.n : 0) : j.jourActif === jour ? (j.deplacements ?? 0) : 0,
-    }));
 }
 
 // Actions de chaque joueur de la bande `b` depuis l'instant `depuis` (début
