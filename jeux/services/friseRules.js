@@ -30,11 +30,13 @@ function melanger(liste, rng) {
 
 // Paquet de la partie : cartes mélangées, en ne gardant que celles à au
 // moins `ecartMin` ans de toutes les cartes déjà retenues (aucun créneau
-// ambigu). Carte : { libelle, annee }.
+// ambigu). Carte : { id (index dans cartes.json, pour l'URL de l'image),
+// libelle, annee }.
 export function construirePaquet(cartes, { ecartMin = 3, rng = Math.random } = {}) {
   const paquet = [];
-  for (const c of melanger(cartes, rng)) {
-    if (paquet.every((p) => Math.abs(p.annee - c.annee) >= ecartMin)) paquet.push({ libelle: c.libelle, annee: c.annee });
+  for (const id of melanger([...cartes.keys()], rng)) {
+    const c = cartes[id];
+    if (paquet.every((p) => Math.abs(p.annee - c.annee) >= ecartMin)) paquet.push({ id, libelle: c.libelle, annee: c.annee });
   }
   return paquet;
 }
@@ -45,7 +47,8 @@ export function creerDuel(cartes, { commence = "joueur", tailleMain = 4, ecartMi
   const frise = [pioche.shift()];
   const mains = { joueur: pioche.splice(0, tailleMain), bot: pioche.splice(0, tailleMain) };
   return {
-    // Frise triée par année (dates visibles)
+    // Frise triée par année (dates visibles) ; `par` : siège qui a posé la
+    // carte (absent pour la carte de départ)
     frise,
     // Mains visibles, dates cachées à l'affichage
     mains,
@@ -59,6 +62,8 @@ export function creerDuel(cartes, { commence = "joueur", tailleMain = 4, ecartMi
     vue: 0,
     // Dernier coup : { id, carte, juste, pioche (carte piochée ou null) }
     dernier: null,
+    // Erreurs de la partie, dans l'ordre : { id (siège), libelle, annee }
+    erreurs: [],
     // Second joueur à son dernier tour (le premier a vidé sa main)
     dernierTour: false,
     termine: false,
@@ -107,12 +112,15 @@ export function placer(d, id, creneau) {
   const index = Math.min(d.choix[id] ?? 0, main.length - 1);
   const [carte] = main.splice(index, 1);
   const juste = creneauJuste(d, creneau, carte.annee);
+  // Auteur de la pose (couleur de la carte sur l'image), même après une erreur
+  carte.par = id;
   ranger(d.frise, carte);
   // Erreur : une carte de pénalité (rien si la pioche est vide)
   const pioche = juste ? null : (d.pioche.shift() ?? null);
   if (pioche) main.push(pioche);
   d.choix[id] = 0;
   d.dernier = { id, carte, juste, pioche };
+  if (!juste) (d.erreurs ??= []).push({ id, libelle: carte.libelle, annee: carte.annee });
   d.vue++;
   finDeTour(d, id);
   return { juste, carte, pioche };

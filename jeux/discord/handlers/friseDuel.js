@@ -1,8 +1,8 @@
 // ============================================================
 // friseDuel.js (handler) — Frise (`/frise`), deux modes :
 // - contre Kévina, le bot (`/frise adversaire:bot`) : frise publique dans le
-//   salon (suivie par tous) et vue éphémère du joueur (frise, mains, menus
-//   de jeu), éditées en place à chaque coup ; Kévina joue aussitôt après le
+//   salon (suivie par tous) et vue éphémère du joueur (image de la frise,
+//   menus de jeu), éditées en place à chaque coup ; Kévina joue aussitôt après le
 //   joueur ; résultat publié dans un nouveau message en fin de partie ;
 // - 1v1 (`/frise adversaire:1v1`) : message public dans le salon (bouton
 //   Jouer dans le lobby seulement : rejoindre ; frise visible de tous) et
@@ -35,12 +35,14 @@ import {
   rejoindrePvp,
   siegeDe,
 } from "../../services/friseDuel.js";
+import { encodeFrise } from "../../services/friseImage.js";
 import { adversaire, choisir, choixKevina, libelleCreneau, nbCreneaux, placer } from "../../services/friseRules.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
 
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // Brun parchemin
 const FRISE_COLOR = 0xb9770e;
 const TITRE = "🗓️ Frise";
@@ -88,7 +90,12 @@ export function versV2({ content = null, embeds = [], components = [], ...reste 
     blocs.push({
       type: 17,
       accent_color: embed.color ?? FRISE_COLOR,
-      components: [{ type: 10, content: texte.slice(0, TEXTE_MAX) }, ...components],
+      components: [
+        { type: 10, content: texte.slice(0, TEXTE_MAX) },
+        // Image (frise) : galerie sous le texte
+        ...(embed.image?.url ? [{ type: 12, items: [{ media: { url: embed.image.url } }] }] : []),
+        ...components,
+      ],
     });
   } else blocs.push(...components);
   return { ...reste, flags: IS_COMPONENTS_V2, components: blocs };
@@ -196,21 +203,29 @@ function nomsAdv(partie, moi) {
   return nomsJoueur(partie.noms[partie.sieges[adversaire(moi)]] ?? "?");
 }
 
-// Frise en texte : une ligne par carte, année en gras ; la carte du
-// dernier coup est marquée ✅ (bien placée) ou ❌ (rangée après une erreur).
-function lignesFrise(d) {
-  const x = d.dernier;
-  return d.frise.map((c) => {
-    const marque = x && c.libelle === x.carte.libelle ? (x.juste ? " ✅" : " ❌") : "";
-    return `**${formatAnnee(c.annee)}** · ${c.libelle}${marque}`;
-  });
+// Image de la frise (voir friseImage.js) : cartes en bleu ou rouge selon
+// qui les a posées ; `bleu` : siège en bleu (le joueur de la vue, comme
+// Tourneboule ; le premier joueur dans les messages publics).
+const imageFrise = (d, bleu = "joueur") => ({ url: `${TRUST_ROYALE_URL}/api/frise/image?${encodeFrise(d, bleu)}` });
+
+// Récapitulatif de fin : frise horizontale décorative (image fixe), à la
+// place de la frise de la partie.
+const IMAGE_DECOR = { url: `${TRUST_ROYALE_URL}/api/frise/decor` };
+
+// Erreurs de la partie (récapitulatif de fin), par joueur dans l'ordre des
+// sièges ; rien s'il n'y en a eu aucune. `nom(siege)` : pseudo.
+function lignesErreurs(d, nom) {
+  const erreurs = d.erreurs ?? [];
+  if (!erreurs.length) return [];
+  const lignes = ["", "**Erreurs**"];
+  for (const siege of ["joueur", "bot"]) {
+    for (const e of erreurs.filter((x) => x.id === siege)) lignes.push(`• ${nom(siege)} : « ${e.libelle} » (${formatAnnee(e.annee)})`);
+  }
+  return lignes;
 }
 
-// Main en texte (dates cachées) ; `choix` : index de la carte choisie (▶️).
-function lignesMain(main, choix = null) {
-  if (!main.length) return ["*(vide)*"];
-  return main.map((c, k) => `${k === choix ? "▶️" : "•"} ${c.libelle}`);
-}
+// Légende des couleurs de l'image
+const legende = (bleu, rouge) => `🟦 ${bleu} · 🟥 ${rouge}`;
 
 // Récit du dernier coup vu par `moi`, sans point final.
 function recit(d, moi, A) {
@@ -301,7 +316,8 @@ function menusJeu(d, moi, sfx) {
         {
           type: 3,
           custom_id: `friseduel_placer:${d.vue}:${k}${sfx}`,
-          placeholder: n > OPTIONS_MAX ? `Où placer « ${tronquer(main[choix].libelle, 40)} » ? (${debut + 1} à ${fin})` : `Où placer « ${tronquer(main[choix].libelle, 70)} » ?`,
+          // Le menu de carte, au-dessus, montre déjà la carte choisie
+          placeholder: `Où placer ${main.length > 1 ? "cette carte" : `« ${tronquer(main[choix].libelle, 60)} »`} ?${n > OPTIONS_MAX ? ` (${debut + 1} à ${fin})` : ""}`,
           options,
         },
       ],
@@ -339,8 +355,9 @@ function vueFin(d, { moi, A, raison, texte = null }) {
   };
 }
 
-// Vue d'un joueur : récit, frise, sa main (carte choisie ▶️), main
-// adverse, puis menus de jeu à son tour. `ctx` : { moi, A, pvp, echeance,
+// Vue d'un joueur : récit, tour, image de la frise, puis menus de jeu à
+// son tour (sa main est dans le menu « Carte à placer » ; mains réduites à
+// leur nombre de cartes, dans le titre). `ctx` : { moi, A, pvp, echeance,
 // raison, confirmerAbandon, attente (Kévina réfléchit : pas de menus) }.
 function buildVue(
   d,
@@ -353,22 +370,15 @@ function buildVue(
   const lignes = confirmerAbandon
     ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite."]
     : [
-        ...(texte ? [texte, ""] : []),
-        "**Frise**",
-        ...lignesFrise(d),
-        "",
-        `**Ta main** (${cartes(d.mains[moi].length)})`,
-        ...lignesMain(d.mains[moi], monTour ? Math.min(d.choix[moi] ?? 0, d.mains[moi].length - 1) : null),
-        "",
-        `**Main de ${A.Sujet}** (${cartes(d.mains[autre].length)})`,
-        ...lignesMain(d.mains[autre]),
+        legende("**Toi**", `**${A.emoji} ${A.Sujet}**`),
+        ...(texte ? ["", texte] : []),
         "",
         monTour
           ? `👉 À toi : choisis une carte puis son créneau${d.dernierTour ? " (dernier tour !)" : ""}${pvp && echeance ? `, limite <t:${echeance}:R>` : ""}.`
           : `⏳ ${attente ? `${A.Sujet} réfléchit…` : `Au tour de ${A.Sujet}`}${pvp && echeance && !attente ? `, limite <t:${echeance}:R>` : ""}.`,
       ];
   const titre = `${TITRE} · Toi ${d.mains[moi].length} – ${d.mains[autre].length} ${A.Sujet}${pvp && monTour ? " · À toi !" : ""}`;
-  const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: FRISE_COLOR };
+  const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: FRISE_COLOR, image: imageFrise(d, moi) };
   if (confirmerAbandon) return { embeds: [embed], components: boutonsConfirmation(sfx) };
   const bas = { type: 1, components: [BOUTON_REGLES, ...(monTour || pvp ? [boutonAbandon(sfx)] : [])] };
   return { embeds: [embed], components: [...(monTour ? menusJeu(d, moi, sfx) : []), bas] };
@@ -378,8 +388,7 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles de Frise",
     description: [
-      "Une frise commune démarre avec un événement daté. Chaque joueur a une main de " +
-        `${cartes(config.taille_main)} événements, visibles de tous mais **sans leur année**.`,
+      `Une frise commune démarre avec un événement daté. Chaque joueur reçoit ${cartes(config.taille_main)} événements **sans leur année**.`,
       "",
       "**🗓️ À ton tour**, choisis une carte de ta main et le créneau de la frise où elle se place (avant, entre ou après les cartes déjà posées).",
       "**✅ Juste** : la carte reste sur la frise, avec son année.",
@@ -415,16 +424,10 @@ export async function handleFriseRoleRejected(webhookUrl) {
   });
 }
 
-// Frise publique et mains, au tour de qui (messages publics en cours).
+// Au tour de qui et cartes en main (messages publics en cours ; la frise
+// est l'image du message).
 function corpsPublic(d, nom, tour) {
-  return [
-    tour,
-    "",
-    ...lignesFrise(d),
-    "",
-    `**${nom("joueur")}** (${cartes(d.mains.joueur.length)}) : ${d.mains.joueur.map((c) => c.libelle).join(" · ") || "—"}`,
-    `**${nom("bot")}** (${cartes(d.mains.bot.length)}) : ${d.mains.bot.map((c) => c.libelle).join(" · ") || "—"}`,
-  ];
+  return [tour, `Cartes en main : 🟦 **${nom("joueur")}** ${d.mains.joueur.length} · 🟥 **${nom("bot")}** ${d.mains.bot.length}`];
 }
 
 // Message public d'une partie contre Kévina, en cours. Expiration rappelée,
@@ -442,6 +445,7 @@ function messageSolo(d, pseudo, { attente = false } = {}) {
           .join("\n")
           .slice(0, 4096),
         color: FRISE_COLOR,
+        image: imageFrise(d),
       },
     ],
     components: boutonsFin(),
@@ -490,7 +494,7 @@ function lignesSeries({ gagnant, perdant, record, libelleSerie, libelleRecord })
   return lignes;
 }
 
-// Fin d'une partie contre Kévina : message public, résultat, frise finale
+// Fin d'une partie contre Kévina : message public, résultat, erreurs, frise décorative
 // et série. Pseudo en clair, jamais de mention.
 function messageFinalSolo(d, pseudo) {
   const s = d.series;
@@ -514,10 +518,11 @@ function messageFinalSolo(d, pseudo) {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [resultat, "", ...lignesFrise(d), ...(series.length ? ["", ...series] : [])]
+        description: [resultat, ...lignesErreurs(d, (s) => (s === "bot" ? "Kévina" : pseudo)), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
         color: FRISE_COLOR,
+        image: IMAGE_DECOR,
       },
     ],
     components: boutonsFin(),
@@ -696,6 +701,7 @@ function messagePublic(partie, config) {
           .join("\n")
           .slice(0, 4096),
         color: FRISE_COLOR,
+        image: imageFrise(d),
       },
     ],
     components: [{ type: 1, components: [BOUTON_MA_VUE, BOUTON_REGLES] }],
@@ -731,10 +737,11 @@ function messageFinal(partie) {
     embeds: [
       {
         title: `${TITRE} · ${titreGagnant(g, nom)}`,
-        description: [resultat, "", ...lignesFrise(d), ...(series.length ? ["", ...series] : [])]
+        description: [resultat, ...lignesErreurs(d, nom), ...(series.length ? ["", ...series] : [])]
           .join("\n")
           .slice(0, 4096),
         color: FRISE_COLOR,
+        image: IMAGE_DECOR,
       },
     ],
     components: boutonsFin(),

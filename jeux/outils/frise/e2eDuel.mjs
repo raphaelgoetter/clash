@@ -103,7 +103,7 @@ await h.handleFriseCommand(W, lancement);
 const d0 = await readDuel(ID);
 await h.handleFriseChoisir(W, ID, 2, d0.vue);
 if ((await readDuel(ID)).choix.joueur !== 2) throw new Error("choix de carte non enregistré");
-if (!texte(vues.at(-1)).includes(`▶️ ${d0.mains.joueur[2].libelle}`)) throw new Error("carte choisie non marquée");
+if (menus(vues.at(-1))[0].options.find((o) => o.default)?.value !== "2") throw new Error("carte choisie non présélectionnée");
 await h.handleFrisePlacer(W, ID, 0, 999, opts);
 if (!texte(vues.at(-1)).includes("La frise a changé")) throw new Error("vue dépassée acceptée");
 if ((await readDuel(ID)).vue !== d0.vue) throw new Error("coup d'une vue dépassée joué");
@@ -116,7 +116,7 @@ if ((await readDuel(ID)).vue !== d0.vue) throw new Error("créneau invalide jou�
   const { Redis: R } = await import("@upstash/redis");
   const r = new R({ url: "x", token: "x", automaticDeserialization: false });
   const d = await readDuel(ID);
-  d.frise = Array.from({ length: 30 }, (_, k) => ({ libelle: `Carte ${k}`, annee: 1000 + 10 * k }));
+  d.frise = Array.from({ length: 30 }, (_, k) => ({ id: k, libelle: `Carte ${k}`, annee: 1000 + 10 * k }));
   await r.set(`friseduel:${ID}`, JSON.stringify(d));
   await h.handleFriseChoisir(W, ID, 0, d.vue);
   const m = menus(vues.at(-1));
@@ -161,14 +161,28 @@ if (!texte(salon.at(-1)).includes("abandonne face à Kévina")) throw new Error(
 
 vues.forEach(verifier);
 salon.forEach(verifier);
+// Image de la frise : présente dans les vues de jeu et les messages publics,
+// URL relue par la route d'image (frise complète, dernier coup marqué)
+const images = (v) => aplatir(v.components).filter((c) => c.type === 12).map((c) => c.items[0].media.url);
+const { decodeFrise } = await import("../../services/friseImage.js");
+for (const v of [...vues.filter((v) => menus(v).length), ...salon]) {
+  const [url] = images(v);
+  if (!url && !texte(v).includes("1v1") && !texte(v).includes("Règles")) throw new Error("image de frise absente");
+  if (url && !url.endsWith("/api/frise/decor") && !decodeFrise(Object.fromEntries(new URL(url).searchParams))) throw new Error(`URL d'image illisible : ${url}`);
+}
 await h.handleFriseRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
 const exemple = vues.find((v) => menus(v).length >= 2 && texte(v).includes("Kévina place"));
-console.log("\n--- Vue contre Kévina ---\n" + texte(exemple));
+console.log("\n--- Vue contre Kévina ---\n" + texte(exemple) + "\n[image] " + images(exemple)[0]);
 console.log("Menus :\n" + menus(exemple).map((m) => `[${m.placeholder}] ${m.options.map((o) => o.label).join(" | ")}`).join("\n"));
 const recapSolo = salon.find((m) => m.method === "POST" && /bat (Kévina|Testeur)/.test(texte(m)));
+// Récapitulatifs : frise décorative, jamais la frise de la partie ; erreurs listées
+for (const m of salon.filter((m) => m.method === "POST" && /bat |Match nul|abandonne/.test(texte(m)))) {
+  if (images(m)[0] !== "https://trustroyale.vercel.app/api/frise/decor") throw new Error("récapitulatif sans frise décorative");
+}
+if (!salon.some((m) => m.method === "POST" && texte(m).includes("**Erreurs**"))) throw new Error("erreurs jamais listées");
 console.log("\n--- Récap contre Kévina ---\n" + texte(recapSolo));
 console.log("\n--- Message public 1v1 ---\n" + texte(salon.filter((m) => m.method === "PATCH" && texte(m).includes("Alice contre") || texte(m).includes("Bob contre")).at(-2) ?? {}));
 console.log("\n--- Règles ---\n" + texte(vues.at(-1)));

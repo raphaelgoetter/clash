@@ -66,6 +66,7 @@ const CARTES = Array.from({ length: 30 }, (_, k) => ({ libelle: `Événement ${k
   const r = placer(d, "joueur", 1);
   assert.strictEqual(r.juste, true);
   assert.deepStrictEqual(d.frise.map((c) => c.annee), [1500, 1700]);
+  assert.deepStrictEqual(d.frise.map((c) => c.par ?? null), [null, "joueur"]); // auteur de la pose
   assert.strictEqual(d.mains.joueur.length, 1);
   assert.strictEqual(d.actif, "bot");
   assert.strictEqual(d.vue, 1);

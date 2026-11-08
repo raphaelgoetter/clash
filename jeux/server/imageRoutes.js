@@ -47,6 +47,7 @@ import {
   getFinalImage as getPenduFinalImage,
   getVueImage as getPenduVueImage,
 } from "../services/penduImage.js";
+import { decodeFrise, getDecorImage, getFriseImage } from "../services/friseImage.js";
 
 const router = express.Router();
 
@@ -294,6 +295,26 @@ router.get("/api/mascarade/table", async (req, res) => {
 router.get("/api/mascarade/resultat", async (req, res) => {
   const resultat = decodeMascaradeResultat(req.query.d);
   const image = resultat ? await getMascaradeResultatImage(resultat).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Frise : la frise d'une partie (ids des cartes dans l'URL, voir
+// encodeFrise), rendu sans état.
+router.get("/api/frise/image", async (req, res) => {
+  const frise = decodeFrise(req.query);
+  const image = frise ? await getFriseImage(frise).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Frise : frise horizontale décorative (récapitulatif de fin), image fixe.
+router.get("/api/frise/decor", async (req, res) => {
+  const image = await getDecorImage().catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
