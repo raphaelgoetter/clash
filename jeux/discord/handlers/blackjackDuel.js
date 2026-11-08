@@ -180,23 +180,37 @@ async function deletePublicMessage(state) {
 
 // ── Embed / composants du message public ──────────────────────────
 
-// Jamais désactivé : le bouton "Jouer" sert aussi aux joueurs déjà inscrits
+// Jamais désactivé : le bouton "Jouer" (puis "Reprendre ma partie") sert aussi aux joueurs déjà inscrits
 // pour recevoir leur main de la manche courante (à chaque manche). Le refus
 // d'un NOUVEAU joueur une fois les inscriptions verrouillées est géré
 // côté serveur (joinAndDeal) avec un message de rejet éphémère, pas en
 // désactivant le bouton pour tout le monde.
-function buildJoinComponents(gid) {
+// Libellé du bouton de la partie : Jouer tant qu'une place est libre, puis
+// Reprendre ma partie (règle commune des duels), même action.
+function nomBoutonJouer(state) {
+  return state?.rosterLocked ? "Reprendre ma partie" : "Jouer";
+}
+
+function buildJoinComponents(state) {
   return [
     {
       type: 1,
       components: [
-        {
-          type: 2,
-          style: 3,
-          label: "Jouer",
-          emoji: { name: "🃏" },
-          custom_id: `blackjackduel_jouer:${gid}`,
-        },
+        state.rosterLocked
+          ? {
+              type: 2,
+              style: 2,
+              label: "Reprendre ma partie",
+              emoji: { name: "🎮" },
+              custom_id: `blackjackduel_jouer:${state.gid}`,
+            }
+          : {
+              type: 2,
+              style: 3,
+              label: "Jouer",
+              emoji: { name: "🃏" },
+              custom_id: `blackjackduel_jouer:${state.gid}`,
+            },
         {
           type: 2,
           style: 2,
@@ -410,7 +424,7 @@ export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, tot
     if (result.replaced) await deletePublicMessage(result.replaced);
 
     const embed = await buildTableEmbed(result.state);
-    const components = buildJoinComponents(result.state.gid);
+    const components = buildJoinComponents(result.state);
 
     const token = process.env.DISCORD_TOKEN;
     const res = await fetch(
@@ -565,7 +579,7 @@ async function refreshPublicMessage(gid) {
     const embed = await buildTableEmbed(outcome.state);
     await patchPublicMessage(outcome.state, {
       embeds: [embed],
-      components: buildJoinComponents(gid),
+      components: buildJoinComponents(outcome.state),
     });
     return outcome;
   }
@@ -582,7 +596,7 @@ async function refreshPublicMessage(gid) {
   });
   await patchPublicMessage(outcome.state, {
     embeds: [embed],
-    components: buildJoinComponents(gid),
+    components: buildJoinComponents(outcome.state),
   });
   return outcome;
 }
@@ -668,7 +682,7 @@ async function handleDrawOrStand(webhookUrl, gid, discordId, { draw }) {
     }
     if (result.noHand) {
       await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour recevoir tes 2 premières cartes !",
+        content: `Clique d'abord sur **${nomBoutonJouer(result.state)}** pour recevoir tes 2 premières cartes !`,
         embeds: [],
         components: [],
       });
@@ -721,7 +735,7 @@ function buildReglesEmbed() {
       "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. Contre Kévina, seul celui qui a lancé la partie peut jouer.",
       "",
       "**Déroulement (1 main par manche) :**",
-      "🃏 **Jouer** : reçois 2 cartes.",
+      "🃏 **Jouer** (puis **Reprendre ma partie**) : reçois 2 cartes.",
       "👆 **Piocher** : reçois une carte de plus (autant de fois que tu veux).",
       "🛑 **Arrêter** : fige ton score pour cette manche.",
       "Dépasser 21 = main perdue immédiatement pour la manche.",

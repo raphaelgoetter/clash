@@ -190,7 +190,7 @@ async function deletePublicMessage(state) {
 
 // ── Embed / composants du message public ──────────────────────────
 
-// Jamais désactivé : le bouton "Jouer" sert aussi aux joueurs déjà inscrits
+// Jamais désactivé : le bouton "Jouer" (puis "Reprendre ma partie") sert aussi aux joueurs déjà inscrits
 // pour recevoir leur main de la manche courante (à chaque manche). Le refus
 // d'un NOUVEAU joueur une fois les inscriptions verrouillées est géré
 // côté serveur (joinAndDeal) avec un message de rejet éphémère, pas en
@@ -203,18 +203,32 @@ const REGLES_BUTTON = {
   custom_id: "gobeletduel_regles",
 };
 
-function buildJoinComponents(gid) {
+// Libellé du bouton de la partie : Jouer tant qu'une place est libre, puis
+// Reprendre ma partie (règle commune des duels), même action.
+function nomBoutonJouer(state) {
+  return state?.rosterLocked ? "Reprendre ma partie" : "Jouer";
+}
+
+function buildJoinComponents(state) {
   return [
     {
       type: 1,
       components: [
-        {
-          type: 2,
-          style: 3,
-          label: "Jouer",
-          emoji: { name: "🎲" },
-          custom_id: `gobeletduel_jouer:${gid}`,
-        },
+        state.rosterLocked
+          ? {
+              type: 2,
+              style: 2,
+              label: "Reprendre ma partie",
+              emoji: { name: "🎮" },
+              custom_id: `gobeletduel_jouer:${state.gid}`,
+            }
+          : {
+              type: 2,
+              style: 3,
+              label: "Jouer",
+              emoji: { name: "🎲" },
+              custom_id: `gobeletduel_jouer:${state.gid}`,
+            },
         REGLES_BUTTON,
       ],
     },
@@ -237,7 +251,7 @@ async function buildPendingLabel(state, hands) {
       pendingIds.map((id) => resolveDisplayName(id, hands[id]?.username)),
     );
     lines.push(
-      `⏳ ${names.length > 1 ? "Doivent" : "Doit"} encore jouer cette manche (bouton **Jouer**) : ${names.join(", ")}`,
+      `⏳ ${names.length > 1 ? "Doivent" : "Doit"} encore jouer cette manche (bouton **${nomBoutonJouer(state)}**) : ${names.join(", ")}`,
     );
   }
   // Roster incomplet : la manche attend les places libres avant d'être
@@ -383,7 +397,7 @@ export async function handleGobeletCommand(
     if (result.replaced) await deletePublicMessage(result.replaced);
 
     const embed = await buildTableEmbed(result.state);
-    const components = buildJoinComponents(result.state.gid);
+    const components = buildJoinComponents(result.state);
 
     const token = process.env.DISCORD_TOKEN;
     const res = await fetch(
@@ -591,7 +605,7 @@ async function refreshPublicMessage(gid) {
     const embed = await buildTableEmbed(outcome.state);
     await patchPublicMessage(outcome.state, {
       embeds: [embed],
-      components: buildJoinComponents(gid),
+      components: buildJoinComponents(outcome.state),
     });
     return outcome;
   }
@@ -615,7 +629,7 @@ async function refreshPublicMessage(gid) {
   });
   await patchPublicMessage(outcome.state, {
     embeds: [embed],
-    components: buildJoinComponents(gid),
+    components: buildJoinComponents(outcome.state),
   });
   return outcome;
 }
@@ -698,7 +712,7 @@ export async function handleToggle(webhookUrl, gid, discordId, index) {
     }
     if (result.noHand) {
       await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
+        content: `Clique d'abord sur **${nomBoutonJouer(result.state)}** pour lancer tes 5 dés !`,
         embeds: [],
         components: [],
       });
@@ -733,7 +747,7 @@ export async function handleRelancer(webhookUrl, gid, discordId) {
     }
     if (result.noHand) {
       await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
+        content: `Clique d'abord sur **${nomBoutonJouer(result.state)}** pour lancer tes 5 dés !`,
         embeds: [],
         components: [],
       });
@@ -770,7 +784,7 @@ export async function handleValider(webhookUrl, gid, discordId) {
     }
     if (result.noHand) {
       await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
+        content: `Clique d'abord sur **${nomBoutonJouer(result.state)}** pour lancer tes 5 dés !`,
         embeds: [],
         components: [],
       });
@@ -818,7 +832,7 @@ export async function handleChoisir(webhookUrl, gid, discordId, category) {
     }
     if (result.noHand) {
       await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
+        content: `Clique d'abord sur **${nomBoutonJouer(result.state)}** pour lancer tes 5 dés !`,
         embeds: [],
         components: [],
       });
@@ -849,7 +863,7 @@ function buildReglesEmbed() {
       "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. En solo, seul celui qui a lancé la partie peut jouer.",
       "",
       "**Déroulement (1 main par manche) :**",
-      "🎲 **Jouer** : lance tes 5 dés.",
+      "🎲 **Jouer** (puis **Reprendre ma partie**) : lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** : relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
       "👍 **Valider** : dès que tes dés forment une combinaison encore libre (hors Joker), arrête tes relances immédiatement.",
