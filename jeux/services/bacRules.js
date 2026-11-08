@@ -116,19 +116,40 @@ export const MOTS_VIDES_TETE = new Set(
 const sansArticle = (s) => s.replace(/^\s*(le|la|les|un|une|des|the)\s+/i, "").replace(/^\s*l['’]\s*/i, "");
 
 // Personnes (acteurs, chanteurs) : seul le nom de famille compte. Formes du
-// nom : le dernier mot, et la particule avec la suite (« De Niro », « de
-// Havilland », « Van Damme ») ; un nom d'un seul mot (« Cher ») est son nom.
-// Numéro ou suffixe final ignoré (« Ahmet Ier » : A, « Pie II » : P, pas I).
+// nom reconnues : le dernier mot, et la particule avec la suite (« De Niro »,
+// « de Havilland », « Van Damme ») ; un nom d'un seul mot (« Cher ») est son
+// nom. Numéro ou suffixe final ignoré (« Ahmet Ier » : A, « Pie II » : P,
+// pas I). Élision de tête du dernier mot retirée (« Héron d'Alexandrie » :
+// Alexandrie), la forme élidée restant reconnue. La première forme est le
+// nom principal.
 const PARTICULES = new Set(["de", "du", "des", "di", "da", "del", "della", "van", "von", "der", "den", "le", "la", "mac", "o"]);
 const SUFFIXE_NOM = /^([IVXLC]+|Ier|1er|Jr\.?|Sr\.?)$/;
 export function nomsDeFamille(nom) {
   const mots = nom.trim().split(/\s+/);
   while (mots.length > 1 && SUFFIXE_NOM.test(mots.at(-1))) mots.pop();
   if (mots.length === 1) return [mots[0]];
-  const formes = [mots.at(-1)];
+  const dernier = mots.at(-1);
+  const principal = dernier.replace(/^[dl]['’](?=.)/i, "");
+  const formes = principal === dernier ? [dernier] : [principal, dernier];
   const k = mots.findIndex((m, i) => i > 0 && PARTICULES.has(normaliser(m)));
   if (k > 0 && k < mots.length - 1) formes.push(mots.slice(k).join(" "));
+  // Particule en majuscule après une particule en minuscule (« de La
+  // Fontaine » : « La Fontaine »)
+  const j = mots.findIndex((m, i) => i > k && /^\p{Lu}/u.test(m) && PARTICULES.has(normaliser(m)));
+  if (k > 0 && j > k && j < mots.length - 1) formes.push(mots.slice(j).join(" "));
   return formes;
+}
+
+// Lettres d'un nom de personne, règle classique du Petit Bac : celle du nom
+// principal, plus celle d'une particule en majuscule dans l'orthographe de
+// la liste (« De Niro » : N et D, « Van Damme » : D et V, « Jean de La
+// Fontaine » : F et L) ; particule ou élision en minuscule ignorée
+// (« Charles de Gaulle » : G, « Héron d'Alexandrie » : A), quelle que soit
+// la casse tapée par le joueur.
+export function lettresDuNom(nom) {
+  const [principal, ...autres] = nomsDeFamille(nom);
+  const formes = [principal, ...autres.filter((f) => /^\p{Lu}/u.test(f))];
+  return new Set(formes.map((f) => normaliser(f)[0]?.toUpperCase()).filter(Boolean));
 }
 
 // Variantes au singulier d'une clé (« kiwis », « chevaux »)
@@ -166,11 +187,11 @@ export function chargerTheme(id) {
     const personnes = new Map();
     const familles = new Map();
     for (const p of t.personnes ?? []) {
-      const e = { nom: p, initiales: new Set(nomsDeFamille(p).map((f) => normaliser(f)[0]?.toUpperCase()).filter(Boolean)) };
+      const e = { nom: p, initiales: lettresDuNom(p) };
       personnes.set(normaliser(p), e);
       for (const f of nomsDeFamille(p)) if (!familles.has(normaliser(f))) familles.set(normaliser(f), e);
     }
-    // Initiale(s) d'un mot de Kévina : nom de famille pour une personne
+    // Initiale(s) d'un mot de Kévina : lettres du nom pour une personne
     const initiales = (m) => (personnes.has(normaliser(m)) ? [...personnes.get(normaliser(m)).initiales] : [normaliser(sansArticle(m))[0]?.toUpperCase()].filter(Boolean));
     const kevina = new Map();
     for (const m of t.kevina) {

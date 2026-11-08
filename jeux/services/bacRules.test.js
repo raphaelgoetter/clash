@@ -16,11 +16,13 @@ import {
   mancheSuivante,
   niveauDe,
   nomsDeFamille,
+  lettresDuNom,
   normaliser,
   passer,
   proposer,
   tempsEcoule,
   valider,
+  chargerTheme,
 } from "./bacRules.js";
 
 // Tirage reproductible
@@ -76,6 +78,15 @@ assert.strictEqual(valider("outils", "P", "pied").ok, false); // nom composé ga
 // ── Personnes : seul le nom de famille compte ──
 assert.deepStrictEqual(nomsDeFamille("Robert De Niro"), ["Niro", "De Niro"]);
 assert.deepStrictEqual(nomsDeFamille("Madonna"), ["Madonna"]);
+assert.deepStrictEqual(nomsDeFamille("Aristarque de Samos"), ["Samos", "de Samos"]);
+assert.deepStrictEqual(nomsDeFamille("Héron d'Alexandrie"), ["Alexandrie", "d'Alexandrie"]);
+// Règle classique : particule en majuscule comptée, en minuscule ignorée
+assert.deepStrictEqual([...lettresDuNom("Robert De Niro")], ["N", "D"]);
+assert.deepStrictEqual([...lettresDuNom("Jean-Claude Van Damme")], ["D", "V"]);
+assert.deepStrictEqual([...lettresDuNom("Olivia de Havilland")], ["H"]);
+assert.deepStrictEqual([...lettresDuNom("Héron d'Alexandrie")], ["A"]);
+assert.deepStrictEqual([...lettresDuNom("Jean de La Fontaine")], ["F", "L"]);
+assert.deepStrictEqual(nomsDeFamille("Jean de La Fontaine"), ["Fontaine", "de La Fontaine", "La Fontaine"]);
 assert.deepStrictEqual(nomsDeFamille("Ahmet Ier"), ["Ahmet"]);
 assert.deepStrictEqual(nomsDeFamille("Léon XIV"), ["Léon"]);
 assert.deepStrictEqual(nomsDeFamille("Martin Luther King Jr."), ["King"]);
@@ -203,6 +214,19 @@ for (const difficulte of Object.keys(DIFFICULTES)) {
   jouerKevina(d, "bot", { trouve: 0, rng });
   assert.strictEqual(mancheCourante(d).reponses.bot, null);
   assert.strictEqual(mancheCourante(d).fige.bot, true);
+}
+
+// Kévina : initiale du nom principal seulement (pas « de Samos » pour D)
+{
+  const k = chargerTheme("scientifiques").kevina;
+  assert.ok(!k.get("D").includes("Aristarque de Samos"));
+  assert.ok(k.get("S").includes("Aristarque de Samos"));
+  assert.ok(!(k.get("D") ?? []).includes("Diophante d'Alexandrie"));
+  // Même règle pour le joueur, quelle que soit la forme écrite
+  assert.strictEqual(valider("scientifiques", "D", "Aristarque de Samos").raison, "nom");
+  assert.strictEqual(valider("scientifiques", "D", "de Samos").raison, "nom");
+  assert.ok(valider("scientifiques", "S", "de Samos").ok);
+  assert.ok(valider("scientifiques", "A", "Diophante d'Alexandrie").ok);
 }
 
 console.log("bacRules.test.js OK");
