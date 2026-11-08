@@ -1,7 +1,7 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /tourneboule, /mascarade, /bac, /pendu, Six (archivé) et leurs
+// /quatre, /punto, /tourneboule, /frise, /mascarade, /bac, /pendu, Six (archivé) et leurs
 // boutons (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
-// tourneboulduel_*, mascaradeduel_*, bacduel_*, penduduel_*, sixduel_*).
+// tourneboulduel_*, friseduel_*, mascaradeduel_*, bacduel_*, penduduel_*, sixduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -83,6 +83,18 @@ import {
   handleTournebouleRegles,
   handleTournebouleAbandon,
 } from "../handlers/tourneboulDuel.js";
+import {
+  memberHasMiniJeuxRole as friseMemberHasMiniJeuxRole,
+  extractMember as friseExtractMember,
+  handleFriseRoleRejected,
+  handleFriseCommand,
+  handleFrisePvpCommand,
+  handleFriseOuvrir,
+  handleFrisePlacer,
+  handleFriseChoisir,
+  handleFriseRegles,
+  handleFriseAbandon,
+} from "../handlers/friseDuel.js";
 import {
   memberHasMiniJeuxRole as mascaradeMemberHasMiniJeuxRole,
   extractMember as mascaradeExtractMember,
@@ -418,6 +430,65 @@ export async function routeDuels(body, res) {
       // Le suffixe :pvp est en 2ᵉ position
       const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: tourneboulExtractMember(body).username };
       runBackground(() => handleTournebouleAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /frise adversaire:bot : Frise contre Kévina (frise publique, menus
+  // de jeu dans une vue éphémère) ; adversaire:1v1 : contre un joueur
+  // (message public). Réservé au rôle MINI-JEUX pour lancer.
+  if (body.type === 2 && body.data?.name === "frise") {
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      const allowed = await friseMemberHasMiniJeuxRole(body);
+      if (!allowed) {
+        await handleFriseRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handleFrisePvpCommand(webhookUrl, body);
+      else await handleFriseCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Frise : composants. Menus friseduel_carte:<vue>[:pvp] et
+  // friseduel_placer:<vue>:<k>[:pvp] (valeur choisie dans data.values),
+  // édités en place ; friseduel_ouvrir et friseduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("friseduel_")) {
+    const [action, arg, ...suite] = body.data.custom_id.split(":");
+    if (action === "friseduel_regles" || action === "friseduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "friseduel_regles") runBackground(() => handleFriseRegles(webhookUrl));
+      else runBackground(() => handleFriseOuvrir(webhookUrl, body));
+      return;
+    }
+    if (action === "friseduel_carte" || action === "friseduel_placer") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      const valeur = Number(body.data.values?.[0]);
+      const pvp = suite.includes("pvp");
+      if (action === "friseduel_carte") {
+        runBackground(() => handleFriseChoisir(webhookUrl, discordId, valeur, Number(arg), { pvp }));
+      } else {
+        // Contre Kévina, le résultat final est publié dans le salon du choix
+        const opts = { pvp, channelId: body.channel_id, pseudo: friseExtractMember(body).username };
+        runBackground(() => handleFrisePlacer(webhookUrl, discordId, valeur, Number(arg), opts));
+      }
+      return;
+    }
+    // [🏳️] : friseduel_abandon[:pvp] (confirmation), friseduel_abandon_ok /
+    // friseduel_abandon_non[:pvp], tous édités en place
+    const ETAPES_ABANDON = { friseduel_abandon: "demande", friseduel_abandon_ok: "ok", friseduel_abandon_non: "non" };
+    if (ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: friseExtractMember(body).username };
+      runBackground(() => handleFriseAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

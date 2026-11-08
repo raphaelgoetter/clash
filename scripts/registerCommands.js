@@ -30,6 +30,7 @@ const JEUX_COMMANDS = new Set([
   "quatre",
   "punto",
   "tourneboule",
+  "frise",
   "mascarade",
   "bac",
   "pendu",
@@ -566,6 +567,22 @@ const commands = [
     name: "tourneboule",
     description:
       "Tourneboule : encadre et retourne les pions adverses, contre Kévina ou un joueur — rôle MINI-JEUX.",
+    options: [
+      {
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
+        required: true,
+        choices: [
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "frise",
+    description: "Frise : place des événements dans l'ordre chronologique, contre Kévina ou un joueur (MINI-JEUX).",
     options: [
       {
         type: 3, // STRING

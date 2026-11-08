@@ -1218,16 +1218,16 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Duels à la demande
 
-Neuf duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/mascarade`, `/bac`, `/pendu` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Dix duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/tourneboule`, `/frise`, `/mascarade`, `/bac`, `/pendu` (Six est archivé, voir « Jeux archivés »). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `mascaradeduel:*`, `bacduel:*`, `penduduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `mascaradeduel_*`, `bacduel_*`, `penduduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `friseduel:*`, `mascaradeduel:*`, `bacduel:*`, `penduduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `friseduel_*`, `mascaradeduel_*`, `bacduel_*`, `penduduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
-- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Tourneboule 1v1, Mascarade 1v1, Petit Bac 1v1, Pendu 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
-- **1v1 en cours : bouton 🎮 Reprendre ma partie** sur le message public (La Grille, Quatre à la suite, Punto, Tourneboule, Mascarade, Petit Bac, Pendu ; même action que Jouer, `<jeu>duel_ouvrir`) : un joueur assis reçoit sa vue éphémère juste en dessous (l'ancienne est supprimée). Sans lui, le lanceur perd sa vue, postée au moment du défi plus haut dans le salon, et ne peut plus jouer ; sert aussi à changer d'appareil. La nouvelle vue est éditée **avant** la suppression de l'ancienne.
-- **Vues 1v1 jamais figées sur un état périmé** (La Grille, Quatre à la suite, Punto, Tourneboule, Mascarade, Petit Bac) : chaque invocation édite les vues avec l'état lu sous verrou, et les PATCH de deux invocations concurrentes arrivent dans n'importe quel ordre. Après sa diffusion (`diffuserPvp()`, Reprendre ma partie), l'invocation relit donc la partie (`rattraperPvp()`) : si l'état (hors `webhooks`) a changé entre-temps, les deux vues et le message public sont rééditées avec l'état frais. Sans cela, le joueur au trait peut voir « au tour de l'adversaire », sans boutons, et perdre au délai.
+- **Une seule partie publique à la fois** par jeu (Blackjack Duel et Gobelet Duel à 2 joueurs, Arène 1v1, La Grille 1v1, Quatre à la suite 1v1, Punto 1v1, Tourneboule 1v1, Frise 1v1, Mascarade 1v1, Petit Bac 1v1, Pendu 1v1). Le message public est édité en place pendant la partie ; **en fin de partie, le récapitulatif est posté dans un nouveau message et l'ancien supprimé** (repli : édition de l'ancien si le POST échoue).
+- **1v1 en cours : bouton 🎮 Reprendre ma partie** sur le message public (La Grille, Quatre à la suite, Punto, Tourneboule, Frise, Mascarade, Petit Bac, Pendu ; même action que Jouer, `<jeu>duel_ouvrir`) : un joueur assis reçoit sa vue éphémère juste en dessous (l'ancienne est supprimée). Sans lui, le lanceur perd sa vue, postée au moment du défi plus haut dans le salon, et ne peut plus jouer ; sert aussi à changer d'appareil. La nouvelle vue est éditée **avant** la suppression de l'ancienne.
+- **Vues 1v1 jamais figées sur un état périmé** (La Grille, Quatre à la suite, Punto, Tourneboule, Frise, Mascarade, Petit Bac) : chaque invocation édite les vues avec l'état lu sous verrou, et les PATCH de deux invocations concurrentes arrivent dans n'importe quel ordre. Après sa diffusion (`diffuserPvp()`, Reprendre ma partie), l'invocation relit donc la partie (`rattraperPvp()`) : si l'état (hors `webhooks`) a changé entre-temps, les deux vues et le message public sont rééditées avec l'état frais. Sans cela, le joueur au trait peut voir « au tour de l'adversaire », sans boutons, et perdre au délai.
 
 ### Blackjack Duel et Gobelet Duel (contre Kévina / solo, ou en 1v1)
 
@@ -1408,6 +1408,34 @@ Duel de réflexion pure, sans hasard : poser des pions et retourner ceux qu'on e
 
 - `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `coins` (« coins puis bords » sans calcul), `kevina[p<profondeur>][e<erreur>][m<marge>]` (positionnel), ex. `kevinap2e0.5m10` = réglage de production). Repères contre Kévina de production (150 parties) : hasard ~1 % ; « coins puis bords » ~17 % ; joueur positionnel qui calcule 1 coup ~54 %, 2 coups ~85 %, 3 coups ~79 %. Kévina sans erreur bat « coins puis bords » 100 %. Quelques millisecondes par coup à profondeur 4.
 - `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/tourneboule/e2eDuel.mjs`).
+
+### Frise (contre Kévina ou en 1v1)
+
+Duel de culture générale : classer des événements par année sur une frise commune (mécanique de placement chronologique, cartes et nom propres au projet). `/frise adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Tourneboule (modes, sièges, verrous, délai 1v1, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
+
+- Code : `jeux/services/friseRules.js` (règles pures et Kévina, tests `friseRules.test.js`, qui vérifient aussi les données), `jeux/services/friseDuel.js` (Redis, tests `friseDuel.test.js`), `jeux/discord/handlers/friseDuel.js` (Discord). Config `jeux/data/frise/duel.json` : `taille_main` (4), `ecart_min_annees` (3), `delai_tour_minutes` (2, 1v1 uniquement), `erreur_kevina` (0,8), `echelle_kevina` (20, en années).
+- Cartes : `jeux/data/frise/cartes.json` (`libelle` ≤ 60 caractères, `annee` entière, négative avant J.-C., `theme`, `difficulte`, `source`, `note`). **Chaque année est vérifiée sur une source web (Wikipédia FR de préférence), jamais de mémoire.** Le libellé lève toute ambiguïté sur la date visée (« Inauguration de… », « Sortie … au Japon », « Naissance de… ») et ne contient ni la date ni d'indice direct. Les cartes de la partie sont copiées dans l'état Redis (une modification du fichier n'affecte pas les parties en cours). Pas de paquet Clash Royale : une seule carte (sortie mondiale du jeu).
+- Redis : `friseduel:<discordId>` (contre Kévina), `friseduel:pvp`, verrous `friseduel:lock:*`, séries `friseduel:series:bot` / `friseduel:series:pvp`, records `friseduel:records`.
+- `custom_id` : menus `friseduel_carte:<vue>[:pvp]` (carte à placer, valeur = index dans la main) et `friseduel_placer:<vue>:<k>[:pvp]` (créneau, valeur = numéro du créneau ; `<k>` = numéro du menu), `friseduel_ouvrir`, `friseduel_regles`, `friseduel_abandon[:pvp]`, `friseduel_abandon_ok[:pvp]` / `friseduel_abandon_non[:pvp]`. `<vue>` = `d.vue` affiché, +1 à chaque carte placée : un choix sur une vue dépassée est refusé (« La frise a changé depuis »).
+
+#### Règles
+
+- **Paquet** (`construirePaquet()`) : cartes mélangées, en ne gardant que celles à au moins `ecart_min_annees` ans de toutes les cartes déjà retenues (jamais deux cartes de la même année ni de créneau ambigu). **Départ** : une carte sur la frise (année visible), `taille_main` cartes par joueur, **mains visibles de tous, années cachées** ; le reste forme la pioche.
+- **À son tour**, le joueur choisit une carte de sa main (`choisir()`, première carte par défaut) et le **créneau** où l'insérer (`placer()`) : avant la première carte, entre deux cartes ou après la dernière (bornes incluses, `creneauJuste()`).
+- **Juste** : la carte reste sur la frise. **Faux** : la carte est rangée à sa vraie place (année dévoilée) et le joueur pioche une carte (rien si la pioche est vide).
+- **Fin** : le premier à vider sa main gagne. Si c'est le premier joueur, le second joue encore un tour (`d.dernierTour`, même nombre de tours) : s'il vide aussi sa main, **match nul**, sinon le premier gagne. Le second qui vide sa main le premier gagne aussitôt.
+- **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
+- **Kévina** (`choixKevina()`) : elle connaît les années mais se trompe avec la probabilité `erreur_kevina × echelle_kevina / (echelle_kevina + écart)` (`probaErreurKevina()`), où l'écart est la distance en années à la voisine la plus proche sur la frise (jamais d'erreur sur une frise vide de voisine). Elle joue la carte la plus sûre de sa main ; en cas d'erreur, elle vise un créneau voisin du bon.
+
+#### Affichage
+
+- **Vue éphémère** : titre avec les cartes restant en main (« 🗓️ Frise · Toi 3 – 4 Kévina », « · À toi ! » en 1v1), récit des derniers coups (« Tu places « … » : ✅ 1789. », « ❌ c'était 1789, tu pioches une carte. »), la frise (une ligne par carte, année en gras, ✅ ou ❌ sur la carte du dernier coup), sa main (▶️ sur la carte choisie), la main adverse, puis à son tour **deux menus déroulants** : « Carte à placer » (absent avec une seule carte) et « Où placer « … » ? » (libellé « Avant 1492 », « Entre 1492 et 1789 », « Après 2016 », description = cartes qui encadrent le créneau). Au-delà de 25 créneaux, plusieurs menus de créneaux (25 options chacun, limite Discord). Années négatives affichées « 52 av. J.-C. ».
+- **Contre Kévina** : résultat du coup du joueur et « Kévina réfléchit… » (2 à 4 s), puis son coup, sur la vue et le message public.
+- **Messages publics** : dernier coup, au tour de qui, frise, puis les deux mains en une ligne chacune ; récapitulatif de fin : résultat (« 🏆 X bat Kévina (il lui restait 2 cartes) ! »), frise finale et séries.
+
+#### Outils (`jeux/outils/frise/`, à lancer à la main)
+
+- `e2eDuel.mjs` : handler contre Kévina (20 parties, joueur simulé à 60 % de bons coups) et 1v1 sur Redis en mémoire, tous les appels Discord interceptés, limites des menus vérifiées (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/frise/e2eDuel.mjs`).
 
 ### Mascarade (contre Kévina ou en 1v1)
 
