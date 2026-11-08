@@ -31,6 +31,15 @@ const CARTES = Array.from({ length: 30 }, (_, k) => ({ libelle: `Événement ${k
   assert.ok(paquet.some((c) => c.libelle === "C"));
 }
 
+// ── Cartes retirées : jamais tirées, ids des autres inchangés ──
+{
+  const cartes = [
+    { libelle: "A", annee: 1900, retiree: true },
+    { libelle: "B", annee: 1950 },
+  ];
+  assert.deepStrictEqual(construirePaquet(cartes, { rng: rngFixe(2) }), [{ id: 1, libelle: "B", annee: 1950 }]);
+}
+
 // ── Données réelles : années entières, libellés ≤ 60 caractères, sources ──
 {
   const cartes = JSON.parse(fs.readFileSync(new URL("../data/frise/cartes.json", import.meta.url)));

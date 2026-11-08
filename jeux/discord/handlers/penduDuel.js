@@ -260,7 +260,6 @@ function boutonsJeu(j, sfx) {
       components: [
         boutonVoyelle(y, jouee(y), sfx),
         { type: 2, style: 1, label: "Proposer le mot", emoji: { name: "✏️" }, custom_id: `penduduel_proposer${sfx}` },
-        BOUTON_REGLES,
         boutonAbandon(sfx),
       ],
     },
@@ -347,7 +346,8 @@ function buildVue(partie, discordId, { texte = null, config, confirmerAbandon = 
           color: PENDU_COLOR,
         },
       ],
-      components: boutonsFin(),
+      // Bouton Règles : sur le message public seulement (jamais en double)
+      components: [],
     };
   }
   const limite = Math.floor(echeance(d, moi, config.delai_action_secondes * 1000) / 1000);
@@ -566,7 +566,7 @@ const aucunePartie = (solo) => ({
       color: PENDU_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 });
 
 // `/pendu mode:solo` : nouvelle partie (remplace celle en cours du joueur),

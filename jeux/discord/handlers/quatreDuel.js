@@ -353,9 +353,10 @@ function buildVue(
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: QUATRE_COLOR };
   if (confirmerAbandon) return { embeds: [embed], components: boutonsConfirmation(sfx) };
   // Contre Kévina, ce n'est jamais son tour qu'en pleine réflexion : pas d'abandon
-  const regles = { type: 1, components: [BOUTON_REGLES, ...(monTour || pvp ? [boutonAbandon(sfx)] : [])] };
-  if (!monTour) return { embeds: [embed], components: [regles] };
-  return { embeds: [embed], components: [...boutonsColonnes(d, sfx), regles] };
+  // Bouton Règles : sur le message public seulement (jamais en double)
+  const regles = monTour || pvp ? [{ type: 1, components: [boutonAbandon(sfx)] }] : [];
+  if (!monTour) return { embeds: [embed], components: regles };
+  return { embeds: [embed], components: [...boutonsColonnes(d, sfx), ...regles] };
 }
 
 function buildReglesEmbed(config) {
@@ -550,7 +551,7 @@ const AUCUNE_PARTIE_SOLO = {
       color: QUATRE_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 // Fin contre Kévina : récapitulatif dans un NOUVEAU message (visible en bas
@@ -788,7 +789,7 @@ const AUCUNE_PARTIE_PVP = {
       color: QUATRE_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 // `/quatre adversaire:1v1` : ouvre le lobby (message public), la réponse

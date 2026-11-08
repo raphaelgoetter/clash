@@ -422,7 +422,6 @@ function buildVue(
           components: [
             suivante,
             ...boutonContester(m, moi, n, sfx),
-            BOUTON_REGLES,
             boutonAbandon(sfx),
           ],
         },
@@ -497,7 +496,6 @@ function buildVue(
         components: [
           ...actions,
           ...boutonContester(m, moi, n, sfx),
-          BOUTON_REGLES,
           boutonAbandon(sfx),
         ],
       },
@@ -712,7 +710,7 @@ const AUCUNE_PARTIE_SOLO = {
       color: BAC_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 const nomDeSolo = (pseudo) => (id) =>
@@ -1157,7 +1155,7 @@ const AUCUNE_PARTIE_PVP = {
       color: BAC_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 // `/bac adversaire:1v1` : ouvre le lobby (message public), la réponse

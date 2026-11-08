@@ -165,9 +165,13 @@ salon.forEach(verifier);
 // URL relue par la route d'image (frise complète, dernier coup marqué)
 const images = (v) => aplatir(v.components).filter((c) => c.type === 12).map((c) => c.items[0].media.url);
 const { decodeFrise } = await import("../../services/friseImage.js");
+// Message public en cours : jamais la frise (elle est dans les vues)
+if (salon.some((m) => m.method === "PATCH" && images(m).some((u) => u.includes("/api/frise/image")))) throw new Error("frise en double dans le message public");
+// Bouton Règles : jamais dans une vue privée
+if (vues.some((v) => aplatir(v.components).some((c) => c.custom_id === "friseduel_regles") && !texte(v).includes("Règles de Frise"))) throw new Error("bouton Règles dans une vue privée");
 for (const v of [...vues.filter((v) => menus(v).length), ...salon]) {
   const [url] = images(v);
-  if (!url && !texte(v).includes("1v1") && !texte(v).includes("Règles")) throw new Error("image de frise absente");
+  if (!url && menus(v).length) throw new Error("image de frise absente");
   if (url && !url.endsWith("/api/frise/decor") && !decodeFrise(Object.fromEntries(new URL(url).searchParams))) throw new Error(`URL d'image illisible : ${url}`);
 }
 await h.handleFriseRegles(W);

@@ -336,7 +336,8 @@ function buildVue(
   ];
   const titre = `▦ La Grille · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: GRILLE_COLOR };
-  if (!monTour) return { embeds: [embed], components: boutonsFin() };
+  // Bouton Règles : sur le message public seulement (jamais en double)
+  if (!monTour) return { embeds: [embed], components: [] };
   const sfx = pvp ? ":pvp" : "";
   return {
     embeds: [embed],
@@ -351,7 +352,6 @@ function buildVue(
           disabled: Boolean(grilles) || d.grilles[moi][c].length >= HAUTEUR,
         })),
       },
-      { type: 1, components: [BOUTON_REGLES] },
     ],
   };
 }
@@ -526,7 +526,7 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
           color: GRILLE_COLOR,
         },
       ],
-      components: boutonsFin(),
+      components: [],
     });
     return;
   }
@@ -761,7 +761,7 @@ const AUCUNE_PARTIE_PVP = {
       color: GRILLE_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 // `/grille adversaire:1v1` : ouvre le lobby (message public), la réponse

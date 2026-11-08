@@ -30,12 +30,15 @@ function melanger(liste, rng) {
 
 // Paquet de la partie : cartes mélangées, en ne gardant que celles à au
 // moins `ecartMin` ans de toutes les cartes déjà retenues (aucun créneau
-// ambigu). Carte : { id (index dans cartes.json, pour l'URL de l'image),
-// libelle, annee }.
+// ambigu), sans les cartes retirées (`retiree: true`). Carte : { id
+// (index dans cartes.json, pour l'URL de l'image), libelle, annee }.
 export function construirePaquet(cartes, { ecartMin = 3, rng = Math.random } = {}) {
   const paquet = [];
   for (const id of melanger([...cartes.keys()], rng)) {
     const c = cartes[id];
+    // Carte retirée : gardée dans le fichier (son id reste valable pour les
+    // images déjà postées) mais jamais tirée
+    if (c.retiree) continue;
     if (paquet.every((p) => Math.abs(p.annee - c.annee) >= ecartMin)) paquet.push({ id, libelle: c.libelle, annee: c.annee });
   }
   return paquet;

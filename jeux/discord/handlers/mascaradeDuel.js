@@ -522,8 +522,9 @@ function buildVue(
   const lignes = [`Manche **${d.numero}** · premier à ${MANCHES_GAGNANTES}`, ...(texte ? ["", texte] : []), ...(infos.length ? ["", ...infos] : []), "", consigne, ...limite];
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), image: { url: urlTable(d, moi, A) }, color: MASCARADE_COLOR };
   // Contre Kévina, ce n'est jamais son tour qu'en pleine réflexion : pas d'abandon
-  const regles = { type: 1, components: [BOUTON_REGLES, ...(monTour || pvp ? [boutonAbandon(sfx)] : [])] };
-  return { embeds: [embed], components: [...(monTour ? boutonsAction(d, moi, sfx, { choixCout }) : []), regles] };
+  // Bouton Règles : sur le message public seulement (jamais en double)
+  const regles = monTour || pvp ? [{ type: 1, components: [boutonAbandon(sfx)] }] : [];
+  return { embeds: [embed], components: [...(monTour ? boutonsAction(d, moi, sfx, { choixCout }) : []), ...regles] };
 }
 
 // Pause de fin de manche (`d.pauseManche`) : récit du dernier coup, résultat
@@ -549,7 +550,7 @@ function vuePause(d, { texte, moi, A, pvp, echeance }) {
         color: MASCARADE_COLOR,
       },
     ],
-    components: [{ type: 1, components: [...(lanceur ? [suivante] : []), BOUTON_REGLES, boutonAbandon(sfx)] }],
+    components: [{ type: 1, components: [...(lanceur ? [suivante] : []), boutonAbandon(sfx)] }],
   };
 }
 
@@ -814,7 +815,7 @@ async function surveillerDelaiSolo(webhookUrl, discordId, d, config, { channelId
 
 const AUCUNE_PARTIE_SOLO = {
   embeds: [{ description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/mascarade` !", color: MASCARADE_COLOR }],
-  components: boutonsFin(),
+  components: [],
 };
 
 // Fin contre Kévina : récapitulatif dans un NOUVEAU message, table publique
@@ -1036,7 +1037,7 @@ async function surveillerDelai(partie, config, discordId, webhookUrl) {
 
 const AUCUNE_PARTIE_PVP = {
   embeds: [{ description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/mascarade` (1v1) !", color: MASCARADE_COLOR }],
-  components: boutonsFin(),
+  components: [],
 };
 
 // `/mascarade adversaire:1v1` : ouvre le lobby (message public), la réponse

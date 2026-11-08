@@ -394,8 +394,9 @@ function buildVue(
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: TOURNEBOULE_COLOR };
   if (confirmerAbandon) return { embeds: [embed], components: boutonsConfirmation(sfx) };
   // Contre Kévina, ce n'est jamais son tour qu'en pleine réflexion : pas d'abandon
-  const regles = { type: 1, components: [BOUTON_REGLES, ...(!d.retournement && (monTour || pvp) ? [boutonAbandon(sfx)] : [])] };
-  return { embeds: [embed], components: [...boutonsPlateau(d, moi, sfx), regles] };
+  // Bouton Règles : sur le message public seulement (jamais en double)
+  const regles = !d.retournement && (monTour || pvp) ? [{ type: 1, components: [boutonAbandon(sfx)] }] : [];
+  return { embeds: [embed], components: [...boutonsPlateau(d, moi, sfx), ...regles] };
 }
 
 function buildReglesEmbed(config) {
@@ -601,7 +602,7 @@ const AUCUNE_PARTIE_SOLO = {
       color: TOURNEBOULE_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 // Fin contre Kévina : récapitulatif dans un NOUVEAU message (visible en bas
@@ -849,7 +850,7 @@ const AUCUNE_PARTIE_PVP = {
       color: TOURNEBOULE_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 // `/tourneboule adversaire:1v1` : ouvre le lobby (message public), la réponse

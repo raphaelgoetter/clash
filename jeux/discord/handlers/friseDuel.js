@@ -227,16 +227,18 @@ function lignesErreurs(d, nom) {
 // Légende des couleurs de l'image
 const legende = (bleu, rouge) => `🟦 ${bleu} · 🟥 ${rouge}`;
 
-// Récit du dernier coup vu par `moi`, sans point final.
+// Récit du dernier coup vu par `moi`, point final compris (jamais doublé
+// après « av. J.-C. »).
 function recit(d, moi, A) {
   const x = d.dernier;
   if (!x) return null;
   const toi = x.id === moi;
   const qui = toi ? "Tu places" : `${A.Sujet} place`;
   const annee = formatAnnee(x.carte.annee);
-  if (x.juste) return `${qui} « ${x.carte.libelle} » : ✅ ${annee}`;
+  const point = (t) => (t.endsWith(".") ? t : `${t}.`);
+  if (x.juste) return point(`${qui} « ${x.carte.libelle} » : ✅ ${annee}`);
   const penalite = x.pioche ? (toi ? ", tu pioches une carte" : ", et pioche une carte") : "";
-  return `${qui} « ${x.carte.libelle} » : ❌ c'était ${annee}${penalite}`;
+  return point(`${qui} « ${x.carte.libelle} » : ❌ c'était ${annee}${penalite}`);
 }
 
 const ERREURS = {
@@ -380,8 +382,9 @@ function buildVue(
   const titre = `${TITRE} · Toi ${d.mains[moi].length} – ${d.mains[autre].length} ${A.Sujet}${pvp && monTour ? " · À toi !" : ""}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: FRISE_COLOR, image: imageFrise(d, moi) };
   if (confirmerAbandon) return { embeds: [embed], components: boutonsConfirmation(sfx) };
-  const bas = { type: 1, components: [BOUTON_REGLES, ...(monTour || pvp ? [boutonAbandon(sfx)] : [])] };
-  return { embeds: [embed], components: [...(monTour ? menusJeu(d, moi, sfx) : []), bas] };
+  // Bouton Règles : sur le message public seulement (jamais en double)
+  const bas = monTour || pvp ? [{ type: 1, components: [boutonAbandon(sfx)] }] : [];
+  return { embeds: [embed], components: [...(monTour ? menusJeu(d, moi, sfx) : []), ...bas] };
 }
 
 function buildReglesEmbed(config) {
@@ -424,10 +427,10 @@ export async function handleFriseRoleRejected(webhookUrl) {
   });
 }
 
-// Au tour de qui et cartes en main (messages publics en cours ; la frise
-// est l'image du message).
+// Au tour de qui et cartes en main (messages publics en cours, sans la
+// frise : elle n'est que dans la vue de chaque joueur, jamais en double).
 function corpsPublic(d, nom, tour) {
-  return [tour, `Cartes en main : 🟦 **${nom("joueur")}** ${d.mains.joueur.length} · 🟥 **${nom("bot")}** ${d.mains.bot.length}`];
+  return [tour, `Cartes en main : **${nom("joueur")}** ${d.mains.joueur.length} · **${nom("bot")}** ${d.mains.bot.length}`];
 }
 
 // Message public d'une partie contre Kévina, en cours. Expiration rappelée,
@@ -436,7 +439,7 @@ function messageSolo(d, pseudo, { attente = false } = {}) {
   const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
   const nom = (s) => (s === "bot" ? "🤖 Kévina" : pseudo);
   const tour = attente || d.actif === "bot" ? "⏳ Kévina réfléchit…" : `Au tour de **${pseudo}**.`;
-  const derniere = d.dernier ? [`${recit(d, "joueur", BOT).replace(/^Tu places/, `${pseudo} place`).replace(", tu pioches", ", et pioche")}.`, ""] : [];
+  const derniere = d.dernier ? [`${recit(d, "joueur", BOT).replace(/^Tu places/, `${pseudo} place`).replace(", tu pioches", ", et pioche")}`, ""] : [];
   return {
     embeds: [
       {
@@ -445,7 +448,6 @@ function messageSolo(d, pseudo, { attente = false } = {}) {
           .join("\n")
           .slice(0, 4096),
         color: FRISE_COLOR,
-        image: imageFrise(d),
       },
     ],
     components: boutonsFin(),
@@ -536,7 +538,7 @@ const AUCUNE_PARTIE_SOLO = {
       color: FRISE_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 async function executerSolo(webhookUrl, discordId, creneau, vue, { channelId, pseudo } = {}) {
@@ -551,13 +553,13 @@ async function executerSolo(webhookUrl, discordId, creneau, vue, { channelId, ps
       // réflexion de Kévina
       const etapes = [];
       if (!d.termine) {
-        etapes.push({ duel: structuredClone(d), texte: `${lignes[0]}.`, attente: true });
+        etapes.push({ duel: structuredClone(d), texte: lignes[0], attente: true });
         const k = choixKevina(d, "bot", { erreur: config.erreur_kevina, echelle: config.echelle_kevina });
         choisir(d, "bot", k.index);
         placer(d, "bot", k.creneau);
         lignes.push(recit(d, "joueur", BOT));
       }
-      return { texte: `${lignes.join(".\n")}.`, vientDeFinir: d.termine, etapes };
+      return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes };
     },
     { nom: pseudo },
   );
@@ -654,7 +656,7 @@ function vuePvp(partie, config, discordId, texte = null, { confirmerAbandon = fa
   const A = nomsAdv(partie, moi);
   const d = partie.duel;
   return buildVue(d, {
-    texte: texte ?? (d.dernier ? `${recit(d, moi, A)}.` : null),
+    texte: texte ?? (d.dernier ? recit(d, moi, A) : null),
     moi,
     A,
     pvp: true,
@@ -689,7 +691,7 @@ function messagePublic(partie, config) {
   const d = partie.duel;
   const nom = (siege) => partie.noms[partie.sieges[siege]] ?? "?";
   const x = d.dernier;
-  const derniere = x ? [`${recit(d, null, { Sujet: nom(x.id) })}.`, ""] : [];
+  const derniere = x ? [recit(d, null, { Sujet: nom(x.id) }), ""] : [];
   return {
     embeds: [
       {
@@ -701,7 +703,6 @@ function messagePublic(partie, config) {
           .join("\n")
           .slice(0, 4096),
         color: FRISE_COLOR,
-        image: imageFrise(d),
       },
     ],
     components: [{ type: 1, components: [BOUTON_MA_VUE, BOUTON_REGLES] }],
@@ -801,7 +802,7 @@ const AUCUNE_PARTIE_PVP = {
       color: FRISE_COLOR,
     },
   ],
-  components: boutonsFin(),
+  components: [],
 };
 
 export async function handleFrisePvpCommand(webhookUrl, body) {
@@ -884,7 +885,7 @@ async function executerPvp(webhookUrl, discordId, creneau, vue) {
     memoriserWebhook(p, discordId, webhookUrl);
     if (p.statut !== "enCours") return { erreur: "termine" };
     const r = actionPlacer(p.duel, moi, creneau, vue);
-    return r.erreur ? r : { texte: `${recit(p.duel, moi, nomsAdv(p, moi))}.`, coup: true };
+    return r.erreur ? r : { texte: recit(p.duel, moi, nomsAdv(p, moi)), coup: true };
   });
   if (!partie) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
