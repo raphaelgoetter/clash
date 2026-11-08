@@ -57,6 +57,7 @@ Hors npm : `node scripts/registerCommands.js` (enregistre les slash commands, à
 
 - Victoire GDC (1v1 ou manche de duel, hors bateau) au %matchup le plus élevé de la journée écoulée, un seul combat pour toute la famille ; départage par écart de couronnes puis combat le plus tôt.
 - Salon `DISCORD_CHANNEL_GENERAL` ; `--test` poste sur le salon de test des jeux et ignore l'anti-doublon Redis `dedup:warexploit` (pour ne pas bloquer le cron).
+- Second message de félicitations aux 3 joueurs cités (exploit + 2 suivants) : ping dans `content` des joueurs liés à Discord (hash Redis `discordlinks`, les mentions d'embed ne notifient pas), pseudo sinon ; embed de rappel de `/matchup-gdc` et du bouton « Détails ». Pas de notification en `--test` ni en dry-run.
 - Image des deux decks jointe, même rendu que `/matchup-gdc` (`buildWarDecksImage()`, `backend/services/warDecksImage.js`) ; en dry-run, PNG écrit dans le dossier temporaire du système.
 
 ### Scouting (`findDiscordClans.js`)
