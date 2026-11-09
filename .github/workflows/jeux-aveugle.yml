@@ -1,15 +1,13 @@
-name: Jeux à l'aveugle — La Juste Carte / Blind Royale (alternance saisonnière)
+name: Culture geek — Trivia Geek / Intrus de l'inventaire (alternance saisonnière)
 
 permissions:
   contents: read
 
 on:
-  # Lundi 18:00 UTC — créneau déjà utilisé par Blind Royale (voir
-  # jeux/services/jeuxaveugle.js pour le détail de l'alternance et le
-  # choix de ce jour commun). Remplace les deux crons dédiés
-  # (.github/workflows/lajustecarte.yml et blindroyale.yml, supprimés) : le
-  # script décide lui-même, à chaque déclenchement, quel jeu est actif cette
-  # saison Clash Royale (La Juste Carte / Blind Royale en alternance, une
+  # Lundi 18:00 UTC. Groupe technique `aveugle` (ex-Jeux à l'aveugle), devenu
+  # « 🎮 Culture geek » à la refonte (jeux/services/refonte.js) : le script
+  # décide lui-même, à chaque déclenchement, quel jeu est actif cette saison
+  # Clash Royale (Trivia Geek / Intrus de l'inventaire en alternance, une
   # saison sur deux) et poste le récap de fin de saison du jeu qui vient de
   # se terminer, le cas échéant.
   schedule:
@@ -42,5 +40,5 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Post Jeux à l'aveugle (salon public, jeu actif décidé par le script)
+      - name: Post Culture geek (salon public, jeu actif décidé par le script)
         run: npm run aveugle:public

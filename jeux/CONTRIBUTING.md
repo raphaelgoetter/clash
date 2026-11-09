@@ -41,7 +41,7 @@ Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numéro
 | 🎬 Jeux de culture | Frame / Trivia | mercredi 18:00 (`0 18 * * 3`) | `jeux-culture.yml` | `jeux/scripts/postJeuxCulture.js` | `jeuxculture.js` | `culture:*` |
 | 🔤 Jeux de lettres | Anagram / Pêle-mêle | samedi 18:00 (`0 18 * * 6`) | `jeux-de-lettres.yml` | `postJeuxDeLettres.js` | `jeuxdelettres.js` | `lettres:*` |
 | 🎨 Jeux visuels | Zoom carte / Palette | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml` | `postJeuxVisuels.js` | `jeuxvisuels.js` | `visuels:*` |
-| 🙈 Jeux à l'aveugle | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`) | `jeux-aveugle.yml` | `postJeuxAveugle.js` | `jeuxaveugle.js` | `aveugle:*` |
+| 🙈 Jeux à l'aveugle (🎮 Culture geek après la refonte) | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`) | `jeux-aveugle.yml` (affiché « Culture geek ») | `postJeuxAveugle.js` | `jeuxaveugle.js` | `aveugle:*` |
 | ⚔️ Clash (à partir de la refonte) | Trivia / Zoom carte | mardi 18:00 (`0 18 * * 2`) | `jeux-clash.yml` | `postJeuxClash.js` | `jeuxclash.js` | `clash:*` |
 
 Tous les groupes publient à 18:00 UTC, soit 19h à Paris en hiver et 20h à l'heure d'été (les crons GitHub sont en UTC).
