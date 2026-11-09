@@ -20,6 +20,8 @@ import {
   checkAnswer,
   recordAttempt,
   recordHintUsed,
+  recordDomaineHintUsed,
+  HINT_COSTS,
   markSolved,
   archiveSolve,
   computeSeasonRanking,
@@ -58,7 +60,8 @@ function buildZoom2Embed({ seasonId, seasonManche, seasonMancheTotal, gameId }) 
       "**Barème**",
       "- Réponse exacte du 1er coup sans indice : **10 pts**",
       "- Chaque tentative incorrecte : **-2 pts**",
-      "- Indice utilisé : **-3 pts**",
+      `- Indice 1 (domaine d'activité) : **-${HINT_COSTS.domaine} pt**`,
+      `- Indice 2 (logo moins zoomé) : **-${HINT_COSTS.image} pts**`,
       "",
       "**Merci de ne pas spoiler, sinon c'est pas drôle !**",
     ].join("\n"),
@@ -73,7 +76,8 @@ function buildZoom2Components(gameId) {
     {
       type: 1,
       components: [
-        { type: 2, style: 2, label: "🔍 Indice", custom_id: `zoom2_hint:${gameId}` },
+        { type: 2, style: 2, label: "🏷️ Indice 1 (domaine)", custom_id: `zoom2_domaine:${gameId}` },
+        { type: 2, style: 2, label: "🔍 Indice 2 (dézoom)", custom_id: `zoom2_hint:${gameId}` },
         { type: 2, style: 1, label: "📝 Répondre", custom_id: `zoom2_answer:${gameId}` },
       ],
     },
@@ -269,12 +273,39 @@ export async function handleHintButton(webhookUrl, gameId, discordId, username) 
     let suffix = "_Tu as déjà trouvé, cet indice ne change plus ton score._";
     if (!solved) {
       const { alreadyUsed } = await recordHintUsed(gameId, discordId, username);
-      suffix = alreadyUsed ? "_Indice déjà révélé._" : "_Indice révélé (-3 pts)._";
+      suffix = alreadyUsed ? "_Indice déjà révélé._" : `_Indice révélé (-${HINT_COSTS.image} pts)._`;
     }
 
     await patchOriginal(webhookUrl, {
       embeds: [{ description: `🔍 Un peu moins zoomé...\n${suffix}`, image: { url: imageUrl(gameId, "hint") }, color: ZOOM2_COLOR }],
     });
+  } catch (err) {
+    await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
+  }
+}
+
+// ── Bouton indice « domaine d'activité » (texte éphémère) ─────────
+
+export async function handleDomaineButton(webhookUrl, gameId, discordId, username) {
+  try {
+    const state = await readState();
+    if (!state || state.gameId !== gameId) {
+      await postEphemeral(webhookUrl, "⚠️ Cette manche est terminée.");
+      return;
+    }
+
+    const entry = resolveZoom2Entry(await loadZoom2Catalog(), gameId);
+    const hintText = `🏷️ **Domaine d'activité** : ${entry.domaine}`;
+
+    const solved = (await readParticipant(gameId, discordId))?.solved;
+    if (solved) {
+      await postEphemeral(webhookUrl, `${hintText}\n_Tu as déjà trouvé, cet indice ne change plus ton score._`);
+      return;
+    }
+
+    const { alreadyUsed } = await recordDomaineHintUsed(gameId, discordId, username);
+    const suffix = alreadyUsed ? "_Indice déjà révélé._" : `_Indice révélé (-${HINT_COSTS.domaine} pt)._`;
+    await postEphemeral(webhookUrl, `${hintText}\n${suffix}`);
   } catch (err) {
     await postEphemeral(webhookUrl, `⚠️ ${err.message}`);
   }

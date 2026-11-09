@@ -16,10 +16,12 @@ console.log("Running zoom2 tests...");
 
 const IMAGES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "data", "jeux-visuels", "zoom2", "images");
 
-// Barème de Zoom carte (un seul indice), plancher 1.
+// Barème : -2 par erreur, indice domaine -1, indice image -3, plancher 1.
 assert.strictEqual(zoom2.computeScore(0, false), 10);
+assert.strictEqual(zoom2.computeScore(0, false, true), 9);
 assert.strictEqual(zoom2.computeScore(1, true), 5);
-assert.strictEqual(zoom2.computeScore(9, true), 1);
+assert.strictEqual(zoom2.computeScore(1, true, true), 4);
+assert.strictEqual(zoom2.computeScore(9, true, true), 1);
 console.log("✓ barème");
 
 // Catalogue : numero = position, image présente aux bonnes dimensions,
@@ -29,6 +31,7 @@ const vues = new Map();
 catalog.forEach((e, i) => {
   assert.strictEqual(e.numero, i + 1, `numero ${e.numero}`);
   assert.ok(e.answer && e.accept.includes(e.answer), `réponse acceptée au n° ${e.numero}`);
+  assert.ok(typeof e.domaine === "string" && e.domaine.trim(), `domaine au n° ${e.numero}`);
   assert.ok(zoom2.checkAnswer(e, e.answer), `n° ${e.numero}`);
   const png = fs.readFileSync(path.join(IMAGES_DIR, e.image));
   assert.deepStrictEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [e.width, e.height], `dimensions de ${e.image}`);
@@ -68,15 +71,17 @@ assert.strictEqual(await zoom2.isGamePosted("l001"), true);
 assert.strictEqual(await zoom2.isGamePosted("l002"), false);
 assert.strictEqual((await zoom2.recordHintUsed("l001", "u1", "u1")).alreadyUsed, false);
 assert.strictEqual((await zoom2.recordHintUsed("l001", "u1", "u1")).alreadyUsed, true);
+assert.strictEqual((await zoom2.recordDomaineHintUsed("l001", "u1", "u1")).alreadyUsed, false);
+assert.strictEqual((await zoom2.recordDomaineHintUsed("l001", "u1", "u1")).alreadyUsed, true);
 await zoom2.recordAttempt("l001", "u1", "u1");
 const { participant, score } = await zoom2.markSolved("l001", "u1", "u1");
-assert.strictEqual(score, 5, "10 - 2 (1 erreur) - 3 (indice)");
+assert.strictEqual(score, 4, "10 - 2 (1 erreur) - 3 (indice image) - 1 (indice domaine)");
 await zoom2.archiveSolve(state, entry, "u1", "u1", score, participant.solvedAt);
 await zoom2.archiveSolve(state, entry, "u1", "u1", score, participant.solvedAt); // double soumission
 const { score: s2, participant: p2 } = await zoom2.markSolved("l001", "u2", "u2");
 await zoom2.archiveSolve(state, entry, "u2", "u2", s2, p2.solvedAt);
 const ranking = await zoom2.computeSeasonRanking(state.seasonId);
-assert.deepStrictEqual(ranking.map((r) => [r.discordId, r.totalScore]), [["u2", 10], ["u1", 5]]);
+assert.deepStrictEqual(ranking.map((r) => [r.discordId, r.totalScore]), [["u2", 10], ["u1", 4]]);
 assert.strictEqual(await zoom2.hasPlayerInteracted("l001", "u1"), true);
 assert.strictEqual(await zoom2.getZoom2RoundLabel("l001"), entry.answer);
 console.log("✓ manche complète");

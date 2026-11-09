@@ -86,8 +86,13 @@ function participantsKey(gameId) {
 function usernamesKey(gameId) {
   return `zoom2:usernames:${gameId}`;
 }
+// Indice image (logo moins zoomé).
 function hintKey(gameId, discordId) {
   return `zoom2:hint:${gameId}:${discordId}`;
+}
+// Indice texte (domaine d'activité de la marque).
+function domaineHintKey(gameId, discordId) {
+  return `zoom2:domaine:${gameId}:${discordId}`;
 }
 function attemptsKey(gameId, discordId) {
   return `zoom2:attempts:${gameId}:${discordId}`;
@@ -157,6 +162,7 @@ export async function writeState(state) {
 async function cleanupGameScratchData(gameId) {
   await getRedis().del(participantsKey(gameId), usernamesKey(gameId));
   await scanDelete(`zoom2:hint:${gameId}:*`);
+  await scanDelete(`zoom2:domaine:${gameId}:*`);
   await scanDelete(`zoom2:attempts:${gameId}:*`);
 }
 
@@ -168,6 +174,7 @@ export async function resetGame() {
   await scanDelete("zoom2:participants:*");
   await scanDelete("zoom2:usernames:*");
   await scanDelete("zoom2:hint:*");
+  await scanDelete("zoom2:domaine:*");
   await scanDelete("zoom2:attempts:*");
   await scanDelete("zoom2:season:*");
   await scanDelete("zoom2:archived:*");
@@ -260,10 +267,14 @@ export function checkAnswer(entry, rawAnswer) {
 }
 
 // ── Scoring ──────────────────────────────────────────────────────
-// Barème de Zoom carte : un seul indice (-3), -2 par erreur, plancher 1.
+// Barème de Zoom carte (-2 par erreur, plancher 1) avec deux indices
+// indépendants : domaine d'activité (-1) et logo moins zoomé (-3).
 
-export function computeScore(attemptsIncorrects, hintUsed) {
-  return Math.max(1, 10 - 2 * attemptsIncorrects - (hintUsed ? 3 : 0));
+export const HINT_COSTS = { domaine: 1, image: 3 };
+
+export function computeScore(attemptsIncorrects, hintUsed, domaineUsed = false) {
+  const hints = (hintUsed ? HINT_COSTS.image : 0) + (domaineUsed ? HINT_COSTS.domaine : 0);
+  return Math.max(1, 10 - 2 * attemptsIncorrects - hints);
 }
 
 // ── Progression par joueur ────────────────────────────────────────
@@ -278,6 +289,10 @@ async function touchUsername(gameId, discordId, username) {
 
 async function hintUsedFor(gameId, discordId) {
   return (await getRedis().get(hintKey(gameId, discordId))) === "1";
+}
+
+async function domaineHintUsedFor(gameId, discordId) {
+  return (await getRedis().get(domaineHintKey(gameId, discordId))) === "1";
 }
 
 async function countAttempts(gameId, discordId) {
@@ -297,6 +312,12 @@ export async function recordHintUsed(gameId, discordId, username) {
   return { alreadyUsed: wasSet === 0 };
 }
 
+export async function recordDomaineHintUsed(gameId, discordId, username) {
+  await touchUsername(gameId, discordId, username);
+  const wasSet = Number(await getRedis().setnx(domaineHintKey(gameId, discordId), "1"));
+  return { alreadyUsed: wasSet === 0 };
+}
+
 // Idempotent : si déjà résolu, renvoie le résultat existant sans rien réécrire.
 export async function markSolved(gameId, discordId, username) {
   const existing = await readParticipant(gameId, discordId);
@@ -304,11 +325,12 @@ export async function markSolved(gameId, discordId, username) {
     return { participant: existing, score: existing.score };
   }
 
-  const [hintUsed, attempts] = await Promise.all([
+  const [hintUsed, domaineUsed, attempts] = await Promise.all([
     hintUsedFor(gameId, discordId),
+    domaineHintUsedFor(gameId, discordId),
     countAttempts(gameId, discordId),
   ]);
-  const score = computeScore(attempts, hintUsed);
+  const score = computeScore(attempts, hintUsed, domaineUsed);
   const participant = {
     discordId,
     username,

@@ -23,6 +23,7 @@ import {
 import {
   buildAnswerModal as buildZoom2AnswerModal,
   handleHintButton as handleZoom2HintButton,
+  handleDomaineButton as handleZoom2DomaineButton,
   handleModalSubmit as handleZoom2ModalSubmit,
 } from "../handlers/zoom2.js";
 import {
@@ -439,6 +440,25 @@ export async function routeMiniJeux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleZoom2HintButton(webhookUrl, gameId, discordId, username));
+    return;
+  }
+
+  // ── Jeu Zoom logo : bouton indice « domaine d'activité » ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("zoom2_domaine:")
+  ) {
+    const gameId = body.data.custom_id.split(":")[1];
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleZoom2DomaineButton(webhookUrl, gameId, discordId, username));
     return;
   }
 

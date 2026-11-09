@@ -5,6 +5,7 @@
     "accept": [
       "IBM"
     ],
+    "domaine": "Informatique et services aux entreprises",
     "image": "ibm.png",
     "width": 1280,
     "height": 478,
@@ -22,6 +23,7 @@
       "Total",
       "Total Energies"
     ],
+    "domaine": "Énergie (pétrole, gaz, électricité)",
     "image": "totalenergies.png",
     "width": 1280,
     "height": 933,
@@ -34,6 +36,7 @@
       "LG",
       "LG Electronics"
     ],
+    "domaine": "Électronique grand public et électroménager",
     "image": "lg-electronics.png",
     "width": 1280,
     "height": 1281,
@@ -49,6 +52,7 @@
     "accept": [
       "Steam"
     ],
+    "domaine": "Plateforme de vente de jeux vidéo",
     "image": "steam.png",
     "width": 1280,
     "height": 1280,
@@ -65,6 +69,7 @@
       "Société générale",
       "SG"
     ],
+    "domaine": "Banque",
     "image": "societe-generale.png",
     "width": 1280,
     "height": 292,
@@ -76,6 +81,7 @@
     "accept": [
       "Bugatti"
     ],
+    "domaine": "Constructeur automobile (voitures de sport)",
     "image": "bugatti.png",
     "width": 1280,
     "height": 630,
@@ -91,6 +97,7 @@
     "accept": [
       "Renault"
     ],
+    "domaine": "Constructeur automobile",
     "image": "renault.png",
     "width": 1280,
     "height": 1121,
@@ -110,6 +117,7 @@
     "accept": [
       "Bluetooth"
     ],
+    "domaine": "Technologie sans fil",
     "image": "bluetooth.png",
     "width": 1280,
     "height": 1280,
@@ -130,6 +138,7 @@
       "BNP Paribas",
       "BNP"
     ],
+    "domaine": "Banque",
     "image": "bnp-paribas.png",
     "width": 1280,
     "height": 1280,
@@ -146,6 +155,7 @@
       "New Balance",
       "NB"
     ],
+    "domaine": "Chaussures et vêtements de sport",
     "image": "new-balance.png",
     "width": 1280,
     "height": 706,
@@ -158,6 +168,7 @@
       "Toys R Us",
       "Toysrus"
     ],
+    "domaine": "Magasins de jouets",
     "image": "toys-r-us.png",
     "width": 1280,
     "height": 359,
@@ -170,6 +181,7 @@
       "HP",
       "Hewlett-Packard"
     ],
+    "domaine": "Matériel informatique",
     "image": "hewlett-packard.png",
     "width": 1280,
     "height": 1280,
@@ -181,6 +193,7 @@
     "accept": [
       "Gucci"
     ],
+    "domaine": "Mode de luxe",
     "image": "gucci.png",
     "width": 1280,
     "height": 1316,
@@ -192,6 +205,7 @@
     "accept": [
       "Atari"
     ],
+    "domaine": "Jeux vidéo et consoles",
     "image": "atari.png",
     "width": 1280,
     "height": 1408,
@@ -207,6 +221,7 @@
     "accept": [
       "Duolingo"
     ],
+    "domaine": "Application éducative",
     "image": "duolingo.png",
     "width": 1280,
     "height": 300,
@@ -226,6 +241,7 @@
     "accept": [
       "Twitch"
     ],
+    "domaine": "Plateforme vidéo en ligne",
     "image": "twitch.png",
     "width": 1280,
     "height": 1459,
@@ -237,6 +253,7 @@
     "accept": [
       "Porsche"
     ],
+    "domaine": "Constructeur automobile (voitures de sport)",
     "image": "porsche.png",
     "width": 489,
     "height": 641,
@@ -258,6 +275,7 @@
       "Dream Works",
       "DreamWorks Animation"
     ],
+    "domaine": "Studio de cinéma d'animation",
     "image": "dreamworks-animation.png",
     "width": 1280,
     "height": 115,
@@ -273,6 +291,7 @@
     "accept": [
       "Unilever"
     ],
+    "domaine": "Produits de grande consommation (alimentation, hygiène, entretien)",
     "image": "unilever.png",
     "width": 1280,
     "height": 1417,
@@ -285,6 +304,7 @@
       "Virgin Megastore",
       "Virgin"
     ],
+    "domaine": "Magasins de produits culturels (musique, films, livres)",
     "image": "virgin-megastore.png",
     "width": 297,
     "height": 335,
@@ -300,6 +320,7 @@
     "accept": [
       "Sega"
     ],
+    "domaine": "Jeux vidéo",
     "image": "sega.png",
     "width": 1280,
     "height": 427,
@@ -319,6 +340,7 @@
     "accept": [
       "Spotify"
     ],
+    "domaine": "Streaming musical",
     "image": "spotify.png",
     "width": 1280,
     "height": 1281,
@@ -336,6 +358,7 @@
       "Bandai",
       "Namco"
     ],
+    "domaine": "Jeux vidéo et jouets",
     "image": "bandai-namco-entertainment.png",
     "width": 1280,
     "height": 293,
@@ -351,6 +374,7 @@
     "accept": [
       "Capcom"
     ],
+    "domaine": "Jeux vidéo",
     "image": "capcom.png",
     "width": 1280,
     "height": 235,
@@ -366,6 +390,7 @@
     "accept": [
       "Lamborghini"
     ],
+    "domaine": "Constructeur automobile (voitures de sport)",
     "image": "lamborghini.png",
     "width": 1280,
     "height": 1438,
@@ -387,6 +412,7 @@
       "Universal Pictures",
       "Universal Studios"
     ],
+    "domaine": "Studio de cinéma",
     "image": "universal-pictures.png",
     "width": 1280,
     "height": 786,
@@ -403,6 +429,7 @@
       "Dreamcast",
       "Sega Dreamcast"
     ],
+    "domaine": "Console de jeux vidéo",
     "image": "dreamcast.png",
     "width": 1280,
     "height": 968,
@@ -414,6 +441,7 @@
     "accept": [
       "Lufthansa"
     ],
+    "domaine": "Compagnie aérienne",
     "image": "lufthansa.png",
     "width": 1280,
     "height": 1280,
@@ -425,6 +453,7 @@
     "accept": [
       "Honda"
     ],
+    "domaine": "Constructeur automobile et de motos",
     "image": "honda.png",
     "width": 1280,
     "height": 1028,
@@ -440,6 +469,7 @@
     "accept": [
       "Android"
     ],
+    "domaine": "Système d'exploitation pour smartphones",
     "image": "android.png",
     "width": 1280,
     "height": 718,
@@ -455,6 +485,7 @@
     "accept": [
       "Lacoste"
     ],
+    "domaine": "Mode et vêtements",
     "image": "lacoste.png",
     "width": 1280,
     "height": 227,
@@ -470,6 +501,7 @@
     "accept": [
       "Deliveroo"
     ],
+    "domaine": "Livraison de repas",
     "image": "deliveroo.png",
     "width": 1280,
     "height": 342,
@@ -492,6 +524,7 @@
       "Domino's Pizza",
       "Dominos Pizza"
     ],
+    "domaine": "Restauration rapide",
     "image": "domino-s-pizza.png",
     "width": 1280,
     "height": 268,
@@ -512,6 +545,7 @@
       "Alcatel",
       "Alcatel-Lucent"
     ],
+    "domaine": "Télécommunications et téléphones mobiles",
     "image": "alcatel.png",
     "width": 1280,
     "height": 330,
@@ -528,6 +562,7 @@
       "Riot Games",
       "Riot"
     ],
+    "domaine": "Jeux vidéo",
     "image": "riot-games.png",
     "width": 1280,
     "height": 360,
@@ -544,6 +579,7 @@
       "Linux",
       "Tux"
     ],
+    "domaine": "Système d'exploitation libre",
     "image": "linux.png",
     "width": 1280,
     "height": 1518,
@@ -563,6 +599,7 @@
     "accept": [
       "ASICS"
     ],
+    "domaine": "Chaussures et vêtements de sport",
     "image": "asics.png",
     "width": 1280,
     "height": 451,
@@ -578,6 +615,7 @@
     "accept": [
       "Lexus"
     ],
+    "domaine": "Constructeur automobile (haut de gamme)",
     "image": "lexus.png",
     "width": 1280,
     "height": 788,
@@ -589,6 +627,7 @@
     "accept": [
       "Discord"
     ],
+    "domaine": "Messagerie et discussion en ligne",
     "image": "discord.png",
     "width": 1280,
     "height": 246,
@@ -606,6 +645,7 @@
       "Vuitton",
       "LV"
     ],
+    "domaine": "Maroquinerie et mode de luxe",
     "image": "louis-vuitton.png",
     "width": 1280,
     "height": 1561,
@@ -622,6 +662,7 @@
       "Le Coq sportif",
       "Coq sportif"
     ],
+    "domaine": "Vêtements de sport",
     "image": "le-coq-sportif.png",
     "width": 1280,
     "height": 1014,
@@ -637,6 +678,7 @@
     "accept": [
       "Supercell"
     ],
+    "domaine": "Jeux vidéo sur mobile",
     "image": "supercell.png",
     "width": 1280,
     "height": 1042,
@@ -648,6 +690,7 @@
     "accept": [
       "Kodak"
     ],
+    "domaine": "Photographie",
     "image": "kodak.png",
     "width": 1280,
     "height": 1159,
@@ -663,6 +706,7 @@
     "accept": [
       "ASUS"
     ],
+    "domaine": "Matériel informatique",
     "image": "asus.png",
     "width": 1280,
     "height": 270,
@@ -683,6 +727,7 @@
       "Paramount",
       "Paramount Pictures"
     ],
+    "domaine": "Studio de cinéma",
     "image": "paramount-pictures.png",
     "width": 1280,
     "height": 1033,
@@ -702,6 +747,7 @@
     "accept": [
       "Rolex"
     ],
+    "domaine": "Horlogerie de luxe",
     "image": "rolex.png",
     "width": 1280,
     "height": 720,
@@ -717,6 +763,7 @@
     "accept": [
       "Subaru"
     ],
+    "domaine": "Constructeur automobile",
     "image": "subaru.png",
     "width": 1280,
     "height": 774,
@@ -737,6 +784,7 @@
       "Starbucks",
       "Starbucks Coffee"
     ],
+    "domaine": "Chaîne de cafés",
     "image": "starbucks.png",
     "width": 1280,
     "height": 1296,
@@ -756,6 +804,7 @@
     "accept": [
       "Peugeot"
     ],
+    "domaine": "Constructeur automobile",
     "image": "peugeot.png",
     "width": 1280,
     "height": 1406,
@@ -775,6 +824,7 @@
     "accept": [
       "Plex"
     ],
+    "domaine": "Serveur multimédia (films, séries, musique)",
     "image": "plex.png",
     "width": 152,
     "height": 152,
@@ -786,6 +836,7 @@
     "accept": [
       "Fujitsu"
     ],
+    "domaine": "Informatique et électronique",
     "image": "fujitsu.png",
     "width": 1280,
     "height": 623,
@@ -797,6 +848,7 @@
     "accept": [
       "Crédit agricole"
     ],
+    "domaine": "Banque",
     "image": "credit-agricole.png",
     "width": 1280,
     "height": 900,
@@ -810,6 +862,7 @@
       "North Face",
       "TNF"
     ],
+    "domaine": "Vêtements et équipement de montagne",
     "image": "the-north-face.png",
     "width": 1280,
     "height": 1280,
@@ -830,6 +883,7 @@
       "NBA",
       "National Basketball Association"
     ],
+    "domaine": "Ligue sportive professionnelle",
     "image": "national-basketball-association.png",
     "width": 1280,
     "height": 2909,
@@ -850,6 +904,7 @@
       "Quiksilver",
       "Quicksilver"
     ],
+    "domaine": "Vêtements de surf et de glisse",
     "image": "quiksilver.png",
     "width": 1280,
     "height": 681,
@@ -861,6 +916,7 @@
     "accept": [
       "Philips"
     ],
+    "domaine": "Électronique et électroménager",
     "image": "philips.png",
     "width": 1280,
     "height": 1630,
@@ -873,6 +929,7 @@
       "HBO",
       "HBO Max"
     ],
+    "domaine": "Chaîne de télévision et séries",
     "image": "hbo.png",
     "width": 1280,
     "height": 528,
@@ -884,6 +941,7 @@
     "accept": [
       "Gameloft"
     ],
+    "domaine": "Jeux vidéo sur mobile",
     "image": "gameloft.png",
     "width": 1280,
     "height": 250,
@@ -904,6 +962,7 @@
       "BlackBerry",
       "Black Berry"
     ],
+    "domaine": "Téléphones mobiles",
     "image": "blackberry.png",
     "width": 1280,
     "height": 224,
@@ -923,6 +982,7 @@
     "accept": [
       "Ducati"
     ],
+    "domaine": "Constructeur de motos",
     "image": "ducati.png",
     "width": 1280,
     "height": 1358,
@@ -938,6 +998,7 @@
     "accept": [
       "Reddit"
     ],
+    "domaine": "Réseau social (forums)",
     "image": "reddit.png",
     "width": 1280,
     "height": 1140,
@@ -957,6 +1018,7 @@
     "accept": [
       "Kappa"
     ],
+    "domaine": "Vêtements de sport",
     "image": "kappa.png",
     "width": 1280,
     "height": 296,
@@ -969,6 +1031,7 @@
       "Calvin Klein",
       "CK"
     ],
+    "domaine": "Mode et sous-vêtements",
     "image": "calvin-klein.png",
     "width": 1280,
     "height": 1596,
@@ -981,6 +1044,7 @@
       "Blizzard",
       "Blizzard Entertainment"
     ],
+    "domaine": "Jeux vidéo",
     "image": "blizzard-entertainment.png",
     "width": 1280,
     "height": 667,
@@ -996,6 +1060,7 @@
     "accept": [
       "Maserati"
     ],
+    "domaine": "Constructeur automobile (voitures de sport et de luxe)",
     "image": "maserati.png",
     "width": 1280,
     "height": 520,
@@ -1011,6 +1076,7 @@
     "accept": [
       "Versace"
     ],
+    "domaine": "Mode de luxe",
     "image": "versace.png",
     "width": 1280,
     "height": 659,
@@ -1026,6 +1092,7 @@
     "accept": [
       "Hyundai"
     ],
+    "domaine": "Constructeur automobile",
     "image": "hyundai.png",
     "width": 1280,
     "height": 653,
@@ -1037,6 +1104,7 @@
     "accept": [
       "Xbox"
     ],
+    "domaine": "Console de jeux vidéo",
     "image": "xbox.png",
     "width": 1280,
     "height": 1255,
@@ -1048,6 +1116,7 @@
     "accept": [
       "Subway"
     ],
+    "domaine": "Restauration rapide",
     "image": "subway.png",
     "width": 1280,
     "height": 1654,
@@ -1059,6 +1128,7 @@
     "accept": [
       "Mazda"
     ],
+    "domaine": "Constructeur automobile",
     "image": "mazda.png",
     "width": 1280,
     "height": 1172,
@@ -1070,6 +1140,7 @@
     "accept": [
       "Acer"
     ],
+    "domaine": "Matériel informatique",
     "image": "acer.png",
     "width": 1280,
     "height": 309,
@@ -1085,6 +1156,7 @@
     "accept": [
       "Reebok"
     ],
+    "domaine": "Chaussures et vêtements de sport",
     "image": "reebok.png",
     "width": 1280,
     "height": 363,
@@ -1096,6 +1168,7 @@
     "accept": [
       "Chanel"
     ],
+    "domaine": "Mode, parfums et cosmétiques de luxe",
     "image": "chanel.png",
     "width": 1280,
     "height": 820,
@@ -1112,6 +1185,7 @@
       "Chevrolet",
       "Chevy"
     ],
+    "domaine": "Constructeur automobile",
     "image": "chevrolet.png",
     "width": 1280,
     "height": 598,
@@ -1132,6 +1206,7 @@
       "Mini",
       "Mini Cooper"
     ],
+    "domaine": "Constructeur automobile",
     "image": "mini.png",
     "width": 1280,
     "height": 562,
@@ -1143,6 +1218,7 @@
     "accept": [
       "Tinder"
     ],
+    "domaine": "Application de rencontre",
     "image": "tinder.png",
     "width": 1280,
     "height": 1698,
@@ -1161,6 +1237,7 @@
       "UEFA Champions League",
       "Ligue des champions de l'UEFA"
     ],
+    "domaine": "Compétition de football",
     "image": "ligue-des-champions-de-l-uefa.png",
     "width": 1280,
     "height": 566,
@@ -1172,6 +1249,7 @@
     "accept": [
       "Tommy Hilfiger"
     ],
+    "domaine": "Mode et vêtements",
     "image": "tommy-hilfiger.png",
     "width": 1280,
     "height": 854,
@@ -1188,6 +1266,7 @@
       "Netscape",
       "Netscape Navigator"
     ],
+    "domaine": "Navigateur web",
     "image": "netscape-navigator.png",
     "width": 1280,
     "height": 1280,
@@ -1209,6 +1288,7 @@
       "Warner",
       "Warner Brothers"
     ],
+    "domaine": "Studio de cinéma",
     "image": "warner-bros.png",
     "width": 1280,
     "height": 1633,
