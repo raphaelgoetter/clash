@@ -26,6 +26,8 @@ import {
 } from "../services/bangImage.js";
 import {
   decodeGrille as decodeQuiEstCeGrille,
+  decodeChasse as decodeQuiEstCeChasse,
+  getChasseImage as getQuiEstCeChasseImage,
   getGrilleImage as getQuiEstCeGrilleImage,
   getIllustrationImage as getQuiEstCeIllustrationImage,
 } from "../services/quiestceImage.js";
@@ -254,6 +256,18 @@ router.get("/api/bang/illustration", async (req, res) => {
 router.get("/api/quiestce/grille", async (req, res) => {
   const entrees = await decodeQuiEstCeGrille(req.query.d);
   const image = entrees ? await getQuiEstCeGrilleImage(entrees).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Qui est-ce ? : tableau de chasse (message officiel), rendu sans état à
+// partir de l'état encodé dans l'URL (d = deflate + base64url, voir
+// encodeChasse) ; avatars Discord téléchargés au rendu.
+router.get("/api/quiestce/chasse", async (req, res) => {
+  const joueurs = decodeQuiEstCeChasse(req.query.d);
+  const image = joueurs ? await getQuiEstCeChasseImage(joueurs).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");

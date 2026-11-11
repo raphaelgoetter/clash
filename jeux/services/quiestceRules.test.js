@@ -23,6 +23,8 @@ import {
   accuser,
   etatObjet,
   utiliserObjet,
+  compteRendu,
+  stats,
   cloturer,
   classement,
   texteJournal,
@@ -371,6 +373,28 @@ function main() {
     assert.strictEqual(utiliserObjet(p, "j4", "miroir", { config: un, rng }).erreur, "objetJour");
     cloturer(p, { config: un });
     assert.ok(!utiliserObjet(p, "j4", "miroir", { config: un, rng }).erreur, "plafond remis à zéro à la clôture");
+  }
+
+  // ── Compte-rendu : statistiques tenues dès le Jour 1, phrases ──
+  {
+    const p = partieTest(6);
+    const ids = Object.keys(p.joueurs);
+    debutAction(p, "j0", { config: CONFIG, rng });
+    assert.strictEqual(Object.values(stats(p.joueurs.j0).recus).reduce((a, b) => a + b, 0), 1, "objet du jour compté");
+    // j0 démasque sa cible au flair, avec seulement l'indice de départ
+    const cible = p.joueurs.j0.cible;
+    const n = candidats(p, "j0").length;
+    accuser(p, "j0", p.joueurs[cible].carte, { config: CONFIG, rng });
+    assert.deepStrictEqual(p.coup, { s: "j0", v: cible, n, j: 1 });
+    p.joueurs.j1.stats = { recus: { double: 4 }, utilises: {}, pileFaceGagnes: 0, pileFacePerdus: 3, brouillees: 0 };
+    for (const id of ids) p.joueurs[id].actifJour = true;
+    cloturer(p, { config: CONFIG });
+    assert.strictEqual(p.soirs.length, 1);
+    const bref = compteRendu(p).join("\n");
+    assert.match(bref, /\*\*j0\*\* a mené de bout en bout/);
+    assert.match(bref, /\*\*j1\*\* a tiré 4 Doubles accusations/);
+    assert.match(bref, /Pas de chance pour \*\*j1\*\* : 3 pile ou face perdus/);
+    if (n >= 3) assert.match(bref, new RegExp(`Plus beau coup : \\*\\*j0\\*\\* a démasqué .* avec 1 chance sur ${n}`));
   }
 
   console.log("quiestceRules.test.js : OK");

@@ -50,10 +50,11 @@ import {
   accuser,
   etatObjet,
   utiliserObjet,
+  compteRendu,
   classement,
   texteJournal,
 } from "../../services/quiestceRules.js";
-import { encodeGrille } from "../../services/quiestceImage.js";
+import { encodeGrille, encodeChasse } from "../../services/quiestceImage.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -73,6 +74,31 @@ function illustrationUrl() {
 
 async function grilleUrl(partie, barrees = []) {
   return `${TRUST_ROYALE_URL}/api/quiestce/grille?d=${await encodeGrille(partie.grille, barrees)}`;
+}
+
+// Tableau de chasse en image (message officiel) : une vignette par joueur
+// dans l'ordre du classement, avec sa cible, ses chasseurs et le nombre de
+// questions qu'ils ont posées sur lui.
+function chasseUrl(partie) {
+  const ordre = classement(partie).map((r) => r.discordId);
+  const index = new Map(ordre.map((id, i) => [id, i]));
+  const joueurs = ordre.map((id) => {
+    const j = partie.joueurs[id];
+    const hs = chasseurs(partie, id);
+    return {
+      nom: j.username,
+      points: points(j),
+      avatar: j.avatar ?? null,
+      cible: j.cible ? (index.get(j.cible) ?? -1) : -1,
+      chasseurs: hs.length,
+      questions: hs.reduce((n, h) => n + (partie.joueurs[h].enquete?.posees ?? 0), 0),
+      demasque: j.nbDemasque ?? 0,
+      trouvees: j.demasques?.length ?? 0,
+      brouillard: !!j.brouillard,
+      tombe: !!j.demasqueJour,
+    };
+  });
+  return `${TRUST_ROYALE_URL}/api/quiestce/chasse?d=${encodeChasse(joueurs)}`;
 }
 
 // ── Mise en forme ────────────────────────────────────────────────────
@@ -225,37 +251,6 @@ function bilanVeilleLignes(partie) {
   return lignes;
 }
 
-// Tableau de chasse, lu du point de vue du chasseur : « **Chasseur** →
-// cible (questions posées) », trié par cible (les chasseurs d'une même
-// cible côte à côte), 🌫️ pour une cible sous Brouillard, puis les joueurs
-// sans cible et ceux que personne ne chasse.
-function tableauChasseLignes(partie) {
-  const joueurs = Object.entries(partie.joueurs).filter(([, j]) => j.carte);
-  const lignes = joueurs
-    .filter(([, j]) => j.cible)
-    .sort(
-      ([, a], [, b]) =>
-        partie.joueurs[a.cible].username.localeCompare(
-          partie.joueurs[b.cible].username,
-        ) || a.username.localeCompare(b.username),
-    )
-    .map(([, j]) => {
-      const c = partie.joueurs[j.cible];
-      return `**${j.username}** → ${c.username}${c.brouillard ? " 🌫️" : ""} (${j.enquete.posees} ❓)`;
-    });
-  const sansCible = joueurs
-    .filter(([, j]) => !j.cible)
-    .map(([, j]) => j.username);
-  if (sansCible.length)
-    lignes.push(`En attente d'une cible : ${sansCible.join(", ")}`);
-  const libres = joueurs
-    .filter(([id]) => !chasseurs(partie, id).length)
-    .map(([, j]) => j.username);
-  if (libres.length)
-    lignes.push(`Personne ne les chasse : ${libres.join(", ")}`);
-  return lignes;
-}
-
 // Message officiel du jour : intro (J1) ou bilan de la veille, classement,
 // tableau de chasse, faits du jour (les questions du jour sont dans
 // l'enquête de chacun).
@@ -279,9 +274,6 @@ async function buildTableEmbed(jour, config, partie) {
         ),
     );
   }
-  const chasse = tableauChasseLignes(partie);
-  if (chasse.length)
-    lignes.push("", "**🎯 Tableau de chasse** (chasseur → cible)", ...chasse);
   const cruciaux = partie.journal
     .filter((e) => e.c && e.j === (partie.numeroJour ?? jour))
     .slice(-JOURNAL_AFFICHE);
@@ -295,7 +287,7 @@ async function buildTableEmbed(jour, config, partie) {
     title: `🕵️ Qui est-ce ? (Jour ${jour}/${config.duree_jours})`,
     description: lignes.join("\n").slice(0, 4096),
     color: QEC_COLOR,
-    image: partie.grille.length ? { url: await grilleUrl(partie) } : undefined,
+    image: partie.grille.length ? { url: chasseUrl(partie) } : undefined,
     footer: {
       text: `Nouvelles questions et nouvel objet chaque jour à ${heureCloture()}.`,
     },
@@ -323,6 +315,11 @@ async function buildFinEmbed(ranking, partie, manches, currentManche) {
         (r, i) =>
           `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${plural(r.score, "pt")} (${r.cartes.map((k) => nomCarte(partie, k)).join(", ")})`,
       ),
+      // Rebondissements, plus beau coup, plus et moins chanceux
+      ...(() => {
+        const bref = compteRendu(partie);
+        return bref.length ? ["", "**📰 La partie en bref**", ...bref.map((p) => `- ${p}`)] : [];
+      })(),
       ...(manches.length
         ? [
             "",
@@ -370,6 +367,7 @@ function buildReglesEmbed(config) {
       "- La première est tirée au sort, les suivantes sont choisies (le meneur t'est proposé).",
       `- ${config.chasseurs_max} chasseurs au plus par joueur, jamais un joueur que tu as déjà démasqué.`,
       "- À chaque nouvelle cible, un **indice de départ** : une caractéristique de sa carte.",
+      "- Sur l'image du jour, à côté des points : 🎯 cibles démasquées, 🎭 fois démasqué.",
       "",
       "**⚔️ Objets contre ta cible**",
       ...objets("offensif"),
@@ -454,6 +452,7 @@ async function discordFetch(url, init) {
 // 16/10 : illustration perdue à la réédition de l'annonce). Repli sur l'URL
 // si le téléchargement échoue.
 const IMAGES_JOINTES = [
+  { chemin: "/api/quiestce/chasse", filename: "chasse.png", type: "image/png" },
   { chemin: "/api/quiestce/grille", filename: "grille.png", type: "image/png" },
   { chemin: "/api/quiestce/illustration", filename: "quiestce.webp", type: "image/webp" },
 ];
@@ -470,6 +469,8 @@ async function joindreImage(embed) {
     return { buffer, ...cible };
   } catch (err) {
     console.warn("[QuiEstCe] Image non jointe:", err.message);
+    // Repli sur l'URL, sauf au-delà de la limite de Discord (message refusé)
+    if (url.length > 2000) delete embed.image;
     return null;
   }
 }
@@ -1203,7 +1204,7 @@ async function executer(
   username,
   action,
   vue,
-  { rafraichir = true, annonce = false, inscription = false } = {},
+  { rafraichir = true, annonce = false, inscription = false, avatar } = {},
 ) {
   const state = await guardActive(webhookUrl, { annonce });
   if (!state) return;
@@ -1218,7 +1219,7 @@ async function executer(
     return;
   }
   const config = await loadQuiEstCeConfig();
-  const r = await agir(discordId, username, action, { inscription });
+  const r = await agir(discordId, username, action, { inscription, avatar });
   const refus = {
     inscriptions:
       "🔒 Les inscriptions sont closes : tu ne participes pas à cette partie. Rendez-vous à la prochaine !",
@@ -1256,7 +1257,7 @@ function texteAccusation(r, partie, cibleId, cardKey) {
 // ── Boutons du message officiel (nouvel éphémère) ────────────────────
 
 // [✅ S'inscrire] (fenêtre d'inscription).
-export async function handleParticiper(webhookUrl, discordId, username) {
+export async function handleParticiper(webhookUrl, discordId, username, avatar) {
   try {
     await executer(
       webhookUrl,
@@ -1264,7 +1265,7 @@ export async function handleParticiper(webhookUrl, discordId, username) {
       username,
       () => ({}),
       buildEnqueteView,
-      { rafraichir: false, annonce: true, inscription: true },
+      { rafraichir: false, annonce: true, inscription: true, avatar },
     );
   } catch (err) {
     console.error("[QuiEstCe] Échec inscription:", err.message);
@@ -1304,7 +1305,7 @@ export async function handleDesinscrire(webhookUrl, discordId) {
 }
 
 // [🔎 Enquêter].
-export async function handleEnqueter(webhookUrl, discordId, username) {
+export async function handleEnqueter(webhookUrl, discordId, username, avatar) {
   try {
     await executer(
       webhookUrl,
@@ -1312,7 +1313,7 @@ export async function handleEnqueter(webhookUrl, discordId, username) {
       username,
       () => ({}),
       buildEnqueteView,
-      { rafraichir: false },
+      { rafraichir: false, avatar },
     );
   } catch (err) {
     console.error("[QuiEstCe] Échec enquêter:", err.message);

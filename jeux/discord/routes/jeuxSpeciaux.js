@@ -708,13 +708,15 @@ export async function routeJeuxSpeciaux(body, res) {
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    // Hash de l'avatar Discord (tableau de chasse en image), null sans avatar
+    const avatar = body.member?.user?.avatar ?? null;
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (action === "quiestce_regles") runBackground(() => handleQuiEstCeRegles(webhookUrl));
     else if (action === "quiestce_journal") runBackground(() => handleQuiEstCeJournal(webhookUrl, discordId));
-    else if (action === "quiestce_participer") runBackground(() => handleQuiEstCeParticiper(webhookUrl, discordId, username));
+    else if (action === "quiestce_participer") runBackground(() => handleQuiEstCeParticiper(webhookUrl, discordId, username, avatar));
     else if (action === "quiestce_desinscrire") runBackground(() => handleQuiEstCeDesinscrire(webhookUrl, discordId));
-    else runBackground(() => handleQuiEstCeEnqueter(webhookUrl, discordId, username));
+    else runBackground(() => handleQuiEstCeEnqueter(webhookUrl, discordId, username, avatar));
     return;
   }
 

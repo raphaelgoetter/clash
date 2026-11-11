@@ -327,6 +327,7 @@ export function debutAction(partie, id, { config, rng = Math.random }) {
     moi.objetRecuJour = true;
     if (moi.objets.length < config.inventaire_max) {
       r.objetRecu = tirerObjet(config, rng);
+      compter(stats(moi).recus, r.objetRecu);
       // Pas de note au journal : seuls les objets utilisés y figurent
       moi.objets.push(r.objetRecu);
     }
@@ -402,6 +403,7 @@ export function poser(partie, id, q, { config }) {
     prive(partie, moi.cible, `🪞 Miroir : **${moi.username}** t'a interrogé (${QUESTIONS[q].nom.toLowerCase()}). Sa carte : ${QUESTIONS[q].nom.toLowerCase()} **${reflet}**.`);
   }
   if (cible.brouillard) {
+    stats(moi).brouillees += 1;
     prive(partie, id, `🌫️ ${QUESTIONS[q].nom} de la carte de **${cible.username}** : réponse brouillée.`);
     return { q, brouille: true };
   }
@@ -432,7 +434,8 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   if (partie.termine) return { erreur: "termine" };
   if (!moi?.cible) return { erreur: "sansCible" };
   if (accusationsRestantes(moi) < 1) return { erreur: "plafondAccusation" };
-  if (!candidats(partie, id).includes(cardKey)) return { erreur: "carte" };
+  const possibles = candidats(partie, id);
+  if (!possibles.includes(cardKey)) return { erreur: "carte" };
   const cibleId = moi.cible;
   const cible = partie.joueurs[cibleId];
   // Option `brouillard_bloque_accusation` : le Brouillard protège aussi des accusations
@@ -442,6 +445,7 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   moi.actifJour = true;
   if (cible.carte !== cardKey) {
     moi.erreurs += 1;
+    if (possibles.length === 2) stats(moi).pileFacePerdus += 1;
     moi.enquete.eliminees.push(cardKey);
     bilan(partie).erreurs += 1;
     prive(partie, id, `❌ Raté : **${cible.username}** n'a pas la carte ${nomCarte(partie, cardKey)}.`);
@@ -455,6 +459,9 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   partie.seq = (partie.seq ?? 0) + 1;
   moi.seqScore = partie.seq;
   moi.demasques.push(cibleId);
+  if (possibles.length === 2) stats(moi).pileFaceGagnes += 1;
+  // Plus beau coup : démasquage avec le plus de cartes encore possibles
+  if (possibles.length > (partie.coup?.n ?? 0)) partie.coup = { s: id, v: cibleId, n: possibles.length, j: partie.numeroJour ?? 1 };
   moi.pointsCartes = (moi.pointsCartes ?? 0) + (config.points_carte ?? 1);
   moi.cartesConnues.push(cardKey);
   moi.cible = null;
@@ -471,6 +478,7 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   if (config.objet_demasquage && moi.objets.length < config.inventaire_max) {
     objetGagne = tirerObjet(config, rng);
     moi.objets.push(objetGagne);
+    compter(stats(moi).recus, objetGagne);
     prive(partie, id, `🎁 Objet gagné : ${OBJETS[objetGagne].emoji} ${OBJETS[objetGagne].nom}.`);
   }
   return { correct: true, cible: cibleId, points: config.points_carte ?? 1, bonus, nbIndices, objetGagne };
@@ -520,6 +528,7 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
   moi.objets.splice(moi.objets.indexOf(objet), 1);
   moi.objetJour = true;
   moi.objetsJour = (moi.objetsJour ?? 0) + 1;
+  compter(stats(moi).utilises, objet);
   moi.actifJour = true;
 
   if (objet === "loupe") {
@@ -603,6 +612,8 @@ export function cloturer(partie, { config = {} } = {}) {
     j.brouillard = false;
     j.miroir = false;
   }
+  // Points de chacun au soir de chaque jour (déroulé du compte-rendu)
+  (partie.soirs ??= []).push(Object.fromEntries(Object.entries(partie.joueurs).filter(([, j]) => j.carte).map(([cid, j]) => [cid, points(j)])));
   partie.veille = bilan(partie);
   partie.jour = bilanVide();
   partie.numeroJour = (partie.numeroJour ?? 1) + 1;
@@ -642,6 +653,90 @@ export function classement(partie) {
     // Toutes les cartes tenues pendant la partie (Déguisements compris)
     cartes: [...(j.anciennesCartes ?? []), j.carte],
   }));
+}
+
+// ── Compte-rendu de fin de partie ───────────────────────────────────
+// Statistiques par joueur, tenues dès le Jour 1 : objets reçus (tirage du
+// jour et démasquages) et utilisés par type, accusations à 2 cartes
+// possibles gagnées et perdues (pile ou face), questions perdues dans un
+// Brouillard. `partie.coup` : démasquage réussi avec le plus de cartes
+// possibles ; `partie.soirs` : points de chacun à chaque clôture.
+
+export function stats(j) {
+  j.stats ??= {};
+  j.stats.recus ??= {};
+  j.stats.utilises ??= {};
+  j.stats.pileFaceGagnes ??= 0;
+  j.stats.pileFacePerdus ??= 0;
+  j.stats.brouillees ??= 0;
+  return j.stats;
+}
+
+function compter(table, cle) {
+  table[cle] = (table[cle] ?? 0) + 1;
+}
+
+const PLURIELS = { loupe: "Loupes", double: "Doubles accusations", desamorcage: "Désamorçages", brouillard: "Brouillards", deguisement: "Déguisements", miroir: "Miroirs" };
+
+// Joueur au plus haut `valeur`, seulement s'il est seul en tête et atteint
+// `seuil` (sinon rien à raconter)
+function record(joueurs, valeur, seuil) {
+  const tries = joueurs.map((j) => [j, valeur(j)]).sort((a, b) => b[1] - a[1]);
+  if (!tries.length || tries[0][1] < seuil || tries[1]?.[1] === tries[0][1]) return null;
+  return { j: tries[0][0], n: tries[0][1] };
+}
+
+// Phrases de « La partie en bref » (rebondissements, plus beau coup, plus
+// et moins chanceux, intouchables) ; chaque phrase est omise si la donnée
+// manque ou ne se démarque pas.
+export function compteRendu(partie) {
+  const phrases = [];
+  const cl = classement(partie);
+  const joueurs = Object.values(partie.joueurs).filter((j) => j.carte);
+  const nom = (id) => `**${partie.joueurs[id]?.username ?? "?"}**`;
+  const soirs = partie.soirs ?? [];
+  const w = cl[0]?.discordId;
+  if (w && soirs.length) {
+    const rang = (soir, id) => 1 + Object.values(soir).filter((x) => x > soir[id]).length;
+    const seulEnTete = (soir, id) => rang(soir, id) === 1 && Object.values(soir).filter((x) => x === soir[id]).length === 1;
+    const ecart = cl[0].score - (cl[1]?.score ?? 0);
+    const fin = ecart === 0 ? ", au départage" : ecart <= 2 ? `, avec ${ecart} pt${ecart > 1 ? "s" : ""} d'avance seulement` : "";
+    let depuis = soirs.length;
+    while (depuis > 1 && seulEnTete(soirs[depuis - 2], w)) depuis--;
+    const pire = soirs.slice(0, -1).map((soir, k) => ({ jour: k + 1, r: rang(soir, w) })).sort((a, b) => b.r - a.r || b.jour - a.jour)[0];
+    if (depuis === 1 && seulEnTete(soirs[0], w)) phrases.push(`${nom(w)} a mené de bout en bout${fin}.`);
+    else if (pire && pire.r >= 4) phrases.push(`Encore ${pire.r}e au soir du Jour ${pire.jour}, ${nom(w)} a renversé la partie${fin}.`);
+    else phrases.push(`${nom(w)} a pris la tête au Jour ${depuis} pour ne plus la lâcher${fin}.`);
+    // Changements de meneur (seul en tête) d'un soir à l'autre
+    const meneurs = soirs.map((soir) => Object.keys(soir).find((id) => seulEnTete(soir, id)) ?? null).filter(Boolean);
+    const changements = meneurs.filter((id, k) => k > 0 && id !== meneurs[k - 1]).length;
+    if (changements >= 3) phrases.push(`La tête a changé ${changements} fois de mains.`);
+  }
+  const c = partie.coup;
+  if (c && c.n >= 3) phrases.push(`Plus beau coup : ${nom(c.s)} a démasqué ${nom(c.v)} au Jour ${c.j} avec 1 chance sur ${c.n}.`);
+  // Plus chanceux : la plus grosse série d'un même objet, sinon le plus de
+  // pile ou face gagnés
+  let main = null;
+  for (const o of Object.keys(OBJETS)) {
+    const r = record(joueurs, (j) => stats(j).recus[o] ?? 0, 3);
+    if (r && r.n > (main?.n ?? 0)) main = { ...r, o };
+  }
+  if (main) phrases.push(`Main la plus chanceuse : **${main.j.username}** a tiré ${main.n} ${PLURIELS[main.o]}.`);
+  const pileFace = record(joueurs, (j) => stats(j).pileFaceGagnes, 2);
+  if (pileFace) phrases.push(`**${pileFace.j.username}** a gagné ${pileFace.n} pile ou face (accusations entre 2 cartes).`);
+  // Moins chanceux : pile ou face perdus, sinon accusations ratées ;
+  // le plus démasqué ; questions perdues dans le Brouillard
+  const perdus = record(joueurs, (j) => stats(j).pileFacePerdus, 2);
+  const ratees = record(joueurs, (j) => j.erreurs ?? 0, 3);
+  if (perdus) phrases.push(`Pas de chance pour **${perdus.j.username}** : ${perdus.n} pile ou face perdus.`);
+  else if (ratees) phrases.push(`Pas de chance pour **${ratees.j.username}** : ${ratees.n} accusations ratées.`);
+  const proie = record(joueurs, (j) => j.nbDemasque ?? 0, 3);
+  if (proie) phrases.push(`Proie favorite : **${proie.j.username}**, démasqué ${proie.n} fois.`);
+  const brume = record(joueurs, (j) => stats(j).brouillees, 2);
+  if (brume) phrases.push(`**${brume.j.username}** a perdu ${brume.n} questions dans le Brouillard.`);
+  const intouchables = joueurs.filter((j) => !j.nbDemasque && (j.survie ?? 0) > 0);
+  if (intouchables.length && intouchables.length <= 3) phrases.push(`Jamais démasqué${intouchables.length > 1 ? "s" : ""} : ${intouchables.map((j) => `**${j.username}**`).join(", ")}.`);
+  return phrases;
 }
 
 // ── Journal ─────────────────────────────────────────────────────────

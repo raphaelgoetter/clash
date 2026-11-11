@@ -157,7 +157,9 @@ export async function demarrerPartie({ pnj = [] } = {}) {
 // non-inscrit est refusé. À la première action du jour, le joueur reçoit
 // son objet gratuit (et une cible s'il n'en a pas), voir debutAction().
 // Renvoie { partie, resultat, nouveau, debut } ou { erreur: "inscriptions" | "complet" | "pasInscrit" }.
-export async function agir(discordId, username, fn = () => null, { inscription = false } = {}) {
+// `avatar` : hash de l'avatar Discord (null sans avatar, undefined pour ne
+// rien changer), retenu pour le tableau de chasse en image.
+export async function agir(discordId, username, fn = () => null, { inscription = false, avatar } = {}) {
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);
     let nouveau = false;
@@ -170,6 +172,7 @@ export async function agir(discordId, username, fn = () => null, { inscription =
     } else if (username && joueur.username !== username) {
       joueur.username = username;
     }
+    if (avatar !== undefined) partie.joueurs[discordId].avatar = avatar ? `${discordId}/${avatar}` : null;
     const debut = debutAction(partie, discordId, { config });
     const resultat = await fn(partie, config);
     await writePartie(partie);

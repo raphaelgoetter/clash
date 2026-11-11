@@ -9,7 +9,7 @@
 import "../env.js";
 
 import { loadQuiEstCeConfig, readState, readPartie } from "../services/quiestce.js";
-import { nomCarte, candidats, classement, texteJournal } from "../services/quiestceRules.js";
+import { nomCarte, candidats, classement, texteJournal, compteRendu, stats, OBJETS } from "../services/quiestceRules.js";
 
 (async () => {
   const state = await readState();
@@ -31,6 +31,15 @@ import { nomCarte, candidats, classement, texteJournal } from "../services/quies
     const cible = j.cible ? `${partie.joueurs[j.cible].username} (${candidats(partie, r.discordId).length} cartes possibles, ${j.enquete.ordre.join("/") || "aucun indice"})` : "aucune";
     console.log(`  ${r.rang}. ${j.username} — ${r.score} pt(s) · ${r.decouvertes} découverte(s) · ${j.nbDemasque}× démasqué · ${j.erreurs} ratée(s) · carte ${nomCarte(partie, j.carte)} · objets [${j.objets.join(", ")}]${j.brouillard ? " · 🌫️" : ""}${j.miroir ? " · 🪞" : ""} · cible ${cible}${j.objetRecuJour ? "" : " · pas encore joué"}`);
   }
+  // Statistiques du compte-rendu (objets reçus/utilisés, pile ou face, Brouillard)
+  console.log("\nStatistiques :");
+  const objets = (t) => Object.entries(t).map(([o, n]) => `${OBJETS[o]?.emoji ?? o}×${n}`).join(" ") || "aucun";
+  for (const r of classement(partie)) {
+    const s = stats(partie.joueurs[r.discordId]);
+    console.log(`  ${r.username} — reçus ${objets(s.recus)} · utilisés ${objets(s.utilises)} · pile ou face ${s.pileFaceGagnes} gagné(s) / ${s.pileFacePerdus} perdu(s) · ${s.brouillees} question(s) brouillée(s)`);
+  }
+  console.log("\nLa partie en bref (message de fin) :");
+  for (const p of compteRendu(partie)) console.log(`  - ${p.replace(/\*\*/g, "")}`);
   console.log("\nDerniers événements :");
   for (const e of partie.journal.filter((x) => !x.p).slice(-10)) console.log(`  J${e.j} ${texteJournal(partie, e).replace(/\*\*/g, "")}`);
 })();
