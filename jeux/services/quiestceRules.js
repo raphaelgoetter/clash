@@ -465,12 +465,21 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   bilan(partie).demasquages.push({ s: id, v: cibleId });
   noter(partie, "demasque", { s: id, v: cibleId, crucial: true });
   prive(partie, id, `🎯 Tu as démasqué **${cible.username}** : ${nomCarte(partie, cardKey)}.`);
-  return { correct: true, cible: cibleId, points: config.points_carte ?? 1, bonus, nbIndices };
+  // `objet_demasquage` : un objet gagné à chaque démasquage (dans la limite
+  // de la réserve)
+  let objetGagne = null;
+  if (config.objet_demasquage && moi.objets.length < config.inventaire_max) {
+    objetGagne = tirerObjet(config, rng);
+    moi.objets.push(objetGagne);
+    prive(partie, id, `🎁 Objet gagné : ${OBJETS[objetGagne].emoji} ${OBJETS[objetGagne].nom}.`);
+  }
+  return { correct: true, cible: cibleId, points: config.points_carte ?? 1, bonus, nbIndices, objetGagne };
 }
 
 // ── Objets ──────────────────────────────────────────────────────────
 // Un objet gratuit par jour (debutAction), gardé en réserve jusqu'à
-// `inventaire_max` ; un seul objet utilisé par jour. Offensifs contre sa
+// `inventaire_max`, plus un par démasquage (`objet_demasquage`) ;
+// `objets_par_jour` utilisés par jour au plus (0 = sans limite). Offensifs contre sa
 // cible, défensifs contre son chasseur (décision du 12/10).
 
 export const OBJETS = {
@@ -488,7 +497,9 @@ export const DEFENSIFS = Object.keys(OBJETS).filter((o) => OBJETS[o].famille ===
 export function etatObjet(partie, id, objet, { config }) {
   const moi = partie.joueurs[id];
   if (!moi.objets.includes(objet)) return { ok: false, raison: "pasEnReserve" };
-  if (moi.objetJour) return { ok: false, raison: "objetJour" };
+  // `objets_par_jour` : plafond d'objets utilisés par jour (0 = sans limite)
+  const parJour = config.objets_par_jour ?? 1;
+  if (parJour > 0 && (moi.objetsJour ?? (moi.objetJour ? 1 : 0)) >= parJour) return { ok: false, raison: "objetJour" };
   if (OBJETS[objet].famille === "offensif" && !moi.cible) return { ok: false, raison: "sansCible" };
   if (objet === "loupe" && moi.loupe) return { ok: false, raison: "dejaActif" };
   if (objet === "double" && moi.doubleCible === moi.cible) return { ok: false, raison: "dejaActif" };
@@ -508,6 +519,7 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
   if (!etat.ok) return { erreur: etat.raison };
   moi.objets.splice(moi.objets.indexOf(objet), 1);
   moi.objetJour = true;
+  moi.objetsJour = (moi.objetsJour ?? 0) + 1;
   moi.actifJour = true;
 
   if (objet === "loupe") {
@@ -586,6 +598,7 @@ export function cloturer(partie, { config = {} } = {}) {
     j.accusationsCible = 0;
     j.doubleCible = null;
     j.objetJour = false;
+    j.objetsJour = 0;
     j.objetRecuJour = false;
     j.brouillard = false;
     j.miroir = false;

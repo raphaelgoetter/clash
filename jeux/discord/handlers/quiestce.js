@@ -344,7 +344,7 @@ function buildReglesEmbed(config) {
   const n = config.pool["1"]?.length ?? 3;
   const objets = (famille) =>
     Object.keys(OBJETS)
-      .filter((o) => OBJETS[o].famille === famille)
+      .filter((o) => OBJETS[o].famille === famille && config.tirage_objets[o])
       .map(
         (o) =>
           `- ${objetLabel(o)} : ${OBJETS[o].effet.charAt(0).toLowerCase()}${OBJETS[o].effet.slice(1)}`,
@@ -357,7 +357,7 @@ function buildReglesEmbed(config) {
       "**🗓️ Chaque jour**",
       `- 🔎 **${plural(config.questions_par_jour, "question")}** sur ta cible, parmi les ${n} questions du jour (${n + 1} avec la Loupe).`,
       "- 🎯 **1 accusation** si tu penses avoir trouvé sa carte.",
-      `- 🎁 **1 objet** gratuit tiré au hasard (${config.inventaire_max} en réserve au plus, 1 utilisé par jour).`,
+      `- 🎁 **1 objet** gratuit tiré au hasard${config.objet_demasquage ? ", plus 1 à chaque carte démasquée" : ""} (réserve de ${config.inventaire_max} au plus, ${config.objets_par_jour ? `${config.objets_par_jour} utilisé par jour` : "utilisables sans limite"}).`,
       "",
       "**🏆 Points**",
       `- Accusation juste : **+${config.points_carte} points**, puis tu choisis ta prochaine cible.`,
@@ -969,7 +969,7 @@ function objetsRow(partie, discordId, config) {
         type: 3,
         custom_id: "quiestce_objet",
         placeholder: utilisable
-          ? "🎒 Utiliser un objet (1 par jour)"
+          ? `🎒 Utiliser un objet${config.objets_par_jour ? ` (${config.objets_par_jour} par jour)` : ""}`
           : "🔒 Aucun objet utilisable pour l'instant",
         disabled: !utilisable,
         options: enReserve.map((o) => {
@@ -1249,7 +1249,8 @@ function texteAccusation(r, partie, cibleId, cardKey) {
   const efficacite = r.bonus
     ? ` et **+${r.bonus}** d'efficacité (${plural(r.nbIndices, "indice")})`
     : "";
-  return `🎯 **Bravo !** **${nom}** avait bien la carte ${nomCarte(partie, cardKey)} : **+${plural(r.points, "point")}**${efficacite} !`;
+  const objet = r.objetGagne ? `\n🎁 Objet gagné : **${objetLabel(r.objetGagne)}**.` : "";
+  return `🎯 **Bravo !** **${nom}** avait bien la carte ${nomCarte(partie, cardKey)} : **+${plural(r.points, "point")}**${efficacite} !${objet}`;
 }
 
 // ── Boutons du message officiel (nouvel éphémère) ────────────────────
@@ -1446,6 +1447,8 @@ export async function handleJournal(webhookUrl, discordId) {
     const jours = new Map();
     for (const e of partie.journal) {
       if (e.p !== discordId && !e.ids?.includes(discordId)) continue;
+      // Son propre démasquage figure déjà dans sa note privée (avec la carte)
+      if (e.k === "demasque" && e.s === discordId) continue;
       if (!jours.has(e.j)) jours.set(e.j, []);
       jours.get(e.j).push(texteJournal(partie, e, discordId));
     }

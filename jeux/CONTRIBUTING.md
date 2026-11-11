@@ -833,7 +833,7 @@ Mêmes commandes que Blackjack avec le préfixe `gobelet:` (`test`, `test:dry`, 
 
 ## Qui est-ce ? — démasquer les cartes secrètes en 7 jours
 
-Jeu spécial 100 % asynchrone : chaque joueur reçoit en secret une carte d'une grille commune et chasse les cartes des autres, avec **une question par jour** sur sa cible puis une accusation. Un objet gratuit par jour, offensif (contre sa cible) ou défensif (contre son chasseur).
+Jeu spécial 100 % asynchrone : chaque joueur reçoit en secret une carte d'une grille commune et chasse les cartes des autres, avec **une question par jour** sur sa cible puis une accusation. Un objet gratuit par jour et un par démasquage, offensif (contre sa cible) ou défensif (contre son chasseur).
 
 | Rôle | Fichier |
 | ---- | ------- |
@@ -880,7 +880,7 @@ Effectif `effectif_min` (10) à `effectif_max` (18), fenêtre d'inscription `fen
 
 ### Objets
 
-Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `tirage_objets` équiprobable), gardé jusqu'à `inventaire_max` (3, au-delà rien n'est reçu). **Un seul objet utilisé par jour** (`etatObjet()` donne la raison d'un objet inutilisable).
+Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `tirage_objets` équiprobable), plus un à **chaque démasquage** (`objet_demasquage`, note privée et message de l'accusation), gardé jusqu'à `inventaire_max` (3, au-delà rien n'est reçu). **Autant d'objets utilisés par jour que voulu** (`objets_par_jour` : 0 = sans limite ; `etatObjet()` donne la raison d'un objet inutilisable). Seuls les objets de `tirage_objets` sont distribués et affichés dans les Règles.
 
 | Objet | Famille | Effet |
 | ----- | ------- | ----- |
@@ -888,7 +888,7 @@ Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `t
 | 🎯 Double accusation | offensif | Deux accusations aujourd'hui sur la cible actuelle (`doubleCible`), même si une accusation a déjà visé une cible précédente. |
 | 🧨 Désamorçage | offensif | Coupe le Brouillard ou le Miroir actif de la cible, sinon détruit un objet défensif de sa réserve. La cible est prévenue. |
 | 🌫️ Brouillard | défensif | Public, jusqu'à la clôture : questions sur le joueur sans réponse (question perdue) et, avec `brouillard_bloque_accusation`, aucune accusation possible. |
-| 🎭 Déguisement | défensif | Carte échangée contre une carte libre (`cartesLibres()` : ni attribuée ni déjà découverte) ; indices des chasseurs et renseignements du Miroir sur lui effacés ; annoncé publiquement. |
+| 🎭 Déguisement | défensif | **Hors tirage** (retiré de `tirage_objets` : l'effacement des indices frustrait les chasseurs ; code conservé). Carte échangée contre une carte libre (`cartesLibres()` : ni attribuée ni déjà découverte) ; indices des chasseurs et renseignements du Miroir sur lui effacés ; annoncé publiquement. |
 | 🪞 Miroir | défensif | Secret, jusqu'à la clôture : la prochaine question posée sur le joueur lui révèle la même caractéristique de la carte de son chasseur (`renseignements`, réinjectés si ce chasseur devient sa cible). |
 
 ### Interface (Qui est-ce ?)

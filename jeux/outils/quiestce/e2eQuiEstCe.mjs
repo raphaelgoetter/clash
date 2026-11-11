@@ -53,11 +53,10 @@ for (const id of ids.slice(0, 8)) {
 }
 await H.handleDesinscrire("wh-u8", "u8");
 console.log(`--- Désinscription de u8 : ${lastEph("u8").content}`);
-// Rappel (fenêtre non close), puis clôture forcée sous le minimum : prolongation
+// Rappel (fenêtre non close), puis inscription des autres joueurs avant la
+// clôture (sous le minimum, la clôture annule la partie sans prolongation)
 await H.postQuiEstCe("chan", { force: true, noPing: true, pnj: false });
 console.log(`--- Rappel : ${lastPost().embeds[0].description.split("\n").slice(-2).join(" / ")}`);
-const prolong = await H.postQuiEstCe("chan", { force: true, noPing: true, pnj: false, forceClose: true });
-console.log(`--- Prolongation : ${prolong.prolongation} · ${lastPost().embeds[0].title}\n${lastPost().embeds[0].description.split("\n")[0]}`);
 for (const id of ids) await H.handleParticiper(`wh-${id}`, id, nom(id));
 console.log(`--- Inscription au-delà de ${nb > 18 ? 18 : nb} : ${lastEph(ids.at(-1)).content || "acceptée"}`);
 await H.postQuiEstCe("chan", { force: true, noPing: true, pnj: false, forceClose: true });

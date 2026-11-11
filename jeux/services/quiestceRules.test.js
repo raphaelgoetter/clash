@@ -346,6 +346,33 @@ function main() {
     assert.strictEqual(accuser(p, "j0", p.joueurs[c2].carte, { config: CONFIG, rng }).bonus, 0);
   }
 
+  // ── Objet gagné au démasquage, plusieurs objets par jour ──
+  {
+    const p = partieTest(6);
+    const moi = p.joueurs.j0;
+    const r = accuser(p, "j0", p.joueurs[moi.cible].carte, { config: CONFIG, rng });
+    assert.ok(r.objetGagne && moi.objets.includes(r.objetGagne), "objet gagné au démasquage");
+    assert.strictEqual(accuser(p, "j1", p.joueurs[p.joueurs.j1.cible].carte, { config: { ...CONFIG, objet_demasquage: false }, rng }).objetGagne, null);
+    // Réserve pleine : rien de plus
+    const j2 = p.joueurs.j2;
+    j2.objets = ["loupe", "loupe", "loupe"];
+    assert.strictEqual(accuser(p, "j2", p.joueurs[j2.cible].carte, { config: CONFIG, rng }).objetGagne, null);
+    assert.strictEqual(j2.objets.length, CONFIG.inventaire_max);
+    // Sans limite par jour (`objets_par_jour` = 0) : deux objets le même jour
+    const j3 = p.joueurs.j3;
+    j3.objets = ["brouillard", "miroir"];
+    assert.ok(!utiliserObjet(p, "j3", "brouillard", { config: CONFIG, rng }).erreur);
+    assert.ok(!utiliserObjet(p, "j3", "miroir", { config: CONFIG, rng }).erreur);
+    // Plafond à 1 par jour
+    const j4 = p.joueurs.j4;
+    j4.objets = ["brouillard", "miroir"];
+    const un = { ...CONFIG, objets_par_jour: 1 };
+    assert.ok(!utiliserObjet(p, "j4", "brouillard", { config: un, rng }).erreur);
+    assert.strictEqual(utiliserObjet(p, "j4", "miroir", { config: un, rng }).erreur, "objetJour");
+    cloturer(p, { config: un });
+    assert.ok(!utiliserObjet(p, "j4", "miroir", { config: un, rng }).erreur, "plafond remis à zéro à la clôture");
+  }
+
   console.log("quiestceRules.test.js : OK");
 }
 

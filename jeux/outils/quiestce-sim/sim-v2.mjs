@@ -13,6 +13,9 @@ const CHOIX = !!process.env.CHOIX;
 if (process.env.BROUILLARD_FORT) CONFIG.brouillard_bloque_accusation = true;
 // Bonus : BONUS_EFF='[3,2,1]' (efficacité), INTOUCHABLE=2
 if (process.env.BONUS_EFF) CONFIG.bonus_efficacite = JSON.parse(process.env.BONUS_EFF);
+// MULTI=1 (objets sans limite par jour), DEMASQUE_OBJET=1 (objet gagné au démasquage)
+if (process.env.MULTI) CONFIG.objets_par_jour = 0;
+if (process.env.DEMASQUE_OBJET) CONFIG.objet_demasquage = true;
 if (process.env.INTOUCHABLE) CONFIG.bonus_intouchable = Number(process.env.INTOUCHABLE);
 
 // Choix de cible des bots : d'abord celle sur laquelle on a des renseignements
@@ -51,6 +54,34 @@ function jouer(p, id, bot, jour) {
   const j = p.joueurs[id];
   if (!j.cible) prendreCible(p, id);
   // Objet (bots heuristiques, seulement les types autorisés)
+  utiliserObjets(p, id, bot);
+  // Questions (meilleure partition), puis accusation
+  while (j.cible && R.questionsRestantes(j, CONFIG) > 0) {
+    const cs = R.candidats(p, id);
+    const qs = R.questionsPossibles(p, id, { config: CONFIG });
+    if (!qs.length || cs.length <= 1) break;
+    const q = bot.profil === "occasionnel" ? qs[Math.floor(rng() * qs.length)] : qs.map((x) => [x, score(cs, (k) => p.cartes[k].profil[x])]).sort((a, b) => a[1] - b[1])[0][0];
+    R.poser(p, id, q, { config: CONFIG });
+  }
+  for (let k = 0; k < 4; k++) {
+    const cs = R.candidats(p, id);
+    if (!(j.cible && R.accusationsRestantes(j) > 0 && cs.length && cs.length <= PROFILS[bot.profil].seuil(jour))) break;
+    const r = R.accuser(p, id, cs[Math.floor(rng() * cs.length)], { config: CONFIG, rng });
+    if (r.correct) {
+      prendreCible(p, id);
+      utiliserObjets(p, id, bot);
+    }
+  }
+}
+
+// Objets (bots heuristiques, seulement les types autorisés), autant que le
+// plafond du jour le permet
+function utiliserObjets(p, id, bot) {
+  for (let n = 0; n < 3; n++) if (!utiliserUnObjet(p, id, bot)) return;
+}
+
+function utiliserUnObjet(p, id, bot) {
+  const j = p.joueurs[id];
   const peut = (o) => bot.droits[o] && R.etatObjet(p, id, o, { config: CONFIG }).ok;
   const chasseursDeMoi = R.chasseurs(p, id);
   const menace = chasseursDeMoi.some((h) => p.joueurs[h].enquete.ordre.length >= 2);
@@ -62,21 +93,9 @@ function jouer(p, id, bot, jour) {
   else if (peut("double") && cs0 >= 2 && cs0 <= 3) objet = "double";
   else if (peut("loupe") && cs0 > 2 && R.questionsRestantes(j, CONFIG) > 0) objet = "loupe";
   else if (peut("miroir") && chasseursDeMoi.length) objet = "miroir";
-  if (objet && !R.utiliserObjet(p, id, objet, { config: CONFIG, rng }).erreur) bot.utilises[objet] = (bot.utilises[objet] || 0) + 1;
-  // Questions (meilleure partition), puis accusation
-  while (j.cible && R.questionsRestantes(j, CONFIG) > 0) {
-    const cs = R.candidats(p, id);
-    const qs = R.questionsPossibles(p, id, { config: CONFIG });
-    if (!qs.length || cs.length <= 1) break;
-    const q = bot.profil === "occasionnel" ? qs[Math.floor(rng() * qs.length)] : qs.map((x) => [x, score(cs, (k) => p.cartes[k].profil[x])]).sort((a, b) => a[1] - b[1])[0][0];
-    R.poser(p, id, q, { config: CONFIG });
-  }
-  for (let k = 0; k < 2; k++) {
-    const cs = R.candidats(p, id);
-    if (!(j.cible && R.accusationsRestantes(j) > 0 && cs.length && cs.length <= PROFILS[bot.profil].seuil(jour))) break;
-    const r = R.accuser(p, id, cs[Math.floor(rng() * cs.length)], { config: CONFIG, rng });
-    if (r.correct) prendreCible(p, id);
-  }
+  if (!objet || R.utiliserObjet(p, id, objet, { config: CONFIG, rng }).erreur) return false;
+  bot.utilises[objet] = (bot.utilises[objet] || 0) + 1;
+  return true;
 }
 
 const ab = Object.fromEntries(OBJ.map((o) => [o, { oui: { n: 0, cartes: 0, demasque: 0, win: 0, u: 0 }, non: { n: 0, cartes: 0, demasque: 0, win: 0 } }]));

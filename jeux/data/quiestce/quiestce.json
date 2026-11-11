@@ -7,12 +7,13 @@
   "questions_par_jour": 1,
   "chasseurs_max": 2,
   "inventaire_max": 3,
+  "objets_par_jour": 0,
+  "objet_demasquage": true,
   "tirage_objets": {
     "loupe": 1,
     "double": 1,
     "desamorcage": 1,
     "brouillard": 1,
-    "deguisement": 1,
     "miroir": 1
   },
   "brouillard_bloque_accusation": true,
