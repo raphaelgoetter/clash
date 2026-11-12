@@ -18,18 +18,19 @@
 //   2. Appelle l'API Clash Royale (currentriverrace) pour
 //      détecter si la semaine est un Colisée.
 //   3. Construit le message text + embed Colisée si nécessaire.
-//   4. Poste sur le channel du clan (sans ping de rôle).
+//   4. Poste sur le channel du clan en pingant le rôle du clan.
 //
 // Usage :
 //   node scripts/notifyGdcLaunch.js              # poste réellement
 //   node scripts/notifyGdcLaunch.js --dry-run     # simule sans poster
 //   node scripts/notifyGdcLaunch.js --force       # ignore le dedup
+//   node scripts/notifyGdcLaunch.js --no-ping     # poste sans pinger le rôle du clan
 //
 // Cron attendu : jeudi 10h30 UTC (~46 min après le reset GDC de 09:42-09:44 UTC)
 // Workflow : .github/workflows/gdc-launch.yml
 //
 // Dépendances env :
-//   DISCORD_TOKEN
+//   DISCORD_TOKEN, DISCORD_GUILD_ID (résolution du rôle de clan à pinger)
 //   DISCORD_CHANNEL_MEMBERS_Y8JUPC9C, DISCORD_CHANNEL_MEMBERS_LRQP20V9, DISCORD_CHANNEL_MEMBERS_QU9UQJRL
 //   CLASH_API_KEY
 //
@@ -42,6 +43,7 @@ import { Redis } from "@upstash/redis";
 
 import { fetchCurrentRace } from "@clash/clash-royale/clashApi.js";
 import { formatResetTimeParis } from "@clash/clash-royale/dateUtils.js";
+import { getRoleIdByName } from "@clash/commun/discordRoles.js";
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -49,6 +51,13 @@ const DISCORD_API = "https://discord.com/api/v10";
 // QU9UQJRL (Les Revoltes, Clan 3) exclu : GDC non obligatoire dans ce clan.
 const CLAN_TAGS = ["Y8JUPC9C", "LRQP20V9"];
 const LOG_KEY = "dedup:gdclaunch";
+
+// Rôle Discord pingé dans le salon de chaque clan (mêmes noms que notifyRules.js).
+const CLAN_ROLE_NAMES = {
+  Y8JUPC9C: "LA RESISTANCE ★",
+  LRQP20V9: "LES RESISTANTS ★",
+  QU9UQJRL: "LES REVOLTES ★",
+};
 
 let _redis = null;
 function getRedis() {
@@ -137,6 +146,7 @@ Détails pratiques :
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
+const NO_PING = process.argv.includes("--no-ping");
 
 // ── Dedup log ──────────────────────────────────────────────────
 
@@ -218,9 +228,19 @@ async function main() {
     }
 
     const resetTime = formatResetTimeParis(tag);
-    const content = buildMessageBody(tag, isColosseum, resetTime);
+    const body = buildMessageBody(tag, isColosseum, resetTime);
 
-    const payload = { content, allowed_mentions: { parse: [] } };
+    // Ping du rôle du clan : seul ce rôle est autorisé dans allowed_mentions.
+    // Rôle introuvable → message posté sans ping.
+    const roleId = NO_PING ? null : await getRoleIdByName(CLAN_ROLE_NAMES[tag]);
+    if (!NO_PING && !roleId) {
+      console.warn(`[WARN] ${tag}: rôle "${CLAN_ROLE_NAMES[tag]}" introuvable, pas de ping`);
+    }
+    const content = roleId ? `<@&${roleId}>\n${body}` : body;
+    const payload = {
+      content,
+      allowed_mentions: { parse: [], roles: roleId ? [roleId] : [] },
+    };
     if (isColosseum) {
       payload.embeds = [
         {

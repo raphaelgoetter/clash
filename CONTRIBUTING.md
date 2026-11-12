@@ -44,7 +44,7 @@ Scripts TrustRoyale (`package.json` racine ; les scripts des jeux sont listés d
 | `clan-status` (`:dry`) | `scripts/notifyClanStatus.js` | Statut des clans (salon staff) |
 | `war-exploit` (`:dry`, `:test`) | `scripts/notifyWarExploit.js` | « Exploit du jour » (voir ci-dessous) |
 | `last-seen` (`:dry`) | `scripts/notifyLastSeen.js` | Joueurs inactifs (`lastSeen` lu en live via l’API, jamais depuis le cache horaire) |
-| `gdc-launch` (`:dry`) | `scripts/notifyGdcLaunch.js` | Annonce de lancement GDC (jeudi) |
+| `gdc-launch` (`:dry`) | `scripts/notifyGdcLaunch.js` | Annonce de lancement GDC (jeudi), ping du rôle du clan (`--no-ping` pour l'omettre) |
 | `pre-war-summary` (`:dry`) | `scripts/notifyPreWarSummary.js` | Résumé pré-GDC hebdo |
 | `rules` (`:dry`, `:dry:noping`) | `scripts/notifyRules.js` | Rappel des règles, ne poste que le 1er mardi du mois (heure de Paris) |
 | `discord-links:list` / `:set` / `:remove` | `scripts/discordLinks.js` | Administration des liens tag → Discord |
