@@ -708,7 +708,7 @@ export async function routeJeuxSpeciaux(body, res) {
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
-    // Hash de l'avatar Discord (tableau de chasse en image), null sans avatar
+    // Hash de l'avatar Discord (tableau des enquêtes en image), null sans avatar
     const avatar = body.member?.user?.avatar ?? null;
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);

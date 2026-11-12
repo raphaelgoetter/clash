@@ -1,7 +1,7 @@
 // ============================================================
 // quiestce.js — Handlers Discord de Qui est-ce ? (jeu spécial de 7 jours).
 // Un seul message officiel par jour (questions du jour, classement, tableau
-// de chasse, révélations), réédité en direct après chaque action, avec
+// des enquêtes, révélations), réédité en direct après chaque action, avec
 // trois boutons, chacun en éphémère : Jouer (l'enquête : sa carte secrète,
 // sa cible, ses indices, et trois menus édités en place : question du
 // jour, accusation, objet), Règles et Journal (ce qui concerne le joueur).
@@ -38,7 +38,7 @@ import {
   QUESTIONS,
   OBJETS,
   nomCarte,
-  chasseurs,
+  enqueteurs,
   ciblesDisponibles,
   choisirCible,
   points,
@@ -54,7 +54,7 @@ import {
   classement,
   texteJournal,
 } from "../../services/quiestceRules.js";
-import { encodeGrille, encodeChasse } from "../../services/quiestceImage.js";
+import { encodeGrille, encodeEnquetes } from "../../services/quiestceImage.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
@@ -76,21 +76,21 @@ async function grilleUrl(partie, barrees = []) {
   return `${TRUST_ROYALE_URL}/api/quiestce/grille?d=${await encodeGrille(partie.grille, barrees)}`;
 }
 
-// Tableau de chasse en image (message officiel) : une vignette par joueur
-// dans l'ordre du classement, avec sa cible, ses chasseurs et le nombre de
+// Tableau des enquêtes en image (message officiel) : une vignette par joueur
+// dans l'ordre du classement, avec sa cible, ses enquêteurs et le nombre de
 // questions qu'ils ont posées sur lui.
-function chasseUrl(partie) {
+function enquetesUrl(partie) {
   const ordre = classement(partie).map((r) => r.discordId);
   const index = new Map(ordre.map((id, i) => [id, i]));
   const joueurs = ordre.map((id) => {
     const j = partie.joueurs[id];
-    const hs = chasseurs(partie, id);
+    const hs = enqueteurs(partie, id);
     return {
       nom: j.username,
       points: points(j),
       avatar: j.avatar ?? null,
       cible: j.cible ? (index.get(j.cible) ?? -1) : -1,
-      chasseurs: hs.length,
+      enqueteurs: hs.length,
       questions: hs.reduce((n, h) => n + (partie.joueurs[h].enquete?.posees ?? 0), 0),
       demasque: j.nbDemasque ?? 0,
       trouvees: j.demasques?.length ?? 0,
@@ -98,7 +98,7 @@ function chasseUrl(partie) {
       tombe: !!j.demasqueJour,
     };
   });
-  return `${TRUST_ROYALE_URL}/api/quiestce/chasse?d=${encodeChasse(joueurs)}`;
+  return `${TRUST_ROYALE_URL}/api/quiestce/enquetes?d=${encodeEnquetes(joueurs)}`;
 }
 
 // ── Mise en forme ────────────────────────────────────────────────────
@@ -252,7 +252,7 @@ function bilanVeilleLignes(partie) {
 }
 
 // Message officiel du jour : intro (J1) ou bilan de la veille, classement,
-// tableau de chasse, faits du jour (les questions du jour sont dans
+// tableau des enquêtes, faits du jour (les questions du jour sont dans
 // l'enquête de chacun).
 async function buildTableEmbed(jour, config, partie) {
   const lignes =
@@ -287,7 +287,7 @@ async function buildTableEmbed(jour, config, partie) {
     title: `🕵️ Qui est-ce ? (Jour ${jour}/${config.duree_jours})`,
     description: lignes.join("\n").slice(0, 4096),
     color: QEC_COLOR,
-    image: partie.grille.length ? { url: chasseUrl(partie) } : undefined,
+    image: partie.grille.length ? { url: enquetesUrl(partie) } : undefined,
     footer: {
       text: `Nouvelles questions et nouvel objet chaque jour à ${heureCloture()}.`,
     },
@@ -365,14 +365,14 @@ function buildReglesEmbed(config) {
       "",
       "**👀 Cibles**",
       "- La première est tirée au sort, les suivantes sont choisies (le meneur t'est proposé).",
-      `- ${config.chasseurs_max} chasseurs au plus par joueur, jamais un joueur que tu as déjà démasqué.`,
+      `- ${config.enqueteurs_max} enquêteurs au plus par joueur, jamais un joueur que tu as déjà démasqué.`,
       "- À chaque nouvelle cible, un **indice de départ** : une caractéristique de sa carte.",
       "- Sur l'image du jour, à côté des points : 🎯 cibles démasquées, 🎭 fois démasqué.",
       "",
       "**⚔️ Objets contre ta cible**",
       ...objets("offensif"),
       "",
-      "**🛡️ Objets contre ton chasseur**",
+      "**🛡️ Objets contre ton enquêteur**",
       ...objets("defensif"),
       "",
       "**❓ Questions**",
@@ -452,7 +452,7 @@ async function discordFetch(url, init) {
 // 16/10 : illustration perdue à la réédition de l'annonce). Repli sur l'URL
 // si le téléchargement échoue.
 const IMAGES_JOINTES = [
-  { chemin: "/api/quiestce/chasse", filename: "chasse.png", type: "image/png" },
+  { chemin: "/api/quiestce/enquetes", filename: "enquetes.png", type: "image/png" },
   { chemin: "/api/quiestce/grille", filename: "grille.png", type: "image/png" },
   { chemin: "/api/quiestce/illustration", filename: "quiestce.webp", type: "image/webp" },
 ];
@@ -906,7 +906,7 @@ const RAISONS_OBJET = {
 };
 
 // Statut : points, objets défensifs actifs (la réserve est dans le menu
-// des objets), et chasseurs avec le nombre de questions déjà posées.
+// des objets), et enquêteurs avec le nombre de questions déjà posées.
 function statutLigne(partie, discordId) {
   const j = partie.joueurs[discordId];
   const actifs = [
@@ -922,14 +922,14 @@ function statutLigne(partie, discordId) {
   const lignes = [`🏆 **${plural(points(j), "pt")}** (${detail.join(", ")})`];
   if (actifs.length)
     lignes.push(`🛡️ Actif jusqu'à la clôture : ${actifs.join(", ")}`);
-  const hs = chasseurs(partie, discordId).map((h) => partie.joueurs[h]);
+  const hs = enqueteurs(partie, discordId).map((h) => partie.joueurs[h]);
   if (hs.length === 1)
     lignes.push(
-      `🕵️ Ton chasseur, **${hs[0].username}**, a déjà posé ${plural(hs[0].enquete.posees, "question")} sur toi.`,
+      `🕵️ Ton enquêteur, **${hs[0].username}**, a déjà posé ${plural(hs[0].enquete.posees, "question")} sur toi.`,
     );
   else if (hs.length > 1)
     lignes.push(
-      `🕵️ Tes chasseurs : ${hs.map((h) => `**${h.username}** (${plural(h.enquete.posees, "question")})`).join(", ")}.`,
+      `🕵️ Tes enquêteurs : ${hs.map((h) => `**${h.username}** (${plural(h.enquete.posees, "question")})`).join(", ")}.`,
     );
   return lignes.join("\n");
 }
@@ -1035,13 +1035,13 @@ async function buildEnqueteView(
     const dispo = ciblesDisponibles(partie, discordId, { config });
     if (!dispo.length) {
       lignes.push(
-        "🎯 Aucune cible disponible pour l'instant (2 chasseurs au plus par joueur) : reviens un peu plus tard.",
+        "🎯 Aucune cible disponible pour l'instant (2 enquêteurs au plus par joueur) : reviens un peu plus tard.",
       );
     } else {
       // Meneur disponible proposé par défaut, menu pour les autres
       const [top, ...autres] = dispo;
       const libelle = (id) =>
-        `${plural(points(partie.joueurs[id]), "pt")} · ${plural(chasseurs(partie, id).length, "chasseur")}`;
+        `${plural(points(partie.joueurs[id]), "pt")} · ${plural(enqueteurs(partie, id).length, "enquêteur")}`;
       lignes.push(
         "🎯 **Choisis ta prochaine cible.** Le meneur disponible t'est proposé (le démasquer lui retire un point), ou choisis quelqu'un d'autre.",
       );
@@ -1079,10 +1079,10 @@ async function buildEnqueteView(
     }
   } else {
     const cible = partie.joueurs[j.cible];
-    const rivaux = chasseurs(partie, j.cible).filter((id) => id !== discordId);
+    const rivaux = enqueteurs(partie, j.cible).filter((id) => id !== discordId);
     if (rivaux.length)
       lignes.push(
-        `👥 ${rivaux.map((id) => `**${partie.joueurs[id].username}**`).join(", ")} chasse${rivaux.length > 1 ? "nt" : ""} aussi ${cible.username}.`,
+        `👥 ${rivaux.map((id) => `**${partie.joueurs[id].username}**`).join(", ")} enquête${rivaux.length > 1 ? "nt" : ""} aussi sur ${cible.username}.`,
       );
     if (cible.brouillard)
       lignes.push(
@@ -1379,8 +1379,8 @@ function texteObjet(r, partie) {
   if (r.objet === "brouillard")
     return "🌫️ Brouillard : jusqu'à la clôture, les questions sur ta carte restent sans réponse et personne ne peut t'accuser.";
   if (r.objet === "miroir")
-    return "🪞 Miroir posé (secret) : la prochaine question sur toi te révélera la même caractéristique de ton chasseur.";
-  return `🎭 Déguisement : ta carte secrète est maintenant **${nomCarte(partie, r.carte)}**.${r.chasseurs ? ` ${r.chasseurs > 1 ? "Tes chasseurs perdent" : "Ton chasseur perd"} ses indices !` : ""}`;
+    return "🪞 Miroir posé (secret) : la prochaine question sur toi te révélera la même caractéristique de ton enquêteur.";
+  return `🎭 Déguisement : ta carte secrète est maintenant **${nomCarte(partie, r.carte)}**.${r.enqueteurs ? ` ${r.enqueteurs > 1 ? "Tes enquêteurs perdent" : "Ton enquêteur perd"} ses indices !` : ""}`;
 }
 
 // Bouton « Viser X » et menu « Ou choisis une autre cible ».

@@ -1,10 +1,10 @@
 // ============================================================
 // quiestceRules.js — Règles pures de Qui est-ce ? (jeu spécial de 7 jours) :
-// chaque joueur reçoit une carte secrète d'une grille commune, chasse une
-// cible qu'il choisit (le meneur est proposé) en posant une question par
+// chaque joueur reçoit une carte secrète d'une grille commune, enquête sur
+// une cible qu'il choisit (le meneur est proposé) en posant une question par
 // jour (parmi les 3 questions du jour, 4 avec la Loupe), puis l'accuse ; score = cartes
 // découvertes moins fois démasqué. Chaque jour, un objet gratuit tiré au
-// hasard (offensif contre sa cible ou défensif contre son chasseur),
+// hasard (offensif contre sa cible ou défensif contre son enquêteur),
 // utilisable ou à garder. Aucune I/O : la couche Redis (quiestce.js) lit
 // la partie, appelle ces fonctions sous verrou puis réécrit la partie.
 //
@@ -127,7 +127,7 @@ function nouveauJoueur(username, arrivee) {
     cible: null,
     enquete: nouvelleEnquete(),
     // Joueurs démasqués et carte qu'ils avaient alors (un Déguisement
-    // ultérieur ne change pas ce que le chasseur sait)
+    // ultérieur ne change pas ce que l'enquêteur sait)
     demasques: [],
     cartesConnues: [],
     nbDemasque: 0,
@@ -217,8 +217,8 @@ export function tirerGrille(cartesData, taille, rng = Math.random) {
 
 // Jour 1 : grille tirée (`taille_grille` cartes, au moins une par joueur),
 // une carte secrète par joueur, et première cible attribuée en cercle
-// (chacun chasse le suivant : un seul chasseur par cible, sans paire qui
-// se chasse mutuellement).
+// (chacun enquête sur le suivant : un seul enquêteur par cible, sans paire
+// qui enquête l'un sur l'autre).
 export function demarrer(partie, { config, cartesData, rng = Math.random }) {
   const ids = shuffle(Object.keys(partie.joueurs), rng);
   const taille = Math.max(config.taille_grille, ids.length);
@@ -235,8 +235,8 @@ export function demarrer(partie, { config, cartesData, rng = Math.random }) {
 }
 
 // Cartes de la grille que personne n'a, hors cartes déjà découvertes par
-// un chasseur (sinon un Déguisement pourrait tomber sur une carte qu'un
-// chasseur barre à juste titre de sa fiche).
+// un enquêteur (sinon un Déguisement pourrait tomber sur une carte qu'un
+// enquêteur barre à juste titre de sa fiche).
 export function cartesLibres(partie) {
   const prises = new Set(Object.values(partie.joueurs).flatMap((j) => [j.carte, ...j.cartesConnues]));
   return partie.grille.filter((k) => !prises.has(k));
@@ -244,19 +244,19 @@ export function cartesLibres(partie) {
 
 // ── Cibles ──────────────────────────────────────────────────────────
 
-export function chasseurs(partie, cibleId) {
+export function enqueteurs(partie, cibleId) {
   return Object.entries(partie.joueurs).filter(([, j]) => j.cible === cibleId).map(([id]) => id);
 }
 
-// Cibles possibles : au plus `chasseurs_max` chasseurs par cible, jamais un
-// joueur déjà démasqué par ce chasseur (il connaît sa carte). Triées du
+// Cibles possibles : au plus `enqueteurs_max` enquêteurs par cible, jamais un
+// joueur déjà démasqué par cet enquêteur (il connaît sa carte). Triées du
 // meneur au dernier (points, puis cartes découvertes, puis arrivée) : la
 // première est proposée par défaut (décision du 12/10 : démasquer le
 // meneur lui retire un point, rattrapage naturel).
 export function ciblesDisponibles(partie, id, { config, sauf = null }) {
   const moi = partie.joueurs[id];
   return Object.entries(partie.joueurs)
-    .filter(([cid, j]) => cid !== id && cid !== sauf && j.carte && !moi.demasques.includes(cid) && chasseurs(partie, cid).length < config.chasseurs_max)
+    .filter(([cid, j]) => cid !== id && cid !== sauf && j.carte && !moi.demasques.includes(cid) && enqueteurs(partie, cid).length < config.enqueteurs_max)
     .sort(([, a], [, b]) => points(b) - points(a) || b.demasques.length - a.demasques.length || a.arrivee - b.arrivee)
     .map(([cid]) => cid);
 }
@@ -394,7 +394,7 @@ export function poser(partie, id, q, { config }) {
   moi.actifJour = true;
   bilan(partie).questions += 1;
   // Miroir (secret) : la cible apprend la même caractéristique de la carte
-  // de son chasseur
+  // de son enquêteur
   if (cible.miroir) {
     cible.miroir = false;
     const reflet = partie.cartes[moi.carte].profil[q];
@@ -417,7 +417,7 @@ export function poser(partie, id, q, { config }) {
 // Une accusation par jour (deux avec la Double accusation). Juste : une
 // carte découverte (+`points_carte`), la cible est démasquée
 // (-`malus_demasque` pour elle, décision du 13/10), le
-// chasseur choisit sa prochaine cible. Fausse : la carte est barrée
+// enquêteur choisit sa prochaine cible. Fausse : la carte est barrée
 // (accusation ratée comptée dans le départage). Sous Brouillard (option
 // `brouillard_bloque_accusation`), aucune accusation possible.
 // Une accusation par jour, toutes cibles confondues ; avec une Double
@@ -488,15 +488,15 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
 // Un objet gratuit par jour (debutAction), gardé en réserve jusqu'à
 // `inventaire_max`, plus un par démasquage (`objet_demasquage`) ;
 // `objets_par_jour` utilisés par jour au plus (0 = sans limite). Offensifs contre sa
-// cible, défensifs contre son chasseur (décision du 12/10).
+// cible, défensifs contre son enquêteur (décision du 12/10).
 
 export const OBJETS = {
   loupe: { nom: "Loupe", emoji: "🔍", famille: "offensif", effet: "Débloque une 4e question au choix aujourd'hui." },
   double: { nom: "Double accusation", emoji: "🎯", famille: "offensif", effet: "Deux accusations aujourd'hui sur ta cible actuelle." },
   desamorcage: { nom: "Désamorçage", emoji: "🧨", famille: "offensif", effet: "Coupe le Brouillard ou le Miroir de ta cible, sinon détruit un objet défensif de sa réserve." },
   brouillard: { nom: "Brouillard", emoji: "🌫️", famille: "defensif", effet: "Jusqu'à la clôture, questions sans réponse et accusations impossibles contre toi." },
-  deguisement: { nom: "Déguisement", emoji: "🎭", famille: "defensif", effet: "Change ta carte contre une carte libre : tes chasseurs perdent leurs indices." },
-  miroir: { nom: "Miroir", emoji: "🪞", famille: "defensif", effet: "Secret : la prochaine question sur toi te révèle la même caractéristique de ton chasseur." },
+  deguisement: { nom: "Déguisement", emoji: "🎭", famille: "defensif", effet: "Change ta carte contre une carte libre : tes enquêteurs perdent leurs indices." },
+  miroir: { nom: "Miroir", emoji: "🪞", famille: "defensif", effet: "Secret : la prochaine question sur toi te révèle la même caractéristique de ton enquêteur." },
 };
 
 export const DEFENSIFS = Object.keys(OBJETS).filter((o) => OBJETS[o].famille === "defensif");
@@ -575,19 +575,19 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
     prive(partie, id, "🪞 Miroir posé (secret) jusqu'à la clôture.");
     return { objet };
   }
-  // Déguisement : nouvelle carte libre ; indices des chasseurs et
+  // Déguisement : nouvelle carte libre ; indices des enquêteurs et
   // renseignements du Miroir sur l'ancienne carte devenus faux
   const libres = cartesLibres(partie);
   const ancienne = moi.carte;
   moi.anciennesCartes = [...(moi.anciennesCartes ?? []), ancienne];
   moi.carte = libres[Math.floor(rng() * libres.length)];
   for (const j of Object.values(partie.joueurs)) delete j.renseignements?.[id];
-  const victimes = chasseurs(partie, id);
+  const victimes = enqueteurs(partie, id);
   for (const hid of victimes) partie.joueurs[hid].enquete = nouvelleEnquete();
   bilan(partie).deguisements += 1;
   noter(partie, "deguisement", { s: id, ids: [id, ...victimes], crucial: true });
   prive(partie, id, `🎭 Déguisement : ta carte ${nomCarte(partie, ancienne)} devient **${nomCarte(partie, moi.carte)}**.`);
-  return { objet, carte: moi.carte, chasseurs: victimes.length };
+  return { objet, carte: moi.carte, enqueteurs: victimes.length };
 }
 
 // ── Clôture et classement ───────────────────────────────────────────
@@ -762,9 +762,9 @@ export function texteJournal(partie, e, moi = null) {
       return `🧨 Le Désamorçage de ${S} ${quoi} chez ${V}.`;
     }
     case "deguisement":
-      if (parMoi) return "🎭 Tu te déguises : tes chasseurs perdent leurs indices !";
+      if (parMoi) return "🎭 Tu te déguises : tes enquêteurs perdent leurs indices !";
       if (moi != null && e.ids?.includes(moi)) return `🎭 ${S} s'est déguisé : tes indices sur sa carte sont effacés !`;
-      return `🎭 ${S} s'est déguisé : ses chasseurs perdent leurs indices !`;
+      return `🎭 ${S} s'est déguisé : ses enquêteurs perdent leurs indices !`;
     case "brouillard":
       if (parMoi) return "🌫️ Tu t'enveloppes de brouillard jusqu'à la clôture.";
       return `🌫️ ${S} s'enveloppe de brouillard jusqu'à la clôture.`;

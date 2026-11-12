@@ -1,6 +1,6 @@
 // ============================================================
 // quiestce.js — Qui est-ce ?, jeu spécial de 7 jours : chaque joueur a une
-// carte secrète d'une grille commune et chasse les cartes des autres, une
+// carte secrète d'une grille commune et enquête sur les cartes des autres, une
 // question par jour. 100 % asynchrone : chaque action est résolue tout de
 // suite (règles pures dans quiestceRules.js).
 //
@@ -158,7 +158,7 @@ export async function demarrerPartie({ pnj = [] } = {}) {
 // son objet gratuit (et une cible s'il n'en a pas), voir debutAction().
 // Renvoie { partie, resultat, nouveau, debut } ou { erreur: "inscriptions" | "complet" | "pasInscrit" }.
 // `avatar` : hash de l'avatar Discord (null sans avatar, undefined pour ne
-// rien changer), retenu pour le tableau de chasse en image.
+// rien changer), retenu pour le tableau des enquêtes en image.
 export async function agir(discordId, username, fn = () => null, { inscription = false, avatar } = {}) {
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);

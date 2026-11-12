@@ -110,7 +110,7 @@ export async function getIllustrationImage() {
   return illustrationCache;
 }
 
-// ── Tableau de chasse (message officiel) ─────────────────────────────
+// ── Tableau des enquêtes (message officiel) ──────────────────────────
 // Pensé pour mobile (image réduite à ~360 px de large par Discord) : deux
 // colonnes de vignettes horizontales, dans l'ordre du classement, avec peu
 // d'informations en gros : rang, avatar Discord (créature « Clay » de
@@ -118,7 +118,7 @@ export async function getIllustrationImage() {
 // démasquées ; masque : fois démasqué), flèche vers l'avatar de sa cible ;
 // voile de brume sous Brouillard. Aucune carte secrète n'y figure.
 // État passé dans l'URL, compressé (deflate + base64url, voir
-// encodeChasse) pour rester sous la limite d'URL d'image de Discord.
+// encodeEnquetes) pour rester sous la limite d'URL d'image de Discord.
 
 
 const CH = { cols: 2, w: 540, h: 128, gap: 16, pad: 24 };
@@ -162,24 +162,24 @@ async function avatarDataUrl(av, i) {
 }
 
 // `joueurs` : [{ nom, points, avatar ("id/hash" ou null), cible (index ou
-// -1), chasseurs, questions, demasque, brouillard, tombe, trouvees }]
-export function encodeChasse(joueurs) {
-  const d = joueurs.map((j) => [j.nom, j.points, j.avatar ?? 0, j.cible, j.chasseurs, j.questions, j.demasque, (j.brouillard ? 1 : 0) | (j.tombe ? 2 : 0), j.trouvees ?? 0]);
+// -1), enquêteurs, questions, demasque, brouillard, tombe, trouvees }]
+export function encodeEnquetes(joueurs) {
+  const d = joueurs.map((j) => [j.nom, j.points, j.avatar ?? 0, j.cible, j.enqueteurs, j.questions, j.demasque, (j.brouillard ? 1 : 0) | (j.tombe ? 2 : 0), j.trouvees ?? 0]);
   return zlib.deflateRawSync(Buffer.from(JSON.stringify(d), "utf8")).toString("base64url");
 }
 
 // null si le paramètre est illisible.
-export function decodeChasse(param) {
+export function decodeEnquetes(param) {
   try {
     const d = JSON.parse(zlib.inflateRawSync(Buffer.from(String(param), "base64url"), { maxOutputLength: 20000 }).toString("utf8"));
     if (!Array.isArray(d) || !d.length) return null;
     const nombre = (x, min = 0) => Math.max(min, Math.min(999, Math.trunc(Number(x)) || 0));
-    return d.slice(0, 24).map(([nom, points, avatar, cible, chasseurs, questions, demasque, f, trouvees]) => ({
+    return d.slice(0, 24).map(([nom, points, avatar, cible, enqueteurs, questions, demasque, f, trouvees]) => ({
       nom: String(nom ?? "?").slice(0, 40),
       points: nombre(points, -999),
       avatar: typeof avatar === "string" ? avatar : null,
       cible: Number.isInteger(cible) && cible >= 0 && cible < d.length ? cible : -1,
-      chasseurs: nombre(chasseurs),
+      enqueteurs: nombre(enqueteurs),
       questions: nombre(questions),
       demasque: nombre(demasque),
       trouvees: nombre(trouvees),
@@ -223,7 +223,7 @@ function brume(x, y, w, h) {
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18" fill="#9fb0c8" opacity="0.28"/>${vagues}`;
 }
 
-async function buildChasseSvg(joueurs) {
+async function buildEnquetesSvg(joueurs) {
   const n = joueurs.length;
   const cols = Math.min(CH.cols, n);
   const rows = Math.ceil(n / cols);
@@ -269,7 +269,7 @@ async function buildChasseSvg(joueurs) {
   };
 }
 
-export async function getChasseImage(joueurs) {
-  const { svg, width } = await buildChasseSvg(joueurs);
+export async function getEnquetesImage(joueurs) {
+  const { svg, width } = await buildEnquetesSvg(joueurs);
   return { buffer: await rasterize(svg, width), mimeType: "image/png" };
 }

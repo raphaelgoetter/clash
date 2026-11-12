@@ -10,7 +10,7 @@ import {
   desinscrire,
   tirerGrille,
   demarrer,
-  chasseurs,
+  enqueteurs,
   ciblesDisponibles,
   choisirCible,
   points,
@@ -93,7 +93,7 @@ function main() {
     const p = partieTest(12);
     assert.strictEqual(new Set(Object.values(p.joueurs).map((j) => j.carte)).size, 12);
     for (const [id, j] of Object.entries(p.joueurs)) {
-      assert.strictEqual(chasseurs(p, id).length, 1);
+      assert.strictEqual(enqueteurs(p, id).length, 1);
       assert.notStrictEqual(p.joueurs[j.cible].cible, id);
       const [q] = j.enquete.ordre;
       assert.strictEqual(j.enquete.sources[q], "depart");
@@ -158,7 +158,7 @@ function main() {
     assert.strictEqual(r.correct, true);
     assert.deepStrictEqual(moi.demasques, [cibleId]);
     assert.strictEqual(cible.nbDemasque, 1);
-    assert.strictEqual(moi.cible, null, "le chasseur choisit sa prochaine cible");
+    assert.strictEqual(moi.cible, null, "l'enquêteur choisit sa prochaine cible");
     assert.ok(!ciblesDisponibles(p, "j0", { config: CONFIG }).includes(cibleId), "jamais un joueur déjà démasqué");
     const suivante = ciblesDisponibles(p, "j0", { config: CONFIG })[0];
     assert.ok(choisirCible(p, "j0", suivante, { config: CONFIG, rng }).depart, "indice de départ sur la nouvelle cible");
@@ -167,7 +167,7 @@ function main() {
     assert.strictEqual(texteJournal(p, p.journal.find((e) => e.k === "demasque")), `🎯 **j0** a démasqué **${cible.username}** !`);
   }
 
-  // ── Choix de cible : meneur proposé en premier, 2 chasseurs au plus ──
+  // ── Choix de cible : meneur proposé en premier, 2 enquêteurs au plus ──
   {
     const p = partieTest(6);
     p.joueurs.j4.demasques = ["a", "b"]; // 2 pts
@@ -180,28 +180,28 @@ function main() {
       p.joueurs[id].cible = null;
       choisirCible(p, id, "j4", { config: CONFIG, rng });
     }
-    assert.ok(chasseurs(p, "j4").length <= CONFIG.chasseurs_max);
+    assert.ok(enqueteurs(p, "j4").length <= CONFIG.enqueteurs_max);
     assert.ok(!ciblesDisponibles(p, "j0", { config: CONFIG }).includes("j4"), "cible pleine");
   }
 
   // ── Brouillard : questions sans réponse jusqu'à la clôture ──
   {
     const p = partieTest(6);
-    const chasseur = "j0";
+    const enqueteur = "j0";
     const cibleId = p.joueurs.j0.cible;
     p.joueurs[cibleId].objets = ["brouillard"];
     assert.ok(!utiliserObjet(p, cibleId, "brouillard", { config: CONFIG }).erreur);
-    const q = questionsPossibles(p, chasseur, { config: CONFIG })[0];
+    const q = questionsPossibles(p, enqueteur, { config: CONFIG })[0];
     const avant = p.joueurs.j0.enquete.ordre.length;
-    assert.strictEqual(poser(p, chasseur, q, { config: CONFIG }).brouille, true);
+    assert.strictEqual(poser(p, enqueteur, q, { config: CONFIG }).brouille, true);
     assert.strictEqual(p.joueurs.j0.enquete.ordre.length, avant, "aucune information");
-    assert.strictEqual(poser(p, chasseur, q, { config: CONFIG }).erreur, "plafondQuestion", "question perdue");
-    assert.strictEqual(accuser(p, chasseur, candidats(p, chasseur)[0], { config: CONFIG }).erreur, "brouillard", "accusation impossible");
+    assert.strictEqual(poser(p, enqueteur, q, { config: CONFIG }).erreur, "plafondQuestion", "question perdue");
+    assert.strictEqual(accuser(p, enqueteur, candidats(p, enqueteur)[0], { config: CONFIG }).erreur, "brouillard", "accusation impossible");
     cloturer(p, { config: CONFIG });
-    assert.ok(!poser(p, chasseur, questionsPossibles(p, chasseur, { config: CONFIG })[0], { config: CONFIG }).brouille);
+    assert.ok(!poser(p, enqueteur, questionsPossibles(p, enqueteur, { config: CONFIG })[0], { config: CONFIG }).brouille);
   }
 
-  // ── Déguisement : nouvelle carte libre, indices des chasseurs effacés ──
+  // ── Déguisement : nouvelle carte libre, indices des enquêteurs effacés ──
   {
     const p = partieTest(6);
     const cibleId = p.joueurs.j0.cible;
@@ -216,7 +216,7 @@ function main() {
     assert.strictEqual(p.joueurs.j0.enquete.ordre.length, 0);
     assert.strictEqual(p.joueurs.j3.renseignements[cibleId], undefined, "renseignements du Miroir effacés");
     assert.ok(candidats(p, "j0").includes(p.joueurs[cibleId].carte));
-    // La carte découverte par un chasseur n'est jamais redistribuée
+    // La carte découverte par un enquêteur n'est jamais redistribuée
     p.joueurs.j1.cartesConnues.push(ancienne);
     assert.ok(!cartesLibres(p).includes(ancienne));
   }
@@ -263,24 +263,24 @@ function main() {
     assert.strictEqual(accuser(p, "j0", p.joueurs[c2].carte, { config: CONFIG, rng }).correct, true);
   }
 
-  // ── Miroir : la cible apprend la même caractéristique de son chasseur ──
+  // ── Miroir : la cible apprend la même caractéristique de son enquêteur ──
   {
     const p = partieTest(6);
-    const chasseur = "j0";
+    const enqueteur = "j0";
     const cibleId = p.joueurs.j0.cible;
     const cible = p.joueurs[cibleId];
     cible.objets = ["miroir"];
     assert.ok(!utiliserObjet(p, cibleId, "miroir", { config: CONFIG }).erreur);
-    const q = questionsPossibles(p, chasseur, { config: CONFIG })[0];
-    assert.ok(poser(p, chasseur, q, { config: CONFIG }).valeur, "le chasseur reçoit quand même sa réponse");
-    assert.strictEqual(cible.renseignements[chasseur][q], p.cartes[p.joueurs[chasseur].carte].profil[q]);
+    const q = questionsPossibles(p, enqueteur, { config: CONFIG })[0];
+    assert.ok(poser(p, enqueteur, q, { config: CONFIG }).valeur, "l'enquêteur reçoit quand même sa réponse");
+    assert.strictEqual(cible.renseignements[enqueteur][q], p.cartes[p.joueurs[enqueteur].carte].profil[q]);
     assert.strictEqual(cible.miroir, false, "une seule fois");
-    // Renseignement repris si le chasseur devient la cible
+    // Renseignement repris si l'enquêteur devient la cible
     cible.cible = null;
-    p.joueurs[chasseur].nbDemasque = 0;
+    p.joueurs[enqueteur].nbDemasque = 0;
     const autres = Object.keys(p.joueurs).filter((id) => id !== cibleId);
-    for (const id of autres) if (id !== chasseur && p.joueurs[id].cible === chasseur) p.joueurs[id].cible = null;
-    assert.ok(choisirCible(p, cibleId, chasseur, { config: CONFIG, rng }).cible);
+    for (const id of autres) if (id !== enqueteur && p.joueurs[id].cible === enqueteur) p.joueurs[id].cible = null;
+    assert.ok(choisirCible(p, cibleId, enqueteur, { config: CONFIG, rng }).cible);
     assert.strictEqual(cible.enquete.sources[q], "miroir");
   }
 
