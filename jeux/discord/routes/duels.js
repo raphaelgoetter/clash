@@ -1,5 +1,5 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /tourneboule, /frise, /mascarade, /bac, /pendu, Six (archivé) et leurs
+// /quatre, /punto, /frise, /mascarade, /bac, /pendu, Six et Tourneboule (archivés) et leurs
 // boutons (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
 // tourneboulduel_*, friseduel_*, mascaradeduel_*, bacduel_*, penduduel_*, sixduel_*).
 //

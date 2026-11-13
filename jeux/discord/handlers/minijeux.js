@@ -123,6 +123,14 @@ import { getWiredGame } from "../../services/refonte.js";
 import { computeMiniJeuxStats } from "../../services/miniJeuxStats.js";
 
 const MINIJEUX_COLOR = 0x5865f2;
+
+// Duels à la demande (voir « Duels à la demande » dans jeux/CONTRIBUTING.md),
+// affichés par /mini-jeux : à tenir à jour à chaque ajout ou archivage.
+const DUEL_COMMANDS = ["/blackjack", "/gobelet", "/grille", "/quatre", "/punto", "/frise", "/mascarade", "/bac", "/pendu"];
+
+function buildDuelsBlock() {
+  return `## Les mini-jeux Duels de Kévina:\n${DUEL_COMMANDS.join(", ")}`;
+}
 const BAR_SEGMENTS = 7;
 
 // Même salon pour tous les mini-jeux (voir DISCORD_CHANNEL_FRAME_PUBLIC
@@ -813,7 +821,7 @@ export async function buildMiniJeuxEmbed(now = new Date()) {
     buildSpecialGameBlock(),
   ]);
 
-  const description = `${regularBlock}\n\n${specialBlock}`;
+  const description = `${regularBlock}\n\n${buildDuelsBlock()}\n\n${specialBlock}`;
 
   const link = channelLink();
   const fields = [
