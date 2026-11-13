@@ -126,7 +126,7 @@ const MINIJEUX_COLOR = 0x5865f2;
 
 // Duels à la demande (voir « Duels à la demande » dans jeux/CONTRIBUTING.md),
 // affichés par /mini-jeux : à tenir à jour à chaque ajout ou archivage.
-const DUEL_COMMANDS = ["/blackjack", "/gobelet", "/grille", "/quatre", "/punto", "/frise", "/mascarade", "/bac", "/pendu"];
+const DUEL_COMMANDS = ["/blackjack", "/gobelet", "/grille", "/quatre", "/punto", "/frise", "/mascarade", "/potato", "/bac", "/pendu"];
 
 function buildDuelsBlock() {
   return `## Les mini-jeux Duels de Kévina:\n${DUEL_COMMANDS.join(", ")}`;

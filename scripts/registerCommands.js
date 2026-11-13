@@ -31,6 +31,7 @@ const JEUX_COMMANDS = new Set([
   "punto",
   "frise",
   "mascarade",
+  "potato",
   "bac",
   "pendu",
   "pendu-generator",
@@ -582,6 +583,22 @@ const commands = [
     name: "mascarade",
     description:
       "Mascarade : une carte secrète en main, bluff et déduction, contre Kévina ou un joueur (MINI-JEUX).",
+    options: [
+      {
+        type: 3, // STRING
+        name: "adversaire",
+        description: "Contre qui jouer ?",
+        required: true,
+        choices: [
+          { name: "Kévina (bot)", value: "bot" },
+          { name: "2 joueurs", value: "1v1" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "potato",
+    description: "Potato : une patate chaude qui explose à une température secrète, contre Kévina ou un joueur.",
     options: [
       {
         type: 3, // STRING

@@ -1,7 +1,7 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /frise, /mascarade, /bac, /pendu, Six et Tourneboule (archivés) et leurs
+// /quatre, /punto, /frise, /mascarade, /potato, /bac, /pendu, Six et Tourneboule (archivés) et leurs
 // boutons (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
-// tourneboulduel_*, friseduel_*, mascaradeduel_*, bacduel_*, penduduel_*, sixduel_*).
+// tourneboulduel_*, friseduel_*, mascaradeduel_*, potatoduel_*, bacduel_*, penduduel_*, sixduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -106,6 +106,17 @@ import {
   handleMascaradeRegles,
   handleMascaradeAbandon,
 } from "../handlers/mascaradeDuel.js";
+import {
+  memberHasMiniJeuxRole as potatoMemberHasMiniJeuxRole,
+  extractMember as potatoExtractMember,
+  handlePotatoRoleRejected,
+  handlePotatoCommand,
+  handlePotatoPvpCommand,
+  handlePotatoOuvrir,
+  handlePotatoChauffer,
+  handlePotatoRegles,
+  handlePotatoAbandon,
+} from "../handlers/potatoDuel.js";
 import {
   memberHasMiniJeuxRole as bacMemberHasMiniJeuxRole,
   extractMember as bacExtractMember,
@@ -545,6 +556,58 @@ export async function routeDuels(body, res) {
       const webhookUrl = buildDiscordWebhookUrl(body);
       const opts = { pvp: args[0] === "pvp", channelId: body.channel_id, pseudo: mascaradeExtractMember(body).username };
       runBackground(() => handleMascaradeAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
+      return;
+    }
+  }
+
+  // ── /potato adversaire:bot : Potato contre Kévina (message public, vue
+  // éphémère du joueur) ; adversaire:1v1 : contre un joueur. Réservé au rôle
+  // MINI-JEUX pour lancer.
+  if (body.type === 2 && body.data?.name === "potato") {
+    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(async () => {
+      if (!(await potatoMemberHasMiniJeuxRole(body))) {
+        await handlePotatoRoleRejected(webhookUrl);
+        return;
+      }
+      if (pvp) await handlePotatoPvpCommand(webhookUrl, body);
+      else await handlePotatoCommand(webhookUrl, body);
+    });
+    return;
+  }
+
+  // ── Potato : composants. potatoduel_chauffer:<0|1|2>:<vue>[:pvp] et
+  // potatoduel_abandon*[:pvp] éditent la vue en place ; potatoduel_ouvrir
+  // (Jouer du message public 1v1) et potatoduel_regles : nouvel éphémère.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("potatoduel_")) {
+    const [action, ...args] = body.data.custom_id.split(":");
+    if (action === "potatoduel_regles" || action === "potatoduel_ouvrir") {
+      res.status(200).json({ type: 5, data: { flags: 64 } });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      if (action === "potatoduel_regles") runBackground(() => handlePotatoRegles(webhookUrl));
+      else runBackground(() => handlePotatoOuvrir(webhookUrl, body));
+      return;
+    }
+    if (action === "potatoduel_chauffer") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      const [k, vue, mode] = args;
+      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: potatoExtractMember(body).username };
+      runBackground(() => handlePotatoChauffer(webhookUrl, discordId, Number(k), Number(vue), opts));
+      return;
+    }
+    // [🏳️] : potatoduel_abandon[:pvp] (confirmation), potatoduel_abandon_ok /
+    // potatoduel_abandon_non[:pvp], tous édités en place
+    const ETAPES_ABANDON = { potatoduel_abandon: "demande", potatoduel_abandon_ok: "ok", potatoduel_abandon_non: "non" };
+    if (ETAPES_ABANDON[action]) {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      const opts = { pvp: args[0] === "pvp", channelId: body.channel_id, pseudo: potatoExtractMember(body).username };
+      runBackground(() => handlePotatoAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

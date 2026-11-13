@@ -50,6 +50,12 @@ import {
   getVueImage as getPenduVueImage,
 } from "../services/penduImage.js";
 import { decodeFrise, getDecorImage, getFriseImage } from "../services/friseImage.js";
+import {
+  decodePublic as decodePotatoPublic,
+  decodeVue as decodePotatoVue,
+  getPublicImage as getPotatoPublicImage,
+  getVueImage as getPotatoVueImage,
+} from "../services/potatoImage.js";
 
 const router = express.Router();
 
@@ -309,6 +315,27 @@ router.get("/api/mascarade/table", async (req, res) => {
 router.get("/api/mascarade/resultat", async (req, res) => {
   const resultat = decodeMascaradeResultat(req.query.d);
   const image = resultat ? await getMascaradeResultatImage(resultat).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Potato : vue d'un joueur (thermomètre, patate, événement) et vue publique
+// (barre des chauffes), rendu sans état à partir de l'état encodé dans l'URL
+// (d, voir encodeVue / encodePublic).
+router.get("/api/potato/vue", async (req, res) => {
+  const vue = decodePotatoVue(req.query.d);
+  const image = vue ? await getPotatoVueImage(vue).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+router.get("/api/potato/public", async (req, res) => {
+  const pub = decodePotatoPublic(req.query.d);
+  const image = pub ? await getPotatoPublicImage(pub).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
