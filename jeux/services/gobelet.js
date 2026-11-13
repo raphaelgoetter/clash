@@ -19,6 +19,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterJeuSpecial } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -428,6 +429,7 @@ export async function writeHand(jour, discordId, hand) {
   if (hand.username) {
     await getRedis().hset(USERNAMES_KEY, { [discordId]: hand.username });
   }
+  await noterJeuSpecial(discordId, "gobelet");
 }
 
 export async function listHands(jour) {

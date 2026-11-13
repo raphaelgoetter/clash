@@ -37,6 +37,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterJeuSpecial } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -211,6 +212,7 @@ async function updateAction(jour, discordId, patch) {
   const current = fromJson(raw) || {};
   const updated = { ...current, ...patch };
   await getRedis().hset(actionsKey(jour), { [discordId]: toJson(updated) });
+  await noterJeuSpecial(discordId, "marioclash");
   return updated;
 }
 

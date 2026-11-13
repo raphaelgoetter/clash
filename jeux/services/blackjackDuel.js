@@ -24,6 +24,7 @@
 //   liste les parties, `npm run blackjackduel:reset` les efface toutes.
 // ============================================================
 
+import { noterVictoireDuel } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import {
   drawCard,
@@ -447,6 +448,12 @@ async function resolveManche(gid, state, hands) {
     const newState = { ...state, history, lastActivityAt: new Date().toISOString(), termine: true };
     await writeState(gid, newState);
     const highScore = await updateHighScore(gid, state.totalManches, outcome.ranking);
+    // 1v1 : victoire au passeport si le premier est seul en tête. En solo,
+    // pas de victoire définie contre Kévina.
+    const [premier, second] = outcome.ranking;
+    if (state.maxPlayers === 2 && premier && second && premier.points > second.points) {
+      await noterVictoireDuel(premier.discordId, "blackjack", "pvp");
+    }
     return {
       final: true,
       highScore,

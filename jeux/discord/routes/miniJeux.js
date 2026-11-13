@@ -569,7 +569,7 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── /mini-jeux : bouton "Ma participation" ──
+  // ── /mini-jeux : bouton "Mon passeport" ──
   // Les anciens messages /mini-jeux portent encore "minijeux_refresh" :
   // même traitement, le bouton ouvrant de toute façon un message à part.
   if (

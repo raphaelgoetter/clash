@@ -23,6 +23,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { adversaire, creerDuel } from "./grilleRules.js";
+import { noterVictoireDuel } from "./passeport.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "grille", "duel.json");
@@ -107,7 +108,9 @@ export async function agirDuel(discordId, fn) {
   return withLock(discordId, async () => {
     const duel = await readDuel(discordId);
     if (!duel) return { duel: null };
+    const finiAvant = duel.termine;
     const resultat = await fn(duel);
+    if (!finiAvant && duel.termine && duel.gagnant === "joueur") await noterVictoireDuel(discordId, "grille", "bot");
     await writeDuel(discordId, duel);
     return { duel, resultat };
   });
@@ -235,6 +238,10 @@ export async function agirPvp(fn) {
       partie.raisonFin ??= "plein";
     }
     resultat.vientDeFinir = !finiAvant && partie.statut === "fini";
+    const vainqueur = partie.duel?.gagnant;
+    if (resultat.vientDeFinir && vainqueur && vainqueur !== "nul") {
+      await noterVictoireDuel(partie.sieges[vainqueur], "grille", "pvp");
+    }
     await writePvp(partie);
     return { partie, config, resultat };
   });

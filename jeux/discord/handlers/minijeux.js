@@ -13,7 +13,7 @@
 // ============================================================
 
 // Imports en namespace : /mini-jeux n'a besoin que de readState(), mais le
-// bouton "Ma participation" lit aussi la progression du joueur
+// bouton "Mon passeport" lit aussi la progression du joueur
 // (readParticipant, computeSeasonRanking...) — même interface sur les 8 jeux.
 import * as blindRoyaleSvc from "../../services/blindroyale.js";
 import * as frameSvc from "../../services/frames.js";
@@ -121,6 +121,9 @@ import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 import { deMois, getCurrentSeasonBounds, seasonIdForDate } from "../../services/saison.js";
 import { getWiredGame } from "../../services/refonte.js";
 import { computeMiniJeuxStats } from "../../services/miniJeuxStats.js";
+import { lireCompteurs, lirePasseport } from "../../services/passeport.js";
+import { bossEnCours } from "../../services/boss.js";
+import { boutonLancer } from "./boss.js";
 
 const MINIJEUX_COLOR = 0x5865f2;
 
@@ -858,7 +861,7 @@ function buildMiniJeuxComponents() {
         {
           type: 2,
           style: 2,
-          label: "🙋 Ma participation",
+          label: "🛂 Mon passeport",
           custom_id: "minijeux_participation",
         },
         {
@@ -872,7 +875,7 @@ function buildMiniJeuxComponents() {
   ];
 }
 
-// ── Bouton "Ma participation" (message éphémère personnel) ──────────
+// ── Bouton "Mon passeport" (message éphémère personnel) ─────────────
 
 function formatPoints(n) {
   return `${n} pt${n > 1 ? "s" : ""}`;
@@ -905,67 +908,74 @@ async function buildRegularParticipationLine(game, discordId) {
     rankingSeasonId != null ? svc.computeSeasonRanking(rankingSeasonId) : [],
   ]);
 
-  const status = !state
-    ? "Pas encore de manche cette saison"
-    : played
-      ? "✅ Déjà joué à la manche en cours"
-      : "❌ Pas encore joué à la manche en cours";
-
+  if (!state) return `➖ **${game.title}** : pas encore de manche`;
   const entry = ranking.find((e) => e.discordId === discordId);
   const score = entry
-    ? `${formatPoints(entry.totalScore)} (${formatRank(svc.findTiedRank(ranking, discordId, "totalScore"))}/${ranking.length})`
-    : formatPoints(0);
-
-  return `**${game.title}**\n${status}\nScore saison : **${score}**`;
+    ? ` · ${formatPoints(entry.totalScore)} (${formatRank(svc.findTiedRank(ranking, discordId, "totalScore"))}/${ranking.length})`
+    : "";
+  return `${played ? "✅" : "❌"} **${game.title}**${score}`;
 }
 
-async function buildSpecialParticipationBlock(discordId) {
+async function buildSpecialParticipationLine(discordId) {
   const active = await findActiveSpecialGame();
-  if (!active) {
-    return "## 🎲 Jeu spécial du moment\nAucun jeu spécial en cours actuellement.";
-  }
+  if (!active) return null;
   const { game, state } = active;
   const participation = await game.participation(state, discordId);
-  const lines = [];
-  if (!participation) {
-    lines.push("Phase de présentation du jeu");
-  } else {
-    if (participation.statusLabel) {
-      lines.push(participation.statusLabel);
-    } else {
-      lines.push(
-        participation.played
-          ? "✅ Déjà joué aujourd'hui"
-          : "❌ Pas encore joué aujourd'hui",
-      );
-    }
-    if (participation.scoreLabel) lines.push(participation.scoreLabel);
-  }
-  return `## 🎲 Jeu spécial du moment: ${game.title}\n${lines.join("\n")}`;
+  if (!participation) return `🎲 **${game.title}** : présentation du jeu`;
+  const status =
+    participation.statusLabel ?? (participation.played ? "✅ Déjà joué aujourd'hui" : "❌ Pas encore joué aujourd'hui");
+  const score = participation.scoreLabel ? ` · ${participation.scoreLabel}` : "";
+  return `🎲 **${game.title}** : ${status}${score}`;
 }
 
-export async function buildParticipationEmbed(discordId, username, now = new Date()) {
+function buildTamponsBlock({ seasonId, tampons, complet }) {
+  const valides = tampons.filter((t) => t.valide).length;
+  const lines = tampons.map((t) => {
+    const progression = t.objectif ? ` (${Math.min(t.valeur, t.objectif)}/${t.objectif})` : "";
+    return `${t.valide ? "✅" : "⬜"} ${t.libelle}${progression}`;
+  });
+  if (complet) lines.push("🎉 Passeport complet !");
+  return `## 🛂 Tampons de la saison ${deMois(seasonId)} (${valides}/${tampons.length})\n${lines.join("\n")}`;
+}
+
+function ligneCompteurs({ passeports, boss }) {
+  if (!passeports) return null;
+  return `🛂 Passeports complétés : **${passeports}** · 🐉 Boss vaincus : **${boss}**`;
+}
+
+// Message du bouton « 🛂 Mon passeport » : embed, et pendant la semaine du
+// Boss, bouton « Affronter Kévina » pour les qualifiés (secours des MP).
+export async function buildPasseportMessage(discordId, username, now = new Date()) {
   const games = await resolveRegularGames(now);
-  const [regularLines, specialBlock] = await Promise.all([
+  const [regularLines, specialLine, passeport, compteurs, boss] = await Promise.all([
     Promise.all(games.map((game) => buildRegularParticipationLine(game, discordId))),
-    buildSpecialParticipationBlock(discordId),
+    buildSpecialParticipationLine(discordId),
+    lirePasseport(discordId, { now }),
+    lireCompteurs(discordId),
+    bossEnCours(now),
   ]);
+  const semaine = [...regularLines, specialLine].filter(Boolean);
+  const qualifie = boss?.qualifies.includes(discordId);
+  const blocs = [
+    `## Cette semaine\n${semaine.join("\n")}`,
+    buildTamponsBlock(passeport),
+    qualifie ? `🐉 **Boss de la saison ${deMois(boss.seasonId)}** : Kévina t'attend jusqu'au <t:${Math.floor(new Date(boss.clotureAt).getTime() / 1000)}:f> !` : null,
+    ligneCompteurs(compteurs),
+  ].filter(Boolean);
 
   return {
-    title: `🙋 Participation de ${username}`,
-    description: `## Les Mini-jeux hebdomadaires\n${regularLines.join("\n\n")}\n\n${specialBlock}`,
-    color: MINIJEUX_COLOR,
+    embeds: [{ title: `🛂 Passeport de ${username}`, description: blocs.join("\n\n"), color: MINIJEUX_COLOR }],
+    components: qualifie ? [{ type: 1, components: [boutonLancer(boss.seasonId)] }] : [],
   };
 }
 
 export async function handleMiniJeuxParticipation(webhookUrl, discordId, username) {
   try {
-    const embed = await buildParticipationEmbed(discordId, username);
-    await patchOriginal(webhookUrl, { embeds: [embed] });
+    await patchOriginal(webhookUrl, await buildPasseportMessage(discordId, username));
   } catch (err) {
-    console.error("[MiniJeux] Erreur Ma participation:", err);
+    console.error("[MiniJeux] Erreur Mon passeport:", err);
     await patchOriginal(webhookUrl, {
-      content: "⚠️ Erreur lors de la récupération de ta participation.",
+      content: "⚠️ Erreur lors de la récupération de ton passeport.",
     });
   }
 }

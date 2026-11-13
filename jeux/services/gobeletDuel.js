@@ -25,6 +25,7 @@
 //   parties, `npm run gobeletduel:reset` les efface toutes.
 // ============================================================
 
+import { noterVictoireDuel } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import {
   rollDice,
@@ -578,6 +579,12 @@ async function resolveManche(gid, state, hands) {
     const newState = { ...state, bestCombos: outcome.bestCombos, lastActivityAt: new Date().toISOString(), termine: true };
     await writeState(gid, newState);
     const highScore = await updateHighScore(gid, state.totalManches, outcome.ranking);
+    // 1v1 : victoire au passeport si le premier est seul en tête. En solo,
+    // pas de victoire définie contre Kévina.
+    const [premier, second] = outcome.ranking;
+    if (state.maxPlayers === 2 && premier && second && premier.points > second.points) {
+      await noterVictoireDuel(premier.discordId, "gobelet", "pvp");
+    }
     return {
       final: true,
       highScore,

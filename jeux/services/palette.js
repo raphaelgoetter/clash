@@ -37,6 +37,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterManche } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
 
@@ -376,6 +377,7 @@ export async function readParticipant(gameId, discordId) {
 }
 
 export async function recordAnswer(gameId, discordId, username, letter, correct, score, rank) {
+  await noterManche(discordId, "palette", gameId);
   const participant = {
     discordId,
     username,

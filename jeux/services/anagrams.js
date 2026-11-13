@@ -31,6 +31,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterManche } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { fetchCards } from "@clash/clash-royale/clashApi.js";
 import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
@@ -349,6 +350,7 @@ export async function readParticipant(gameId, discordId) {
 }
 
 async function touchUsername(gameId, discordId, username) {
+  await noterManche(discordId, "anagram", gameId);
   await getRedis().hset(usernamesKey(gameId), { [discordId]: username });
 }
 
@@ -385,6 +387,7 @@ async function assignArrivalPosition(gameId, discordId) {
 // Idempotent : si déjà résolu, renvoie le résultat existant sans rien
 // réécrire. Le score est connu et figé dès l'attribution de la position.
 export async function markSolved(gameId, discordId, username) {
+  await noterManche(discordId, "anagram", gameId);
   const existing = await readParticipant(gameId, discordId);
   if (existing?.solved) {
     return { participant: existing, score: existing.score };

@@ -211,7 +211,7 @@ const cote = (id) => (id === "joueur" ? 0 : 1);
 // Image de la vue de `moi` : thermomètre (repères fume / siffle, fourchette
 // de son Thermomètre jusqu'à la fin de la manche), patate et, si c'est son
 // tour, son événement.
-function urlVue(d, moi) {
+export function urlVue(d, moi) {
   const ev = d.actif === moi ? evenementDe(d, moi) : null;
   const param = encodeVue({
     temp: d.temp,
@@ -273,7 +273,7 @@ const recitPublic = (d, nomDe) =>
 
 // « 💥 La patate t'explose dans les mains à 115 °C (dès 105 °C) : manche 2
 // pour Kévina » ; `nomDe(id)` : null pour « toi ».
-function ligneManche(h, numero, nomDe) {
+export function ligneManche(h, numero, nomDe) {
   const p = nomDe(h.perdant);
   const g = nomDe(h.gagnant);
   const temp = h.temp > h.seuil ? `à ${h.temp} °C (elle explosait dès ${h.seuil} °C)` : `à ${h.temp} °C`;
@@ -282,7 +282,7 @@ function ligneManche(h, numero, nomDe) {
   return `💥 ${sujet} ${ou} : manche ${numero} pour ${g ?? "toi"}`;
 }
 
-const score = (d, moi, A) => `Toi ${d.manches[moi]} – ${d.manches[adversaire(moi)]} ${A.Sujet}`;
+export const score = (d, moi, A) => `Toi ${d.manches[moi]} – ${d.manches[adversaire(moi)]} ${A.Sujet}`;
 
 const ERREURS = {
   termine: "La partie est terminée.",
@@ -387,7 +387,7 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
 }
 
 // Ligne de l'événement du joueur au trait, dans sa vue
-const LIGNES_EVENEMENT = {
+export const LIGNES_EVENEMENT = {
   glacon: () => `🧊 **Glaçon** : la patate refroidit de ${GLACON} °C.`,
   piment: () => "🌶️ **Piment** : ta chauffe s'applique deux fois, maintenant et au début du tour de ton adversaire.",
   thermo: (d) => `🌡️ **Thermomètre** : la patate explose entre ${d.evenement.lo} et ${d.evenement.hi} °C.`,

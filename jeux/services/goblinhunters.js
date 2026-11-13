@@ -24,6 +24,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterJeuSpecial } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -163,6 +164,7 @@ export async function registerPlayer(discordId, username, effectifMax) {
   await getRedis().hset(INSCRIPTIONS_KEY, {
     [discordId]: toJson({ username, registeredAt: new Date().toISOString() }),
   });
+  await noterJeuSpecial(discordId, "goblinhunters");
   return { status: "registered" };
 }
 
@@ -297,6 +299,7 @@ export async function recordAction(
   if (username) {
     await getRedis().hset(actionUsernamesKey(jour), { [discordId]: username });
   }
+  await noterJeuSpecial(discordId, "goblinhunters");
   return existing;
 }
 

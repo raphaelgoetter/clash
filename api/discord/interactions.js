@@ -17,6 +17,7 @@ import { routeSuiviGdc } from "./_routes/suiviGdc.js";
 import { routeMiniJeux } from "../../jeux/discord/routes/miniJeux.js";
 import { routeJeuxSpeciaux } from "../../jeux/discord/routes/jeuxSpeciaux.js";
 import { routeDuels } from "../../jeux/discord/routes/duels.js";
+import { routeBoss } from "../../jeux/discord/routes/boss.js";
 
 const ROUTES = [
   routeAdmin,
@@ -26,6 +27,7 @@ const ROUTES = [
   routeMiniJeux,
   routeJeuxSpeciaux,
   routeDuels,
+  routeBoss,
 ];
 
 const TAG_AUTOCOMPLETE_COMMANDS = new Set([

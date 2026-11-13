@@ -20,7 +20,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 | Module | Contenu |
 | --- | --- |
-| `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « Ma participation » et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` |
+| `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
 | `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/mascarade`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Six et Tourneboule, archivés) |
 
@@ -122,7 +122,7 @@ Clés communes (`<p>` = préfixe du jeu) :
 - Bot en webhook HTTP uniquement (pas de Gateway ni d'intent `MESSAGE_CONTENT`) : les réponses libres passent par une **Modal** (réponse `type: 9`, `custom_id: <jeu>_answer_modal:<gameId>`). La soumission arrive avec `body.type === 5` (`MODAL_SUBMIT`), à ne pas confondre avec la réponse `type: 5` (`DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE`).
 - Routage des boutons/modals : `jeux/discord/routes/miniJeux.js` (`routeMiniJeux`, appelé par `api/discord/interactions.js`).
 - Normalisation des réponses : `normalizeAnswer()` (`packages/commun/textNormalize.js` : minuscules, accents et ponctuation retirés).
-- Scores personnels d'un joueur : bouton « Ma participation » de `/mini-jeux`, aucune commande par jeu.
+- Scores personnels d'un joueur : bouton « 🛂 Mon passeport » de `/mini-jeux`, aucune commande par jeu.
 
 ### Images servies et anti-spoiler
 
@@ -240,7 +240,7 @@ Groupe « Jeux de mots » (samedi 18:00 UTC) à partir de la refonte, en alterna
 - Réponse : un terme `accepte` doit apparaître **en mots entiers** dans la réponse normalisée (`normalizeConcept` : `normalizeAnswer` + ligatures œ/æ), aucun terme `refuse`.
 - Barème : `max(1, 10 − 2 × tentatives incorrectes − 3 × indice)`. La catégorie est affichée d'office ; le seul indice (éphémère) est le masque de `solution` (`buildMasque` : une case par lettre, ponctuation visible, nombre de lettres par mot). Score figé à la résolution.
 - Redis (`concept:*`) : `state`, `participants:<gameId>`, `usernames:<gameId>`, `hint:<gameId>:<discordId>`, `attempts:<gameId>:<discordId>` (purgés à la manche suivante), `season:<id>` (+ `pseudos`, `manche_seq`, `manche_numbers`), `archived:<id>`.
-- Boutons `concept_hint:`, `concept_answer:` (Modal `concept_answer_modal:`). Classement joueur : « Ma participation » de `/mini-jeux`.
+- Boutons `concept_hint:`, `concept_answer:` (Modal `concept_answer_modal:`). Classement joueur : « 🛂 Mon passeport » de `/mini-jeux`.
 - Scripts : `concept:test`, `concept:test:dry`, `concept:scores`, `concept:reset` (`concept:scores` = `mancheScores.js concept`).
 
 ---
@@ -256,7 +256,7 @@ Groupe « Ciné-club » (mercredi 18:00 UTC) à partir de la refonte, en alterna
 - Réponse : système de Frame (`checkAnswer` réexporté de `frames.js`) : un terme `accepte` en sous-chaîne de la réponse normalisée, aucun terme `refuse` (suites, autres épisodes). Les termes `accepte` font au moins 4 caractères (« up » validerait « super ») ; le titre complet doit toujours être accepté (vérifié par `synopsis.test.js`).
 - Barème de Frame : `max(1, 10 − 2 × tentatives incorrectes − 3 × indices utilisés)`, score figé à la résolution.
 - Redis (`synopsis:*`) : `state`, `participants:<gameId>`, `usernames:<gameId>`, `hints:<gameId>:<discordId>` (ensemble), `attempts:<gameId>:<discordId>` (purgés à la manche suivante), `season:<id>` (+ `pseudos`, `manche_seq`, `manche_numbers`), `archived:<id>`.
-- Boutons `synopsis_hint1:`, `synopsis_hint2:`, `synopsis_answer:` (Modal `synopsis_answer_modal:`). Classement joueur : « Ma participation » de `/mini-jeux`.
+- Boutons `synopsis_hint1:`, `synopsis_hint2:`, `synopsis_answer:` (Modal `synopsis_answer_modal:`). Classement joueur : « 🛂 Mon passeport » de `/mini-jeux`.
 - Scripts : `synopsis:test`, `synopsis:test:dry`, `synopsis:scores`, `synopsis:reset`.
 
 ---
@@ -362,7 +362,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 - Recadrage : formule de Zoom carte, mais **fond blanc** (beaucoup de logos sont noirs sur fond transparent) et zooms par défaut `×3,5` (post public) / `×1,8` (indice), point focal `(0.5, 0.45)`. Réglage logo par logo validé visuellement avant l'ajout au catalogue ; la révélation (`stage=reveal`) est le logo entier centré sur fond blanc.
 - Images dans `jeux/data/jeux-visuels/zoom2/images/`, servies depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/zoom2`.
 - Redis (`zoom2:*`) : schéma commun avec `zoom2:posted_games`, `zoom2:hint:<gameId>:<discordId>` (indice image) et `zoom2:domaine:<gameId>:<discordId>` (indice domaine), flags `SETNX` ; `zoom2:reset` purge aussi `posted_games`.
-- Boutons `zoom2_domaine:`, `zoom2_hint:`, `zoom2_answer:` (Modal `zoom2_answer_modal:`), route `/api/zoom2/image`. Classement joueur : « Ma participation » de `/mini-jeux`.
+- Boutons `zoom2_domaine:`, `zoom2_hint:`, `zoom2_answer:` (Modal `zoom2_answer_modal:`), route `/api/zoom2/image`. Classement joueur : « 🛂 Mon passeport » de `/mini-jeux`.
 - Scripts : `zoom2:test`, `zoom2:test:dry`, `zoom2:scores` (alias `logo:scores`), `zoom2:reset` (`zoom2:scores` = `mancheScores.js zoom2`).
 
 ---
@@ -377,7 +377,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 - Plats : origine incontestée de préférence, au plus 2 plats par pays, pas d'évidence (pizza, sushi, croissant…). Si deux pays revendiquent le plat, le second va dans `accepte` et le champ optionnel `origine` (« Mali ou Sénégal ») remplace `pays` à l'affichage (réponse, DM, récap) : mafé, lamington.
 - Photos : Wikimedia Commons sous licence libre. Le post n'affiche que « Photo : Wikimedia Commons (licence) » : le nom de l'auteur (écriture, langue) peut trahir le pays. Le crédit complet (auteur, licence, page Commons) est donné dans la réponse « Bravo » et le DM de fin de manche. Fichiers nommés d'après le `gameId` (`p001.webp`), jamais d'après le plat, WebP de 835 px de large sans métadonnées (l'EXIF peut contenir le titre de la photo), crédit sans lieu (« from Santiago, Chile » trahirait le pays), et servis uniquement par `/api/platpays/image?gameId=`, gardé par `platpays:posted_games` : aucune URL ne trahit la réponse. Images dans `jeux/data/jeux-visuels/platpays/images/`, lues depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/platpays`.
 - Redis (`platpays:*`) : schéma commun avec `platpays:posted_games` et `platpays:hints:<gameId>:<discordId>` (SET des indices pris) ; `platpays:reset` purge aussi `posted_games`.
-- Boutons `platpays_hint1:`, `platpays_hint2:`, `platpays_answer:` (Modal `platpays_answer_modal:`). Classement joueur : « Ma participation » de `/mini-jeux`.
+- Boutons `platpays_hint1:`, `platpays_hint2:`, `platpays_answer:` (Modal `platpays_answer_modal:`). Classement joueur : « 🛂 Mon passeport » de `/mini-jeux`.
 - Scripts : `platpays:test`, `platpays:test:dry`, `platpays:scores`, `platpays:reset` (`platpays:scores` = `mancheScores.js platpays`).
 
 ---
@@ -426,6 +426,75 @@ Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scr
 
 - Rangs ex aequo : deux joueurs à égalité partagent le même rang (« 1, 2, 2, 4 ») via `rangExAequo()` (`@clash/commun/classement.js`) ; les récaps utilisent `findTiedRank()`. Départages propres à un jeu : voir sa section.
 
+
+## Passeport mensuel (« 🛂 Mon passeport »)
+
+Bouton « 🛂 Mon passeport » de `/mini-jeux` (`custom_id: minijeux_participation`, `buildParticipationEmbed()` de `jeux/discord/handlers/minijeux.js`), éphémère :
+
+- **Cette semaine** : une ligne par mini-jeu hebdomadaire actif (✅/❌ manche en cours, score et rang de saison s'il a des points ; ➖ sans manche), puis le jeu spécial en cours.
+- **Tampons de la saison** (saison = mois calendaire, heure de Paris) :
+  1. jouer à `OBJECTIFS.jeux` (4) mini-jeux hebdomadaires différents ;
+  2. jouer `OBJECTIFS.manches` (10) manches hebdomadaires ;
+  3. battre Kévina `OBJECTIFS.kevina` (2) fois en duel (mode contre Kévina seulement) ;
+  4. participer à un jeu spécial ; validé d'office si aucun jeu spécial n'a eu de participant dans le mois, **une fois le mois fini** seulement (un jeu peut encore commencer).
+  5. **quête du mois** : gagner un duel du jeu du mois, contre Kévina ou en 1v1 (une entente en 1v1 est acceptée, l'enjeu n'est qu'un tampon). `queteDuMois(seasonId)` fait tourner `QUETES_DU_MOIS` dans l'ordre (novembre 2026 = Frise, puis Punto, Quatre à la suite, La Grille, Mascarade, Potato, Petit Bac, Pendu en 1v1) ; seulement des duels où la victoire est nette (pas Blackjack ni Gobelet). Lit les champs `bot:<jeu>` et `pvp:<jeu>` du registre des duels.
+
+Objectifs allégés d'une saison (`OBJECTIFS_ALLEGES`, lus par `objectifsDe(seasonId)`, libellés compris) : novembre 2026, entamé à l'arrivée du passeport, demande 3 mini-jeux, 5 manches et 1 victoire contre Kévina (jeu spécial et quête du mois inchangés).
+
+Registre : `jeux/services/passeport.js` (tests `passeport.test.js`). Le mois retenu est celui de l'action (`seasonIdForDate(now)`), pas celui de la manche : une manche de fin novembre jouée le 2 décembre compte pour décembre. Les écritures ne lèvent jamais (erreur journalisée) : un incident Redis ne casse pas le jeu appelant.
+
+- `noterManche(discordId, jeu, gameId)` : première interaction avec une manche, idempotente. Appelée dans le service de chaque jeu hebdomadaire : `touchUsername()` (tentative, indice) et `markSolved()` (bonne réponse du premier coup sans indice, qui n'écrit pas de tentative) ; Pêle-mêle par `touchUsername()` (appelé par `submitWord()`) ; Palette et moteur Trivia (Trivia, Trivia Geek, Intrus) par `recordAnswer()`. Clés de jeu : celles de `WEEKLY_GAMES` (`miniJeuxStats.js`), préfixe pour le moteur Trivia.
+- `noterVictoireDuel(discordId, jeu, mode)`, `mode` = `bot` | `pvp` : dans `finSerieSolo()` / `finSeriesPvp()` (Quatre, Punto, Frise, Mascarade, Potato, Bac), `finSeries()` en 1v1 seulement (Pendu : le solo n'oppose personne), `agirDuel()` / `agirPvp()` (Grille), `resolveManche()` en 1v1 avec un premier seul en tête (Blackjack, Gobelet ; pas de victoire définie en solo). Un match nul ne compte pas.
+- `noterJeuSpecial(discordId, jeu)` : vote enregistré (Quiz, Robinson), inscription ou action (Goblin Hunters), main écrite (Blackjack, Gobelet), action (Mario Clash), toute action sous `agir()` (Qui est-ce ?, Meow). Les archives des jeux spéciaux ne permettent pas de reconstituer après coup qui a joué dans un mois (pas de date de début, pas de participants pour Robinson, Goblin Hunters, Mario Clash).
+
+Clés Redis (expiration `TTL_SECONDES`, 120 jours, relancée à chaque écriture) :
+
+| Clé | Type | Contenu |
+|---|---|---|
+| `passeport:<seasonId>:<discordId>:manches` | SET | `<jeu>:<gameId>` des manches jouées |
+| `passeport:<seasonId>:<discordId>:duels` | HASH | victoires : `bot`, `pvp` (totaux), `bot:<jeu>`, `pvp:<jeu>` |
+| `passeport:<seasonId>:<discordId>:speciaux` | SET | jeux spéciaux joués |
+| `passeport:<seasonId>:speciaux` | SET | jeux spéciaux ayant eu au moins un participant dans le mois |
+| `passeport:<seasonId>:joueurs` | SET | joueurs ayant au moins une entrée dans le mois (qualifiés du Boss) |
+| `passeport:compteurs` | HASH | `discordId` → `{ passeports, boss }`, compteurs permanents (jamais effacés, sans expiration) |
+
+Le passeport affiche aussi, une fois non nuls, les compteurs permanents (« 🛂 Passeports complétés · 🐉 Boss vaincus », incrémentés à la clôture du Boss) et, pendant la semaine du Boss, le rappel et le bouton « 🐉 Affronter Kévina » pour les qualifiés (`buildPasseportMessage()`).
+
+## Boss de fin de saison
+
+Les passeports complets d'une saison (5/5 tampons, calculés à l'ouverture, une fois le mois fini) affrontent Kévina (réglages du mode normal) sur un duel, **une seule tentative**, du 1er à minuit au 8 à minuit (heure de Paris) du mois suivant. Classement individuel publié le 8. Premier Boss : saison de novembre 2026 (`PREMIERE_SAISON_BOSS` = 138, ouvert le 1er décembre).
+
+- Code : `jeux/services/boss.js` (Redis, déroulé, classement, clôture ; tests `boss.test.js`), `jeux/services/boss<Jeu>.js` (règles d'un duel en Boss, tests `boss<Jeu>.test.js` ; interface en tête de `bossQuatre.js`), `jeux/services/bossRng.js` (hasard commun), `jeux/discord/handlers/boss.js` (déroulé commun, MP), `jeux/discord/handlers/boss/<jeu>.js` (vue d'un duel ; interface en tête de `boss/quatre.js`, rendu réutilisé du handler du duel), route `jeux/discord/routes/boss.js`, script `jeux/scripts/postBoss.js`.
+- **Duels du Boss** (`BOSS_JEUX`) : Quatre à la suite, Frise, Punto, La Grille, Potato. Tiré au sort à l'ouverture (`choisirJeu()`), jamais deux mois de suite, et révélé seulement par l'annonce. Écartés définitivement : Blackjack, Gobelet, Petit Bac, Pendu ; Mascarade non branché (mélange des manches suivantes hors rng).
+- **Même donne pour tous** : graine tirée à l'ouverture ; tout hasard de la partie passe par `rngBossDe(graine, étape)` (`bossRng.js`), jamais par `Math.random` (les tests `boss<Jeu>.test.js` le vérifient). Deux joueurs qui jouent les mêmes coups obtiennent les mêmes états. Le plateau n'est donc **jamais public** : partie en MP, ou en éphémère depuis le passeport. Étapes : Quatre `coups` (choix de Kévina) ; Frise `creation` (paquet, mains, pioche), `kevina:<vue>` ; Punto `creation` (pioches), `kevina:<coups>` ; La Grille `de:<n>` (n-ième dé, indépendant du déroulé : dés pairs au joueur, impairs à Kévina) ; Potato `manche:<m>` (température d'explosion, ne dépend que de la manche, via `rng.manche` lu par `nouvelleManche()` de `potatoRules.js`), `evenement:<m>:<vue>`, `kevina:<m>:<vue>`.
+- **Tentative** : consommée au clic sur « Prêt » (`HSETNX`). Sans coup pendant `INACTIVITE_MS` (1 h), ou après la clôture, la partie est perdue avec le score atteint (`inactif`), constaté au clic suivant ou à la clôture. Pas d'abandon volontaire.
+- **Règles par duel** : le joueur commence ; Kévina garde les réglages du mode normal (`duel.json`, chargé par `chargerConfig`), seul son hasard devient commun. Score : victoire ≥ 100, nul de 50 à 99, défaite ou inactivité de 0 à 49 (une inactivité reste sous une défaite jouée jusqu'au bout).
+  - Quatre à la suite (`bossQuatre.js`) : victoire `100 + 43 - coups` (la plus rapide), nul 50, défaite = coups joués (plafond 49).
+  - Frise (`bossFrise.js`, tour en deux actions : carte puis créneau) : victoire `100 + 10 × (9 - erreurs) + cartes restées à Kévina` ; nul `99 - erreurs` ; défaite `45 - 5 × (cartes en main - 1) + cartes bien placées` (au plus près d'avoir vidé sa main).
+  - Punto (`bossPunto.js`, action `{ case, coup }`) : victoire `100 + 72 - cartes posées` ; nul `50 + cases de la grille finale au joueur` ; défaite `cartes posées / 2 + 3 × meilleure ligne encore ouverte` (plafond 49).
+  - La Grille (`bossGrille.js`) : victoire `100 + écart` ; nul `50 + total commun / 4` (plafond 99) ; défaite `49 - (écart - 1) / 3` (plancher 25) ; inactivité = coups joués (plafond 24).
+  - Potato (`bossPotato.js`, pas de nul) : victoire 2-0 de 120 à 139, 2-1 de 100 à 119 (bonus `19 - chauffes du joueur`) ; défaite 1-2 de 25 à 49, 0-2 de 0 à 24 (+ chauffes du joueur).
+- ⚠️ Punto et Potato recopient dans `bossPunto.js` / `bossPotato.js` les récits du duel (`recit()`, `phraseAction`, `ligneManche`) pour qu'un service n'importe pas un handler Discord : toute phrase modifiée dans le duel est à reporter. Frise, Punto et Potato refusent une action faite sur une vue dépassée (numéro de vue dans le `custom_id`, double clic).
+- **Classement** (`classer()`) : score décroissant, puis partie la plus courte ; rang partagé à score égal. Le joueur voit son score en fin de partie, jamais le classement avant le 8.
+- **Clôture** (`cloturerBoss()`, idempotente par marqueur) : parties en cours perdues, puis compteurs permanents : +1 passeport complété pour chaque qualifié, +1 Boss vaincu pour chaque victoire.
+
+Déroulé (`postBoss.js`, cron `boss.yml`, chaque jour 8h26 UTC, idempotent) :
+
+1. Du 1er au 7 : ouverture (`ouvrirBoss()`, duel, graine, qualifiés), puis, une seule fois (marqueur `boss:<seasonId>:annonce`), annonce dans le salon public (duel, qualifiés sans ping, clôture) et MP d'invitation à chaque qualifié (bouton « 🐉 Affronter Kévina »). MP fermés : le bouton du passeport sert de secours.
+2. À partir du 8 : clôture et classement public (champion = premier s'il a vaincu Kévina).
+
+- Hors `--public`, rien n'est ouvert ni clos : annonce ou classement provisoire postés sur le salon de test, MP seulement aux identifiants passés par `--mp <discordId>` (Boss déjà ouvert). `npm run boss:test[:dry]`, `npm run boss:public[:dry]`.
+- Boutons : `boss_lancer:<seasonId>` (nouveau message : éphémère sur le serveur, normal en MP), `boss_pret:<seasonId>`, `boss_jouer:<seasonId>:<arg>` (édités en place). ⚠️ Seules interactions acceptées **hors serveur** par `api/discord/jeux.js` (clics en MP, sans `guild_id`) : l'accès repose sur la qualification, vérifiée à chaque clic.
+
+| Clé | Type | Contenu |
+|---|---|---|
+| `boss:<seasonId>` | STRING (JSON) | `{ seasonId, jeu, graine, ouvertAt, clotureAt, qualifies, cloture }` |
+| `boss:<seasonId>:tentatives` | HASH | `discordId` → `{ pseudo, statut, debutAt, finAt, resultat, score, inactif? }` |
+| `boss:<seasonId>:partie:<discordId>` | STRING (JSON) | `{ etat, dernierCoupAt }` |
+| `boss:<seasonId>:annonce`, `boss:<seasonId>:cloture` | HASH | marqueurs d'idempotence |
+
+Toutes ces clés expirent après 120 jours.
+
 ---
 
 ## Crons GitHub Actions (jeux spéciaux)
@@ -442,6 +511,7 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | Mario Clash    | `marioclash.yml`    | `14 8 * * *` |
 | Jeu du Gobelet | `gobelet.yml`       | `16 8 * * *` |
 | Qui est-ce ?   | `quiestce.yml`      | `20 8 * * *` |
+| Boss de fin de saison | `boss.yml`   | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison ») |
 
 Tamagotchi (`tamagotchi.yml`, ex-minute 10), Boss Raid (`bossraid.yml`, ex-minute 2) et Bang! (`bang.yml`, ex-minute 18) ont leur cron commenté : voir « Jeux archivés ».
 

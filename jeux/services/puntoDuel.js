@@ -18,6 +18,7 @@
 // corrompus sinon, voir bossraid.js) : JSON sérialisé/désérialisé nous-mêmes.
 // ============================================================
 
+import { noterVictoireDuel } from "./passeport.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -168,6 +169,7 @@ async function majRecord(mode, discordId, username, serie, now) {
 
 // Fin d'une partie contre Kévina : { avant, serie, record }.
 async function finSerieSolo(discordId, nom, gagnant, now) {
+  if (gagnant === "joueur") await noterVictoireDuel(discordId, "punto", "bot", now);
   const { serie: avant } = await lireSerie("bot", discordId);
   const serie = serieApres(avant, issueDe(gagnant, "joueur"));
   await ecrireSerie("bot", discordId, { serie, enCours: false });
@@ -177,6 +179,8 @@ async function finSerieSolo(discordId, nom, gagnant, now) {
 // Fin d'une partie 1v1 : { joueur: { avant, serie }, bot: { … }, record }
 // (sièges du moteur).
 async function finSeriesPvp(partie, now) {
+  const vainqueur = partie.duel.gagnant;
+  if (vainqueur !== "nul") await noterVictoireDuel(partie.sieges[vainqueur], "punto", "pvp", now);
   const series = {};
   for (const [siege, id] of Object.entries(partie.sieges)) {
     const { serie: avant } = await lireSerie("pvp", id);

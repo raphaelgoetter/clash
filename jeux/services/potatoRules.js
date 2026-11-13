@@ -84,11 +84,15 @@ export function creerDuel({ commence = "joueur", rng = Math.random } = {}) {
   return d;
 }
 
+// `rng.manche(numero)` (facultatif) : générateur propre au seuil de la
+// manche (Boss de fin de saison : même température d'explosion pour tous à
+// chaque manche, quelles que soient les actions jouées avant).
 function nouvelleManche(d, commence, rng) {
+  const numero = d.historique.length + 1;
   Object.assign(d, {
-    numero: d.historique.length + 1,
+    numero,
     commence,
-    seuil: tirerSeuil(rng),
+    seuil: tirerSeuil(rng.manche?.(numero) ?? rng),
     temp: TEMP_DEPART,
     // Chauffes de la manche : [{ id, v }] (v : degrés ajoutés)
     chauffes: [],

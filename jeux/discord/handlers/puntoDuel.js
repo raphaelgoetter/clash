@@ -211,7 +211,7 @@ const carteVue = (carte, s, moi, opts) => formatCarte(couleurDe(s, carte.k, moi)
 // Plateau vu par le siège `moi` (ses cartes en bleu et vert) : emojis à
 // taille de texte séparés par une espace, une rangée par ligne de texte.
 // `noms` : { moi, adv } libellés des deux camps, en légende.
-function plateau(d, moi, noms) {
+export function plateau(d, moi, noms) {
   const gagnantes = new Set(d.alignement ?? []);
   const rangees = [];
   for (let r = 0; r < TAILLE; r++) {
@@ -341,7 +341,7 @@ function vueFin(d, { moi, A, raison }) {
 // distinguent (liseré clair, emoji `jouable`) ; un clic ailleurs est
 // refusé avec un avertissement. Le numéro du coup dans le custom_id écarte
 // un clic sur une vue dépassée (pendant la réflexion de Kévina, par exemple).
-function boutonsPlateau(d, moi, monTour, sfx) {
+export function boutonsPlateau(d, moi, monTour, sfx) {
   const jouables = new Set(monTour && d.carte ? casesJouables(d.grille, d.carte) : []);
   const rangees = [];
   for (let r = 0; r < TAILLE; r++) {
@@ -367,7 +367,7 @@ function boutonsPlateau(d, moi, monTour, sfx) {
 
 // « Ta carte : 🟦7 » en titre (carte agrandie) à son tour, « Carte de
 // Kévina : 🟥3 » en texte sinon.
-function ligneCarte(d, moi, A) {
+export function ligneCarte(d, moi, A) {
   if (!d.carte) return null;
   const carte = carteVue(d.carte, d.actif, moi);
   return d.actif === moi ? `## Ta carte : ${carte}` : `Carte de ${A.Sujet} : ${carte}`;

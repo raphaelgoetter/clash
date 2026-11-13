@@ -43,6 +43,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterManche } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
@@ -646,6 +647,7 @@ export async function readParticipant(gameId, discordId) {
 }
 
 async function touchUsername(gameId, discordId, username) {
+  await noterManche(discordId, "pelemele", gameId);
   await getRedis().hset(usernamesKey(gameId), { [discordId]: username });
 }
 

@@ -24,6 +24,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterManche } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { countRemainingWednesdays, getCurrentSeasonId } from "./saison.js";
 
@@ -358,6 +359,7 @@ export async function readParticipant(gameId, discordId) {
 }
 
 async function touchUsername(gameId, discordId, username) {
+  await noterManche(discordId, "frame", gameId);
   await getRedis().hset(usernamesKey(gameId), { [discordId]: username });
 }
 
@@ -388,6 +390,7 @@ export async function recordHintUsed(gameId, discordId, username, hintKey) {
 // réécrire. Sinon calcule le score à partir des compteurs indices/tentatives
 // (déjà atomiques) et écrit le document final.
 export async function markSolved(gameId, discordId, username) {
+  await noterManche(discordId, "frame", gameId);
   const existing = await readParticipant(gameId, discordId);
   if (existing?.solved) {
     return { participant: existing, score: existing.score };

@@ -17,6 +17,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterManche } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
@@ -284,6 +285,7 @@ export async function readParticipant(gameId, discordId) {
 }
 
 async function touchUsername(gameId, discordId, username) {
+  await noterManche(discordId, "zoom2", gameId);
   await getRedis().hset(usernamesKey(gameId), { [discordId]: username });
 }
 
@@ -320,6 +322,7 @@ export async function recordDomaineHintUsed(gameId, discordId, username) {
 
 // Idempotent : si déjà résolu, renvoie le résultat existant sans rien réécrire.
 export async function markSolved(gameId, discordId, username) {
+  await noterManche(discordId, "zoom2", gameId);
   const existing = await readParticipant(gameId, discordId);
   if (existing?.solved) {
     return { participant: existing, score: existing.score };

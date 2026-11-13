@@ -19,6 +19,7 @@
 // ============================================================
 
 import fs from "fs/promises";
+import { noterManche } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { countRemainingWeekdayOccurrences, getCurrentSeasonId, seasonIdForDate } from "./saison.js";
 
@@ -313,6 +314,7 @@ export function createTriviaService({ prefix, catalogPath, weekday, loadCatalog 
   }
 
   async function recordAnswer(gameId, discordId, username, letter, correct, score) {
+    await noterManche(discordId, prefix, gameId);
     const participant = {
       discordId,
       username,

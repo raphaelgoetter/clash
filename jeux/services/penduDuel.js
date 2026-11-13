@@ -23,6 +23,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Redis } from "@upstash/redis";
 import { appliquerDelais, creerDuel } from "./penduRules.js";
+import { noterVictoireDuel } from "./passeport.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "pendu", "duel.json");
@@ -125,6 +126,12 @@ async function majRecord(mode, discordId, username, serie, now) {
 // Fin de partie : { joueur: { avant, serie }, bot: { … } (1v1), record }
 // (sièges du moteur).
 async function finSeries(partie, now) {
+  // Le solo n'oppose personne (joueur contre le mot) : seul le 1v1 compte
+  // pour le passeport.
+  const vainqueur = partie.duel.gagnant;
+  if (partie.mode === "pvp" && vainqueur && vainqueur !== "nul") {
+    await noterVictoireDuel(partie.sieges[vainqueur], "pendu", "pvp", now);
+  }
   const series = {};
   for (const [siege, id] of Object.entries(partie.sieges)) {
     const { serie: avant } = await lireSerie(partie.mode, id);

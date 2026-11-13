@@ -12,8 +12,9 @@ import {
 import { routeMiniJeux } from "../../jeux/discord/routes/miniJeux.js";
 import { routeJeuxSpeciaux } from "../../jeux/discord/routes/jeuxSpeciaux.js";
 import { routeDuels } from "../../jeux/discord/routes/duels.js";
+import { estBoutonBoss, routeBoss } from "../../jeux/discord/routes/boss.js";
 
-const ROUTES = [routeMiniJeux, routeJeuxSpeciaux, routeDuels];
+const ROUTES = [routeBoss, routeMiniJeux, routeJeuxSpeciaux, routeDuels];
 
 export default async function handler(req, res) {
   // Tant que le bot des jeux n'est pas configuré, l'endpoint n'existe pas.
@@ -43,7 +44,10 @@ export default async function handler(req, res) {
 
   if (body.type === 1) return res.status(200).json({ type: 1 });
 
-  if (!isAuthorizedGuild(body.guild_id)) {
+  // Seule exception hors serveur : les boutons du Boss, joués en MP (accès
+  // vérifié par la qualification, voir jeux/services/boss.js)
+  const mpBoss = !body.guild_id && estBoutonBoss(body);
+  if (!mpBoss && !isAuthorizedGuild(body.guild_id)) {
     return res.status(200).json({
       type: 4,
       data: { content: "🚫 Ce serveur n'est pas autorisé à utiliser ce bot.", flags: 64 },

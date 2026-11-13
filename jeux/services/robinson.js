@@ -26,6 +26,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterJeuSpecial } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -252,6 +253,7 @@ export async function recordVote(jour, discordId, actionId, username) {
   const wasSet = Number(await redis.hsetnx(votesKey(jour), discordId, actionId));
   if (wasSet) {
     if (username) await redis.hset(voteUsernamesKey(jour), { [discordId]: username });
+    await noterJeuSpecial(discordId, "robinson");
     return { status: "recorded" };
   }
   const existing = await redis.hget(votesKey(jour), discordId);

@@ -53,8 +53,8 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 
 // Ses propres dés en bleu, ceux de l'adversaire en rouge (code couleur de
 // Clash Royale)
-const MOI = "bleu";
-const ADV = "rouge";
+export const MOI = "bleu";
+export const ADV = "rouge";
 const CASE_VIDE = "⬛";
 // Même emoji que le high score du Gobelet Duel
 const EMOJI_HIGHSCORE = "<:topplayers:1563107730397601792>";
@@ -68,7 +68,7 @@ const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 // (comme Quatre à la suite)
 const REFLEXION_MS = { min: 2000, max: 5000 };
 // Libellé du bouton et position dans les récits (« Tu poses 5 à gauche »)
-const COLONNES = [
+export const COLONNES = [
   { nom: "Gauche", lieu: "à gauche" },
   { nom: "Centre", lieu: "au centre" },
   { nom: "Droite", lieu: "à droite" },
@@ -218,7 +218,7 @@ function ligneScores(nom, grilleAffichee) {
 // Plateau vu par le siège `moi` : l'adversaire en haut (rouge), soi en bas
 // (bleu). `noms` : { moi, adv } libellés des deux camps, `titre` : niveau
 // de titre des rangées.
-function plateau(d, moi, noms, titre = "#") {
+export function plateau(d, moi, noms, titre = "#") {
   const adv = adversaire(moi);
   return [
     ligneScores(noms.adv, d.grilles[adv]),

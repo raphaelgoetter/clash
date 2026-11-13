@@ -26,6 +26,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterManche } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { fetchCards } from "@clash/clash-royale/clashApi.js";
 import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.js";
@@ -439,6 +440,7 @@ export async function readParticipant(gameId, discordId) {
 }
 
 async function touchUsername(gameId, discordId, username) {
+  await noterManche(discordId, "lajustecarte", gameId);
   await getRedis().hset(usernamesKey(gameId), { [discordId]: username });
 }
 
@@ -487,6 +489,7 @@ export async function hintUsedFor(gameId, discordId) {
 // dernière valeur connue — l'indice peut avoir été pris n'importe quand
 // avant de trouver.
 export async function markSolved(gameId, discordId, username, attemptNumber, hintUsed) {
+  await noterManche(discordId, "lajustecarte", gameId);
   const existing = await readParticipant(gameId, discordId);
   if (existing?.solved) {
     return { participant: existing, score: existing.score };

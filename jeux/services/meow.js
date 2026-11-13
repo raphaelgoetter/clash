@@ -21,6 +21,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterJeuSpecial } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { creerPartie, inscrire, desinscrire, demarrer, rattraper, nbInscrits, classementBandes, classementCaid, horloge, parisParts, parisInstant, ajouterJours, prochaineDistribution } from "./meowRules.js";
 
@@ -159,6 +160,7 @@ export async function agir(discordId, username, fn = () => null, { inscription =
     }
     const resultat = await fn(partie, config);
     await writePartie(partie);
+    await noterJeuSpecial(discordId, "meow");
     return { partie, resultat, nouveau };
   });
 }

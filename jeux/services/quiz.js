@@ -21,6 +21,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterJeuSpecial } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -216,6 +217,7 @@ export async function recordVote(manche, jour, discordId, choiceIndex, username)
     if (username) {
       await getRedis().hset(voteUsernamesKey(manche, jour), { [discordId]: username });
     }
+    await noterJeuSpecial(discordId, "quiz");
     return { status: "recorded" };
   }
   if (existing === choice) {

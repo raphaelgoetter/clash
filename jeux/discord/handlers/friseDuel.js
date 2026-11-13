@@ -206,7 +206,7 @@ function nomsAdv(partie, moi) {
 // Image de la frise (voir friseImage.js) : cartes en bleu ou rouge selon
 // qui les a posées ; `bleu` : siège en bleu (le joueur de la vue, comme
 // Tourneboule ; le premier joueur dans les messages publics).
-const imageFrise = (d, bleu = "joueur") => ({ url: `${TRUST_ROYALE_URL}/api/frise/image?${encodeFrise(d, bleu)}` });
+export const imageFrise = (d, bleu = "joueur") => ({ url: `${TRUST_ROYALE_URL}/api/frise/image?${encodeFrise(d, bleu)}` });
 
 // Récapitulatif de fin : frise horizontale décorative (image fixe), à la
 // place de la frise de la partie.
@@ -214,7 +214,7 @@ const IMAGE_DECOR = { url: `${TRUST_ROYALE_URL}/api/frise/decor` };
 
 // Erreurs de la partie (récapitulatif de fin), par joueur dans l'ordre des
 // sièges ; rien s'il n'y en a eu aucune. `nom(siege)` : pseudo.
-function lignesErreurs(d, nom) {
+export function lignesErreurs(d, nom) {
   const erreurs = d.erreurs ?? [];
   if (!erreurs.length) return [];
   const lignes = ["", "**Erreurs**"];
@@ -225,7 +225,7 @@ function lignesErreurs(d, nom) {
 }
 
 // Légende des couleurs de l'image
-const legende = (bleu, rouge) => `🟦 ${bleu} · 🟥 ${rouge}`;
+export const legende = (bleu, rouge) => `🟦 ${bleu} · 🟥 ${rouge}`;
 
 // Récit du dernier coup vu par `moi`, point final compris (jamais doublé
 // après « av. J.-C. »).
@@ -284,7 +284,7 @@ const tronquer = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 // Menus de jeu : carte à placer (si la main en a plusieurs), puis créneau
 // (découpé en plusieurs menus au-delà de 25 créneaux). Chaque créneau
 // rappelle les cartes qui l'encadrent.
-function menusJeu(d, moi, sfx) {
+export function menusJeu(d, moi, sfx) {
   const main = d.mains[moi];
   const choix = Math.min(d.choix[moi] ?? 0, main.length - 1);
   const rangees = [];

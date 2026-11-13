@@ -22,6 +22,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { noterJeuSpecial } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import { creerPartie, inscrire, desinscrire, demarrer, debutAction, cloturer, classement, completerCartes, nbInscrits } from "./quiestceRules.js";
 
@@ -176,6 +177,7 @@ export async function agir(discordId, username, fn = () => null, { inscription =
     const debut = debutAction(partie, discordId, { config });
     const resultat = await fn(partie, config);
     await writePartie(partie);
+    await noterJeuSpecial(discordId, "quiestce");
     return { partie, resultat, nouveau, debut };
   });
 }

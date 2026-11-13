@@ -205,7 +205,7 @@ function nomsAdv(partie, moi) {
 // toute l'image de l'emoji (comme DraftBot). Une rangée par ligne de texte,
 // sans titre `###` (marge entre les rangées). `noms` : { moi, adv }
 // libellés des deux camps, en légende.
-function plateau(d, moi, noms) {
+export function plateau(d, moi, noms) {
   const gagnantes = new Set((d.alignement ?? []).map(([c, r]) => `${c},${r}`));
   const pion = (id, c, r) => {
     if (!id) return formatPion("vide");

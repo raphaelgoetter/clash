@@ -1,0 +1,39 @@
+name: Boss de fin de saison (mini-jeux)
+
+permissions:
+  contents: read
+
+on:
+  # Chaque jour 08:26 UTC : ouverture le 1er, clôture le 8 (script idempotent)
+  schedule:
+    - cron: "26 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-boss:
+    runs-on: ubuntu-latest
+    env:
+      CLASH_API_KEY: ${{ secrets.CLASH_API_KEY }}
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      # Bot des jeux (jeux/env.js) : vides tant que les secrets n'existent pas.
+      DISCORD_JEUX_TOKEN: ${{ secrets.DISCORD_JEUX_TOKEN }}
+      DISCORD_JEUX_APP_ID: ${{ secrets.DISCORD_JEUX_APP_ID }}
+      DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Ouverture ou clôture du Boss (salon public, MP)
+        run: npm run boss:public
