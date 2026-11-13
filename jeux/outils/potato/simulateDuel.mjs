@@ -20,7 +20,7 @@ function profil(nom) {
     return (d, id) => {
       const ev = evenementDe(d, id);
       if (ev?.type === "gants") return 2;
-      if (ev?.type === "thermo") return [2, 1, 0].find((k) => d.temp + [5, 10, 15][k] < d.seuil) ?? 0;
+      if (ev?.type === "thermo") return [2, 1, 0].find((k) => d.temp + [5, 10, 15][k] < ev.lo) ?? 0;
       return etatVisible(d) === "froide" ? 2 : 0;
     };
   }

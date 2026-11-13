@@ -36,6 +36,7 @@ import {
 } from "../../services/potatoDuel.js";
 import {
   CHAUFFES,
+  FOURCHETTE,
   FUME,
   GLACON,
   MANCHES_GAGNANTES,
@@ -207,16 +208,16 @@ const nomsAdv = (partie, moi) => ({ Sujet: partie.noms[partie.sieges[adversaire(
 // Côté d'un siège dans l'image publique : joueur à gauche, bot à droite
 const cote = (id) => (id === "joueur" ? 0 : 1);
 
-// Image de la vue de `moi` : thermomètre (repères fume / siffle), patate
-// et, si c'est son tour, son événement (le Thermomètre y montre la
-// température d'explosion).
+// Image de la vue de `moi` : thermomètre (repères fume / siffle, fourchette
+// de son Thermomètre jusqu'à la fin de la manche), patate et, si c'est son
+// tour, son événement.
 function urlVue(d, moi) {
   const ev = d.actif === moi ? evenementDe(d, moi) : null;
   const param = encodeVue({
     temp: d.temp,
     etat: etatVisible(d),
     evenement: ev?.type ?? null,
-    explosion: ev?.type === "thermo" ? d.seuil : null,
+    fourchette: d.fourchettes?.[moi] ?? null,
     ...reperes(d),
   });
   return `${TRUST_ROYALE_URL}/api/potato/vue?d=${param}`;
@@ -241,15 +242,17 @@ function urlPublic(d, nomDe, { deco = false } = {}) {
   return `${TRUST_ROYALE_URL}/api/potato/public?d=${param}`;
 }
 
-// Récit d'une action `x` (`d.dernier`) : `S` sujet, `toi` deuxième personne.
-function phraseAction(x, S, toi) {
+// Récit d'une action `x` (`d.dernier`) : `S` sujet, `toi` deuxième personne,
+// `chez` : à qui va la seconde chauffe du Piment (« de son tour », « de ton
+// tour », « du tour de X »).
+function phraseAction(x, S, toi, chez = toi ? "de son tour" : "de ton tour") {
   const v = (tu, il) => (toi ? tu : il);
   const c = `+${x.chauffe} °C`;
   const ev = x.evenement?.type;
   if (x.gants) return `🧤 ${S} ${v("enfiles", "enfile")} les gants : la patate ${v("t'aurait", "lui aurait")} explosé dans les mains, elle passe brûlante (${c})`;
   if (ev === "glacon") return `🧊 ${S} ${v("reçois", "reçoit")} un glaçon (−${GLACON} °C), puis ${v("chauffes", "chauffe")} de ${c}`;
   if (ev === "thermo") return `🌡️ ${S} ${v("lis", "lit")} le thermomètre, puis ${v("chauffes", "chauffe")} de ${c}`;
-  if (ev === "four") return `♨️ ${S} ${v("passes", "passe")} la patate au four : ${c}`;
+  if (ev === "piment") return `🌶️ ${S} ${v("pimentes", "pimente")} la patate : ${c} maintenant, encore ${c} au début ${chez}`;
   if (ev === "gants") return `🧤 ${S} ${v("chauffes", "chauffe")} de ${c} avec les gants`;
   if (ev === "retour") return `🔁 ${S} ${v("chauffes", "chauffe")} de ${c}, et la patate ${v("te", "lui")} revient`;
   if (ev === "courant") return `🌬️ ${S} ${v("chauffes", "chauffe")} de ${c} dans un courant d'air`;
@@ -265,7 +268,8 @@ function recit(d, moi, A) {
   return phraseAction(x, toi ? "Tu" : A.Sujet, toi);
 }
 
-const recitPublic = (d, nomDe) => (d.dernier ? `${phraseAction(d.dernier, nomDe(d.dernier.id), false)}.` : null);
+const recitPublic = (d, nomDe) =>
+  d.dernier ? `${phraseAction(d.dernier, nomDe(d.dernier.id), false, `du tour de ${nomDe(adversaire(d.dernier.id))}`)}.` : null;
 
 // « 💥 La patate t'explose dans les mains à 115 °C (dès 105 °C) : manche 2
 // pour Kévina » ; `nomDe(id)` : null pour « toi ».
@@ -274,7 +278,8 @@ function ligneManche(h, numero, nomDe) {
   const g = nomDe(h.gagnant);
   const temp = h.temp > h.seuil ? `à ${h.temp} °C (elle explosait dès ${h.seuil} °C)` : `à ${h.temp} °C`;
   const ou = p ? `explose dans les mains de ${p} ${temp}` : `t'explose dans les mains ${temp}`;
-  return `💥 ${h.renvoi ? "Renvoyée brûlante, la patate" : "La patate"} ${ou} : manche ${numero} pour ${g ?? "toi"}`;
+  const sujet = h.renvoi ? "Renvoyée brûlante, la patate" : h.piment ? "Pimentée, la patate" : "La patate";
+  return `💥 ${sujet} ${ou} : manche ${numero} pour ${g ?? "toi"}`;
 }
 
 const score = (d, moi, A) => `Toi ${d.manches[moi]} – ${d.manches[adversaire(moi)]} ${A.Sujet}`;
@@ -384,8 +389,8 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
 // Ligne de l'événement du joueur au trait, dans sa vue
 const LIGNES_EVENEMENT = {
   glacon: () => `🧊 **Glaçon** : la patate refroidit de ${GLACON} °C.`,
-  four: () => "♨️ **Four** : ta chauffe compte double.",
-  thermo: (d) => `🌡️ **Thermomètre** : la patate explose à ${d.seuil} °C.`,
+  piment: () => "🌶️ **Piment** : ta chauffe s'applique deux fois, maintenant et au début du tour de ton adversaire.",
+  thermo: (d) => `🌡️ **Thermomètre** : la patate explose entre ${d.evenement.lo} et ${d.evenement.hi} °C.`,
   gants: () => "🧤 **Gants** : si ta chauffe devait la faire exploser, elle passe brûlante à ton adversaire.",
   retour: () => "🔁 **Retour à l'envoyeur** : après ta chauffe, la patate te revient et tu rejoues.",
   courant: () => "🌬️ **Courant d'air** : impossible de voir si la patate fume ou siffle.",
@@ -403,8 +408,8 @@ function buildReglesEmbed(config) {
       "",
       "**🎲 Événements** (un peu plus d'un tour sur trois, pour celui qui tient la patate) :",
       `- 🧊 **Glaçon** : la patate refroidit de ${GLACON} °C.`,
-      "- ♨️ **Four** : ta chauffe compte double.",
-      "- 🌡️ **Thermomètre** : tu vois la température d'explosion.",
+      "- 🌶️ **Piment** : ta chauffe s'applique deux fois, maintenant et au début du tour de l'adversaire (si elle fait exploser la patate, c'est dans ses mains).",
+      `- 🌡️ **Thermomètre** : tu vois une fourchette de ${FOURCHETTE} °C qui contient la température d'explosion (elle reste surlignée sur ton thermomètre jusqu'à la fin de la manche).`,
       "- 🧤 **Gants** : si ta chauffe devait faire exploser la patate, elle passe brûlante à l'adversaire et lui explose dans les mains (sauf si un Glaçon ou ses propres Gants le sauvent).",
       "- 🔁 **Retour à l'envoyeur** : après ta chauffe, la patate te revient et tu rejoues.",
       "- 🌬️ **Courant d'air** : impossible de voir si la patate fume ou siffle.",

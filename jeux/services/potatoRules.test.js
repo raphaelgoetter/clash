@@ -75,11 +75,28 @@ assert.deepStrictEqual([indice(30), indice(25), indice(15), indice(10), indice(5
   assert.strictEqual(d.temp, TEMP_DEPART);
   // Pas de Glaçon à température de départ
   const e = creerDuel({ rng: suite([0.99, 0.1, 0]) });
-  assert.strictEqual(e.evenement.type, "four");
-  assert.deepStrictEqual(chauffesDe(e, "joueur"), CHAUFFES.map((c) => c * 2));
-  assert.deepStrictEqual(chauffesDe(e, "bot"), CHAUFFES);
+  assert.strictEqual(e.evenement.type, "piment");
+  assert.deepStrictEqual(chauffesDe(e, "joueur"), CHAUFFES);
+  // Piment : +15 maintenant, encore +15 au début du tour adverse
   chauffer(e, "joueur", 2, { rng: calme });
-  assert.strictEqual(e.temp, TEMP_DEPART + 30);
+  assert.deepStrictEqual([e.temp, e.actif, e.piment], [TEMP_DEPART + 30, "bot", null]);
+  assert.deepStrictEqual(e.chauffes, [{ id: "joueur", v: 15 }, { id: "joueur", v: 15 }]);
+}
+{
+  // Piment qui fait exploser la patate chez l'adversaire au début de son tour
+  const d = creerDuel({ rng: calme });
+  d.seuil = TEMP_DEPART + 20;
+  d.evenement = { type: "piment", id: "joueur" };
+  assert.deepStrictEqual(chauffer(d, "joueur", 1, { rng: calme }), {});
+  assert.deepStrictEqual(d.manches, { joueur: 1, bot: 0 });
+  assert.strictEqual(d.historique[0].piment, true);
+  assert.deepStrictEqual([d.numero, d.actif, d.piment], [2, "bot", null]);
+  // Kévina avec le Piment, à 10 °C de l'explosion connue : seul +5 piège
+  // l'adversaire sans la faire exploser elle-même
+  const k = creerDuel({ rng: calme });
+  Object.assign(k, { actif: "bot", temp: 60, seuil: 70, evenement: { type: "piment", id: "bot" } });
+  k.fourchettes.bot = { lo: 70, hi: 70 };
+  assert.strictEqual(choixKevina(k, "bot", { rng: calme }), 0);
 }
 {
   // Gants : la patate passe brûlante et explose aussitôt chez l'adversaire
@@ -137,6 +154,20 @@ assert.deepStrictEqual([indice(30), indice(25), indice(15), indice(10), indice(5
   assert.strictEqual(f.temp, TEMP_DEPART + 10);
 }
 
+{
+  // Thermomètre : fourchette de 10 °C qui contient la température d'explosion,
+  // toujours entre 70 et 130 °C, retenue jusqu'à la fin de la manche
+  for (let i = 0; i < 300; i++) {
+    const d = creerDuel({ rng: calme });
+    d.seuil = 70 + 5 * (i % 13);
+    chauffer(d, "joueur", 0, { rng: suite([0.1, 2 / 7, Math.random()]) });
+    const { lo, hi, type } = d.evenement;
+    assert.strictEqual(type, "thermo");
+    assert.ok(hi - lo === 10 && lo <= d.seuil && d.seuil <= hi && lo >= 70 && hi <= 130, `${lo}-${hi} pour ${d.seuil}`);
+    assert.deepStrictEqual(d.fourchettes.bot, { lo, hi });
+  }
+}
+
 // ── Seuils possibles et Kévina ──
 {
   const d = creerDuel({ rng: calme });
@@ -159,10 +190,12 @@ assert.deepStrictEqual([indice(30), indice(25), indice(15), indice(10), indice(5
   d.actif = "bot";
   d.temp = 60;
   d.seuil = 80;
-  // Thermomètre : écart de 20, +15 laisse l'adversaire à 5 °C de l'explosion
-  d.evenement = { type: "thermo", id: "bot" };
+  // Thermomètre (fourchette 80-90 °C, retenue) : +15 laisse l'adversaire
+  // à 5 °C de 80 °C, sans risque pour elle
+  d.evenement = { type: "thermo", id: "bot", lo: 80, hi: 90 };
+  d.fourchettes.bot = { lo: 80, hi: 90 };
   assert.strictEqual(choixKevina(d, "bot", { rng: calme }), 2);
-  // Écart de 10 : seul +5 ne fait pas exploser
+  // À 70 °C : +5 est sans risque, +10 et +15 peuvent faire exploser
   d.temp = 70;
   assert.strictEqual(choixKevina(d, "bot", { rng: calme }), 0);
   // Gants : chauffe maximale

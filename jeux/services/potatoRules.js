@@ -8,7 +8,7 @@
 // atteint le seuil la fait exploser et perd la manche. Premier à
 // MANCHES_GAGNANTES manches. Indices : la patate fume (écart ≤ FUME) puis
 // siffle (écart ≤ SIFFLE). Un peu plus d'un tour sur trois, un événement
-// tombe pour le joueur actif (Glaçon, Four, Thermomètre, Gants, Retour à
+// tombe pour le joueur actif (Glaçon, Piment, Thermomètre, Gants, Retour à
 // l'envoyeur, Courant d'air, Chauffe imposée).
 //
 // Sièges du moteur : "joueur" et "bot" (en 1v1, deux joueurs).
@@ -27,9 +27,11 @@ export const FUME = 25;
 export const SIFFLE = 10;
 export const GLACON = 15;
 export const P_EVENEMENT = 0.4;
-export const EVENEMENTS = ["glacon", "four", "thermo", "gants", "retour", "courant", "impose"];
+export const EVENEMENTS = ["glacon", "piment", "thermo", "gants", "retour", "courant", "impose"];
 // Chauffe imposée : seule la chauffe n° CHAUFFE_IMPOSEE (+10 °C) est permise
 export const CHAUFFE_IMPOSEE = 1;
+// Thermomètre : fourchette de FOURCHETTE °C qui contient la température d'explosion
+export const FOURCHETTE = 10;
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
 
@@ -54,8 +56,8 @@ export function reperes(d) {
   return { fume: premier(["fume", "siffle"]), siffle: premier(["siffle"]) };
 }
 
-// Chauffes proposées à `id` (doublées par le Four)
-export const chauffesDe = (d, id) => CHAUFFES.map((c) => c * (evenementDe(d, id)?.type === "four" ? 2 : 1));
+// Chauffes proposées à `id`
+export const chauffesDe = () => CHAUFFES;
 
 // Chauffe n° `k` permise à `id` (Chauffe imposée : +10 °C seulement)
 export const chauffePermise = (d, id, k) => k >= 0 && k < CHAUFFES.length && (evenementDe(d, id)?.type !== "impose" || k === CHAUFFE_IMPOSEE);
@@ -96,6 +98,11 @@ function nouvelleManche(d, commence, rng) {
     bornes: [],
     actif: commence,
     evenement: null,
+    // Fourchette du Thermomètre connue de chacun jusqu'à la fin de la
+    // manche : { lo, hi } ou null
+    fourchettes: { joueur: null, bot: null },
+    // Piment en attente : { id, v } (seconde chauffe au début du tour adverse)
+    piment: null,
   });
   debutTour(d, rng);
 }
@@ -105,21 +112,37 @@ function nouvelleManche(d, commence, rng) {
 // rejoue après un Retour à l'envoyeur (pas de second Retour d'affilée).
 function debutTour(d, rng, { rejoue = false } = {}) {
   d.evenement = null;
+  // Piment de l'adversaire : sa chauffe s'applique une seconde fois
+  const piment = d.piment;
+  if (piment) {
+    d.temp += piment.v;
+    d.chauffes.push({ id: piment.id, v: piment.v });
+    d.piment = null;
+  }
   if (rng() < P_EVENEMENT) {
     // Glaçon sans effet à température de départ : un autre événement
     const possibles = EVENEMENTS.filter((e) => !(e === "glacon" && d.temp <= TEMP_DEPART) && !(e === "retour" && rejoue));
     const type = possibles[Math.floor(rng() * possibles.length)];
     d.evenement = { type, id: d.actif };
+    if (type === "thermo") {
+      // Position de la vraie température dans la fourchette tirée au hasard,
+      // fourchette toujours comprise entre SEUIL_MIN et SEUIL_MAX
+      const los = [0, 1, 2].map((k) => d.seuil - k * PAS).filter((lo) => lo >= SEUIL_MIN && lo + FOURCHETTE <= SEUIL_MAX);
+      const lo = los[Math.floor(rng() * los.length)];
+      Object.assign(d.evenement, { lo, hi: lo + FOURCHETTE });
+      // Partie commencée avant l'ajout des fourchettes : champ créé à la volée
+      (d.fourchettes ??= { joueur: null, bot: null })[d.actif] = { lo, hi: lo + FOURCHETTE };
+    }
     if (type === "glacon") {
       d.evenement.avant = d.temp;
       d.temp = Math.max(TEMP_DEPART, d.temp - GLACON);
     }
   }
   if (d.evenement?.type !== "courant") d.obs.push({ t: d.temp, i: etatPatate(d) });
-  // Patate reçue brûlante (renvoyée par des Gants) : elle explose aussitôt,
-  // sauf si un Glaçon l'a refroidie sous le seuil ou si ses propres Gants
-  // permettent de la renvoyer
-  if (d.temp >= d.seuil && d.evenement?.type !== "gants") cloreManche(d, d.actif, rng, { renvoi: true });
+  // Patate reçue brûlante (renvoyée par des Gants, ou pimentée) : elle
+  // explose aussitôt, sauf si un Glaçon l'a refroidie sous le seuil ou si
+  // ses propres Gants permettent de la renvoyer
+  if (d.temp >= d.seuil && d.evenement?.type !== "gants") cloreManche(d, d.actif, rng, piment ? { piment: true } : { renvoi: true });
 }
 
 // `id` chauffe la patate avec la chauffe n° `k` (0, 1, 2).
@@ -153,6 +176,7 @@ export function chauffer(d, id, k, { rng = Math.random } = {}) {
   d.temp = avant + chauffe;
   d.chauffes.push({ id, v: chauffe });
   d.dernier = { id, chauffe, evenement, manche: d.numero };
+  if (evenement?.type === "piment") d.piment = { id, v: chauffe };
   // Retour à l'envoyeur : la patate revient, le même joueur rejoue
   if (evenement?.type === "retour") {
     d.dernier.retour = true;
@@ -170,10 +194,20 @@ function passer(d, rng) {
 
 // Manche perdue par `perdant` : point à l'autre, partie gagnée à
 // MANCHES_GAGNANTES, sinon nouvelle manche que le perdant commence.
-// `renvoi` : explosion d'une patate renvoyée par des Gants.
-function cloreManche(d, perdant, rng, { renvoi = false } = {}) {
+// `renvoi` : explosion d'une patate renvoyée par des Gants ; `piment` :
+// explosion due à la seconde chauffe d'un Piment.
+function cloreManche(d, perdant, rng, { renvoi = false, piment = false } = {}) {
   const gagnant = adversaire(perdant);
-  d.historique.push({ gagnant, perdant, seuil: d.seuil, temp: d.temp, chauffes: d.chauffes.map((c) => ({ ...c })), ...(renvoi ? { renvoi: true } : {}) });
+  d.piment = null;
+  d.historique.push({
+    gagnant,
+    perdant,
+    seuil: d.seuil,
+    temp: d.temp,
+    chauffes: d.chauffes.map((c) => ({ ...c })),
+    ...(renvoi ? { renvoi: true } : {}),
+    ...(piment ? { piment: true } : {}),
+  });
   d.manches[gagnant] += 1;
   if (d.manches[gagnant] >= MANCHES_GAGNANTES) {
     Object.assign(d, { termine: true, gagnant, evenement: null });
@@ -184,7 +218,8 @@ function cloreManche(d, perdant, rng, { renvoi = false } = {}) {
 
 // ── Kévina ───────────────────────────────────────────────────────────────
 // Kévina garde en tête les seuils encore possibles (indices vus depuis le
-// début de la manche, bornes révélées par les Gants) et choisit la chauffe
+// début de la manche, bornes révélées par les Gants, fourchette de son
+// Thermomètre) et choisit la chauffe
 // qui minimise son risque d'explosion tout en maximisant celui de
 // l'adversaire au tour suivant (même avec sa plus petite chauffe).
 // Égalité : au hasard. Avec la probabilité `erreur`, chauffe au hasard
@@ -210,13 +245,26 @@ export function choixKevina(d, id, { erreur = 0, rng = Math.random } = {}) {
   // Gants : aucun risque, et chauffer au maximum donne le plus de chances
   // de renvoyer une patate brûlante
   if (ev?.type === "gants") return CHAUFFES.length - 1;
-  const set = ev?.type === "thermo" ? [d.seuil] : seuilsPossibles(d);
+  // Fourchette de son Thermomètre, retenue jusqu'à la fin de la manche
+  const f = d.fourchettes?.[id];
+  const possibles = seuilsPossibles(d);
+  const dans = f ? possibles.filter((s) => s >= f.lo && s <= f.hi) : possibles;
+  const set = dans.length ? dans : possibles;
   const valeurs = chauffesDe(d, id).map((c) => {
     const t = d.temp + c;
     const p = part(set, t);
     const reste = set.filter((s) => s > t);
     // Retour à l'envoyeur : c'est elle qui rejoue, piéger l'adversaire ne sert à rien
-    const q = reste.length && ev?.type !== "retour" ? part(reste, t + CHAUFFES[0]) : 0;
+    if (ev?.type === "retour") return -p;
+    // Piment : la seconde chauffe peut faire exploser l'adversaire dès le
+    // début de son tour, sinon il doit chauffer à son tour
+    if (ev?.type === "piment") {
+      const q2 = reste.length ? part(reste, t + c) : 0;
+      const reste2 = reste.filter((s) => s > t + c);
+      const q3 = reste2.length ? part(reste2, t + c + CHAUFFES[0]) : 0;
+      return -p + (1 - p) * (q2 + (1 - q2) * q3);
+    }
+    const q = reste.length ? part(reste, t + CHAUFFES[0]) : 0;
     return -p + (1 - p) * q;
   });
   const best = Math.max(...valeurs);

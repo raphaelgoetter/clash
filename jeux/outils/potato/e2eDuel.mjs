@@ -61,7 +61,7 @@ function verifier(v, { public: estPublic = false } = {}) {
     if (!t) throw new Error(`image illisible : ${url}`);
     // Anti-spoiler : aucune température d'explosion dans une image publique
     if (estPublic && !u.pathname.endsWith("/public")) throw new Error("vue d'un joueur dans le salon");
-    if (t.explosion && t.evenement !== "thermo") throw new Error("température d'explosion hors Thermomètre");
+    if (t.fourchette && t.fourchette.hi - t.fourchette.lo !== 10) throw new Error("fourchette du Thermomètre invalide");
   }
 }
 

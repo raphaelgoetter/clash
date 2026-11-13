@@ -10,8 +10,8 @@
 // via @resvg/resvg-js, police Inter embarquée (Vercel Blob).
 //
 // Rendu sans état : l'état est passé dans l'URL (encodeVue, encodePublic).
-// ⚠️ Anti-spoiler : l'URL ne contient JAMAIS le seuil, sauf la température
-// d'explosion du Thermomètre dans la vue de celui qui l'a tiré (éphémère).
+// ⚠️ Anti-spoiler : l'URL ne contient JAMAIS le seuil ; seule la vue de
+// celui qui a tiré le Thermomètre (éphémère) contient sa fourchette.
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
@@ -38,7 +38,7 @@ const ETATS = {
   siffle: { corps: "#e2533a", ombre: "#9e2c1d" },
 };
 const CODES_ETAT = { froide: "f", fume: "u", siffle: "s", cache: "c" };
-const CODES_EVENEMENT = { glacon: "g", four: "o", thermo: "t", gants: "a", retour: "r", courant: "c", impose: "i" };
+const CODES_EVENEMENT = { glacon: "g", piment: "p", thermo: "t", gants: "a", retour: "r", courant: "c", impose: "i" };
 const inverse = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [v, k]));
 
 function escapeXml(value) {
@@ -57,7 +57,8 @@ const cadre = (w, h, contenu) =>
 
 // ── Encodage dans l'URL ─────────────────────────────────────────────
 // Vue : { t: température, e: état (f, u, s), v: événement ("" ou g, o, t,
-//   a), x: température d'explosion (Thermomètre seulement), f / s :
+//   a), l / h : fourchette du Thermomètre (connue du joueur jusqu'à la fin
+//   de la manche), f / s :
 //   température à laquelle la patate a commencé à fumer / siffler }.
 // Public : { n: [pseudo gauche, pseudo droite], m: [manches], c: chauffes
 //   "côté:degrés,…", h: côté qui tient la patate (-1 : personne), x: côté
@@ -75,12 +76,12 @@ function depuisUrl(param) {
 
 const borner = (n, min, max) => Math.max(min, Math.min(max, Math.round(Number(n) || 0)));
 
-export function encodeVue({ temp, etat, evenement = null, explosion = null, fume = null, siffle = null }) {
+export function encodeVue({ temp, etat, evenement = null, fourchette = null, fume = null, siffle = null }) {
   return versUrl({
     t: temp,
     e: CODES_ETAT[etat],
     v: CODES_EVENEMENT[evenement] ?? "",
-    ...(explosion ? { x: explosion } : {}),
+    ...(fourchette ? { l: fourchette.lo, h: fourchette.hi } : {}),
     ...(fume != null ? { f: fume } : {}),
     ...(siffle != null ? { s: siffle } : {}),
   });
@@ -96,7 +97,7 @@ export function decodeVue(param) {
     temp: borner(d.t, TEMP_DEPART, 200),
     etat,
     evenement,
-    explosion: evenement === "thermo" && d.x ? borner(d.x, SEUIL_MIN, SEUIL_MAX) : null,
+    fourchette: d.l != null && d.h != null ? { lo: borner(d.l, SEUIL_MIN, SEUIL_MAX), hi: borner(d.h, SEUIL_MIN, SEUIL_MAX) } : null,
     fume: d.f != null ? borner(d.f, TEMP_DEPART, SEUIL_MAX) : null,
     siffle: d.s != null ? borner(d.s, TEMP_DEPART, SEUIL_MAX) : null,
   };
@@ -206,7 +207,13 @@ function repere(x, t, dy, couleur, n) {
     ${texte(x - 46, y + 6 + dy, `${t}°`, { size: 16, fill: couleur, anchor: "end" })}${volutes(x - 104, y + 9 + dy, n, couleur)}`;
 }
 
-function thermometre(temp, { fume = null, siffle = null } = {}) {
+// Fourchette du Thermomètre : bande jaune sur le tube, du bas au haut
+function bandeFourchette(x, { lo, hi }) {
+  const [y1, y2] = [yTemp(hi), yTemp(lo)];
+  return `<rect x="${x - 21}" y="${y1 - 3}" width="42" height="${y2 - y1 + 6}" rx="8" fill="none" stroke="#ffd54f" stroke-width="4"/>`;
+}
+
+function thermometre(temp, { fume = null, siffle = null, fourchette = null } = {}) {
   const x = 120;
   const grads = [40, 60, 80, 100, 120, 140]
     .map((t) => `<line x1="${x + 18}" y1="${yTemp(t)}" x2="${x + 28}" y2="${yTemp(t)}" stroke="${GRIS}" stroke-width="3"/>${texte(x + 34, yTemp(t) + 6, `${t}°`, { size: 16, fill: GRIS })}`)
@@ -222,13 +229,14 @@ function thermometre(temp, { fume = null, siffle = null } = {}) {
     <rect x="${x - 14}" y="${Y_HAUT - 10}" width="28" height="${Y_BAS - Y_HAUT + 30}" rx="14" fill="#ece3f0"/>
     <rect x="${x - 7}" y="${yTemp(temp)}" width="14" height="${Y_BAS + 20 - yTemp(temp)}" rx="7" fill="${ROUGE}"/>
     <circle cx="${x}" cy="${Y_BAS + 34}" r="24" fill="#ece3f0"/><circle cx="${x}" cy="${Y_BAS + 34}" r="17" fill="${ROUGE}"/>
-    ${grads}${reperes}`;
+    ${grads}${reperes}${fourchette ? bandeFourchette(x, fourchette) : ""}`;
 }
 
 const ICONES = {
   glacon: (x, y) => `<rect x="${x - 13}" y="${y - 13}" width="26" height="26" rx="6" fill="#b3e5fc" stroke="#4fc3f7" stroke-width="3" transform="rotate(12 ${x} ${y})"/>`,
-  four: (x, y) =>
-    `<path d="M ${x} ${y - 16} C ${x + 14} ${y - 4} ${x + 12} ${y + 14} ${x} ${y + 15} C ${x - 12} ${y + 14} ${x - 14} ${y - 2} ${x} ${y - 16} Z" fill="#ff7043"/><path d="M ${x} ${y - 2} C ${x + 6} ${y + 4} ${x + 5} ${y + 12} ${x} ${y + 12} C ${x - 5} ${y + 12} ${x - 6} ${y + 4} ${x} ${y - 2} Z" fill="#ffd54f"/>`,
+  // Piment : gousse rouge courbée, queue verte
+  piment: (x, y) =>
+    `<path d="M ${x - 9} ${y - 9} C ${x + 4} ${y - 12} ${x + 13} ${y - 4} ${x + 11} ${y + 6} C ${x + 9} ${y + 13} ${x + 2} ${y + 17} ${x - 6} ${y + 16} C ${x + 2} ${y + 11} ${x + 3} ${y + 4} ${x - 1} ${y - 1} C ${x - 4} ${y - 4} ${x - 8} ${y - 4} ${x - 9} ${y - 9} Z" fill="#e53935"/><path d="M ${x - 9} ${y - 9} q -2 -6 3 -9" stroke="#66bb6a" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
   thermo: (x, y) => `<rect x="${x - 4}" y="${y - 16}" width="8" height="24" rx="4" fill="#ece3f0"/><circle cx="${x}" cy="${y + 10}" r="7" fill="${ROUGE}"/>`,
   retour: (x, y) =>
     `<path d="M ${x + 11} ${y - 4} A 12 12 0 1 0 ${x + 8} ${y + 9}" stroke="#ffd54f" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M ${x + 4} ${y - 9} L ${x + 13} ${y - 6} L ${x + 15} ${y - 15} Z" fill="#ffd54f"/>`,
@@ -240,10 +248,10 @@ const ICONES = {
     `<path d="M ${x - 10} ${y + 15} L ${x - 10} ${y - 4} Q ${x - 10} ${y - 15} ${x - 4} ${y - 15} L ${x + 6} ${y - 15} Q ${x + 11} ${y - 15} ${x + 11} ${y - 8} L ${x + 11} ${y + 15} Z" fill="#81c784" stroke="#388e3c" stroke-width="3"/>`,
 };
 
-function libelleEvenement(evenement, explosion) {
+function libelleEvenement(evenement, fourchette) {
   if (evenement === "glacon") return `Glaçon : −${GLACON} °C`;
-  if (evenement === "four") return "Four : chauffe ×2";
-  if (evenement === "thermo") return `Explosion à ${explosion} °C`;
+  if (evenement === "piment") return "Piment : double chauffe";
+  if (evenement === "thermo") return `Explosion : ${fourchette?.lo} à ${fourchette?.hi} °C`;
   if (evenement === "retour") return "Retour : tu rejoues après";
   if (evenement === "courant") return "Courant d'air : état caché";
   if (evenement === "impose") return "Chauffe imposée : +10 °C";
@@ -255,11 +263,11 @@ function libelleEvenement(evenement, explosion) {
 const VUE_L = 500;
 const VUE_H = 380;
 
-export function buildVueSvg({ temp, etat, evenement = null, explosion = null, fume = null, siffle = null }) {
+export function buildVueSvg({ temp, etat, evenement = null, fourchette = null, fume = null, siffle = null }) {
   const pastille = evenement
-    ? `<rect x="196" y="306" width="270" height="52" rx="26" fill="${PANNEAU}"/>${ICONES[evenement](224, 332)}${texte(248, 339, libelleEvenement(evenement, explosion), { size: 17 })}`
+    ? `<rect x="196" y="306" width="270" height="52" rx="26" fill="${PANNEAU}"/>${ICONES[evenement](224, 332)}${texte(248, 339, libelleEvenement(evenement, fourchette), { size: 17 })}`
     : "";
-  return cadre(VUE_L, VUE_H, `${thermometre(temp, { fume, siffle })}${patate(335, evenement ? 180 : 200, etat, 1.0)}${pastille}`);
+  return cadre(VUE_L, VUE_H, `${thermometre(temp, { fume, siffle, fourchette })}${patate(335, evenement ? 180 : 200, etat, 1.0)}${pastille}`);
 }
 
 // ── Vue publique ────────────────────────────────────────────────────
