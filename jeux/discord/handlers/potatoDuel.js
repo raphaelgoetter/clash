@@ -226,8 +226,9 @@ function urlVue(d, moi) {
 // n'a reçu aucune chauffe (ou en fin de partie), sinon celle en cours.
 const mancheTerminee = (d) => (d.historique.length && (d.termine || !d.chauffes.length) ? d.historique.at(-1) : null);
 
-// Image publique : joueurs (`nomDe(siège)`), manches, barre des chauffes.
-function urlPublic(d, nomDe) {
+// Image publique : joueurs (`nomDe(siège)`), manches, barre des chauffes ;
+// `deco` : patate qui fume au centre (message final).
+function urlPublic(d, nomDe, { deco = false } = {}) {
   const h = mancheTerminee(d);
   const param = encodePublic({
     noms: [nomDe("joueur"), nomDe("bot")],
@@ -235,6 +236,7 @@ function urlPublic(d, nomDe) {
     chauffes: (h ?? d).chauffes.map((c) => [cote(c.id), c.v]),
     tient: h ? -1 : cote(d.actif),
     explose: h ? cote(h.perdant) : -1,
+    deco,
   });
   return `${TRUST_ROYALE_URL}/api/potato/public?d=${param}`;
 }
@@ -244,7 +246,7 @@ function phraseAction(x, S, toi) {
   const v = (tu, il) => (toi ? tu : il);
   const c = `+${x.chauffe} °C`;
   const ev = x.evenement?.type;
-  if (x.gants) return `🧤 ${S} ${v("enfiles", "enfile")} les gants : la patate allait exploser, elle passe sans chauffer`;
+  if (x.gants) return `🧤 ${S} ${v("enfiles", "enfile")} les gants : la patate ${v("t'aurait", "lui aurait")} explosé dans les mains, elle passe brûlante (${c})`;
   if (ev === "glacon") return `🧊 ${S} ${v("reçois", "reçoit")} un glaçon (−${GLACON} °C), puis ${v("chauffes", "chauffe")} de ${c}`;
   if (ev === "thermo") return `🌡️ ${S} ${v("lis", "lit")} le thermomètre, puis ${v("chauffes", "chauffe")} de ${c}`;
   if (ev === "four") return `♨️ ${S} ${v("passes", "passe")} la patate au four : ${c}`;
@@ -272,7 +274,7 @@ function ligneManche(h, numero, nomDe) {
   const g = nomDe(h.gagnant);
   const temp = h.temp > h.seuil ? `à ${h.temp} °C (elle explosait dès ${h.seuil} °C)` : `à ${h.temp} °C`;
   const ou = p ? `explose dans les mains de ${p} ${temp}` : `t'explose dans les mains ${temp}`;
-  return `💥 La patate ${ou} : manche ${numero} pour ${g ?? "toi"}`;
+  return `💥 ${h.renvoi ? "Renvoyée brûlante, la patate" : "La patate"} ${ou} : manche ${numero} pour ${g ?? "toi"}`;
 }
 
 const score = (d, moi, A) => `Toi ${d.manches[moi]} – ${d.manches[adversaire(moi)]} ${A.Sujet}`;
@@ -384,7 +386,7 @@ const LIGNES_EVENEMENT = {
   glacon: () => `🧊 **Glaçon** : la patate refroidit de ${GLACON} °C.`,
   four: () => "♨️ **Four** : ta chauffe compte double.",
   thermo: (d) => `🌡️ **Thermomètre** : la patate explose à ${d.seuil} °C.`,
-  gants: () => "🧤 **Gants** : si ta chauffe devait la faire exploser, elle passe sans chauffer.",
+  gants: () => "🧤 **Gants** : si ta chauffe devait la faire exploser, elle passe brûlante à ton adversaire.",
   retour: () => "🔁 **Retour à l'envoyeur** : après ta chauffe, la patate te revient et tu rejoues.",
   courant: () => "🌬️ **Courant d'air** : impossible de voir si la patate fume ou siffle.",
   impose: () => "🎯 **Chauffe imposée** : +10 °C seulement.",
@@ -403,7 +405,7 @@ function buildReglesEmbed(config) {
       `- 🧊 **Glaçon** : la patate refroidit de ${GLACON} °C.`,
       "- ♨️ **Four** : ta chauffe compte double.",
       "- 🌡️ **Thermomètre** : tu vois la température d'explosion.",
-      "- 🧤 **Gants** : si ta chauffe devait faire exploser la patate, elle passe sans chauffer.",
+      "- 🧤 **Gants** : si ta chauffe devait faire exploser la patate, elle passe brûlante à l'adversaire et lui explose dans les mains (sauf si un Glaçon ou ses propres Gants le sauvent).",
       "- 🔁 **Retour à l'envoyeur** : après ta chauffe, la patate te revient et tu rejoues.",
       "- 🌬️ **Courant d'air** : impossible de voir si la patate fume ou siffle.",
       "- 🎯 **Chauffe imposée** : +10 °C seulement.",
@@ -549,7 +551,7 @@ function messageFinalSolo(d, pseudo) {
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
         description: [resultat, ...(derniere ? ["", derniere] : []), ...(series.length ? ["", ...series] : [])].join("\n").slice(0, 4096),
-        ...(finJeu ? { image: { url: urlPublic(d, nomDe) } } : {}),
+        ...(finJeu ? { image: { url: urlPublic(d, nomDe, { deco: true }) } } : {}),
         color: POTATO_COLOR,
       },
     ],
@@ -781,7 +783,7 @@ function messageFinal(partie) {
       {
         title: `${TITRE} · ${nomDe(g)} contre ${nomDe(adversaire(g))}`,
         description: [resultat, ...(derniere ? ["", derniere] : []), ...(series.length ? ["", ...series] : [])].join("\n").slice(0, 4096),
-        ...(finJeu ? { image: { url: urlPublic(d, nomDe) } } : {}),
+        ...(finJeu ? { image: { url: urlPublic(d, nomDe, { deco: true }) } } : {}),
         color: POTATO_COLOR,
       },
     ],

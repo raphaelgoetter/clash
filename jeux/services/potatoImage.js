@@ -61,7 +61,8 @@ const cadre = (w, h, contenu) =>
 //   température à laquelle la patate a commencé à fumer / siffler }.
 // Public : { n: [pseudo gauche, pseudo droite], m: [manches], c: chauffes
 //   "côté:degrés,…", h: côté qui tient la patate (-1 : personne), x: côté
-//   qui l'a fait exploser (-1 : en cours) }.
+//   qui l'a fait exploser (-1 : en cours), p: 1 pour la patate qui fume en
+//   décoration (message final) }.
 
 const versUrl = (d) => Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
 function depuisUrl(param) {
@@ -101,8 +102,15 @@ export function decodeVue(param) {
   };
 }
 
-export function encodePublic({ noms, manches, chauffes, tient = -1, explose = -1 }) {
-  return versUrl({ n: noms.map((n) => tronquer(sansEmoji(n), 16)), m: manches, c: chauffes.map(([j, v]) => `${j}:${v}`).join(","), h: tient, x: explose });
+export function encodePublic({ noms, manches, chauffes, tient = -1, explose = -1, deco = false }) {
+  return versUrl({
+    n: noms.map((n) => tronquer(sansEmoji(n), 16)),
+    m: manches,
+    c: chauffes.map(([j, v]) => `${j}:${v}`).join(","),
+    h: tient,
+    x: explose,
+    ...(deco ? { p: 1 } : {}),
+  });
 }
 
 export function decodePublic(param) {
@@ -118,6 +126,7 @@ export function decodePublic(param) {
     chauffes,
     tient: cote(d.h),
     explose: cote(d.x),
+    deco: d.p === 1,
   };
 }
 
@@ -238,7 +247,7 @@ function libelleEvenement(evenement, explosion) {
   if (evenement === "retour") return "Retour : tu rejoues après";
   if (evenement === "courant") return "Courant d'air : état caché";
   if (evenement === "impose") return "Chauffe imposée : +10 °C";
-  return "Gants : protégé ce tour";
+  return "Gants : renvoi brûlant";
 }
 
 // ── Vue d'un joueur ─────────────────────────────────────────────────
@@ -262,7 +271,7 @@ const BAR_MAX = 150;
 const jeton = (x, y, plein) =>
   `<g transform="translate(${x} ${y}) scale(0.16)"><path d="${CONTOUR}" ${plein ? 'fill="#d9a65b" stroke="#a8743a"' : `fill="none" stroke="${GRIS}" stroke-dasharray="20 14"`} stroke-width="10"/></g>`;
 
-export function buildPublicSvg({ noms, manches, chauffes, tient = -1, explose = -1 }) {
+export function buildPublicSvg({ noms, manches, chauffes, tient = -1, explose = -1, deco = false }) {
   const x0 = 60;
   const x1 = 700;
   const yb = 155;
@@ -295,7 +304,7 @@ export function buildPublicSvg({ noms, manches, chauffes, tient = -1, explose = 
   return cadre(
     PUB_L,
     PUB_H,
-    `${cote(0)}${cote(1)}
+    `${deco ? patate(PUB_L / 2, 74, "fume", 0.5) : ""}${cote(0)}${cote(1)}
     <rect x="${xT(SEUIL_MIN)}" y="${yb - 26}" width="${xT(SEUIL_MAX) - xT(SEUIL_MIN)}" height="52" rx="8" fill="${DANGER}" opacity="0.16" stroke="${DANGER}" stroke-opacity="0.5" stroke-dasharray="6 5"/>
     <rect x="${x0}" y="${yb - 18}" width="${x1 - x0}" height="36" rx="8" fill="#ffffff" opacity="0.06"/>
     ${segments}${boum}${grads}`,

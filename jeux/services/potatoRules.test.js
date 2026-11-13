@@ -82,13 +82,34 @@ assert.deepStrictEqual([indice(30), indice(25), indice(15), indice(10), indice(5
   assert.strictEqual(e.temp, TEMP_DEPART + 30);
 }
 {
-  // Gants : la chauffe qui ferait exploser ne chauffe pas, la patate passe
+  // Gants : la patate passe brûlante et explose aussitôt chez l'adversaire
   const d = creerDuel({ rng: calme });
   d.seuil = TEMP_DEPART + 10;
   d.evenement = { type: "gants", id: "joueur" };
-  assert.deepStrictEqual(chauffer(d, "joueur", 2, { rng: calme }), {});
-  assert.deepStrictEqual([d.temp, d.actif, d.bornes, d.manches.bot], [TEMP_DEPART, "bot", [TEMP_DEPART + 15], 0]);
+  assert.deepStrictEqual(chauffer(d, "joueur", 2, { rng: calme }), { explose: true });
+  assert.deepStrictEqual(d.manches, { joueur: 1, bot: 0 });
+  assert.deepStrictEqual(d.historique[0], { gagnant: "joueur", perdant: "bot", seuil: TEMP_DEPART + 10, temp: TEMP_DEPART + 15, chauffes: [{ id: "joueur", v: 15 }], renvoi: true });
   assert.strictEqual(d.dernier.gants, true);
+  // Le perdant (Kévina) commence la manche suivante
+  assert.deepStrictEqual([d.numero, d.actif, d.temp], [2, "bot", TEMP_DEPART]);
+}
+{
+  // Sauvé par un Glaçon : la patate refroidit sous le seuil, la manche continue
+  const d = creerDuel({ rng: calme });
+  d.seuil = TEMP_DEPART + 20;
+  chauffer(d, "joueur", 0, { rng: calme });
+  d.evenement = { type: "gants", id: "bot" };
+  chauffer(d, "bot", 2, { rng: suite([0.1, 0]) });
+  assert.deepStrictEqual([d.manches, d.actif, d.temp], [{ joueur: 0, bot: 0 }, "joueur", TEMP_DEPART + 5]);
+  assert.strictEqual(d.evenement.type, "glacon");
+  // Sauvé par ses propres Gants : il la renvoie, elle explose chez l'autre
+  const e = creerDuel({ rng: calme });
+  e.seuil = TEMP_DEPART + 5;
+  e.evenement = { type: "gants", id: "joueur" };
+  chauffer(e, "joueur", 0, { rng: suite([0.1, 3 / 6]) });
+  assert.deepStrictEqual([e.actif, e.evenement.type, e.manches.joueur], ["bot", "gants", 0]);
+  chauffer(e, "bot", 0, { rng: calme });
+  assert.deepStrictEqual(e.manches, { joueur: 0, bot: 1 });
 }
 
 {

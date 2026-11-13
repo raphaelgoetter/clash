@@ -91,7 +91,7 @@ function nouvelleManche(d, commence, rng) {
     // Chauffes de la manche : [{ id, v }] (v : degrés ajoutés)
     chauffes: [],
     // Indices vus à chaque début de tour : [{ t, i }] ; bornes hautes
-    // révélées par les Gants : [températures atteintes sans exploser]
+    // révélées par les Gants : [températures qui auraient fait exploser]
     obs: [],
     bornes: [],
     actif: commence,
@@ -116,6 +116,10 @@ function debutTour(d, rng, { rejoue = false } = {}) {
     }
   }
   if (d.evenement?.type !== "courant") d.obs.push({ t: d.temp, i: etatPatate(d) });
+  // Patate reçue brûlante (renvoyée par des Gants) : elle explose aussitôt,
+  // sauf si un Glaçon l'a refroidie sous le seuil ou si ses propres Gants
+  // permettent de la renvoyer
+  if (d.temp >= d.seuil && d.evenement?.type !== "gants") cloreManche(d, d.actif, rng, { renvoi: true });
 }
 
 // `id` chauffe la patate avec la chauffe n° `k` (0, 1, 2).
@@ -128,13 +132,17 @@ export function chauffer(d, id, k, { rng = Math.random } = {}) {
   d.vue += 1;
   const avant = d.temp;
   if (avant + chauffe >= d.seuil) {
-    // Gants : la patate ne chauffe pas et passe ; tout le monde sait alors
-    // qu'elle allait exploser
+    // Gants : la patate passe brûlante à l'adversaire (chauffe comprise) ;
+    // elle lui explose dans les mains au début de son tour, sauf si son
+    // événement le sauve (debutTour())
     if (evenement?.type === "gants") {
-      d.bornes.push(avant + chauffe);
+      const manches = d.historique.length;
+      d.temp = avant + chauffe;
+      d.chauffes.push({ id, v: chauffe });
+      d.bornes.push(d.temp);
       d.dernier = { id, chauffe, evenement, gants: true, manche: d.numero };
       passer(d, rng);
-      return {};
+      return d.historique.length > manches ? { explose: true } : {};
     }
     d.temp = avant + chauffe;
     d.chauffes.push({ id, v: chauffe });
@@ -162,9 +170,10 @@ function passer(d, rng) {
 
 // Manche perdue par `perdant` : point à l'autre, partie gagnée à
 // MANCHES_GAGNANTES, sinon nouvelle manche que le perdant commence.
-function cloreManche(d, perdant, rng) {
+// `renvoi` : explosion d'une patate renvoyée par des Gants.
+function cloreManche(d, perdant, rng, { renvoi = false } = {}) {
   const gagnant = adversaire(perdant);
-  d.historique.push({ gagnant, perdant, seuil: d.seuil, temp: d.temp, chauffes: d.chauffes.map((c) => ({ ...c })) });
+  d.historique.push({ gagnant, perdant, seuil: d.seuil, temp: d.temp, chauffes: d.chauffes.map((c) => ({ ...c })), ...(renvoi ? { renvoi: true } : {}) });
   d.manches[gagnant] += 1;
   if (d.manches[gagnant] >= MANCHES_GAGNANTES) {
     Object.assign(d, { termine: true, gagnant, evenement: null });
@@ -198,7 +207,8 @@ export function choixKevina(d, id, { erreur = 0, rng = Math.random } = {}) {
   const ev = evenementDe(d, id);
   if (ev?.type === "impose") return CHAUFFE_IMPOSEE;
   if (rng() < erreur) return Math.floor(rng() * CHAUFFES.length);
-  // Gants : aucun risque, autant chauffer au maximum
+  // Gants : aucun risque, et chauffer au maximum donne le plus de chances
+  // de renvoyer une patate brûlante
   if (ev?.type === "gants") return CHAUFFES.length - 1;
   const set = ev?.type === "thermo" ? [d.seuil] : seuilsPossibles(d);
   const valeurs = chauffesDe(d, id).map((c) => {
