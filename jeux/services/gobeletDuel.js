@@ -535,6 +535,19 @@ export async function checkAndResolveManche(gid) {
   return { resolved: true, ...outcome };
 }
 
+// Pure : meilleure combinaison de chaque joueur sur la partie, affichée dans
+// le récap de fin. Seul un score strictement supérieur la remplace (à
+// égalité, la première obtenue reste) ; une manche à 0 point ne compte pas.
+export function withBestCombos(bestCombos = {}, results) {
+  const next = { ...bestCombos };
+  for (const r of results) {
+    if (r.points > 0 && r.points > (next[r.discordId]?.points ?? 0)) {
+      next[r.discordId] = { category: r.category, points: r.points };
+    }
+  }
+  return next;
+}
+
 // Pure : calcule les résultats de la manche et le classement mis à jour,
 // sans écrire dans Redis.
 export function computeMancheOutcome(state, hands, currentPoints) {
@@ -543,10 +556,11 @@ export function computeMancheOutcome(state, hands, currentPoints) {
   for (const r of results) {
     pointsAfter[r.discordId] = (pointsAfter[r.discordId] || 0) + r.points;
   }
+  const bestCombos = withBestCombos(state.bestCombos, results);
   const mancheSuivante = state.manche + 1;
   const estFinDePartie = mancheSuivante > state.totalManches;
   const ranking = estFinDePartie ? buildRanking(pointsAfter) : null;
-  return { results, pointsAfter, mancheSuivante, estFinDePartie, ranking };
+  return { results, pointsAfter, bestCombos, mancheSuivante, estFinDePartie, ranking };
 }
 
 async function resolveManche(gid, state, hands) {
@@ -561,7 +575,7 @@ async function resolveManche(gid, state, hands) {
   }
 
   if (outcome.estFinDePartie) {
-    const newState = { ...state, lastActivityAt: new Date().toISOString(), termine: true };
+    const newState = { ...state, bestCombos: outcome.bestCombos, lastActivityAt: new Date().toISOString(), termine: true };
     await writeState(gid, newState);
     const highScore = await updateHighScore(gid, state.totalManches, outcome.ranking);
     return {
@@ -579,6 +593,7 @@ async function resolveManche(gid, state, hands) {
     // Conservé pour réafficher le bilan de la manche précédente à chaque
     // rafraîchissement du message public (pas seulement à la résolution).
     lastResults: outcome.results,
+    bestCombos: outcome.bestCombos,
     lastActivityAt: new Date().toISOString(),
   };
   await writeState(gid, newState);

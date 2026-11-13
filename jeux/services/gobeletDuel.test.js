@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, gameIdFor, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking } from "./gobeletDuel.js";
+import { applyJoin, gameIdFor, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking, withBestCombos } from "./gobeletDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -121,6 +121,24 @@ async function main() {
     const outcome = computeMancheOutcome(state, hands, {});
     assert.strictEqual(outcome.results[0].category, "Gobelet");
     assert.strictEqual(outcome.pointsAfter.a, 60);
+  }
+
+  // ── withBestCombos — meilleure combinaison de la partie par joueur ──
+  {
+    const before = { a: { category: "Full", points: 25 } };
+    const next = withBestCombos(before, [
+      { discordId: "a", category: "Brelan", points: 25 }, // égalité : la première reste
+      { discordId: "b", category: "Aucune combinaison", points: 0 }, // 0 point : ignoré
+    ]);
+    assert.deepStrictEqual(next, { a: { category: "Full", points: 25 } });
+    const after = withBestCombos(next, [{ discordId: "a", category: "Gobelet", points: 60 }]);
+    assert.deepStrictEqual(after.a, { category: "Gobelet", points: 60 });
+    assert.deepStrictEqual(before.a, { category: "Full", points: 25 }); // jamais muté
+    const state = baseState({ manche: 2, totalManches: 5, bestCombos: before });
+    const outcome = computeMancheOutcome(state, {
+      a: { dice: [6, 6, 6, 6, 6], status: "termine", category: "Gobelet", points: 60, username: "Alice" },
+    }, {});
+    assert.deepStrictEqual(outcome.bestCombos.a, { category: "Gobelet", points: 60 });
   }
 
   // ── applyJoin — en solo, réservé au joueur qui a lancé ──

@@ -335,6 +335,21 @@ async function buildTableEmbed(
   };
 }
 
+// Meilleure combinaison de la partie par joueur (`state.bestCombos`) : une
+// ligne en solo, une par joueur (ordre du classement) à 2.
+function formatBestCombosLines(state, resolvedRanking) {
+  const combos = state.bestCombos || {};
+  const label = (combo) =>
+    combo ? `**${combo.category}** (${combo.points} pt${combo.points > 1 ? "s" : ""})` : "aucune";
+  if (state.maxPlayers === 1) {
+    return [`🎯 Meilleure combinaison : ${label(combos[state.players[0]])}`];
+  }
+  return [
+    "**🎯 Meilleures combinaisons :**",
+    ...resolvedRanking.map((r) => `${r.username} : ${label(combos[r.discordId])}`),
+  ];
+}
+
 async function buildFinalEmbed(state, results, ranking, highScore) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
@@ -343,16 +358,22 @@ async function buildFinalEmbed(state, results, ranking, highScore) {
     })),
   );
 
-  const lastManchePoints = Math.max(...results.map((r) => r.points));
-  const lastWinners = results.filter((r) => r.points === lastManchePoints);
-  const lastWinnerNames = await Promise.all(
-    lastWinners.map((w) => resolveDisplayName(w.discordId, w.username)),
-  );
+  const lines = [];
+  // Solo : pas de bilan de la dernière manche, redondant avec le classement.
+  if (state.maxPlayers > 1) {
+    const lastManchePoints = Math.max(...results.map((r) => r.points));
+    const lastWinners = results.filter((r) => r.points === lastManchePoints);
+    const lastWinnerNames = await Promise.all(
+      lastWinners.map((w) => resolveDisplayName(w.discordId, w.username)),
+    );
+    lines.push(
+      `**📊 Bilan de la dernière manche**`,
+      formatMancheScoreLine(state, lastManchePoints, lastWinnerNames),
+      "",
+    );
+  }
 
-  const lines = [
-    `**📊 Bilan de la dernière manche**`,
-    formatMancheScoreLine(state, lastManchePoints, lastWinnerNames),
-    "",
+  lines.push(
     "**Classement final :**",
     ...(resolvedRanking.length
       ? resolvedRanking.map(
@@ -360,7 +381,9 @@ async function buildFinalEmbed(state, results, ranking, highScore) {
             `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
         )
       : ["Personne n'a marqué de point."]),
-  ];
+    "",
+    ...formatBestCombosLines(state, resolvedRanking),
+  );
 
   if (highScore) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
