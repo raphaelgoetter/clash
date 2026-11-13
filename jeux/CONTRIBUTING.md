@@ -431,7 +431,7 @@ Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scr
 
 Bouton « 🛂 Mon passeport » de `/mini-jeux` (`custom_id: minijeux_participation`, `buildParticipationEmbed()` de `jeux/discord/handlers/minijeux.js`), éphémère :
 
-- **Cette semaine** : une ligne par mini-jeu hebdomadaire actif (✅/❌ manche en cours, score et rang de saison s'il a des points ; ➖ sans manche), puis le jeu spécial en cours.
+- **Cette semaine** : une ligne par mini-jeu hebdomadaire actif : ✅ (interaction avec la manche en cours : tentative, indice ou réponse, trouvée ou non) / ❌, puis score et rang de saison (« 0 pt » sans rang tant qu'aucune manche n'est trouvée) ; ➖ sans manche. Pas de jeu spécial.
 - **Tampons de la saison** (saison = mois calendaire, heure de Paris) :
   1. jouer à `OBJECTIFS.jeux` (4) mini-jeux hebdomadaires différents ;
   2. jouer `OBJECTIFS.manches` (10) manches hebdomadaires ;

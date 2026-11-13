@@ -910,22 +910,11 @@ async function buildRegularParticipationLine(game, discordId) {
 
   if (!state) return `➖ **${game.title}** : pas encore de manche`;
   const entry = ranking.find((e) => e.discordId === discordId);
+  // Pas encore au classement (aucune manche trouvée cette saison) : 0 pt
   const score = entry
     ? ` · ${formatPoints(entry.totalScore)} (${formatRank(svc.findTiedRank(ranking, discordId, "totalScore"))}/${ranking.length})`
-    : "";
+    : ` · ${formatPoints(0)}`;
   return `${played ? "✅" : "❌"} **${game.title}**${score}`;
-}
-
-async function buildSpecialParticipationLine(discordId) {
-  const active = await findActiveSpecialGame();
-  if (!active) return null;
-  const { game, state } = active;
-  const participation = await game.participation(state, discordId);
-  if (!participation) return `🎲 **${game.title}** : présentation du jeu`;
-  const status =
-    participation.statusLabel ?? (participation.played ? "✅ Déjà joué aujourd'hui" : "❌ Pas encore joué aujourd'hui");
-  const score = participation.scoreLabel ? ` · ${participation.scoreLabel}` : "";
-  return `🎲 **${game.title}** : ${status}${score}`;
 }
 
 function buildTamponsBlock({ seasonId, tampons, complet }) {
@@ -947,14 +936,13 @@ function ligneCompteurs({ passeports, boss }) {
 // Boss, bouton « Affronter Kévina » pour les qualifiés (secours des MP).
 export async function buildPasseportMessage(discordId, username, now = new Date()) {
   const games = await resolveRegularGames(now);
-  const [regularLines, specialLine, passeport, compteurs, boss] = await Promise.all([
+  const [regularLines, passeport, compteurs, boss] = await Promise.all([
     Promise.all(games.map((game) => buildRegularParticipationLine(game, discordId))),
-    buildSpecialParticipationLine(discordId),
     lirePasseport(discordId, { now }),
     lireCompteurs(discordId),
     bossEnCours(now),
   ]);
-  const semaine = [...regularLines, specialLine].filter(Boolean);
+  const semaine = regularLines;
   const qualifie = boss?.qualifies.includes(discordId);
   const blocs = [
     `## Cette semaine\n${semaine.join("\n")}`,

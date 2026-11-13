@@ -156,7 +156,7 @@ export function calculerTampons({ objectifs = OBJECTIFS, manches, victoiresKevin
     },
     {
       cle: "special",
-      libelle: aucunSpecial ? "Participer à un jeu spécial (validé d'office s'il n'y en a pas ce mois-ci)" : "Participer à un jeu spécial",
+      libelle: "Participer à un jeu spécial",
       valeur: null,
       objectif: null,
       valide: speciauxJoueur.length > 0 || (aucunSpecial && moisTermine),
