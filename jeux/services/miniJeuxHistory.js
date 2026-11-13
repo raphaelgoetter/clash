@@ -32,6 +32,7 @@ import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
 import { listManches as listBangManches } from "./bang.js";
 import { listManches as listQuiEstCeManches } from "./quiestce.js";
+import { PREMIERE_SAISON_BOSS, championsBoss } from "./boss.js";
 
 // Ordre d'affichage canonique — indépendant de l'ordre de découverte des
 // données (les trois groupes ci-dessous tournent en parallèle).
@@ -327,9 +328,19 @@ export async function getSeasonWinnersHistory(now = new Date()) {
   const currentSeasonKey = getCurrentSeasonBounds(now).start.toISOString();
   seasonMap.delete(currentSeasonKey);
 
-  return [...seasonMap.values()]
-    .map((season) => ({
+  const seasons = [...seasonMap.values()];
+  // Boss de fin de saison (clos le 8 du mois suivant ; conservé 120 jours)
+  const boss = await Promise.all(
+    seasons.map((season) => {
+      const seasonId = seasonIdForDate(season.start);
+      return seasonId >= PREMIERE_SAISON_BOSS ? championsBoss(seasonId) : null;
+    }),
+  );
+
+  return seasons
+    .map((season, i) => ({
       start: season.start,
+      boss: boss[i],
       end: season.end,
       games: [...season.games.entries()]
         .map(([key, entry]) => ({

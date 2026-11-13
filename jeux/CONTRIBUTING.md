@@ -20,7 +20,7 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 | Module | Contenu |
 | --- | --- |
-| `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` |
+| `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
 | `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/mascarade`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Six et Tourneboule, archivés) |
 
@@ -496,6 +496,8 @@ Déroulé (`postBoss.js`, cron `boss.yml`, chaque jour 8h26 UTC, idempotent) :
 | `boss:<seasonId>:annonce`, `boss:<seasonId>:cloture` | HASH | marqueurs d'idempotence |
 
 Toutes ces clés expirent après 120 jours.
+
+`/mini-jeux-history` affiche le champion du Boss clos sur la ligne du mois (`**Novembre 2026** · 👑 Pseudo`, ex aequo séparés par « / », « 👑 Kévina invaincue » si personne ne l'a battue, rien sans qualifié) via `championsBoss()` : historique limité à 120 jours, comme les clés.
 
 ---
 

@@ -2,6 +2,7 @@ import assert from "assert";
 import { Redis } from "@upstash/redis";
 import {
   BOSS_JEUX,
+  championsBoss,
   choisirJeu,
   classer,
   clotureDe,
@@ -124,6 +125,11 @@ if (Redis.isFake) {
   assert.strictEqual(c1.boss, r.tentative.resultat === "victoire" ? 1 : 0);
   assert.deepStrictEqual(await lireCompteurs("2"), { passeports: 1, boss: 0 });
   assert.deepStrictEqual(await lireCompteurs("3"), { passeports: 0, boss: 0 });
+
+  // Historique : champion(s) seulement si Kévina est vaincue, rien avant la clôture
+  const champions = await championsBoss(139);
+  assert.deepStrictEqual(champions.champions, r.tentative.resultat === "victoire" ? ["un"] : []);
+  assert.strictEqual(await championsBoss(140), null);
 }
 
 console.log("boss.test.js OK");

@@ -67,8 +67,11 @@ function buildHistoryEmbed(seasons, offset) {
   const page = seasons.slice(offset, offset + PAGE_SIZE);
 
   const blocks = page.map((season) => {
-    const label =
-      `**${libelleMoisAnnee(season.start)}**`;
+    // Champion du Boss de fin de saison sur la ligne du mois
+    const boss = season.boss
+      ? ` · 👑 ${season.boss.champions.length ? season.boss.champions.join(" / ") : "Kévina invaincue"}`
+      : "";
+    const label = `**${libelleMoisAnnee(season.start)}**${boss}`;
     const lines = season.games.map((g) => {
       const names = g.winners.map((w) => `**${w.name}**`).join(" / ");
       return `${g.label} : 🏆 ${names}`;

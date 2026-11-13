@@ -272,6 +272,18 @@ export async function listerTentatives(seasonId) {
   return tentatives.filter((t) => t.statut);
 }
 
+/** Champions d'un Boss clos, pour /mini-jeux-history : { champions:
+ * [pseudo] } (premiers du classement s'ils ont vaincu Kévina, sinon liste
+ * vide : Kévina invaincue). null si le Boss n'existe pas (ou plus : 120
+ * jours), n'est pas clos ou n'avait aucun qualifié. */
+export async function championsBoss(seasonId) {
+  const boss = await lireBoss(seasonId);
+  if (!boss?.cloture || !boss.qualifies?.length) return null;
+  const classement = classer(await listerTentatives(seasonId));
+  const champions = classement.filter((t) => t.rang === 1 && t.resultat === "victoire").map((t) => t.pseudo ?? "?");
+  return { jeu: boss.jeu, champions };
+}
+
 /** Clôture (le 8) : parties encore en cours perdues, classement, compteurs
  * permanents (passeport complété pour chaque qualifié, Boss vaincu pour
  * chaque victoire). Idempotente (marqueur posé avant les compteurs).
