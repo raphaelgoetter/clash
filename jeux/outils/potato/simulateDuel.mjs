@@ -7,7 +7,7 @@
 // Usage : node jeux/outils/potato/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
 // ex. : node jeux/outils/potato/simulateDuel.mjs 5000 kevina kevinae0.3
 // Le premier joueur de la partie alterne.
-import { choixKevina, creerDuel, chauffer, etatPatate, evenementDe } from "../../services/potatoRules.js";
+import { CHAUFFE_IMPOSEE, choixKevina, creerDuel, chauffer, etatVisible, evenementDe } from "../../services/potatoRules.js";
 
 const PARTIES = Number(process.argv[2] || 2000);
 const PROFILS = { joueur: process.argv[3] || "kevina", bot: process.argv[4] || "kevina" };
@@ -21,7 +21,7 @@ function profil(nom) {
       const ev = evenementDe(d, id);
       if (ev?.type === "gants") return 2;
       if (ev?.type === "thermo") return [2, 1, 0].find((k) => d.temp + [5, 10, 15][k] < d.seuil) ?? 0;
-      return etatPatate(d) === "froide" ? 2 : 0;
+      return etatVisible(d) === "froide" ? 2 : 0;
     };
   }
   const m = /^kevina(?:e([\d.]+))?$/.exec(nom);
@@ -29,7 +29,9 @@ function profil(nom) {
   const erreur = Number(m[1] ?? 0);
   return (d, id) => choixKevina(d, id, { erreur });
 }
-const P = { joueur: profil(PROFILS.joueur), bot: profil(PROFILS.bot) };
+// Chauffe imposée : tous les profils s'y plient
+const plie = (f) => (d, id) => (evenementDe(d, id)?.type === "impose" ? CHAUFFE_IMPOSEE : f(d, id));
+const P = { joueur: plie(profil(PROFILS.joueur)), bot: plie(profil(PROFILS.bot)) };
 
 const res = { joueur: 0, bot: 0 };
 let manches = 0;

@@ -7,8 +7,9 @@
 // tour, on la chauffe de +5, +10 ou +15 °C puis on la passe : celui qui
 // atteint le seuil la fait exploser et perd la manche. Premier à
 // MANCHES_GAGNANTES manches. Indices : la patate fume (écart ≤ FUME) puis
-// siffle (écart ≤ SIFFLE). Un tour sur quatre environ, un événement tombe
-// pour le joueur actif (Glaçon, Four, Thermomètre, Gants).
+// siffle (écart ≤ SIFFLE). Un peu plus d'un tour sur trois, un événement
+// tombe pour le joueur actif (Glaçon, Four, Thermomètre, Gants, Retour à
+// l'envoyeur, Courant d'air, Chauffe imposée).
 //
 // Sièges du moteur : "joueur" et "bot" (en 1v1, deux joueurs).
 //
@@ -25,8 +26,10 @@ export const CHAUFFES = [5, 10, 15];
 export const FUME = 25;
 export const SIFFLE = 10;
 export const GLACON = 15;
-export const P_EVENEMENT = 0.25;
-export const EVENEMENTS = ["glacon", "four", "thermo", "gants"];
+export const P_EVENEMENT = 0.4;
+export const EVENEMENTS = ["glacon", "four", "thermo", "gants", "retour", "courant", "impose"];
+// Chauffe imposée : seule la chauffe n° CHAUFFE_IMPOSEE (+10 °C) est permise
+export const CHAUFFE_IMPOSEE = 1;
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
 
@@ -37,6 +40,9 @@ export function indice(ecart) {
 }
 
 export const etatPatate = (d) => indice(d.seuil - d.temp);
+
+// État montré à tous : caché pendant un Courant d'air
+export const etatVisible = (d) => (d.evenement?.type === "courant" ? "cache" : etatPatate(d));
 
 // Événement du tour de `id` (null s'il n'en a pas)
 export const evenementDe = (d, id) => (d.evenement?.id === id ? d.evenement : null);
@@ -50,6 +56,9 @@ export function reperes(d) {
 
 // Chauffes proposées à `id` (doublées par le Four)
 export const chauffesDe = (d, id) => CHAUFFES.map((c) => c * (evenementDe(d, id)?.type === "four" ? 2 : 1));
+
+// Chauffe n° `k` permise à `id` (Chauffe imposée : +10 °C seulement)
+export const chauffePermise = (d, id, k) => k >= 0 && k < CHAUFFES.length && (evenementDe(d, id)?.type !== "impose" || k === CHAUFFE_IMPOSEE);
 
 function tirerSeuil(rng) {
   const n = (SEUIL_MAX - SEUIL_MIN) / PAS + 1;
@@ -92,12 +101,13 @@ function nouvelleManche(d, commence, rng) {
 }
 
 // Début de tour : événement éventuel (Glaçon appliqué aussitôt), puis
-// indice visible noté.
-function debutTour(d, rng) {
+// indice visible noté (sauf pendant un Courant d'air). `rejoue` : le joueur
+// rejoue après un Retour à l'envoyeur (pas de second Retour d'affilée).
+function debutTour(d, rng, { rejoue = false } = {}) {
   d.evenement = null;
   if (rng() < P_EVENEMENT) {
     // Glaçon sans effet à température de départ : un autre événement
-    const possibles = d.temp > TEMP_DEPART ? EVENEMENTS : EVENEMENTS.filter((e) => e !== "glacon");
+    const possibles = EVENEMENTS.filter((e) => !(e === "glacon" && d.temp <= TEMP_DEPART) && !(e === "retour" && rejoue));
     const type = possibles[Math.floor(rng() * possibles.length)];
     d.evenement = { type, id: d.actif };
     if (type === "glacon") {
@@ -105,15 +115,15 @@ function debutTour(d, rng) {
       d.temp = Math.max(TEMP_DEPART, d.temp - GLACON);
     }
   }
-  d.obs.push({ t: d.temp, i: etatPatate(d) });
+  if (d.evenement?.type !== "courant") d.obs.push({ t: d.temp, i: etatPatate(d) });
 }
 
 // `id` chauffe la patate avec la chauffe n° `k` (0, 1, 2).
 export function chauffer(d, id, k, { rng = Math.random } = {}) {
   if (d.termine) return { erreur: "termine" };
   if (d.actif !== id) return { erreur: "pasTonTour" };
+  if (!chauffePermise(d, id, k)) return { erreur: k >= 0 && k < CHAUFFES.length ? "impose" : "choix" };
   const chauffe = chauffesDe(d, id)[k];
-  if (!chauffe) return { erreur: "choix" };
   const evenement = evenementDe(d, id);
   d.vue += 1;
   const avant = d.temp;
@@ -135,6 +145,12 @@ export function chauffer(d, id, k, { rng = Math.random } = {}) {
   d.temp = avant + chauffe;
   d.chauffes.push({ id, v: chauffe });
   d.dernier = { id, chauffe, evenement, manche: d.numero };
+  // Retour à l'envoyeur : la patate revient, le même joueur rejoue
+  if (evenement?.type === "retour") {
+    d.dernier.retour = true;
+    debutTour(d, rng, { rejoue: true });
+    return {};
+  }
   passer(d, rng);
   return {};
 }
@@ -162,7 +178,9 @@ function cloreManche(d, perdant, rng) {
 // début de la manche, bornes révélées par les Gants) et choisit la chauffe
 // qui minimise son risque d'explosion tout en maximisant celui de
 // l'adversaire au tour suivant (même avec sa plus petite chauffe).
-// Égalité : au hasard. Avec la probabilité `erreur`, chauffe au hasard.
+// Égalité : au hasard. Avec la probabilité `erreur`, chauffe au hasard
+// (jamais contre une Chauffe imposée). Retour à l'envoyeur : seul son propre
+// risque compte, puisqu'elle rejoue.
 
 // Seuils compatibles avec tout ce qui est public dans la manche
 export function seuilsPossibles(d) {
@@ -177,8 +195,9 @@ export function seuilsPossibles(d) {
 const part = (set, t) => set.filter((s) => t >= s).length / set.length;
 
 export function choixKevina(d, id, { erreur = 0, rng = Math.random } = {}) {
-  if (rng() < erreur) return Math.floor(rng() * CHAUFFES.length);
   const ev = evenementDe(d, id);
+  if (ev?.type === "impose") return CHAUFFE_IMPOSEE;
+  if (rng() < erreur) return Math.floor(rng() * CHAUFFES.length);
   // Gants : aucun risque, autant chauffer au maximum
   if (ev?.type === "gants") return CHAUFFES.length - 1;
   const set = ev?.type === "thermo" ? [d.seuil] : seuilsPossibles(d);
@@ -186,7 +205,8 @@ export function choixKevina(d, id, { erreur = 0, rng = Math.random } = {}) {
     const t = d.temp + c;
     const p = part(set, t);
     const reste = set.filter((s) => s > t);
-    const q = reste.length ? part(reste, t + CHAUFFES[0]) : 0;
+    // Retour à l'envoyeur : c'est elle qui rejoue, piéger l'adversaire ne sert à rien
+    const q = reste.length && ev?.type !== "retour" ? part(reste, t + CHAUFFES[0]) : 0;
     return -p + (1 - p) * q;
   });
   const best = Math.max(...valeurs);

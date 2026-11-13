@@ -32,11 +32,13 @@ export const COULEURS = ["#4fc3f7", "#f06292"];
 
 const ETATS = {
   froide: { corps: "#d9a65b", ombre: "#a8743a" },
+  // Courant d'air : état caché (couleur neutre, ni visage ni vapeur)
+  cache: { corps: "#b9a48a", ombre: "#7d6a55" },
   fume: { corps: "#e58e45", ombre: "#b05f22" },
   siffle: { corps: "#e2533a", ombre: "#9e2c1d" },
 };
-const CODES_ETAT = { froide: "f", fume: "u", siffle: "s" };
-const CODES_EVENEMENT = { glacon: "g", four: "o", thermo: "t", gants: "a" };
+const CODES_ETAT = { froide: "f", fume: "u", siffle: "s", cache: "c" };
+const CODES_EVENEMENT = { glacon: "g", four: "o", thermo: "t", gants: "a", retour: "r", courant: "c", impose: "i" };
 const inverse = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [v, k]));
 
 function escapeXml(value) {
@@ -135,9 +137,12 @@ function patate(cx, cy, etat, s = 1, { visage = true } = {}) {
     siffle: `<circle cx="-22" cy="-10" r="10" fill="#fff"/><circle cx="-22" cy="-10" r="4" fill="#3b2412"/>
       <circle cx="18" cy="-12" r="10" fill="#fff"/><circle cx="18" cy="-12" r="4" fill="#3b2412"/>
       <ellipse cx="-2" cy="20" rx="8" ry="10" fill="#3b2412"/>`,
+    // Courant d'air : un « ? » à la place du visage, rafales de vent
+    cache: `<text x="0" y="22" font-family="${FONT_FAMILY}" font-size="64" text-anchor="middle" fill="#5d4a36">?</text>
+      <path d="M -125 -40 q 22 -12 44 0 t 44 0 M -128 0 q 22 -12 44 0 M -125 40 q 22 -12 44 0 t 44 0" stroke="#cfe8f5" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/>`,
   }[etat];
   const vapeur =
-    etat === "froide" || !visage
+    etat === "froide" || etat === "cache" || !visage
       ? ""
       : [-30, 0, 30]
           .slice(0, etat === "fume" ? 2 : 3)
@@ -216,6 +221,12 @@ const ICONES = {
   four: (x, y) =>
     `<path d="M ${x} ${y - 16} C ${x + 14} ${y - 4} ${x + 12} ${y + 14} ${x} ${y + 15} C ${x - 12} ${y + 14} ${x - 14} ${y - 2} ${x} ${y - 16} Z" fill="#ff7043"/><path d="M ${x} ${y - 2} C ${x + 6} ${y + 4} ${x + 5} ${y + 12} ${x} ${y + 12} C ${x - 5} ${y + 12} ${x - 6} ${y + 4} ${x} ${y - 2} Z" fill="#ffd54f"/>`,
   thermo: (x, y) => `<rect x="${x - 4}" y="${y - 16}" width="8" height="24" rx="4" fill="#ece3f0"/><circle cx="${x}" cy="${y + 10}" r="7" fill="${ROUGE}"/>`,
+  retour: (x, y) =>
+    `<path d="M ${x + 11} ${y - 4} A 12 12 0 1 0 ${x + 8} ${y + 9}" stroke="#ffd54f" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M ${x + 4} ${y - 9} L ${x + 13} ${y - 6} L ${x + 15} ${y - 15} Z" fill="#ffd54f"/>`,
+  courant: (x, y) =>
+    `<path d="M ${x - 14} ${y - 7} q 10 -6 20 0 q 6 4 10 -2 M ${x - 14} ${y + 1} h 24 M ${x - 14} ${y + 9} q 10 6 20 0" stroke="#cfe8f5" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+  impose: (x, y) =>
+    `<circle cx="${x}" cy="${y}" r="13" fill="none" stroke="${DANGER}" stroke-width="3.5"/><circle cx="${x}" cy="${y}" r="7" fill="none" stroke="${DANGER}" stroke-width="3.5"/><circle cx="${x}" cy="${y}" r="2.5" fill="${DANGER}"/>`,
   gants: (x, y) =>
     `<path d="M ${x - 10} ${y + 15} L ${x - 10} ${y - 4} Q ${x - 10} ${y - 15} ${x - 4} ${y - 15} L ${x + 6} ${y - 15} Q ${x + 11} ${y - 15} ${x + 11} ${y - 8} L ${x + 11} ${y + 15} Z" fill="#81c784" stroke="#388e3c" stroke-width="3"/>`,
 };
@@ -224,6 +235,9 @@ function libelleEvenement(evenement, explosion) {
   if (evenement === "glacon") return `Glaçon : −${GLACON} °C`;
   if (evenement === "four") return "Four : chauffe ×2";
   if (evenement === "thermo") return `Explosion à ${explosion} °C`;
+  if (evenement === "retour") return "Retour : tu rejoues après";
+  if (evenement === "courant") return "Courant d'air : état caché";
+  if (evenement === "impose") return "Chauffe imposée : +10 °C";
   return "Gants : protégé ce tour";
 }
 

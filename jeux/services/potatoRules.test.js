@@ -8,8 +8,10 @@ import {
   chauffer,
   chauffesDe,
   choixKevina,
+  chauffePermise,
   creerDuel,
   etatPatate,
+  etatVisible,
   indice,
   reperes,
   seuilsPossibles,
@@ -87,6 +89,31 @@ assert.deepStrictEqual([indice(30), indice(25), indice(15), indice(10), indice(5
   assert.deepStrictEqual(chauffer(d, "joueur", 2, { rng: calme }), {});
   assert.deepStrictEqual([d.temp, d.actif, d.bornes, d.manches.bot], [TEMP_DEPART, "bot", [TEMP_DEPART + 15], 0]);
   assert.strictEqual(d.dernier.gants, true);
+}
+
+{
+  // Retour à l'envoyeur : la patate revient, le même joueur rejoue (pas de second Retour)
+  const d = creerDuel({ rng: calme });
+  d.evenement = { type: "retour", id: "joueur" };
+  chauffer(d, "joueur", 0, { rng: suite([0.1, 0.99]) });
+  assert.deepStrictEqual([d.actif, d.temp, d.dernier.retour], ["joueur", TEMP_DEPART + 5, true]);
+  assert.notStrictEqual(d.evenement?.type, "retour");
+  // Courant d'air : état caché à tous, aucun indice noté
+  const e = creerDuel({ rng: calme });
+  const avant = e.obs.length;
+  e.evenement = null;
+  chauffer(e, "joueur", 0, { rng: suite([0.1, 5.5 / 7]) });
+  assert.strictEqual(e.evenement.type, "courant");
+  assert.strictEqual(etatVisible(e), "cache");
+  assert.strictEqual(e.obs.length, avant);
+  // Chauffe imposée : +10 °C seulement, Kévina s'y plie même en erreur
+  const f = creerDuel({ rng: calme });
+  f.evenement = { type: "impose", id: "joueur" };
+  assert.deepStrictEqual([0, 1, 2].map((k) => chauffePermise(f, "joueur", k)), [false, true, false]);
+  assert.deepStrictEqual(chauffer(f, "joueur", 2, { rng: calme }), { erreur: "impose" });
+  assert.strictEqual(choixKevina({ ...f, evenement: { type: "impose", id: "bot" } }, "bot", { erreur: 1 }), 1);
+  assert.deepStrictEqual(chauffer(f, "joueur", 1, { rng: calme }), {});
+  assert.strictEqual(f.temp, TEMP_DEPART + 10);
 }
 
 // ── Seuils possibles et Kévina ──

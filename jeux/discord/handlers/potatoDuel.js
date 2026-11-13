@@ -44,10 +44,11 @@ import {
   SIFFLE,
   TEMP_DEPART,
   adversaire,
+  chauffePermise,
   chauffer,
   chauffesDe,
   choixKevina,
-  etatPatate,
+  etatVisible,
   evenementDe,
   reperes,
 } from "../../services/potatoRules.js";
@@ -213,7 +214,7 @@ function urlVue(d, moi) {
   const ev = d.actif === moi ? evenementDe(d, moi) : null;
   const param = encodeVue({
     temp: d.temp,
-    etat: etatPatate(d),
+    etat: etatVisible(d),
     evenement: ev?.type ?? null,
     explosion: ev?.type === "thermo" ? d.seuil : null,
     ...reperes(d),
@@ -248,6 +249,9 @@ function phraseAction(x, S, toi) {
   if (ev === "thermo") return `🌡️ ${S} ${v("lis", "lit")} le thermomètre, puis ${v("chauffes", "chauffe")} de ${c}`;
   if (ev === "four") return `♨️ ${S} ${v("passes", "passe")} la patate au four : ${c}`;
   if (ev === "gants") return `🧤 ${S} ${v("chauffes", "chauffe")} de ${c} avec les gants`;
+  if (ev === "retour") return `🔁 ${S} ${v("chauffes", "chauffe")} de ${c}, et la patate ${v("te", "lui")} revient`;
+  if (ev === "courant") return `🌬️ ${S} ${v("chauffes", "chauffe")} de ${c} dans un courant d'air`;
+  if (ev === "impose") return `🎯 Chauffe imposée : ${S.toLowerCase() === "tu" ? "tu" : S} ${v("chauffes", "chauffe")} de ${c}`;
   return `${S} ${v("chauffes", "chauffe")} la patate de ${c}`;
 }
 
@@ -278,6 +282,7 @@ const ERREURS = {
   pasTonTour: "Ce n'est pas ton tour.",
   choix: "Choix impossible.",
   perime: "La patate a changé depuis : rejoue sur cette vue.",
+  impose: "Chauffe imposée : +10 °C seulement.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
 };
@@ -353,10 +358,19 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
   }
   const consigne = monTour ? "À toi : chauffe la patate, puis elle passe." : `⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`;
   const limite = monTour && echeance ? [`⏰ Limite <t:${echeance}:R>`] : [];
-  const lignes = [`Manche **${d.numero}** · premier à ${MANCHES_GAGNANTES}`, ...(texte ? ["", texte] : []), "", consigne, ...limite];
+  const ev = monTour ? evenementDe(d, moi) : null;
+  const evenement = ev ? ["", LIGNES_EVENEMENT[ev.type](d)] : [];
+  const lignes = [`Manche **${d.numero}** · premier à ${MANCHES_GAGNANTES}`, ...(texte ? ["", texte] : []), ...evenement, "", consigne, ...limite];
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), image: { url: urlVue(d, moi) }, color: POTATO_COLOR };
   const chauffes = monTour
-    ? chauffesDe(d, moi).map((c, k) => ({ type: 2, style: 2, label: `+${c} °C`, emoji: { name: "🔥" }, custom_id: `potatoduel_chauffer:${k}:${d.vue}${sfx}` }))
+    ? chauffesDe(d, moi).map((c, k) => ({
+        type: 2,
+        style: 2,
+        label: `+${c} °C`,
+        emoji: { name: "🔥" },
+        custom_id: `potatoduel_chauffer:${k}:${d.vue}${sfx}`,
+        disabled: !chauffePermise(d, moi, k),
+      }))
     : [];
   // Contre Kévina, ce n'est jamais son tour qu'en pleine réflexion : pas d'abandon
   // Bouton Règles : sur le message public seulement (jamais en double)
@@ -364,6 +378,17 @@ function buildVue(d, { texte = null, moi = "joueur", A = BOT, pvp = false, echea
   const rangee = [...chauffes, ...abandon];
   return { embeds: [embed], components: rangee.length ? [{ type: 1, components: rangee }] : [] };
 }
+
+// Ligne de l'événement du joueur au trait, dans sa vue
+const LIGNES_EVENEMENT = {
+  glacon: () => `🧊 **Glaçon** : la patate refroidit de ${GLACON} °C.`,
+  four: () => "♨️ **Four** : ta chauffe compte double.",
+  thermo: (d) => `🌡️ **Thermomètre** : la patate explose à ${d.seuil} °C.`,
+  gants: () => "🧤 **Gants** : si ta chauffe devait la faire exploser, elle passe sans chauffer.",
+  retour: () => "🔁 **Retour à l'envoyeur** : après ta chauffe, la patate te revient et tu rejoues.",
+  courant: () => "🌬️ **Courant d'air** : impossible de voir si la patate fume ou siffle.",
+  impose: () => "🎯 **Chauffe imposée** : +10 °C seulement.",
+};
 
 function buildReglesEmbed(config) {
   return {
@@ -374,11 +399,14 @@ function buildReglesEmbed(config) {
       `**🔥 À ton tour** : chauffe-la de **${CHAUFFES.map((c) => `+${c}`).join(", ").replace(/, ([^,]*)$/, " ou $1")} °C**, puis elle passe à l'adversaire. Celui qui la fait exploser **perd la manche**.`,
       `**👀 Indices** : la patate fume quand l'explosion est à ${FUME} °C ou moins, puis siffle à ${SIFFLE} °C ou moins. Ton thermomètre note la température où elle a commencé à fumer, puis à siffler.`,
       "",
-      "**🎲 Événements** (environ un tour sur quatre, pour celui qui tient la patate) :",
+      "**🎲 Événements** (un peu plus d'un tour sur trois, pour celui qui tient la patate) :",
       `- 🧊 **Glaçon** : la patate refroidit de ${GLACON} °C.`,
       "- ♨️ **Four** : ta chauffe compte double.",
       "- 🌡️ **Thermomètre** : tu vois la température d'explosion.",
       "- 🧤 **Gants** : si ta chauffe devait faire exploser la patate, elle passe sans chauffer.",
+      "- 🔁 **Retour à l'envoyeur** : après ta chauffe, la patate te revient et tu rejoues.",
+      "- 🌬️ **Courant d'air** : impossible de voir si la patate fume ou siffle.",
+      "- 🎯 **Chauffe imposée** : +10 °C seulement.",
       "",
       `**🏁 Manches** : le perdant commence la suivante. **Premier à ${MANCHES_GAGNANTES} manches.**`,
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",

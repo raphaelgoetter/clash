@@ -30,6 +30,7 @@ globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 const h = await import("../../discord/handlers/potatoDuel.js");
 const { readDuel, readPvp } = await import("../../services/potatoDuel.js");
 const { decodePublic, decodeVue } = await import("../../services/potatoImage.js");
+const { chauffePermise } = await import("../../services/potatoRules.js");
 
 function aplatir(composants = []) {
   return composants.flatMap((c) => (c.type === 17 ? [c, ...aplatir(c.components)] : c.type === 1 ? [c, ...c.components] : [c]));
@@ -64,8 +65,12 @@ function verifier(v, { public: estPublic = false } = {}) {
   }
 }
 
-// Chauffe au hasard du joueur au trait
-const auHasard = () => Math.floor(Math.random() * 3);
+// Chauffe permise au hasard du siège `moi` (Chauffe imposée respectée)
+const auHasard = (d, moi) => {
+  const ks = [0, 1, 2].filter((k) => chauffePermise(d, moi, k));
+  return ks[Math.floor(Math.random() * ks.length)];
+};
+const evenementsVus = new Set();
 
 // ── Contre Kévina ──
 const ID = "joueur-e2e";
@@ -74,7 +79,7 @@ const lancement = { member: { user: { id: ID, username: "Testeur" } }, channel_i
 const opts = { channelId: "salon", pseudo: "Testeur" };
 const resultats = {};
 let actions = 0;
-for (let g = 0; g < 6; g++) {
+for (let g = 0; g < 10; g++) {
   await h.handlePotatoCommand(W, lancement);
   for (let k = 0; ; k++) {
     if (k > 200) throw new Error("partie bloquée");
@@ -85,15 +90,21 @@ for (let g = 0; g < 6; g++) {
     }
     const b = boutons(vues.at(-1)).filter((x) => x.custom_id.startsWith("potatoduel_chauffer"));
     if (b.length !== 3) throw new Error("3 boutons de chauffe attendus");
-    await h.handlePotatoChauffer(W, ID, auHasard(), d.vue, opts);
+    if (d.evenement?.id === "joueur") {
+      evenementsVus.add(d.evenement.type);
+      if (!texte(vues.at(-1)).includes("**")) throw new Error("ligne de l'événement absente");
+    }
+    await h.handlePotatoChauffer(W, ID, auHasard(d, "joueur"), d.vue, opts);
     actions++;
   }
 }
 const posts = salon.filter((m) => m.method === "POST");
-console.log(`Contre Kévina : 6 parties ${JSON.stringify(resultats)}, ${actions} chauffes du joueur, ${posts.length} messages publiés`);
-if (posts.length !== 12) throw new Error("message public et résultat attendus pour chaque partie");
+console.log(`Contre Kévina : 10 parties ${JSON.stringify(resultats)}, ${actions} chauffes du joueur, ${posts.length} messages publiés`);
+if (posts.length !== 20) throw new Error("message public et résultat attendus pour chaque partie");
 if (!salon.some((m) => m.method === "PATCH" && texte(m).includes("Kévina réfléchit"))) throw new Error("message public non suivi");
 if (!vues.some((v) => texte(v).includes("💥 La patate"))) throw new Error("explosion jamais racontée");
+
+console.log(`Événements vus par le joueur : ${[...evenementsVus].join(", ")}`);
 
 // Vue dépassée, chauffe inconnue : partie intacte
 await h.handlePotatoCommand(W, lancement);
@@ -131,7 +142,7 @@ for (let k = 0; ; k++) {
   // Clic hors tour : refusé sans effet
   await h.handlePotatoChauffer(`https://discord.test/${autre.toLowerCase()}`, autre, 0, p.duel.vue, { pvp: true });
   if ((await readPvp()).duel.vue !== p.duel.vue) throw new Error("chauffe hors tour acceptée");
-  await h.handlePotatoChauffer(`https://discord.test/${actif.toLowerCase()}`, actif, auHasard(), p.duel.vue, { pvp: true });
+  await h.handlePotatoChauffer(`https://discord.test/${actif.toLowerCase()}`, actif, auHasard(p.duel, p.duel.actif), p.duel.vue, { pvp: true });
 }
 
 // ── Abandon (🏳️ puis confirmation) ──
