@@ -48,7 +48,7 @@ const ASSIDUS_LOWER_MAX = 6;
 // Durée d'une manche hebdomadaire (de sa publication à la suivante).
 const ROUND_DURATION_MS = 7 * 24 * 3600 * 1000;
 
-const WEEKLY_GAMES = [
+export const WEEKLY_GAMES = [
   { key: "frame", title: "🎬 Trouve le film !", fetch: getFrameResults },
   { key: "trivia", title: "🧠 Trivia", fetch: getTriviaResults },
   { key: "synopsis", title: "🎬 Synopsis éclaté", fetch: getSynopsisResults },

@@ -447,6 +447,8 @@ Registre : `jeux/services/passeport.js` (tests `passeport.test.js`). Le mois ret
 - `noterVictoireDuel(discordId, jeu, mode)`, `mode` = `bot` | `pvp` : dans `finSerieSolo()` / `finSeriesPvp()` (Quatre, Punto, Frise, Mascarade, Potato, Bac), `finSeries()` en 1v1 seulement (Pendu : le solo n'oppose personne), `agirDuel()` / `agirPvp()` (Grille), `resolveManche()` en 1v1 avec un premier seul en tête (Blackjack, Gobelet ; pas de victoire définie en solo). Un match nul ne compte pas.
 - `noterJeuSpecial(discordId, jeu)` : vote enregistré (Quiz, Robinson), inscription ou action (Goblin Hunters), main écrite (Blackjack, Gobelet), action (Mario Clash), toute action sous `agir()` (Qui est-ce ?, Meow). Les archives des jeux spéciaux ne permettent pas de reconstituer après coup qui a joué dans un mois (pas de date de début, pas de participants pour Robinson, Goblin Hunters, Mario Clash).
 
+Rattrapage (registre en retard sur les jeux : déploiement en cours de mois, incident) : `node jeux/outils/passeport/rattrapage.mjs [--saison <id>] [--ecrire]` (aperçu sans `--ecrire`, idempotent). Il reprend les manches archivées datées de la saison, tous ceux qui ont interagi avec la manche en cours, les classements des jeux spéciaux terminés dans la saison et les inscrits de Qui est-ce ? / Meow en cours. Les victoires en duel ne sont pas récupérables.
+
 Clés Redis (expiration `TTL_SECONDES`, 120 jours, relancée à chaque écriture) :
 
 | Clé | Type | Contenu |
