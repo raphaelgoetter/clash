@@ -20,6 +20,7 @@ import zlib from "zlib";
 import path from "path";
 import { fileURLToPath } from "url";
 import { cardSvg, loadDataUrls, rasterize, RATIO_CARTE } from "@clash/clash-royale/cardImage.js";
+import { tronquer } from "@clash/commun/texteImage.js";
 import { readBlobAsset } from "@clash/commun/blobAssets.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,10 +36,6 @@ const FONT_FAMILY = "Inter";
 
 function escapeXml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-function tronquer(nom, max) {
-  return nom.length > max ? `${nom.slice(0, Math.max(1, max - 1))}…` : nom;
 }
 
 // Index des cartes (ordre de jeux/data/cardNames.json) : l'URL ne transporte que

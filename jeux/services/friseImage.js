@@ -19,12 +19,12 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Resvg } from "@resvg/resvg-js";
-import { readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { texteAffichable } from "@clash/commun/texteImage.js";
+import { readGameFontPaths } from "@clash/commun/blobAssets.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARTES_JSON_PATH = path.resolve(__dirname, "..", "data", "frise", "cartes.json");
 
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 const LARGEUR = 800;
@@ -215,10 +215,10 @@ ${jalons.join("\n")}
 }
 
 async function rasterize(svg) {
-  const fontPath = await readBlobFontPath(FONT_PATH);
-  const resvg = new Resvg(Buffer.from(svg, "utf8"), {
+  const fontPaths = await readGameFontPaths();
+  const resvg = new Resvg(Buffer.from(texteAffichable(svg), "utf8"), {
     fitTo: { mode: "width", value: LARGEUR },
-    font: { fontFiles: [fontPath], loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
+    font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
   });
   return { buffer: Buffer.from(resvg.render().asPng()), mimeType: "image/png" };
 }

@@ -30,11 +30,10 @@
 
 import { Resvg } from "@resvg/resvg-js";
 import { loadPaletteCatalog, resolvePaletteEntry, isGamePosted, readRoundOrder, LETTERS } from "./palette.js";
-import { readBlobAsset, readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { readBlobAsset, readGameFontPaths } from "@clash/commun/blobAssets.js";
 
 const IMAGES_DIR = "jeux-visuels/palette/images";
 const HIGHLIGHTS_DIR = "jeux-visuels/palette/highlights";
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 const BACKGROUND = "#0f172a";
@@ -113,12 +112,12 @@ function buildPaletteSvg({ dataUrl, cardWidth, cardHeight, swatches }) {
 }
 
 async function rasterize(svg, width) {
-  const fontPath = await readBlobFontPath(FONT_PATH);
+  const fontPaths = await readGameFontPaths();
   const resvg = new Resvg(Buffer.from(svg, "utf8"), {
     fitTo: { mode: "width", value: width },
     background: BACKGROUND,
     font: {
-      fontFiles: [fontPath],
+      fontFiles: fontPaths,
       loadSystemFonts: false,
       defaultFontFamily: FONT_FAMILY,
     },

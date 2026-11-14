@@ -13,10 +13,10 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
-import { readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { texteAffichable, tronquer } from "@clash/commun/texteImage.js";
+import { readGameFontPaths } from "@clash/commun/blobAssets.js";
 import { ERREURS_MAX } from "./penduRules.js";
 
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 const LARGEUR = 700;
@@ -38,8 +38,6 @@ const CASE_VIDE = "#37474f";
 function escapeXml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-
-const tronquer = (nom, max) => (nom.length > max ? `${nom.slice(0, Math.max(1, max - 1))}…` : nom);
 
 const texte = (x, y, contenu, { size = 22, fill = CRAIE, anchor = "start" } = {}) =>
   `<text x="${x}" y="${y}" font-family="${FONT_FAMILY}" font-size="${size}" text-anchor="${anchor}" fill="${fill}">${escapeXml(contenu)}</text>`;
@@ -253,10 +251,10 @@ export function buildFinalSvg({ mot, joueurs, gagnant }) {
 }
 
 async function rasterize(svg) {
-  const fontPath = await readBlobFontPath(FONT_PATH);
-  const resvg = new Resvg(Buffer.from(svg, "utf8"), {
+  const fontPaths = await readGameFontPaths();
+  const resvg = new Resvg(Buffer.from(texteAffichable(svg), "utf8"), {
     fitTo: { mode: "width", value: LARGEUR },
-    font: { fontFiles: [fontPath], loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
+    font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
   });
   return { buffer: Buffer.from(resvg.render().asPng()), mimeType: "image/png" };
 }

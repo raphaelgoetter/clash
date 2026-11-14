@@ -84,3 +84,34 @@ export async function readBlobFontPath(relativePath) {
   fontPathCache.set(relativePath, tmpFile);
   return tmpFile;
 }
+
+// Polices des images de jeux : Inter d'abord, puis des sous-ensembles Noto
+// en repli (resvg bascule glyphe par glyphe) pour les pseudos stylés :
+// lettres mathématiques (𝕄, 𝐋, 𝑨…), symboles (✰, ♛…) et emojis
+// monochromes. Format TTF obligatoire : resvg ne lit pas le WOFF/WOFF2.
+export const GAME_FONT_PATH = "fonts/Inter-Bold.ttf";
+const GAME_FALLBACK_FONT_PATHS = [
+  "fonts/NotoSansMath-subset.ttf",
+  "fonts/NotoSansSymbols2-subset.ttf",
+  "fonts/NotoEmoji-subset.ttf",
+];
+
+// Chemins locaux à passer à `font.fontFiles` de resvg. Un repli
+// indisponible est ignoré (et non retenté pendant la vie de l'instance) :
+// l'image s'affiche quand même avec Inter.
+let gameFontPathsCache = null;
+
+export async function readGameFontPaths() {
+  if (gameFontPathsCache) return gameFontPathsCache;
+  const [inter, ...replis] = await Promise.all([
+    readBlobFontPath(GAME_FONT_PATH),
+    ...GAME_FALLBACK_FONT_PATHS.map((p) =>
+      readBlobFontPath(p).catch((err) => {
+        console.warn(`[blobAssets] Police de repli indisponible ${p}: ${err.message}`);
+        return null;
+      }),
+    ),
+  ]);
+  gameFontPathsCache = [inter, ...replis.filter(Boolean)];
+  return gameFontPathsCache;
+}

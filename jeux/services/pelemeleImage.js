@@ -36,14 +36,14 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
+import { texteAffichable } from "@clash/commun/texteImage.js";
 import { readState, DRAW_SIZE } from "./pelemele.js";
-import { readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { readGameFontPaths } from "@clash/commun/blobAssets.js";
 
 // La police est servie depuis Vercel Blob (voir blobAssets.js) et non plus
 // depuis data/ — évite qu'elle soit réembarquée dans le bundle de fonction
 // à chaque déploiement (voir goblinhuntersImage.js pour le détail du
 // mécanisme).
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 const TILE = 90;
@@ -98,11 +98,11 @@ ${tiles.join("\n")}
 async function rasterize(svg) {
   // Pas de `background` : fond transparent, les tuiles flottent sur le fond
   // sombre de l'embed Discord plutôt qu'un rectangle plein disgracieux.
-  const fontPath = await readBlobFontPath(FONT_PATH);
-  const resvg = new Resvg(Buffer.from(svg, "utf8"), {
+  const fontPaths = await readGameFontPaths();
+  const resvg = new Resvg(Buffer.from(texteAffichable(svg), "utf8"), {
     fitTo: { mode: "width", value: WIDTH },
     font: {
-      fontFiles: [fontPath],
+      fontFiles: fontPaths,
       loadSystemFonts: false,
       defaultFontFamily: FONT_FAMILY,
     },

@@ -55,6 +55,9 @@ const CONTENT_TYPES = {
 // jeux/data/), pour que les clés lues au runtime restent inchangées.
 const TARGETS = [
   { file: "fonts/Inter-Bold.ttf", root: DATA_DIR },
+  { file: "fonts/NotoSansMath-subset.ttf", root: DATA_DIR },
+  { file: "fonts/NotoSansSymbols2-subset.ttf", root: DATA_DIR },
+  { file: "fonts/NotoEmoji-subset.ttf", root: DATA_DIR },
   { file: "goblinhunters/images/board.jpg" },
   { file: "goblinhunters/images/end.webp" },
   { file: "goblinhunters/images/start.webp" },

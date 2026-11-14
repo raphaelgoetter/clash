@@ -41,13 +41,13 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
+import { texteAffichable } from "@clash/commun/texteImage.js";
 import { readState, loadGoblinHuntersConfig } from "./goblinhunters.js";
-import { readBlobAsset, readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { readBlobAsset, readGameFontPaths } from "@clash/commun/blobAssets.js";
 
 const BOARD_IMAGE_PATH = "goblinhunters/images/board.jpg";
 const END_IMAGE_PATH = "goblinhunters/images/end.webp";
 const START_IMAGE_PATH = "goblinhunters/images/start.webp";
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 // Dimensions natives de board.jpg (voir jeux/data/goblinhunters/images/board.jpg)
@@ -229,12 +229,12 @@ async function buildBoardSvg(joueurs) {
 }
 
 async function rasterize(svg) {
-  const fontPath = await readBlobFontPath(FONT_PATH);
-  const resvg = new Resvg(Buffer.from(svg, "utf8"), {
+  const fontPaths = await readGameFontPaths();
+  const resvg = new Resvg(Buffer.from(texteAffichable(svg), "utf8"), {
     fitTo: { mode: "width", value: BOARD_WIDTH },
     background: BACKGROUND,
     font: {
-      fontFiles: [fontPath],
+      fontFiles: fontPaths,
       loadSystemFonts: false,
       defaultFontFamily: FONT_FAMILY,
     },

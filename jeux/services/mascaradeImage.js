@@ -16,6 +16,7 @@
 // ============================================================
 
 import { cardSvg, loadDataUrls, rasterize, RATIO_CARTE } from "@clash/clash-royale/cardImage.js";
+import { tronquer } from "@clash/commun/texteImage.js";
 import { CARTES } from "./mascaradeRules.js";
 
 const FONT_FAMILY = "Inter";
@@ -40,7 +41,6 @@ function escapeXml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-const tronquer = (nom, max) => (nom.length > max ? `${nom.slice(0, Math.max(1, max - 1))}…` : nom);
 
 // ── Encodage dans l'URL ─────────────────────────────────────────────
 // { e: écartées, r: Réserve présente (0/1), p: cartes dans la pioche,

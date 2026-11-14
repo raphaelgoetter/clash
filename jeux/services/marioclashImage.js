@@ -40,12 +40,12 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
+import { texteAffichable } from "@clash/commun/texteImage.js";
 import { readJoueurs, loadMarioClashConfig, getHistoriqueEntry } from "./marioclash.js";
-import { readBlobAsset, readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { readBlobAsset, readGameFontPaths } from "@clash/commun/blobAssets.js";
 
 const BOARD_IMAGE_PATH = "marioclash/images/mario-clash-board.jpg";
 const ILLUSTRATION_IMAGE_PATH = "marioclash/images/mario-clash.webp";
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 // Dimensions natives de mario-clash-board.jpg — à ajuster si l'asset est
@@ -236,12 +236,12 @@ async function buildBoardSvg(joueurs) {
 }
 
 async function rasterize(svg) {
-  const fontPath = await readBlobFontPath(FONT_PATH);
-  const resvg = new Resvg(Buffer.from(svg, "utf8"), {
+  const fontPaths = await readGameFontPaths();
+  const resvg = new Resvg(Buffer.from(texteAffichable(svg), "utf8"), {
     fitTo: { mode: "width", value: BOARD_WIDTH },
     background: BACKGROUND,
     font: {
-      fontFiles: [fontPath],
+      fontFiles: fontPaths,
       loadSystemFonts: false,
       defaultFontFamily: FONT_FAMILY,
     },

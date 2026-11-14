@@ -16,13 +16,13 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
+import { texteAffichable } from "@clash/commun/texteImage.js";
 import jpeg from "jpeg-js";
-import { readBlobAsset, readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { readBlobAsset, readGameFontPaths } from "@clash/commun/blobAssets.js";
 import { COINS, PANIERS, ERRANTS, nomCoin } from "./meowRules.js";
 
 const MAP_IMAGE_PATH = "meow/images/meow-map.jpg";
 const ILLUSTRATION_IMAGE_PATH = "meow/images/meow-launch.webp";
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 // Dimensions natives de meow-map.jpg
@@ -148,10 +148,10 @@ async function buildCarteSvg(coins) {
 }
 
 export async function getCarteImage(coins) {
-  const fontPath = await readBlobFontPath(FONT_PATH);
-  const rendu = new Resvg(await buildCarteSvg(coins), {
+  const fontPaths = await readGameFontPaths();
+  const rendu = new Resvg(texteAffichable(await buildCarteSvg(coins)), {
     fitTo: { mode: "width", value: W },
-    font: { fontFiles: [fontPath], loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
+    font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
   }).render();
   const buffer = Buffer.from(jpeg.encode({ data: rendu.pixels, width: rendu.width, height: rendu.height }, QUALITE_JPEG).data);
   return { buffer, mimeType: "image/jpeg" };

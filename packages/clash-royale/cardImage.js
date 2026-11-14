@@ -13,12 +13,12 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
+import { texteAffichable } from "@clash/commun/texteImage.js";
 import { fetchCards } from "./clashApi.js";
 import { getOrSet } from "@clash/commun/cache.js";
-import { readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { readGameFontPaths } from "@clash/commun/blobAssets.js";
 import { CARD_ART_OVERRIDES, readCardArt } from "./cardArt.js";
 
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
 
@@ -109,10 +109,10 @@ export async function loadDataUrls(cards) {
 }
 
 export async function rasterize(svg, width) {
-  const fontPath = await readBlobFontPath(FONT_PATH);
-  const resvg = new Resvg(Buffer.from(svg, "utf8"), {
+  const fontPaths = await readGameFontPaths();
+  const resvg = new Resvg(Buffer.from(texteAffichable(svg), "utf8"), {
     fitTo: { mode: "width", value: width },
-    font: { fontFiles: [fontPath], loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
+    font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
   });
   return Buffer.from(resvg.render().asPng());
 }

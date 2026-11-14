@@ -15,10 +15,10 @@
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
-import { readBlobFontPath } from "@clash/commun/blobAssets.js";
+import { texteAffichable, tronquer } from "@clash/commun/texteImage.js";
+import { readGameFontPaths } from "@clash/commun/blobAssets.js";
 import { GLACON, SEUIL_MAX, SEUIL_MIN, TEMP_DEPART } from "./potatoRules.js";
 
-const FONT_PATH = "fonts/Inter-Bold.ttf";
 const FONT_FAMILY = "Inter";
 
 const FOND = "#2b2233";
@@ -47,7 +47,6 @@ function escapeXml(value) {
 
 // La police embarquée n'a pas d'emoji : retirés des pseudos
 const sansEmoji = (nom) => String(nom).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "").trim() || "?";
-const tronquer = (nom, max) => (nom.length > max ? `${nom.slice(0, Math.max(1, max - 1))}…` : nom);
 
 const texte = (x, y, contenu, { size = 20, fill = CRAIE, anchor = "start" } = {}) =>
   `<text x="${x}" y="${y}" font-family="${FONT_FAMILY}" font-size="${size}" text-anchor="${anchor}" fill="${fill}">${escapeXml(contenu)}</text>`;
@@ -320,10 +319,10 @@ export function buildPublicSvg({ noms, manches, chauffes, tient = -1, explose = 
 }
 
 async function rasterize(svg, largeur) {
-  const fontPath = await readBlobFontPath(FONT_PATH);
-  const resvg = new Resvg(Buffer.from(svg, "utf8"), {
+  const fontPaths = await readGameFontPaths();
+  const resvg = new Resvg(Buffer.from(texteAffichable(svg), "utf8"), {
     fitTo: { mode: "width", value: largeur },
-    font: { fontFiles: [fontPath], loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
+    font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
   });
   return { buffer: Buffer.from(resvg.render().asPng()), mimeType: "image/png" };
 }

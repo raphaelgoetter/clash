@@ -18,6 +18,7 @@
 
 import { readBlobAsset } from "@clash/commun/blobAssets.js";
 import { cardSvg, loadDataUrls, rasterize, RATIO_CARTE } from "@clash/clash-royale/cardImage.js";
+import { tronquer } from "@clash/commun/texteImage.js";
 import { CARTES } from "./bangRules.js";
 
 const MAT_IMAGE_PATH = "bang/images/bang-table.jpg";
@@ -160,10 +161,6 @@ function couronneSvg(cx, cy, size, vivant) {
 
 function texte(x, y, contenu, { size = 18, fill = "#ffffff", anchor = "middle", opacity = 1 } = {}) {
   return `<text x="${x}" y="${y}" font-family="${FONT_FAMILY}" font-size="${size}" text-anchor="${anchor}" fill="${fill}" opacity="${opacity}" stroke="#0b1a3a" stroke-width="${Math.max(2, size / 7)}" paint-order="stroke">${escapeXml(contenu)}</text>`;
-}
-
-function tronquer(nom, max) {
-  return nom.length > max ? `${nom.slice(0, Math.max(1, max - 1))}…` : nom;
 }
 
 // Pseudo sur une ou deux lignes de `max` caractères : coupe à un espace,
