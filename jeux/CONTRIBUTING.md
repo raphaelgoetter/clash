@@ -996,7 +996,7 @@ Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `t
 | `npm run quiestce:test` | Salon de test : 1er lancement = inscriptions, 2e = Jour 1 immédiat (clôture forcée), puis un jour par lancement. Inscrit des **PNJ** (6 ou 7, ou plus pour atteindre `effectif_min`) qui ont carte et cible mais ne jouent jamais (`-- --sans-pnj` pour s'en passer). |
 | `npm run quiestce:test:dry` / `quiestce:public` / `quiestce:public:dry` | Aperçu / public / aperçu public |
 | `npm run quiestce:reset` / `quiestce:reset:manches` | **Destructif** |
-| `npm run quiestce:status` | Vue organisateur (cartes, cibles, indices, objets, statistiques par joueur, aperçu de « La partie en bref ») |
+| `npm run quiestce:status` | Vue organisateur : une ligne par joueur dans l'ordre du classement (points, carte secrète, cible et cartes encore possibles, actions du jour : √ fait, ✗ accusation ratée), derniers événements |
 
 Options de `postQuiEstCe.js` : `--force` (garde-fou anti-double-avancée), `--force-close` (ignore la date de clôture). E2E local : `node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/quiestce/e2eQuiEstCe.mjs [joueurs]`. Cron `.github/workflows/quiestce.yml` : `20 8 * * *`. Variables : comme Bang! (`BLOB_READ_WRITE_TOKEN` pour la police et l'illustration).
 
