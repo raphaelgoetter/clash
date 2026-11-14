@@ -25,8 +25,7 @@ const plural = (n, mot) => `${n} ${mot}${Math.abs(n) > 1 ? "s" : ""}`;
     console.log(`Phase : inscriptions, clôture le ${new Date(state.closingAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}. Inscrits (${inscrits.length}/${config.effectif_max}, minimum ${config.effectif_min}) : ${inscrits.join(", ") || "aucun"}`);
     return;
   }
-  console.log(`Jour ${state.jour}/${config.duree_jours}${state.termine ? " (terminée)" : ""} · questions du jour : ${(config.pool[String(partie.numeroJour)] ?? []).join(", ")}`);
-  console.log(`Grille (${partie.grille.length} cartes) : ${partie.grille.map((k) => nomCarte(partie, k)).join(", ")}\n`);
+  console.log(`Jour ${state.jour}/${config.duree_jours}${state.termine ? " (terminée)" : ""}\n`);
   // Une ligne par joueur (ordre du classement) : points, carte, cible, et
   // actions du jour comme Meow (√ fait, ✗ accusation ratée)
   const jour = partie.numeroJour ?? 1;
