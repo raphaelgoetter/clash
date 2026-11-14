@@ -1428,8 +1428,8 @@ export async function handleObjet(webhookUrl, discordId, username, objet) {
 // ── Bouton [📜 Journal] (éphémère) ───────────────────────────────────
 
 // Ce qui concerne le joueur (ses actions, celles qui le visent, ses notes
-// privées : réponses, accusations), regroupé par jour, du plus récent au
-// plus ancien (jours anciens coupés au-delà de 4096 caractères).
+// privées : réponses, accusations), précédé de sa carte secrète, regroupé
+// par jour, du plus récent au plus ancien (jours anciens coupés au-delà de 4096 caractères).
 export async function handleJournal(webhookUrl, discordId) {
   try {
     const [state, partie] = await Promise.all([readState(), readPartie()]);
@@ -1464,11 +1464,12 @@ export async function handleJournal(webhookUrl, discordId) {
       }
       description += `${bloc}\n`;
     }
+    const carte = `🃏 Ta carte secrète : **${nomCarte(partie, partie.joueurs[discordId].carte)}**`;
     await patchOriginal(webhookUrl, {
       embeds: [
         {
           title: "📜 Ton journal",
-          description: description.trim() || "Rien à signaler pour l'instant.",
+          description: `${carte}\n\n${description.trim() || "Rien à signaler pour l'instant."}`,
           color: QEC_COLOR,
         },
       ],
