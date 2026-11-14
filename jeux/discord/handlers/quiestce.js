@@ -361,7 +361,7 @@ function buildReglesEmbed(config) {
       `- Efficacité : **+${config.bonus_efficacite.join("/+")}** si tu démasques avec ${config.bonus_efficacite.map((_, i) => i + 1).join("/")} indices (indice de départ compris).`,
       `- Survie : **+${config.bonus_survie_jour}** par jour joué sans être démasqué.`,
       `- Être démasqué : **-${config.malus_demasque} points**.`,
-      "- Accusation ratée : la carte est barrée de ta fiche.",
+      `- Accusation ratée : la carte est barrée de ta fiche${config.malus_erreur ? `, **-${config.malus_erreur} point** (gratuite le jour 1)` : ""}.`,
       "",
       "**👀 Cibles**",
       "- La première est tirée au sort, les suivantes sont choisies (le meneur t'est proposé).",
@@ -1246,7 +1246,7 @@ function texteAccusation(r, partie, cibleId, cardKey) {
   const nom = partie.joueurs[cibleId]?.username ?? "?";
   if (r.erreur) return avertissement(r.erreur);
   if (!r.correct)
-    return `❌ Raté : **${nom}** n'a pas la carte ${nomCarte(partie, cardKey)}.`;
+    return `❌ Raté : **${nom}** n'a pas la carte ${nomCarte(partie, cardKey)}${r.malus ? ` : **-${plural(r.malus, "point")}**` : ""}.`;
   const efficacite = r.bonus
     ? ` et **+${r.bonus}** d'efficacité (${plural(r.nbIndices, "indice")})`
     : "";

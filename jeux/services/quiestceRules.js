@@ -418,7 +418,8 @@ export function poser(partie, id, q, { config }) {
 // carte découverte (+`points_carte`), la cible est démasquée
 // (-`malus_demasque` pour elle, décision du 13/10), le
 // enquêteur choisit sa prochaine cible. Fausse : la carte est barrée
-// (accusation ratée comptée dans le départage). Sous Brouillard (option
+// (accusation ratée comptée dans le départage), gratuite les
+// `erreur_gratuite_jours` premiers jours, -`malus_erreur` ensuite. Sous Brouillard (option
 // `brouillard_bloque_accusation`), aucune accusation possible.
 // Une accusation par jour, toutes cibles confondues ; avec une Double
 // accusation sur la cible actuelle, deux accusations sur elle, même si une
@@ -448,8 +449,10 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
     if (possibles.length === 2) stats(moi).pileFacePerdus += 1;
     moi.enquete.eliminees.push(cardKey);
     bilan(partie).erreurs += 1;
-    prive(partie, id, `❌ Raté : **${cible.username}** n'a pas la carte ${nomCarte(partie, cardKey)}.`);
-    return { correct: false };
+    const malus = (partie.numeroJour ?? 1) > (config.erreur_gratuite_jours ?? 0) ? (config.malus_erreur ?? 0) : 0;
+    moi.malus = (moi.malus ?? 0) + malus;
+    prive(partie, id, `❌ Raté : **${cible.username}** n'a pas la carte ${nomCarte(partie, cardKey)}${malus ? ` (-${malus} pt)` : ""}.`);
+    return { correct: false, malus };
   }
   // Bonus d'efficacité (décision du 12/10, `bonus_efficacite` : +3 avec 1
   // indice connu, +2 avec 2, +1 avec 3, indice de départ compris)

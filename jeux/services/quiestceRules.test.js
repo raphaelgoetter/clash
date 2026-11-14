@@ -151,6 +151,7 @@ function main() {
     const fausse = candidats(p, "j0").find((k) => k !== cible.carte);
     assert.strictEqual(accuser(p, "j0", fausse, { config: CONFIG }).correct, false);
     assert.strictEqual(moi.erreurs, 1);
+    assert.strictEqual(moi.malus, 0, "accusation ratée gratuite le jour 1");
     assert.strictEqual(accuser(p, "j0", cible.carte, { config: CONFIG }).erreur, "plafondAccusation");
     assert.strictEqual(accusationsRestantes(moi), 0);
     cloturer(p, { config: CONFIG });
@@ -301,6 +302,17 @@ function main() {
     cloturer(p, { config: CONFIG });
     p.joueurs.j0.objets = ["desamorcage"];
     assert.strictEqual(utiliserObjet(p, "j0", "desamorcage", { config: CONFIG, rng }).detruit, null);
+  }
+
+  // ── Accusation ratée : gratuite le jour 1, -malus_erreur ensuite ──
+  {
+    const p = partieTest(8);
+    const moi = p.joueurs.j0;
+    cloturer(p, { config: CONFIG });
+    const avant = points(moi);
+    const fausse = candidats(p, "j0").find((k) => k !== p.joueurs[moi.cible].carte);
+    assert.strictEqual(accuser(p, "j0", fausse, { config: CONFIG }).malus, CONFIG.malus_erreur);
+    assert.strictEqual(points(moi), avant - CONFIG.malus_erreur);
   }
 
   // ── Classement : points = points des cartes - malus, puis découvertes, puis ratées ──
