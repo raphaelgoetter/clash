@@ -21,6 +21,7 @@
 // règles : jeux/services/puntoRules.js, cartes : jeux/services/puntoCartes.js.
 // ============================================================
 
+import { ligneChances } from "../../services/chancesKevina.js";
 import {
   agirDuel,
   agirPvp,
@@ -461,6 +462,7 @@ function messageSolo(d, pseudo) {
           ...plateauPublic(d, pseudo, "🤖 Kévina"),
           "",
           `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
+          ligneChances("punto"),
         ]
           .join("\n")
           .slice(0, 4096),

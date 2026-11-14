@@ -20,6 +20,7 @@
 // règles : jeux/services/quatreRules.js.
 // ============================================================
 
+import { ligneChances } from "../../services/chancesKevina.js";
 import {
   agirDuel,
   agirPvp,
@@ -409,6 +410,7 @@ function messageSolo(d, pseudo) {
           ...plateauPublic(d, pseudo, "🤖 Kévina"),
           "",
           `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
+          ligneChances("quatre"),
         ]
           .join("\n")
           .slice(0, 4096),

@@ -22,6 +22,7 @@
 // (routes /api/potato/vue et /api/potato/public).
 // ============================================================
 
+import { ligneChances } from "../../services/chancesKevina.js";
 import {
   agirDuel,
   agirPvp,
@@ -473,6 +474,8 @@ function messageSolo(d, pseudo, config) {
           ...(derniere ? ["", derniere] : []),
           ...(recitPub ? ["", recitPub] : []),
           ...(etat ? ["", etat] : []),
+          "",
+          ligneChances("potato"),
         ]
           .join("\n")
           .slice(0, 4096),

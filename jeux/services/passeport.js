@@ -202,6 +202,14 @@ export async function listerJoueursSaison(seasonId) {
   return (await getRedis().smembers(cleJoueursMois(seasonId))) ?? [];
 }
 
+/** Joueurs au passeport complet pour la saison, à `now` (un passeport
+ * lu par joueur indexé : à garder hors des chemins fréquents). */
+export async function listerPasseportsComplets(seasonId, { now = new Date() } = {}) {
+  const ids = await listerJoueursSaison(seasonId);
+  const passeports = await Promise.all(ids.map((id) => lirePasseport(id, { now, seasonId })));
+  return ids.filter((_, i) => passeports[i].complet);
+}
+
 /** Compteurs permanents d'un joueur : { passeports, boss }. */
 export async function lireCompteurs(discordId) {
   const raw = await getRedis().hget(CLE_COMPTEURS, discordId);

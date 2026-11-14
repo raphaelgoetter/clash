@@ -3,7 +3,7 @@ import { Redis } from "@upstash/redis";
 import {
   BOSS_JEUX,
   championsBoss,
-  choisirJeu,
+  jeuDeSaison,
   classer,
   clotureDe,
   cloturerBoss,
@@ -24,9 +24,10 @@ assert.deepStrictEqual(tirage("abc", 4), tirage("abc", 4));
 assert.notDeepStrictEqual(tirage("abc", 4), tirage("abc", 5));
 assert.ok(tirage("abc", 4).every((x) => x >= 0 && x < 1));
 
-// ── choisirJeu : jamais deux fois de suite s'il y a le choix ──
-assert.strictEqual(choisirJeu(["quatre", "frise"], "quatre", () => 0.99), "frise");
-assert.strictEqual(choisirJeu(["quatre"], "quatre"), "quatre");
+// ── jeuDeSaison : roulement dans l'ordre de BOSS_JEUX ──
+const ordre = Object.keys(BOSS_JEUX);
+assert.deepStrictEqual(ordre.map((_, i) => jeuDeSaison(138 + i)), ordre);
+assert.strictEqual(jeuDeSaison(138 + ordre.length), ordre[0]);
 
 // ── clotureDe : le 8 du mois suivant à minuit, heure de Paris ──
 assert.strictEqual(clotureDe(138).toISOString(), "2026-12-07T23:00:00.000Z");
@@ -72,7 +73,7 @@ if (Redis.isFake) {
   // Déroulé testé sur Quatre à la suite (chaque duel a ses propres tests boss<Jeu>.test.js)
   const boss = { ...ouvert.boss, jeu: "quatre" };
   assert.strictEqual(deja, false);
-  assert.ok(Object.keys(BOSS_JEUX).includes(ouvert.boss.jeu));
+  assert.strictEqual(ouvert.boss.jeu, jeuDeSaison(139));
   assert.deepStrictEqual([...boss.qualifies].sort(), ["1", "2"]);
   assert.strictEqual((await ouvrirBoss(139, { now: ouverture })).boss.graine, boss.graine);
 

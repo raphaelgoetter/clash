@@ -22,6 +22,7 @@
 // règles : jeux/services/friseRules.js.
 // ============================================================
 
+import { ligneChances } from "../../services/chancesKevina.js";
 import {
   agirDuel,
   agirPvp,
@@ -444,7 +445,7 @@ function messageSolo(d, pseudo, { attente = false } = {}) {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [...derniere, ...corpsPublic(d, nom, tour), "", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`]
+        description: [...derniere, ...corpsPublic(d, nom, tour), "", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`, ligneChances("frise")]
           .join("\n")
           .slice(0, 4096),
         color: FRISE_COLOR,

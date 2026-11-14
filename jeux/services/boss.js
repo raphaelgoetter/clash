@@ -103,11 +103,12 @@ export async function bossEnCours(now = new Date()) {
   return boss;
 }
 
-/** Pure : duel du Boss, tiré au sort parmi `jeux`, différent du précédent
- * s'il y a le choix. */
-export function choisirJeu(jeux, precedent, rng = Math.random) {
-  const choix = jeux.length > 1 ? jeux.filter((j) => j !== precedent) : jeux;
-  return choix[Math.floor(rng() * choix.length)];
+/** Pure : duel du Boss de la saison `seasonId`, en roulement dans l'ordre
+ * de BOSS_JEUX à partir de PREMIERE_SAISON_BOSS. */
+export function jeuDeSaison(seasonId) {
+  const jeux = Object.keys(BOSS_JEUX);
+  const i = (((seasonId - PREMIERE_SAISON_BOSS) % jeux.length) + jeux.length) % jeux.length;
+  return jeux[i];
 }
 
 /** Ouvre le Boss de la saison `seasonId` (une fois la saison finie) :
@@ -118,7 +119,6 @@ export async function ouvrirBoss(seasonId, { now = new Date(), rng = Math.random
   if (seasonId < PREMIERE_SAISON_BOSS) throw new Error(`Pas de Boss avant la saison ${PREMIERE_SAISON_BOSS}`);
   const existant = await lireBoss(seasonId);
   if (existant) return { boss: existant, deja: true };
-  const precedent = await lireBoss(seasonId - 1);
   const joueurs = await listerJoueursSaison(seasonId);
   const qualifies = [];
   for (const discordId of joueurs) {
@@ -126,7 +126,7 @@ export async function ouvrirBoss(seasonId, { now = new Date(), rng = Math.random
   }
   const boss = {
     seasonId,
-    jeu: choisirJeu(Object.keys(BOSS_JEUX), precedent?.jeu, rng),
+    jeu: jeuDeSaison(seasonId),
     graine: Math.floor(rng() * 2 ** 32).toString(36),
     ouvertAt: now.toISOString(),
     clotureAt: clotureDe(seasonId).toISOString(),

@@ -25,6 +25,7 @@ import {
   PREMIERE_SAISON_BOSS,
   classer,
   clotureDe,
+  jeuDeSaison,
   cloturerBoss,
   lireBoss,
   listerTentatives,
@@ -117,7 +118,7 @@ async function ouvrir(seasonId, now) {
         if ((await lirePasseport(id, { now, seasonId })).complet) qualifies.push(id);
       }
     }
-    const apercu = existant ?? { seasonId, jeu: Object.keys(BOSS_JEUX)[0], clotureAt: clotureDe(seasonId).toISOString(), qualifies };
+    const apercu = existant ?? { seasonId, jeu: jeuDeSaison(seasonId), clotureAt: clotureDe(seasonId).toISOString(), qualifies };
     console.log(`Aperçu : Boss ${existant ? "déjà ouvert" : "non ouvert"}, ${qualifies.length} qualifié(s).`);
     await posterSalon(embedAnnonce(apercu, await listeNoms(qualifies)));
     if (!DRY_RUN && existant) {

@@ -20,6 +20,7 @@
 // règles : jeux/services/grilleRules.js.
 // ============================================================
 
+import { ligneChances } from "../../services/chancesKevina.js";
 import {
   agirDuel,
   agirPvp,
@@ -421,6 +422,7 @@ function messageSolo(d, pseudo, { grilles = null, actif = d.actif } = {}) {
           ...plateauPublic(grilles ? { ...d, grilles } : d, pseudo, "🤖 Kévina"),
           "",
           `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
+          ligneChances("grille"),
         ]
           .join("\n")
           .slice(0, 4096),

@@ -121,7 +121,8 @@ import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
 import { deMois, getCurrentSeasonBounds, seasonIdForDate } from "../../services/saison.js";
 import { getWiredGame } from "../../services/refonte.js";
 import { computeMiniJeuxStats } from "../../services/miniJeuxStats.js";
-import { lireCompteurs, lirePasseport } from "../../services/passeport.js";
+import { lireCompteurs, lirePasseport, listerPasseportsComplets } from "../../services/passeport.js";
+import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { bossEnCours } from "../../services/boss.js";
 import { boutonLancer } from "./boss.js";
 
@@ -927,6 +928,16 @@ function buildTamponsBlock({ seasonId, tampons, complet }) {
   return `## 🛂 Tampons de la saison ${deMois(seasonId)} (${valides}/${tampons.length})\n${lines.join("\n")}`;
 }
 
+// Passeports complets de la saison à ce jour (pseudos Discord actuels)
+const MAX_COMPLETS = 40;
+async function ligneComplets(seasonId, now) {
+  const ids = await listerPasseportsComplets(seasonId, { now });
+  if (!ids.length) return "Aucun passeport complet pour l'instant.";
+  const noms = await Promise.all(ids.slice(0, MAX_COMPLETS).map((id) => resolveDisplayName(id, null)));
+  const reste = ids.length > MAX_COMPLETS ? ` et ${ids.length - MAX_COMPLETS} autres` : "";
+  return `**Passeports complets (${ids.length})** : ${noms.join(", ")}${reste}`;
+}
+
 function ligneCompteurs({ passeports, boss }) {
   if (!passeports) return null;
   return `🛂 Passeports complétés : **${passeports}** · 🐉 Boss vaincus : **${boss}**`;
@@ -936,17 +947,19 @@ function ligneCompteurs({ passeports, boss }) {
 // Boss, bouton « Affronter Kévina » pour les qualifiés (secours des MP).
 export async function buildPasseportMessage(discordId, username, now = new Date()) {
   const games = await resolveRegularGames(now);
-  const [regularLines, passeport, compteurs, boss] = await Promise.all([
+  const [regularLines, passeport, compteurs, boss, complets] = await Promise.all([
     Promise.all(games.map((game) => buildRegularParticipationLine(game, discordId))),
     lirePasseport(discordId, { now }),
     lireCompteurs(discordId),
     bossEnCours(now),
+    ligneComplets(seasonIdForDate(now), now),
   ]);
   const semaine = regularLines;
   const qualifie = boss?.qualifies.includes(discordId);
   const blocs = [
     `## Cette semaine\n${semaine.join("\n")}`,
     buildTamponsBlock(passeport),
+    complets,
     qualifie ? `🐉 **Boss de la saison ${deMois(boss.seasonId)}** : Kévina t'attend jusqu'au <t:${Math.floor(new Date(boss.clotureAt).getTime() / 1000)}:f> !` : null,
     ligneCompteurs(compteurs),
   ].filter(Boolean);
