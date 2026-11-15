@@ -379,3 +379,70 @@ function buildFinPvpSvg({ joueurs }) {
 
 export const buildFinSvg = (fin) => (fin.joueurs.length === 1 ? buildFinSoloSvg(fin) : buildFinPvpSvg(fin));
 export const getFinImage = (fin) => rasterize(buildFinSvg(fin));
+
+
+// ── Image de la dernière manche (message public du duel) ────────────
+// Bandeau de l'issue, puis deux mains côte à côte (Kévina et le joueur, ou
+// les deux joueurs), en petites cartes, score en pastille. Toujours une
+// manche terminée : ⚠️ jamais de main en cours (secrète en 1v1).
+
+const ISSUES_MANCHE = ["win", "push", "lose", "bust", "cache"];
+const ECHELLE_MANCHE = 76 / CW;
+
+/**
+ * @param {object} p
+ * @param {string} p.titre bandeau (« Manche 3 : Raphaël gagne +2 »)
+ * @param {{ nom: string, cartes: object[], score: number, issue: string }[]} p.mains
+ *   2 mains, gauche puis droite ; issue `cache` = pastille grise (Kévina)
+ */
+export function encodeManche({ titre, mains }) {
+  const d = {
+    t: tronquer(String(titre), 40),
+    m: mains.slice(0, 2).map((m) => [
+      tronquer(sansEmoji(m.nom), 14),
+      versCartes(m.cartes),
+      borner(m.score, 0, 99),
+      Math.max(0, ISSUES_MANCHE.indexOf(m.issue)),
+    ]),
+  };
+  return Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
+}
+
+export function decodeManche(param) {
+  try {
+    const d = JSON.parse(Buffer.from(String(param), "base64url").toString("utf8"));
+    if (!Array.isArray(d?.m) || d.m.length !== 2) return null;
+    return {
+      titre: String(d.t ?? ""),
+      mains: d.m.map(([nom, cartes, score, issue]) => ({
+        nom: String(nom ?? "?"),
+        cartes: depuisCartes(cartes),
+        score: borner(score, 0, 99),
+        issue: ISSUES_MANCHE[Number(issue)] ?? "lose",
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function buildMancheSvg({ titre, mains }) {
+  const hauteur = 300;
+  let c = texte(LARGEUR / 2, 50, titre, { size: 22, weight: 700, anchor: "middle", fill: OR });
+  mains.forEach((m, i) => {
+    const cx = LARGEUR / 4 + (i * LARGEUR) / 2;
+    c += texte(cx, 92, m.nom, { size: 24, weight: 800, anchor: "middle" });
+    c += `<rect x="${cx - 34}" y="104" width="68" height="36" rx="18" fill="${PASTILLES[m.issue]}" stroke="${BLANC}" stroke-width="2"/>`;
+    c += texte(cx, 129, String(m.score), { size: 22, weight: 800, anchor: "middle" });
+    c += rangee(m.cartes, 156, faceDeCarte, { echelle: ECHELLE_MANCHE, centre: cx, place: 240 });
+  });
+  c += `<line x1="${LARGEUR / 2}" y1="80" x2="${LARGEUR / 2}" y2="270" stroke="${OR}" stroke-width="2" stroke-dasharray="6 6" opacity="0.5"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${LARGEUR}" height="${hauteur}" viewBox="0 0 ${LARGEUR} ${hauteur}">
+<defs><radialGradient id="tapis" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#1e7a46"/><stop offset="1" stop-color="#0b3d22"/></radialGradient></defs>
+<rect width="${LARGEUR}" height="${hauteur}" rx="24" fill="#5a3a1e"/>
+<rect x="12" y="12" width="${LARGEUR - 24}" height="${hauteur - 24}" rx="18" fill="url(#tapis)"/>
+${c}
+</svg>`;
+}
+
+export const getMancheImage = (manche) => rasterize(buildMancheSvg(manche));

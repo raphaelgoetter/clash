@@ -60,8 +60,10 @@ import {
 import {
   decodeFin as decodeBlackjackFin,
   decodeMain as decodeBlackjackMain,
+  decodeManche as decodeBlackjackManche,
   getFinImage as getBlackjackFinImage,
   getMainImage as getBlackjackMainImage,
+  getMancheImage as getBlackjackMancheImage,
 } from "../services/blackjackImage.js";
 
 const router = express.Router();
@@ -365,6 +367,17 @@ router.get("/api/blackjack/main", async (req, res) => {
 router.get("/api/blackjack/fin", async (req, res) => {
   const fin = decodeBlackjackFin(req.query.d);
   const image = fin ? await getBlackjackFinImage(fin).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Blackjack Duel : dernière manche terminée, mains côte à côte (message
+// public ; d, voir encodeManche).
+router.get("/api/blackjack/manche", async (req, res) => {
+  const manche = decodeBlackjackManche(req.query.d);
+  const image = manche ? await getBlackjackMancheImage(manche).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");

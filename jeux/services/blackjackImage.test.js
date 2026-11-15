@@ -1,6 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildFinSvg, buildMainSvg, decodeFin, decodeMain, encodeFin, encodeMain, meilleureMain } from "./blackjackImage.js";
+import {
+  buildFinSvg,
+  buildMainSvg,
+  buildMancheSvg,
+  decodeFin,
+  decodeMain,
+  decodeManche,
+  encodeFin,
+  encodeMain,
+  encodeManche,
+  meilleureMain,
+} from "./blackjackImage.js";
 
 const carte = (rank, suit) => ({ rank, suit });
 
@@ -90,4 +101,26 @@ test("encodeFin / decodeFin : aller-retour solo et 1v1", () => {
   assert.equal(pvp.joueurs[1].meilleure, null);
   assert.match(buildFinSvg(pvp), /Victoire de A/);
   assert.equal(decodeFin("pas-du-json"), null);
+});
+
+test("encodeManche / decodeManche : deux mains côte à côte", () => {
+  const manche = decodeManche(
+    encodeManche({
+      titre: "Manche 2 : Raphaël gagne +2",
+      mains: [
+        { nom: "Kévina", cartes: [carte("9", "♣️"), carte("8", "♣️")], score: 17, issue: "cache" },
+        { nom: "Raphaël 🎉", cartes: [carte("K", "♥️"), carte("9", "♠️")], score: 19, issue: "win" },
+      ],
+    }),
+  );
+  assert.equal(manche.titre, "Manche 2 : Raphaël gagne +2");
+  assert.deepEqual(
+    manche.mains.map((m) => [m.nom, m.score, m.issue, m.cartes.length]),
+    [
+      ["Kévina", 17, "cache", 2],
+      ["Raphaël", 19, "win", 2],
+    ],
+  );
+  assert.match(buildMancheSvg(manche), /<svg/);
+  assert.equal(decodeManche(Buffer.from(JSON.stringify({ m: [] })).toString("base64url")), null);
 });

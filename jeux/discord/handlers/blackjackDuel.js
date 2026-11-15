@@ -25,7 +25,7 @@ import {
   readHandWebhooks,
   INACTIVITE_SECONDES,
 } from "../../services/blackjackDuel.js";
-import { encodeFin, encodeMain, meilleureMain } from "../../services/blackjackImage.js";
+import { encodeFin, encodeMain, encodeManche, meilleureMain } from "../../services/blackjackImage.js";
 
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 import {
@@ -37,26 +37,7 @@ import { rangExAequo } from "@clash/commun/classement.js";
 
 const BLACKJACKDUEL_COLOR = 0x2ecc71;
 
-// ── Cartes — rendu texte (dupliqué depuis _handlers/blackjack.js : pas de
-// dépendance croisée entre les deux jeux) ──────────────────────────
-
-function formatCard(card) {
-  return `${card.rank}${card.suit}`;
-}
-
-function formatCards(cards) {
-  return cards.map(formatCard).join(" ");
-}
-
-function formatCardsBlock(cards, scoreLabel = null) {
-  const lines = [`# ${formatCards(cards)}`];
-  if (scoreLabel) lines.push(`**${scoreLabel}**`);
-  return lines;
-}
-
-function formatDealerLine(dealer) {
-  return `🤖 **Kévina :** ${formatCards(dealer.cards)} (**${dealer.score}**)`;
-}
+// Cartes : en image partout (blackjackImage.js), plus de rendu texte.
 
 // ── Résolution des rôles/utilisateurs ────────────────────────────────
 
@@ -253,6 +234,42 @@ async function buildPendingLabel(state, hands) {
 // Sans bilan explicite (rafraîchissement après un clic Jouer, Piocher…), le
 // bilan est relu depuis la dernière manche de l'historique : il reste
 // affiché pendant toute la manche suivante au lieu de disparaître au 1ᵉʳ clic.
+// Image de la dernière manche terminée (blackjackImage.js) : Kévina à
+// gauche et le joueur à droite, ou les deux joueurs, et l'issue en bandeau.
+async function urlImageManche(numero, results, dealer, isSolo, players = []) {
+  // Ordre des sièges (gauche, droite), pas celui des mains en Redis
+  const rang = (r) => (players.includes(r.discordId) ? players.indexOf(r.discordId) : players.length);
+  const nommes = await Promise.all(
+    [...results].sort((x, y) => rang(x) - rang(y)).map(async (r) => ({ ...r, nom: await resolveDisplayName(r.discordId, r.username) })),
+  );
+  const issue = (r) => (r.status === "bust" ? "bust" : r.result);
+  const main = (r) => ({ nom: r.nom, cartes: r.cards, score: r.score, issue: issue(r) });
+  let titre;
+  let mains;
+  if (isSolo) {
+    const [r] = nommes;
+    titre =
+      r.status === "bust"
+        ? `${r.nom} dépasse 21`
+        : r.result === "win"
+          ? `${r.nom} gagne +2`
+          : r.result === "push"
+            ? "Égalité +1"
+            : "Kévina gagne";
+    mains = [{ nom: "Kévina", cartes: dealer.cards, score: dealer.score, issue: "cache" }, main(r)];
+  } else {
+    const gagnant = nommes.find((r) => r.result === "win");
+    titre = gagnant
+      ? `${gagnant.nom} gagne +2`
+      : nommes.some((r) => r.result === "push")
+        ? "Égalité, +1 chacun"
+        : "Personne ne gagne";
+    mains = nommes.slice(0, 2).map(main);
+  }
+  const param = encodeManche({ titre: `Manche ${numero} : ${titre}`, mains });
+  return `${TRUST_ROYALE_URL}/api/blackjack/manche?d=${param}`;
+}
+
 async function buildTableEmbed(
   state,
   {
@@ -264,34 +281,8 @@ async function buildTableEmbed(
   const lines = [];
   const isSolo = state.maxPlayers === 1;
 
-  if (previousResults) {
-    if (isSolo) {
-      const winners = previousResults.filter((r) => r.result === "win");
-      const winnerNames = await Promise.all(
-        winners.map((w) => resolveDisplayName(w.discordId, w.username)),
-      );
-      lines.push(
-        `**📊 Bilan de la manche ${state.manche - 1}**`,
-        formatDealerLine(previousDealer),
-        winnerNames.length
-          ? `🏆 Gagnant${winnerNames.length > 1 ? "s" : ""} : ${winnerNames.join(", ")}`
-          : "🏆 Personne n'a battu Kévina.",
-        "",
-      );
-    } else {
-      const winners = previousResults.filter((r) => r.result === "win" || r.result === "push");
-      const winnerNames = await Promise.all(
-        winners.map((w) => resolveDisplayName(w.discordId, w.username)),
-      );
-      lines.push(
-        `**📊 Bilan de la manche ${state.manche - 1}**`,
-        winnerNames.length
-          ? `🏆 Vainqueur${winnerNames.length > 1 ? "s" : ""} de la manche : ${winnerNames.join(", ")}`
-          : "🏆 Personne n'a de main valide sur cette manche.",
-        "",
-      );
-    }
-  }
+  // Bilan de la manche précédente : en image (mains côte à côte)
+  const imageManche = previousResults ? await urlImageManche(state.manche - 1, previousResults, previousDealer, isSolo, state.players) : null;
 
   // Pas de "Manche X/Y" ici : déjà dans le titre de l'embed (buildTableEmbed
   // est utilisé pour le body) — même principe que buildDealerTargetSection
@@ -314,7 +305,6 @@ async function buildTableEmbed(
     // révélé seulement à la résolution de la manche.
     lines.push(
       `## 🤖 Score à battre : ${state.dealer.score}`,
-      ...formatCardsBlock(state.dealer.cards),
       "",
       seatsLabel,
     );
@@ -341,6 +331,7 @@ async function buildTableEmbed(
   return {
     title: `🃏 Blackjack Duel${isSolo ? " contre Kévina" : ""} (Manche ${state.manche}/${state.totalManches})`,
     description: lines.join("\n"),
+    ...(imageManche ? { image: { url: imageManche } } : {}),
     color: BLACKJACKDUEL_COLOR,
     footer: {
       text: state.rosterLocked
