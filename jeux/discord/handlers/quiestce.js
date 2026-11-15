@@ -237,44 +237,31 @@ const INTRO_J1 =
 function bilanVeilleLignes(partie) {
   const v = partie.veille;
   const n = (id) => `**${partie.joueurs[id]?.username ?? "?"}**`;
-  const lignes = v.demasquages.length
-    ? v.demasquages.map((d) => `🎯 ${n(d.s)} a démasqué ${n(d.v)}.`)
-    : ["🎯 Personne n'a été démasqué."];
-  if (v.desamorcages)
-    lignes.push(`🧨 ${plural(v.desamorcages, "Désamorçage")}.`);
-  if (v.deguisements)
-    lignes.push(`🎭 ${plural(v.deguisements, "Déguisement")}.`);
-  if (v.brouillards) lignes.push(`🌫️ ${plural(v.brouillards, "Brouillard")}.`);
+  // Un joueur démasqué deux fois le même jour n'est cité qu'une fois
+  const demasques = [...new Set(v.demasquages.map((d) => d.v))];
+  const nb = demasques.length;
+  const lignes = [
+    nb
+      ? `🎯 ${nb} démasqué${nb > 1 ? "s" : ""} : ${demasques.map(n).join(", ")}.`
+      : "🎯 Personne n'a été démasqué.",
+  ];
   if (v.erreurs)
     lignes.push(
       `❌ ${plural(v.erreurs, "accusation")} ratée${v.erreurs > 1 ? "s" : ""}.`,
     );
+  if (v.absents?.length)
+    lignes.push(`🤷 N'ont pas joué : ${v.absents.map(n).join(", ")}.`);
   return lignes;
 }
 
-// Message officiel du jour : intro (J1) ou bilan de la veille, classement,
-// tableau des enquêtes, faits du jour (les questions du jour sont dans
-// l'enquête de chacun).
+// Message officiel du jour : intro (J1) ou bilan de la veille, faits du
+// jour, tableau des enquêtes en image (qui affiche le classement ; les
+// questions du jour sont dans l'enquête de chacun).
 async function buildTableEmbed(jour, config, partie) {
   const lignes =
     jour === 1 || !partie.veille
       ? [INTRO_J1]
       : ["**📰 Hier**", ...bilanVeilleLignes(partie)];
-  const ranking = classement(partie).filter(
-    (r) => r.decouvertes || r.nbDemasque,
-  );
-  if (ranking.length) {
-    lignes.push(
-      "",
-      "**🏆 Classement**",
-      ...ranking
-        .slice(0, 10)
-        .map(
-          (r, i) =>
-            `${MEDALS[i] || `${i + 1}.`} **${r.username}** : ${plural(r.score, "pt")}`,
-        ),
-    );
-  }
   const cruciaux = partie.journal
     .filter((e) => e.c && e.j === (partie.numeroJour ?? jour))
     .slice(-JOURNAL_AFFICHE);

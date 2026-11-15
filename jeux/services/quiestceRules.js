@@ -600,6 +600,10 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
 // 13/10 : un inscrit absent ne marque rien) ; compteurs quotidiens,
 // Brouillard et Miroir remis à zéro.
 export function cloturer(partie, { config = {} } = {}) {
+  // Inscrits n'ayant rien fait de la journée (bilan public du lendemain)
+  bilan(partie).absents = Object.entries(partie.joueurs)
+    .filter(([, j]) => j.carte && !j.actifJour)
+    .map(([cid]) => cid);
   for (const j of Object.values(partie.joueurs)) {
     if (j.carte && j.actifJour && !j.demasqueJour) j.survie = (j.survie ?? 0) + (config.bonus_survie_jour ?? 0);
     j.demasqueJour = false;

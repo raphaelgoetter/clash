@@ -155,6 +155,8 @@ function main() {
     assert.strictEqual(accuser(p, "j0", cible.carte, { config: CONFIG }).erreur, "plafondAccusation");
     assert.strictEqual(accusationsRestantes(moi), 0);
     cloturer(p, { config: CONFIG });
+    assert.ok(!p.veille.absents.includes("j0"), "j0 a joué");
+    assert.ok(p.veille.absents.includes("j1"), "j1 n'a rien fait : noté absent pour le bilan");
     const r = accuser(p, "j0", cible.carte, { config: CONFIG, rng });
     assert.strictEqual(r.correct, true);
     assert.deepStrictEqual(moi.demasques, [cibleId]);
