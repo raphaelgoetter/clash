@@ -157,7 +157,7 @@ function nombreDeJoueurs(body) {
 }
 
 export async function routeDuels(body, res) {
-  // ── /blackjack : lance un duel Blackjack autonome (contre Kévina ou à
+  // ── /blackjack : lance un duel Blackjack autonome (contre le Croupier ou à
   // 2 joueurs, N manches) — jeu développé en parallèle du jeu spécial, sans lien avec
   // lui. Réservé au rôle MINI-JEUX : le check se fait ici en arrière-plan
   // (getRoleIdByName fait un appel réseau, trop risqué dans la fenêtre de

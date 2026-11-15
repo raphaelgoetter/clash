@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================
-// Simulation Monte Carlo du Blackjack : règles actuelles (Croupier au
+// Simulation Monte Carlo du Blackjack : anciennes règles (Croupier au
 // score tiré entre 16 et 21, jamais de dépassement, alternance visible /
 // joue en second) comparées à des règles plus proches de l'officiel
 // (Croupier qui tire jusqu'à 17 avec une carte visible, Blackjack naturel,
@@ -12,7 +12,11 @@
 // Usage : node jeux/outils/blackjack-simulation/simulation.mjs [mains] [graine]
 // ============================================================
 
-import { computeHandValue, drawCard, drawUniqueCard, rollDealerScore } from "../../services/blackjack.js";
+import { computeHandValue, drawCard, drawUniqueCard } from "../../services/blackjack.js";
+
+// Ancienne règle (avant le Croupier officiel) : score tiré uniformément
+// entre min et max, jamais de dépassement. Gardée ici pour la comparaison.
+const rollDealerScore = (r, min, max) => min + Math.floor(r() * (max - min + 1));
 
 const MAINS = Number(process.argv[2]) || 400_000;
 let graine = Number(process.argv[3]) || 42;
@@ -45,7 +49,7 @@ function estSouple(cartes) {
 const estNaturel = (cartes) => cartes.length === 2 && computeHandValue(cartes) === 21;
 const valeurVisible = (carte) => (carte.rank === "A" ? 11 : carte.value);
 
-// ── Règles actuelles ────────────────────────────────────────────────
+// ── Anciennes règles ────────────────────────────────────────────────
 
 // Croupier visible (jours impairs) : le joueur connaît la cible T et pioche
 // tant qu'il est en dessous ; à égalité, il pioche si `risqueEgalite`.
@@ -222,7 +226,7 @@ function afficherManche(nom, jouer) {
 
 console.log(`Simulation Blackjack : ${MAINS.toLocaleString("fr-FR")} mains par scénario\n`);
 
-console.log("## Règles actuelles (Croupier 16-21, jamais de dépassement)");
+console.log("## Anciennes règles (Croupier 16-21, jamais de dépassement)");
 const visibleOpt = mesurer("Croupier visible, pioche jusqu'à dépasser la cible", () => mainActuelleVisible(false));
 afficher(visibleOpt);
 afficher(mesurer("Croupier visible, pioche aussi sur égalité", () => mainActuelleVisible(true)));
@@ -263,8 +267,8 @@ for (let i = 0; i < MAINS; i++) {
 console.log(`\nLe Croupier officiel dépasse 21 dans ${pct(sauts / MAINS)} des mains qu'il joue jusqu'au bout`);
 
 console.log(`\n## Manche de ${JOURS} jours (un joueur)`);
-afficherManche(`Actuel, joueur optimal (caché : reste dès ${meilleurSeuil.seuil})`, actuel);
-afficherManche("Actuel, joueur qui reste dès 17 les jours cachés", actuelPrudent);
+afficherManche(`Ancien, joueur optimal (caché : reste dès ${meilleurSeuil.seuil})`, actuel);
+afficherManche("Ancien, joueur qui reste dès 17 les jours cachés", actuelPrudent);
 afficherManche("Officiel + naturel + Doubler, stratégie de base", () => mainOfficielle(scenarios[2][1]));
 afficherManche("Officiel + naturel + Doubler, joueur prudent", () => mainOfficielle(scenarios[4][1]));
 

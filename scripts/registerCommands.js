@@ -682,7 +682,7 @@ const commands = [
   {
     name: "blackjack",
     description:
-      "Blackjack : approche-toi de 21 contre Kévina ou un autre joueur — réservé au rôle MINI-JEUX.",
+      "Blackjack : approche-toi de 21 contre le Croupier ou un autre joueur, réservé au rôle MINI-JEUX.",
     options: [
       {
         type: 3, // STRING
@@ -690,7 +690,7 @@ const commands = [
         description: "Contre qui jouer ?",
         required: true,
         choices: [
-          { name: "Kévina (bot)", value: "bot" },
+          { name: "Le Croupier (bot)", value: "bot" },
           { name: "2 joueurs", value: "1v1" },
         ],
       },

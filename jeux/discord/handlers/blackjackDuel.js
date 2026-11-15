@@ -40,7 +40,7 @@ import { rangExAequo } from "@clash/commun/classement.js";
 
 const BLACKJACKDUEL_COLOR = 0x2ecc71;
 
-// Cartes : en image (blackjackImage.js), sauf la carte visible de Kévina
+// Cartes : en image (blackjackImage.js), sauf la carte visible du Croupier
 // dans le message public.
 const formatCard = (card) => `${card.rank}${card.suit}`;
 const ptsLabel = (n) => `${n} point${n > 1 ? "s" : ""}`;
@@ -149,7 +149,7 @@ async function postFinalMessage(state, payload) {
 }
 
 // Supprime le message public de la partie (fin de partie, ou partie contre
-// Kévina remplacée par un nouveau /blackjack).
+// le Croupier remplacée par un nouveau /blackjack).
 async function deletePublicMessage(state) {
   const token = process.env.DISCORD_TOKEN;
   if (!token || !state?.channelId || !state?.messageId) return;
@@ -240,7 +240,7 @@ async function buildPendingLabel(state, hands) {
 // Sans bilan explicite (rafraîchissement après un clic Jouer, Piocher…), le
 // bilan est relu depuis la dernière manche de l'historique : il reste
 // affiché pendant toute la manche suivante au lieu de disparaître au 1ᵉʳ clic.
-// Image de la dernière manche terminée (blackjackImage.js) : Kévina à
+// Image de la dernière manche terminée (blackjackImage.js) : le Croupier à
 // gauche et le joueur à droite, ou les deux joueurs, et l'issue en bandeau.
 async function urlImageManche(numero, results, dealer, isSolo, players = []) {
   // Ordre des sièges (gauche, droite), pas celui des mains en Redis
@@ -255,7 +255,7 @@ async function urlImageManche(numero, results, dealer, isSolo, players = []) {
   let mains;
   if (isSolo) {
     const [r] = nommes;
-    const kevinaNaturel = dealerHasNatural(dealer);
+    const croupierNaturel = dealerHasNatural(dealer);
     titre =
       r.status === "bust"
         ? "Dépassement"
@@ -263,15 +263,15 @@ async function urlImageManche(numero, results, dealer, isSolo, players = []) {
           ? `Blackjack ! ${gain(r)}`
           : r.result === "win"
             ? dealer.score > 21
-              ? `Kévina dépasse 21 : ${gain(r)}`
+              ? `Croupier dépasse 21 : ${gain(r)}`
               : `Gagné ${gain(r)}`
             : r.result === "push"
               ? `Égalité ${gain(r)}`
-              : kevinaNaturel
-                ? "Blackjack de Kévina"
-                : "Kévina gagne";
-    const issueKevina = kevinaNaturel ? "blackjack" : dealer.score > 21 ? "bust" : "cache";
-    mains = [{ nom: "Kévina", cartes: dealer.cards, score: dealer.score, issue: issueKevina }, main(r)];
+              : croupierNaturel
+                ? "Blackjack du Croupier"
+                : "Le Croupier gagne";
+    const issueCroupier = croupierNaturel ? "blackjack" : dealer.score > 21 ? "bust" : "cache";
+    mains = [{ nom: "Croupier", cartes: dealer.cards, score: dealer.score, issue: issueCroupier }, main(r)];
   } else {
     const gagnant = nommes.find((r) => r.result === "win" || r.result === "blackjack");
     titre = gagnant
@@ -314,11 +314,11 @@ async function buildTableEmbed(
       seatsLabel,
     );
   } else {
-    // Contre Kévina : sa première carte est visible, la seconde cachée ;
-    // elle joue sa main (pioche jusqu'à 17) après le joueur.
+    // Contre le Croupier : sa première carte est visible, la seconde cachée ;
+    // il joue sa main (pioche jusqu'à 17) après le joueur.
     lines.push(
-      `## 🤖 Carte visible de Kévina : ${formatCard(state.dealer.cards[0])}`,
-      "Sa seconde carte est cachée. Elle jouera après toi (elle pioche jusqu'à 17).",
+      `## 🎩 Carte visible du Croupier : ${formatCard(state.dealer.cards[0])}`,
+      "Sa seconde carte est cachée. Il jouera après toi (il pioche jusqu'à 17).",
       "",
       seatsLabel,
     );
@@ -336,7 +336,7 @@ async function buildTableEmbed(
   lines.push("", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`);
 
   return {
-    title: `🃏 Blackjack Duel${isSolo ? " contre Kévina" : ""} (Manche ${state.manche}/${state.totalManches})`,
+    title: `🃏 Blackjack Duel${isSolo ? " contre le Croupier" : ""} (Manche ${state.manche}/${state.totalManches})`,
     description: lines.join("\n"),
     ...(imageManche ? { image: { url: imageManche } } : {}),
     color: BLACKJACKDUEL_COLOR,
@@ -374,7 +374,7 @@ async function urlImageFin(state, ranking) {
 }
 
 // Le détail des manches est dans l'image : le texte se limite au
-// classement (au total contre Kévina) et au high score.
+// classement (au total contre le Croupier) et au high score.
 async function buildFinalEmbed(state, ranking, highScore) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
@@ -396,7 +396,7 @@ async function buildFinalEmbed(state, ranking, highScore) {
   }
 
   return {
-    title: `🏁 Blackjack Duel${state.maxPlayers === 1 ? " contre Kévina" : ""} : partie terminée (${state.totalManches} manches)`,
+    title: `🏁 Blackjack Duel${state.maxPlayers === 1 ? " contre le Croupier" : ""} : partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
     image: { url: await urlImageFin(state, ranking) },
     color: BLACKJACKDUEL_COLOR,
@@ -475,7 +475,7 @@ function introMain(hand) {
   return `🛑 Tu t'arrêtes à ${hand.score}.`;
 }
 
-// Contre Kévina, la manche se résout dès que la main est finie : sa main et
+// Contre le Croupier, la manche se résout dès que la main est finie : sa main et
 // le résultat sont dévoilés aussitôt. En 1v1, résultat quand les deux ont
 // joué.
 function handStatusMessage(hand, dealer, isSolo) {
@@ -489,18 +489,18 @@ function handStatusMessage(hand, dealer, isSolo) {
   const gain = pointsForResult(result, hand.double);
   if (dealerHasNatural(dealer) && hand.cards.length === 2) {
     return result === "push"
-      ? "🤖 Kévina a un Blackjack, mais toi aussi : égalité, tu gagnes quand même 1 point !"
-      : "🤖 Kévina a un Blackjack, impossible de la battre cette manche. Pas de point.";
+      ? "🎩 Le Croupier a un Blackjack, mais toi aussi : égalité, tu gagnes quand même 1 point !"
+      : "🎩 Le Croupier a un Blackjack, impossible de le battre cette manche. Pas de point.";
   }
   if (hand.status === "bust") return `💥 Tu dépasses 21${hand.double ? " sur ta mise doublée" : ""}, ta main est perdue pour cette manche.`;
-  const kevina = dealer.score > 21 ? `Kévina dépasse 21 (${dealer.score})` : `Kévina fait ${dealer.score}`;
-  if (result === "blackjack") return `${introMain(hand)} ${kevina} : tu gagnes ${ptsLabel(gain)} !`;
-  if (result === "win") return `${introMain(hand)} ${kevina} : tu gagnes ${ptsLabel(gain)} !`;
-  if (result === "push") return `${introMain(hand)} ${kevina} aussi : égalité, tu gagnes quand même ${ptsLabel(gain)} !`;
-  return `${introMain(hand)} ${kevina}, pas de point cette manche.`;
+  const croupier = dealer.score > 21 ? `Le Croupier dépasse 21 (${dealer.score})` : `Le Croupier fait ${dealer.score}`;
+  if (result === "blackjack") return `${introMain(hand)} ${croupier} : tu gagnes ${ptsLabel(gain)} !`;
+  if (result === "win") return `${introMain(hand)} ${croupier} : tu gagnes ${ptsLabel(gain)} !`;
+  if (result === "push") return `${introMain(hand)} ${croupier} aussi : égalité, tu gagnes quand même ${ptsLabel(gain)} !`;
+  return `${introMain(hand)} ${croupier}, pas de point cette manche.`;
 }
 
-// Image de la main (blackjackImage.js) : contre Kévina, sa carte visible
+// Image de la main (blackjackImage.js) : contre le Croupier, sa carte visible
 // et une carte cachée tant que la main est en cours (⚠️ rien d'autre ne
 // doit fuiter), sa main entière ensuite ; main du joueur en bas, pastille
 // colorée par l'issue quand elle est connue. En 1v1, la main du joueur seule.
@@ -511,8 +511,8 @@ function urlImageMain(state, hand) {
   const croupier = !isSolo
     ? null
     : devoile
-      ? { nom: "Kévina", cartes: dealer.cards, score: dealer.score }
-      : { nom: "Kévina", cartes: dealer.cards.slice(0, 1), cache: true };
+      ? { nom: "Croupier", cartes: dealer.cards, score: dealer.score }
+      : { nom: "Croupier", cartes: dealer.cards.slice(0, 1), cache: true };
   const param = encodeMain({
     joueur: {
       nom: hand.username ?? "Toi",
@@ -669,7 +669,7 @@ export async function handleJouer(webhookUrl, gid, discordId, username) {
     }
     if (result.notYours) {
       await patchOriginal(webhookUrl, {
-        content: "Cette partie contre Kévina n'est pas la tienne : lance la tienne avec `/blackjack` !",
+        content: "Cette partie contre le Croupier n'est pas la tienne : lance la tienne avec `/blackjack` !",
         embeds: [],
         components: [],
       });
@@ -771,11 +771,11 @@ function buildReglesEmbed() {
   return {
     title: "📖 Règles du Blackjack Duel",
     description: [
-      "Contre Kévina (le bot) ou à 2 joueurs, sur plusieurs manches.",
+      "Contre le Croupier ou à 2 joueurs, sur plusieurs manches.",
       "",
       "**Valeur des cartes :** 2 à 10 = leur valeur, Valet/Dame/Roi = 10, As = 11 ou 1 (ramené à 1 si besoin pour éviter de dépasser 21).",
       "",
-      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. Contre Kévina, seul celui qui a lancé la partie peut jouer.",
+      "**Inscription :** clique sur **Jouer** pour rejoindre. Dès que tous les sièges sont pris, les inscriptions sont définitivement closes. Contre le Croupier, seul celui qui a lancé la partie peut jouer.",
       "",
       "**Déroulement (1 main par manche) :**",
       "🃏 **Jouer** (puis **Reprendre ma partie**) : reçois 2 cartes.",
@@ -784,11 +784,11 @@ function buildReglesEmbed() {
       "💰 **Doubler** : sur tes 2 premières cartes seulement, une seule carte de plus puis ta main s'arrête, points doublés.",
       "Dépasser 21 = main perdue immédiatement pour la manche.",
       "",
-      "**Contre Kévina :** elle tient le rôle du croupier. Une de ses deux cartes est visible, l'autre est cachée. Elle joue après toi : elle pioche jusqu'à 17 et peut dépasser 21. Si elle a un Blackjack, ta main s'arrête tout de suite.",
+      "**Contre le Croupier :** une de ses deux cartes est visible, l'autre est cachée. Il joue après toi : il pioche jusqu'à 17 et peut dépasser 21. Si elle a un Blackjack, ta main s'arrête tout de suite.",
       "",
-      "**À 2 joueurs :** pas de Kévina, vous vous affrontez directement. La meilleure main non dépassée l'emporte, résultat révélé dès que tout le monde a joué sa main.",
+      "**À 2 joueurs :** pas de Croupier, vous vous affrontez directement. La meilleure main non dépassée l'emporte, résultat révélé dès que tout le monde a joué sa main.",
       "",
-      "**Résultat d'une manche :** le vainqueur gagne **2 points** (si Kévina dépasse 21, toute main valide gagne). Égalité = **1 point**. **Blackjack** (21 avec tes 2 premières cartes) = **3 points**, et il bat un 21 en 3 cartes ou plus. Main doublée = points doublés. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
+      "**Résultat d'une manche :** le vainqueur gagne **2 points** (si le Croupier dépasse 21, toute main valide gagne). Égalité = **1 point**. **Blackjack** (21 avec tes 2 premières cartes) = **3 points**, et il bat un 21 en 3 cartes ou plus. Main doublée = points doublés. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
       "",
       "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Sans action pendant 1 h, la partie est abandonnée.",
     ].join("\n"),

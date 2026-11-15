@@ -18,7 +18,7 @@ const carte = (rank, suit) => ({ rank, suit });
 test("encodeMain / decodeMain : aller-retour d'une main contre un Croupier visible", () => {
   const d = encodeMain({
     joueur: { nom: "Raphaël 🎉", cartes: [carte("10", "♥️"), carte("A", "♣️")], score: 21, statut: "stand", issue: "win" },
-    croupier: { nom: "Kévina", cartes: [carte("K", "♠️"), carte("7", "♦️")], score: 17 },
+    croupier: { nom: "Croupier", cartes: [carte("K", "♠️"), carte("7", "♦️")], score: 17 },
     legende: "Manche 3/10",
   });
   const main = decodeMain(d);
@@ -31,7 +31,7 @@ test("encodeMain / decodeMain : aller-retour d'une main contre un Croupier visib
     double: false,
   });
   assert.deepEqual(main.croupier, {
-    nom: "Kévina",
+    nom: "Croupier",
     cartes: [{ rang: "K", couleur: "♠" }, { rang: "7", couleur: "♦" }],
     score: 17,
     cache: false,
@@ -112,7 +112,7 @@ test("encodeManche / decodeManche : deux mains côte à côte", () => {
     encodeManche({
       titre: "Manche 2 : Raphaël gagne +2",
       mains: [
-        { nom: "Kévina", cartes: [carte("9", "♣️"), carte("8", "♣️")], score: 17, issue: "cache" },
+        { nom: "Croupier", cartes: [carte("9", "♣️"), carte("8", "♣️")], score: 17, issue: "cache" },
         { nom: "Raphaël 🎉", cartes: [carte("K", "♥️"), carte("9", "♠️")], score: 19, issue: "win" },
       ],
     }),
@@ -121,7 +121,7 @@ test("encodeManche / decodeManche : deux mains côte à côte", () => {
   assert.deepEqual(
     manche.mains.map((m) => [m.nom, m.score, m.issue, m.cartes.length]),
     [
-      ["Kévina", 17, "cache", 2],
+      ["Croupier", 17, "cache", 2],
       ["Raphaël", 19, "win", 2],
     ],
   );

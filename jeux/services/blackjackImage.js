@@ -1,7 +1,7 @@
 // ============================================================
 // blackjackImage.js — Image de la main de Blackjack (jeu spécial et duel),
-// format portrait pensé pour le mobile : tapis vert, main du Croupier /
-// de Kévina en haut (absente en 1v1), main du joueur en bas, score en
+// format portrait pensé pour le mobile : tapis vert, main du Croupier
+// en haut (absente en 1v1), main du joueur en bas, score en
 // pastille à droite de chaque nom, légende en pied (jour ou manche).
 // Cartes classiques dessinées en SVG (rang + couleur) ; au-delà de 3
 // cartes, elles se chevauchent pour garder une largeur fixe.
@@ -243,7 +243,7 @@ async function rasterize(svg) {
 export const getMainImage = (main) => rasterize(buildMainSvg(main));
 
 // ── Image de fin du duel ────────────────────────────────────────────
-// Contre Kévina : total en grand, score de chaque manche en pastilles
+// Contre le Croupier : total en grand, score de chaque manche en pastilles
 // colorées par l'issue, décompte, meilleure main de la partie (cartes).
 // En 1v1 : vainqueur (ou égalité), une rangée de pastilles par joueur,
 // numéros de manche entre les deux pour lire chaque manche en colonne,
@@ -265,7 +265,7 @@ export function meilleureMain(mains) {
 /**
  * @param {object} p
  * @param {{ nom: string, points: number, manches: { score: number, issue: string }[],
- *   meilleure: { cartes: object[], score: number }|null }[]} p.joueurs 1 (contre Kévina) ou 2
+ *   meilleure: { cartes: object[], score: number }|null }[]} p.joueurs 1 (contre le Croupier) ou 2
  * @param {number} p.totalManches
  */
 export function encodeFin({ joueurs, totalManches }) {
@@ -407,7 +407,7 @@ export const getFinImage = (fin) => rasterize(buildFinSvg(fin));
 
 
 // ── Image de la dernière manche (message public du duel) ────────────
-// Bandeau de l'issue, puis deux mains côte à côte (Kévina et le joueur, ou
+// Bandeau de l'issue, puis deux mains côte à côte (le Croupier et le joueur, ou
 // les deux joueurs), en petites cartes, score en pastille. Toujours une
 // manche terminée : ⚠️ jamais de main en cours (secrète en 1v1).
 
@@ -418,7 +418,7 @@ const ECHELLE_MANCHE = 76 / CW;
  * @param {object} p
  * @param {string} p.titre bandeau (« Manche 3 : Raphaël gagne +2 »)
  * @param {{ nom: string, cartes: object[], score: number, issue: string, double?: boolean }[]} p.mains
- *   2 mains, gauche puis droite ; issue `cache` = pastille grise (Kévina)
+ *   2 mains, gauche puis droite ; issue `cache` = pastille grise (Croupier)
  */
 export function encodeManche({ titre, mains }) {
   const d = {
