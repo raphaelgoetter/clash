@@ -48,6 +48,7 @@ import { rangExAequo } from "@clash/commun/classement.js";
 // voir buildRanking()).
 const memeRang = (a, b) => a.points === b.points && a.cards === b.cards;
 import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
+import { encodeMain } from "../../services/blackjackImage.js";
 
 const BLACKJACK_COLOR = 0x2ecc71;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -688,16 +689,25 @@ function journalStatusMessage(hand, dealer, jour) {
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
 
-function buildHandEmbed(jour, hand, message) {
-  const scoreLabel =
-    hand.status === "bust" ? "Dépassement" : `Score : ${hand.score}`;
+// Image de la main (blackjackImage.js) : cartes du Croupier en haut (deux
+// dos de carte les jours pairs, ⚠️ rien ne doit fuiter de son score), main
+// du joueur en bas, pastille colorée par l'issue quand elle est connue.
+function urlImageMain(jour, hand, dealer) {
+  const revealed = isDealerRevealed(jour);
+  const issue = revealed && hand.status === "stand" ? compareToDealer(hand.score, dealer) : null;
+  const param = encodeMain({
+    joueur: { nom: hand.username ?? "Toi", cartes: hand.cards, score: hand.score, statut: hand.status, issue },
+    croupier: revealed ? { nom: "Croupier", cartes: dealer.cards, score: dealer.score } : { nom: "Croupier", cache: true },
+    legende: revealed ? `Jour ${jour}` : `Jour ${jour} · le Croupier joue en second`,
+  });
+  return `${TRUST_ROYALE_URL}/api/blackjack/main?d=${param}`;
+}
+
+function buildHandEmbed(jour, hand, message, dealer) {
   return {
     title: `🃏 Ta main (Jour ${jour})`,
-    description: [
-      ...formatCardsBlock(hand.cards, scoreLabel),
-      "",
-      message,
-    ].join("\n"),
+    description: message,
+    image: { url: urlImageMain(jour, hand, dealer) },
     color: BLACKJACK_COLOR,
   };
 }
@@ -751,6 +761,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
             jour,
             existing,
             handStatusMessage(existing, state.dealer, jour),
+            state.dealer,
           ),
         ],
         components: buildHandComponents(jour, existing),
@@ -767,7 +778,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
 
     await patchOriginal(webhookUrl, {
       embeds: [
-        buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer, jour)),
+        buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer, jour), state.dealer),
       ],
       components: buildHandComponents(jour, hand),
     });
@@ -805,6 +816,7 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
             jour,
             hand,
             "Ta main est déjà terminée pour aujourd'hui.",
+            state.dealer,
           ),
         ],
         components: [],
@@ -830,6 +842,7 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
           jour,
           updated,
           handStatusMessage(updated, state.dealer, jour),
+          state.dealer,
         ),
       ],
       components: buildHandComponents(jour, updated),

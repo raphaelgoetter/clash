@@ -57,6 +57,12 @@ import {
   getPublicImage as getPotatoPublicImage,
   getVueImage as getPotatoVueImage,
 } from "../services/potatoImage.js";
+import {
+  decodeFin as decodeBlackjackFin,
+  decodeMain as decodeBlackjackMain,
+  getFinImage as getBlackjackFinImage,
+  getMainImage as getBlackjackMainImage,
+} from "../services/blackjackImage.js";
 
 const router = express.Router();
 
@@ -337,6 +343,28 @@ router.get("/api/potato/vue", async (req, res) => {
 router.get("/api/potato/public", async (req, res) => {
   const pub = decodePotatoPublic(req.query.d);
   const image = pub ? await getPotatoPublicImage(pub).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Blackjack (jeu spécial et duel) : main d'un joueur et du Croupier /
+// de Kévina, rendu sans état à partir de l'état encodé dans l'URL (d, voir
+// encodeMain).
+router.get("/api/blackjack/main", async (req, res) => {
+  const main = decodeBlackjackMain(req.query.d);
+  const image = main ? await getBlackjackMainImage(main).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Blackjack Duel : image de fin de partie (d, voir encodeFin).
+router.get("/api/blackjack/fin", async (req, res) => {
+  const fin = decodeBlackjackFin(req.query.d);
+  const image = fin ? await getBlackjackFinImage(fin).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");

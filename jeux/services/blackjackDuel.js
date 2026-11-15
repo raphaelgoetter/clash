@@ -434,7 +434,7 @@ async function resolveManche(gid, state, hands) {
   }
 
   // Historique complet (mains, scores, points) de la manche qui vient de se
-  // résoudre — affiché en intégralité dans le récapitulatif final, voir
+  // résoudre — résumé dans l'image de fin (scores, meilleure main), voir
   // buildFinalEmbed côté handler. Le Croupier n'y figure que pour les
   // manches solo (null en duel à 2 joueurs, voir resolvePvP).
   const mancheRecord = {

@@ -21,11 +21,13 @@ import {
   checkAndResolveManche,
   listHands,
   isDealerRevealed,
-  pointsForResult,
   saveHandWebhook,
   readHandWebhooks,
   INACTIVITE_SECONDES,
 } from "../../services/blackjackDuel.js";
+import { encodeFin, encodeMain, meilleureMain } from "../../services/blackjackImage.js";
+
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -348,29 +350,33 @@ async function buildTableEmbed(
   };
 }
 
-// Une ligne par manche : main + score de chaque joueur, et points gagnés —
-// le Croupier n'apparaît que sur les manches solo (mancheRecord.dealer est
-// null en duel à 2 joueurs, voir resolveManche côté service).
-async function buildMancheHistoryBlocks(history) {
-  const blocks = [];
-  for (const entry of history) {
-    const header = entry.dealer
-      ? `**Manche ${entry.manche}** : ${formatDealerLine(entry.dealer)}`
-      : `**Manche ${entry.manche}**`;
-    const playerParts = await Promise.all(
-      entry.results.map(async (r) => {
-        const name = await resolveDisplayName(r.discordId, r.username);
-        const pts = pointsForResult(r.result);
-        const scoreLabel = r.status === "bust" ? "💥" : `${r.score}`;
-        const badge = pts === 2 ? " 🏆" : pts === 1 ? " 🤝" : "";
-        return `${name} ${formatCards(r.cards)} (${scoreLabel})${badge} +${pts} pt${pts > 1 ? "s" : ""}`;
-      }),
-    );
-    blocks.push(`${header}\n${playerParts.join("\n")}`);
-  }
-  return blocks;
+// Image de fin (blackjackImage.js) : pour chaque joueur, son score et
+// l'issue de chaque manche, et sa meilleure main de la partie.
+async function urlImageFin(state, ranking) {
+  const history = state.history || [];
+  const points = Object.fromEntries(ranking.map((r) => [r.discordId, r.points]));
+  const joueurs = await Promise.all(
+    state.players.map(async (discordId) => {
+      const mains = history
+        .map((h) => h.results.find((r) => r.discordId === discordId))
+        .filter(Boolean)
+        .map((r) => ({ cartes: r.cards, score: r.score, statut: r.status, issue: r.status === "bust" ? "bust" : r.result }));
+      const username = mains.length ? history.flatMap((h) => h.results).find((r) => r.discordId === discordId)?.username : null;
+      const best = meilleureMain(mains);
+      return {
+        nom: await resolveDisplayName(discordId, username),
+        points: points[discordId] ?? 0,
+        manches: mains.map((m) => ({ score: m.score, issue: m.issue })),
+        meilleure: best ? { cartes: best.cartes, score: best.score } : null,
+      };
+    }),
+  );
+  const param = encodeFin({ joueurs, totalManches: state.totalManches });
+  return `${TRUST_ROYALE_URL}/api/blackjack/fin?d=${param}`;
 }
 
+// Le détail des manches est dans l'image : le texte se limite au
+// classement (au total contre Kévina) et au high score.
 async function buildFinalEmbed(state, ranking, highScore) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
@@ -378,29 +384,23 @@ async function buildFinalEmbed(state, ranking, highScore) {
       username: await resolveDisplayName(r.discordId, r.username),
     })),
   );
-  const historyBlocks = await buildMancheHistoryBlocks(state.history || []);
-
-  const lines = [
-    "**📊 Détail des manches**",
-    ...historyBlocks,
-    "",
-    "**Classement final :**",
-    ...(resolvedRanking.length
-      ? resolvedRanking.map(
-          (r, i, list) =>
-            `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
-        )
-      : ["Personne n'a marqué de point."]),
-  ];
+  const ptsLabel = (n) => `${n} pt${n > 1 ? "s" : ""}`;
+  const lines =
+    state.maxPlayers === 1
+      ? [`Total : **${ptsLabel(resolvedRanking[0]?.points ?? 0)}**`]
+      : resolvedRanking.length
+        ? resolvedRanking.map((r, i, list) => `${rangExAequo(list, i)}. ${r.username} (${ptsLabel(r.points)})`)
+        : ["Personne n'a marqué de point."];
 
   if (highScore) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
-    lines.push("", `<:topplayers:1563107730397601792> High score : ${name} (${highScore.points} pt${highScore.points > 1 ? "s" : ""})`);
+    lines.push(`<:topplayers:1563107730397601792> High score : ${name} (${ptsLabel(highScore.points)})`);
   }
 
   return {
     title: `🏁 Blackjack Duel${state.maxPlayers === 1 ? " contre Kévina" : ""} : partie terminée (${state.totalManches} manches)`,
     description: lines.join("\n"),
+    image: { url: await urlImageFin(state, ranking) },
     color: BLACKJACKDUEL_COLOR,
   };
 }
@@ -507,11 +507,37 @@ function handStatusMessage(hand, dealer, manche, isSolo) {
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
 
-function buildHandEmbed(manche, hand, message) {
-  const scoreLabel = hand.status === "bust" ? "Dépassement" : `Score : ${hand.score}`;
+// Image de la main (blackjackImage.js) : Kévina en haut contre elle seule
+// (deux dos de carte quand elle joue en second, ⚠️ rien ne doit fuiter de
+// son score), main du joueur en bas, pastille colorée par l'issue quand
+// elle est connue. En 1v1, la main du joueur seule.
+function urlImageMain(state, hand) {
+  const isSolo = state.maxPlayers === 1;
+  const revealed = isSolo && isDealerRevealed(state.manche);
+  const { dealer } = state;
+  const issue =
+    revealed && hand.status === "stand"
+      ? hand.score > dealer.score ? "win" : hand.score === dealer.score ? "push" : "lose"
+      : null;
+  const croupier = !isSolo
+    ? null
+    : revealed
+      ? { nom: "Kévina", cartes: dealer.cards, score: dealer.score }
+      : { nom: "Kévina", cache: true };
+  const manche = `Manche ${state.manche}/${state.totalManches}`;
+  const param = encodeMain({
+    joueur: { nom: hand.username ?? "Toi", cartes: hand.cards, score: hand.score, statut: hand.status, issue },
+    croupier,
+    legende: isSolo && !revealed ? `${manche} · Kévina joue en second` : manche,
+  });
+  return `${TRUST_ROYALE_URL}/api/blackjack/main?d=${param}`;
+}
+
+function buildHandEmbed(state, hand, message) {
   return {
-    title: `🃏 Ta main (Manche ${manche})`,
-    description: [...formatCardsBlock(hand.cards, scoreLabel), "", message].join("\n"),
+    title: `🃏 Ta main (Manche ${state.manche})`,
+    description: message,
+    image: { url: urlImageMain(state, hand) },
     color: BLACKJACKDUEL_COLOR,
   };
 }
@@ -656,7 +682,7 @@ export async function handleJouer(webhookUrl, gid, discordId, username) {
     await patchOriginal(webhookUrl, {
       embeds: [
         buildHandEmbed(
-          state.manche,
+          state,
           result.hand,
           handStatusMessage(result.hand, state.dealer, state.manche, state.maxPlayers === 1),
         ),
@@ -690,7 +716,7 @@ async function handleDrawOrStand(webhookUrl, gid, discordId, { draw }) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, "Ta main est déjà terminée pour cette manche.")],
+        embeds: [buildHandEmbed(result.state, result.hand, "Ta main est déjà terminée pour cette manche.")],
         components: [],
       });
       return;
@@ -700,7 +726,7 @@ async function handleDrawOrStand(webhookUrl, gid, discordId, { draw }) {
     await patchOriginal(webhookUrl, {
       embeds: [
         buildHandEmbed(
-          state.manche,
+          state,
           result.hand,
           handStatusMessage(result.hand, state.dealer, state.manche, state.maxPlayers === 1),
         ),
