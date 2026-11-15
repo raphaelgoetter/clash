@@ -50,6 +50,7 @@ import {
   getVueImage as getPenduVueImage,
 } from "../services/penduImage.js";
 import { decodeFrise, getDecorImage, getFriseImage } from "../services/friseImage.js";
+import { decodePlateau as decodeRobinsonPlateau, getPlateauImage as getRobinsonPlateauImage } from "../services/robinsonImage.js";
 import {
   decodePublic as decodePotatoPublic,
   decodeVue as decodePotatoVue,
@@ -377,6 +378,18 @@ router.get("/api/pendu/vue", async (req, res) => {
 router.get("/api/pendu/final", async (req, res) => {
   const final = decodePenduFinal(req.query.d);
   const image = final ? await getPenduFinalImage(final).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Robinson : plateau du jour (stocks, Radeau, constructions, récolte,
+// frise), rendu sans état à partir de l'état encodé dans l'URL (d, voir
+// encodePlateau). L'URL change avec l'état : cache CDN sans risque.
+router.get("/api/robinson/plateau", async (req, res) => {
+  const plateau = decodeRobinsonPlateau(req.query.d);
+  const image = plateau ? await getRobinsonPlateauImage(plateau).catch(() => null) : null;
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");

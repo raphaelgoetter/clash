@@ -52,6 +52,25 @@ import {
   computeMancheScore,
   archiveManche,
   listManches,
+  readConstructions,
+  attemptConstructionContribution,
+  incrementZone,
+  readZones,
+  drawEventProgramme,
+  forecastForDay,
+  computeEpuisementPalier,
+  computeEpuisementMalus,
+  computeHarvestAmount,
+  computeExplorerAmount,
+  isConstructionDone,
+  constructionHarvestBonus,
+  raftPointsPerVote,
+  computeRadeauPlafondJour,
+  computeAppauvrissement,
+  harvestMaxForDay,
+  readRadeauJour,
+  computeDay1ConsumptionVoters,
+  hasEmptyResource,
 } from "../../services/robinson.js";
 import {
   getRoleIdByName,
@@ -60,6 +79,7 @@ import {
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
+import { encodePlateau } from "../../services/robinsonImage.js";
 
 const ROBINSON_COLOR = 0x1abc9c;
 const RESOURCE_LABELS = { poisson: "poisson(s)", eau: "eau", bois: "bois" };
@@ -151,15 +171,68 @@ async function buildNarrative(jour, stocks, voters, estPremierJour, config) {
 
 // ── Embed / composants du jour ────────────────────────────────────
 
-function formatStockLine(emoji, label, value) {
-  const alerte =
-    value === 0
-      ? " ⚠️ **à 0** : encore une journée comme ça et c'est la fin !"
-      : "";
-  return `${emoji} ${label} : **${value}**${alerte}`;
+const HARVEST_ACTIONS = ["peche", "eau", "bois", "explorer"];
+
+function constructionIds(config) {
+  return Object.keys(config.constructions ?? {});
 }
 
-async function buildRobinsonEmbed(
+// Besoin de la nuit affiché dans le message du jour : V de la veille, ou au
+// Jour 1 une fraction des votants du jour (`consommation_jour1_ratio`).
+function computeBesoinNuit(jour, config, vVeille, vJour) {
+  const V = jour > 1 && vVeille != null ? vVeille : computeDay1ConsumptionVoters(vJour, config.consommation_jour1_ratio);
+  return computeDailyConsumption(V);
+}
+
+// Ligne « 🔭 Demain » : événement programmé, Grosse Houle qui commence, ou
+// arrivée des secours au dernier jour.
+function buildForecastLines(jour, config, programme) {
+  if (jour >= config.duree_jours) {
+    return ["🚢 **Demain : les secours arrivent !** Aucune ressource ne doit être à 0 après cette dernière nuit (sauf Radeau achevé)."];
+  }
+  const lines = [];
+  const prevu = forecastForDay(jour + 1, config.evenements, programme);
+  if (prevu) {
+    const detail = (prevu.prevision ?? "").replaceAll("{seuil}", prevu.condition_votants_veille_max ?? "");
+    lines.push(`🔭 **Demain : ${prevu.emoji} ${prevu.nom}** (${detail})`);
+  }
+  const appauvDemain = computeAppauvrissement(jour + 1, config);
+  if (appauvDemain > computeAppauvrissement(jour, config)) {
+    lines.push(`🔭 **Demain : 🍂 l’île s’appauvrit** (récolte de 0 à ${harvestMaxForDay(jour + 1, config)}, Explorer ${3 - appauvDemain})`);
+  }
+  const houle = config.radeau_verrouille;
+  if (houle && jour + 1 === houle.jour_debut) {
+    lines.push(`🔭 **Demain : ${houle.emoji} ${houle.nom}** (Radeau indisponible jusqu’au Jour ${houle.jour_fin} inclus)`);
+  }
+  return lines;
+}
+
+// Plateau graphique du jour (/api/robinson/plateau, robinsonImage.js) :
+// stocks et besoin de la nuit, Radeau, constructions, récolte du jour et
+// frise des jours. Seuls les événements déjà vus, celui du jour et celui
+// annoncé pour demain sont encodés (anti-spoiler).
+function buildPlateauUrl({ jour, config, stocks, besoin, zeroStreaks, radeauPoints, radeauJour, constructions, eventsVus, event, programme, zones, palier }) {
+  const prevu = jour < config.duree_jours ? forecastForDay(jour + 1, config.evenements, programme) : null;
+  const evenements = { ...(eventsVus ?? {}) };
+  if (event?.id) evenements[jour] = event.id;
+  if (prevu) evenements[jour + 1] = prevu.id;
+  const d = encodePlateau({
+    jour,
+    stocks,
+    besoin: besoin ?? { poisson: 0, eau: 0, bois: 0 },
+    zeroStreaks,
+    radeauPoints,
+    radeauJour,
+    constructions,
+    evenements,
+    zones,
+    palier,
+    explorerBloque: isExplorerDisabled(event),
+  });
+  return `${TRUST_ROYALE_URL}/api/robinson/plateau?d=${d}`;
+}
+
+async function buildRobinsonEmbed({
   jour,
   stocks,
   radeauPoints,
@@ -169,10 +242,15 @@ async function buildRobinsonEmbed(
   voters,
   chefExplorateurId,
   chefCharpentierId,
-) {
-  const sections = computeRaftSections(radeauPoints, config.points_par_section);
-  const raftBar =
-    "🟩".repeat(sections) + "⬜".repeat(config.radeau_sections_max - sections);
+  constructions = {},
+  programme = null,
+  palier = null,
+  zones = {},
+  besoin = null,
+  zeroStreaks = {},
+  radeauJour = 0,
+  eventsVus = {},
+}) {
 
   const narrative = await buildNarrative(jour, stocks, voters, estPremierJour, config);
   const lines = [narrative, ""];
@@ -190,10 +268,8 @@ async function buildRobinsonEmbed(
     }
     lines.push("");
   }
-  // Verrou anti-rush narré (mécanique du 26/08) : affiché tant que le jour
-  // est dans la fenêtre de config.radeau_verrouille, en plus de
-  // l'événement du jour éventuel (les deux peuvent coexister — ex. le
-  // Colis Royal et la Grosse Houle tombent tous les deux au Jour 4).
+  // Verrou anti-rush narré : affiché tant que le jour est dans la fenêtre de
+  // config.radeau_verrouille, en plus de l'événement du jour éventuel.
   if (isRadeauDisabled(jour, config.radeau_verrouille)) {
     const { emoji, nom, description, jour_fin } = config.radeau_verrouille;
     lines.push(
@@ -203,39 +279,39 @@ async function buildRobinsonEmbed(
       "",
     );
   }
-  // Chef Explorateur du jour (mécanique du 24/08) : annoncé dès l'ouverture
-  // du jour pour que la personne désignée sache dès le matin. Choisi parmi
-  // les votants RÉELS de la veille (jamais un non-votant) — voir
-  // pickChefExplorateur(). Aucune annonce si personne n'a voté hier.
+  // Chefs du jour : annoncés dès l'ouverture, choisis parmi les votants
+  // réels de la veille (pickChefExplorateur()/pickChefCharpentier()).
   if (chefExplorateurId) {
     lines.push(
-      `👑 **Chef explorateur du jour :** <@${chefExplorateurId}> récolte automatiquement 1 ressource de plus (jusqu’à 6 !) aujourd’hui sur Pêcher/Eau/Bois.`,
+      `👑 **Chef explorateur du jour :** <@${chefExplorateurId}> récolte automatiquement 1 ressource de plus aujourd’hui sur Pêcher/Eau/Bois.`,
       "",
     );
   }
-  // Chef Charpentier du jour (30/08, second rôle) : annoncé uniquement les
-  // jours où le Radeau est déverrouillé (avant, le rôle n'aurait aucun
-  // effet possible). Comme le Chef Explorateur, choisi parmi les votants
-  // réels de la veille — voir pickChefCharpentier().
   if (chefCharpentierId) {
     lines.push(
       `🪓 **Chef charpentier du jour :** <@${chefCharpentierId}> peut construire en solo aujourd’hui : un vote Radeau de sa part ne coûte aucun Bois commun et rapporte des points doublés !`,
       "",
     );
   }
-  lines.push(
-    formatStockLine("🐟", "Nourriture", stocks.poisson),
-    formatStockLine("💧", "Eau", stocks.eau),
-    formatStockLine("🪵", "Bois", stocks.bois),
-    "",
-    `🛶 Radeau : [${raftBar}] (${sections}/${config.radeau_sections_max} sections)`,
-  );
+  // Le détail (besoin de la nuit, Radeau, constructions, récolte) est dans
+  // le plateau ; le texte garde les stocks en une ligne et l'alerte à 0,
+  // lisibles même si l'image ne se charge pas.
+  const total = config.points_par_section * config.radeau_sections_max;
+  lines.push(`🐟 **${stocks.poisson}** · 💧 **${stocks.eau}** · 🪵 **${stocks.bois}** · 🛶 **${Math.min(radeauPoints, total)}**/${total}`);
+  const aZero = [["poisson", "Nourriture"], ["eau", "Eau"], ["bois", "Bois"]].filter(([id]) => stocks[id] <= 0).map(([, l]) => l);
+  if (aZero.length) {
+    lines.push(`⚠️ **${aZero.join(" et ")} à 0** : encore une journée comme ça et c'est la fin !`);
+  }
+  const forecast = buildForecastLines(jour, config, programme);
+  if (forecast.length) lines.push("", ...forecast);
 
   return {
     title: `🏝️ Robinson (Jour ${jour}/${config.duree_jours})`,
     description: lines.join("\n"),
     color: ROBINSON_COLOR,
-    image: { url: robinsonImageUrl(jour) },
+    image: {
+      url: buildPlateauUrl({ jour, config, stocks, besoin, zeroStreaks, radeauPoints, radeauJour, constructions, eventsVus, event, programme, zones, palier }),
+    },
     footer: {
       text: estPremierJour
         ? `Naufragés ! Survivez ensemble jusqu’au Jour ${config.duree_jours + 1}, ou évadez-vous avant en finissant le Radeau.`
@@ -279,27 +355,61 @@ function buildAnnonceComponents() {
   ];
 }
 
-function buildRobinsonComponents(jour, config, voteCounts, event) {
-  const actionIds = Object.keys(config.actions).filter(
-    (id) =>
-      !(id === "explorer" && isExplorerDisabled(event)) &&
-      !(id === "radeau" && isRadeauDisabled(jour, config.radeau_verrouille)),
+// Actions qui coûtent du Bois (Radeau et constructions), regroupées
+// derrière le bouton Bâtir : le message public garde une seule rangée
+// d'actions (récolter ou bâtir), le choix du chantier se fait en éphémère.
+const BATIR = { id: "batir", label: "Bâtir", emoji: "🔨" };
+
+// Chantiers proposés par le menu Bâtir : Radeau hors Grosse Houle, puis les
+// constructions inachevées, dans l'ordre de la config.
+function listChantiers(jour, config, constructions, radeauJour = 0) {
+  const chantiers = [];
+  if (
+    config.actions.radeau &&
+    !isRadeauDisabled(jour, config.radeau_verrouille) &&
+    radeauJour < computeRadeauPlafondJour(config)
+  ) {
+    chantiers.push("radeau");
+  }
+  for (const [id, c] of Object.entries(config.constructions ?? {})) {
+    if (!isConstructionDone(constructions?.[id] ?? 0, c)) chantiers.push(id);
+  }
+  return chantiers;
+}
+
+function buildRobinsonComponents(jour, config, voteCounts, event, constructions = {}, radeauJour = 0) {
+  const recoltes = HARVEST_ACTIONS.filter(
+    (id) => config.actions[id] && !(id === "explorer" && isExplorerDisabled(event)),
+  );
+  const chantiers = listChantiers(jour, config, constructions, radeauJour);
+  // Compteur du bouton Bâtir : tous les votes Radeau et construction du jour.
+  const votesBatir = ["radeau", ...Object.keys(config.constructions ?? {})].reduce(
+    (total, id) => total + (voteCounts[id] || 0),
+    0,
   );
 
+  const actions = recoltes.map((id) => {
+    const action = config.actions[id];
+    return {
+      type: 2,
+      style: 2,
+      label: `${action.label} (${voteCounts[id] || 0})`.slice(0, 80),
+      emoji: { name: action.emoji },
+      custom_id: `robinson_vote:${jour}:${id}`,
+    };
+  });
+  if (chantiers.length) {
+    actions.push({
+      type: 2,
+      style: 2,
+      label: `${BATIR.label} (${votesBatir})`,
+      emoji: { name: BATIR.emoji },
+      custom_id: `robinson_vote:${jour}:${BATIR.id}`,
+    });
+  }
+
   return [
-    {
-      type: 1,
-      components: actionIds.map((id) => {
-        const action = config.actions[id];
-        return {
-          type: 2,
-          style: 2,
-          label: `${action.label} (${voteCounts[id] || 0})`.slice(0, 80),
-          emoji: { name: action.emoji },
-          custom_id: `robinson_vote:${jour}:${id}`,
-        };
-      }),
-    },
+    { type: 1, components: actions },
     {
       type: 1,
       components: [
@@ -372,6 +482,7 @@ function buildOutcomeEmbed(
   config,
   manches = [],
   currentManche = null,
+  { derniereNuit = false } = {},
 ) {
   const image = { url: robinsonImageUrl(config.duree_jours) };
   const manchesLines = buildManchesSection(manches, config, currentManche);
@@ -401,7 +512,9 @@ function buildOutcomeEmbed(
   return {
     title: "💀 Naufrage définitif…",
     description: [
-      `Une ressource critique est restée à 0 pendant ${ZERO_STREAK_LIMIT} jours de suite, l’île a eu raison du campement. L’aventure s’arrête ici.`,
+      derniereNuit
+        ? "Les secours accostent au matin… mais le camp n’a pas tenu cette dernière nuit : une ressource critique est tombée à 0. L’aventure s’arrête ici."
+        : `Une ressource critique est restée à 0 pendant ${ZERO_STREAK_LIMIT} jours de suite, l’île a eu raison du campement. L’aventure s’arrête ici.`,
       ...manchesLines,
     ].join("\n"),
     color: 0x2c3e50,
@@ -495,23 +608,33 @@ export async function postRobinson(
   if (state.phase === "annonce") {
     const jour = 1;
     const stocks = config.stocks_initiaux;
-    const embed = await buildRobinsonEmbed(
+    // Ordre des événements tiré une fois pour toute la manche, gardé dans
+    // l'état (prévision affichée la veille de chaque événement).
+    const programme = drawEventProgramme(config.evenements, config.duree_jours);
+    const palierEpuisement = computeEpuisementPalier(null, config.epuisement);
+    const embed = await buildRobinsonEmbed({
       jour,
       stocks,
-      0,
+      radeauPoints: 0,
       config,
-      null,
-      true,
-      [],
-    );
+      event: null,
+      estPremierJour: true,
+      voters: [],
+      programme,
+      palier: palierEpuisement,
+      besoin: computeBesoinNuit(jour, config, null, 0),
+    });
     const components = buildRobinsonComponents(jour, config, {}, null);
 
     if (dryRun) return { dryRun: true, phase: "jour", jour, embed, components };
 
-    await initEconomy(config.stocks_initiaux);
+    await initEconomy(config.stocks_initiaux, constructionIds(config));
     return publishAndWriteState(channelId, state, {
       phase: "jour",
       jour,
+      programme,
+      palierEpuisement,
+      eventsVus: {},
       event: null,
       zeroStreaks: { poisson: 0, eau: 0, bois: 0 },
       dayVoters: [],
@@ -567,6 +690,51 @@ export async function postRobinson(
   }
 
   const jourSuivant = state.jour + 1;
+  // Dernière nuit : une ressource à 0 après la consommation du dernier jour
+  // = défaite, même si les secours arrivent (le Radeau achevé a déjà été
+  // traité plus haut). Sans cette règle, le dernier jour serait gratuit.
+  if (
+    isSurvivalVictory(jourSuivant, config.duree_jours) &&
+    hasEmptyResource(closure.stocksApres)
+  ) {
+    let currentManche = null;
+    if (!dryRun) {
+      await finalizeDayClosure(state.jour, {
+        V: closure.V,
+        radeauVotes: closure.voters.filter((v) => v.actionId === "radeau").length,
+        stocksAvant: closure.stocksAvant,
+        stocksFinal: closure.stocksApres,
+        consumption: closure.consumption,
+        gobelinsVoleur: closure.gobelinsVoleur,
+        event: state.event ?? null,
+        previousZeroStreaks: state.zeroStreaks,
+        outcome: "defaite",
+      });
+    }
+    if (!dryRun && isPublic) {
+      currentManche = await archiveManche({
+        outcome: "defaite",
+        jour: state.jour,
+        radeauPoints: closure.radeauPoints,
+        resolvedAt: new Date().toISOString(),
+      });
+    }
+    const manches = await listManches({ limit: 10 });
+    const embed = buildOutcomeEmbed("defaite", config, manches, currentManche, { derniereNuit: true });
+    if (dryRun) return { dryRun: true, final: true, outcome: "defaite", embed };
+    const result = await publishAndWriteState(channelId, state, {
+      jour: state.jour,
+      event: state.event,
+      zeroStreaks: state.zeroStreaks,
+      dayVoters: [],
+      embed,
+      components: [],
+      noPing,
+      estAnnonce: false,
+      termine: true,
+    });
+    return { ...result, final: true, outcome: "defaite" };
+  }
   if (isSurvivalVictory(jourSuivant, config.duree_jours)) {
     let currentManche = null;
     if (!dryRun && isPublic) {
@@ -604,7 +772,8 @@ export async function postRobinson(
   // événements conditionnels (Colis Royal) ou à montant dégressif (Épave)
   // en ont besoin. Les dons sont appliqués une seule fois, à l'arrivée du
   // jour concerné — jamais liés à un vote, jamais répétés à un reclic.
-  const event = eventForDay(jourSuivant, config.evenements, closure.V);
+  const event = eventForDay(jourSuivant, config.evenements, closure.V, state.programme);
+  const palierEpuisement = computeEpuisementPalier(closure.V, config.epuisement);
   let stocksPourEmbed = closure.stocksApres;
   let radeauPointsPourEmbed = closure.radeauPoints;
   let eventPourEmbed = event;
@@ -715,18 +884,25 @@ export async function postRobinson(
     return { ...result, final: true, outcome: "defaite" };
   }
 
-  const embed = await buildRobinsonEmbed(
-    jourSuivant,
-    stocksPourEmbed,
-    radeauPointsPourEmbed,
+  const constructions = await readConstructions(constructionIds(config));
+  const embed = await buildRobinsonEmbed({
+    jour: jourSuivant,
+    stocks: stocksPourEmbed,
+    radeauPoints: radeauPointsPourEmbed,
     config,
-    eventPourEmbed,
-    false,
-    closure.voters,
+    event: eventPourEmbed,
+    estPremierJour: false,
+    voters: closure.voters,
     chefExplorateurId,
     chefCharpentierId,
-  );
-  const components = buildRobinsonComponents(jourSuivant, config, {}, event);
+    constructions,
+    programme: state.programme,
+    palier: palierEpuisement,
+    besoin: computeBesoinNuit(jourSuivant, config, closure.V, 0),
+    zeroStreaks: zeroStreaksApres,
+    eventsVus: state.eventsVus,
+  });
+  const components = buildRobinsonComponents(jourSuivant, config, {}, event, constructions);
 
   if (dryRun) {
     // stocks/radeauPoints exposés en plus de l'embed pour jeux/scripts/robinsonStatus.js
@@ -745,6 +921,10 @@ export async function postRobinson(
 
   return publishAndWriteState(channelId, state, {
     jour: jourSuivant,
+    programme: state.programme,
+    // Événements réellement survenus (frise du plateau), jamais le programme à venir
+    eventsVus: { ...(state.eventsVus ?? {}), ...(event ? { [jourSuivant]: event.id } : {}) },
+    palierEpuisement,
     event: eventPourEmbed,
     chefExplorateurId,
     chefCharpentierId,
@@ -765,6 +945,9 @@ async function publishAndWriteState(
   {
     phase = "jour",
     jour,
+    programme = previousState?.programme ?? null,
+    palierEpuisement = previousState?.palierEpuisement ?? null,
+    eventsVus = previousState?.eventsVus ?? {},
     event,
     chefExplorateurId = null,
     chefCharpentierId = null,
@@ -835,6 +1018,9 @@ async function publishAndWriteState(
     messageId: message.id,
     publishedAt: new Date().toISOString(),
     termine,
+    programme,
+    palierEpuisement,
+    eventsVus,
     event,
     chefExplorateurId,
     chefCharpentierId,
@@ -867,27 +1053,42 @@ async function patchOriginal(webhookUrl, payload) {
 // intro) sur le message déjà publié sans avancer le jour ni toucher aux
 // votes/stocks — contrairement à postRobinson(), qui clôturerait la journée.
 export async function refreshPublicMessage(state, config, botToken) {
-  const [stocks, radeauPoints, voteCounts] = await Promise.all([
+  const [stocks, radeauPoints, voteCounts, constructions, zones, veille, radeauJour] = await Promise.all([
     readStocks(),
     readRadeauPoints(),
     tallyVotes(state.jour),
+    readConstructions(constructionIds(config)),
+    readZones(state.jour),
+    state.jour > 1 ? getHistoriqueEntry(state.jour - 1) : null,
+    readRadeauJour(state.jour),
   ]);
-  const embed = await buildRobinsonEmbed(
-    state.jour,
+  const vJour = Object.values(voteCounts).reduce((a, b) => a + b, 0);
+  const embed = await buildRobinsonEmbed({
+    jour: state.jour,
     stocks,
     radeauPoints,
     config,
-    state.event,
-    state.jour === 1,
-    state.dayVoters,
-    state.chefExplorateurId,
-    state.chefCharpentierId,
-  );
+    event: state.event,
+    estPremierJour: state.jour === 1,
+    voters: state.dayVoters,
+    chefExplorateurId: state.chefExplorateurId,
+    chefCharpentierId: state.chefCharpentierId,
+    constructions,
+    programme: state.programme,
+    palier: state.palierEpuisement,
+    zones,
+    besoin: computeBesoinNuit(state.jour, config, veille?.V ?? null, vJour),
+    zeroStreaks: state.zeroStreaks,
+    radeauJour,
+    eventsVus: state.eventsVus,
+  });
   const components = buildRobinsonComponents(
     state.jour,
     config,
     voteCounts,
     state.event,
+    constructions,
+    radeauJour,
   );
 
   await fetch(
@@ -903,18 +1104,30 @@ export async function refreshPublicMessage(state, config, botToken) {
   );
 }
 
+// Précisions entre parenthèses : épuisement et Filet/Citerne, seulement
+// quand ils ont joué (concision des messages joueurs).
+function formatModifiers(detail, config) {
+  const parts = [];
+  if (detail.malus > 0) parts.push(`zone épuisée −${detail.malus}`);
+  if (detail.bonusConstruction > 0 && detail.constructionId) {
+    const c = config.constructions?.[detail.constructionId];
+    if (c) parts.push(`${c.label} +${detail.bonusConstruction}`);
+  }
+  return parts.length ? ` (${parts.join(", ")})` : "";
+}
+
 function formatHarvestConfirmation(actionId, config, detail) {
   if (actionId === "explorer") {
-    const [resourceId] =
-      Object.entries(detail.yields).find(([, n]) => n > 0) ?? [];
-    return `🔍 Exploration réussie : tu ramènes 3 ${RESOURCE_LABELS[resourceId]} !`;
+    const [resourceId, n] =
+      Object.entries(detail.yields).find(([, v]) => v > 0) ?? [];
+    return `🔍 Exploration réussie : tu ramènes ${n} ${RESOURCE_LABELS[resourceId]} !${formatModifiers(detail, config)}`;
   }
   const action = config.actions[actionId];
   if (detail.amount === 0) {
-    return `${action.emoji} ${action.label} : bredouille cette fois-ci, rien à ramener !`;
+    return `${action.emoji} ${action.label} : bredouille cette fois-ci, rien à ramener !${formatModifiers(detail, config)}`;
   }
   const prefix = detail.isChef ? "👑 Chef explorateur du jour : " : "";
-  return `${prefix}${action.emoji} ${action.label} : tu récoltes ${detail.amount} ${RESOURCE_LABELS[action.resource]} !`;
+  return `${prefix}${action.emoji} ${action.label} : tu récoltes ${detail.amount} ${RESOURCE_LABELS[action.resource]} !${formatModifiers(detail, config)}`;
 }
 
 // ── Bouton de vote — actions de récolte (Pêcher/Eau/Bois/Explorer) ──
@@ -959,31 +1172,45 @@ async function handleHarvestVote(
 
   // "recorded" — premier vote réussi du joueur ce jour-ci : le tirage a
   // réellement lieu maintenant, et le stock est incrémenté immédiatement.
+  // Rang sur cette action aujourd'hui (épuisement), compté seulement pour
+  // un vote réellement enregistré.
+  const rang = await incrementZone(state.jour, actionId);
+  const malus = computeEpuisementMalus(rang, state.palierEpuisement);
+
   let detail;
   if (actionId === "explorer") {
-    const yields = rollExplorerYield(Math.random);
-    await Promise.all(
-      Object.entries(yields).map(([resourceId, amount]) =>
-        harvestResource(resourceId, amount),
-      ),
-    );
-    detail = { actionId, yields, at: new Date().toISOString() };
+    const tirage = rollExplorerYield(Math.random);
+    const [resourceId] = Object.entries(tirage).find(([, n]) => n > 0);
+    const appauv = computeAppauvrissement(state.jour, config);
+    const amount = computeExplorerAmount(malus + appauv, config.epuisement?.explorer_min ?? 1);
+    await harvestResource(resourceId, amount);
+    detail = {
+      actionId,
+      yields: { poisson: 0, eau: 0, bois: 0, [resourceId]: amount },
+      malus,
+      at: new Date().toISOString(),
+    };
   } else {
     const resourceId = config.actions[actionId].resource;
-    // Chef Explorateur du jour : +1 au tirage qui s'applique déjà ce jour-là
-    // (normal OU plafonné selon l'événement en cours) — refonte du 30/08,
-    // remplace l'ancien "garanti non-nul" (relance jusqu'à >= 1). Toujours
-    // >= 1 comme avant, mais peut désormais monter jusqu'à 6 un jour normal
-    // — uniquement sur les actions de récolte directes (pas Explorer, qui ne
-    // tombe déjà jamais à 0 ; pas Radeau, géré par une fonction séparée qui
-    // n'appelle jamais ce tirage).
+    // Chef explorateur : +1 sur Pêcher/Eau/Bois (pas Explorer ni Radeau).
+    // Filet/Citerne : +1 sur Pêcher/Eau une fois achevés.
     const isChef = state.chefExplorateurId === discordId;
+    const constructions = await readConstructions(constructionIds(config));
+    const bonusConstruction = constructionHarvestBonus(actionId, constructions, config.constructions);
     const baseRoll = harvestCapForEvent(state.event, actionId)
       ? rollEventCappedAmount(state.event, Math.random)
-      : rollHarvestAmount(Math.random);
-    const amount = isChef ? baseRoll + 1 : baseRoll;
+      : rollHarvestAmount(Math.random, harvestMaxForDay(state.jour, config));
+    const amount = computeHarvestAmount({ baseRoll, malus, isChef, bonusConstruction });
     await harvestResource(resourceId, amount);
-    detail = { actionId, amount, at: new Date().toISOString(), isChef };
+    detail = {
+      actionId,
+      amount,
+      malus,
+      bonusConstruction,
+      constructionId: actionId === "peche" ? "filet" : actionId === "eau" ? "citerne" : null,
+      at: new Date().toISOString(),
+      isChef,
+    };
   }
   await writeVoteDetail(state.jour, discordId, detail);
 
@@ -1030,20 +1257,33 @@ async function handleRadeauVote(
     return;
   }
 
-  // Chef Charpentier du jour (30/08) : son vote Radeau ne passe jamais par
-  // attemptRaftContribution() (aucun coût en Bois, ne peut jamais échouer) —
-  // un tirage de récolte classique +1, doublé, ajouté directement en points.
+  const plafond = { jour: state.jour, plafond: computeRadeauPlafondJour(config) };
+  const refusPlafond = async () => {
+    await releaseVoteSlot(state.jour, discordId);
+    await patchOriginal(webhookUrl, {
+      content: `🛶 Le Radeau a assez avancé pour aujourd’hui (${plafond.plafond} points au maximum par jour), choisis une autre action !`,
+      embeds: [],
+      components: [],
+    });
+  };
+
+  // Chef Charpentier : aucun coût en Bois, tirage de récolte +1 doublé,
+  // plafond quotidien compris (gain partiel s'il reste moins).
   if (state.chefCharpentierId === discordId) {
     const gain = rollCharpentierRadeauPoints(Math.random);
-    const { points } = await grantFreeRadeauPoints(gain);
+    const don = await grantFreeRadeauPoints(gain, plafond);
+    if (!don.success) {
+      await refusPlafond();
+      return;
+    }
     await writeVoteDetail(state.jour, discordId, {
       actionId: "radeau",
-      pointsAdded: gain,
+      pointsAdded: don.pointsAjoutes,
       isCharpentier: true,
       at: new Date().toISOString(),
     });
     await patchOriginal(webhookUrl, {
-      content: `🪓 Chef charpentier du jour : tu construis en solo, sans toucher au Bois commun : +${gain} points de construction (total : ${points}) !`,
+      content: `🪓 Chef charpentier du jour : tu construis en solo, sans toucher au Bois commun : +${don.pointsAjoutes} points de construction (total : ${don.points}) !`,
       embeds: [],
       components: [],
     });
@@ -1051,9 +1291,17 @@ async function handleRadeauVote(
     return;
   }
 
+  const constructions = await readConstructions(constructionIds(config));
+  const pointsGagnes = raftPointsPerVote(constructions, config.constructions);
   const contribution = await attemptRaftContribution(
     config.bois_par_point_radeau,
+    pointsGagnes,
+    plafond,
   );
+  if (!contribution.success && contribution.raison === "plafond") {
+    await refusPlafond();
+    return;
+  }
   if (!contribution.success) {
     await releaseVoteSlot(state.jour, discordId);
     await patchOriginal(webhookUrl, {
@@ -1066,17 +1314,155 @@ async function handleRadeauVote(
 
   await writeVoteDetail(state.jour, discordId, {
     actionId: "radeau",
-    pointsAdded: 1,
+    pointsAdded: contribution.pointsAjoutes,
     boisRestant: contribution.boisRestant,
     at: new Date().toISOString(),
   });
+  const ajout = contribution.pointsAjoutes;
   await patchOriginal(webhookUrl, {
-    content: `🛶 Contribution réussie ! +1 point de construction (il reste ${contribution.boisRestant} Bois).`,
+    content: `🛶 Contribution réussie ! +${ajout} point${ajout > 1 ? "s" : ""} de construction${ajout > 1 ? " (Atelier)" : ""}, il reste ${contribution.boisRestant} Bois.`,
     embeds: [],
     components: [],
   });
 
   await refreshPublicMessage(state, config, botToken);
+}
+
+// ── Bouton de vote — constructions (Filet, Citerne, Atelier) ──────
+// Même principe que le Radeau : 1 vote + 1 Bois commun = 1 point. Refus
+// sans consommer le vote si le Bois manque ou si la construction est déjà
+// achevée (slot libéré, le joueur peut voter autre chose).
+async function handleConstructionVote(
+  webhookUrl,
+  state,
+  config,
+  constructionId,
+  discordId,
+  username,
+  botToken,
+) {
+  const construction = config.constructions[constructionId];
+  const result = await recordVote(state.jour, discordId, constructionId, username);
+
+  if (result.status === "rejected") {
+    await patchOriginal(webhookUrl, {
+      content:
+        "Tu as déjà voté aujourd’hui pour une autre action, ton vote est définitif jusqu’à demain !",
+      embeds: [],
+      components: [],
+    });
+    return;
+  }
+  if (result.status === "already_recorded") {
+    await patchOriginal(webhookUrl, {
+      content: `${construction.emoji} Tu as déjà travaillé sur : ${construction.nom} aujourd’hui, c’est noté !`,
+      embeds: [],
+      components: [],
+    });
+    return;
+  }
+
+  const contribution = await attemptConstructionContribution(
+    constructionId,
+    construction.cout,
+    config.bois_par_point_radeau,
+  );
+  if (!contribution.success) {
+    await releaseVoteSlot(state.jour, discordId);
+    await patchOriginal(webhookUrl, {
+      content:
+        contribution.raison === "achevee"
+          ? `${construction.emoji} ${construction.nom} : déjà achevé, choisis une autre action !`
+          : `${construction.emoji} Pas assez de Bois pour construire (il en faut ${config.bois_par_point_radeau}), réessaie plus tard si le stock remonte !`,
+      embeds: [],
+      components: [],
+    });
+    return;
+  }
+
+  await writeVoteDetail(state.jour, discordId, {
+    actionId: constructionId,
+    pointsAdded: 1,
+    boisRestant: contribution.boisRestant,
+    at: new Date().toISOString(),
+  });
+  await patchOriginal(webhookUrl, {
+    content: contribution.achevee
+      ? `${construction.emoji} ${construction.nom} achevé grâce à toi ! Effet immédiat : ${construction.description}.`
+      : `${construction.emoji} ${construction.nom} : +1 point (${contribution.points}/${construction.cout}), il reste ${contribution.boisRestant} Bois.`,
+    embeds: [],
+    components: [],
+  });
+
+  await refreshPublicMessage(state, config, botToken);
+}
+
+// ── Bouton Bâtir — menu éphémère des chantiers ─────────────────────
+// Ne consomme pas le vote : le vote a lieu au clic sur un chantier du menu
+// (`robinson_vote:<jour>:<chantier>`, même routage que les autres actions).
+async function handleBatirMenu(webhookUrl, state, config, discordId) {
+  if (await getVoteDetail(state.jour, discordId)) {
+    await patchOriginal(webhookUrl, {
+      content: "Tu as déjà voté aujourd’hui, ton vote est définitif jusqu’à demain !",
+      embeds: [],
+      components: [],
+    });
+    return;
+  }
+  const total = config.points_par_section * config.radeau_sections_max;
+  const [stocks, radeauPoints, constructions, radeauJour] = await Promise.all([
+    readStocks(),
+    readRadeauPoints(),
+    readConstructions(constructionIds(config)),
+    readRadeauJour(state.jour),
+  ]);
+  const chantiers = listChantiers(state.jour, config, constructions, radeauJour);
+  const plafondJour = computeRadeauPlafondJour(config);
+  if (!chantiers.length) {
+    await patchOriginal(webhookUrl, {
+      content: "Rien à bâtir aujourd’hui !",
+      embeds: [],
+      components: [],
+    });
+    return;
+  }
+
+  const estCharpentier = state.chefCharpentierId === discordId;
+  const parVote = raftPointsPerVote(constructions, config.constructions);
+  const lignes = chantiers.map((id) => {
+    if (id === "radeau") {
+      const effet = estCharpentier
+        ? "🪓 gratuit pour toi aujourd’hui, points doublés"
+        : `1 Bois = ${parVote} point${parVote > 1 ? "s" : ""}`;
+      const resteJour = Number.isFinite(plafondJour) ? `, encore ${plafondJour - radeauJour} aujourd’hui` : "";
+      return `${config.actions.radeau.emoji} **Radeau** ${radeauPoints}/${total} : ${effet}${resteJour}`;
+    }
+    const c = config.constructions[id];
+    return `${c.emoji} **${c.nom}** ${constructions[id] ?? 0}/${c.cout} : ${c.description}`;
+  });
+
+  await patchOriginal(webhookUrl, {
+    content: [
+      `🔨 **Bâtir** (1 vote + 1 Bois = 1 point, il reste ${stocks.bois} Bois) :`,
+      ...lignes,
+    ].join("\n"),
+    embeds: [],
+    components: [
+      {
+        type: 1,
+        components: chantiers.map((id) => {
+          const item = id === "radeau" ? config.actions.radeau : config.constructions[id];
+          return {
+            type: 2,
+            style: 2,
+            label: item.label,
+            emoji: { name: item.emoji },
+            custom_id: `robinson_vote:${state.jour}:${id}`,
+          };
+        }),
+      },
+    ],
+  });
 }
 
 export async function handleVoteButton(
@@ -1096,6 +1482,11 @@ export async function handleVoteButton(
         embeds: [],
         components: [],
       });
+      return;
+    }
+
+    if (actionId === BATIR.id) {
+      await handleBatirMenu(webhookUrl, state, await loadRobinsonConfig(), discordId);
       return;
     }
 
@@ -1123,6 +1514,29 @@ export async function handleVoteButton(
       const { emoji, nom, jour_fin } = config.radeau_verrouille;
       await patchOriginal(webhookUrl, {
         content: `${emoji} ${nom} : le Radeau est hors de portée avec une mer pareille, reviens à partir du Jour ${jour_fin + 1} !`,
+        embeds: [],
+        components: [],
+      });
+      return;
+    }
+
+    if (config.constructions?.[actionId]) {
+      await handleConstructionVote(
+        webhookUrl,
+        state,
+        config,
+        actionId,
+        discordId,
+        username,
+        botToken,
+      );
+      return;
+    }
+
+    if (!config.actions[actionId]) {
+      // Identifiant inconnu (bouton d'une ancienne version du jeu).
+      await patchOriginal(webhookUrl, {
+        content: "Ce bouton n’est plus valable, utilise le message du jour !",
         embeds: [],
         components: [],
       });
@@ -1212,8 +1626,7 @@ export async function handleJournal(webhookUrl) {
     // minuscule), un signal trompeur qui masque une vraie baisse de
     // mobilisation au lieu de la révéler. Le Jour 1 n'a pas de veille : seul
     // cas où on garde le décompte du jour même (comportement historique).
-    const vPourBesoin = state.jour > 1 && veille ? veille.V : V;
-    const besoin = computeDailyConsumption(vPourBesoin);
+    const besoin = computeBesoinNuit(state.jour, config, veille?.V ?? null, V);
     const manque = {
       poisson: Math.max(0, besoin.poisson - stocks.poisson),
       eau: Math.max(0, besoin.eau - stocks.eau),
@@ -1226,7 +1639,7 @@ export async function handleJournal(webhookUrl) {
     const baseBesoin =
       state.jour > 1 && veille
         ? ` (estimés sur les ${veille.V} joueurs d’hier)`
-        : "";
+        : " (provisions du navire : seule une partie des joueurs du jour compte)";
 
     const lines = [
       `**Joueurs aujourd’hui : ${V}**`,
@@ -1256,7 +1669,7 @@ export async function handleJournal(webhookUrl) {
     if (streakWarnings.length > 0) {
       lines.push(
         "",
-        "**⚠️ Jours consécutifs à 0 (naufrage à 3) :**",
+        `**⚠️ Jours consécutifs à 0 (naufrage à ${ZERO_STREAK_LIMIT}) :**`,
         ...streakWarnings,
       );
     }
@@ -1285,15 +1698,18 @@ export async function handleJournal(webhookUrl) {
 // aucune lecture/écriture d'état (même principe que Tamagotchi).
 
 function buildReglesEmbed(config) {
+  const total = config.points_par_section * config.radeau_sections_max;
+  const ep = config.epuisement;
   const actionLines = Object.entries(config.actions).map(([id, action]) => {
-    if (id === "radeau") {
-      return `${action.emoji} **${action.label}** : coûte ${config.bois_par_point_radeau} Bois pour +1 point de construction (${config.points_par_section} points = 1 section, ${config.radeau_sections_max} sections = évasion !). Refusé sans consommer ton vote si le stock de Bois est insuffisant.`;
-    }
+    if (id === "radeau") return null; // présenté avec les constructions (bouton Bâtir)
     if (id === "explorer") {
-      return `${action.emoji} **${action.label}** : rapporte toujours 3 unités d’une seule ressource, tirée au hasard parmi Nourriture, Eau et Bois.`;
+      return `${action.emoji} **${action.label}** : 3 unités d’une ressource tirée au hasard.`;
     }
-    return `${action.emoji} **${action.label}** : rapporte de 0 à 5 ${RESOURCE_LABELS[action.resource]} au hasard (~16,7 % de chances chacun).`;
-  });
+    return `${action.emoji} **${action.label}** : 0 à 5 ${RESOURCE_LABELS[action.resource]} au hasard.`;
+  }).filter(Boolean);
+  const constructionLines = Object.values(config.constructions ?? {}).map(
+    (c) => `${c.emoji} **${c.nom}** (${c.cout} points) : ${c.description}.`,
+  );
 
   return {
     title: "📖 Règles du jeu Robinson",
@@ -1303,13 +1719,28 @@ function buildReglesEmbed(config) {
       "**Actions (1 vote par membre et par jour) :**",
       ...actionLines,
       "",
-      "**Consommation automatique chaque nuit** (V = votants uniques du jour) : −V Nourriture, −V Eau, −⌈V/2⌉ Bois.",
+      ...(ep
+        ? [
+            `**Épuisement :** sur une même action, chaque groupe de récolteurs du jour retire 1 à la récolte suivante (palier affiché dans le message du jour). Répartissez-vous !`,
+            "",
+          ]
+        : []),
+      `${BATIR.emoji} **Bâtir** (1 vote + 1 Bois = 1 point, chantier choisi après le clic, effet immédiat une fois achevé) :`,
+      `${config.actions.radeau.emoji} **Radeau** (${total} points) : l’évasion !${Number.isFinite(computeRadeauPlafondJour(config)) ? ` Au plus ${computeRadeauPlafondJour(config)} points par jour.` : ""}`,
+      ...constructionLines,
       "",
-      `**Défaite :** une ressource à 0 pendant ${ZERO_STREAK_LIMIT} jours consécutifs met fin à l’aventure.`,
+      "**Consommation chaque nuit** (V = votants de la veille) : −V Nourriture, −V Eau, −⌈V/2⌉ Bois. La première nuit, seule la moitié des votants compte.",
       "",
-      "📜 **Journal de Bord** : consulte les besoins du jour et l’historique des jours précédents. Simple lecture, ça ne consomme jamais ton vote : clique dessus autant de fois que tu veux.",
+      `**Défaite :** une ressource à 0 pendant ${ZERO_STREAK_LIMIT} jours de suite, ou à 0 après la dernière nuit.`,
       "",
-      "Un vote n’est pas modifiable une fois qu’il a réellement abouti. Attention, des événements imprévus peuvent frapper l’île à tout moment…",
+      ...(Array.isArray(config.appauvrissement) && config.appauvrissement.some((m) => m > 0)
+        ? ["🍂 **L’île s’appauvrit** au fil des jours : les récoltes diminuent (annoncé la veille). Les constructions, elles, gardent leur bonus.", ""]
+        : []),
+      "🔭 Les événements qui frappent l’île sont annoncés la veille.",
+      "",
+      "📜 **Journal de Bord** : besoins du jour et historique, sans consommer ton vote.",
+      "",
+      "Un vote n’est pas modifiable une fois qu’il a réellement abouti.",
     ].join("\n"),
     color: ROBINSON_COLOR,
   };

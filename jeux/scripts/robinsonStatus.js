@@ -19,6 +19,10 @@ import {
   readRadeauPoints,
   computeRaftSections,
   computeDailyConsumption,
+  computeDay1ConsumptionVoters,
+  computeEpaveBoisBonus,
+  readConstructions,
+  isConstructionDone,
   getHistoriqueEntry,
   tallyVotes,
   listVotes,
@@ -49,7 +53,19 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
   console.log(`🐟 Nourriture : ${stocks.poisson}`);
   console.log(`💧 Eau        : ${stocks.eau}`);
   console.log(`🪵 Bois       : ${stocks.bois}`);
-  console.log(`🛶 Radeau     : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)\n`);
+  console.log(`🛶 Radeau     : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)`);
+  const constructions = await readConstructions(Object.keys(config.constructions ?? {}));
+  for (const [id, c] of Object.entries(config.constructions ?? {})) {
+    const pts = constructions[id] ?? 0;
+    console.log(`${c.emoji} ${c.nom.padEnd(14)} : ${isConstructionDone(pts, c) ? "achevé" : `${pts}/${c.cout}`}`);
+  }
+  if (state.programme) {
+    const prog = Object.entries(state.programme)
+      .map(([j, id]) => `J${j} ${config.evenements.find((e) => e.id === id)?.nom ?? id}`)
+      .join(", ");
+    console.log(`📅 Programme  : ${prog}`);
+  }
+  console.log(`⛏️ Palier d'épuisement : ${state.palierEpuisement ?? "aucun"}\n`);
 
   const votes = await listVotes(state.jour);
   // Pseudo actuel résolu en direct pour chaque votant (jamais celui figé au
@@ -74,7 +90,7 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 
   // Projection : réutilise postRobinson() en --dry-run (lecture seule, aucune
   // écriture Redis, aucun appel Discord) pour ne pas dupliquer la logique des
-  // événements (bonus Épave/Colis Royal/Poissons pourris) — canal factice, la
+  // événements (Épave, Poissons pourris) — canal factice, la
   // publication n'est jamais atteinte en dry-run.
   const projection = await postRobinson(state.channelId, { dryRun: true, noPing: true, isPublic: false });
   console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
@@ -96,16 +112,15 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
     // clôture, pas à un autre calcul. Jour 1 : pas de veille, on retombe sur
     // le décompte du jour même (comportement historique, seule exception).
     const veille = state.jour > 1 ? await getHistoriqueEntry(state.jour - 1) : null;
-    const vConsommation = veille ? veille.V : votes.length;
+    const vConsommation = veille ? veille.V : computeDay1ConsumptionVoters(votes.length, config.consommation_jour1_ratio);
     const conso = computeDailyConsumption(vConsommation);
     // N'inclut pas le vol des Gobelins (Jour 8, conditionnel au Bois final
     // <5) : trop dépendant des autres lignes pour un calcul indépendant simple.
     const eventDelta = (resource) => {
       const e = projection.event;
       if (!e) return 0;
-      if ((e.id === "colis_royal" || e.id === "evenement")) return e.bonus_ressources ?? 0;
-      if (e.id === "indigestion_royale" && resource === "eau") return e.bonus_eau ?? 2;
       if (e.id === "poissons_pourris" && resource === "poisson") return -(e.perte ?? 0);
+      if (e.id === "epave" && resource === "bois") return computeEpaveBoisBonus(e, votes.length);
       return 0;
     };
     const detailLigne = (emoji, label, resource, consoKey) => {

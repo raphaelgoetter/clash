@@ -620,36 +620,48 @@ Cron `.github/workflows/quiz.yml` : `6 8 * * *`. Variables : `DISCORD_TOKEN`, `D
 
 ## Robinson (survie insulaire communautaire)
 
-Jeu spécial collaboratif : la communauté, naufragée, doit survivre `duree_jours` (7) jours jusqu'aux secours (Jour `duree_jours + 1`) ou s'évader plus tôt en Radeau. Chaque jour, chaque membre vote une action (Pêcher, Eau, Bois, Explorer, Radeau) qui alimente 3 stocks (Nourriture/poisson, Eau, Bois) consommés chaque nuit. Mécaniques communes (annonce, cron `--require-active`, salon test/public, ping, manches) : voir « Jeux spéciaux : fonctionnement commun ».
+Jeu spécial collaboratif : la communauté, naufragée, doit survivre `duree_jours` (7) jours jusqu'aux secours (Jour `duree_jours + 1`) ou s'évader plus tôt en Radeau. Chaque jour, chaque membre vote une action : récolter (Pêcher, Eau, Bois, Explorer) ou bâtir (Radeau, Filet, Citerne, Atelier). Les 3 stocks (Nourriture/poisson, Eau, Bois) sont consommés chaque nuit. Mécaniques communes (annonce, cron `--require-active`, salon test/public, ping, manches) : voir « Jeux spéciaux : fonctionnement commun ».
 
 | Rôle | Fichier |
 |---|---|
 | Logique métier, Redis, fonctions pures | `jeux/services/robinson.js` |
 | Embeds, publication, boutons | `jeux/discord/handlers/robinson.js` (`postRobinson()`, `handleVoteButton()`, `handleJournal()`, `handleRegles()`) |
-| Routage des boutons (`robinson_vote:<jour>:<action>`, `robinson_journal`, `robinson_regles`) | `jeux/discord/routes/jeuxSpeciaux.js` |
+| Routage des boutons (`robinson_vote:<jour>:<action>`, action, `batir` ou chantier, `robinson_journal`, `robinson_regles`) | `jeux/discord/routes/jeuxSpeciaux.js` |
 | Publication (manuel/cron) | `jeux/scripts/postRobinson.js` (pas de commande slash) |
 | Config | `jeux/data/robinson/robinson.json`, `jeux/data/robinson/narratifs.json` |
-| Illustrations | `frontend/public/images/robinson/rob-01.webp` … `rob-10.webp` (`robinsonImageUrl(jour)`) ; seules 01-07 servent avec 7 jours, l'embed de fin réutilise celle de `duree_jours` |
+| Simulation d'équilibrage | `jeux/outils/robinson-simulation/simuler.mjs` (`--n`, `--v 6,10,14`, surcharges de calibrage `--appauvrissement`, `--points-section`, `--stocks`) |
+| Plateau du jour | `jeux/services/robinsonImage.js` (`GET /api/robinson/plateau?d=`, `jeux/server/imageRoutes.js`) ; rendu local : `node jeux/outils/robinson/renderPlateau.mjs <sortie.png> [jour]` |
+| Illustrations | `frontend/public/images/robinson/rob-01.webp` (annonce) et celle de `duree_jours` (fin de partie) (`robinsonImageUrl(jour)`) |
 
 ### Déroulement
 
 1. **Annonce** (lancement manuel) : `phase: "annonce"`, `jour: null`, bouton Règles seul, ping MINI-JEUX.
-2. **Jour 1** (cron suivant) : `initEconomy(stocks_initiaux)` (stocks + Radeau à 0), ping MINI-JEUX.
+2. **Jour 1** (cron suivant) : `initEconomy(stocks_initiaux, constructions)` (stocks, Radeau et constructions à 0), tirage du programme des événements (`drawEventProgramme()`, gardé dans `state.programme`), ping MINI-JEUX.
 3. **Clôture quotidienne** (`postRobinson()` → `computeClosure()` puis `finalizeDayClosure()`) :
    - Radeau achevé (`isRaftVictory()`) → victoire Radeau, sans consommation ni vérification de défaite.
-   - Sinon consommation automatique (`computeDailyConsumption()`) : `-V` Nourriture, `-V` Eau, `-⌈V/2⌉` Bois (plancher 0), où **V = votants uniques de la veille** (`historique[jour-1].V`) ; seul le Jour 1 utilise son propre V. ⚠️ Ne pas baser la conso sur le V du jour clos : une baisse de participation deviendrait gratuite.
-   - Jour 5 (Gobelins) : après conso, si Bois `< 5` → vol de 5 Poissons (plancher 0).
-   - Jour `duree_jours + 1` atteint → victoire par survie.
+   - Sinon consommation automatique (`computeDailyConsumption()`) : `-V` Nourriture, `-V` Eau, `-⌈V/2⌉` Bois (plancher 0), où **V = votants uniques de la veille** (`historique[jour-1].V`). Jour 1 : `⌈V × consommation_jour1_ratio⌉` de ses propres votants (`computeDay1ConsumptionVoters()`, provisions du navire : la réserve de départ grandit avec le groupe). ⚠️ Ne pas baser la conso sur le V du jour clos : une baisse de participation deviendrait gratuite.
+   - Événement Gobelins du jour clos : après conso, si Bois `< 5` → vol de 5 Poissons (plancher 0).
+   - Dernier jour (`duree_jours`) : une ressource à 0 après la conso → **défaite** (`hasEmptyResource()`, embed « dernière nuit ») ; sinon victoire par survie. ⚠️ Sans cette règle le dernier jour serait gratuit (tout le monde au Radeau sans risque).
    - Sinon : résolution de l'événement du jour suivant (pertes/dons Poissons Pourris, Épave) → stock **final**, puis `updateZeroStreaks()` sur ce stock final. Ressource à 0 pendant `ZERO_STREAK_LIMIT` (**2**) jours consécutifs → défaite. ⚠️ Toujours calculer les streaks sur le stock final affiché, jamais sur le stock intermédiaire (sinon « jour à 0 » invisible pour les joueurs).
-   - Tirage des Chefs du jour, suppression du message de la veille, publication du jour suivant.
+   - Palier d'épuisement du jour suivant (`computeEpuisementPalier()`, `state.palierEpuisement`), tirage des Chefs du jour, suppression du message de la veille, publication du jour suivant.
 4. Fin (victoire Radeau, victoire survie, défaite) : `termine: true`, ping, archivage de la manche (salon public).
+
+Le message du jour affiche en texte le récit, l'événement, la Grosse Houle, les Chefs, les stocks et le Radeau en une ligne (« 🐟 12 · 💧 9 · 🪵 7 · 🛶 8/25 »), l'alerte des ressources à 0 et la prévision du lendemain (« 🔭 Demain » : événement programmé, appauvrissement, début de la Grosse Houle, ou au dernier jour l'arrivée des secours et la règle de la dernière nuit). Le détail est dans le **plateau** (image du message, régénérée à chaque rafraîchissement) :
+
+- frise des jours : jour courant, événements survenus (`state.eventsVus`), celui du jour et celui annoncé pour demain, « ? » au-delà, vagues de la Grosse Houle, feuilles d'appauvrissement (connues jusqu'à demain), bateau des secours ;
+- stocks : barre, valeur (vert couvert, orange sous le besoin, rouge à 0), trait du besoin de la nuit, « nuit −N » ou « à 0 : n / 2 jours » ;
+- Radeau : points sur le total, une planche par section, points du jour sur le plafond (« Houle » les jours fermés) ; constructions : avancement ou ✓ ;
+- récolte du prochain votant par action : fourchette réelle (tirage du jour ou limite d'événement, épuisement, Filet/Citerne), orange si la zone est épuisée, Explorer barré pendant les Gobelins.
+
+Rendu sans état (`encodePlateau()`, JSON en base64url : état dynamique seulement, le reste vient de la config), PNG via `@resvg/resvg-js` et la police Inter (Blob), comme Potato. ⚠️ Anti-spoiler : jamais le programme au-delà de demain dans l'URL. ⚠️ Lisibilité mobile : Discord réduit l'image à la largeur du message (≈ 360 px sur téléphone pour une toile de 800 px) ; texte ≥ 26 px dans l'image, aucun libellé que l'icône suffit à porter, tout changement vérifié sur un rendu réduit à 360 px (`sips -Z 360`).
 
 ### Votes
 
+- Message public : une rangée d'actions (Pêcher, Eau, Bois, Explorer, 🔨 Bâtir) et une rangée Journal / Règles. ⚠️ Radeau et constructions restent regroupés derrière Bâtir : un bouton par chantier surchargerait le message (jusqu'à 10 boutons). Bâtir (`robinson_vote:<jour>:batir`, compteur = votes Radeau + constructions du jour) ouvre un menu éphémère sans consommer le vote (`handleBatirMenu()`) : chantiers disponibles (`listChantiers()` : Radeau hors Grosse Houle, constructions inachevées), avancement, effet, Bois restant, mention « gratuit » pour le Chef charpentier ; refus si le joueur a déjà voté. Le vote a lieu au clic sur un chantier du menu, routé comme les autres actions.
 - Un vote par membre et par jour, **définitif** : `recordVote()` en `HSETNX` ; même action = no-op (réaffiche le tirage via `vote_details`), autre action = rejet.
-- **Récoltes appliquées en direct au clic** (pas au cron) : stock incrémenté immédiatement, résultat exact en éphémère (ack `type: 5` puis `PATCH @original`) ; message public rafraîchi par un `PATCH` séparé (token bot, `refreshPublicMessage()`).
-- ⚠️ Stocks et points de Radeau = clés numériques séparées mutées uniquement en `INCRBY`/`DECRBY`, jamais un blob JSON lu-modifié-réécrit (clics concurrents).
-- Radeau sans Bois suffisant (`attemptRaftContribution()`, décrémente puis compense si négatif) : vote rejeté **et slot libéré** (`releaseVoteSlot()`), le joueur peut réessayer.
+- **Récoltes appliquées en direct au clic** (pas au cron) : stock incrémenté immédiatement, résultat exact en éphémère (ack `type: 5` puis `PATCH @original`, précisions « zone épuisée −N » / « Filet +1 » seulement si elles jouent) ; message public rafraîchi par un `PATCH` séparé (token bot, `refreshPublicMessage()`).
+- ⚠️ Stocks, points de Radeau et points de construction = clés numériques séparées mutées uniquement en `INCRBY`/`DECRBY`, jamais un blob JSON lu-modifié-réécrit (clics concurrents).
+- Radeau ou construction sans Bois suffisant (`attemptRaftContribution()`, `attemptConstructionContribution()`, décrémentent puis compensent si négatif) : vote rejeté **et slot libéré** (`releaseVoteSlot()`), le joueur peut réessayer. Même chose pour une construction déjà achevée (deux clics concurrents sur le dernier point).
 
 ### Tirages
 
@@ -657,10 +669,28 @@ Jeu spécial collaboratif : la communauté, naufragée, doit survivre `duree_jou
 |---|---|
 | Pêcher / Eau / Bois | 0-5 uniforme (`rollHarvestAmount()`) |
 | Pêcher / Eau / Bois plafonnés par événement | palier « modéré » 0-2 (Canicule, `rollModerateCapAmount()`) ; palier « léger » 1-2 (Ouragan, Indigestion Royale, `rollMildCapAmount()`) ; dispatch `rollEventCappedAmount()`, cible via `harvestCapForEvent()` |
-| Explorer | toujours 3 unités d'une seule ressource tirée au hasard (`rollExplorerYield()`), jamais plafonné |
-| Radeau | `bois_par_point_radeau` (1) Bois → +1 point |
+| Explorer | 3 unités d'une seule ressource tirée au hasard (`rollExplorerYield()`), moins l'épuisement, jamais sous `epuisement.explorer_min` (`computeExplorerAmount()`), jamais plafonné |
+| Radeau | `bois_par_point_radeau` (1) Bois → +1 point, +2 une fois l'Atelier achevé (`raftPointsPerVote()`) |
 
-⚠️ Barème 0-5 calibré par simulation Monte Carlo : récolte moyenne = consommation (équilibre sans marge). Le baisser (0-4) effondre la survie ; tout changement de barème, palier, stocks ou `ZERO_STREAK_LIMIT` doit être revalidé par simulation **sur le code réellement implémenté**. Cibles de calibrage : survie passive 40-60 % et victoire Radeau 20-40 % à V=12-16.
+Récolte finale (`computeHarvestAmount()`) : tirage moins l'épuisement (plancher 0), puis +1 Chef explorateur, +1 Filet (Pêcher) ou Citerne (Eau).
+
+**Appauvrissement de l'île** (`config.appauvrissement`, malus par jour, `computeAppauvrissement()`) : `[0, 0, 0, 1, 1, 2, 2]`. La récolte normale passe de 0-5 à 0-(5 − malus) (`harvestMaxForDay()`, borne de `rollHarvestAmount()`) et Explorer rapporte 3 − malus avant épuisement. Les plafonds d'événement, le Chef explorateur, Filet/Citerne et le Chef charpentier n'en dépendent pas. Affiché dans le message du jour (« 🍂 ») et annoncé la veille quand il augmente. ⚠️ Raison d'être : sans pression croissante, un groupe coordonné se contente de récolter ce qui manquera le lendemain et ne perd presque jamais ; l'appauvrissement force à investir tôt (constructions, stocks de départ plus généreux) et fait du Radeau l'échappatoire.
+
+**Épuisement des zones** : le rang du récolteur sur l'action du jour (`incrementZone()`, `HINCRBY` atomique) donne un malus `⌊(rang − 1) / palier⌋` (`computeEpuisementMalus()`). Palier = `max(palier_min, ⌈V_veille / diviseur⌉)`, `palier_jour1` au Jour 1. ⚠️ Raison d'être : sans lui, tout le monde récolte la ressource la plus basse et la partie est résolue ; le palier suit V pour ne pas pénaliser les gros groupes. Ne s'applique ni au Radeau ni aux constructions.
+
+⚠️ Barème calibré par simulation Monte Carlo (`jeux/outils/robinson-simulation/simuler.mjs`, qui lit la config réelle) : tout changement de barème, palier, stocks, coûts, épuisement, événements ou `ZERO_STREAK_LIMIT` doit être revalidé par cette simulation. Cibles à V=10-18 : groupe « stratège » 10-15 % de défaite, « réaliste » environ 30 %, Radeau environ 40 % des parties d'un bon groupe ; « stratège » (prévisions, constructions tôt) nettement meilleur que « glouton myope » (ressource la plus basse), lui-même meilleur que « aléatoire » (≥ 80 % de défaite) ; aucune stratégie dominante sur le Radeau : « rush Atelier » (Radeau au plafond dès que possible) et « Radeau prudent » gagnent plus souvent au Radeau mais perdent nettement plus souvent que « stratège » ; défaite du profil réaliste peu dépendante de V.
+
+### Constructions (`robinson.json.constructions`)
+
+Proposée dans le menu Bâtir tant qu'elle est inachevée. 1 vote + 1 Bois commun = 1 point (`attemptConstructionContribution()`), effet immédiat dès le dernier point. Effets liés à l'identifiant :
+
+| Id | Coût | Effet |
+|---|---|---|
+| `filet` | 4 | +1 à chaque Pêche (`constructionHarvestBonus()`) |
+| `citerne` | 4 | +1 à chaque Eau, y compris plafonnée |
+| `atelier` | 4 | 2 points par vote Radeau (pas le Chef charpentier) |
+
+Raison d'être : arbitrage entre survivre aujourd'hui, investir pour la suite et avancer le Radeau, tous payés en Bois. Rentables si bâties tôt.
 
 ### Chefs du jour
 
@@ -669,26 +699,29 @@ Tirés à chaque ouverture de jour (à partir du Jour 2) parmi les **votants ré
 - **👑 Chef Explorateur** (`pickChefExplorateur()`) : **+1** au tirage du jour (normal ou plafonné) sur Pêcher/Eau/Bois uniquement (pas Explorer, pas Radeau).
 - **🪓 Chef Charpentier** (`pickChefCharpentier()`) : tiré seulement les jours où le Radeau est déverrouillé, en excluant le Chef Explorateur (sauf votant unique). Son vote Radeau est **gratuit** (aucun Bois, `grantFreeRadeauPoints()`) et vaut `(rollHarvestAmount() + 1) × 2` points (2-12, `rollCharpentierRadeauPoints()`). ⚠️ Raison d'être : détourner une fraction des votes du groupe vers le Radeau fait s'effondrer la survie ; ce rôle ne coûte qu'un vote.
 
-### Événements programmés (`robinson.json.evenements`)
+### Événements (`robinson.json.evenements`)
 
-`eventForDay(jour, evenements, V_veille)` : lookup par champ `jour` ; `condition_votants_veille_max` désactive l'événement si `V_veille >=` seuil. Les pertes/dons s'appliquent **une seule fois**, à la publication du jour concerné.
+Programme tiré au Jour 1 (`drawEventProgramme(evenements, duree_jours)`) : chaque événement tombe une fois sur un jour au hasard entre le Jour 2 et `duree_jours`, deux événements de même `famille` (les plafonds d'Eau, `eau_limitee`) jamais consécutifs (`isProgrammeValide()`). ⚠️ Jamais d'ordre fixe : le jeu est rejoué, il serait connu d'avance. Prévision la veille (`forecastForDay()`, texte `prevision`, `{seuil}` remplacé par `condition_votants_veille_max`), sans filtre de condition.
 
-| Jour | Événement (`id`) | Effet |
-|---|---|---|
-| 2 | Poissons Pourris (`poissons_pourris`) | Seulement si V_veille `<` 14 (`condition_votants_veille_max`). Perte de Poisson `computePoissonsPourrisLoss(V, seuil) = max(1, min(seuil − V, 4 + V))` (`spoilPoisson()`). ⚠️ `seuil` doit être `event.condition_votants_veille_max`, jamais codé en dur. |
-| 3 | Grosse Canicule (`canicule`) | Eau : palier modéré 0-2 |
-| 4 | Ouragan Monstrueux (`ouragan`) | Pêcher et Bois : palier léger 1-2 |
-| 5 | Invasion de Gobelins (`gobelins`) | Bouton Explorer retiré (`isExplorerDisabled()`) ; vol de 5 Poissons si Bois `< 5` après conso (`computeGobelinsTheft()`) |
-| 6 | Indigestion Royale (`indigestion_royale`) | Eau : palier léger 1-2 |
-| 7 | Épave échouée (`epave`) | Don de **Bois** `max(bois_min, bois_base − V_veille)` = `max(5, 19 − V)` (`computeEpaveBoisBonus()`). ⚠️ Don de Bois, jamais de points de Radeau directs (rendrait la victoire Radeau quasi certaine). |
+`eventForDay(jour, evenements, V_veille, programme)` : lookup dans le programme ; `condition_votants_veille_max` désactive l'événement si `V_veille >=` seuil. Les pertes/dons s'appliquent **une seule fois**, à la publication du jour concerné.
 
-⚠️ Les événements ne figurent jamais dans l'embed Règles (`buildReglesEmbed()`) : surprise volontaire.
+| Événement (`id`) | Effet |
+|---|---|
+| Poissons Pourris (`poissons_pourris`) | Seulement si V_veille `<` 14 (`condition_votants_veille_max`). Perte de Poisson `computePoissonsPourrisLoss(V, seuil) = max(1, min(seuil − V, 4 + V))` (`spoilPoisson()`). ⚠️ `seuil` doit être `event.condition_votants_veille_max`, jamais codé en dur. |
+| Grosse Canicule (`canicule`) | Eau : palier modéré 0-2 |
+| Ouragan Monstrueux (`ouragan`) | Pêcher et Bois : palier léger 1-2 |
+| Invasion de Gobelins (`gobelins`) | Bouton Explorer retiré (`isExplorerDisabled()`) ; vol de 5 Poissons si Bois `< 5` après conso (`computeGobelinsTheft()`) |
+| Indigestion Royale (`indigestion_royale`) | Eau : palier léger 1-2 |
+| Épave échouée (`epave`) | Don de **Bois** `max(bois_min, bois_base − V_veille)` = `max(5, 19 − V)` (`computeEpaveBoisBonus()`). ⚠️ Don de Bois, jamais de points de Radeau directs (rendrait la victoire Radeau quasi certaine). |
+
+Les événements ne sont pas détaillés dans l'embed Règles (`buildReglesEmbed()`), qui indique seulement qu'ils sont annoncés la veille.
 
 ### Radeau
 
-- `points_par_section` (4) × `radeau_sections_max` (5) = **20 points** pour la victoire.
+- `points_par_section` (5) × `radeau_sections_max` (5) = **25 points** pour la victoire.
+- **Plafond quotidien** : `radeau_sections_max_par_jour` (2) sections, soit 10 points par jour au maximum, Chef charpentier compris (`computeRadeauPlafondJour()`, `clipRaftGain()`, compteur `robinson:radeau_jour:<jour>`). Gain partiel s'il reste moins que le gain du vote ; plafond atteint = vote refusé sans consommer le Bois, slot libéré, Radeau retiré du menu Bâtir. Évasion la plus rapide possible : Jour 5 (Jours 1, 2 puis 5, Grosse Houle les Jours 3-4). ⚠️ Raison d'être : sans plafond, Atelier au Jour 1 puis tout le groupe au Radeau le Jour 2 gagnait dans ~97 % des parties à V=15.
 - Victoire **jamais annoncée au clic** : détectée au cron suivant, qui court-circuite conso et défaite (y compris si c'est l'Épave qui fait franchir le seuil).
-- **Verrou « Grosse Houle »** (`robinson.json.radeau_verrouille`, `isRadeauDisabled(jour, radeau_verrouille)`) : bouton Radeau masqué Jours 3-4 (`jour_debut`/`jour_fin`), texte narratif dans l'embed, refus au clic en filet de sécurité. Empêche un rush des 20 points en une journée. `radeau_verrouille` absent/`null` = pas de verrou. Jamais annoncé dans les Règles.
+- **Verrou « Grosse Houle »** (`robinson.json.radeau_verrouille`, `isRadeauDisabled(jour, radeau_verrouille)`) : Radeau retiré du menu Bâtir Jours 3-4 (`jour_debut`/`jour_fin`), annoncé la veille et narré dans l'embed, refus au clic en filet de sécurité. Empêche un rush en une journée. `radeau_verrouille` absent/`null` = pas de verrou. Ne bloque pas les constructions.
 
 ### Manches
 
@@ -696,17 +729,20 @@ Score de classement (`computeMancheScore(outcome, jour, dureeJours)`) : victoire
 
 ### Config (`jeux/data/robinson/robinson.json`)
 
-`duree_jours` (7), `radeau_sections_max` (5), `bois_par_point_radeau` (1), `points_par_section` (4), `stocks_initiaux` (`{ poisson: 11, eau: 11, bois: 6 }`), `radeau_verrouille`, `actions`, `evenements`. Chargée une fois (`loadRobinsonConfig()`), jamais mutée. Constantes dans le code : `ZERO_STREAK_LIMIT = 2`, seuil Gobelins 5 et vol de 5 Poissons. `narratifs.json` : textes cosmétiques.
+`duree_jours` (7), `radeau_sections_max` (5), `bois_par_point_radeau` (1), `points_par_section` (5), `radeau_sections_max_par_jour` (2, absent = pas de plafond), `stocks_initiaux` (`{ poisson: 20, eau: 20, bois: 12 }`), `consommation_jour1_ratio` (0,5), `appauvrissement` (`[0, 0, 0, 1, 1, 2, 2]`, absent = aucun), `epuisement` (`{ palier_jour1: 4, diviseur: 4, palier_min: 3, explorer_min: 1 }`, absent = pas d'épuisement), `radeau_verrouille`, `actions`, `constructions` (`label`, `nom`, `emoji`, `cout`, `description`), `evenements` (`id`, `nom`, `emoji`, `description`, `prevision`, `famille` optionnelle, paramètres propres). Chargée une fois (`loadRobinsonConfig()`), jamais mutée. Constantes dans le code : `ZERO_STREAK_LIMIT = 2`, seuil Gobelins 5 et vol de 5 Poissons. `narratifs.json` : textes cosmétiques.
 
 ### Redis (`robinson:*`)
 
 | Clé | Type | Contenu |
 |---|---|---|
-| `robinson:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, event, chefExplorateurId, chefCharpentierId, zeroStreaks, dayVoters }`, muté au cron |
+| `robinson:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, programme, palierEpuisement, eventsVus, event, chefExplorateurId, chefCharpentierId, zeroStreaks, dayVoters }`, muté au cron |
 | `robinson:stock:poisson` / `:eau` / `:bois` | compteur | stocks, `INCRBY`/`DECRBY` uniquement |
 | `robinson:radeau_points` | compteur | points de Radeau |
+| `robinson:construction:<id>` | compteur | points investis dans chaque construction |
+| `robinson:radeau_jour:<jour>` | compteur | points de Radeau gagnés dans la journée (plafond quotidien, effacé à la clôture) |
+| `robinson:zones:<jour>` | HASH | `actionId → nombre de récoltes du jour` (épuisement, effacé à la clôture) |
 | `robinson:votes:<jour>` | HASH | `discordId → actionId` (effacé à la clôture) |
-| `robinson:vote_details:<jour>` | HASH | `discordId → { actionId, amount\|yields\|pointsAdded, isChef?, isCharpentier?, at }` (réaffichage sans re-tirage) |
+| `robinson:vote_details:<jour>` | HASH | `discordId → { actionId, amount\|yields\|pointsAdded, malus?, bonusConstruction?, isChef?, isCharpentier?, at }` (réaffichage sans re-tirage) |
 | `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` (affichage admin) |
 | `robinson:historique` | HASH | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }`, manche en cours, alimente le Journal de Bord |
 | `robinson:manches` / `robinson:manche_seq` | HASH / compteur | archive permanente des manches |
@@ -721,7 +757,7 @@ Le bouton `[📜 Journal de Bord]` affiche aussi les points de Radeau et, seulem
 | `npm run robinson:public` / `:public:dry` | salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) / aperçu |
 | `npm run robinson:reset` | efface état, stocks, votes, historique (**destructif**, garde les manches) |
 | `npm run robinson:reset:manches` | idem + `robinson:manches`/`manche_seq` |
-| `npm run robinson:status` | état courant + projection du jour suivant |
+| `npm run robinson:status` | état courant (stocks, constructions, programme, palier) + projection du jour suivant |
 | `npm run robinson:refresh` / `:refresh:dry` | réédite le message du jour en place (sans clôturer) après un correctif de texte |
 
 Workflow `.github/workflows/robinson.yml` : cron `8 8 * * *` UTC (avec `--require-active`) + `workflow_dispatch` (lancement). Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`/`_TEST`, `KV_REST_API_URL`/`KV_REST_API_TOKEN` (aucune spécifique).

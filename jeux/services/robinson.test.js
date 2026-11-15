@@ -23,19 +23,36 @@ import {
   computeEpaveBoisBonus,
   computePoissonsPourrisLoss,
   computeMancheScore,
+  drawEventProgramme,
+  isProgrammeValide,
+  forecastForDay,
+  computeEpuisementPalier,
+  computeEpuisementMalus,
+  computeHarvestAmount,
+  computeExplorerAmount,
+  isConstructionDone,
+  constructionHarvestBonus,
+  raftPointsPerVote,
+  computeRadeauPlafondJour,
+  clipRaftGain,
+  computeAppauvrissement,
+  harvestMaxForDay,
+  computeDay1ConsumptionVoters,
+  hasEmptyResource,
 } from "./robinson.js";
 
 const CONFIG = { radeau_sections_max: 5, points_par_section: 5 };
 
 const EVENEMENTS = [
-  { jour: 3, id: "canicule" },
-  { jour: 6, id: "ouragan" },
-  { jour: 8, id: "gobelins" },
-  { jour: 4, id: "colis_royal", condition_votants_veille: 12, bonus_ressources: 2 },
-  { jour: 7, id: "epave", bois_base: 19, bois_min: 5 },
-  { jour: 9, id: "indigestion_royale" },
-  { jour: 2, id: "poissons_pourris", condition_votants_veille_max: 10 },
+  { id: "canicule", famille: "eau_limitee" },
+  { id: "ouragan" },
+  { id: "gobelins" },
+  { id: "colis_royal", condition_votants_veille: 12, bonus_ressources: 2 },
+  { id: "epave", bois_base: 19, bois_min: 5 },
+  { id: "indigestion_royale", famille: "eau_limitee" },
+  { id: "poissons_pourris", condition_votants_veille_max: 10 },
 ];
+const PROGRAMME = { 2: "poissons_pourris", 3: "canicule", 4: "colis_royal", 6: "ouragan", 7: "epave", 8: "gobelins", 9: "indigestion_royale" };
 
 function rngSequence(values) {
   let i = 0;
@@ -190,30 +207,109 @@ async function main() {
   assert.strictEqual(isTooSoonSinceLastClosure("2026-08-27T03:00:00Z", NOW), false); // 9h -> OK
   assert.strictEqual(isTooSoonSinceLastClosure("2026-08-26T08:16:00Z", NOW), false); // ~28h (cas réel du 27/08) -> OK
 
-  // ── eventForDay ──
-  assert.strictEqual(eventForDay(3, EVENEMENTS).id, "canicule");
-  assert.strictEqual(eventForDay(6, EVENEMENTS).id, "ouragan");
-  assert.strictEqual(eventForDay(8, EVENEMENTS).id, "gobelins");
-  assert.strictEqual(eventForDay(5, EVENEMENTS), null);
-  assert.strictEqual(eventForDay(1, EVENEMENTS), null);
-  // Événement conditionnel (Colis Royal, jour 4) : ne se déclenche que si
-  // la mobilisation de la veille atteint le seuil.
-  assert.strictEqual(eventForDay(4, EVENEMENTS, 12)?.id, "colis_royal"); // pile au seuil -> déclenché
-  assert.strictEqual(eventForDay(4, EVENEMENTS, 15)?.id, "colis_royal");
-  assert.strictEqual(eventForDay(4, EVENEMENTS, 11), null); // sous le seuil -> journée normale
-  assert.strictEqual(eventForDay(4, EVENEMENTS), null); // previousDayVoters par défaut = 0 -> pas déclenché
-  // Événement non conditionnel (Épave, jour 7) : toujours déclenché, peu importe V.
-  assert.strictEqual(eventForDay(7, EVENEMENTS, 0)?.id, "epave");
-  assert.strictEqual(eventForDay(7, EVENEMENTS, 20)?.id, "epave");
-  // Événement non conditionnel (Indigestion Royale, jour 9).
-  assert.strictEqual(eventForDay(9, EVENEMENTS)?.id, "indigestion_royale");
-  // Événement conditionnel à seuil MAXIMUM (Poissons Pourris, jour 2) : ne se
-  // déclenche que si la mobilisation de la veille est SOUS le seuil.
-  assert.strictEqual(eventForDay(2, EVENEMENTS, 9)?.id, "poissons_pourris"); // sous le seuil -> déclenché
-  assert.strictEqual(eventForDay(2, EVENEMENTS, 1)?.id, "poissons_pourris");
-  assert.strictEqual(eventForDay(2, EVENEMENTS, 10), null); // pile au seuil -> pas déclenché
-  assert.strictEqual(eventForDay(2, EVENEMENTS, 15), null); // au-dessus -> pas déclenché
-  assert.strictEqual(eventForDay(2, EVENEMENTS)?.id, "poissons_pourris"); // previousDayVoters par défaut = 0 -> sous le seuil -> déclenché
+  // ── eventForDay — lookup dans le programme tiré au Jour 1 ──
+  assert.strictEqual(eventForDay(3, EVENEMENTS, 0, PROGRAMME).id, "canicule");
+  assert.strictEqual(eventForDay(6, EVENEMENTS, 0, PROGRAMME).id, "ouragan");
+  assert.strictEqual(eventForDay(8, EVENEMENTS, 0, PROGRAMME).id, "gobelins");
+  assert.strictEqual(eventForDay(5, EVENEMENTS, 0, PROGRAMME), null); // jour sans événement
+  assert.strictEqual(eventForDay(1, EVENEMENTS, 0, PROGRAMME), null);
+  assert.strictEqual(eventForDay(3, EVENEMENTS, 0, null), null); // pas de programme -> aucun événement
+  // Conditionnel à seuil minimum (Colis Royal)
+  assert.strictEqual(eventForDay(4, EVENEMENTS, 12, PROGRAMME)?.id, "colis_royal"); // pile au seuil
+  assert.strictEqual(eventForDay(4, EVENEMENTS, 11, PROGRAMME), null); // sous le seuil
+  // Non conditionnel (Épave)
+  assert.strictEqual(eventForDay(7, EVENEMENTS, 0, PROGRAMME)?.id, "epave");
+  assert.strictEqual(eventForDay(7, EVENEMENTS, 20, PROGRAMME)?.id, "epave");
+  // Conditionnel à seuil maximum (Poissons Pourris)
+  assert.strictEqual(eventForDay(2, EVENEMENTS, 9, PROGRAMME)?.id, "poissons_pourris");
+  assert.strictEqual(eventForDay(2, EVENEMENTS, 10, PROGRAMME), null); // pile au seuil
+  assert.strictEqual(eventForDay(2, EVENEMENTS, 15, PROGRAMME), null);
+
+  // ── forecastForDay — prévision sans filtre de condition ──
+  assert.strictEqual(forecastForDay(2, EVENEMENTS, PROGRAMME).id, "poissons_pourris");
+  assert.strictEqual(forecastForDay(5, EVENEMENTS, PROGRAMME), null);
+  assert.strictEqual(forecastForDay(2, EVENEMENTS, null), null);
+
+  // ── drawEventProgramme — chaque événement une fois, Jours 2..duree, familles non consécutives ──
+  const SIX = EVENEMENTS.filter((e) => e.id !== "colis_royal");
+  for (let i = 0; i < 300; i++) {
+    const prog = drawEventProgramme(SIX, 7, Math.random);
+    assert.deepStrictEqual(Object.keys(prog).map(Number).sort((a, b) => a - b), [2, 3, 4, 5, 6, 7]);
+    assert.deepStrictEqual(Object.values(prog).sort(), SIX.map((e) => e.id).sort());
+    assert.ok(isProgrammeValide(prog, SIX));
+  }
+  // Moins d'événements que de jours : certains jours restent calmes
+  const prog3 = drawEventProgramme(SIX.slice(0, 3), 7, Math.random);
+  assert.strictEqual(Object.keys(prog3).length, 3);
+  assert.ok(Object.keys(prog3).every((j) => j >= 2 && j <= 7));
+  // isProgrammeValide : deux plafonds d'Eau consécutifs refusés
+  assert.strictEqual(isProgrammeValide({ 3: "canicule", 4: "indigestion_royale" }, SIX), false);
+  assert.strictEqual(isProgrammeValide({ 3: "canicule", 5: "indigestion_royale" }, SIX), true);
+
+  // ── computeEpuisementPalier / computeEpuisementMalus ──
+  const EP = { palier_jour1: 4, diviseur: 4, palier_min: 3, explorer_min: 1 };
+  assert.strictEqual(computeEpuisementPalier(null, EP), 4); // Jour 1
+  assert.strictEqual(computeEpuisementPalier(0, EP), 4);
+  assert.strictEqual(computeEpuisementPalier(14, EP), 4); // ceil(14/4)
+  assert.strictEqual(computeEpuisementPalier(17, EP), 5);
+  assert.strictEqual(computeEpuisementPalier(6, EP), 3); // plancher palier_min
+  assert.strictEqual(computeEpuisementPalier(14, null), null); // mécanique désactivée
+  assert.strictEqual(computeEpuisementMalus(1, 4), 0);
+  assert.strictEqual(computeEpuisementMalus(4, 4), 0);
+  assert.strictEqual(computeEpuisementMalus(5, 4), 1);
+  assert.strictEqual(computeEpuisementMalus(9, 4), 2);
+  assert.strictEqual(computeEpuisementMalus(9, null), 0); // ancien état sans palier
+
+  // ── computeHarvestAmount / computeExplorerAmount ──
+  assert.strictEqual(computeHarvestAmount({ baseRoll: 3 }), 3);
+  assert.strictEqual(computeHarvestAmount({ baseRoll: 1, malus: 2 }), 0); // plancher 0 avant bonus
+  assert.strictEqual(computeHarvestAmount({ baseRoll: 1, malus: 2, isChef: true, bonusConstruction: 1 }), 2);
+  assert.strictEqual(computeHarvestAmount({ baseRoll: 5, malus: 1, bonusConstruction: 1 }), 5);
+  assert.strictEqual(computeExplorerAmount(0, 1), 3);
+  assert.strictEqual(computeExplorerAmount(1, 1), 2);
+  assert.strictEqual(computeExplorerAmount(5, 1), 1); // jamais sous le minimum
+
+  // ── Constructions ──
+  const CONSTR = { filet: { cout: 4 }, citerne: { cout: 4 }, atelier: { cout: 4 } };
+  assert.strictEqual(isConstructionDone(3, CONSTR.filet), false);
+  assert.strictEqual(isConstructionDone(4, CONSTR.filet), true);
+  assert.strictEqual(isConstructionDone(4, undefined), false);
+  assert.strictEqual(constructionHarvestBonus("peche", { filet: 4 }, CONSTR), 1);
+  assert.strictEqual(constructionHarvestBonus("peche", { filet: 3 }, CONSTR), 0);
+  assert.strictEqual(constructionHarvestBonus("eau", { citerne: 4 }, CONSTR), 1);
+  assert.strictEqual(constructionHarvestBonus("bois", { filet: 4, citerne: 4 }, CONSTR), 0);
+  assert.strictEqual(constructionHarvestBonus("peche", { filet: 4 }, undefined), 0); // config sans constructions
+  assert.strictEqual(raftPointsPerVote({ atelier: 4 }, CONSTR), 2);
+  assert.strictEqual(raftPointsPerVote({ atelier: 2 }, CONSTR), 1);
+  assert.strictEqual(raftPointsPerVote({}, CONSTR), 1);
+
+  // ── Appauvrissement de l'île ──
+  const APPAUV = { appauvrissement: [0, 0, 0, 1, 1, 2, 2] };
+  assert.strictEqual(computeAppauvrissement(1, APPAUV), 0);
+  assert.strictEqual(computeAppauvrissement(4, APPAUV), 1);
+  assert.strictEqual(computeAppauvrissement(7, APPAUV), 2);
+  assert.strictEqual(computeAppauvrissement(9, APPAUV), 2); // au-delà du calendrier : dernière valeur
+  assert.strictEqual(computeAppauvrissement(4, {}), 0); // absent -> aucun appauvrissement
+  assert.strictEqual(harvestMaxForDay(1, APPAUV), 5);
+  assert.strictEqual(harvestMaxForDay(6, APPAUV), 3);
+  assert.strictEqual(rollHarvestAmount(rngSequence([0.99]), 3), 3); // borne haute réduite
+  assert.strictEqual(rollHarvestAmount(rngSequence([0.5]), 3), 2);
+
+  // ── Plafond quotidien du Radeau ──
+  assert.strictEqual(computeRadeauPlafondJour({ radeau_sections_max_par_jour: 2, points_par_section: 6 }), 12);
+  assert.strictEqual(computeRadeauPlafondJour({ points_par_section: 6 }), Infinity); // pas de plafond configuré
+  assert.strictEqual(clipRaftGain(2, 0, 12), 2);
+  assert.strictEqual(clipRaftGain(2, 11, 12), 1); // gain partiel
+  assert.strictEqual(clipRaftGain(2, 12, 12), 0); // plafond atteint
+  assert.strictEqual(clipRaftGain(12, 4, 12), 8); // Chef charpentier écrêté
+  assert.strictEqual(clipRaftGain(5, 3, Infinity), 5);
+
+  // ── Consommation du Jour 1 / dernière nuit ──
+  assert.strictEqual(computeDay1ConsumptionVoters(14, 0.5), 7);
+  assert.strictEqual(computeDay1ConsumptionVoters(15, 0.5), 8); // arrondi supérieur
+  assert.strictEqual(computeDay1ConsumptionVoters(15, undefined), 15); // pas de ratio -> V entier
+  assert.strictEqual(hasEmptyResource({ poisson: 1, eau: 1, bois: 1 }), false);
+  assert.strictEqual(hasEmptyResource({ poisson: 1, eau: 0, bois: 1 }), true);
 
   // ── computePoissonsPourrisLoss — la courbe est calée sur `threshold`, jamais figée ──
   // threshold=10 (valeur historique) : pic à V=3 (perte 7), symétrique des deux côtés.

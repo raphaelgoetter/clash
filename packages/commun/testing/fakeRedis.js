@@ -28,6 +28,8 @@ export class Redis {
   async smembers(k) { const s = store.get(k); return s instanceof Set ? [...s] : []; }
   async sismember(k, m) { const s = store.get(k); return s instanceof Set && s.has(String(m)) ? 1 : 0; }
   async incr(k) { const n = Number(store.get(k) || 0) + 1; store.set(k, String(n)); return n; }
+  async incrby(k, d) { const n = Number(store.get(k) || 0) + Number(d); store.set(k, String(n)); return n; }
+  async decrby(k, d) { const n = Number(store.get(k) || 0) - Number(d); store.set(k, String(n)); return n; }
   async scan(_c, { match }) { const re = new RegExp("^" + match.replace(/\*/g, ".*") + "$"); return ["0", [...new Set([...store.keys(), ...zsets.keys()])].filter((k) => re.test(k))]; }
   async zincrby(k, inc, m) { const z = zset(k); z.set(String(m), (z.get(String(m)) || 0) + Number(inc)); return z.get(String(m)); }
   async zrange(k, start, stop, { rev = false, withScores = false } = {}) {
