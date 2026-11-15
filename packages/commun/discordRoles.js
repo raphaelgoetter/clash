@@ -78,3 +78,18 @@ export async function memberHasRolePrefix(member, prefix) {
       normalizeRoleName(r?.name).replace(/^@/, "").startsWith(wanted),
   );
 }
+
+// Mention individuelle des joueurs (lancement du Jour 1 des jeux à
+// inscriptions : Meow, Qui est-ce ?, Goblin Hunters). Seuls les vrais
+// identifiants Discord sont gardés (pas de PNJ) ; Discord autorise 100
+// utilisateurs au plus dans `allowed_mentions.users`.
+export function buildUserPingFields(userIds) {
+  const ids = [...new Set((userIds ?? []).map(String))]
+    .filter((id) => /^\d{17,20}$/.test(id))
+    .slice(0, 100);
+  if (!ids.length) return {};
+  return {
+    content: ids.map((id) => `<@${id}>`).join(" "),
+    allowed_mentions: { parse: [], users: ids },
+  };
+}

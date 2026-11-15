@@ -517,8 +517,9 @@ export async function postRobinson(
       dayVoters: [],
       embed,
       components,
-      noPing: true,
+      noPing,
       estAnnonce: false,
+      estPremierJour: true,
     });
   }
 
@@ -773,6 +774,7 @@ async function publishAndWriteState(
     components,
     noPing,
     estAnnonce,
+    estPremierJour = false,
     termine = false,
   },
 ) {
@@ -798,10 +800,10 @@ async function publishAndWriteState(
     }
   }
 
-  // Ping réservé au lancement (jour de présentation) et à la fin de manche
-  // — jamais pour le Jour 1 ni les jours intermédiaires.
+  // Ping à l'annonce, au Jour 1 et à la fin de manche (jamais les jours
+  // intermédiaires).
   const roleId =
-    (estAnnonce || termine) && !noPing
+    (estAnnonce || estPremierJour || termine) && !noPing
       ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
       : null;
 

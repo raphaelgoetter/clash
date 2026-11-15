@@ -902,8 +902,9 @@ export async function postMarioClash(
       jour,
       embed,
       components,
-      noPing: true,
+      noPing,
       estAnnonce: false,
+      estPremierJour: true,
     });
   }
 
@@ -978,7 +979,16 @@ export async function postMarioClash(
 async function publishAndWriteState(
   channelId,
   previousState,
-  { phase, jour, embed, components, noPing, estAnnonce, termine = false },
+  {
+    phase,
+    jour,
+    embed,
+    components,
+    noPing,
+    estAnnonce,
+    estPremierJour = false,
+    termine = false,
+  },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -1006,7 +1016,7 @@ async function publishAndWriteState(
   }
 
   const roleId =
-    (estAnnonce || termine) && !noPing
+    (estAnnonce || estPremierJour || termine) && !noPing
       ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
       : null;
 

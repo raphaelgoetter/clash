@@ -58,6 +58,7 @@ import { encodeGrille, encodeEnquetes } from "../../services/quiestceImage.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
+  buildUserPingFields,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
 import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
@@ -526,6 +527,8 @@ async function publishAndWriteState(
     noPing,
     closingAt = null,
     openedAt = null,
+    // Jour 1 : mention des inscrits au lieu du rôle
+    mentions = null,
   },
 ) {
   const image = await joindreImage(embed);
@@ -535,7 +538,13 @@ async function publishAndWriteState(
   const res = await discordFetch(`/channels/${channelId}/messages`, {
     method: "POST",
     body: corpsMessage(
-      { embeds: [embed], components, ...buildRolePingFields(roleId) },
+      {
+        embeds: [embed],
+        components,
+        ...(mentions && !noPing
+          ? buildUserPingFields(mentions)
+          : buildRolePingFields(roleId)),
+      },
       image,
     ),
   });
@@ -810,6 +819,7 @@ export async function postQuiEstCe(
       ping: false,
       isPublic,
       noPing,
+      mentions: Object.keys(partie.joueurs),
     });
   }
 

@@ -396,8 +396,9 @@ export async function postBossRaid(
       totalDegatsOptimalCumules: state.totalDegatsOptimalCumules,
       embed,
       components,
-      noPing: true,
+      noPing,
       estAnnonce: false,
+      estPremierJour: true,
     });
   }
 
@@ -503,6 +504,7 @@ async function publishAndWriteState(
     components,
     noPing,
     estAnnonce,
+    estPremierJour = false,
     termine = false,
   },
 ) {
@@ -528,10 +530,10 @@ async function publishAndWriteState(
     }
   }
 
-  // Ping réservé au jour d'annonce (lancement) et à la fin de manche —
-  // jamais pour les jours intermédiaires.
+  // Ping à l'annonce, au Jour 1 et à la fin de manche (jamais les jours
+  // intermédiaires).
   const roleId =
-    (estAnnonce || termine) && !noPing
+    (estAnnonce || estPremierJour || termine) && !noPing
       ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
       : null;
 

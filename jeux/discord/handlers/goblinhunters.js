@@ -40,6 +40,7 @@ import { membresPartis } from "@clash/commun/discordUsers.js";
 import {
   getRoleIdByName,
   buildRolePingFields,
+  buildUserPingFields,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
 
@@ -1016,8 +1017,9 @@ export async function postGoblinHunters(
     return publishAndWriteState(channelId, state, {
       embed,
       components,
-      noPing: true,
-      estAnnonce: true,
+      noPing,
+      estAnnonce: false,
+      mentions: joueurs.map((j) => j.discordId),
       extraState: {},
     });
   }
@@ -1133,7 +1135,16 @@ export async function postGoblinHunters(
 async function publishAndWriteState(
   channelId,
   previousState,
-  { embed, components, noPing, estAnnonce, termine = false, extraState = {} },
+  {
+    embed,
+    components,
+    noPing,
+    estAnnonce,
+    termine = false,
+    extraState = {},
+    // Jour 1 : mention des inscrits au lieu du rôle
+    mentions = null,
+  },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -1173,7 +1184,9 @@ async function publishAndWriteState(
       body: JSON.stringify({
         embeds: [embed],
         components,
-        ...buildRolePingFields(roleId),
+        ...(mentions && !noPing
+          ? buildUserPingFields(mentions)
+          : buildRolePingFields(roleId)),
       }),
     },
   );

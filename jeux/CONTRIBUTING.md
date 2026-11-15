@@ -409,7 +409,7 @@ Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scr
 
 - Rôle résolu par `getRoleIdByName(MINI_JEUX_ROLE_NAME)` (`@clash/commun/discordRoles.js`), injecté via `buildRolePingFields()`.
 - ⚠️ Jamais de ping hors salon public : `NO_PING = --no-ping || !PUBLIC` dans chaque `post*.js`.
-- Au minimum : ping à l'annonce et à la fin de partie (y compris annulation). Jours intermédiaires : selon le jeu (Quiz, Gobelet, Blackjack pinguent à chaque post ; Robinson, Mario Clash, Goblin Hunters jamais ; voir la section du jeu).
+- Au minimum : ping à l'annonce, au Jour 1 et à la fin de partie (y compris annulation). Au Jour 1 des jeux à inscriptions (Meow, Qui est-ce ?, Goblin Hunters), seuls les inscrits sont mentionnés (`buildUserPingFields()`, PNJ exclus), pas le rôle. Jours intermédiaires : selon le jeu (Quiz, Gobelet, Blackjack pinguent à chaque post ; Robinson, Mario Clash, Boss Raid, Meow, Qui est-ce ?, Goblin Hunters jamais).
 
 ### Inscriptions (Meow, Qui est-ce ?, Goblin Hunters)
 
@@ -634,7 +634,7 @@ Jeu spécial collaboratif : la communauté, naufragée, doit survivre `duree_jou
 ### Déroulement
 
 1. **Annonce** (lancement manuel) : `phase: "annonce"`, `jour: null`, bouton Règles seul, ping MINI-JEUX.
-2. **Jour 1** (cron suivant) : `initEconomy(stocks_initiaux)` (stocks + Radeau à 0), pas de ping.
+2. **Jour 1** (cron suivant) : `initEconomy(stocks_initiaux)` (stocks + Radeau à 0), ping MINI-JEUX.
 3. **Clôture quotidienne** (`postRobinson()` → `computeClosure()` puis `finalizeDayClosure()`) :
    - Radeau achevé (`isRaftVictory()`) → victoire Radeau, sans consommation ni vérification de défaite.
    - Sinon consommation automatique (`computeDailyConsumption()`) : `-V` Nourriture, `-V` Eau, `-⌈V/2⌉` Bois (plancher 0), où **V = votants uniques de la veille** (`historique[jour-1].V`) ; seul le Jour 1 utilise son propre V. ⚠️ Ne pas baser la conso sur le V du jour clos : une baisse de participation deviendrait gratuite.
@@ -944,7 +944,7 @@ Effectif `effectif_min` (10) à `effectif_max` (18), fenêtre d'inscription `fen
 
 ### Règles (Qui est-ce ?)
 
-- **Jour 1** (`demarrer()`) : grille tirée, une carte secrète par inscrit, première cible **en cercle** (chacun enquête sur le suivant d'un ordre aléatoire).
+- **Jour 1** (`demarrer()`) : grille tirée, une carte secrète par inscrit, première cible **en cercle** (chacun enquête sur le suivant d'un ordre aléatoire). Le message mentionne les inscrits (pas le rôle `@MINI-JEUX`, pingué à l'annonce et à la fin).
 - **Indice de départ** (`assignerCible()`/`donnerIndice()`) : à chaque nouvelle cible, une caractéristique inconnue tirée au hasard, de préférence hors des questions du jour (Loupe comprise).
 - **Chaque jour** : `questions_par_jour` (1) question, toutes cibles confondues ; puis une accusation au plus (`accusationsRestantes()`), parmi les cartes encore possibles.
 - **Accusation juste** : +`points_carte` (3), plus `bonus_efficacite` selon le nombre d'indices connus (indice de départ compris) : +3 avec 1, +2 avec 2, +1 avec 3, rien au-delà. La cible perd `malus_demasque` (2). Le démasquage est public, la carte reste connue du seul enquêteur ; la cible garde sa carte (peut être redémasquée par un autre).
@@ -1055,7 +1055,7 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 - **💬 Ma bande** : messagerie signée réservée à la bande (`posterMessage()`, `messagesBande()`). Affiche les `messages_affiches` (15) derniers du jour de jeu (ceux de la veille sont masqués, `messagesBande()`) ; **Écrire** ouvre une fenêtre Discord (`type: 9`, `message_max` 200 caractères, espaces compactés) ; `messages_par_jour` (10) par joueur et par jour de jeu, revérifié à l'envoi ; 30 messages gardés par bande ; ouvrir la vue marque comme lu (`marquerLus()`), libellé « Ma bande (N) » en vert s'il y a du nouveau (`nouveauxMessages()`). Pas de ping.
 - **Journal** : en tête, **Ont joué depuis la distribution de 20h** (prochaine à 8h) (`derniereDistribution()`, `actionsDistribution()`, `texteActions()` : chaque membre de sa bande et ses actions du créneau en cours, « appel √ squat √ déplacement √ » ou « pas encore joué » ; par créneau et non par jour car celui de 20h passe minuit : appels et squats d'après le journal, un squat comptant à son lancement `debut`, déplacement d'après `deplacementT`, comme `meow:status`), puis aujourd'hui et hier, ce qui concerne sa bande (territoires pris, perdus, retraites), du plus récent au plus ancien avec l'heure ; croquettes regroupées par jour.
 - **Fin** : classement des bandes, **📰 La partie en bref** (`compteRendu()` : déroulé de la course, record de territoires, plus bel exploit `partie.exploit` si moins de 50 % de chances, effet des mercenaires ; chaque phrase omise si la donnée manque), **🐾 Actions cumulées par bande** (`activiteBandes()` : appels, squats lancés et déplacements comptés dans `partie.actions`, écart en % avec la bande la plus active), **😿 Chats perdus au combat** (`chatsPerdus()`, de la bande la plus touchée à la moins touchée), 3 premiers du Caïd (classement complet archivé dans la manche), manches précédentes, illustration.
-- **Ping** `@MINI-JEUX` : ouverture des inscriptions, annulation et fin seulement.
+- **Ping** `@MINI-JEUX` : ouverture des inscriptions, annulation et fin seulement ; au Jour 1, mention des seuls inscrits.
 
 ### Images (Meow)
 
@@ -1100,7 +1100,7 @@ Jeu à identité secrète (Shadow Hunters / Loups-Garous) au rythme quotidien : 
 
 1. **Inscription** (`state.phase === "inscription"`) : ouverture manuelle (boutons ✅ S'inscrire / ✖️ Se désinscrire, ping `@MINI-JEUX`), rappel quotidien avec décompte, fenêtre de `fenetre_inscription_jours` (2). Clôture calée sur le cron (`dateCloture()` : 8h04 UTC). Dès `closingAt` passé, inscriptions et désinscriptions sont refusées (`refuserApresCloture()`) et un clic avant le passage du cron fige le message sur place (`cloturerInscriptions()`). Les inscrits ayant quitté le serveur sont désinscrits à la clôture. Au passage du cron :
    - moins de `effectif_min` (10) inscrits → partie **annulée** (`termine: true`, ping) ;
-   - sinon `launchGame()` : roster figé, camps/rôles attribués, DM de rôle à chacun, inscriptions vidées.
+   - sinon `launchGame()` : roster figé, camps/rôles attribués, DM de rôle à chacun, inscriptions vidées ; le message du Jour 1 mentionne les inscrits (pas le rôle).
    - `effectif_max` (18) atteint : inscription refusée au-delà (`registerPlayer()` → `full`) et lancement anticipé au prochain cron sans attendre `closingAt`.
 2. **Jour de jeu** : chaque vivant choisit un lieu (bouton éphémère) qui détermine son action. Rien n'est publié en cours de journée.
 3. **Clôture quotidienne** (`closeDayAndAdvance()`) : résout vote, combat, enquêtes, positions ; envoie les DM ; publie le bilan et le jour suivant (sans ping). Victoire ou fin du dernier jour : embed de fin avec révélation complète, ping `@MINI-JEUX`, `termine: true` (les runs suivants sont des no-op). Garde-fou anti-double-avancée : pas de nouvelle clôture moins de `MIN_HOURS_BETWEEN_CLOSURES` (8 h) après la précédente (`isTooSoonSinceLastClosure()`, contournable par `--force`).
@@ -1226,7 +1226,7 @@ Course façon Mario Kart sur un plateau de 49 cases (départ case 0, arrivée `c
 ### Déroulé
 
 1. **Jour de présentation** (aucun état, lancement manuel) : embed d'annonce + Règles, ping `@MINI-JEUX` (`phase: "annonce"`).
-2. **Jour 1** au passage suivant (rien à clôturer), sans ping.
+2. **Jour 1** au passage suivant (rien à clôturer), ping `@MINI-JEUX`.
 3. **Chaque jour** : clôture du jour actif (`closeDayAndAdvance()`), résumé narratif, nouveau message (l'ancien est supprimé), sans ping.
 4. **Fin** après le jour `duree_jours` (la course ne s'arrête pas au premier arrivé) : classement final, historique des manches, trophées (`config.trophees`), ping `@MINI-JEUX`, `termine: true`. La manche est archivée (`archiveManche()`) seulement en public et hors dry-run.
 
