@@ -5,8 +5,8 @@
 // Développé EN PARALLÈLE du jeu spécial (jeux/services/blackjack.js),
 // sans aucun couplage d'état : espace de clés Redis dédié
 // `blackjackduel:*`, entièrement séparé de `blackjack:*`. Seules les
-// fonctions PURES de logique de cartes (drawCard, computeHandValue,
-// dealerPlay, compareToDealer, resolveDay, buildRanking, isDealerRevealed)
+// fonctions PURES de logique de cartes (dealHand, applyHandAction,
+// dealerPlay, resolveDay, buildRanking, pointsForResult, isNatural)
 // sont réutilisées par import direct — elles n'ont aucun état, les
 // réutiliser ne crée donc aucun risque d'impact sur le jeu spécial.
 //
@@ -27,14 +27,16 @@
 import { noterVictoireDuel } from "./passeport.js";
 import { Redis } from "@upstash/redis";
 import {
-  drawCard,
-  drawUniqueCard,
-  computeHandValue,
+  dealHand,
+  applyHandAction,
+  canDouble,
+  isNatural,
+  dealerHasNatural,
+  compareToDealer,
   dealerPlay,
   resolveDay,
   buildRanking,
   pointsForResult,
-  isDealerRevealed,
 } from "./blackjack.js";
 
 let _redis = null;
@@ -136,12 +138,6 @@ export async function readHandWebhooks(gid, manche) {
   return hgetallRaw(webhookKey(gid, manche));
 }
 
-// Mêmes bornes que le Croupier du jeu spécial (jeux/data/blackjack/blackjack.json)
-// — pas de fichier de config séparé, rien d'autre à y régler ici (le nombre
-// de manches est un paramètre de commande, pas une config statique).
-const DEALER_MIN = 16;
-const DEALER_MAX = 21;
-
 // ── État de la partie ──────────────────────────────────────────────
 
 // gid absent : bouton d'un ancien message (avant les parties par joueur).
@@ -193,7 +189,7 @@ export async function readPoints(gid) {
   return result;
 }
 
-export { buildRanking, isDealerRevealed, pointsForResult };
+export { buildRanking, canDouble, compareToDealer, dealerHasNatural, pointsForResult };
 
 // ── Remise à zéro ───────────────────────────────────────────────────
 
@@ -242,7 +238,7 @@ export async function startGame(channelId, discordId, { maxPlayers, totalManches
   // Croupier uniquement en solo (1 joueur) — à 2 joueurs, pas de
   // Croupier : les joueurs s'affrontent directement (voir resolvePvP), le
   // jeu redevient un vrai "duel" plutôt qu'un multi-solo côte à côte.
-  const dealer = maxPlayers === 1 ? dealerPlay(Math.random, DEALER_MIN, DEALER_MAX) : null;
+  const dealer = maxPlayers === 1 ? dealerPlay() : null;
   const state = {
     gid,
     ownerId: discordId,
@@ -304,11 +300,8 @@ export async function joinAndDeal(gid, discordId, username) {
   if (decision.notYours) return { notYours: true, state };
   if (!decision.allowed) return { rosterLocked: true, state };
 
-  const first = drawCard();
-  const cards = [first, drawUniqueCard([first])];
-  const score = computeHandValue(cards);
-  const status = score === 21 ? "stand" : "en_cours";
-  const hand = { cards, score, status, username };
+  // Contre Kévina, un Blackjack de sa part arrête la main d'emblée
+  const hand = dealHand(username, state.maxPlayers === 1 ? state.dealer : null);
   await writeHand(gid, manche, discordId, hand);
 
   const newState = {
@@ -322,9 +315,9 @@ export async function joinAndDeal(gid, discordId, username) {
   return { state: newState, hand, isNew: true };
 }
 
-// ── Boutons [Piocher] / [Arrêter] ────────────────────────────────────
+// ── Boutons [Piocher] / [Arrêter] / [Doubler] ────────────────────────
 
-export async function drawOrStand(gid, discordId, { draw }) {
+export async function drawOrStand(gid, discordId, { draw, double = false }) {
   const state = await readState(gid);
   if (!state || state.termine) return { inactive: true };
 
@@ -333,10 +326,9 @@ export async function drawOrStand(gid, discordId, { draw }) {
   if (!hand) return { noHand: true, state };
   if (hand.status !== "en_cours") return { alreadyDone: true, state, hand };
 
-  const cards = draw ? [...hand.cards, drawUniqueCard(hand.cards)] : hand.cards;
-  const score = computeHandValue(cards);
-  const status = !draw ? "stand" : score > 21 ? "bust" : score === 21 ? "stand" : "en_cours";
-  const updated = { ...hand, cards, score, status };
+  if (double && !canDouble(hand)) return { cannotDouble: true, state, hand };
+
+  const updated = applyHandAction(hand, double ? "doubler" : draw ? "piocher" : "arreter");
   await writeHand(gid, manche, discordId, updated);
 
   const newState = { ...state, lastActivityAt: new Date().toISOString() };
@@ -384,10 +376,10 @@ export async function checkAndResolveManche(gid) {
 }
 
 // Pure : résout une manche à 2 joueurs SANS Croupier — la meilleure main
-// non bust l'emporte (2 points, comme une victoire face au Croupier) ; en
-// cas d'égalité au sommet, tous les joueurs à égalité se partagent 1 point
-// chacun (même barème qu'une égalité face au Croupier — voir
-// pointsForResult) ; si tout le monde bust, personne ne gagne la manche.
+// non bust l'emporte (2 points, 3 pour un Blackjack naturel, qui bat un 21
+// en 3 cartes ou plus) ; en cas d'égalité au sommet, les joueurs à égalité
+// se partagent 1 point chacun ; si tout le monde bust, personne ne gagne la
+// manche. Une main doublée compte double (voir pointsForResult).
 export function resolvePvP(hands) {
   const entries = Object.entries(hands).map(([discordId, hand]) => {
     const finalStatus = hand.status === "en_cours" ? "stand" : hand.status;
@@ -397,14 +389,18 @@ export function resolvePvP(hands) {
       cards: hand.cards,
       score: hand.score,
       status: finalStatus,
+      ...(hand.double ? { double: true } : {}),
     };
   });
+  // Valeur de comparaison : un naturel passe devant un 21 ordinaire
+  const force = (e) => e.score + (isNatural(e.cards) && !e.double ? 0.5 : 0);
   const valid = entries.filter((e) => e.status !== "bust");
-  const maxScore = valid.length ? Math.max(...valid.map((e) => e.score)) : null;
-  const topCount = valid.filter((e) => e.score === maxScore).length;
+  const best = valid.length ? Math.max(...valid.map(force)) : null;
+  const topCount = valid.filter((e) => force(e) === best).length;
   return entries.map((e) => {
-    if (e.status === "bust" || e.score !== maxScore) return { ...e, result: "lose" };
-    return { ...e, result: topCount > 1 ? "push" : "win" };
+    if (e.status === "bust" || force(e) !== best) return { ...e, result: "lose" };
+    if (topCount > 1) return { ...e, result: "push" };
+    return { ...e, result: isNatural(e.cards) && !e.double ? "blackjack" : "win" };
   });
 }
 
@@ -416,7 +412,7 @@ export function computeMancheOutcome(state, hands, currentPoints) {
   const results = state.maxPlayers === 1 ? resolveDay(hands, state.dealer) : resolvePvP(hands);
   const pointsAfter = { ...currentPoints };
   for (const r of results) {
-    const pts = pointsForResult(r.result);
+    const pts = pointsForResult(r.result, r.double);
     if (pts > 0) pointsAfter[r.discordId] = (pointsAfter[r.discordId] || 0) + pts;
   }
   const mancheSuivante = state.manche + 1;
@@ -430,7 +426,7 @@ async function resolveManche(gid, state, hands) {
   const outcome = computeMancheOutcome(state, hands, currentPoints);
 
   for (const r of outcome.results) {
-    await addPoints(gid, r.discordId, pointsForResult(r.result));
+    await addPoints(gid, r.discordId, pointsForResult(r.result, r.double));
   }
 
   // Historique complet (mains, scores, points) de la manche qui vient de se
@@ -464,7 +460,7 @@ async function resolveManche(gid, state, hands) {
     };
   }
 
-  const nextDealer = state.maxPlayers === 1 ? dealerPlay(Math.random, DEALER_MIN, DEALER_MAX) : null;
+  const nextDealer = state.maxPlayers === 1 ? dealerPlay() : null;
   const newState = {
     ...state,
     manche: outcome.mancheSuivante,

@@ -29,7 +29,8 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 function classifyHand(hand, dealer) {
   if (hand.status === "bust") return { rank: 4, label: "bust" };
   if (hand.status === "en_cours") return { rank: 3, label: "run" };
-  const result = compareToDealer(hand.score, dealer);
+  const result = compareToDealer(hand, dealer);
+  if (result === "blackjack") return { rank: 0, label: "blackjack" };
   if (result === "win") return { rank: 0, label: "win" };
   if (result === "push") return { rank: 1, label: "tie" };
   return { rank: 2, label: "stand" };
@@ -62,7 +63,7 @@ function classifyHand(hand, dealer) {
   } else {
     for (const [discordId, hand, { label }] of entries) {
       const username = await resolveDisplayName(discordId, hand.username || discordId);
-      console.log(`${username} — ${hand.cards.map((c) => `${c.rank}${c.suit}`).join(" ")} (${hand.score}) [${label}]`);
+      console.log(`${username} — ${hand.cards.map((c) => `${c.rank}${c.suit}`).join(" ")} (${hand.score}) [${label}${hand.double ? " x2" : ""}]`);
     }
     console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""} aujourd'hui.\n`);
   }

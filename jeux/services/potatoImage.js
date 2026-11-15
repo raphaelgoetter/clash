@@ -60,7 +60,7 @@ const cadre = (w, h, contenu) =>
 //   de la manche), f / s :
 //   température à laquelle la patate a commencé à fumer / siffler }.
 // Public : { n: [pseudo gauche, pseudo droite], m: [manches], c: chauffes
-//   "côté:degrés,…", h: côté qui tient la patate (-1 : personne), x: côté
+//   "côté:degrés,…" (degrés négatifs : Glaçon), h: côté qui tient la patate (-1 : personne), x: côté
 //   qui l'a fait exploser (-1 : en cours), p: 1 pour la patate qui fume en
 //   décoration (message final) }.
 
@@ -117,7 +117,7 @@ export function decodePublic(param) {
   const d = depuisUrl(param);
   if (!d || !Array.isArray(d.n) || d.n.length !== 2 || !Array.isArray(d.m) || typeof d.c !== "string") return null;
   const chauffes = d.c
-    ? d.c.split(",").slice(0, 60).map((s) => s.split(":").map(Number)).filter(([j, v]) => (j === 0 || j === 1) && v > 0 && v <= 30)
+    ? d.c.split(",").slice(0, 60).map((s) => s.split(":").map(Number)).filter(([j, v]) => (j === 0 || j === 1) && v !== 0 && v >= -GLACON && v <= 30)
     : [];
   const cote = (v) => ([0, 1].includes(v) ? v : -1);
   return {
@@ -283,17 +283,38 @@ export function buildPublicSvg({ noms, manches, chauffes, tient = -1, explose = 
   const x1 = 700;
   const yb = 155;
   const xT = (t) => x0 + ((Math.min(t, BAR_MAX) - TEMP_DEPART) / (BAR_MAX - TEMP_DEPART)) * (x1 - x0);
+  // Cases de la barre ; un Glaçon (chauffe négative) coupe les cases à la
+  // nouvelle température (la suite repart de là) et laisse un glaçon au-dessus
   let t = TEMP_DEPART;
-  const segments = chauffes
-    .map(([j, v]) => {
-      const a = xT(t);
-      const b = xT(t + v);
+  const cases = [];
+  const glacons = [];
+  for (const [j, v] of chauffes) {
+    if (v < 0) {
+      t = Math.max(TEMP_DEPART, t + v);
+      for (let k = cases.length - 1; k >= 0; k--) {
+        if (cases[k].t0 >= t) cases.splice(k, 1);
+        else cases[k].t1 = Math.min(cases[k].t1, t);
+      }
+      glacons.push({ t, v });
+    } else {
+      cases.push({ j, v, t0: t, t1: t + v });
       t += v;
+    }
+  }
+  const segments = cases
+    .map(({ j, v, t0, t1 }) => {
+      const [a, b] = [xT(t0), xT(t1)];
       if (b - a < 4) return "";
       const etroit = b - a <= 34;
       return `<rect x="${(a + 1.5).toFixed(1)}" y="${yb - 18}" width="${(b - a - 3).toFixed(1)}" height="36" rx="6" fill="${COULEURS[j]}"/>${
         b - a > 20 ? texte((a + b) / 2, yb + 6, `+${v}`, { size: etroit ? 13 : 15, fill: "#1b1320", anchor: "middle" }) : ""
       }`;
+    })
+    .join("");
+  const cubes = glacons
+    .map(({ t: tg, v }) => {
+      const x = xT(tg);
+      return `<rect x="${x - 17}" y="${yb - 50}" width="34" height="24" rx="6" fill="#b3e5fc" stroke="#4fc3f7" stroke-width="2.5"/>${texte(x, yb - 33, `−${-v}`, { size: 13, fill: "#1b1320", anchor: "middle" })}`;
     })
     .join("");
   const grads = [40, 60, 80, 100, 120, 140].map((g) => texte(xT(g), yb + 46, `${g}°`, { size: 14, fill: GRIS, anchor: "middle" })).join("");
@@ -314,7 +335,7 @@ export function buildPublicSvg({ noms, manches, chauffes, tient = -1, explose = 
     `${deco ? patate(PUB_L / 2, 74, "fume", 0.5) : ""}${cote(0)}${cote(1)}
     <rect x="${xT(SEUIL_MIN)}" y="${yb - 26}" width="${xT(SEUIL_MAX) - xT(SEUIL_MIN)}" height="52" rx="8" fill="${DANGER}" opacity="0.16" stroke="${DANGER}" stroke-opacity="0.5" stroke-dasharray="6 5"/>
     <rect x="${x0}" y="${yb - 18}" width="${x1 - x0}" height="36" rx="8" fill="#ffffff" opacity="0.06"/>
-    ${segments}${boum}${grads}`,
+    ${segments}${cubes}${boum}${grads}`,
   );
 }
 

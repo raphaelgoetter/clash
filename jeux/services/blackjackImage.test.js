@@ -28,6 +28,7 @@ test("encodeMain / decodeMain : aller-retour d'une main contre un Croupier visib
     score: 21,
     statut: "stand",
     issue: "win",
+    double: false,
   });
   assert.deepEqual(main.croupier, {
     nom: "Kévina",
@@ -38,18 +39,21 @@ test("encodeMain / decodeMain : aller-retour d'une main contre un Croupier visib
   assert.equal(main.legende, "Manche 3/10");
 });
 
-test("encodeMain : Croupier caché, ni cartes ni score dans l'URL", () => {
+test("encodeMain : Croupier pas encore dévoilé, seule sa carte visible dans l'URL", () => {
   const d = encodeMain({
-    joueur: { nom: "Toi", cartes: [carte("5", "♥️"), carte("6", "♣️")], score: 11, statut: "en_cours" },
+    joueur: { nom: "Toi", cartes: [carte("5", "♥️"), carte("6", "♣️")], score: 11, statut: "en_cours", double: true },
     croupier: { nom: "Croupier", cartes: [carte("K", "♠️"), carte("9", "♦️")], score: 19, cache: true },
     legende: "Jour 4",
   });
   const brut = JSON.parse(Buffer.from(d, "base64url").toString("utf8"));
-  assert.deepEqual(brut.c, ["Croupier"]);
+  assert.deepEqual(brut.c, ["Croupier", "12.0"]);
   const main = decodeMain(d);
-  assert.deepEqual(main.croupier, { nom: "Croupier", cache: true });
+  assert.deepEqual(main.croupier, { nom: "Croupier", cartes: [{ rang: "K", couleur: "♠" }], cache: true });
   assert.equal(main.joueur.issue, null);
-  assert.ok(!buildMainSvg(main).includes(">19<"));
+  assert.equal(main.joueur.double, true);
+  const svg = buildMainSvg(main);
+  assert.ok(!svg.includes(">19<"));
+  assert.ok(svg.includes("×2"));
 });
 
 test("decodeMain : paramètre illisible → null ; 1v1 sans Croupier", () => {

@@ -14,6 +14,7 @@ import {
   handleJouer as handleBlackjackDuelJouer,
   handlePiocher as handleBlackjackDuelPiocher,
   handleArreter as handleBlackjackDuelArreter,
+  handleDoubler as handleBlackjackDuelDoubler,
   handleRegles as handleBlackjackDuelRegles,
   extractMember as extractBlackjackDuelMember,
 } from "../handlers/blackjackDuel.js";
@@ -787,13 +788,14 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── Blackjack Duel : boutons "Piocher" / "Arrêter" (message éphémère),
+  // ── Blackjack Duel : boutons "Piocher" / "Arrêter" / "Doubler" (message éphémère),
   // custom_id `<action>:<manche>:<partie>` ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
     (body.data.custom_id.startsWith("blackjackduel_piocher:") ||
-      body.data.custom_id.startsWith("blackjackduel_arreter:"))
+      body.data.custom_id.startsWith("blackjackduel_arreter:") ||
+      body.data.custom_id.startsWith("blackjackduel_doubler:"))
   ) {
     const [action, , gid] = body.data.custom_id.split(":");
     const { discordId } = extractBlackjackDuelMember(body);
@@ -801,7 +803,12 @@ export async function routeDuels(body, res) {
     // déjà affiché, comme blackjack_piocher:/blackjack_arreter: existants.
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    const handler = action === "blackjackduel_piocher" ? handleBlackjackDuelPiocher : handleBlackjackDuelArreter;
+    const handler =
+      action === "blackjackduel_piocher"
+        ? handleBlackjackDuelPiocher
+        : action === "blackjackduel_doubler"
+          ? handleBlackjackDuelDoubler
+          : handleBlackjackDuelArreter;
     runBackground(() => handler(webhookUrl, gid, discordId));
     return;
   }

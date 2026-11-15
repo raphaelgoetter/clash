@@ -70,6 +70,7 @@ import {
   handleJouer as handleBlackjackJouer,
   handlePiocher as handleBlackjackPiocher,
   handleArreter as handleBlackjackArreter,
+  handleDoubler as handleBlackjackDoubler,
   handleRegles as handleBlackjackRegles,
   handleJournal as handleBlackjackJournal,
 } from "../handlers/blackjack.js";
@@ -144,12 +145,13 @@ export async function routeJeuxSpeciaux(body, res) {
     return;
   }
 
-  // ── Blackjack : boutons "Piocher" / "Arrêter" (sur le message éphémère) ──
+  // ── Blackjack : boutons "Piocher" / "Arrêter" / "Doubler" (sur le message éphémère) ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
     (body.data.custom_id.startsWith("blackjack_piocher:") ||
-      body.data.custom_id.startsWith("blackjack_arreter:"))
+      body.data.custom_id.startsWith("blackjack_arreter:") ||
+      body.data.custom_id.startsWith("blackjack_doubler:"))
   ) {
     const [action, jour] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
@@ -157,7 +159,12 @@ export async function routeJeuxSpeciaux(body, res) {
     // déjà affiché (pas de nouveau message, comme goblinhunters_target).
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    const handler = action === "blackjack_piocher" ? handleBlackjackPiocher : handleBlackjackArreter;
+    const handler =
+      action === "blackjack_piocher"
+        ? handleBlackjackPiocher
+        : action === "blackjack_doubler"
+          ? handleBlackjackDoubler
+          : handleBlackjackArreter;
     runBackground(() => handler(webhookUrl, jour, discordId));
     return;
   }

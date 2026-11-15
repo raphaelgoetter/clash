@@ -47,7 +47,7 @@ const texte = (x, y, contenu, { size = 22, fill = CRAIE, anchor = "start" } = {}
 //   s: fin ("" en jeu, "t" trouvé, "p" pendu, "d" délai dépassé) }.
 // Final : { w: mot (accents compris), j: [{ n: pseudo (sans emoji : la
 //   police embarquée n'en a pas), e: erreurs, l: lettres découvertes,
-//   s: fin }] × 2 (× 1 en solo), g: index du gagnant (-1 : nul, solo) }.
+//   f: lettres fausses, s: fin }] × 2 (× 1 en solo), g: index du gagnant (-1 : nul, solo) }.
 
 const FINS = { trouve: "t", pendu: "p", temps: "d" };
 const FINS_INV = { t: "trouve", p: "pendu", d: "temps" };
@@ -77,7 +77,7 @@ export function decodeVue(param) {
 export function encodeFinal({ mot, joueurs, gagnant }) {
   return versUrl({
     w: mot,
-    j: joueurs.map((j) => ({ n: tronquer(String(j.nom).replace(/\p{Extended_Pictographic}/gu, "").trim() || "?", 18), e: j.erreurs, l: j.decouvertes, s: FINS[j.fin] ?? "" })),
+    j: joueurs.map((j) => ({ n: tronquer(String(j.nom).replace(/\p{Extended_Pictographic}/gu, "").trim() || "?", 18), e: j.erreurs, l: j.decouvertes, f: (j.fausses ?? []).join(""), s: FINS[j.fin] ?? "" })),
     g: gagnant,
   });
 }
@@ -87,7 +87,7 @@ export function decodeFinal(param) {
   if (!d || typeof d.w !== "string" || d.w.length < 1 || [...d.w].length > MOT_FINAL_MAX || !Array.isArray(d.j) || ![1, 2].includes(d.j.length)) return null;
   return {
     mot: d.w,
-    joueurs: d.j.map((j) => ({ nom: String(j.n ?? "?"), erreurs: borner(j.e, ERREURS_MAX), decouvertes: borner(j.l, MOT_FINAL_MAX), fin: FINS_INV[j.s] ?? null })),
+    joueurs: d.j.map((j) => ({ nom: String(j.n ?? "?"), erreurs: borner(j.e, ERREURS_MAX), decouvertes: borner(j.l, MOT_FINAL_MAX), fausses: /^[A-Z]{0,26}$/.test(j.f ?? "") ? [...(j.f ?? "")] : [], fin: FINS_INV[j.s] ?? null })),
     gagnant: [0, 1].includes(d.g) ? d.g : -1,
   };
 }
@@ -186,6 +186,12 @@ const cadre = (largeur, hauteur, contenu) => `<?xml version="1.0" encoding="UTF-
 ${contenu}
 </svg>`;
 
+// Lettre fausse : case rouge, lettre barrée (vue et image finale)
+const lettreFausseSvg = (x, y, l, t = 46) =>
+  `<rect x="${x}" y="${y}" width="${t}" height="${t}" rx="${t * 0.17}" fill="none" stroke="${ROUGE}" stroke-width="2"/>
+  ${texte(x + t / 2, y + t * 0.72, l, { size: Math.round(t * 0.61), fill: ROUGE, anchor: "middle" })}
+  <line x1="${x + t * 0.17}" y1="${y + t * 0.83}" x2="${x + t * 0.83}" y2="${y + t * 0.17}" stroke="${ROUGE}" stroke-width="${t > 40 ? 3 : 2.5}" stroke-linecap="round"/>`;
+
 const LIBELLE_FIN = { trouve: ["Trouvé !", VERT], pendu: ["Pendu !", ROUGE], temps: ["Temps écoulé", ROUGE] };
 
 export function buildVueSvg({ motif, fausses, erreurs, fin }) {
@@ -194,13 +200,7 @@ export function buildVueSvg({ motif, fausses, erreurs, fin }) {
   // Colonne de droite : erreurs et lettres fausses (6 au plus par ligne)
   const xd = 330;
   const fauxSvg = fausses
-    .map((l, i) => {
-      const x = xd + (i % 6) * 54;
-      const y = PADDING + 70 + Math.floor(i / 6) * 54;
-      return `<rect x="${x}" y="${y}" width="46" height="46" rx="8" fill="none" stroke="${ROUGE}" stroke-width="2"/>
-  ${texte(x + 23, y + 33, l, { size: 28, fill: ROUGE, anchor: "middle" })}
-  <line x1="${x + 8}" y1="${y + 38}" x2="${x + 38}" y2="${y + 8}" stroke="${ROUGE}" stroke-width="3" stroke-linecap="round"/>`;
-    })
+    .map((l, i) => lettreFausseSvg(xd + (i % 6) * 54, PADDING + 70 + Math.floor(i / 6) * 54, l))
     .join("\n");
   const [libelle, couleur] = LIBELLE_FIN[fin] ?? [`Erreurs : ${erreurs}/${ERREURS_MAX}`, CRAIE];
   const contenu = [
@@ -226,9 +226,16 @@ export function tailleTuiles(n) {
   return { taille, ecart };
 }
 
-// Deux potences côte à côte (1v1), une seule au centre (solo)
+// Lettres fausses de l'image finale : cases de 32 px, rangée centrée sous
+// le détail de chaque joueur (6 au plus : une erreur par lettre)
+const FAUSSE_FINALE = 32;
+const FAUSSE_ECART = 6;
+
+// Deux potences côte à côte (1v1), une seule au centre (solo) ; rangée des
+// lettres fausses ajoutée (image plus haute) si un joueur en a
 export function buildFinalSvg({ mot, joueurs, gagnant }) {
-  const hauteur = 470;
+  const rangee = joueurs.some((j) => j.fausses?.length) ? FAUSSE_FINALE + 16 : 0;
+  const hauteur = 470 + rangee;
   const moitie = LARGEUR / joueurs.length;
   const panneaux = joueurs.map((j, i) => {
     const x0 = i * moitie;
@@ -240,13 +247,17 @@ export function buildFinalSvg({ mot, joueurs, gagnant }) {
       potenceSvg(x0 + moitie / 2 - 105, PADDING + 44, 0.9, j.erreurs, { couleur: perdu ? ROUGE : CRAIE, mort: perdu }),
       texte(x0 + moitie / 2, PADDING + 298, libelle, { size: 24, fill: couleur, anchor: "middle" }),
       texte(x0 + moitie / 2, PADDING + 326, detail, { size: 18, fill: GRIS, anchor: "middle" }),
+      ...(j.fausses ?? []).map((l, k, tab) => {
+        const total = tab.length * FAUSSE_FINALE + (tab.length - 1) * FAUSSE_ECART;
+        return lettreFausseSvg(x0 + moitie / 2 - total / 2 + k * (FAUSSE_FINALE + FAUSSE_ECART), PADDING + 342, l, FAUSSE_FINALE);
+      }),
     ].join("\n");
   });
-  const separateur = joueurs.length > 1 ? `<line x1="${moitie}" y1="${PADDING}" x2="${moitie}" y2="${PADDING + 330}" stroke="${BORD}" stroke-width="2"/>` : "";
+  const separateur = joueurs.length > 1 ? `<line x1="${moitie}" y1="${PADDING}" x2="${moitie}" y2="${PADDING + 330 + rangee}" stroke="${BORD}" stroke-width="2"/>` : "";
   const lettres = [...mot.toUpperCase()];
   const { taille, ecart } = tailleTuiles(lettres.length);
   // Tuiles plus petites : centrées sur la même ligne que les grandes
-  const y = 380 + (54 - taille) / 2;
+  const y = 380 + rangee + (54 - taille) / 2;
   return cadre(LARGEUR, hauteur, [...panneaux, separateur, tuilesSvg(lettres, LARGEUR / 2, y, { taille, ecart })].join("\n"));
 }
 

@@ -10,8 +10,9 @@
 //
 // Rendu sans état : la main est passée dans l'URL (encodeMain) ; l'URL
 // change avec l'état, ce qui contourne le cache d'images de Discord.
-// ⚠️ Anti-spoiler : quand le Croupier joue en second, l'URL ne contient
-// NI ses cartes NI son score (`croupier.cache`), deux dos de carte seulement.
+// ⚠️ Anti-spoiler : tant que le Croupier n'a pas dévoilé sa main, l'URL ne
+// contient que sa carte visible (`croupier.cache`), ni sa carte cachée ni
+// son score : sa carte visible et un dos de carte.
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
@@ -38,12 +39,15 @@ const PASTILLES = {
   lose: "#6d4c41",
   bust: "#c62828",
   cache: "#555555",
+  blackjack: "#7b1fa2",
 };
 
 const RANGS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const COULEURS = ["♠", "♥", "♦", "♣"];
 const STATUTS = ["en_cours", "stand", "bust"];
-const ISSUES = ["win", "push", "lose"];
+// Nouveaux codes ajoutés en fin de liste (index stables pour les URL déjà
+// publiées)
+const ISSUES = ["win", "push", "lose", "blackjack"];
 // Cartes affichées au plus par main (au-delà, illisible ; jamais atteint en
 // pratique : 11 cartes font déjà plus de 21)
 const MAX_CARTES = 12;
@@ -59,11 +63,11 @@ const texte = (x, y, contenu, { size = 20, fill = BLANC, anchor = "start", weigh
   `<text x="${x}" y="${y}" font-family="${FONT_FAMILY}" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}" fill="${fill}" opacity="${opacity}">${escapeXml(contenu)}</text>`;
 
 // ── Encodage dans l'URL ─────────────────────────────────────────────
-// { j: [pseudo, cartes, score, statut, issue], c: croupier ou absent,
-//   l: légende } ; cartes = "rang.couleur" par index (RANGS, COULEURS)
-//   séparées par des virgules ; croupier = [nom, cartes, score] visible,
-//   [nom] caché (joue en second) ; statut = index de STATUTS ; issue =
-//   index de ISSUES, -1 si inconnue.
+// { j: [pseudo, cartes, score, statut, issue, doublée (0/1)], c: croupier
+//   ou absent, l: légende } ; cartes = "rang.couleur" par index (RANGS,
+//   COULEURS) séparées par des virgules ; croupier = [nom, cartes, score]
+//   dévoilé, [nom, carte visible] caché ([nom] seul : deux dos) ; statut =
+//   index de STATUTS ; issue = index de ISSUES, -1 si inconnue.
 
 const versCartes = (cartes) =>
   cartes
@@ -86,9 +90,10 @@ const borner = (n, min, max) => Math.max(min, Math.min(max, Math.round(Number(n)
 
 /**
  * @param {object} p
- * @param {{ nom: string, cartes: object[], score: number, statut: string, issue?: string|null }} p.joueur
+ * @param {{ nom: string, cartes: object[], score: number, statut: string, issue?: string|null, double?: boolean }} p.joueur
  * @param {{ nom: string, cartes?: object[], score?: number, cache?: boolean }|null} p.croupier
- *   null en 1v1 ; `cache` : joue en second, ni cartes ni score encodés
+ *   null en 1v1 ; `cache` : main pas encore dévoilée, `cartes` = carte(s)
+ *   visible(s) seulement, score non encodé
  * @param {string} p.legende texte du pied (« Jour 4/7 », « Manche 3/10 »…)
  */
 export function encodeMain({ joueur, croupier = null, legende = "" }) {
@@ -99,12 +104,13 @@ export function encodeMain({ joueur, croupier = null, legende = "" }) {
       joueur.score,
       Math.max(0, STATUTS.indexOf(joueur.statut)),
       ISSUES.indexOf(joueur.issue ?? ""),
+      joueur.double ? 1 : 0,
     ],
     l: tronquer(String(legende), 48),
   };
   if (croupier) {
     d.c = croupier.cache
-      ? [tronquer(sansEmoji(croupier.nom), 18)]
+      ? [tronquer(sansEmoji(croupier.nom), 18), ...(croupier.cartes?.length ? [versCartes(croupier.cartes.slice(0, 1))] : [])]
       : [tronquer(sansEmoji(croupier.nom), 18), versCartes(croupier.cartes ?? []), croupier.score];
   }
   return Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
@@ -115,7 +121,7 @@ export function decodeMain(param) {
   try {
     const d = JSON.parse(Buffer.from(String(param), "base64url").toString("utf8"));
     if (!Array.isArray(d?.j)) return null;
-    const [nom, cartes, score, statut, issue] = d.j;
+    const [nom, cartes, score, statut, issue, double] = d.j;
     const main = {
       joueur: {
         nom: String(nom ?? "?"),
@@ -123,14 +129,15 @@ export function decodeMain(param) {
         score: borner(score, 0, 99),
         statut: STATUTS[Number(statut)] ?? "en_cours",
         issue: ISSUES[Number(issue)] ?? null,
+        double: double === 1,
       },
       croupier: null,
       legende: String(d.l ?? ""),
     };
     if (Array.isArray(d.c)) {
       main.croupier =
-        d.c.length === 1
-          ? { nom: String(d.c[0] ?? "?"), cache: true }
+        d.c.length <= 2
+          ? { nom: String(d.c[0] ?? "?"), cartes: depuisCartes(d.c[1]).slice(0, 1), cache: true }
           : { nom: String(d.c[0] ?? "?"), cartes: depuisCartes(d.c[1]), score: borner(d.c[2], 0, 99), cache: false };
     }
     return main;
@@ -141,8 +148,8 @@ export function decodeMain(param) {
 
 // ── Dessin ──────────────────────────────────────────────────────────
 
-function dosDeCarte(x, y) {
-  return `<g transform="translate(${x},${y})"><rect width="${CW}" height="${CH}" rx="14" fill="#1f3a8a" stroke="${BLANC}" stroke-width="5"/>
+function dosDeCarte(x, y, _carte = null, echelle = 1) {
+  return `<g transform="translate(${x},${y}) scale(${echelle})"><rect width="${CW}" height="${CH}" rx="14" fill="#1f3a8a" stroke="${BLANC}" stroke-width="5"/>
     <rect x="12" y="12" width="${CW - 24}" height="${CH - 24}" rx="8" fill="none" stroke="${OR}" stroke-width="3"/>
     ${texte(CW / 2, CH / 2 + 20, "?", { size: 60, fill: OR, anchor: "middle", weight: 800 })}</g>`;
 }
@@ -155,24 +162,33 @@ function faceDeCarte(x, y, { rang, couleur }, echelle = 1) {
     ${texte(CW / 2 + 10, CH / 2 + 42, couleur, { size: 80, fill, anchor: "middle" })}</g>`;
 }
 
-// Rangée centrée sur `centre`, dans une largeur `place` ; au-delà de 3
-// cartes, chevauchement à largeur fixe
+// Rangée centrée sur `centre`, dans une largeur `place` ; les cartes se
+// chevauchent dès qu'elles n'y tiennent plus côte à côte
 function rangee(cartes, y, dessin, { echelle = 1, centre = LARGEUR / 2, place = LARGEUR - 2 * MARGE } = {}) {
   const n = cartes.length;
   if (!n) return "";
   const w = CW * echelle;
   const ecart = 12 * echelle;
-  const pas = n <= 3 ? w + ecart : Math.min(w + ecart, (place - w) / (n - 1));
+  const pas = n === 1 ? 0 : Math.min(w + ecart, (place - w) / (n - 1));
   const total = pas * (n - 1) + w;
   const x0 = centre - total / 2;
   return cartes.map((c, i) => dessin(x0 + i * pas, y, c, echelle)).join("");
 }
 
-function bandeau(y, nom, score, fond) {
+// Pastille « ×2 » d'une main doublée, centrée en (cx, cy)
+const puceDouble = (cx, cy, s = 1) =>
+  `<g transform="translate(${cx},${cy}) scale(${s})"><rect x="-28" y="-18" width="56" height="36" rx="18" fill="${OR}" stroke="${BLANC}" stroke-width="2"/>${texte(0, 8, "×2", { size: 22, weight: 800, anchor: "middle", fill: "#3a2a00" })}</g>`;
+
+function bandeau(y, nom, score, fond, double = false) {
   return `${texte(MARGE, y, nom, { size: 34, weight: 800 })}
+  ${double ? puceDouble(LARGEUR - 172, y - 12) : ""}
   <g transform="translate(${LARGEUR - 80},${y - 12})"><rect x="-46" y="-30" width="92" height="52" rx="26" fill="${fond}" stroke="${BLANC}" stroke-width="3"/>
   ${texte(0, 9, score, { size: 32, weight: 800, anchor: "middle" })}</g>`;
 }
+
+// Carte visible puis un dos (main du Croupier pas encore dévoilée)
+const DOS = Symbol("dos");
+const carteOuDos = (x, y, c, echelle) => (c === DOS ? dosDeCarte(x, y, null, echelle) : faceDeCarte(x, y, c, echelle));
 
 const pastilleJoueur = (j) => (j.statut === "bust" ? PASTILLES.bust : PASTILLES[j.issue ?? j.statut]);
 
@@ -185,15 +201,23 @@ export function buildMainSvg({ joueur, croupier, legende }) {
   let y = haut;
   let contenu = "";
   if (croupier) {
-    contenu += bandeau(y + 44, croupier.nom, croupier.cache ? "?" : String(croupier.score), PASTILLES.cache);
+    // Main dévoilée : pastille violette sur un Blackjack, rouge s'il dépasse
+    const fondCroupier = croupier.cache
+      ? PASTILLES.cache
+      : croupier.score > 21
+        ? PASTILLES.bust
+        : croupier.score === 21 && croupier.cartes.length === 2
+          ? PASTILLES.blackjack
+          : PASTILLES.cache;
+    contenu += bandeau(y + 44, croupier.nom, croupier.cache ? "?" : String(croupier.score), fondCroupier);
     contenu += croupier.cache
-      ? rangee([0, 1], y + 78, (x, yy) => dosDeCarte(x, yy))
+      ? rangee(croupier.cartes?.length ? [croupier.cartes[0], DOS] : [DOS, DOS], y + 78, carteOuDos)
       : rangee(croupier.cartes, y + 78, faceDeCarte);
     y += ZONE_H + 16;
     contenu += `<line x1="60" y1="${y}" x2="${LARGEUR - 60}" y2="${y}" stroke="${OR}" stroke-width="2" stroke-dasharray="8 8" opacity="0.6"/>`;
     y += 16;
   }
-  contenu += bandeau(y + 44, joueur.nom, String(joueur.score), pastilleJoueur(joueur));
+  contenu += bandeau(y + 44, joueur.nom, String(joueur.score), pastilleJoueur(joueur), joueur.double);
   contenu += rangee(joueur.cartes, y + 78, faceDeCarte);
   y += ZONE_H;
   const hauteur = y + PIED_H;
@@ -225,7 +249,7 @@ export const getMainImage = (main) => rasterize(buildMainSvg(main));
 // numéros de manche entre les deux pour lire chaque manche en colonne,
 // légende des couleurs, meilleure main de chacun.
 
-const ISSUES_FIN = ["win", "push", "lose", "bust"];
+const ISSUES_FIN = ["win", "push", "lose", "bust", "blackjack"];
 
 // Meilleure main d'une partie : plus haut score sans dépassement, puis
 // moins de cartes, puis la plus ancienne. null si toutes ont dépassé.
@@ -318,6 +342,7 @@ ${contenu}
 function decompte(manches) {
   const n = (issue) => manches.filter((m) => m.issue === issue).length;
   return [
+    n("blackjack") && pluriel(n("blackjack"), "Blackjack", "Blackjacks"),
     n("win") && pluriel(n("win"), "victoire"),
     n("push") && pluriel(n("push"), "égalité"),
     n("lose") && pluriel(n("lose"), "défaite"),
@@ -339,7 +364,7 @@ function buildFinSoloSvg({ joueurs: [j], totalManches }) {
     return cadreFin(440, c);
   }
   const { cartes, score } = j.meilleure;
-  const titre = `Meilleure main : ${score}${cartes.length === 2 && score === 21 ? " en 2 cartes" : ""}`;
+  const titre = `Meilleure main : ${cartes.length === 2 && score === 21 ? "Blackjack" : score}`;
   c += texte(LARGEUR / 2, 390, titre, { size: 22, weight: 700, anchor: "middle" });
   c += rangee(cartes, 415, faceDeCarte, { echelle: 110 / CW });
   return cadreFin(640, c);
@@ -358,10 +383,10 @@ function buildFinPvpSvg({ joueurs }) {
   const n = Math.max(a.manches.length, b.manches.length);
   for (let i = 0; i < n; i++) c += texte(xPastille(i, n), 222, String(i + 1), { size: 16, anchor: "middle", opacity: 0.6 });
   c += bloc(b, 270);
-  [["win", "Gagnée"], ["push", "Égalité"], ["lose", "Perdue"], ["bust", "Dépassé"]].forEach(([k, libelle], i) => {
-    const x = 60 + i * 135;
+  [["blackjack", "Blackjack"], ["win", "Gagnée"], ["push", "Égalité"], ["lose", "Perdue"], ["bust", "Dépassé"]].forEach(([k, libelle], i) => {
+    const x = 44 + i * 110;
     c += `<circle cx="${x}" cy="362" r="9" fill="${PASTILLES[k]}" stroke="${BLANC}" stroke-width="1.5"/>`;
-    c += texte(x + 16, 369, libelle, { size: 18, opacity: 0.85 });
+    c += texte(x + 15, 369, libelle, { size: 17, opacity: 0.85 });
   });
   c += separateur(398);
   c += texte(LARGEUR / 2, 440, "Meilleures mains", { size: 22, weight: 700, anchor: "middle" });
@@ -386,13 +411,13 @@ export const getFinImage = (fin) => rasterize(buildFinSvg(fin));
 // les deux joueurs), en petites cartes, score en pastille. Toujours une
 // manche terminée : ⚠️ jamais de main en cours (secrète en 1v1).
 
-const ISSUES_MANCHE = ["win", "push", "lose", "bust", "cache"];
+const ISSUES_MANCHE = ["win", "push", "lose", "bust", "cache", "blackjack"];
 const ECHELLE_MANCHE = 76 / CW;
 
 /**
  * @param {object} p
  * @param {string} p.titre bandeau (« Manche 3 : Raphaël gagne +2 »)
- * @param {{ nom: string, cartes: object[], score: number, issue: string }[]} p.mains
+ * @param {{ nom: string, cartes: object[], score: number, issue: string, double?: boolean }[]} p.mains
  *   2 mains, gauche puis droite ; issue `cache` = pastille grise (Kévina)
  */
 export function encodeManche({ titre, mains }) {
@@ -403,6 +428,7 @@ export function encodeManche({ titre, mains }) {
       versCartes(m.cartes),
       borner(m.score, 0, 99),
       Math.max(0, ISSUES_MANCHE.indexOf(m.issue)),
+      m.double ? 1 : 0,
     ]),
   };
   return Buffer.from(JSON.stringify(d), "utf8").toString("base64url");
@@ -414,11 +440,12 @@ export function decodeManche(param) {
     if (!Array.isArray(d?.m) || d.m.length !== 2) return null;
     return {
       titre: String(d.t ?? ""),
-      mains: d.m.map(([nom, cartes, score, issue]) => ({
+      mains: d.m.map(([nom, cartes, score, issue, double]) => ({
         nom: String(nom ?? "?"),
         cartes: depuisCartes(cartes),
         score: borner(score, 0, 99),
         issue: ISSUES_MANCHE[Number(issue)] ?? "lose",
+        double: double === 1,
       })),
     };
   } catch {
@@ -434,6 +461,7 @@ export function buildMancheSvg({ titre, mains }) {
     c += texte(cx, 92, m.nom, { size: 24, weight: 800, anchor: "middle" });
     c += `<rect x="${cx - 34}" y="104" width="68" height="36" rx="18" fill="${PASTILLES[m.issue]}" stroke="${BLANC}" stroke-width="2"/>`;
     c += texte(cx, 129, String(m.score), { size: 22, weight: 800, anchor: "middle" });
+    if (m.double) c += puceDouble(cx + 72, 122, 0.85);
     c += rangee(m.cartes, 156, faceDeCarte, { echelle: ECHELLE_MANCHE, centre: cx, place: 240 });
   });
   c += `<line x1="${LARGEUR / 2}" y1="80" x2="${LARGEUR / 2}" y2="270" stroke="${OR}" stroke-width="2" stroke-dasharray="6 6" opacity="0.5"/>`;

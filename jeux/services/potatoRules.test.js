@@ -73,6 +73,8 @@ assert.deepStrictEqual([indice(30), indice(25), indice(15), indice(10), indice(5
   chauffer(d, "joueur", 2, { rng: suite([0.1, 0]) });
   assert.deepStrictEqual(d.evenement, { type: "glacon", id: "bot", avant: TEMP_DEPART + 15 });
   assert.strictEqual(d.temp, TEMP_DEPART);
+  // Noté en chauffe négative (plancher à TEMP_DEPART compris)
+  assert.deepStrictEqual(d.chauffes, [{ id: "joueur", v: 15 }, { id: "bot", v: -15 }]);
   // Pas de Glaçon à température de départ
   const e = creerDuel({ rng: suite([0.99, 0.1, 0]) });
   assert.strictEqual(e.evenement.type, "piment");

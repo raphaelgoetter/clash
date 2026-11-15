@@ -197,76 +197,79 @@ export function computeHandValue(cards) {
   return total;
 }
 
-// Score du Croupier — décision explicite (29/08, retour utilisateur) : plus
-// de simulation "tire jusqu'à 17" avec risque de saut, qui produisait un
-// Croupier trop souvent battu d'office par un bust. Un simple entier
-// aléatoire dans [min, max] (15-21 par défaut) : toujours une vraie cible à
-// battre, jamais de saut.
-export function rollDealerScore(rng = Math.random, min = 15, max = 21) {
-  return min + Math.floor(rng() * (max - min + 1));
+// ── Règles officielles (Croupier, Blackjack naturel, Doubler) ──────────
+// Simulées avant adoption : jeux/outils/blackjack-simulation/simulation.mjs.
+
+// Blackjack naturel : 21 avec les 2 cartes de départ (jamais après Doubler,
+// qui ajoute une 3ᵉ carte).
+export function isNatural(cards) {
+  return Array.isArray(cards) && cards.length === 2 && computeHandValue(cards) === 21;
 }
 
-function rankForValue(value, rng) {
-  if (value === 11) return "A";
-  if (value === 10) {
-    const tens = ["10", "J", "Q", "K"];
-    return tens[Math.floor(rng() * tens.length)];
-  }
-  return String(value);
+// Croupier officiel : 2 cartes (la première visible, la seconde cachée),
+// puis il pioche jusqu'à 17 et reste sur tout 17, souple compris. Sa main
+// est tirée en entier à l'ouverture (sabot infini, indépendant des joueurs)
+// et dévoilée après les joueurs. Il peut dépasser 21.
+export function dealerPlay(rng = Math.random) {
+  const cards = [drawCard(rng)];
+  cards.push(drawUniqueCard(cards, rng));
+  while (computeHandValue(cards) < 17) cards.push(drawUniqueCard(cards, rng));
+  return { cards, score: computeHandValue(cards) };
 }
 
-// Habille un score cible d'une main à 2 cartes cohérente (valeurs réelles,
-// 2 à 11 chacune) — purement cosmétique pour l'affichage, l'issue du jeu ne
-// dépend que du score lui-même.
-export function buildHandForScore(score, rng = Math.random) {
-  const minV1 = Math.max(2, score - 11);
-  const maxV1 = Math.min(11, score - 2);
-  const v1 = minV1 + Math.floor(rng() * (maxV1 - minV1 + 1));
-  const v2 = score - v1;
-  const card1 = { rank: rankForValue(v1, rng), suit: SUITS[Math.floor(rng() * SUITS.length)], value: v1 };
-  // v1 et v2 peuvent tomber sur le même rang (ex. 8+8) : reroule la couleur
-  // de la 2e carte si elle est identique à la 1ʳᵉ (même rang+couleur), sans
-  // jamais toucher aux valeurs (le total doit rester exactement `score`).
-  let card2;
-  let attempts = 0;
-  do {
-    card2 = { rank: rankForValue(v2, rng), suit: SUITS[Math.floor(rng() * SUITS.length)], value: v2 };
-    attempts += 1;
-  } while (cardSignature(card2) === cardSignature(card1) && attempts < 20);
-  return [card1, card2];
+export function dealerHasNatural(dealer) {
+  return Boolean(dealer) && isNatural(dealer.cards);
 }
 
-export function dealerPlay(rng = Math.random, min = 15, max = 21) {
-  const score = rollDealerScore(rng, min, max);
-  const cards = buildHandForScore(score, rng);
-  return { cards, score };
-}
-
-// Le Croupier ne saute plus jamais (voir dealerPlay ci-dessus) : la
-// comparaison est purement numérique.
-export function compareToDealer(playerScore, dealer) {
-  if (playerScore > dealer.score) return "win";
-  if (playerScore === dealer.score) return "push";
+// Issue d'une main face au Croupier : `blackjack` (naturel du joueur seul),
+// `win`, `push` ou `lose`. Un dépassement du joueur perd toujours, même si
+// le Croupier dépasse aussi. Naturel contre naturel : égalité.
+export function compareToDealer(hand, dealer) {
+  if (hand.status === "bust" || hand.score > 21) return "lose";
+  const joueurNaturel = isNatural(hand.cards) && !hand.double;
+  const croupierNaturel = dealerHasNatural(dealer);
+  if (joueurNaturel && croupierNaturel) return "push";
+  if (joueurNaturel) return "blackjack";
+  if (croupierNaturel) return "lose";
+  if (dealer.score > 21 || hand.score > dealer.score) return "win";
+  if (hand.score === dealer.score) return "push";
   return "lose";
 }
 
-// Alternance jour/manche impair-pair (15/09, retour utilisateur) : les jours
-// impairs le Croupier joue "en premier" (son score est révélé dès
-// l'ouverture, comme aujourd'hui) ; les jours pairs il joue "en dernier" (son
-// score reste caché jusqu'à la clôture, les joueurs misent à l'aveugle).
-// Fonction pure partagée par le jeu spécial (jour) et le duel (manche) — même
-// numérotation 1-indexée dans les deux cas.
-export function isDealerRevealed(n) {
-  return n % 2 === 1;
+// Barème : victoire 2, égalité 1 (une égalité ne compte pas comme une
+// défaite), Blackjack naturel 3 (le « paie 3 pour 2 »), défaite 0. Une main
+// doublée compte double (victoire 4, égalité 2).
+export function pointsForResult(result, double = false) {
+  const base = { blackjack: 3, win: 2, push: 1 }[result] ?? 0;
+  return double ? base * 2 : base;
 }
 
-// Barème (12/09, retour utilisateur) : une égalité ne doit pas "compter
-// comme une défaite" dans le classement — elle rapporte donc 1 point, moitié
-// moins qu'une vraie victoire (2 points), plutôt que 0 comme une défaite.
-export function pointsForResult(result) {
-  if (result === "win") return 2;
-  if (result === "push") return 1;
-  return 0;
+// Main de départ : 2 cartes. Elle s'arrête d'office sur un 21, ou si le
+// Croupier a un Blackjack (il le vérifie avant que les joueurs jouent :
+// aucune décision ne changerait l'issue). `dealer` null en 1v1.
+export function dealHand(username, dealer, rng = Math.random) {
+  const first = drawCard(rng);
+  const cards = [first, drawUniqueCard([first], rng)];
+  const score = computeHandValue(cards);
+  const status = score === 21 || dealerHasNatural(dealer) ? "stand" : "en_cours";
+  return { cards, score, status, username };
+}
+
+// Doubler : seulement sur les 2 cartes de départ.
+export function canDouble(hand) {
+  return hand.status === "en_cours" && hand.cards.length === 2 && !hand.double;
+}
+
+// Action sur une main en cours : `piocher`, `arreter` ou `doubler` (une
+// seule carte de plus, puis la main s'arrête ; points doublés). Pure.
+export function applyHandAction(hand, action, rng = Math.random) {
+  if (action === "arreter") return { ...hand, status: "stand" };
+  if (action === "doubler" && !canDouble(hand)) return hand;
+  const cards = [...hand.cards, drawUniqueCard(hand.cards, rng)];
+  const score = computeHandValue(cards);
+  const double = action === "doubler" || Boolean(hand.double);
+  const status = score > 21 ? "bust" : action === "doubler" || score === 21 ? "stand" : "en_cours";
+  return { ...hand, cards, score, status, ...(double ? { double: true } : {}) };
 }
 
 // Résout toutes les mains d'un jour face à la main du Croupier de ce
@@ -278,7 +281,7 @@ export function pointsForResult(result) {
 export function resolveDay(hands, dealer) {
   return Object.entries(hands).map(([discordId, hand]) => {
     const finalStatus = hand.status === "en_cours" ? "stand" : hand.status;
-    const result = finalStatus === "bust" ? "lose" : compareToDealer(hand.score, dealer);
+    const result = compareToDealer({ ...hand, status: finalStatus }, dealer);
     return {
       discordId,
       username: hand.username,
@@ -286,6 +289,7 @@ export function resolveDay(hands, dealer) {
       score: hand.score,
       status: finalStatus,
       result,
+      ...(hand.double ? { double: true } : {}),
     };
   });
 }

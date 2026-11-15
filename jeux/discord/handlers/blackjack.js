@@ -12,12 +12,12 @@ import {
   loadBlackjackConfig,
   readState,
   writeState,
-  drawCard,
-  drawUniqueCard,
-  computeHandValue,
   dealerPlay,
+  dealHand,
+  applyHandAction,
+  canDouble,
+  dealerHasNatural,
   compareToDealer,
-  isDealerRevealed,
   pointsForResult,
   resolveDay,
   readHand,
@@ -82,21 +82,9 @@ function formatCards(cards) {
   return cards.map(formatCard).join(" ");
 }
 
-// Les vrais glyphes Unicode de cartes à jouer (bloc U+1F0A0-1F0DF) ont été
-// essayés puis abandonnés (29/08, retour utilisateur avec capture d'écran) :
-// sans artwork couleur chez Discord, ils restent minuscules même sous un
-// titre H1 — contrairement aux emoji standard (♠️♥️♦️♣️ compris) qui
-// s'agrandissent normalement. Rang+couleur en titre Markdown (# ) reste donc
-// le seul rendu "graphique" fiable.
-//
-// scoreLabel optionnel : omis quand le score est déjà annoncé juste
-// au-dessus (ex. le titre "Score à battre aujourd'hui : N" du Croupier),
-// pour ne pas le répéter une 3ᵉ fois.
-function formatCardsBlock(cards, scoreLabel = null) {
-  const lines = [`# ${formatCards(cards)}`];
-  if (scoreLabel) lines.push(`**${scoreLabel}**`);
-  return lines;
-}
+// ⚠️ Pas de glyphes Unicode de cartes (bloc U+1F0A0-1F0DF) : minuscules
+// sur Discord. Les mains sont en image (blackjackImage.js) ; ce rendu texte
+// ne sert qu'à la carte visible du Croupier, au bilan et au Journal.
 
 // ── Résolution d'un jour — rendu texte partagé (recap + révélation finale) ──
 // Résumé plutôt que liste exhaustive (29/08, retour utilisateur) : avec
@@ -108,7 +96,8 @@ function formatCardsBlock(cards, scoreLabel = null) {
 async function formatResultsSection(results) {
   if (!results.length) return ["Personne n'a joué ce jour-là."];
 
-  const winners = results.filter((r) => r.result === "win");
+  const winners = results.filter((r) => r.result === "win" || r.result === "blackjack");
+  const naturels = results.filter((r) => r.result === "blackjack");
   const pushes = results.filter((r) => r.result === "push");
 
   const lines = [
@@ -124,44 +113,26 @@ async function formatResultsSection(results) {
   } else {
     lines.push("🏆 Personne n'a battu le Croupier hier.");
   }
+  if (naturels.length) lines.push(`🎉 Blackjack : ${naturels.length}`);
   if (pushes.length) lines.push(`🤝 Égalité : ${pushes.length}`);
 
   return lines;
 }
 
 function formatDealerLine(dealer) {
-  return `🎩 **Croupier :** ${formatCards(dealer.cards)} (**${dealer.score}**)`;
+  const issue = dealerHasNatural(dealer) ? "Blackjack" : dealer.score > 21 ? `${dealer.score}, dépasse 21` : String(dealer.score);
+  return `🎩 **Croupier :** ${formatCards(dealer.cards)} (**${issue}**)`;
 }
 
-// Section "score à battre" du jour — le Croupier ne joue plus une vraie main
-// (voir dealerPlay() côté service) : un score aléatoire 15-21 est tiré à
-// l'ouverture du jour, jamais de saut. Jours impairs : révélé immédiatement,
-// les joueurs savent exactement ce qu'ils doivent battre avant même de
-// cliquer sur Jouer. Jours pairs (15/09, retour utilisateur) : le Croupier
-// "joue en dernier" — son score est déjà tiré en interne mais reste caché
-// jusqu'à la clôture, les joueurs misent à l'aveugle (voir isDealerRevealed).
-function buildDealerTargetSection(dealer, jour) {
-  if (!isDealerRevealed(jour)) {
-    return [
-      "## 🎩 Le Croupier joue en second aujourd'hui",
-      "Il n'a pas encore joué sa main. Fais le meilleur score possible sans dépasser 21, le Croupier jouera après toi et le résultat sera révélé demain à la clôture.",
-      "",
-    ];
-  }
-  const lines = [
-    `## 🎩 Score à battre aujourd'hui : ${dealer.score}`,
-    ...formatCardsBlock(dealer.cards),
+// Section du jour : seule la première carte du Croupier est visible, la
+// seconde reste cachée et il jouera sa main (pioche jusqu'à 17) après les
+// joueurs, dévoilée à la clôture. ⚠️ Rien d'autre ne doit fuiter de sa main.
+function buildDealerTargetSection(dealer) {
+  return [
+    `## 🎩 Carte visible du Croupier : ${formatCard(dealer.cards[0])}`,
+    "Sa seconde carte est cachée. Il jouera après toi (il pioche jusqu'à 17) et dévoilera sa main demain à la clôture.",
     "",
   ];
-  // 21 est le maximum atteignable sans dépasser — impossible de faire mieux,
-  // seule une égalité (21 aussi) est jouable ce jour-là. Prévient les
-  // joueurs avant qu'ils ne cliquent sur Jouer plutôt qu'à la clôture.
-  lines.push(
-    dealer.score === 21
-      ? "😱 21 pile, impossible de faire mieux aujourd'hui, seule une égalité (21 aussi, 1 point) est possible !"
-      : "Fais mieux que ça sans dépasser 21 pour gagner 2 points (1 point en cas d'égalité).",
-  );
-  return lines;
 }
 
 // ── Embed / composants du jour de présentation (annonce) ─────────────
@@ -249,7 +220,7 @@ async function buildDayEmbed(
       "",
     );
   }
-  lines.push(...buildDealerTargetSection(dealer, jour));
+  lines.push(...buildDealerTargetSection(dealer));
 
   return {
     title: `🃏 Blackjack (Jour ${jour}/${config.duree_jours})`,
@@ -465,11 +436,7 @@ export async function postBlackjack(
   // de la partie (remise à zéro des points) puis ouverture de la table.
   if (state.phase === "annonce") {
     const jour = 1;
-    const dealer = dealerPlay(
-      Math.random,
-      config.croupier.min,
-      config.croupier.max,
-    );
+    const dealer = dealerPlay();
     const embed = await buildDayEmbed(jour, config, dealer, {
       estPremierJour: true,
     });
@@ -507,7 +474,7 @@ export async function postBlackjack(
       // Points simulés selon pointsForResult() (2/1/0), sans écrire dans
       // Redis — pure projection pour npm run blackjack:status / --dry-run.
       for (const r of results) {
-        const pts = pointsForResult(r.result);
+        const pts = pointsForResult(r.result, r.double);
         if (pts > 0) pointsActuels[r.discordId] = (pointsActuels[r.discordId] || 0) + pts;
       }
       // Cartes du jour projeté ajoutées aux totaux déjà résolus, pour un
@@ -517,11 +484,7 @@ export async function postBlackjack(
       const embed = await buildRevealEmbed(state.dealer, results, ranking, []);
       return { dryRun: true, final: true, embed };
     }
-    const nextDealerPreview = dealerPlay(
-      Math.random,
-      config.croupier.min,
-      config.croupier.max,
-    );
+    const nextDealerPreview = dealerPlay();
     const embed = await buildDayEmbed(jourSuivant, config, nextDealerPreview, {
       estPremierJour: false,
       previousDealer: state.dealer,
@@ -537,7 +500,7 @@ export async function postBlackjack(
   }
 
   for (const r of results) {
-    await addPoints(r.discordId, pointsForResult(r.result));
+    await addPoints(r.discordId, pointsForResult(r.result, r.double));
   }
   await writeHistoriqueEntry(state.jour, {
     jour: state.jour,
@@ -593,11 +556,7 @@ export async function postBlackjack(
     return { ...result, final: true };
   }
 
-  const nextDealer = dealerPlay(
-    Math.random,
-    config.croupier.min,
-    config.croupier.max,
-  );
+  const nextDealer = dealerPlay();
   const embed = await buildDayEmbed(jourSuivant, config, nextDealer, {
     estPremierJour: false,
     previousDealer: state.dealer,
@@ -636,69 +595,64 @@ async function patchOriginal(webhookUrl, payload) {
 // aucun compteur à y afficher — la main de chacun reste secrète jusqu'à la
 // clôture du lendemain.
 
-// Jours impairs : le Croupier joue en premier, son score est déjà public dès
-// l'ouverture du jour (voir buildDealerTargetSection) — inutile de faire
-// attendre la clôture pour dire si la main gagne ou non, le résultat est
-// révélé immédiatement dès que la main est figée (stand ou dépassement).
-// Jours pairs : le Croupier joue en second (après tous les joueurs), donc
-// même un bust (pourtant toujours perdant quel que soit son score) ne doit
-// pas laisser fuiter ${dealer.score} — le résultat complet n'est révélé
-// qu'à la clôture, demain.
-function handStatusMessage(hand, dealer, jour) {
-  const revealed = isDealerRevealed(jour);
+// Le Croupier joue après tous les joueurs : le résultat n'est connu qu'à
+// la clôture, sauf s'il a un Blackjack (vérifié d'emblée, la main s'arrête
+// aussitôt). ⚠️ Rien d'autre de sa main ne doit fuiter.
+const pts = (n) => `${n} point${n > 1 ? "s" : ""}`;
+
+function handStatusMessage(hand, dealer) {
+  if (dealerHasNatural(dealer) && hand.cards.length === 2 && hand.status !== "en_cours") {
+    const result = compareToDealer(hand, dealer);
+    return result === "push"
+      ? "🎩 Le Croupier a un Blackjack, mais toi aussi : égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝"
+      : "🎩 Le Croupier a un Blackjack, personne ne peut le battre aujourd'hui. Pas de point, rendez-vous demain !";
+  }
   if (hand.status === "bust") {
-    return revealed
-      ? `💥 Tu dépasses 21 (le Croupier était à ${dealer.score}), ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !`
-      : `💥 Tu dépasses 21, ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !`;
+    return `💥 Tu dépasses 21${hand.double ? " sur ta mise doublée" : ""}, ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !`;
   }
   if (hand.status === "stand") {
-    const natural = hand.score === 21 && hand.cards.length === 2;
-    const intro = natural
-      ? "🎉 21 sur deux cartes, la meilleure main possible !"
-      : `🛑 Tu t'arrêtes à ${hand.score}.`;
-    if (!revealed) {
-      return `${intro} Le Croupier n'a pas encore joué : il jouera en second aujourd'hui, tu sauras si tu l'as battu à la clôture, demain.`;
-    }
-    const result = compareToDealer(hand.score, dealer);
-    if (result === "win")
-      return `${intro} Le Croupier était à ${dealer.score}, tu gagnes 2 points aujourd'hui ! 🏆`;
-    if (result === "push")
-      return `${intro} Le Croupier était aussi à ${dealer.score} : égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝`;
-    return `${intro} Le Croupier était à ${dealer.score}, pas de point aujourd'hui.`;
+    const intro = hand.cards.length === 2 && hand.score === 21
+      ? "🎉 Blackjack ! 21 sur deux cartes : 3 points si le Croupier n'en a pas aussi."
+      : hand.double
+        ? `💰 Mise doublée : tu t'arrêtes à ${hand.score}, points doublés si tu gagnes.`
+        : `🛑 Tu t'arrêtes à ${hand.score}.`;
+    return `${intro} Le Croupier joue après toi, résultat demain à la clôture.`;
   }
+  return canDouble(hand)
+    ? "Pioche pour te rapprocher de 21, arrête-toi, ou double (une seule carte de plus, points doublés)."
+    : "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
+}
+
+// Variante condensée pour le Journal (main déjà affichée juste avant)
+function journalStatusMessage(hand, dealer) {
+  if (dealerHasNatural(dealer) && hand.cards.length === 2 && hand.status !== "en_cours") {
+    return compareToDealer(hand, dealer) === "push"
+      ? "Blackjack contre Blackjack : égalité, 1 point. 🤝"
+      : "Le Croupier a un Blackjack, pas de point aujourd'hui.";
+  }
+  if (hand.status === "bust") return "💥 Ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !";
+  if (hand.status === "stand") return `${hand.double ? "Mise doublée. " : ""}Le Croupier dévoile sa main demain à la clôture.`;
   return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
 }
 
-// Variante condensée pour le Journal : le score de la main et celui du
-// Croupier sont déjà visibles ailleurs (ligne "Ta main", historique des
-// jours précédents), donc seul le résultat est utile ici.
-function journalStatusMessage(hand, dealer, jour) {
-  const revealed = isDealerRevealed(jour);
-  if (hand.status === "bust") {
-    return "💥 Ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !";
-  }
-  if (hand.status === "stand") {
-    if (!revealed) {
-      return "Le Croupier n'a pas encore joué, tu sauras si tu l'as battu à la clôture, demain.";
-    }
-    const result = compareToDealer(hand.score, dealer);
-    if (result === "win") return "Tu gagnes 2 points aujourd'hui ! 🏆";
-    if (result === "push") return "Égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝";
-    return "Pas de point aujourd'hui.";
-  }
-  return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
-}
-
-// Image de la main (blackjackImage.js) : cartes du Croupier en haut (deux
-// dos de carte les jours pairs, ⚠️ rien ne doit fuiter de son score), main
-// du joueur en bas, pastille colorée par l'issue quand elle est connue.
+// Image de la main (blackjackImage.js) : carte visible du Croupier et sa
+// carte cachée en haut (main entière seulement sur un Blackjack, déjà
+// connu du joueur), main du joueur en bas.
 function urlImageMain(jour, hand, dealer) {
-  const revealed = isDealerRevealed(jour);
-  const issue = revealed && hand.status === "stand" ? compareToDealer(hand.score, dealer) : null;
+  const blackjackCroupier = dealerHasNatural(dealer) && hand.status !== "en_cours";
   const param = encodeMain({
-    joueur: { nom: hand.username ?? "Toi", cartes: hand.cards, score: hand.score, statut: hand.status, issue },
-    croupier: revealed ? { nom: "Croupier", cartes: dealer.cards, score: dealer.score } : { nom: "Croupier", cache: true },
-    legende: revealed ? `Jour ${jour}` : `Jour ${jour} · le Croupier joue en second`,
+    joueur: {
+      nom: hand.username ?? "Toi",
+      cartes: hand.cards,
+      score: hand.score,
+      statut: hand.status,
+      issue: blackjackCroupier ? compareToDealer(hand, dealer) : null,
+      double: hand.double,
+    },
+    croupier: blackjackCroupier
+      ? { nom: "Croupier", cartes: dealer.cards, score: dealer.score }
+      : { nom: "Croupier", cartes: dealer.cards.slice(0, 1), cache: true },
+    legende: `Jour ${jour}`,
   });
   return `${TRUST_ROYALE_URL}/api/blackjack/main?d=${param}`;
 }
@@ -732,6 +686,17 @@ function buildHandComponents(jour, hand) {
           emoji: { name: "🛑" },
           custom_id: `blackjack_arreter:${jour}`,
         },
+        ...(canDouble(hand)
+          ? [
+              {
+                type: 2,
+                style: 2,
+                label: "Doubler",
+                emoji: { name: "💰" },
+                custom_id: `blackjack_doubler:${jour}`,
+              },
+            ]
+          : []),
       ],
     },
   ];
@@ -760,7 +725,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
           buildHandEmbed(
             jour,
             existing,
-            handStatusMessage(existing, state.dealer, jour),
+            handStatusMessage(existing, state.dealer),
             state.dealer,
           ),
         ],
@@ -769,16 +734,13 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
       return;
     }
 
-    const first = drawCard();
-    const cards = [first, drawUniqueCard([first])];
-    const score = computeHandValue(cards);
-    const status = score === 21 ? "stand" : "en_cours";
-    const hand = { cards, score, status, username };
+    // Un Blackjack du Croupier arrête la main d'emblée
+    const hand = dealHand(username, state.dealer);
     await writeHand(jour, discordId, hand);
 
     await patchOriginal(webhookUrl, {
       embeds: [
-        buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer, jour), state.dealer),
+        buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer), state.dealer),
       ],
       components: buildHandComponents(jour, hand),
     });
@@ -787,7 +749,7 @@ export async function handleJouer(webhookUrl, jour, discordId, username) {
   }
 }
 
-async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
+async function handleDrawOrStand(webhookUrl, jour, discordId, { draw, double = false }) {
   try {
     const state = await readState();
     if (isDayInactive(state, jour)) {
@@ -824,16 +786,14 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
       return;
     }
 
-    const cards = draw ? [...hand.cards, drawUniqueCard(hand.cards)] : hand.cards;
-    const score = computeHandValue(cards);
-    const status = !draw
-      ? "stand"
-      : score > 21
-        ? "bust"
-        : score === 21
-          ? "stand"
-          : "en_cours";
-    const updated = { ...hand, cards, score, status };
+    if (double && !canDouble(hand)) {
+      await patchOriginal(webhookUrl, {
+        embeds: [buildHandEmbed(jour, hand, "On ne peut doubler que sur ses 2 premières cartes.", state.dealer)],
+        components: buildHandComponents(jour, hand),
+      });
+      return;
+    }
+    const updated = applyHandAction(hand, double ? "doubler" : draw ? "piocher" : "arreter");
     await writeHand(jour, discordId, updated);
 
     await patchOriginal(webhookUrl, {
@@ -841,7 +801,7 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
         buildHandEmbed(
           jour,
           updated,
-          handStatusMessage(updated, state.dealer, jour),
+          handStatusMessage(updated, state.dealer),
           state.dealer,
         ),
       ],
@@ -849,7 +809,7 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw }) {
     });
   } catch (err) {
     console.error(
-      `[Blackjack] Échec ${draw ? "Piocher" : "Arrêter"}:`,
+      `[Blackjack] Échec ${double ? "Doubler" : draw ? "Piocher" : "Arrêter"}:`,
       err.message,
     );
   }
@@ -863,18 +823,26 @@ export async function handleArreter(webhookUrl, jour, discordId) {
   return handleDrawOrStand(webhookUrl, jour, discordId, { draw: false });
 }
 
+export async function handleDoubler(webhookUrl, jour, discordId) {
+  return handleDrawOrStand(webhookUrl, jour, discordId, { draw: true, double: true });
+}
+
 // ── Bouton [📜 Journal] — lecture seule ─────────────────────────────
 
 function formatHistoriqueLine(entry, discordId) {
   const mine = entry.results?.find((r) => r.discordId === discordId);
+  const gain = mine ? pointsForResult(mine.result, mine.double) : 0;
   const monResultat = !mine
     ? " (tu n'as pas joué)"
-    : mine.result === "win"
-      ? " (🏆 tu as gagné)"
-      : mine.result === "push"
-        ? " (🤝 égalité)"
-        : " (❌ tu as perdu)";
-  return `Jour ${entry.jour} : Croupier **${entry.dealer.score}**${monResultat}`;
+    : mine.result === "blackjack"
+      ? ` (🎉 Blackjack, +${gain})`
+      : mine.result === "win"
+        ? ` (🏆 tu as gagné, +${gain})`
+        : mine.result === "push"
+          ? ` (🤝 égalité, +${gain})`
+          : " (❌ tu as perdu)";
+  const croupier = dealerHasNatural(entry.dealer) ? "Blackjack" : entry.dealer.score > 21 ? "dépasse 21" : entry.dealer.score;
+  return `Jour ${entry.jour} : Croupier **${croupier}**${monResultat}`;
 }
 
 export async function handleJournal(webhookUrl, discordId) {
@@ -917,7 +885,7 @@ export async function handleJournal(webhookUrl, discordId) {
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
     if (hand) {
       lines.push(
-        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**). ${journalStatusMessage(hand, state.dealer, state.jour)}`,
+        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**). ${journalStatusMessage(hand, state.dealer)}`,
       );
     } else {
       lines.push(
@@ -976,11 +944,12 @@ function buildReglesEmbed(config) {
       "🃏 **Jouer** : reçois 2 cartes.",
       "👆 **Piocher** : reçois une carte de plus (autant de fois que tu veux).",
       "🛑 **Arrêter** : fige ton score pour aujourd'hui.",
+      "💰 **Doubler** : sur tes 2 premières cartes seulement, une seule carte de plus puis ta main s'arrête, points doublés.",
       "Dépasser 21 = main perdue immédiatement pour la journée.",
       "",
-      "**Score du Croupier :** les jours impairs (1, 3, 5, 7), le Croupier joue en premier : son score est connu à l'avance. Les jours pairs (2, 4, 6), il joue en second : tu joues sans connaître son score, qui n'est révélé qu'à la clôture !",
+      "**Le Croupier :** une de ses deux cartes est visible dès l'ouverture, l'autre est cachée. Il joue après les joueurs : il pioche jusqu'à 17 et peut dépasser 21. Sa main est dévoilée à la clôture. S'il a un Blackjack, ta main s'arrête tout de suite.",
       "",
-      "**Résultat quotidien :** le plus proche de 21 sans le dépasser gagne **2 points**. Égalité avec le Croupier = **1 point** quand même. Une main non jouée ne rapporte ni ne coûte rien.",
+      "**Résultat quotidien :** battre le Croupier sans dépasser 21 rapporte **2 points** (s'il dépasse 21, toute main valide gagne). Égalité = **1 point**. **Blackjack** (21 avec tes 2 premières cartes) = **3 points**, et il bat un 21 en 3 cartes ou plus. Main doublée = points doublés. Une main non jouée ne rapporte ni ne coûte rien.",
       "",
       `Au Jour ${config.duree_jours}, le classement cumulé désigne le(s) vainqueur(s) de la manche.`,
       "",

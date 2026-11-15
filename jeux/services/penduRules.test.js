@@ -125,10 +125,14 @@ const duel = () => creerDuel({ mot: "éléphant", now });
   assert.ok(!Buffer.from(param, "base64url").toString().includes("PHANT"));
   assert.deepStrictEqual(decodeVue(param), { motif: "E_E_____", fausses: ["S"], erreurs: 1, fin: null });
   assert.strictEqual(decodeVue("n'importe quoi"), null);
-  const final = { mot: "éléphant", joueurs: [{ nom: "Alice 🎉", erreurs: 2, decouvertes: 8, fin: "trouve" }, { nom: "Bob", erreurs: 6, decouvertes: 3, fin: "pendu" }], gagnant: 0 };
+  const final = { mot: "éléphant", joueurs: [{ nom: "Alice 🎉", erreurs: 2, decouvertes: 8, fausses: ["S", "R"], fin: "trouve" }, { nom: "Bob", erreurs: 6, decouvertes: 3, fausses: ["S", "O", "U", "R", "I", "D"], fin: "pendu" }], gagnant: 0 };
   assert.deepStrictEqual(decodeFinal(encodeFinal(final)), { ...final, joueurs: [{ ...final.joueurs[0], nom: "Alice" }, final.joueurs[1]] });
   const solo = { mot: "jazz", joueurs: [final.joueurs[1]], gagnant: -1 };
   assert.deepStrictEqual(decodeFinal(encodeFinal(solo)), solo);
+  // Lettres fausses barrées sous la potence : image plus haute
+  const hauteur = (f) => Number(buildFinalSvg(f).match(/height="(\d+)"/)[1]);
+  assert.ok(hauteur(solo) > hauteur({ ...solo, joueurs: [{ ...solo.joueurs[0], fausses: [] }] }));
+  assert.strictEqual(buildFinalSvg(final).split(`stroke="#ef5350" stroke-width="2"/>`).length - 1, 8);
 }
 
 // ── Générateur : mot choisi, gagné ou perdu, erreurs et lettres au hasard ──

@@ -217,7 +217,7 @@ const urlFinal = (partie) => {
   const n = nomDe(partie);
   return `${TRUST_ROYALE_URL}/api/pendu/final?d=${encodeFinal({
     mot: d.mot,
-    joueurs: siegesDe(d).map((s) => ({ nom: n(s), erreurs: d.joueurs[s].erreurs, decouvertes: lettresDecouvertes(d, s), fin: d.joueurs[s].fin })),
+    joueurs: siegesDe(d).map((s) => ({ nom: n(s), erreurs: d.joueurs[s].erreurs, decouvertes: lettresDecouvertes(d, s), fausses: lettresFausses(d, s), fin: d.joueurs[s].fin })),
     // Solo : pas d'étoile
     gagnant: estSolo(d) ? -1 : SIEGES.indexOf(d.gagnant),
   })}`;

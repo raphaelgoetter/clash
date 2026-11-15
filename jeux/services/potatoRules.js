@@ -140,6 +140,9 @@ function debutTour(d, rng, { rejoue = false } = {}) {
     if (type === "glacon") {
       d.evenement.avant = d.temp;
       d.temp = Math.max(TEMP_DEPART, d.temp - GLACON);
+      // Noté dans les chauffes (valeur négative) : la barre publique suit
+      // ainsi la vraie température
+      d.chauffes.push({ id: d.actif, v: d.temp - d.evenement.avant });
     }
   }
   if (d.evenement?.type !== "courant") d.obs.push({ t: d.temp, i: etatPatate(d) });

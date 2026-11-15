@@ -178,6 +178,27 @@ async function main() {
     assert.strictEqual(outcome.pointsAfter.b ?? 0, 0);
   }
 
+  // ── resolvePvP — un Blackjack naturel bat un 21 en 3 cartes (3 pts) ;
+  // une main doublée compte double ──
+  {
+    const C = (rank) => ({ rank, suit: "♠️", value: rank === "A" ? 11 : ["J", "Q", "K"].includes(rank) ? 10 : Number(rank) });
+    const hands = {
+      a: { cards: [C("A"), C("K")], score: 21, status: "stand", username: "Alice" },
+      b: { cards: [C("7"), C("4"), C("K")], score: 21, status: "stand", username: "Bob" },
+    };
+    const byId = Object.fromEntries(resolvePvP(hands).map((r) => [r.discordId, r]));
+    assert.strictEqual(byId.a.result, "blackjack");
+    assert.strictEqual(byId.b.result, "lose");
+
+    const state = baseState({ maxPlayers: 2 });
+    const doubles = {
+      a: { cards: [C("5"), C("6"), C("9")], score: 20, status: "stand", double: true, username: "Alice" },
+      b: { cards: [C("10"), C("8")], score: 18, status: "stand", username: "Bob" },
+    };
+    const outcome = computeMancheOutcome(state, doubles, {});
+    assert.strictEqual(outcome.pointsAfter.a, 4);
+  }
+
   console.log("✓ blackjackDuel service tests passed");
 }
 
