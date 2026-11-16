@@ -376,27 +376,40 @@ async function urlImageFin(state, ranking) {
 // Le détail des manches est dans l'image : le texte se limite au
 // classement (au total contre le Croupier) et au high score.
 async function buildFinalEmbed(state, ranking, highScore) {
+  // Pseudos de la partie (mains jouées), en repli de l'affichage Discord
+  const pseudos = new Map(
+    (state.history || []).flatMap((h) => h.results).map((r) => [r.discordId, r.username]),
+  );
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
       ...r,
-      username: await resolveDisplayName(r.discordId, r.username),
+      username: await resolveDisplayName(r.discordId, r.username ?? pseudos.get(r.discordId)),
     })),
   );
   const ptsLabel = (n) => `${n} pt${n > 1 ? "s" : ""}`;
-  const lines =
-    state.maxPlayers === 1
-      ? [`Total : **${ptsLabel(resolvedRanking[0]?.points ?? 0)}**`]
-      : resolvedRanking.length
-        ? resolvedRanking.map((r, i, list) => `${rangExAequo(list, i)}. ${r.username} (${ptsLabel(r.points)})`)
-        : ["Personne n'a marqué de point."];
+  const isSolo = state.maxPlayers === 1;
+  const partie = `Partie en ${state.totalManches} manches.`;
+  const lines = isSolo
+    ? [`${partie} Total : **${ptsLabel(resolvedRanking[0]?.points ?? 0)}**`]
+    : [
+        partie,
+        ...(resolvedRanking.length
+          ? resolvedRanking.map((r, i, list) => `${rangExAequo(list, i)}. ${r.username} (${ptsLabel(r.points)})`)
+          : ["Personne n'a marqué de point."]),
+      ];
 
   if (highScore) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
     lines.push(`<:topplayers:1563107730397601792> High score : ${name} (${ptsLabel(highScore.points)})`);
   }
 
+  // Titre au format des autres duels (« 🃏 Blackjack · Pseudo contre … »),
+  // joueurs dans l'ordre des sièges
+  const noms = await Promise.all(state.players.map((id) => resolveDisplayName(id, pseudos.get(id))));
+  const titre = isSolo ? `${noms[0]} contre le Croupier` : noms.join(" contre ");
+
   return {
-    title: `🏁 Blackjack Duel${state.maxPlayers === 1 ? " contre le Croupier" : ""} : partie terminée (${state.totalManches} manches)`,
+    title: `🃏 Blackjack · ${titre}`,
     description: lines.join("\n"),
     image: { url: await urlImageFin(state, ranking) },
     color: BLACKJACKDUEL_COLOR,
