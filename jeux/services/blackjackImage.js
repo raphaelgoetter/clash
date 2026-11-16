@@ -30,17 +30,26 @@ const NOIR_CARTE = "#1a1a1a";
 const OR = "#f0c040";
 const BLANC = "#ffffff";
 
-// Couleur de la pastille de score selon l'issue de la main
+// Couleur de la pastille de score selon l'issue de la main, palette du
+// Gobelet : vert gagnée, gris égalité, rouge perdue ou dépassée ; un
+// Blackjack garde le vert avec un contour doré et une étoile (estBlackjack)
+const VERT = "#2e7d32";
+const ROUGE = "#c62828";
+const NEUTRE = "#5f6b7a";
 const PASTILLES = {
   en_cours: "#1e5fa8",
   stand: "#1e5fa8",
-  win: "#2e7d32",
-  push: "#b8860b",
-  lose: "#6d4c41",
-  bust: "#c62828",
+  win: VERT,
+  push: NEUTRE,
+  lose: ROUGE,
+  bust: ROUGE,
   cache: "#555555",
-  blackjack: "#7b1fa2",
+  blackjack: VERT,
 };
+const estBlackjack = (issue) => issue === "blackjack";
+// Contour d'une pastille : doré et épais sur un Blackjack
+const contour = (blackjack, epaisseur) =>
+  `stroke="${blackjack ? OR : BLANC}" stroke-width="${blackjack ? epaisseur * 2 : epaisseur}"`;
 
 const RANGS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const COULEURS = ["♠", "♥", "♦", "♣"];
@@ -58,6 +67,16 @@ function escapeXml(value) {
 
 // La police embarquée n'a pas d'emoji : retirés des pseudos
 const sansEmoji = (nom) => String(nom).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "").trim() || "?";
+
+// Étoile dorée à 5 branches centrée en (cx, cy), rayon extérieur r
+function etoile(cx, cy, r) {
+  const pts = Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const ri = i % 2 ? r * 0.45 : r;
+    return `${(cx + ri * Math.cos(a)).toFixed(1)},${(cy + ri * Math.sin(a)).toFixed(1)}`;
+  });
+  return `<polygon points="${pts.join(" ")}" fill="${OR}" stroke="${BLANC}" stroke-width="2" stroke-linejoin="round"/>`;
+}
 
 const texte = (x, y, contenu, { size = 20, fill = BLANC, anchor = "start", weight = 400, opacity = 1 } = {}) =>
   `<text x="${x}" y="${y}" font-family="${FONT_FAMILY}" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}" fill="${fill}" opacity="${opacity}">${escapeXml(contenu)}</text>`;
@@ -179,11 +198,11 @@ function rangee(cartes, y, dessin, { echelle = 1, centre = LARGEUR / 2, place = 
 const puceDouble = (cx, cy, s = 1) =>
   `<g transform="translate(${cx},${cy}) scale(${s})"><rect x="-28" y="-18" width="56" height="36" rx="18" fill="${OR}" stroke="${BLANC}" stroke-width="2"/>${texte(0, 8, "×2", { size: 22, weight: 800, anchor: "middle", fill: "#3a2a00" })}</g>`;
 
-function bandeau(y, nom, score, fond, double = false) {
+function bandeau(y, nom, score, fond, double = false, blackjack = false) {
   return `${texte(MARGE, y, nom, { size: 34, weight: 800 })}
   ${double ? puceDouble(LARGEUR - 172, y - 12) : ""}
-  <g transform="translate(${LARGEUR - 80},${y - 12})"><rect x="-46" y="-30" width="92" height="52" rx="26" fill="${fond}" stroke="${BLANC}" stroke-width="3"/>
-  ${texte(0, 9, score, { size: 32, weight: 800, anchor: "middle" })}</g>`;
+  <g transform="translate(${LARGEUR - 80},${y - 12})"><rect x="-46" y="-30" width="92" height="52" rx="26" fill="${fond}" ${contour(blackjack, 3)}/>
+  ${texte(0, 9, score, { size: 32, weight: 800, anchor: "middle" })}${blackjack ? etoile(40, -28, 16) : ""}</g>`;
 }
 
 // Carte visible puis un dos (main du Croupier pas encore dévoilée)
@@ -201,15 +220,16 @@ export function buildMainSvg({ joueur, croupier, legende }) {
   let y = haut;
   let contenu = "";
   if (croupier) {
-    // Main dévoilée : pastille violette sur un Blackjack, rouge s'il dépasse
+    // Main dévoilée : étoile sur un Blackjack, rouge s'il dépasse
+    const bjCroupier = !croupier.cache && croupier.score === 21 && croupier.cartes.length === 2;
     const fondCroupier = croupier.cache
       ? PASTILLES.cache
       : croupier.score > 21
         ? PASTILLES.bust
-        : croupier.score === 21 && croupier.cartes.length === 2
+        : bjCroupier
           ? PASTILLES.blackjack
           : PASTILLES.cache;
-    contenu += bandeau(y + 44, croupier.nom, croupier.cache ? "?" : String(croupier.score), fondCroupier);
+    contenu += bandeau(y + 44, croupier.nom, croupier.cache ? "?" : String(croupier.score), fondCroupier, false, bjCroupier);
     contenu += croupier.cache
       ? rangee(croupier.cartes?.length ? [croupier.cartes[0], DOS] : [DOS, DOS], y + 78, carteOuDos)
       : rangee(croupier.cartes, y + 78, faceDeCarte);
@@ -217,7 +237,7 @@ export function buildMainSvg({ joueur, croupier, legende }) {
     contenu += `<line x1="60" y1="${y}" x2="${LARGEUR - 60}" y2="${y}" stroke="${OR}" stroke-width="2" stroke-dasharray="8 8" opacity="0.6"/>`;
     y += 16;
   }
-  contenu += bandeau(y + 44, joueur.nom, String(joueur.score), pastilleJoueur(joueur), joueur.double);
+  contenu += bandeau(y + 44, joueur.nom, String(joueur.score), pastilleJoueur(joueur), joueur.double, estBlackjack(joueur.issue));
   contenu += rangee(joueur.cartes, y + 78, faceDeCarte);
   y += ZONE_H;
   const hauteur = y + PIED_H;
@@ -247,7 +267,7 @@ export const getMainImage = (main) => rasterize(buildMainSvg(main));
 // colorées par l'issue, décompte, meilleure main de la partie (cartes).
 // En 1v1 : vainqueur (ou égalité), une rangée de pastilles par joueur,
 // numéros de manche entre les deux pour lire chaque manche en colonne,
-// légende des couleurs, meilleure main de chacun.
+// meilleure main de chacun (sans légende, comme le Gobelet).
 
 const ISSUES_FIN = ["win", "push", "lose", "bust", "blackjack"];
 
@@ -313,17 +333,22 @@ export function decodeFin(param) {
 const pluriel = (n, mot, pl = `${mot}s`) => `${n} ${n > 1 ? pl : mot}`;
 const pts = (n) => pluriel(n, "pt");
 
-// Pastilles des manches, centrées, espacées de 53 px (10 manches au plus)
-const PAS_PASTILLE = 53;
+// Pastilles des manches, centrées, espacées de 54 px (10 manches au plus),
+// mêmes tailles que le Gobelet (lisibles sur mobile)
+const PAS_PASTILLE = 54;
 const xPastille = (i, n) => (LARGEUR - (n - 1) * PAS_PASTILLE) / 2 + i * PAS_PASTILLE;
 
 function pastillesManches(manches, y) {
   return manches
-    .map(
-      (m, i) =>
-        `<circle cx="${xPastille(i, manches.length)}" cy="${y}" r="21" fill="${PASTILLES[m.issue]}" stroke="${BLANC}" stroke-width="2"/>` +
-        texte(xPastille(i, manches.length), y + 7, String(m.score), { size: 18, weight: 800, anchor: "middle" }),
-    )
+    .map((m, i) => {
+      const x = xPastille(i, manches.length);
+      const bj = estBlackjack(m.issue);
+      return (
+        `<circle cx="${x}" cy="${y}" r="25" fill="${PASTILLES[m.issue]}" ${contour(bj, 2.5)}/>` +
+        texte(x, y + 9, String(m.score), { size: 25, weight: 800, anchor: "middle" }) +
+        (bj ? etoile(x + 19, y - 21, 16) : "")
+      );
+    })
     .join("");
 }
 
@@ -339,67 +364,61 @@ ${contenu}
 </svg>`;
 }
 
+// Décompte par couleur de pastille : un Blackjack compte comme une
+// victoire (l'étoile le distingue), un dépassement comme une défaite
 function decompte(manches) {
-  const n = (issue) => manches.filter((m) => m.issue === issue).length;
+  const n = (...issues) => manches.filter((m) => issues.includes(m.issue)).length;
   return [
-    n("blackjack") && pluriel(n("blackjack"), "Blackjack", "Blackjacks"),
-    n("win") && pluriel(n("win"), "victoire"),
+    n("win", "blackjack") && pluriel(n("win", "blackjack"), "victoire"),
     n("push") && pluriel(n("push"), "égalité"),
-    n("lose") && pluriel(n("lose"), "défaite"),
-    n("bust") && pluriel(n("bust"), "dépassement"),
+    n("lose", "bust") && pluriel(n("lose", "bust"), "défaite"),
   ]
     .filter(Boolean)
     .join(" · ");
 }
 
 function buildFinSoloSvg({ joueurs: [j], totalManches }) {
-  let c = texte(LARGEUR / 2, 80, j.nom, { size: 32, weight: 800, anchor: "middle" });
-  c += texte(LARGEUR / 2, 170, String(j.points), { size: 96, weight: 800, anchor: "middle", fill: OR });
-  c += texte(LARGEUR / 2, 205, `${j.points > 1 ? "points" : "point"} sur ${totalManches} manches`, { size: 22, anchor: "middle", opacity: 0.85 });
-  c += pastillesManches(j.manches, 260);
-  c += texte(LARGEUR / 2, 312, decompte(j.manches), { size: 19, anchor: "middle", opacity: 0.85 });
-  c += separateur(345);
+  let c = texte(LARGEUR / 2, 84, tronquer(j.nom, 16), { size: 36, weight: 800, anchor: "middle" });
+  c += texte(LARGEUR / 2, 184, String(j.points), { size: 104, weight: 800, anchor: "middle", fill: OR });
+  c += texte(LARGEUR / 2, 226, `${j.points > 1 ? "points" : "point"} en ${totalManches} manches`, { size: 28, anchor: "middle", opacity: 0.9 });
+  c += pastillesManches(j.manches, 290);
+  c += texte(LARGEUR / 2, 352, decompte(j.manches), { size: 24, anchor: "middle", opacity: 0.9 });
+  c += separateur(382);
   if (!j.meilleure) {
-    c += texte(LARGEUR / 2, 395, "Aucune main sans dépassement", { size: 22, weight: 700, anchor: "middle" });
-    return cadreFin(440, c);
+    c += texte(LARGEUR / 2, 436, "Aucune main sans dépassement", { size: 28, weight: 700, anchor: "middle" });
+    return cadreFin(480, c);
   }
   const { cartes, score } = j.meilleure;
   const titre = `Meilleure main : ${cartes.length === 2 && score === 21 ? "Blackjack" : score}`;
-  c += texte(LARGEUR / 2, 390, titre, { size: 22, weight: 700, anchor: "middle" });
-  c += rangee(cartes, 415, faceDeCarte, { echelle: 110 / CW });
-  return cadreFin(640, c);
+  c += texte(LARGEUR / 2, 432, titre, { size: 30, weight: 800, anchor: "middle" });
+  c += rangee(cartes, 458, faceDeCarte, { echelle: 110 / CW });
+  return cadreFin(650, c);
 }
 
 function buildFinPvpSvg({ joueurs }) {
   const [a, b] = joueurs;
-  const titre = a.points === b.points ? "Égalité !" : `Victoire de ${a.points > b.points ? a.nom : b.nom} !`;
-  let c = texte(LARGEUR / 2, 72, titre, { size: 32, weight: 800, anchor: "middle", fill: OR });
+  const titre = a.points === b.points ? "Égalité !" : `Victoire de ${tronquer(a.points > b.points ? a.nom : b.nom, 14)} !`;
+  let c = texte(LARGEUR / 2, 74, titre, { size: 36, weight: 800, anchor: "middle", fill: OR });
   const tete = Math.max(a.points, b.points);
   const bloc = (j, y) =>
-    texte(MARGE, y, j.nom, { size: 28, weight: 800 }) +
-    texte(LARGEUR - MARGE, y, pts(j.points), { size: 28, weight: 800, anchor: "end", fill: j.points === tete ? OR : BLANC }) +
-    pastillesManches(j.manches, y + 44);
-  c += bloc(a, 130);
+    texte(MARGE, y, tronquer(j.nom, 14), { size: 32, weight: 800 }) +
+    texte(LARGEUR - MARGE, y, pts(j.points), { size: 32, weight: 800, anchor: "end", fill: j.points === tete ? OR : BLANC }) +
+    pastillesManches(j.manches, y + 50);
+  c += bloc(a, 136);
   const n = Math.max(a.manches.length, b.manches.length);
-  for (let i = 0; i < n; i++) c += texte(xPastille(i, n), 222, String(i + 1), { size: 16, anchor: "middle", opacity: 0.6 });
-  c += bloc(b, 270);
-  [["blackjack", "Blackjack"], ["win", "Gagnée"], ["push", "Égalité"], ["lose", "Perdue"], ["bust", "Dépassé"]].forEach(([k, libelle], i) => {
-    const x = 44 + i * 110;
-    c += `<circle cx="${x}" cy="362" r="9" fill="${PASTILLES[k]}" stroke="${BLANC}" stroke-width="1.5"/>`;
-    c += texte(x + 15, 369, libelle, { size: 17, opacity: 0.85 });
-  });
-  c += separateur(398);
-  c += texte(LARGEUR / 2, 440, "Meilleures mains", { size: 22, weight: 700, anchor: "middle" });
+  for (let i = 0; i < n; i++) c += texte(xPastille(i, n), 244, String(i + 1), { size: 24, anchor: "middle", opacity: 0.65 });
+  c += bloc(b, 300);
+  c += separateur(384);
+  c += texte(LARGEUR / 2, 430, "Meilleures mains", { size: 28, weight: 700, anchor: "middle", opacity: 0.9 });
   joueurs.forEach((j, i) => {
     const centre = LARGEUR / 4 + (i * LARGEUR) / 2;
-    if (!j.meilleure) {
-      c += texte(centre, 478, `${tronquer(j.nom, 12)} : aucune`, { size: 20, anchor: "middle", opacity: 0.9 });
-      return;
-    }
-    c += texte(centre, 478, `${tronquer(j.nom, 12)} : ${j.meilleure.score}`, { size: 20, anchor: "middle", opacity: 0.9 });
-    c += rangee(j.meilleure.cartes, 494, faceDeCarte, { echelle: 84 / CW, centre, place: LARGEUR / 2 - 70 });
+    const m = j.meilleure;
+    const libelle = m ? (m.cartes.length === 2 && m.score === 21 ? "Blackjack" : String(m.score)) : "aucune";
+    c += texte(centre, 474, tronquer(j.nom, 11), { size: 26, weight: 800, anchor: "middle" });
+    c += texte(centre, 508, libelle, { size: 26, weight: 700, anchor: "middle", fill: OR });
+    if (m) c += rangee(m.cartes, 526, faceDeCarte, { echelle: 84 / CW, centre, place: LARGEUR / 2 - 70 });
   });
-  return cadreFin(660, c);
+  return cadreFin(680, c);
 }
 
 export const buildFinSvg = (fin) => (fin.joueurs.length === 1 ? buildFinSoloSvg(fin) : buildFinPvpSvg(fin));
@@ -459,8 +478,10 @@ export function buildMancheSvg({ titre, mains }) {
   mains.forEach((m, i) => {
     const cx = LARGEUR / 4 + (i * LARGEUR) / 2;
     c += texte(cx, 92, m.nom, { size: 24, weight: 800, anchor: "middle" });
-    c += `<rect x="${cx - 34}" y="104" width="68" height="36" rx="18" fill="${PASTILLES[m.issue]}" stroke="${BLANC}" stroke-width="2"/>`;
+    const bj = estBlackjack(m.issue);
+    c += `<rect x="${cx - 34}" y="104" width="68" height="36" rx="18" fill="${PASTILLES[m.issue]}" ${contour(bj, 2)}/>`;
     c += texte(cx, 129, String(m.score), { size: 22, weight: 800, anchor: "middle" });
+    if (bj) c += etoile(cx + 30, 106, 13);
     if (m.double) c += puceDouble(cx + 72, 122, 0.85);
     c += rangee(m.cartes, 156, faceDeCarte, { echelle: ECHELLE_MANCHE, centre: cx, place: 240 });
   });
