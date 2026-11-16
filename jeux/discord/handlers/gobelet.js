@@ -54,7 +54,18 @@ import {
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
-import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
+import {
+  JOURNEE,
+  SOIR,
+  creneauJouable,
+  creneauDepuis,
+  messageHorsCreneau,
+} from "../../services/creneaux.js";
+
+// Deux mains par jour (creneaux.js) : journée 8h30-20h, soir 20h-8h, chacune
+// avec ses propres combinaisons réalisées et son Joker
+const EMOJI_CRENEAU = { [JOURNEE]: "☀️", [SOIR]: "🌙" };
+const DE_CRENEAU = { [JOURNEE]: "de la journée", [SOIR]: "du soir" };
 
 const GOBELET_COLOR = 0x9b59b6;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -72,7 +83,7 @@ const GOBELET_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/gobelet/dices.webp?v=
 const GOBELET_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/gobelet/gobelet.webp?v=${GOBELET_IMAGE_VERSION}`;
 
 const DAY1_INTRO =
-  "**Le Gobelet est prêt !** Lance tes dés chaque jour pendant 7 jours pour cumuler des points. Clique sur *Règles* pour le barème complet.";
+  "**Le Gobelet est prêt !** Lance tes dés deux fois par jour pendant 7 jours pour cumuler des points. Clique sur *Règles* pour le barème complet.";
 
 // ── Dés — rendu texte ──────────────────────────────────────────────
 // Chiffres "keycap" (1️⃣-6️⃣) plutôt que les glyphes Unicode de dés
@@ -127,6 +138,17 @@ async function formatResultsSection(results) {
   return lines;
 }
 
+// Bilan d'un jour : un bloc par créneau
+async function formatBilanJour({ results, resultsSoir }) {
+  if (!resultsSoir) return formatResultsSection(results);
+  return [
+    `${EMOJI_CRENEAU[JOURNEE]} **Journée**`,
+    ...(await formatResultsSection(results)),
+    `${EMOJI_CRENEAU[SOIR]} **Soir**`,
+    ...(await formatResultsSection(resultsSoir)),
+  ];
+}
+
 // ── Embed / composants du jour d'annonce ───────────────────────────
 // Tous les jeux spéciaux ont au moins un jour de présentation avant le
 // Jour 1 (voir jeux/CONTRIBUTING.md) : le lancement manuel publie cette annonce,
@@ -138,14 +160,14 @@ function buildAnnonceEmbed(config) {
     description: [
       "Un nouveau jeu arrive sur l'Arène : lance tes dés façon Yahtzee et réalise les meilleures combinaisons !",
       "",
-      `📅 **${config.duree_jours} jours de jeu**, à partir de demain : chaque jour, 5 dés et jusqu'à 2 relances pour marquer un maximum de points.`,
+      `📅 **${config.duree_jours} jours de jeu**, à partir de demain : deux mains par jour (8h30-20h, puis 20h-8h), 5 dés et jusqu'à 2 relances pour marquer un maximum de points.`,
       "",
       "Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: GOBELET_COLOR,
     image: { url: GOBELET_START_IMAGE_URL },
     footer: {
-      text: `La partie commence demain à ${formatUtcTimeAsParis(8)}.`,
+      text: "La partie commence demain à 8h30.",
     },
   };
 }
@@ -205,6 +227,8 @@ function buildTodaySection() {
     "## 🎲 À toi de jouer",
     "Clique sur **Jouer** pour lancer tes 5 dés. Tu pourras ensuite conserver les dés de ton choix et relancer les autres, deux fois de suite.",
     "",
+    "☀️ Main de la journée de 8h30 à 20h, 🌙 main du soir de 20h à 8h.",
+    "",
     "Consulte **Règles** pour le barème complet des combinaisons.",
   ];
 }
@@ -212,17 +236,13 @@ function buildTodaySection() {
 async function buildDayEmbed(
   jour,
   config,
-  { estPremierJour, previousResults },
+  { estPremierJour, bilan },
 ) {
   const lines = [];
   if (estPremierJour) {
     lines.push(DAY1_INTRO, "");
   } else {
-    lines.push(
-      `**📊 Bilan du Jour ${jour - 1}**`,
-      ...(await formatResultsSection(previousResults)),
-      "",
-    );
+    lines.push(`**📊 Bilan du Jour ${jour - 1}**`, ...(await formatBilanJour(bilan)), "");
   }
   lines.push(...buildTodaySection());
 
@@ -234,9 +254,7 @@ async function buildDayEmbed(
       url: estPremierJour ? GOBELET_START_IMAGE_URL : GOBELET_GAME_IMAGE_URL,
     },
     footer: {
-      text: estPremierJour
-        ? "Lance tes dés chaque jour pendant 7 jours pour cumuler des points !"
-        : `Joue avant ${formatUtcTimeAsParis(8)} demain pour ne pas manquer ta chance aujourd'hui.`,
+      text: "Deux mains par jour : de 8h30 à 20h, puis de 20h à 8h (décompte à 8h).",
     },
   };
 }
@@ -262,7 +280,7 @@ function buildTropheesSection(trophees = []) {
   ];
 }
 
-async function buildRevealEmbed(lastResults, ranking, manchesHistory, config) {
+async function buildRevealEmbed(bilan, ranking, manchesHistory, config) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
       ...r,
@@ -272,7 +290,7 @@ async function buildRevealEmbed(lastResults, ranking, manchesHistory, config) {
 
   const lines = [
     `**📊 Bilan du dernier jour**`,
-    ...(await formatResultsSection(lastResults)),
+    ...(await formatBilanJour(bilan)),
     "",
     "**Classement final :**",
     ...(resolvedRanking.length
@@ -455,9 +473,13 @@ export async function postGobelet(
   }
 
   // Résolution du jour actif (state.jour).
-  const hands = await listHands(state.jour);
-  const usedByPlayer = await readAllUsedCategories();
-  const results = resolveJour(hands, usedByPlayer);
+  // Chaque créneau est résolu avec ses propres combinaisons réalisées
+  const usedJournee = await readAllUsedCategories(JOURNEE);
+  const usedSoir = await readAllUsedCategories(SOIR);
+  const results = resolveJour(await listHands(state.jour, JOURNEE), usedJournee);
+  const resultsSoir = resolveJour(await listHands(state.jour, SOIR), usedSoir);
+  const toutes = [...results, ...resultsSoir];
+  const bilan = { results, resultsSoir };
   const jourSuivant = state.jour + 1;
   const estFinDeManche = jourSuivant > config.duree_jours;
 
@@ -466,17 +488,17 @@ export async function postGobelet(
       const pointsActuels = await readPoints();
       // Points simulés selon results[].points, sans écrire dans Redis —
       // pure projection pour npm run gobelet:status / --dry-run.
-      for (const r of results) {
+      for (const r of toutes) {
         pointsActuels[r.discordId] =
           (pointsActuels[r.discordId] || 0) + r.points;
       }
       const ranking = buildRanking(pointsActuels, await readAllUsernames());
-      const embed = await buildRevealEmbed(results, ranking, [], config);
+      const embed = await buildRevealEmbed(bilan, ranking, [], config);
       return { dryRun: true, final: true, embed };
     }
     const embed = await buildDayEmbed(jourSuivant, config, {
       estPremierJour: false,
-      previousResults: results,
+      bilan,
     });
     return {
       dryRun: true,
@@ -486,15 +508,18 @@ export async function postGobelet(
     };
   }
 
-  for (const r of results) {
-    await addPoints(r.discordId, r.points);
-    const used = usedByPlayer[r.discordId] || [];
-    const nextUsed = withUsedCategory(used, r.category);
-    if (nextUsed !== used) await writeUsedCategories(r.discordId, nextUsed);
+  for (const [creneau, liste, usedByPlayer] of [[JOURNEE, results, usedJournee], [SOIR, resultsSoir, usedSoir]]) {
+    for (const r of liste) {
+      await addPoints(r.discordId, r.points);
+      const used = usedByPlayer[r.discordId] || [];
+      const nextUsed = withUsedCategory(used, r.category);
+      if (nextUsed !== used) await writeUsedCategories(r.discordId, nextUsed, creneau);
+    }
   }
   await writeHistoriqueEntry(state.jour, {
     jour: state.jour,
     results,
+    resultsSoir,
     resolvedAt: new Date().toISOString(),
   });
 
@@ -526,7 +551,7 @@ export async function postGobelet(
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = await buildRevealEmbed(results, ranking, manches, config);
+    const embed = await buildRevealEmbed(bilan, ranking, manches, config);
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       embed,
@@ -539,7 +564,7 @@ export async function postGobelet(
 
   const embed = await buildDayEmbed(jourSuivant, config, {
     estPremierJour: false,
-    previousResults: results,
+    bilan,
   });
   const components = buildDayComponents(jourSuivant);
 
@@ -572,36 +597,36 @@ async function patchOriginal(webhookUrl, payload) {
 // jour n'est jamais repatché, il n'y a aucun compteur à y afficher — la
 // main de chacun reste secrète jusqu'à la clôture du lendemain.
 
-function buildHandStatusMessage(hand, kept, jour) {
+function buildHandStatusMessage(hand, kept, jour, creneau) {
   if (hand.status === "termine") {
-    return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** aujourd'hui !`;
+    return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** avec cette main !`;
   }
   if (hand.status === "choix") {
-    return "🎯 Plusieurs combinaisons possibles : choisis celle à retenir dans la liste. Sans choix avant la clôture, la plus payante (hors Joker) est retenue.";
+    return "🎯 Plusieurs combinaisons possibles : choisis celle à retenir dans la liste. Sans choix avant la fin du créneau, la plus payante (hors Joker) est retenue.";
   }
   const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
-  // Consigne détaillée à la première manche seulement, ensuite le joueur sait quoi faire
-  if (jour > 1) {
+  // Consigne détaillée à la première main seulement, ensuite le joueur sait quoi faire
+  if (jour > 1 || creneau === SOIR) {
     return `Tirage ${hand.tirage}/3. Il te reste ${rerollsLeft} lancer${rerollsLeft > 1 ? "s" : ""}.`;
   }
   return `Tirage ${hand.tirage}/3 : sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
-// Combinaisons réalisées les jours précédents : chacune ne rapporte qu'une
-// fois par partie, le joueur doit donc savoir lesquelles tenter.
-function formatUsedLine(used) {
-  return used.length ? ["", `🚫 Déjà réalisées : ${used.join(", ")}`] : [];
+// Combinaisons réalisées les jours précédents sur ce créneau : chacune ne
+// rapporte qu'une fois par créneau, le joueur doit savoir lesquelles tenter.
+function formatUsedLine(used, creneau) {
+  return used.length ? ["", `🚫 Déjà réalisées (${creneau === SOIR ? "soir" : "journée"}) : ${used.join(", ")}`] : [];
 }
 
-function buildHandEmbed(jour, hand, kept, used) {
+function buildHandEmbed(jour, hand, kept, used, creneau, message = null) {
   return {
-    title: `🎲 Ta main (Jour ${jour})`,
+    title: `${EMOJI_CRENEAU[creneau]} Ta main ${DE_CRENEAU[creneau]} (Jour ${jour})`,
     description: [
       ...formatDiceBlock(hand.dice),
       "",
-      buildHandStatusMessage(hand, kept, jour),
-      ...formatUsedLine(used),
+      message ?? buildHandStatusMessage(hand, kept, jour, creneau),
+      ...formatUsedLine(used, creneau),
     ].join("\n"),
     color: GOBELET_COLOR,
   };
@@ -619,11 +644,6 @@ function buildDieEmoji(kept) {
   return { name: kept ? "🔒" : "🎲" };
 }
 
-// Le bouton Valider n'apparaît que si les dés COURANTS (indépendamment de
-// ce qui est coché "à garder") forment déjà une combinaison pas encore
-// réalisée — dès le 1ᵉʳ tirage. Permet de figer une bonne main tout de
-// suite sans passer par les 2 relances obligatoires. Le libellé ne nomme
-// volontairement pas la combinaison : à chacun de la repérer.
 // Main en attente de choix : un select avec chaque combinaison possible
 // (Joker compris s'il est libre), la plus payante en premier.
 function buildChoiceComponents(customId, hand, used) {
@@ -648,9 +668,14 @@ function buildChoiceComponents(customId, hand, used) {
   ];
 }
 
-function buildHandComponents(jour, hand, kept, used) {
+// Le bouton Valider n'apparaît que si les dés COURANTS (indépendamment de
+// ce qui est coché "à garder") forment déjà une combinaison pas encore
+// réalisée — dès le 1ᵉʳ tirage. Le libellé ne nomme volontairement pas la
+// combinaison : à chacun de la repérer.
+// custom_id : `gobelet_<action>:<jour>:<créneau>` (dés : `gobelet_toggle:<jour>:<dé>:<créneau>`)
+function buildHandComponents(jour, hand, kept, used, creneau) {
   if (hand.status === "choix") {
-    return buildChoiceComponents(`gobelet_choix:${jour}`, hand, used);
+    return buildChoiceComponents(`gobelet_choix:${jour}:${creneau}`, hand, used);
   }
   if (hand.status !== "en_cours") return [];
   const { category } = computeBestCombination(hand.dice, used, {
@@ -663,7 +688,7 @@ function buildHandComponents(jour, hand, kept, used) {
       style: 1,
       label: relancerLabel(kept),
       emoji: { name: kept.every(Boolean) ? "➡️" : "🔁" },
-      custom_id: `gobelet_relancer:${jour}`,
+      custom_id: `gobelet_relancer:${jour}:${creneau}`,
     },
   ];
   if (canValider) {
@@ -672,7 +697,7 @@ function buildHandComponents(jour, hand, kept, used) {
       style: 3,
       label: "Valider",
       emoji: { name: "👍" },
-      custom_id: `gobelet_valider:${jour}`,
+      custom_id: `gobelet_valider:${jour}:${creneau}`,
     });
   }
   return [
@@ -683,7 +708,7 @@ function buildHandComponents(jour, hand, kept, used) {
         style: kept[i] ? 3 : 2,
         label: String(value),
         emoji: buildDieEmoji(kept[i]),
-        custom_id: `gobelet_toggle:${jour}:${i}`,
+        custom_id: `gobelet_toggle:${jour}:${i}:${creneau}`,
       })),
     },
     { type: 1, components: secondRow },
@@ -695,30 +720,71 @@ function isDayInactive(state, jour) {
 }
 
 const NO_KEPT = [false, false, false, false, false];
+const messageSeul = (content) => ({ content, embeds: [], components: [] });
+const JOURNEE_CHANGEE = messageSeul("La journée a changé, regarde le nouveau message !");
+const SANS_MAIN = messageSeul("Clique d'abord sur **Jouer** pour lancer tes 5 dés !");
+
+// Contexte d'une action sur une main existante (boutons de l'éphémère) :
+// null après avoir répondu (jour changé, pas de main, créneau terminé).
+async function contexteMain(webhookUrl, jour, creneauBouton, discordId) {
+  const state = await readState();
+  if (isDayInactive(state, jour)) {
+    await patchOriginal(webhookUrl, JOURNEE_CHANGEE);
+    return null;
+  }
+  const creneau = creneauDepuis(creneauBouton);
+  const [used, hand] = await Promise.all([
+    readUsedCategories(discordId, creneau),
+    readHand(jour, discordId, creneau),
+  ]);
+  if (!hand) {
+    await patchOriginal(webhookUrl, SANS_MAIN);
+    return null;
+  }
+  // Créneau terminé (20h ou décompte de 8h) : la main reste figée, elle
+  // sera résolue à la clôture sur ses dés courants
+  if (creneauJouable(state.publishedAt) !== creneau) {
+    await patchOriginal(webhookUrl, {
+      embeds: [buildHandEmbed(jour, hand, NO_KEPT, used, creneau, `Le créneau ${DE_CRENEAU[creneau]} est terminé, ta main est figée.`)],
+      components: [],
+    });
+    return null;
+  }
+  return { creneau, used, hand };
+}
+
+// Main déjà finie : repeint son état réel, sans action
+async function repeindreMainFinie(webhookUrl, jour, { hand, used, creneau }) {
+  await patchOriginal(webhookUrl, {
+    embeds: [buildHandEmbed(jour, hand, NO_KEPT, used, creneau)],
+    components: buildHandComponents(jour, hand, NO_KEPT, used, creneau),
+  });
+}
 
 async function jouer(webhookUrl, jour, discordId, username) {
   try {
     const state = await readState();
     if (isDayInactive(state, jour)) {
-      await patchOriginal(webhookUrl, {
-        content: "La journée a changé, regarde le nouveau message !",
-        embeds: [],
-        components: [],
-      });
+      await patchOriginal(webhookUrl, JOURNEE_CHANGEE);
       return;
     }
-    const used = await readUsedCategories(discordId);
+    // Le créneau se décide à l'heure du clic (heure de Paris)
+    const creneau = creneauJouable(state.publishedAt);
+    if (!creneau) {
+      await patchOriginal(webhookUrl, messageSeul(messageHorsCreneau(state.publishedAt)));
+      return;
+    }
+    const used = await readUsedCategories(discordId, creneau);
 
-
-    const existing = await readHand(jour, discordId);
+    const existing = await readHand(jour, discordId, creneau);
     if (existing) {
       const kept =
         existing.status === "en_cours"
-          ? await readKept(jour, discordId)
+          ? await readKept(jour, discordId, creneau)
           : NO_KEPT;
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, existing, kept, used)],
-        components: buildHandComponents(jour, existing, kept, used),
+        embeds: [buildHandEmbed(jour, existing, kept, used, creneau)],
+        components: buildHandComponents(jour, existing, kept, used, creneau),
       });
       return;
     }
@@ -732,100 +798,54 @@ async function jouer(webhookUrl, jour, discordId, username) {
       points: null,
       username,
     };
-    await writeHand(jour, discordId, hand);
-    await resetKept(jour, discordId);
+    await writeHand(jour, discordId, hand, creneau);
+    await resetKept(jour, discordId, creneau);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
-      components: buildHandComponents(jour, hand, NO_KEPT, used),
+      embeds: [buildHandEmbed(jour, hand, NO_KEPT, used, creneau)],
+      components: buildHandComponents(jour, hand, NO_KEPT, used, creneau),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Jouer:", err.message);
   }
 }
 
-export async function handleToggle(webhookUrl, jour, index, discordId) {
+export async function handleToggle(webhookUrl, jour, index, creneauBouton, discordId) {
   try {
-    const state = await readState();
-    if (isDayInactive(state, jour)) {
-      await patchOriginal(webhookUrl, {
-        content: "La journée a changé, regarde le nouveau message !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    const used = await readUsedCategories(discordId);
-
-    const hand = await readHand(jour, discordId);
-    if (!hand) {
-      await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    if (hand.status !== "en_cours") {
-      await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
-        components: buildHandComponents(jour, hand, NO_KEPT, null, used),
-      });
-      return;
-    }
+    const ctx = await contexteMain(webhookUrl, jour, creneauBouton, discordId);
+    if (!ctx) return;
+    const { creneau, used, hand } = ctx;
+    if (hand.status !== "en_cours") return repeindreMainFinie(webhookUrl, jour, ctx);
 
     const i = Number(index);
-    const kept = await readKept(jour, discordId);
-    await setKeptField(jour, discordId, i, !kept[i]);
+    const kept = await readKept(jour, discordId, creneau);
+    await setKeptField(jour, discordId, i, !kept[i], creneau);
     const updatedKept = kept.map((k, idx) => (idx === i ? !k : k));
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, hand, updatedKept, used)],
-      components: buildHandComponents(jour, hand, updatedKept, used),
+      embeds: [buildHandEmbed(jour, hand, updatedKept, used, creneau)],
+      components: buildHandComponents(jour, hand, updatedKept, used, creneau),
     });
   } catch (err) {
     console.error("[Gobelet] Échec sélection de dé:", err.message);
   }
 }
 
-async function relancer(webhookUrl, jour, discordId) {
+async function relancer(webhookUrl, jour, creneauBouton, discordId) {
   try {
-    const state = await readState();
-    if (isDayInactive(state, jour)) {
-      await patchOriginal(webhookUrl, {
-        content: "La journée a changé, regarde le nouveau message !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    const used = await readUsedCategories(discordId);
+    const ctx = await contexteMain(webhookUrl, jour, creneauBouton, discordId);
+    if (!ctx) return;
+    const { creneau, used, hand } = ctx;
+    if (hand.status !== "en_cours") return repeindreMainFinie(webhookUrl, jour, ctx);
 
-    const hand = await readHand(jour, discordId);
-    if (!hand) {
-      await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    if (hand.status !== "en_cours") {
-      await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
-        components: buildHandComponents(jour, hand, NO_KEPT, null, used),
-      });
-      return;
-    }
-
-    const kept = await readKept(jour, discordId);
+    const kept = await readKept(jour, discordId, creneau);
     const dice = rerollKept(hand.dice, kept, Math.random);
     const tirage = hand.tirage + 1;
     let updated;
     let nextKept;
     if (tirage >= 3) {
       updated = finishHand({ ...hand, dice, tirage }, used);
-      await resetKept(jour, discordId);
+      await resetKept(jour, discordId, creneau);
       nextKept = NO_KEPT;
     } else {
       updated = { ...hand, dice, tirage };
@@ -835,46 +855,23 @@ async function relancer(webhookUrl, jour, discordId) {
       // (déjà le cas, leur position n'a jamais été cochée).
       nextKept = kept;
     }
-    await writeHand(jour, discordId, updated);
+    await writeHand(jour, discordId, updated, creneau);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated, nextKept, used)],
-      components: buildHandComponents(jour, updated, nextKept, used),
+      embeds: [buildHandEmbed(jour, updated, nextKept, used, creneau)],
+      components: buildHandComponents(jour, updated, nextKept, used, creneau),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Relancer:", err.message);
   }
 }
 
-async function validerMain(webhookUrl, jour, discordId) {
+async function validerMain(webhookUrl, jour, creneauBouton, discordId) {
   try {
-    const state = await readState();
-    if (isDayInactive(state, jour)) {
-      await patchOriginal(webhookUrl, {
-        content: "La journée a changé, regarde le nouveau message !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    const used = await readUsedCategories(discordId);
-
-    const hand = await readHand(jour, discordId);
-    if (!hand) {
-      await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    if (hand.status !== "en_cours") {
-      await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, NO_KEPT, used)],
-        components: buildHandComponents(jour, hand, NO_KEPT, null, used),
-      });
-      return;
-    }
+    const ctx = await contexteMain(webhookUrl, jour, creneauBouton, discordId);
+    if (!ctx) return;
+    const { creneau, used, hand } = ctx;
+    if (hand.status !== "en_cours") return repeindreMainFinie(webhookUrl, jour, ctx);
 
     const { category } = computeBestCombination(hand.dice, used, {
       allowJoker: false,
@@ -885,21 +882,21 @@ async function validerMain(webhookUrl, jour, discordId) {
       // affiche encore l'ancien message (avant un relance qui a changé les
       // dés) pourrait renvoyer ce clic — on ignore juste et on repeint l'état
       // réel plutôt que de figer une main sans combinaison.
-      const kept = await readKept(jour, discordId);
+      const kept = await readKept(jour, discordId, creneau);
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, kept, used)],
-        components: buildHandComponents(jour, hand, kept, used),
+        embeds: [buildHandEmbed(jour, hand, kept, used, creneau)],
+        components: buildHandComponents(jour, hand, kept, used, creneau),
       });
       return;
     }
 
     const updated = finishHand(hand, used);
-    await writeHand(jour, discordId, updated);
-    await resetKept(jour, discordId);
+    await writeHand(jour, discordId, updated, creneau);
+    await resetKept(jour, discordId, creneau);
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated, NO_KEPT, used)],
-      components: buildHandComponents(jour, updated, NO_KEPT, used),
+      embeds: [buildHandEmbed(jour, updated, NO_KEPT, used, creneau)],
+      components: buildHandComponents(jour, updated, NO_KEPT, used, creneau),
     });
   } catch (err) {
     console.error("[Gobelet] Échec Valider:", err.message);
@@ -907,35 +904,15 @@ async function validerMain(webhookUrl, jour, discordId) {
 }
 
 // Select de fin de main : fige la combinaison choisie par le joueur.
-async function choisirCombinaison(webhookUrl, jour, discordId, category) {
+async function choisirCombinaison(webhookUrl, jour, creneauBouton, discordId, category) {
   try {
-    const state = await readState();
-    if (isDayInactive(state, jour)) {
-      await patchOriginal(webhookUrl, {
-        content: "La journée a changé, regarde le nouveau message !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    const used = await readUsedCategories(discordId);
-    const hand = await readHand(jour, discordId);
-    if (!hand) {
-      await patchOriginal(webhookUrl, {
-        content: "Clique d'abord sur **Jouer** pour lancer tes 5 dés !",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
+    const ctx = await contexteMain(webhookUrl, jour, creneauBouton, discordId);
+    if (!ctx) return;
+    const { creneau, used, hand } = ctx;
     // Choix invalide ou main déjà figée : on repeint simplement l'état réel.
     const updated = pickChoice(hand, used, category) ?? hand;
-    if (updated !== hand) await writeHand(jour, discordId, updated);
-
-    await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(jour, updated, NO_KEPT, used)],
-      components: buildHandComponents(jour, updated, NO_KEPT, null, used),
-    });
+    if (updated !== hand) await writeHand(jour, discordId, updated, creneau);
+    await repeindreMainFinie(webhookUrl, jour, { ...ctx, hand: updated });
   } catch (err) {
     console.error("[Gobelet] Échec choix de combinaison:", err.message);
   }
@@ -943,11 +920,13 @@ async function choisirCombinaison(webhookUrl, jour, discordId, category) {
 
 // Jouer / Relancer / Valider / choix passent par un verrou par joueur
 // (voir withHandLock) : un clic simultané est ignoré au lieu de relancer.
+// Verrou commun aux deux créneaux (Jouer ne connaît pas encore le sien).
 function verrouille(action) {
-  return async (webhookUrl, jour, discordId, ...rest) => {
+  return async (webhookUrl, jour, ...rest) => {
+    const discordId = action === jouer ? rest[0] : rest[1];
     try {
       await withHandLock(`gobelet:lock:${jour}:${discordId}`, () =>
-        action(webhookUrl, jour, discordId, ...rest),
+        action(webhookUrl, jour, ...rest),
       );
     } catch (err) {
       console.error("[Gobelet] Échec verrou de main:", err.message);
@@ -955,6 +934,8 @@ function verrouille(action) {
   };
 }
 
+// Signatures : (webhookUrl, jour, discordId, username) pour Jouer,
+// (webhookUrl, jour, créneau, discordId[, category]) pour les autres
 export const handleJouer = verrouille(jouer);
 export const handleRelancer = verrouille(relancer);
 export const handleValider = verrouille(validerMain);
@@ -962,12 +943,15 @@ export const handleChoisir = verrouille(choisirCombinaison);
 
 // ── Bouton [📜 Journal] — lecture seule ─────────────────────────────
 
+function formatResultatCreneau(results, discordId) {
+  const mine = results?.find((r) => r.discordId === discordId);
+  return !mine ? "pas jouée" : `**${mine.category}** (${mine.points} pt${mine.points > 1 ? "s" : ""})`;
+}
+
 function formatHistoriqueLine(entry, discordId) {
-  const mine = entry.results?.find((r) => r.discordId === discordId);
-  const monResultat = !mine
-    ? " (tu n'as pas joué)"
-    : ` : **${mine.category}** (${mine.points} pt${mine.points > 1 ? "s" : ""})`;
-  return `Jour ${entry.jour}${monResultat}`;
+  const journee = formatResultatCreneau(entry.results, discordId);
+  if (!entry.resultsSoir) return `Jour ${entry.jour} : ${journee}`;
+  return `Jour ${entry.jour} : ☀️ ${journee} · 🌙 ${formatResultatCreneau(entry.resultsSoir, discordId)}`;
 }
 
 export async function handleJournal(webhookUrl, discordId) {
@@ -983,16 +967,17 @@ export async function handleJournal(webhookUrl, discordId) {
     }
     if (state.phase === "annonce") {
       await patchOriginal(webhookUrl, {
-        content: `La partie commence demain à ${formatUtcTimeAsParis(8)} !`,
+        content: "La partie commence demain à 8h30 !",
         embeds: [],
         components: [],
       });
       return;
     }
 
-    const [config, hand, points, historique] = await Promise.all([
+    const [config, hand, handSoir, points, historique] = await Promise.all([
       loadGobeletConfig(),
-      readHand(state.jour, discordId),
+      readHand(state.jour, discordId, JOURNEE),
+      readHand(state.jour, discordId, SOIR),
       readPoints(),
       listHistorique({ limit: 10 }),
     ]);
@@ -1008,18 +993,19 @@ export async function handleJournal(webhookUrl, discordId) {
     );
 
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
-    if (hand) {
+    for (const [creneau, h] of [[JOURNEE, hand], [SOIR, handSoir]]) {
+      const libelle = `${EMOJI_CRENEAU[creneau]} Ta main ${DE_CRENEAU[creneau]}`;
+      if (!h) {
+        lines.push(`${libelle} : pas encore jouée.`);
+        continue;
+      }
       const detail =
-        hand.status === "termine"
-          ? `**${hand.category}** (${hand.points} pt${hand.points > 1 ? "s" : ""})`
-          : hand.status === "choix"
+        h.status === "termine"
+          ? `**${h.category}** (${h.points} pt${h.points > 1 ? "s" : ""})`
+          : h.status === "choix"
             ? "combinaison à choisir (clique sur **Jouer**)"
-            : `en cours (tirage ${hand.tirage}/3)`;
-      lines.push(`Ta main aujourd'hui : ${formatDice(hand.dice)} (${detail})`);
-    } else {
-      lines.push(
-        "Tu n'as pas encore joué aujourd'hui, clique sur **Jouer** !",
-      );
+            : `en cours (tirage ${h.tirage}/3)`;
+      lines.push(`${libelle} : ${formatDice(h.dice)} (${detail})`);
     }
 
     lines.push(
@@ -1058,23 +1044,25 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles du Jeu du Gobelet",
     description: [
-      "Lance tes dés chaque jour pendant 7 jours pour cumuler des points.",
+      "Lance tes dés deux fois par jour pendant 7 jours pour cumuler des points.",
       "",
-      "**Déroulement (1 partie par jour, définitive) :**",
+      "**Deux mains par jour, définitives** (heure de Paris) : ☀️ une de 8h30 à 20h, 🌙 une de 20h à 8h. Une main pas finie à la fin de son créneau est jugée sur ses dés.",
+      "",
+      "**Déroulement d'une main :**",
       "🎲 **Jouer** : lance tes 5 dés.",
       "🔒 **Clique sur un dé** pour le conserver (ou le relâcher) avant la relance.",
       "🔁 **Relancer** : relance tous les dés non conservés. Possible 2 fois, donc 3 tirages au total.",
       "👍 **Valider** : dès que tes dés forment une combinaison encore libre (hors Joker), arrête tes relances immédiatement.",
-      "🎯 **Choix de la combinaison** : si tes dés en forment plusieurs encore libres (Joker compris), choisis celle à retenir dans la liste, par exemple pour garder la plus payante pour un autre jour. Sans choix avant la clôture, la plus payante (hors Joker) est retenue.",
+      "🎯 **Choix de la combinaison** : si tes dés en forment plusieurs encore libres (Joker compris), choisis celle à retenir dans la liste, par exemple pour garder la plus payante pour un autre jour. Sans choix avant la fin du créneau, la plus payante (hors Joker) est retenue.",
       "",
-      "**Une combinaison différente chaque jour :** chaque combinaison ne rapporte des points qu'une seule fois par partie. Les combinaisons déjà réalisées ne sont plus proposées ; s'il n'en reste aucune dans tes dés : 0 pt.",
+      "**Une combinaison différente chaque jour :** chaque combinaison (et le Joker) ne rapporte des points qu'une seule fois par partie et par créneau : une fois en journée, une fois le soir. Les combinaisons déjà réalisées sur le créneau ne sont plus proposées ; s'il n'en reste aucune dans tes dés : 0 pt.",
       "",
       "**Barème :**",
       ...formatBaremeLines(),
       "",
       `Au Jour ${config.duree_jours}, le classement cumulé désigne le(s) vainqueur(s) de la manche.`,
       "",
-      "📜 **Journal** : consulte ta main du jour, le classement cumulé et l'historique des jours précédents. Simple lecture, clique dessus autant de fois que tu veux.",
+      "📜 **Journal** : consulte tes mains du jour, le classement cumulé et l'historique des jours précédents. Simple lecture, clique dessus autant de fois que tu veux.",
     ].join("\n"),
     color: GOBELET_COLOR,
   };

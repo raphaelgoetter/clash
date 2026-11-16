@@ -47,8 +47,16 @@ import { rangExAequo } from "@clash/commun/classement.js";
 // Ex aequo seulement si points ET cartes piochées égaux (départage officiel,
 // voir buildRanking()).
 const memeRang = (a, b) => a.points === b.points && a.cards === b.cards;
-import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
 import { encodeMain } from "../../services/blackjackImage.js";
+import {
+  JOURNEE,
+  SOIR,
+  CRENEAUX,
+  NOM_CRENEAU,
+  creneauJouable,
+  creneauDepuis,
+  messageHorsCreneau,
+} from "../../services/creneaux.js";
 
 const BLACKJACK_COLOR = 0x2ecc71;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -70,7 +78,13 @@ const BLACKJACK_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack
 export const BLACKJACK_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-start.webp?v=${BLACKJACK_IMAGE_VERSION}`;
 
 const DAY1_INTRO =
-  "**Table ouverte !** Le Croupier s'installe pour 7 jours. Bats-le chaque jour pour cumuler des points. Clique sur *Règles* pour les détails.";
+  "**Table ouverte !** Le Croupier s'installe pour 7 jours. Bats-le deux fois par jour pour cumuler des points. Clique sur *Règles* pour les détails.";
+
+// Deux mains par jour (creneaux.js) : journée 8h30-20h, soir 20h-8h, chacune
+// contre son propre Croupier (state.dealer, state.dealerSoir)
+const EMOJI_CRENEAU = { [JOURNEE]: "☀️", [SOIR]: "🌙" };
+const RENDEZ_VOUS = { [JOURNEE]: "rendez-vous ce soir à 20h", [SOIR]: "rendez-vous demain à 8h30" };
+const dealerDuCreneau = (state, creneau) => (creneau === SOIR ? state.dealerSoir : state.dealer);
 
 // ── Cartes — rendu texte ────────────────────────────────────────────
 
@@ -101,7 +115,7 @@ async function formatResultsSection(results) {
   const pushes = results.filter((r) => r.result === "push");
 
   const lines = [
-    `${results.length} joueur${results.length > 1 ? "s" : ""} ont joué.`,
+    `${results.length} joueur${results.length > 1 ? "s ont" : " a"} joué.`,
   ];
   if (winners.length) {
     const names = await Promise.all(
@@ -111,7 +125,7 @@ async function formatResultsSection(results) {
       `🏆 Gagnant${names.length > 1 ? "s" : ""} (${names.length}) : ${names.join(", ")}`,
     );
   } else {
-    lines.push("🏆 Personne n'a battu le Croupier hier.");
+    lines.push("🏆 Personne n'a battu le Croupier.");
   }
   if (naturels.length) lines.push(`🎉 Blackjack : ${naturels.length}`);
   if (pushes.length) lines.push(`🤝 Égalité : ${pushes.length}`);
@@ -124,6 +138,19 @@ function formatDealerLine(dealer) {
   return `🎩 **Croupier :** ${formatCards(dealer.cards)} (**${issue}**)`;
 }
 
+// Bilan d'un jour : un bloc par créneau (sans dealerSoir : une seule main)
+async function formatBilanJour({ dealer, results, dealerSoir, resultsSoir }) {
+  if (!dealerSoir) return [formatDealerLine(dealer), ...(await formatResultsSection(results))];
+  return [
+    `${EMOJI_CRENEAU[JOURNEE]} **Journée**`,
+    formatDealerLine(dealer),
+    ...(await formatResultsSection(results)),
+    `${EMOJI_CRENEAU[SOIR]} **Soir**`,
+    formatDealerLine(dealerSoir),
+    ...(await formatResultsSection(resultsSoir)),
+  ];
+}
+
 // Section du jour : seule la première carte du Croupier est visible, la
 // seconde reste cachée et il jouera sa main (pioche jusqu'à 17) après les
 // joueurs, dévoilée à la clôture. ⚠️ Rien d'autre ne doit fuiter de sa main.
@@ -132,6 +159,7 @@ function buildDealerTargetSection(dealer) {
     `## 🎩 Carte visible du Croupier : ${formatCard(dealer.cards[0])}`,
     "Sa seconde carte est cachée. Il jouera après toi (il pioche jusqu'à 17) et dévoilera sa main demain à la clôture.",
     "",
+    "☀️ Main de la journée de 8h30 à 20h, 🌙 main du soir de 20h à 8h contre un nouveau Croupier.",
   ];
 }
 
@@ -143,13 +171,13 @@ function buildAnnonceEmbed(config) {
   return {
     title: "🃏 Blackjack : la table ouvre demain",
     description: [
-      `Le Croupier s'installe pour **${config.duree_jours} jours** : bats-le chaque jour pour cumuler des points (2 par victoire, 1 en cas d'égalité).`,
+      `Le Croupier s'installe pour **${config.duree_jours} jours** : bats-le deux fois par jour (8h30-20h, puis 20h-8h) pour cumuler des points (2 par victoire, 1 en cas d'égalité).`,
       "",
       "Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: BLACKJACK_COLOR,
     image: { url: BLACKJACK_START_IMAGE_URL },
-    footer: { text: `La partie commence demain à ${formatUtcTimeAsParis(8)}.` },
+    footer: { text: `La partie commence demain à 8h30.` },
   };
 }
 
@@ -207,18 +235,13 @@ async function buildDayEmbed(
   jour,
   config,
   dealer,
-  { estPremierJour, previousDealer, previousResults },
+  { estPremierJour, bilan },
 ) {
   const lines = [];
   if (estPremierJour) {
     lines.push(DAY1_INTRO, "");
   } else {
-    lines.push(
-      `**📊 Bilan du Jour ${jour - 1}**`,
-      formatDealerLine(previousDealer),
-      ...(await formatResultsSection(previousResults)),
-      "",
-    );
+    lines.push(`**📊 Bilan du Jour ${jour - 1}**`, ...(await formatBilanJour(bilan)), "");
   }
   lines.push(...buildDealerTargetSection(dealer));
 
@@ -232,9 +255,7 @@ async function buildDayEmbed(
         : BLACKJACK_GAME_IMAGE_URL,
     },
     footer: {
-      text: estPremierJour
-        ? "Bats le Croupier chaque jour pendant 7 jours pour cumuler des points !"
-        : `Joue avant ${formatUtcTimeAsParis(8)} demain pour ne pas manquer ta chance aujourd'hui.`,
+      text: "Deux mains par jour : de 8h30 à 20h, puis de 20h à 8h (décompte à 8h).",
     },
   };
 }
@@ -248,12 +269,7 @@ function formatMancheHistoryLine(record) {
   return `Manche ${record.manche} : 🏆 ${winners} (${record.maxPoints} pts)`;
 }
 
-async function buildRevealEmbed(
-  lastDealer,
-  lastResults,
-  ranking,
-  manchesHistory,
-) {
+async function buildRevealEmbed(bilan, ranking, manchesHistory) {
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
       ...r,
@@ -266,8 +282,7 @@ async function buildRevealEmbed(
 
   const lines = [
     `**📊 Bilan du dernier jour**`,
-    formatDealerLine(lastDealer),
-    ...(await formatResultsSection(lastResults)),
+    ...(await formatBilanJour(bilan)),
     "",
     "**Classement final :**",
     ...(resolvedRanking.length
@@ -308,7 +323,7 @@ async function buildRevealEmbed(
 async function publishAndWriteState(
   channelId,
   previousState,
-  { phase = "jour", jour, dealer, embed, components, noPing, termine = false },
+  { phase = "jour", jour, dealer, dealerSoir = null, embed, components, noPing, termine = false },
 ) {
   const token = process.env.DISCORD_TOKEN;
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
@@ -362,6 +377,7 @@ async function publishAndWriteState(
     phase,
     jour,
     dealer,
+    dealerSoir,
     channelId,
     messageId: message.id,
     publishedAt: new Date().toISOString(),
@@ -437,6 +453,7 @@ export async function postBlackjack(
   if (state.phase === "annonce") {
     const jour = 1;
     const dealer = dealerPlay();
+    const dealerSoir = dealerPlay();
     const embed = await buildDayEmbed(jour, config, dealer, {
       estPremierJour: true,
     });
@@ -454,6 +471,7 @@ export async function postBlackjack(
       phase: "jour",
       jour,
       dealer,
+      dealerSoir,
       embed,
       components,
       noPing,
@@ -463,8 +481,11 @@ export async function postBlackjack(
 
   // Résolution du jour actif (state.jour) face à state.dealer, déjà généré
   // (et caché) à l'ouverture de ce jour-là.
-  const hands = await listHands(state.jour);
-  const results = resolveDay(hands, state.dealer);
+  // Main du soir : seulement si le jour a son Croupier du soir
+  const results = resolveDay(await listHands(state.jour, JOURNEE), state.dealer);
+  const resultsSoir = state.dealerSoir ? resolveDay(await listHands(state.jour, SOIR), state.dealerSoir) : [];
+  const toutes = [...results, ...resultsSoir];
+  const bilan = { dealer: state.dealer, results, dealerSoir: state.dealerSoir ?? null, resultsSoir };
   const jourSuivant = state.jour + 1;
   const estFinDeManche = jourSuivant > config.duree_jours;
 
@@ -473,22 +494,21 @@ export async function postBlackjack(
       const pointsActuels = await readPoints();
       // Points simulés selon pointsForResult() (2/1/0), sans écrire dans
       // Redis — pure projection pour npm run blackjack:status / --dry-run.
-      for (const r of results) {
+      for (const r of toutes) {
         const pts = pointsForResult(r.result, r.double);
         if (pts > 0) pointsActuels[r.discordId] = (pointsActuels[r.discordId] || 0) + pts;
       }
       // Cartes du jour projeté ajoutées aux totaux déjà résolus, pour un
       // départage des ex-æquo cohérent avec la vraie clôture.
-      const cardsDrawn = addResultsCardsToTotals(await sumCardsPerPlayer(), results);
+      const cardsDrawn = addResultsCardsToTotals(await sumCardsPerPlayer(), toutes);
       const ranking = buildRanking(pointsActuels, await readUsernames(), cardsDrawn);
-      const embed = await buildRevealEmbed(state.dealer, results, ranking, []);
+      const embed = await buildRevealEmbed(bilan, ranking, []);
       return { dryRun: true, final: true, embed };
     }
     const nextDealerPreview = dealerPlay();
     const embed = await buildDayEmbed(jourSuivant, config, nextDealerPreview, {
       estPremierJour: false,
-      previousDealer: state.dealer,
-      previousResults: results,
+      bilan,
     });
     return {
       dryRun: true,
@@ -499,13 +519,12 @@ export async function postBlackjack(
     };
   }
 
-  for (const r of results) {
+  for (const r of toutes) {
     await addPoints(r.discordId, pointsForResult(r.result, r.double));
   }
   await writeHistoriqueEntry(state.jour, {
     jour: state.jour,
-    dealer: state.dealer,
-    results,
+    ...bilan,
     resolvedAt: new Date().toISOString(),
   });
 
@@ -539,12 +558,7 @@ export async function postBlackjack(
       });
     }
     const manches = await listManches({ limit: 10 });
-    const embed = await buildRevealEmbed(
-      state.dealer,
-      results,
-      ranking,
-      manches,
-    );
+    const embed = await buildRevealEmbed(bilan, ranking, manches);
     const result = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       dealer: state.dealer,
@@ -559,14 +573,14 @@ export async function postBlackjack(
   const nextDealer = dealerPlay();
   const embed = await buildDayEmbed(jourSuivant, config, nextDealer, {
     estPremierJour: false,
-    previousDealer: state.dealer,
-    previousResults: results,
+    bilan,
   });
   const components = buildDayComponents(jourSuivant);
 
   return publishAndWriteState(channelId, state, {
     jour: jourSuivant,
     dealer: nextDealer,
+    dealerSoir: dealerPlay(),
     embed,
     components,
     noPing,
@@ -598,17 +612,16 @@ async function patchOriginal(webhookUrl, payload) {
 // Le Croupier joue après tous les joueurs : le résultat n'est connu qu'à
 // la clôture, sauf s'il a un Blackjack (vérifié d'emblée, la main s'arrête
 // aussitôt). ⚠️ Rien d'autre de sa main ne doit fuiter.
-const pts = (n) => `${n} point${n > 1 ? "s" : ""}`;
-
-function handStatusMessage(hand, dealer) {
+function handStatusMessage(hand, dealer, creneau) {
+  const rdv = RENDEZ_VOUS[creneau];
   if (dealerHasNatural(dealer) && hand.cards.length === 2 && hand.status !== "en_cours") {
     const result = compareToDealer(hand, dealer);
     return result === "push"
-      ? "🎩 Le Croupier a un Blackjack, mais toi aussi : égalité, tu gagnes quand même 1 point aujourd'hui ! 🤝"
-      : "🎩 Le Croupier a un Blackjack, personne ne peut le battre aujourd'hui. Pas de point, rendez-vous demain !";
+      ? "🎩 Le Croupier a un Blackjack, mais toi aussi : égalité, tu gagnes quand même 1 point ! 🤝"
+      : `🎩 Le Croupier a un Blackjack, personne ne peut le battre. Pas de point, ${rdv} !`;
   }
   if (hand.status === "bust") {
-    return `💥 Tu dépasses 21${hand.double ? " sur ta mise doublée" : ""}, ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !`;
+    return `💥 Tu dépasses 21${hand.double ? " sur ta mise doublée" : ""}, ta main est perdue. Prochaine chance : ${rdv} !`;
   }
   if (hand.status === "stand") {
     const intro = hand.cards.length === 2 && hand.score === 21
@@ -628,17 +641,17 @@ function journalStatusMessage(hand, dealer) {
   if (dealerHasNatural(dealer) && hand.cards.length === 2 && hand.status !== "en_cours") {
     return compareToDealer(hand, dealer) === "push"
       ? "Blackjack contre Blackjack : égalité, 1 point. 🤝"
-      : "Le Croupier a un Blackjack, pas de point aujourd'hui.";
+      : "Le Croupier a un Blackjack, pas de point.";
   }
-  if (hand.status === "bust") return "💥 Ta main est perdue pour aujourd'hui. Rendez-vous demain pour une nouvelle chance !";
+  if (hand.status === "bust") return "💥 Main perdue.";
   if (hand.status === "stand") return `${hand.double ? "Mise doublée. " : ""}Le Croupier dévoile sa main demain à la clôture.`;
-  return "Pioche pour te rapprocher de 21, ou arrête-toi pour figer ton score.";
+  return "En cours.";
 }
 
 // Image de la main (blackjackImage.js) : carte visible du Croupier et sa
 // carte cachée en haut (main entière seulement sur un Blackjack, déjà
 // connu du joueur), main du joueur en bas.
-function urlImageMain(jour, hand, dealer) {
+function urlImageMain(jour, hand, dealer, creneau) {
   const blackjackCroupier = dealerHasNatural(dealer) && hand.status !== "en_cours";
   const param = encodeMain({
     joueur: {
@@ -652,50 +665,32 @@ function urlImageMain(jour, hand, dealer) {
     croupier: blackjackCroupier
       ? { nom: "Croupier", cartes: dealer.cards, score: dealer.score }
       : { nom: "Croupier", cartes: dealer.cards.slice(0, 1), cache: true },
-    legende: `Jour ${jour}`,
+    legende: `Jour ${jour} · ${NOM_CRENEAU[creneau]}`,
   });
   return `${TRUST_ROYALE_URL}/api/blackjack/main?d=${param}`;
 }
 
-function buildHandEmbed(jour, hand, message, dealer) {
+function buildHandEmbed(jour, hand, message, dealer, creneau) {
   return {
-    title: `🃏 Ta main (Jour ${jour})`,
+    title: `${EMOJI_CRENEAU[creneau]} Ta main ${creneau === SOIR ? "du soir" : "de la journée"} (Jour ${jour})`,
     description: message,
-    image: { url: urlImageMain(jour, hand, dealer) },
+    image: { url: urlImageMain(jour, hand, dealer, creneau) },
     color: BLACKJACK_COLOR,
   };
 }
 
-function buildHandComponents(jour, hand) {
+// custom_id des actions : `blackjack_<action>:<jour>:<créneau>`
+function buildHandComponents(jour, hand, creneau) {
   if (hand.status !== "en_cours") return [];
+  const id = (action) => `blackjack_${action}:${jour}:${creneau}`;
   return [
     {
       type: 1,
       components: [
-        {
-          type: 2,
-          style: 2,
-          label: "Piocher",
-          emoji: { name: "👆" },
-          custom_id: `blackjack_piocher:${jour}`,
-        },
-        {
-          type: 2,
-          style: 1,
-          label: "Arrêter",
-          emoji: { name: "🛑" },
-          custom_id: `blackjack_arreter:${jour}`,
-        },
+        { type: 2, style: 2, label: "Piocher", emoji: { name: "👆" }, custom_id: id("piocher") },
+        { type: 2, style: 1, label: "Arrêter", emoji: { name: "🛑" }, custom_id: id("arreter") },
         ...(canDouble(hand)
-          ? [
-              {
-                type: 2,
-                style: 2,
-                label: "Doubler",
-                emoji: { name: "💰" },
-                custom_id: `blackjack_doubler:${jour}`,
-              },
-            ]
+          ? [{ type: 2, style: 2, label: "Doubler", emoji: { name: "💰" }, custom_id: id("doubler") }]
           : []),
       ],
     },
@@ -706,81 +701,70 @@ function isDayInactive(state, jour) {
   return !state || state.termine || String(state.jour) !== String(jour);
 }
 
+const messageSeul = (content) => ({ content, embeds: [], components: [] });
+
 export async function handleJouer(webhookUrl, jour, discordId, username) {
   try {
     const state = await readState();
     if (isDayInactive(state, jour)) {
-      await patchOriginal(webhookUrl, {
-        content: "La journée a changé, regarde le nouveau message !",
-        embeds: [],
-        components: [],
-      });
+      await patchOriginal(webhookUrl, messageSeul("La journée a changé, regarde le nouveau message !"));
+      return;
+    }
+    // Le créneau se décide à l'heure du clic (heure de Paris)
+    const creneau = creneauJouable(state.publishedAt);
+    const dealer = creneau && dealerDuCreneau(state, creneau);
+    if (!dealer) {
+      await patchOriginal(webhookUrl, messageSeul(messageHorsCreneau(state.publishedAt)));
       return;
     }
 
-    const existing = await readHand(jour, discordId);
+    const existing = await readHand(jour, discordId, creneau);
     if (existing) {
       await patchOriginal(webhookUrl, {
-        embeds: [
-          buildHandEmbed(
-            jour,
-            existing,
-            handStatusMessage(existing, state.dealer),
-            state.dealer,
-          ),
-        ],
-        components: buildHandComponents(jour, existing),
+        embeds: [buildHandEmbed(jour, existing, handStatusMessage(existing, dealer, creneau), dealer, creneau)],
+        components: buildHandComponents(jour, existing, creneau),
       });
       return;
     }
 
     // Un Blackjack du Croupier arrête la main d'emblée
-    const hand = dealHand(username, state.dealer);
-    await writeHand(jour, discordId, hand);
+    const hand = dealHand(username, dealer);
+    await writeHand(jour, discordId, hand, creneau);
 
     await patchOriginal(webhookUrl, {
-      embeds: [
-        buildHandEmbed(jour, hand, handStatusMessage(hand, state.dealer), state.dealer),
-      ],
-      components: buildHandComponents(jour, hand),
+      embeds: [buildHandEmbed(jour, hand, handStatusMessage(hand, dealer, creneau), dealer, creneau)],
+      components: buildHandComponents(jour, hand, creneau),
     });
   } catch (err) {
     console.error("[Blackjack] Échec Jouer:", err.message);
   }
 }
 
-async function handleDrawOrStand(webhookUrl, jour, discordId, { draw, double = false }) {
+async function handleDrawOrStand(webhookUrl, jour, creneauBouton, discordId, { draw, double = false }) {
   try {
     const state = await readState();
     if (isDayInactive(state, jour)) {
-      await patchOriginal(webhookUrl, {
-        content: "La journée a changé, regarde le nouveau message !",
-        embeds: [],
-        components: [],
-      });
+      await patchOriginal(webhookUrl, messageSeul("La journée a changé, regarde le nouveau message !"));
       return;
     }
-
-    const hand = await readHand(jour, discordId);
+    const creneau = creneauDepuis(creneauBouton);
+    const dealer = dealerDuCreneau(state, creneau);
+    const hand = dealer ? await readHand(jour, discordId, creneau) : null;
     if (!hand) {
+      await patchOriginal(webhookUrl, messageSeul("Clique d'abord sur **Jouer** pour recevoir tes 2 premières cartes !"));
+      return;
+    }
+    // Créneau terminé (20h ou décompte de 8h) : la main reste figée
+    if (creneauJouable(state.publishedAt) !== creneau) {
       await patchOriginal(webhookUrl, {
-        content:
-          "Clique d'abord sur **Jouer** pour recevoir tes 2 premières cartes !",
-        embeds: [],
+        embeds: [buildHandEmbed(jour, hand, `Le créneau ${creneau === SOIR ? "du soir" : "de la journée"} est terminé, ta main est figée à ${hand.score}.`, dealer, creneau)],
         components: [],
       });
       return;
     }
     if (hand.status !== "en_cours") {
       await patchOriginal(webhookUrl, {
-        embeds: [
-          buildHandEmbed(
-            jour,
-            hand,
-            "Ta main est déjà terminée pour aujourd'hui.",
-            state.dealer,
-          ),
-        ],
+        embeds: [buildHandEmbed(jour, hand, "Cette main est déjà terminée.", dealer, creneau)],
         components: [],
       });
       return;
@@ -788,24 +772,17 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw, double = f
 
     if (double && !canDouble(hand)) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(jour, hand, "On ne peut doubler que sur ses 2 premières cartes.", state.dealer)],
-        components: buildHandComponents(jour, hand),
+        embeds: [buildHandEmbed(jour, hand, "On ne peut doubler que sur ses 2 premières cartes.", dealer, creneau)],
+        components: buildHandComponents(jour, hand, creneau),
       });
       return;
     }
     const updated = applyHandAction(hand, double ? "doubler" : draw ? "piocher" : "arreter");
-    await writeHand(jour, discordId, updated);
+    await writeHand(jour, discordId, updated, creneau);
 
     await patchOriginal(webhookUrl, {
-      embeds: [
-        buildHandEmbed(
-          jour,
-          updated,
-          handStatusMessage(updated, state.dealer),
-          state.dealer,
-        ),
-      ],
-      components: buildHandComponents(jour, updated),
+      embeds: [buildHandEmbed(jour, updated, handStatusMessage(updated, dealer, creneau), dealer, creneau)],
+      components: buildHandComponents(jour, updated, creneau),
     });
   } catch (err) {
     console.error(
@@ -815,34 +792,40 @@ async function handleDrawOrStand(webhookUrl, jour, discordId, { draw, double = f
   }
 }
 
-export async function handlePiocher(webhookUrl, jour, discordId) {
-  return handleDrawOrStand(webhookUrl, jour, discordId, { draw: true });
+export async function handlePiocher(webhookUrl, jour, creneau, discordId) {
+  return handleDrawOrStand(webhookUrl, jour, creneau, discordId, { draw: true });
 }
 
-export async function handleArreter(webhookUrl, jour, discordId) {
-  return handleDrawOrStand(webhookUrl, jour, discordId, { draw: false });
+export async function handleArreter(webhookUrl, jour, creneau, discordId) {
+  return handleDrawOrStand(webhookUrl, jour, creneau, discordId, { draw: false });
 }
 
-export async function handleDoubler(webhookUrl, jour, discordId) {
-  return handleDrawOrStand(webhookUrl, jour, discordId, { draw: true, double: true });
+export async function handleDoubler(webhookUrl, jour, creneau, discordId) {
+  return handleDrawOrStand(webhookUrl, jour, creneau, discordId, { draw: true, double: true });
 }
 
 // ── Bouton [📜 Journal] — lecture seule ─────────────────────────────
 
-function formatHistoriqueLine(entry, discordId) {
-  const mine = entry.results?.find((r) => r.discordId === discordId);
+function formatResultatCreneau(results, dealer, discordId) {
+  const mine = results?.find((r) => r.discordId === discordId);
   const gain = mine ? pointsForResult(mine.result, mine.double) : 0;
   const monResultat = !mine
-    ? " (tu n'as pas joué)"
+    ? "tu n'as pas joué"
     : mine.result === "blackjack"
-      ? ` (🎉 Blackjack, +${gain})`
+      ? `🎉 Blackjack, +${gain}`
       : mine.result === "win"
-        ? ` (🏆 tu as gagné, +${gain})`
+        ? `🏆 gagné, +${gain}`
         : mine.result === "push"
-          ? ` (🤝 égalité, +${gain})`
-          : " (❌ tu as perdu)";
-  const croupier = dealerHasNatural(entry.dealer) ? "Blackjack" : entry.dealer.score > 21 ? "dépasse 21" : entry.dealer.score;
-  return `Jour ${entry.jour} : Croupier **${croupier}**${monResultat}`;
+          ? `🤝 égalité, +${gain}`
+          : "❌ perdu";
+  const croupier = dealerHasNatural(dealer) ? "Blackjack" : dealer.score > 21 ? "dépasse 21" : dealer.score;
+  return `Croupier **${croupier}** (${monResultat})`;
+}
+
+function formatHistoriqueLine(entry, discordId) {
+  const journee = formatResultatCreneau(entry.results, entry.dealer, discordId);
+  if (!entry.dealerSoir) return `Jour ${entry.jour} : ${journee}`;
+  return `Jour ${entry.jour} : ☀️ ${journee} · 🌙 ${formatResultatCreneau(entry.resultsSoir, entry.dealerSoir, discordId)}`;
 }
 
 export async function handleJournal(webhookUrl, discordId) {
@@ -858,16 +841,17 @@ export async function handleJournal(webhookUrl, discordId) {
     }
     if (state.phase === "annonce") {
       await patchOriginal(webhookUrl, {
-        content: `La partie commence demain à ${formatUtcTimeAsParis(8)}, rien à consulter pour l'instant.`,
+        content: `La partie commence demain à 8h30, rien à consulter pour l'instant.`,
         embeds: [],
         components: [],
       });
       return;
     }
 
-    const [config, hand, points, usernames, { entries }, cardsDrawn] = await Promise.all([
+    const [config, hand, handSoir, points, usernames, entries, cardsDrawn] = await Promise.all([
       loadBlackjackConfig(),
-      readHand(state.jour, discordId),
+      readHand(state.jour, discordId, JOURNEE),
+      state.dealerSoir ? readHand(state.jour, discordId, SOIR) : null,
       readPoints(),
       readUsernames(),
       listHistorique({ limit: 10 }),
@@ -883,14 +867,10 @@ export async function handleJournal(webhookUrl, discordId) {
     );
 
     const lines = [`**Jour ${state.jour}/${config.duree_jours}**`];
-    if (hand) {
-      lines.push(
-        `Ta main aujourd'hui : ${formatCards(hand.cards)} (**${hand.score}**). ${journalStatusMessage(hand, state.dealer)}`,
-      );
-    } else {
-      lines.push(
-        "Tu n'as pas encore joué aujourd'hui, clique sur **Jouer** !",
-      );
+    const mains = [[JOURNEE, hand, state.dealer], ...(state.dealerSoir ? [[SOIR, handSoir, state.dealerSoir]] : [])];
+    for (const [creneau, h, dealer] of mains) {
+      const libelle = `${EMOJI_CRENEAU[creneau]} Ta main ${creneau === SOIR ? "du soir" : "de la journée"}`;
+      lines.push(h ? `${libelle} : ${formatCards(h.cards)} (**${h.score}**). ${journalStatusMessage(h, dealer)}` : `${libelle} : pas encore jouée.`);
     }
 
     const myRankIndex = ranking.findIndex((r) => r.discordId === discordId);
@@ -936,24 +916,26 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles du Blackjack",
     description: [
-      "Bats le Croupier chaque jour pendant 7 jours pour cumuler des points.",
+      "Bats le Croupier deux fois par jour pendant 7 jours pour cumuler des points.",
       "",
       "**Valeur des cartes :** 2 à 10 = leur valeur, Valet/Dame/Roi = 10, As = 11 ou 1 (automatiquement ramené à 1 si besoin pour éviter de dépasser 21).",
       "",
-      "**Déroulement (1 main par jour, définitive) :**",
+      "**Deux mains par jour, définitives** (heure de Paris) : ☀️ une de 8h30 à 20h, 🌙 une de 20h à 8h, chacune contre son propre Croupier. Une main pas finie à la fin de son créneau est figée sur son score.",
+      "",
+      "**Déroulement d'une main :**",
       "🃏 **Jouer** : reçois 2 cartes.",
       "👆 **Piocher** : reçois une carte de plus (autant de fois que tu veux).",
-      "🛑 **Arrêter** : fige ton score pour aujourd'hui.",
+      "🛑 **Arrêter** : fige ton score.",
       "💰 **Doubler** : sur tes 2 premières cartes seulement, une seule carte de plus puis ta main s'arrête, points doublés.",
-      "Dépasser 21 = main perdue immédiatement pour la journée.",
+      "Dépasser 21 = main perdue immédiatement.",
       "",
       "**Le Croupier :** une de ses deux cartes est visible dès l'ouverture, l'autre est cachée. Il joue après les joueurs : il pioche jusqu'à 17 et peut dépasser 21. Sa main est dévoilée à la clôture. S'il a un Blackjack, ta main s'arrête tout de suite.",
       "",
-      "**Résultat quotidien :** battre le Croupier sans dépasser 21 rapporte **2 points** (s'il dépasse 21, toute main valide gagne). Égalité = **1 point**. **Blackjack** (21 avec tes 2 premières cartes) = **3 points**, et il bat un 21 en 3 cartes ou plus. Main doublée = points doublés. Une main non jouée ne rapporte ni ne coûte rien.",
+      "**Résultat de chaque main :** battre le Croupier sans dépasser 21 rapporte **2 points** (s'il dépasse 21, toute main valide gagne). Égalité = **1 point**. **Blackjack** (21 avec tes 2 premières cartes) = **3 points**, et il bat un 21 en 3 cartes ou plus. Main doublée = points doublés. Une main non jouée ne rapporte ni ne coûte rien.",
       "",
       `Au Jour ${config.duree_jours}, le classement cumulé désigne le(s) vainqueur(s) de la manche.`,
       "",
-      "📜 **Journal** : consulte ta main du jour, le classement cumulé et l'historique des jours précédents. Simple lecture, clique dessus autant de fois que tu veux.",
+      "📜 **Journal** : consulte tes mains du jour, le classement cumulé et l'historique des jours précédents. Simple lecture, clique dessus autant de fois que tu veux.",
     ].join("\n"),
     color: BLACKJACK_COLOR,
   };

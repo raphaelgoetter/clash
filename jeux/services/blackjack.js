@@ -100,8 +100,9 @@ const HISTORIQUE_KEY = "blackjack:historique";
 const MANCHES_KEY = "blackjack:manches";
 const MANCHE_SEQ_KEY = "blackjack:manche_seq";
 
-function handKey(jour) {
-  return `blackjack:hand:${jour}`;
+// Créneau du soir (creneaux.js) : hash à part, `blackjack:hand:<jour>:2`
+function handKey(jour, creneau = 1) {
+  return Number(creneau) === 2 ? `blackjack:hand:${jour}:2` : `blackjack:hand:${jour}`;
 }
 
 // ── Lecture de la config (statique, jamais mutée) ─────────────────
@@ -294,22 +295,22 @@ export function resolveDay(hands, dealer) {
   });
 }
 
-// ── Mains des joueurs (une par jour, hash `blackjack:hand:<jour>`) ────
+// ── Mains des joueurs (une par créneau, hash `blackjack:hand:<jour>[:2]`) ──
 
-export async function readHand(jour, discordId) {
-  return fromJson(await getRedis().hget(handKey(jour), discordId));
+export async function readHand(jour, discordId, creneau = 1) {
+  return fromJson(await getRedis().hget(handKey(jour, creneau), discordId));
 }
 
-export async function writeHand(jour, discordId, hand) {
-  await getRedis().hset(handKey(jour), { [discordId]: toJson(hand) });
+export async function writeHand(jour, discordId, hand, creneau = 1) {
+  await getRedis().hset(handKey(jour, creneau), { [discordId]: toJson(hand) });
   if (hand.username) {
     await getRedis().hset(USERNAMES_KEY, { [discordId]: hand.username });
   }
   await noterJeuSpecial(discordId, "blackjack");
 }
 
-export async function listHands(jour) {
-  return hgetallJson(handKey(jour));
+export async function listHands(jour, creneau = 1) {
+  return hgetallJson(handKey(jour, creneau));
 }
 
 // ── Points cumulés (manche en cours) ──────────────────────────────────
@@ -390,6 +391,7 @@ export async function sumCardsPerPlayer() {
   const totals = {};
   for (const entry of Object.values(all)) {
     addResultsCardsToTotals(totals, entry.results ?? []);
+    addResultsCardsToTotals(totals, entry.resultsSoir ?? []);
   }
   return totals;
 }

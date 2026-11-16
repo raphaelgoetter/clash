@@ -19,6 +19,7 @@ import {
   sumCardsPerPlayer,
   compareToDealer,
 } from "../services/blackjack.js";
+import { JOURNEE, SOIR } from "../services/creneaux.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 
 // Étiquette + ordre d'affichage du meilleur au pire résultat plutôt que par
@@ -54,18 +55,23 @@ function classifyHand(hand, dealer) {
   const config = await loadBlackjackConfig();
   console.log(`Jour ${state.jour}/${config.duree_jours}\n`);
 
-  const hands = await listHands(state.jour);
-  const entries = Object.entries(hands)
-    .map(([discordId, hand]) => [discordId, hand, classifyHand(hand, state.dealer)])
-    .sort(([, , a], [, , b]) => a.rank - b.rank);
-  if (!entries.length) {
-    console.log("Personne n'a encore joué aujourd'hui.\n");
-  } else {
+  // Une section par créneau (journée, puis soir s'il a son Croupier)
+  const creneaux = [["Journée (8h30-20h)", JOURNEE, state.dealer], ...(state.dealerSoir ? [["Soir (20h-8h)", SOIR, state.dealerSoir]] : [])];
+  for (const [titre, creneau, dealer] of creneaux) {
+    console.log(`── ${titre} ──`);
+    const hands = await listHands(state.jour, creneau);
+    const entries = Object.entries(hands)
+      .map(([discordId, hand]) => [discordId, hand, classifyHand(hand, dealer)])
+      .sort(([, , a], [, , b]) => a.rank - b.rank);
+    if (!entries.length) {
+      console.log("Personne n'a encore joué.\n");
+      continue;
+    }
     for (const [discordId, hand, { label }] of entries) {
       const username = await resolveDisplayName(discordId, hand.username || discordId);
       console.log(`${username} — ${hand.cards.map((c) => `${c.rank}${c.suit}`).join(" ")} (${hand.score}) [${label}${hand.double ? " x2" : ""}]`);
     }
-    console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""} aujourd'hui.\n`);
+    console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""}.\n`);
   }
 
   const [points, usernames, cardsDrawn] = await Promise.all([readPoints(), readUsernames(), sumCardsPerPlayer()]);

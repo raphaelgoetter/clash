@@ -153,7 +153,8 @@ export async function routeJeuxSpeciaux(body, res) {
       body.data.custom_id.startsWith("blackjack_arreter:") ||
       body.data.custom_id.startsWith("blackjack_doubler:"))
   ) {
-    const [action, jour] = body.data.custom_id.split(":");
+    // `<action>:<jour>:<créneau>` (créneau absent = journée)
+    const [action, jour, creneau] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
     // déjà affiché (pas de nouveau message, comme goblinhunters_target).
@@ -165,7 +166,7 @@ export async function routeJeuxSpeciaux(body, res) {
         : action === "blackjack_doubler"
           ? handleBlackjackDoubler
           : handleBlackjackArreter;
-    runBackground(() => handler(webhookUrl, jour, discordId));
+    runBackground(() => handler(webhookUrl, jour, creneau, discordId));
     return;
   }
 
@@ -212,13 +213,14 @@ export async function routeJeuxSpeciaux(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobelet_toggle:")
   ) {
-    const [, jour, index] = body.data.custom_id.split(":");
+    // `gobelet_toggle:<jour>:<dé>:<créneau>` (créneau absent = journée)
+    const [, jour, index, creneau] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     // type 6 = DEFERRED_UPDATE_MESSAGE : édite en place le message éphémère
     // déjà affiché, comme blackjack_piocher:/blackjack_arreter:.
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletToggle(webhookUrl, jour, index, discordId));
+    runBackground(() => handleGobeletToggle(webhookUrl, jour, index, creneau, discordId));
     return;
   }
 
@@ -228,11 +230,11 @@ export async function routeJeuxSpeciaux(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobelet_relancer:")
   ) {
-    const jour = body.data.custom_id.split(":")[1];
+    const [, jour, creneau] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletRelancer(webhookUrl, jour, discordId));
+    runBackground(() => handleGobeletRelancer(webhookUrl, jour, creneau, discordId));
     return;
   }
 
@@ -243,11 +245,11 @@ export async function routeJeuxSpeciaux(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobelet_valider:")
   ) {
-    const jour = body.data.custom_id.split(":")[1];
+    const [, jour, creneau] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletValider(webhookUrl, jour, discordId));
+    runBackground(() => handleGobeletValider(webhookUrl, jour, creneau, discordId));
     return;
   }
 
@@ -257,12 +259,12 @@ export async function routeJeuxSpeciaux(body, res) {
     typeof body.data?.custom_id === "string" &&
     body.data.custom_id.startsWith("gobelet_choix:")
   ) {
-    const jour = body.data.custom_id.split(":")[1];
+    const [, jour, creneau] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const category = body.data.values?.[0];
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleGobeletChoisir(webhookUrl, jour, discordId, category));
+    runBackground(() => handleGobeletChoisir(webhookUrl, jour, creneau, discordId, category));
     return;
   }
 

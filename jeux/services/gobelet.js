@@ -104,10 +104,13 @@ const USERNAMES_KEY = "gobelet:usernames";
 const HISTORIQUE_KEY = "gobelet:historique";
 const MANCHES_KEY = "gobelet:manches";
 const MANCHE_SEQ_KEY = "gobelet:manche_seq";
-const USED_KEY = "gobelet:used";
+// Créneau du soir (creneaux.js) : mains, dés gardés et combinaisons
+// réalisées à part (chaque créneau a ses combinaisons et son Joker)
+const soir = (creneau) => Number(creneau) === 2;
+const usedKey = (creneau = 1) => (soir(creneau) ? "gobelet:used_soir" : "gobelet:used");
 
-function handKey(jour) {
-  return `gobelet:hand:${jour}`;
+function handKey(jour, creneau = 1) {
+  return soir(creneau) ? `gobelet:hand:${jour}:2` : `gobelet:hand:${jour}`;
 }
 
 // ── Lecture de la config (statique, jamais mutée) ─────────────────
@@ -418,22 +421,22 @@ export function resolveJour(hands, usedByPlayer = {}) {
   });
 }
 
-// ── Mains des joueurs (une par jour, hash `gobelet:hand:<jour>`) ──────
+// ── Mains des joueurs (une par créneau, hash `gobelet:hand:<jour>[:2]`) ──
 
-export async function readHand(jour, discordId) {
-  return fromJson(await getRedis().hget(handKey(jour), discordId));
+export async function readHand(jour, discordId, creneau = 1) {
+  return fromJson(await getRedis().hget(handKey(jour, creneau), discordId));
 }
 
-export async function writeHand(jour, discordId, hand) {
-  await getRedis().hset(handKey(jour), { [discordId]: toJson(hand) });
+export async function writeHand(jour, discordId, hand, creneau = 1) {
+  await getRedis().hset(handKey(jour, creneau), { [discordId]: toJson(hand) });
   if (hand.username) {
     await getRedis().hset(USERNAMES_KEY, { [discordId]: hand.username });
   }
   await noterJeuSpecial(discordId, "gobelet");
 }
 
-export async function listHands(jour) {
-  return hgetallJson(handKey(jour));
+export async function listHands(jour, creneau = 1) {
+  return hgetallJson(handKey(jour, creneau));
 }
 
 // ── Dés conservés (un champ Redis par dé, PAS un tableau dans le blob JSON
@@ -449,23 +452,23 @@ export async function listHands(jour) {
 // double-clic sur EXACTEMENT le même dé reste théoriquement racy, sans
 // conséquence grave (un des deux clics est simplement perdu, l'état reste
 // cohérent).
-function keptKey(jour, discordId) {
-  return `gobelet:kept:${jour}:${discordId}`;
+function keptKey(jour, discordId, creneau = 1) {
+  return soir(creneau) ? `gobelet:kept:${jour}:2:${discordId}` : `gobelet:kept:${jour}:${discordId}`;
 }
 
-export async function readKept(jour, discordId) {
-  const raw = await hgetallRaw(keptKey(jour, discordId));
+export async function readKept(jour, discordId, creneau = 1) {
+  const raw = await hgetallRaw(keptKey(jour, discordId, creneau));
   return [0, 1, 2, 3, 4].map((i) => raw[String(i)] === "1");
 }
 
-export async function setKeptField(jour, discordId, index, value) {
-  await getRedis().hset(keptKey(jour, discordId), {
+export async function setKeptField(jour, discordId, index, value, creneau = 1) {
+  await getRedis().hset(keptKey(jour, discordId, creneau), {
     [String(index)]: value ? "1" : "0",
   });
 }
 
-export async function resetKept(jour, discordId) {
-  await getRedis().del(keptKey(jour, discordId));
+export async function resetKept(jour, discordId, creneau = 1) {
+  await getRedis().del(keptKey(jour, discordId, creneau));
 }
 
 // ── Verrou par joueur (clics simultanés) ─────────────────────────────
@@ -533,28 +536,29 @@ export function buildRanking(points, usernames = {}) {
 }
 
 // ── Combinaisons déjà réalisées (partie en cours) ───────────────────
-// Hash `gobelet:used` : discordId -> tableau JSON des catégories marquées
-// lors des jours déjà clôturés. Mis à jour uniquement à la clôture
-// quotidienne (jamais en concurrence), remis à zéro avec les points.
+// Hash `gobelet:used` (journée) / `gobelet:used_soir` (soir) : discordId ->
+// tableau JSON des catégories marquées lors des jours déjà clôturés. Mis à
+// jour uniquement à la clôture quotidienne (jamais en concurrence), remis à
+// zéro avec les points.
 
-export async function readUsedCategories(discordId) {
-  return fromJson(await getRedis().hget(USED_KEY, discordId)) || [];
+export async function readUsedCategories(discordId, creneau = 1) {
+  return fromJson(await getRedis().hget(usedKey(creneau), discordId)) || [];
 }
 
-export async function readAllUsedCategories() {
-  const all = await hgetallJson(USED_KEY);
+export async function readAllUsedCategories(creneau = 1) {
+  const all = await hgetallJson(usedKey(creneau));
   const result = {};
   for (const [discordId, used] of Object.entries(all))
     result[discordId] = used || [];
   return result;
 }
 
-export async function writeUsedCategories(discordId, used) {
-  await getRedis().hset(USED_KEY, { [discordId]: toJson(used) });
+export async function writeUsedCategories(discordId, used, creneau = 1) {
+  await getRedis().hset(usedKey(creneau), { [discordId]: toJson(used) });
 }
 
 export async function resetUsedCategories() {
-  await getRedis().del(USED_KEY);
+  await getRedis().del(usedKey(1), usedKey(2));
 }
 
 // ── Historique (bilans quotidiens) ────────────────────────────────
@@ -604,7 +608,8 @@ export async function resetGobelet({ clearManches = false } = {}) {
     POINTS_KEY,
     USERNAMES_KEY,
     HISTORIQUE_KEY,
-    USED_KEY,
+    usedKey(1),
+    usedKey(2),
   );
   await scanDelete("gobelet:hand:*");
   await scanDelete("gobelet:kept:*");

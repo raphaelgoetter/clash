@@ -13,9 +13,10 @@ on:
   # publique sans prévenir pendant une session de test sur le salon de test
   # (l'état est partagé entre les deux, voir jeux/CONTRIBUTING.md).
   schedule:
-    # Décalé de la ronde (0 8) et des autres crons quotidiens du dépôt
-    # (0-10 déjà pris) — voir jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) ».
-    - cron: "12 8 * * *"
+    # 8h12 à Paris en hiver (9h12 en été) : après le décompte de 8h des deux
+    # mains du jour (jeux/services/creneaux.js). Minute distincte des autres
+    # crons — voir jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) ».
+    - cron: "12 7 * * *"
   workflow_dispatch: {}
 
 jobs:

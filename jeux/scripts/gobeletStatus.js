@@ -10,6 +10,7 @@
 
 import "../env.js";
 import { loadGobeletConfig, readState, listHands, readPoints, buildRanking, readAllUsernames } from "../services/gobelet.js";
+import { JOURNEE, SOIR } from "../services/creneaux.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 
 (async () => {
@@ -30,19 +31,22 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
   const config = await loadGobeletConfig();
   console.log(`Jour ${state.jour}/${config.duree_jours}\n`);
 
-  const hands = await listHands(state.jour);
-  // Par points décroissants ; mains pas encore figées (en cours, choix) à la fin.
-  const entries = Object.entries(hands).sort(([, a], [, b]) => (b.points ?? -1) - (a.points ?? -1));
-  if (!entries.length) {
-    console.log("Personne n'a encore joué aujourd'hui.\n");
-  } else {
+  for (const [titre, creneau] of [["Journée (8h30-20h)", JOURNEE], ["Soir (20h-8h)", SOIR]]) {
+    console.log(`── ${titre} ──`);
+    const hands = await listHands(state.jour, creneau);
+    // Par points décroissants ; mains pas encore figées (en cours, choix) à la fin.
+    const entries = Object.entries(hands).sort(([, a], [, b]) => (b.points ?? -1) - (a.points ?? -1));
+    if (!entries.length) {
+      console.log("Personne n'a encore joué.\n");
+      continue;
+    }
     for (const [discordId, hand] of entries) {
       const username = await resolveDisplayName(discordId, hand.username || discordId);
       const dice = hand.dice.join(" ");
       const detail = hand.status === "termine" ? `${hand.category} (${hand.points} pts)` : hand.status === "choix" ? "combinaison à choisir" : `en cours, tirage ${hand.tirage}/3`;
       console.log(`${username} — ${dice} [${detail}]`);
     }
-    console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""} aujourd'hui.\n`);
+    console.log(`\nTotal : ${entries.length} joueur${entries.length > 1 ? "s" : ""}.\n`);
   }
 
   const points = await readPoints();

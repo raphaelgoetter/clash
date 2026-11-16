@@ -117,6 +117,20 @@ import {
 } from "../../services/meow.js";
 import { BANDES as MEOW_BANDES, jourDe as meowJourDe, horloge as meowHorloge } from "../../services/meowRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
+import { CRENEAUX, creneauJouable } from "../../services/creneaux.js";
+
+// Blackjack et Gobelet : deux mains par jour (creneaux.js). « A joué » =
+// main du créneau ouvert (hors créneau : l'une des deux) ; participants =
+// joueurs ayant joué au moins une main du jour.
+async function aJoueCreneau(readHand, state, discordId) {
+  const creneau = creneauJouable(state.publishedAt);
+  const mains = await Promise.all((creneau ? [creneau] : CRENEAUX).map((c) => readHand(state.jour, discordId, c)));
+  return mains.some((m) => m != null);
+}
+async function participantsDuJour(listHands, jour) {
+  const parCreneau = await Promise.all(CRENEAUX.map((c) => listHands(jour, c)));
+  return new Set(parCreneau.flatMap((h) => Object.keys(h))).size;
+}
 
 import { deMois, getCurrentSeasonBounds, seasonIdForDate } from "../../services/saison.js";
 import { getWiredGame } from "../../services/refonte.js";
@@ -445,12 +459,12 @@ const SPECIAL_GAMES = [
     },
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
-      const [hand, points] = await Promise.all([
-        readBlackjackHand(state.jour, discordId),
+      const [played, points] = await Promise.all([
+        aJoueCreneau(readBlackjackHand, state, discordId),
         readBlackjackPoints(),
       ]);
       return {
-        played: hand != null,
+        played,
         scoreLabel: `Score de la partie : **${formatPoints(points[discordId] ?? 0)}**`,
       };
     },
@@ -466,11 +480,10 @@ const SPECIAL_GAMES = [
         };
       }
       const config = await loadBlackjackConfig();
-      const hands = await listBlackjackHands(state.jour);
       return {
         jour: state.jour,
         dureeJours: config.duree_jours,
-        participantsLabel: formatParticipantsToday(Object.keys(hands).length),
+        participantsLabel: formatParticipantsToday(await participantsDuJour(listBlackjackHands, state.jour)),
       };
     },
   },
@@ -521,12 +534,12 @@ const SPECIAL_GAMES = [
     },
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
-      const [hand, points] = await Promise.all([
-        readGobeletHand(state.jour, discordId),
+      const [played, points] = await Promise.all([
+        aJoueCreneau(readGobeletHand, state, discordId),
         readGobeletPoints(),
       ]);
       return {
-        played: hand != null,
+        played,
         scoreLabel: `Score de la partie : **${formatPoints(points[discordId] ?? 0)}**`,
       };
     },
@@ -540,11 +553,10 @@ const SPECIAL_GAMES = [
           phaseLabel: "Phase de présentation du jeu",
         };
       }
-      const hands = await listGobeletHands(state.jour);
       return {
         jour: state.jour,
         dureeJours: config.duree_jours,
-        participantsLabel: formatParticipantsToday(Object.keys(hands).length),
+        participantsLabel: formatParticipantsToday(await participantsDuJour(listGobeletHands, state.jour)),
       };
     },
   },

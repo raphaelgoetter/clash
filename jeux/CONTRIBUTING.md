@@ -405,6 +405,15 @@ Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scr
 - ⚠️ **Un seul état Redis par jeu, partagé entre les deux salons.** Si une partie est active sur l'autre salon, `post<Jeu>()` renvoie `wrongChannel` et ne publie rien : `npm run <jeu>:reset` avant de changer de salon.
 - Archivage des manches (`<jeu>:manches`, `<jeu>:manche_seq`, `archiveManche()`) **uniquement** en publication réelle sur le salon public (`isPublic`), jamais en dry-run ni sur le salon de test. `npm run <jeu>:reset` conserve l'archive ; `<jeu>:reset:manches` l'efface (filet de sécurité).
 
+### Deux mains par jour (Blackjack, Gobelet)
+
+Jeux spéciaux Blackjack et Gobelet seulement (pas leurs duels) : `jeux/services/creneaux.js`, heure de Paris.
+
+- **Créneaux** : ☀️ journée (`JOURNEE`, 8h30-20h) et 🌙 soir (`SOIR`, 20h-8h), une main par créneau. Le jour de jeu va de 8 h à 8 h (`jourDeJeu()`) : la main du soir appartient au jour publié le matin même. Aucun créneau ouvert de 8 h à 8h30.
+- **Décompte à 8 h** : `creneauJouable(publishedAt)` renvoie le créneau ouvert, ou null si le jour de jeu du clic n'est plus celui de la publication (jour suivant pas encore publié) ; plus aucune action après 8 h, le cron résout ensuite le jour tel qu'il était à 8 h. Une main pas finie à la fin de son créneau (20 h ou 8 h) est figée et résolue à la clôture comme une main en cours.
+- Le créneau de Jouer se décide à l'heure du clic ; les boutons de la main le portent (`<action>:<jour>:<créneau>`, absent = journée) et sont refusés une fois le créneau passé (« ta main est figée »).
+- Main du soir stockée à part (`<jeu>:hand:<jour>:2`) ; historique `{ jour, results, resultsSoir, … }` ; bilan du jour en deux blocs ☀️ Journée / 🌙 Soir ; Journal avec les deux mains du jour. `/mini-jeux` : « a joué » = main du créneau ouvert, participants = joueurs ayant joué au moins une main du jour.
+
 ### Ping `@MINI-JEUX`
 
 - Rôle résolu par `getRoleIdByName(MINI_JEUX_ROLE_NAME)` (`@clash/commun/discordRoles.js`), injecté via `buildRolePingFields()`.
@@ -515,9 +524,9 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | Goblin Hunters | `goblinhunters.yml` | `4 8 * * *`  |
 | Quiz           | `quiz.yml`          | `6 8 * * *`  |
 | Robinson       | `robinson.yml`      | `8 8 * * *`  |
-| Blackjack      | `blackjack.yml`     | `12 8 * * *` |
+| Blackjack      | `blackjack.yml`     | `12 7 * * *` (8h12 à Paris en hiver, après le décompte de 8 h des deux mains) |
 | Mario Clash    | `marioclash.yml`    | `14 8 * * *` |
-| Jeu du Gobelet | `gobelet.yml`       | `16 8 * * *` |
+| Jeu du Gobelet | `gobelet.yml`       | `16 7 * * *` (8h16 à Paris en hiver, après le décompte de 8 h des deux mains) |
 | Qui est-ce ?   | `quiestce.yml`      | `20 8 * * *` |
 | Boss de fin de saison | `boss.yml`   | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison ») |
 
@@ -766,7 +775,7 @@ Workflow `.github/workflows/robinson.yml` : cron `8 8 * * *` UTC (avec `--requir
 
 ## Blackjack — bats le Croupier
 
-Jeu spécial de 7 jours (`duree_jours`) : chaque membre affronte le Croupier en solo, une main par jour, classement cumulé révélé après le Jour 7. Pas de commande slash.
+Jeu spécial de 7 jours (`duree_jours`) : chaque membre affronte le Croupier en solo, deux mains par jour (☀️ 8h30-20h, 🌙 20h-8h, voir « Deux mains par jour »), classement cumulé révélé après le Jour 7. Pas de commande slash.
 
 | Rôle | Fichier |
 | ---- | ------- |
@@ -790,7 +799,7 @@ Règles officielles (choix validés par simulation, `jeux/outils/blackjack-simul
 - `dealerPlay()` : 2 cartes, puis le Croupier pioche jusqu'à 17 et reste sur tout 17 (souple compris). Sa main entière est tirée à l'ouverture du jour (sabot infini, indépendant des joueurs) ; il peut dépasser 21 (environ 28 % des mains jouées jusqu'au bout).
 - **Carte visible** : seule `dealer.cards[0]` est montrée à l'ouverture (« 🎩 Carte visible du Croupier : K♠️ »), la seconde est cachée. ⚠️ Ni la carte cachée ni le score ne doivent fuiter (texte comme URL d'image) avant la clôture, sauf sur un Blackjack du Croupier.
 - **Blackjack du Croupier** (`dealerHasNatural()`) : vérifié d'emblée, la main du joueur s'arrête dès la distribution (`dealHand()`), Blackjack contre Blackjack = égalité.
-- **Jeu spécial** : un Croupier par jour pour tous les joueurs, sa main est dévoilée au bilan du lendemain (jamais au joueur qui a fini, l'info circulerait). **Duel contre le Croupier** : sa main est dévoilée dès que la main du joueur est finie (la manche se résout aussitôt).
+- **Jeu spécial** : un Croupier par créneau pour tous les joueurs (`state.dealer` journée, `state.dealerSoir` soir, tirés tous deux à l'ouverture du jour ; seule la carte visible du Croupier de la journée est dans le message public, celle du soir s'affiche quand on joue), ses mains sont dévoilées au bilan du lendemain (jamais au joueur qui a fini, l'info circulerait). **Duel contre le Croupier** : sa main est dévoilée dès que la main du joueur est finie (la manche se résout aussitôt).
 
 ### Main du joueur
 
@@ -810,7 +819,7 @@ Règles officielles (choix validés par simulation, `jeux/outils/blackjack-simul
 
 - Main doublée : points ×2 (victoire 4, égalité 2). Le drapeau `double` suit la main jusqu'au résultat (`resolveDay()`).
 
-- `buildRanking(points, usernames, cardsDrawn)` : points décroissants, puis **moins de cartes piochées** sur la manche (`sumCardsPerPlayer()`, jours clôturés seulement, d'après `blackjack:historique`). Deux joueurs ne sont ex aequo qu'à points **et** cartes égaux. Le critère n'est pas affiché dans les embeds, seulement dans `blackjack:status`/`blackjack:scores` (colonne `Cartes`).
+- `buildRanking(points, usernames, cardsDrawn)` : points décroissants, puis **moins de cartes piochées** sur la manche (`sumCardsPerPlayer()`, jours clôturés seulement, les deux créneaux, d'après `blackjack:historique`). Deux joueurs ne sont ex aequo qu'à points **et** cartes égaux. Le critère n'est pas affiché dans les embeds, seulement dans `blackjack:status`/`blackjack:scores` (colonne `Cartes`).
 - Score de manche cumulé dans l'historique de saison des mini-jeux (`miniJeuxHistory.js`, champ `points`).
 
 ### Interface (Blackjack)
@@ -830,11 +839,11 @@ Règles officielles (choix validés par simulation, `jeux/outils/blackjack-simul
 
 | Clé | Type | Contenu |
 | --- | ---- | ------- |
-| `blackjack:state` | STRING | `{ phase, jour, dealer, channelId, messageId, publishedAt, termine }` |
+| `blackjack:state` | STRING | `{ phase, jour, dealer, dealerSoir, channelId, messageId, publishedAt, termine }` |
 | `blackjack:points` | HASH | `discordId → points` de la manche (`HINCRBY`) |
 | `blackjack:usernames` | HASH | `discordId → pseudo` (repli d'affichage) |
-| `blackjack:hand:<jour>` | HASH | `discordId → { cards, score, status, username, double? }` |
-| `blackjack:historique` | HASH | `jour → { jour, dealer, results, resolvedAt }`, effacé par `resetBlackjack()` |
+| `blackjack:hand:<jour>` / `blackjack:hand:<jour>:2` | HASH | main de la journée / du soir : `discordId → { cards, score, status, username, double? }` |
+| `blackjack:historique` | HASH | `jour → { jour, dealer, results, dealerSoir, resultsSoir, resolvedAt }`, effacé par `resetBlackjack()` |
 | `blackjack:manches` | HASH | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches` |
 | `blackjack:manche_seq` | STRING | compteur de manches |
 
@@ -849,7 +858,7 @@ Règles officielles (choix validés par simulation, `jeux/outils/blackjack-simul
 | `npm run blackjack:status` | État courant et projection de la clôture, sans Discord |
 | `npm run blackjack:scores` | Classement cumulé seul |
 
-Cron `.github/workflows/blackjack.yml` : `12 8 * * *`. Variables : `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
+Cron `.github/workflows/blackjack.yml` : `12 7 * * *`. Variables : `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
 
 ## Faces de dé communes
 
@@ -878,7 +887,7 @@ Service `jeux/services/puntoCartes.js` : `formatCarte(couleur, valeur, { gagnant
 
 ## Jeu du Gobelet — dés façon Yahtzee
 
-Jeu spécial de 7 jours sur le squelette de Blackjack, sans adversaire : chaque jour, chaque membre lance 5 dés, en conserve 0 à 5 et relance les autres jusqu'à 2 fois (3 tirages), puis marque une combinaison. Pas de commande slash.
+Jeu spécial de 7 jours sur le squelette de Blackjack, sans adversaire : deux fois par jour (☀️ 8h30-20h, 🌙 20h-8h, voir « Deux mains par jour »), chaque membre lance 5 dés, en conserve 0 à 5 et relance les autres jusqu'à 2 fois (3 tirages), puis marque une combinaison. Pas de commande slash.
 
 | Rôle | Fichier |
 | ---- | ------- |
@@ -912,12 +921,12 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 - **Calibrage** : barème évalué sur la partie complète en stratégie optimale (5, 7 et 10 manches ; Joker, unicité et choix de la combinaison compris). Critère : une combinaison plus facile à obtenir est marquée au moins aussi souvent qu'une plus difficile, et l'espérance d'une partie reste d'environ 150 / 200 / 265 pts sur 5 / 7 / 10 manches. Gobelet (60) et Double (10) sont fixes par habitude des joueurs. Exceptions assumées : le Full (35) est un peu surpayé (marqué plus souvent que Pairs ou Impairs, pourtant plus faciles) et Tout différent (25) un peu sous-payé (marqué moins souvent que Carré ou Grande Suite, pourtant plus difficiles). Toute modification du barème se revérifie par ce calcul.
 - Avec Tout différent, des dés sans doublon forment toujours une combinaison : « Aucune combinaison » et le Joker automatique ne surviennent qu'une fois les combinaisons présentes déjà réalisées.
-- **Unicité** : chaque combinaison ne rapporte qu'**une fois par partie**. `computeBestCombination(dice, used)` retient la plus payante parmi les combinaisons présentes (`listMatchingCombinations()`) et pas encore réalisées ; égalité de points départagée par `CATEGORY_PRIORITY` (la plus rare d'abord).
+- **Unicité** : chaque combinaison ne rapporte qu'**une fois par partie**. Jeu spécial : une fois **par créneau** (combinaisons réalisées et Joker séparés pour la journée et le soir, comme deux parties de 7 mains dont les points s'additionnent : le calibrage sur 7 manches reste valable). `computeBestCombination(dice, used)` retient la plus payante parmi les combinaisons présentes (`listMatchingCombinations()`) et pas encore réalisées ; égalité de points départagée par `CATEGORY_PRIORITY` (la plus rare d'abord).
 - ⚠️ Double, Brelan et Carré sont des motifs « **au moins** N dés » (un Carré contient un Brelan), pour qu'un joueur ayant déjà fait Carré puisse marquer Brelan. Le Full reste strict.
 - **Joker** (une fois par partie, hors `COMBINATIONS`) : retenu automatiquement seulement si rien d'autre n'est libre, ou choisi volontairement dans le select de fin de main. Le bouton Valider l'ignore (`allowJoker: false`) : impossible de le griller dès le 1ᵉʳ tirage.
 - « Aucune combinaison » vaut 0 et n'est jamais consommée (`withUsedCategory()`).
 - **Choix de la combinaison** : en fin de main (3ᵉ tirage ou Valider), `listChoices(dice, used)` liste les combinaisons libres présentes plus le Joker s'il est libre. Avec 2 choix ou plus, `finishHand()` passe la main en statut `"choix"` et le joueur choisit dans un select (`gobelet_choix:<jour>` / `gobeletduel_choix:<manche>`, validé par `pickChoice()`) ; sinon la main est figée directement.
-- Combinaisons réalisées : `gobelet:used` / `gobeletduel:used` (`discordId → tableau JSON`), mises à jour **uniquement à la résolution** du jour ou de la manche ; affichées dans l'éphémère (« 🚫 Déjà réalisées »).
+- Combinaisons réalisées : `gobelet:used` (journée), `gobelet:used_soir` (soir) / `gobeletduel:used` (`discordId → tableau JSON`), mises à jour **uniquement à la résolution** du jour ou de la manche ; affichées dans l'éphémère (« 🚫 Déjà réalisées »).
 
 ### Main du joueur (Gobelet)
 
@@ -925,8 +934,8 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 - 🔁 **Relancer** : relance les dés non gardés, 2 fois au plus.
 - 👍 **Valider** : affiché dès que les dés courants forment une combinaison encore libre (hors Joker), y compris au 1ᵉʳ tirage ; son libellé ne nomme pas la combinaison. Un clic sur un bouton obsolète est ignoré, le message est repeint.
 - Une main `en_cours` ou `"choix"` à la clôture est résolue par `resolveJour()` sur les dés courants (`computeBestCombination()`, Joker en dernier recours).
-- Verrou par main (`withHandLock()`, clé `gobelet:lock:<jour>:<discordId>`, 10 s) : un clic qui trouve le verrou pris est ignoré (sinon des clics simultanés relançaient sans faire avancer le compteur).
-- ⚠️ Dés gardés stockés à part, un champ de hash par dé (`gobelet:kept:<jour>:<discordId>`, `readKept`/`setKeptField`/`resetKept`) : deux clics simultanés sur des dés différents ne s'écrasent pas. Idem `gobeletduel:kept:<manche>:<discordId>`.
+- Verrou par joueur et par jour, commun aux deux créneaux (`withHandLock()`, clé `gobelet:lock:<jour>:<discordId>`, 10 s) : un clic qui trouve le verrou pris est ignoré (sinon des clics simultanés relançaient sans faire avancer le compteur).
+- ⚠️ Dés gardés stockés à part, un champ de hash par dé (`gobelet:kept:<jour>:<discordId>`, soir `gobelet:kept:<jour>:2:<discordId>`, `readKept`/`setKeptField`/`resetKept`) : deux clics simultanés sur des dés différents ne s'écrasent pas. Idem `gobeletduel:kept:<manche>:<discordId>`.
 
 ### Interface (Gobelet)
 
@@ -943,16 +952,16 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 | `gobelet:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine }` |
 | `gobelet:points` | HASH | `discordId → points` (`HINCRBY`) |
 | `gobelet:usernames` | HASH | `discordId → pseudo` (repli) |
-| `gobelet:hand:<jour>` | HASH | `discordId → { dice, tirage, status, category, points, username }` |
+| `gobelet:hand:<jour>` / `gobelet:hand:<jour>:2` | HASH | main de la journée / du soir : `discordId → { dice, tirage, status, category, points, username }` |
 | `gobelet:kept:<jour>:<discordId>` | HASH | `"0".."4" → "1"/"0"` |
 | `gobelet:lock:<jour>:<discordId>` | STRING | verrou de main (10 s) |
-| `gobelet:used` | HASH | `discordId → [catégories réalisées]` |
-| `gobelet:historique` | HASH | `jour → { jour, results, resolvedAt }`, effacé par `resetGobelet()` |
+| `gobelet:used` / `gobelet:used_soir` | HASH | `discordId → [catégories réalisées]` (journée / soir) |
+| `gobelet:historique` | HASH | `jour → { jour, results, resultsSoir, resolvedAt }`, effacé par `resetGobelet()` |
 | `gobelet:manches` / `gobelet:manche_seq` | HASH / compteur | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches` |
 
 ### Scripts et cron (Gobelet)
 
-Mêmes commandes que Blackjack avec le préfixe `gobelet:` (`test`, `test:dry`, `public`, `public:dry`, `reset`, `reset:manches`, `status`, `scores`). Cron `.github/workflows/gobelet.yml` : `16 8 * * *`. Variables : celles de Blackjack.
+Mêmes commandes que Blackjack avec le préfixe `gobelet:` (`test`, `test:dry`, `public`, `public:dry`, `reset`, `reset:manches`, `status`, `scores`). Cron `.github/workflows/gobelet.yml` : `16 7 * * *`. Variables : celles de Blackjack.
 
 ## Qui est-ce ? — démasquer les cartes secrètes en 7 jours
 
