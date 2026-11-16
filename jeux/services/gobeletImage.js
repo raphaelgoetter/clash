@@ -121,10 +121,35 @@ ${contenu}
 const separateur = (y) =>
   `<line x1="60" y1="${y}" x2="${LARGEUR - 60}" y2="${y}" stroke="${OR}" stroke-width="2" stroke-dasharray="8 8" opacity="0.6"/>`;
 
-// Pastille arrondie centrée en (cx, cy) avec un texte
-function pastille(cx, cy, contenu, { fond, size = 24, padding = 22, hauteur = 44 } = {}) {
+// Couleur d'un score de manche : bon (40 et plus) en vert, mauvais (20 et
+// moins, 0 et Joker faible compris) en rouge, neutre entre les deux. Le
+// Gobelet (60) garde le vert, avec un contour doré et une étoile.
+const VERT = "#2e7d32";
+const ROUGE = "#c62828";
+const NEUTRE = "#5f6b7a";
+export function couleurPoints(points) {
+  if (points >= 40) return VERT;
+  if (points <= 20) return ROUGE;
+  return NEUTRE;
+}
+const estGobelet = (category) => category === "Gobelet";
+
+// Étoile dorée à 5 branches centrée en (cx, cy), rayon extérieur r
+function etoile(cx, cy, r) {
+  const pts = Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const ri = i % 2 ? r * 0.45 : r;
+    return `${(cx + ri * Math.cos(a)).toFixed(1)},${(cy + ri * Math.sin(a)).toFixed(1)}`;
+  });
+  return `<polygon points="${pts.join(" ")}" fill="${OR}" stroke="${BLANC}" stroke-width="2" stroke-linejoin="round"/>`;
+}
+
+// Pastille arrondie centrée en (cx, cy) : combinaison et points, couleur
+// selon les points (couleurPoints)
+function pastille(cx, cy, contenu, { points = 0, category = null, size = 24, padding = 22, hauteur = 44 } = {}) {
   const w = Math.max(hauteur, contenu.length * size * 0.6 + padding * 2);
-  return `<rect x="${cx - w / 2}" y="${cy - hauteur / 2}" width="${w}" height="${hauteur}" rx="${hauteur / 2}" fill="${fond}" stroke="${BLANC}" stroke-width="2.5"/>${texte(cx, cy + size * 0.36, contenu, { size, weight: 800, anchor: "middle" })}`;
+  const gobelet = estGobelet(category);
+  return `<rect x="${cx - w / 2}" y="${cy - hauteur / 2}" width="${w}" height="${hauteur}" rx="${hauteur / 2}" fill="${couleurPoints(points)}" stroke="${gobelet ? OR : BLANC}" stroke-width="${gobelet ? 5 : 2.5}"/>${texte(cx, cy + size * 0.36, contenu, { size, weight: 800, anchor: "middle" })}${gobelet ? etoile(cx + w / 2 - 6, cy - hauteur / 2 + 4, 15) : ""}`;
 }
 
 const libelleCombinaison = (category, points) =>
@@ -240,7 +265,7 @@ export function buildMainSvg({ nom, des, tirage, statut, category, points, used,
   // Bandeau sous les dés : combinaison retenue, ou choix à faire
   let y = 230;
   if (statut === "termine") {
-    c += pastille(LARGEUR / 2, y + 40, libelleCombinaison(category, points), { fond: category === NO_COMBINATION ? "#555555" : "#2e7d32", size: 30, hauteur: 54 });
+    c += pastille(LARGEUR / 2, y + 40, libelleCombinaison(category, points), { points, category, size: 30, hauteur: 54 });
     y += 82;
   } else if (statut === "choix") {
     c += texte(LARGEUR / 2, y + 50, "Choisis ta combinaison", { size: 30, weight: 800, anchor: "middle", fill: OR });
@@ -307,7 +332,7 @@ export function buildMancheSvg({ titre, joueurs }) {
     c += texte(MARGE, y + 40, tronquer(j.nom, 14), { size: 32, weight: 800 });
     c += texte(LARGEUR - MARGE, y + 40, `Total ${j.total}`, { size: 30, weight: 700, anchor: "end" });
     c += rangeeDes(j.des, y + 110, { t: 84, ecart: 18 });
-    c += pastille(LARGEUR / 2, y + 196, libelleCombinaison(j.category, j.points), { fond: j.points > 0 ? "#2e7d32" : "#555555", size: 28, hauteur: 50 });
+    c += pastille(LARGEUR / 2, y + 196, libelleCombinaison(j.category, j.points), { points: j.points, category: j.category, size: 28, hauteur: 50 });
     y += 236;
   });
   return cadre(y + 20, c);
@@ -372,25 +397,21 @@ export function meilleureCombinaison(manches) {
   return best;
 }
 
-// Couleur d'une pastille selon les points de la manche (violet : Joker)
-function fondManche({ points, category }) {
-  if (category === JOKER) return "#7b1fa2";
-  if (points <= 0) return "#555555";
-  if (points < 25) return "#6d4c41";
-  if (points < 40) return "#1e5fa8";
-  if (points < 50) return "#2e7d32";
-  return "#b8860b";
-}
-
 const PAS_PASTILLE = 54;
 const xPastille = (i, n) => (LARGEUR - (n - 1) * PAS_PASTILLE) / 2 + i * PAS_PASTILLE;
 
 function pastillesManches(manches, y) {
   return manches
     .map(
-      (m, i) =>
-        `<circle cx="${xPastille(i, manches.length)}" cy="${y}" r="25" fill="${fondManche(m)}" stroke="${BLANC}" stroke-width="2.5"/>` +
-        texte(xPastille(i, manches.length), y + 9, String(m.points), { size: 25, weight: 800, anchor: "middle" }),
+      (m, i) => {
+        const x = xPastille(i, manches.length);
+        const gobelet = estGobelet(m.category);
+        return (
+          `<circle cx="${x}" cy="${y}" r="25" fill="${couleurPoints(m.points)}" stroke="${gobelet ? OR : BLANC}" stroke-width="${gobelet ? 5 : 2.5}"/>` +
+          texte(x, y + 9, String(m.points), { size: 25, weight: 800, anchor: "middle" }) +
+          (gobelet ? etoile(x + 19, y - 21, 16) : "")
+        );
+      },
     )
     .join("");
 }

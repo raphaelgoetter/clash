@@ -10,6 +10,7 @@ import {
   encodeFin,
   encodeMain,
   encodeManche,
+  couleurPoints,
   meilleureCombinaison,
 } from "./gobeletImage.js";
 
@@ -110,4 +111,12 @@ test("encodeFin / decodeFin : solo et 1v1", () => {
   assert.equal(pvp.joueurs[1].meilleure, null);
   assert.match(buildFinSvg(pvp), /Victoire de A/);
   assert.equal(decodeFin("pas-du-json"), null);
+});
+
+test("couleurPoints : vert dès 40, rouge jusqu'à 20, neutre entre les deux", () => {
+  assert.equal(couleurPoints(60), couleurPoints(40));
+  assert.equal(couleurPoints(0), couleurPoints(20));
+  assert.notEqual(couleurPoints(25), couleurPoints(40));
+  assert.notEqual(couleurPoints(35), couleurPoints(20));
+  assert.match(buildMancheSvg(decodeManche(encodeManche({ titre: "M", joueurs: [{ nom: "A", des: [6, 6, 6, 6, 6], category: "Gobelet", points: 60, total: 60 }] }))), /<polygon/);
 });
