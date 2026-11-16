@@ -1,7 +1,10 @@
 // notifyMemberChanges.js
 // Détecte les arrivées, départs et changements de rôle de membres dans chaque clan
-// en comparant le clan cache persisté (état précédent, ~1h) avec l'état actuel de l'API Clash Royale.
-// Doit être exécuté AVANT npm run cache pour que le fichier JSON ne soit pas encore écrasé.
+// en comparant l'effectif enregistré par le passage précédent (clé Redis
+// `memberbaseline:TAG`, écrite uniquement par ce script) avec l'état actuel de
+// l'API Clash Royale. Le clan cache (`clancache:*`) ne sert que de repli au tout
+// premier passage : le site et le bot le réécrivent à chaque consultation, ce
+// qui effaçait les changements survenus entre deux passages.
 //
 // Usage :
 //   node scripts/notifyMemberChanges.js           — mode normal (poste sur Discord)
@@ -43,6 +46,7 @@ function getRedis() {
   return _redis;
 }
 const NOTIFIED_REDIS_KEY = "membernotifications";
+const BASELINE_REDIS_PREFIX = "memberbaseline:";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -107,7 +111,22 @@ function buildMemberData(members) {
   return { tags, names, roles };
 }
 
+/**
+ * Effectif de référence : celui enregistré par le passage précédent, sinon
+ * (premier passage) le clan cache.
+ * @param {string} tag
+ */
 async function readCachedMembers(tag) {
+  try {
+    const raw = await getRedis().get(`${BASELINE_REDIS_PREFIX}${tag}`);
+    const members = raw ? JSON.parse(raw).members : null;
+    if (Array.isArray(members) && members.length > 0) {
+      return buildMemberData(members);
+    }
+  } catch (_) {
+    // repli sur le clan cache
+  }
+
   const data = await loadClanCache(tag);
   if (!data) return null;
   const members = data.members ?? [];
@@ -117,13 +136,31 @@ async function readCachedMembers(tag) {
 }
 
 /**
+ * Enregistre l'effectif constaté, référence du passage suivant.
+ * @param {string} tag
+ * @param {Array<{tag: string, name: string, role: string}>} members
+ */
+async function saveBaselineMembers(tag, members) {
+  if (DRY_RUN || members.length === 0) return;
+  await getRedis().set(
+    `${BASELINE_REDIS_PREFIX}${tag}`,
+    JSON.stringify({ savedAt: new Date().toISOString(), members }),
+  );
+}
+
+/**
  * Récupère les membres actuels via l'API Clash Royale.
  * @param {string} tag
- * @returns {Promise<{ tags: Set<string>, names: Map<string, string>, roles: Map<string, string> }>}
  */
 async function fetchCurrentMembers(tag) {
   const members = await fetchClanMembers(tag);
-  return buildMemberData(members);
+  const data = buildMemberData(members);
+  data.list = [...data.tags].map((t) => ({
+    tag: t,
+    name: data.names.get(t),
+    role: data.roles.get(t),
+  }));
+  return data;
 }
 
 function debugLog(msg) {
@@ -463,6 +500,7 @@ async function main() {
         console.log(
           `[${tag}] Pas de cache précédent — premier run, diff ignoré.`,
         );
+        await saveBaselineMembers(tag, current.list);
         continue;
       }
 
@@ -699,6 +737,7 @@ async function main() {
         }
         notifiedChanges[tag] = notified;
         await saveNotifiedChanges(notifiedChanges);
+        await saveBaselineMembers(tag, current.list);
         continue;
       }
 
@@ -760,6 +799,7 @@ async function main() {
         );
         notifiedChanges[tag] = notified;
         await saveNotifiedChanges(notifiedChanges);
+        await saveBaselineMembers(tag, current.list);
       }
     } catch (err) {
       console.error(`[${tag}] Erreur : ${err.message}`);
