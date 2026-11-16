@@ -99,10 +99,14 @@ function joueurDe(partie, b) {
   assert.strictEqual(new Date(parisInstant("2026-10-26", 8)).toISOString(), "2026-10-26T07:00:00.000Z");
   assert.deepStrictEqual(parisParts(parisInstant("2026-10-25", 23)), { date: "2026-10-25", h: 23, min: 0 });
   // Événements d'une journée complète, dans l'ordre
+  // Demi-heures et heures du lendemain (8.5 = 8h30, 32 = 8h le lendemain)
+  assert.strictEqual(new Date(parisInstant("2026-10-26", 8.5)).toISOString(), "2026-10-26T07:30:00.000Z");
+  assert.strictEqual(parisInstant("2026-10-26", 32), parisInstant("2026-10-27", 8));
   const ev = evenementsEntre(parisInstant("2026-10-19", 9), parisInstant("2026-10-20", 9), CONFIG);
+  // Bilan du jour 19 à 8h le 20 (daté du 19), avant la distribution de 8h30
   assert.deepStrictEqual(
-    ev.map((e) => `${e.date} ${parisParts(e.t).h} ${e.type}`),
-    ["2026-10-19 20 distribution", "2026-10-19 0 decompte", "2026-10-20 0 sieste", "2026-10-20 8 distribution"],
+    ev.map((e) => `${e.date} ${parisParts(e.t).h}h${String(parisParts(e.t).min).padStart(2, "0")} ${e.type}`),
+    ["2026-10-19 20h00 distribution", "2026-10-20 0h00 sieste", "2026-10-19 8h00 decompte", "2026-10-20 8h30 distribution"],
   );
 }
 
@@ -253,10 +257,10 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   rattraper(partie, { config: CONFIG, now: nuit });
   assert.deepStrictEqual(derniereDistribution(nuit, CONFIG), { t: parisInstant("2026-10-20", 20), h: 20 });
   assert.strictEqual(texteActions(actions(nuit)), "appel √ déplacement √");
-  // Distribution de 8h : nouveau créneau, coches remises à zéro
+  // Distribution de 8h30 : nouveau créneau, coches remises à zéro
   const matin = parisInstant("2026-10-21", 9);
   rattraper(partie, { config: CONFIG, now: matin });
-  assert.strictEqual(derniereDistribution(matin, CONFIG).h, 8);
+  assert.strictEqual(derniereDistribution(matin, CONFIG).h, 8.5);
   assert.strictEqual(texteActions(actions(matin)), "pas encore joué");
 }
 
@@ -377,19 +381,34 @@ for (const [n, attendu] of [[14, [4, 5, 5]], [13, [4, 4, 5]], [12, [4, 4, 4]], [
   // Roux : Chambre + Salon complets ; Noirs : Jardin ; Chartreux : Cuisine moins la Gamelle
   for (const c of PIECES.salon.coins) partie.coins[c] = { b: 0, n: 2 };
   partie.coins.gamelle = { b: 1, n: 2 };
-  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 0) + 60_000 });
-  // 1 point par territoire tenu, pièces entières sans bonus de points
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 8) + 60_000 });
+  // 1 point par territoire et par heure tenue, du lancement (9h30) à
+  // minuit : 14,5 h ; bilan à 8h le lendemain ; pièces entières sans bonus
+  // de points
   const d = partie.decomptes.at(-1);
-  assert.deepStrictEqual(d.gains, [8, 5, 3]);
-  assert.deepStrictEqual(partie.points, [8, 5, 3]);
-  assert.strictEqual(texteJournal(partie, partie.journal.find((e) => e.k === "decompte")), "📊 Décompte du jour 1 : 🟠 +8 · ⚫ +5 · 🔵 +3");
+  assert.deepStrictEqual(partie.points, [8 * 14.5, 5 * 14.5, 3 * 14.5]);
+  assert.deepStrictEqual(d.gains, [116, 73, 44]);
+  assert.strictEqual(texteJournal(partie, partie.journal.find((e) => e.k === "decompte")), "📊 Décompte du jour 1 : 🟠 +116 · ⚫ +73 · 🔵 +44");
+}
+
+{
+  // La nuit ne compte pas ; un coin pris à 23h59 ne rapporte qu'une minute
+  const partie = partieDe(12);
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-19", 23) + 59 * 60_000 });
+  const avant = [...partie.points];
+  partie.coins.canape = { b: 0, n: 2 };
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 8) });
+  assert.ok(Math.abs(partie.points[0] - avant[0] - (5 / 60)) < 1e-9);
+  // De 8h30 à 10h : 5 coins × 1,5 h
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 10) });
+  assert.ok(Math.abs(partie.points[0] - avant[0] - 5 / 60 - 7.5) < 1e-9);
 }
 
 {
   // Ex aequo aux points : départage aux territoires tenus
   const partie = partieDe(12);
-  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 0) + 60_000 });
-  assert.deepStrictEqual(partie.decomptes.at(-1).gains, [4, 4, 4]);
+  rattraper(partie, { config: CONFIG, now: parisInstant("2026-10-20", 8) + 60_000 });
+  assert.deepStrictEqual(partie.decomptes.at(-1).gains, [58, 58, 58]);
   partie.coins.malle = { b: 2, n: 2 };
   assert.strictEqual(classementBandes(partie)[0].b, 2);
 }

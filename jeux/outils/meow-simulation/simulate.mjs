@@ -112,6 +112,11 @@ const PROFILS = {
   occasionnel: { visites: 1 },
   abandon: { visites: 3, stopJour: 2 }, // joue J1-J2 puis disparaît
   travailleur: { visites: 2, creneaux: [[8, 9], [18, 23]] }, // avant et après le travail
+  // Scénario « minuit » : une visite par distribution (8h et 20h) pour
+  // tous, seule l'heure change
+  journee: { visites: 2, creneaux: [[8, 19], [20, 22]] }, // jamais à 23h
+  coucheTard: { visites: 2, creneaux: [[8, 19], [23, 23]] }, // juste avant minuit
+  matinal: { visites: 2, creneaux: [[8, 8], [20, 22]] }, // dès 8h, puis en soirée
 };
 const MIX = [["assidu", 0.3], ["regulier", 0.4], ["occasionnel", 0.2], ["abandon", 0.1]];
 
@@ -255,6 +260,7 @@ function jouerPartie(cfg, seed) {
       if (best) (chats[best.src]--, chats[best.t]++, (j.depFait = true));
     }
     for (let n = 0; n < cfg.attaquesMax; n++) {
+      if (cfg.couvreFeu != null && j.heure >= cfg.couvreFeu) break;
       if (cfg.squatsParDistribution != null && (j.squatsFaits ?? 0) >= cfg.squatsParDistribution) break;
       const att = meilleureAttaque(j.bande, j.strategie, cfg.seuil);
       if (!att) break;
@@ -346,7 +352,16 @@ function jouerPartie(cfg, seed) {
           else j.stock = placer(pire, j.stock);
         }
       }
-      if (h >= 8) for (const j of visitesParHeure[h].sort(() => r() - 0.5)) visite(j, jour);
+      if (h >= 8) for (const j of visitesParHeure[h].sort(() => r() - 0.5)) ((j.heure = h), visite(j, jour));
+      // Temps de détention : chaque heure tenue (8h-minuit, nuit en option)
+      // rapporte 1/16 de point par coin, soit 1 point pour un coin tenu
+      // toute la journée (même échelle que le décompte de minuit)
+      // `detentionHeures` : [de, a[ pour ne compter qu'une partie de la journée
+      const [hDe, hA] = cfg.detentionHeures ?? (cfg.detentionNuit ? [0, 24] : [8, 24]);
+      if (cfg.score === "detention" && h >= hDe && h < hA) {
+        const poids = 1 / (hA - hDe);
+        for (const b of [0, 1, 2]) points[b] += poids * carte.ids.filter((id) => own[id] === b).length;
+      }
       if (cfg.releves && cfg.releves.includes(h) && h !== 23) {
         for (const b of [0, 1, 2]) points[b] += carte.ids.filter((id) => own[id] === b).length;
       }
@@ -357,6 +372,8 @@ function jouerPartie(cfg, seed) {
           [3, 2, 1].forEach((pt, k) => (points[rangs[k]] += pt + (k === 0 ? 0.01 * duJour[rangs[0]] : 0)));
         } else if (cfg.score === "progressif") {
           for (const b of [0, 1, 2]) points[b] += duJour[b] * jour;
+        } else if (cfg.score === "detention") {
+          /* points déjà comptés heure par heure */
         } else if (cfg.score === "final") {
           for (const b of [0, 1, 2]) points[b] = duJour[b];
         } else for (const b of [0, 1, 2]) points[b] += duJour[b];
@@ -1236,5 +1253,48 @@ if (scenario === "deux" || scenario === "deux2") {
       const c = cas.map(([, x]) => mesurer({ ...P, ...d, ...x }).v[0]);
       console.log(`${nom.padEnd(42)} | ${tailles.map((t) => t.ecart).join("/")} pts`.padEnd(80) + ` | ${m.conq.padStart(4)} | ${m.chatsJ7.padStart(4)} | ${m.perdus} | ${m.leader} % | ${c.join(" / ")}`);
     }
+  }
+}
+
+// Décompte de minuit vs temps de détention (16/11) : la partie réelle a
+// montré que tout le monde squattait juste avant minuit (décompte instantané
+// suivi de la sieste, aucune riposte avant 8h). Config du jeu réel (meow.json).
+if (scenario === "minuit") {
+  const carte = construireCarte(PORTES_SYM);
+  const P = { ...BASE, ...ANTI, score: "cumul", pointsPiece: 0, equilibrage: true, carte, rechargeHeures: [8, 20], departs: { 0: "chambre", 1: "jardin", 2: "cuisine" }, paniers: ["fenetre", "potager", "frigo"], croquettes: { chambre: 1, grenier: 1, jardin: 1, cuisine: 1, salon: 1 }, deplacement: true, squatsParDistribution: 1, gainDistribution: 3, stockMax: 4, mercenaires: { jours: [3], n: 1, parJoueur: true }, siesteUnChat: true, joueurs: 18 };
+  const mesurer = (cfg) => {
+    DES_DEF = 2; DETERMINISTE = false; memoVictoire.clear();
+    const v = [0, 0, 0];
+    let leader = 0, conq = 0, ecart = 0;
+    for (let i = 0; i < N; i++) {
+      const g = jouerPartie(cfg, 1000 + i);
+      v[g.classement[0]]++;
+      if (g.stats.leaderJ3 === g.classement[0]) leader++;
+      conq += g.stats.conquetes.reduce((a, b) => a + b, 0) / 7;
+      ecart += (g.points[g.classement[0]] - g.points[g.classement[1]]) / g.points[g.classement[0]];
+    }
+    return { v0: Math.round((100 * v[0]) / N), v: v.map((x) => Math.round((100 * x) / N)), leader: Math.round((100 * leader) / N), conq: (conq / N).toFixed(1), ecart: Math.round((100 * ecart) / N) };
+  };
+  const contre = (p0) => ({ profilForce: (b) => (b === 0 ? p0 : "journee") });
+  const cas = [
+    ["réf. (tous journée)", { profilForce: () => "journee" }],
+    ["Roux couche-tard", contre("coucheTard")],
+    ["Roux matinaux", contre("matinal")],
+    ["Roux 1/2 couche-tard", { profilForce: (b, r) => (b === 0 && r() < 0.5 ? "coucheTard" : "journee") }],
+    ["Roux sans 23h, autres couche-tard", { profilForce: (b) => (b === 0 ? "journee" : "coucheTard") }],
+  ];
+  const variantes = [
+    ["Actuel : décompte à minuit", {}],
+    ["Décomptes à 12h, 18h et minuit", { releves: [12, 18] }],
+    ["Détention 8h-minuit (nuit exclue)", { score: "detention" }],
+    ["Détention 24h/24 (nuit comprise)", { score: "detention", detentionNuit: true }],
+    ["Détention 8h-20h seulement", { score: "detention", detentionHeures: [8, 20] }],
+    ["Détention 8h-minuit, couvre-feu 22h", { score: "detention", couvreFeu: 22 }],
+  ];
+  console.log(`Victoires des Roux (%), ${N} parties par case, 18 joueurs, 1 visite par distribution pour tous ; 33 % = neutre`);
+  console.log("barème".padEnd(36) + " | " + cas.map(([n]) => n).join(" | ") + " | conq./jour | écart 1er-2e | leader J3");
+  for (const [nom, d] of variantes) {
+    const res = cas.map(([, c]) => mesurer({ ...P, ...d, ...c }));
+    console.log(nom.padEnd(36) + " | " + res.map((x, k) => String(x.v0).padStart(cas[k][0].length)).join(" | ") + ` | ${res[0].conq.padStart(10)} | ${String(res[0].ecart).padStart(10)} % | ${res[0].leader} %`);
   }
 }

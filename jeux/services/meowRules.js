@@ -122,10 +122,11 @@ export function parisParts(ms) {
   return { date: `${p.year}-${p.month}-${p.day}`, h: Number(p.hour), min: Number(p.minute) };
 }
 
-// Instant UTC (ms) de `date` à `h` heures pile, heure de Paris
+// Instant UTC (ms) de `date` à `h` heures, heure de Paris. `h` peut être
+// fractionnaire (8.5 = 8h30) ou dépasser 24 (32 = 8h le lendemain).
 export function parisInstant(date, h) {
   const [y, m, d] = date.split("-").map(Number);
-  const base = Date.UTC(y, m - 1, d, h);
+  const base = Date.UTC(y, m - 1, d) + Math.round(h * 3_600_000);
   let t = base - parisOffsetMs(new Date(base));
   t = base - parisOffsetMs(new Date(t));
   return t;
@@ -147,16 +148,18 @@ export function jourDe(partie, ms) {
   return joursEntre(partie.jourDebut, parisParts(ms).date) + 1;
 }
 
-// Sieste de 0 h à `fin_sieste` : aucun squat
+// Sieste de 0 h à `fin_sieste` (8.5 = 8h30) : aucun squat
 export function enSieste(ms, config) {
-  return parisParts(ms).h < config.fin_sieste;
+  const { h, min } = parisParts(ms);
+  return h + min / 60 < config.fin_sieste;
 }
 
 // Événements horaires strictement après `de` et jusqu'à `a` inclus, dans
 // l'ordre : sieste (0 h), distributions, décompte. `heure_decompte` peut
-// valoir 24 (minuit, décision du 16/10) : le décompte du jour D tombe alors
-// à 0 h le lendemain, juste avant la sieste du lendemain (même instant,
-// mais généré avec la date D, donc trié avant).
+// dépasser 24 : le décompte du jour D tombe alors le lendemain, avec la
+// date D (32 = 8h le lendemain, décision du 16/11 : mêmes horaires que
+// Blackjack et Gobelet, jour de jeu de 8h à 8h ; les points ne comptant
+// pas la nuit, le total est le même qu'avec un décompte à minuit).
 export function evenementsEntre(de, a, config) {
   const out = [];
   const fin = parisParts(a).date;
@@ -288,6 +291,7 @@ export function demarrer(partie, { config, now = horloge(partie), rng = Math.ran
   partie.debut = new Date(now).toISOString();
   partie.jourDebut = parisParts(now).date;
   partie.curseur = now;
+  partie.detentionT = now;
   distribuer(partie, { config, t: now });
   return partie;
 }
@@ -372,14 +376,53 @@ function distribuer(partie, { config, t }) {
   }
 }
 
-// Décompte du soir : chaque coin tenu rapporte `points_territoire` (1)
-// point à sa bande (décision du 16/10 : barème en une phrase, remplace le
-// classement du soir 3/2/1 avec +2 par pièce entière, jugé incompréhensible ;
-// les pièces entières ne rapportent plus que des croquettes).
+// Barème au temps de détention (`points_par_heure`, décision du 16/11) :
+// chaque coin rapporte `points_par_heure` point par heure tenue pendant
+// `heures_points` ([8, 24] : de 8h à minuit, la nuit ne compte pas). Le
+// décompte instantané de minuit poussait tout le monde à squatter juste
+// avant minuit, sans riposte possible avant 8h (simulation « minuit » :
+// une bande de couche-tard gagnait 79 % des parties, 49 % au temps de
+// détention). Sans `points_par_heure` : ancien décompte de minuit.
+export const parDetention = (config) => Boolean(config.points_par_heure);
+
+// Crédite chaque bande du temps passé depuis `partie.detentionT` jusqu'à
+// `jusqua`, sur les plages comptées de chaque jour. Le propriétaire des
+// coins ne change jamais entre deux appels : rattraper() l'appelle avant
+// chaque événement et avant toute action.
+function accumuler(partie, config, jusqua) {
+  if (!parDetention(config)) return;
+  const de = partie.detentionT ?? jusqua;
+  partie.detentionT = Math.max(de, jusqua);
+  if (jusqua <= de) return;
+  const [hDe, hA] = config.heures_points;
+  let heures = 0;
+  for (let date = parisParts(de).date; date <= parisParts(jusqua).date; date = ajouterJours(date, 1)) {
+    const debut = parisInstant(date, hDe);
+    const fin = parisInstant(date, hA);
+    heures += Math.max(0, Math.min(fin, jusqua) - Math.max(debut, de)) / 3_600_000;
+  }
+  if (!heures) return;
+  for (const b of [0, 1, 2]) partie.points[b] += coinsDe(partie, b).length * heures * config.points_par_heure;
+}
+
+// Points affichés : arrondis (le classement garde la valeur exacte)
+export const pointsAffiches = (p) => Math.round(p);
+
+// Bilan du soir (minuit). Temps de détention : points gagnés depuis le
+// bilan précédent. Ancien barème : chaque coin tenu rapporte
+// `points_territoire` (1) point à sa bande (décision du 16/10 : barème en
+// une phrase ; les pièces entières ne rapportent plus que des croquettes).
 function decompter(partie, { config, t, jour }) {
   const coins = [0, 1, 2].map((b) => coinsDe(partie, b).length);
-  const gains = coins.map((n) => n * config.points_territoire);
-  gains.forEach((g, b) => (partie.points[b] += g));
+  let gains;
+  if (parDetention(config)) {
+    const avant = partie.pointsBilan ?? [0, 0, 0];
+    gains = partie.points.map((p, b) => pointsAffiches(p) - pointsAffiches(avant[b]));
+    partie.pointsBilan = [...partie.points];
+  } else {
+    gains = coins.map((n) => n * config.points_territoire);
+    gains.forEach((g, b) => (partie.points[b] += g));
+  }
   partie.decomptes.push({ jour, coins, gains });
   noter(partie, { t, k: "decompte", j: jour, jour, gains });
   if (jour >= config.duree_jours) partie.termine = true;
@@ -430,6 +473,7 @@ export function rattraper(partie, { config, now = horloge(partie), rng = Math.ra
   if (!partie.demarree || partie.termine) return partie;
   expirerCombats(partie, { config, now });
   for (const e of evenementsEntre(partie.curseur, now, config)) {
+    accumuler(partie, config, e.t);
     // Jour de jeu de l'événement d'après sa date (un décompte de minuit
     // compte pour la journée qui s'achève)
     const jour = joursEntre(partie.jourDebut, e.date) + 1;
@@ -442,6 +486,7 @@ export function rattraper(partie, { config, now = horloge(partie), rng = Math.ra
     else siester(partie, { t: e.t });
     if (partie.termine) break;
   }
+  if (!partie.termine) accumuler(partie, config, now);
   partie.curseur = now;
   return partie;
 }
@@ -771,8 +816,8 @@ export function scoreCaid(j, config) {
 // Bandes : points cumulés, puis territoires tenus à cet instant.
 export function classementBandes(partie) {
   return [0, 1, 2]
-    .map((b) => ({ b, points: partie.points[b], territoires: coinsDe(partie, b).length }))
-    .sort((x, y) => y.points - x.points || y.territoires - x.territoires);
+    .map((b) => ({ b, exacts: partie.points[b], points: pointsAffiches(partie.points[b]), territoires: coinsDe(partie, b).length }))
+    .sort((x, y) => y.exacts - x.exacts || y.territoires - x.territoires);
 }
 
 export function classementCaid(partie, config) {
@@ -849,7 +894,8 @@ export function compteRendu(partie) {
     if (ecart === 0) phrases.push(`Impossible de départager les ${BANDES[w].nom} et les ${BANDES[final[1].b].nom} aux points au bout des ${soirs.length} jours.`);
     else {
       const seul = (pts, b) => rang(pts, b) === 0 && pts.filter((x) => x === pts[b]).length === 1;
-      const justesse = ecart <= 3 ? `, avec ${pts(ecart)} d'avance seulement` : "";
+      // Petite avance : 3 pts, ou 2 % des points au temps de détention
+      const justesse = ecart <= Math.max(3, final[0].points * 0.02) ? `, avec ${pts(ecart)} d'avance seulement` : "";
       const dernierJour = soirs.map((pts, k) => (rang(pts, w) === 2 ? k + 1 : 0)).filter(Boolean).at(-1);
       let depuis = soirs.length;
       while (depuis > 1 && seul(soirs[depuis - 2], w)) depuis--;

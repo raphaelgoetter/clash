@@ -205,7 +205,7 @@ export async function avancerHorloge(jusqua = "jour") {
     const cible =
       jusqua === "distribution"
         ? prochaineDistribution(h, config).t + 5 * 60_000
-        : parisInstant(ajouterJours(parisParts(h).date, 1), config.distributions[0]) + 22 * 60_000;
+        : parisInstant(parisParts(h).date, 24 + 8) + 22 * 60_000;
     partie.decalage = (partie.decalage ?? 0) + (cible - h);
     rattraper(partie, { config });
     await writePartie(partie);

@@ -35,7 +35,9 @@ import { BANDES, horloge, jourDe, rattraper, classementBandes, classementCaid, c
 
   const maintenant = horloge(partie);
   const creneau = derniereDistribution(maintenant, config);
-  console.log(`Actions depuis la distribution de ${creneau.h}h (prochaine à ${prochaineDistribution(maintenant, config).h}h)`);
+  // 8.5 → « 8h30 »
+  const heure = (h) => `${Math.floor(h)}h${h % 1 ? String(Math.round((h % 1) * 60)).padStart(2, "0") : ""}`;
+  console.log(`Actions depuis la distribution de ${heure(creneau.h)} (prochaine à ${heure(prochaineDistribution(maintenant, config).h)})`);
 
   const pertes = chatsPerdus(partie);
   BANDES.forEach((bd, b) => {

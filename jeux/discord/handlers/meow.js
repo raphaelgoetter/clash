@@ -64,6 +64,7 @@ import {
   retraite,
   pVictoire,
   classementBandes,
+  parDetention,
   texteJournal,
   parisParts,
   posterMessage,
@@ -139,14 +140,27 @@ function delai(ms) {
   return `${h} h${min % 60 ? ` ${String(min % 60).padStart(2, "0")}` : ""}`;
 }
 
-// « minuit » pour un décompte à 24 h (ou 0 h), sinon « 23h »
+// Heure de la config en texte : 8.5 → « 8h30 », 24 → « minuit », 32 → « 8h »
+function formatHeure(h) {
+  const x = h % 24;
+  if (x === 0) return "minuit";
+  const min = Math.round((x % 1) * 60);
+  return `${Math.floor(x)}h${min ? String(min).padStart(2, "0") : ""}`;
+}
+
 function heureDecompte(config) {
-  return config.heure_decompte % 24 === 0 ? "minuit" : `${config.heure_decompte}h`;
+  return formatHeure(config.heure_decompte);
+}
+
+// Plage des points au temps de détention : « de 8h30 à minuit »
+function plagePoints(config) {
+  const [de, a] = config.heures_points;
+  return `de ${formatHeure(de)} à ${formatHeure(a)}`;
 }
 
 function horairesDistribution(config) {
   return config.distributions
-    .map((h) => `${h}h`)
+    .map(formatHeure)
     .join(", ")
     .replace(/, ([^,]*)$/, " et $1");
 }
@@ -290,7 +304,7 @@ function buildJourEmbed(jour, config, partie) {
     color: MEOW_COLOR,
     image: { url: carteUrl(partie) },
     footer: {
-      text: `Chats distribués à ${horairesDistribution(config)} · Décompte à ${heureDecompte(config)} · Sieste de 0h à ${config.fin_sieste}h (pas de squat).`,
+      text: `Chats distribués à ${horairesDistribution(config)} · ${parDetention(config) ? `Points ${plagePoints(config)}` : `Décompte à ${heureDecompte(config)}`} · Sieste de 0h à ${formatHeure(config.fin_sieste)} (pas de squat).`,
     },
   };
 }
@@ -382,7 +396,7 @@ function buildReglesEmbed(config) {
       "- **Crêpage de poils** à chaque manche : jusqu'à 3 dés contre 2, on compare les plus hauts dés, le plus petit perd un chat, **l'égalité profite au défenseur**.",
       "- Les chats et les territoires sont ceux de toute la bande : organisez-vous !",
       "- 🔒 Les **paniers** (anneau doré) sont imprenables.",
-      `- 😴 Pas de squat pendant la sieste (0h à ${config.fin_sieste}h).`,
+      `- 😴 Pas de squat pendant la sieste (0h à ${formatHeure(config.fin_sieste)}).`,
       `- 💬 **Ma bande** : messagerie réservée à ta bande (${config.messages_par_jour} messages par jour).`,
       "",
       "**🍖 Croquettes**",
@@ -391,9 +405,11 @@ function buildReglesEmbed(config) {
       `**⚔️ Mercenaires** : au matin du jour ${config.mercenaires.jour}, la bande dernière reçoit ${plural(config.mercenaires.par_joueur, "chat")} par joueur.`,
       "",
       "**🏆 Points**",
-      `- Chaque soir à **${heureDecompte(config)}**, chaque territoire tenu rapporte ${plural(config.points_territoire, "point")} à sa bande.`,
+      parDetention(config)
+        ? `- Chaque territoire tenu rapporte ${plural(config.points_par_heure, "point")} par heure à sa bande, **${plagePoints(config)}** (la nuit ne compte pas).`
+        : `- Chaque soir à **${heureDecompte(config)}**, chaque territoire tenu rapporte ${plural(config.points_territoire, "point")} à sa bande.`,
       `- 🏅 **Caïd des coussins** (classement individuel) : ${config.caid.coin} pts par territoire pris, ${config.caid.chat} par chat délogé. Classement révélé à la fin de la partie.`,
-      `- Fin après le décompte du jour ${config.duree_jours} : la bande qui a le plus de points gagne.`,
+      `- Bilan des points chaque matin à ${heureDecompte(config)}. Fin au bilan du jour ${config.duree_jours} : la bande qui a le plus de points gagne.`,
     ].join("\n"),
     color: MEOW_COLOR,
   };
@@ -952,7 +968,7 @@ const ERREURS = {
     "Un crêpage de poils est en cours sur ce territoire, réessaie dans un instant.",
   stockVide: "Tu n'as plus de chat à appeler.",
   combatEnCours: "Tu as déjà un crêpage de poils en cours.",
-  sieste: "C'est la sieste : pas de squat avant 8h.",
+  sieste: "C'est la sieste : pas de squat avant 8h30.",
   plafondSquats: "Tu as fait tes squats : attends la prochaine distribution.",
   squatImpossible: "Ce squat n'est plus possible (la carte a bougé).",
   plafondDeplacements:
@@ -1078,15 +1094,15 @@ function buildJouerView(
   const lignes = [
     ...(entete ? [entete, ""] : []),
     `${bd.emoji} Tu es dans la bande des **${bd.nom}**.`,
-    `🐱 **${chats(j.stock)}** à appeler (${config.stock_max} max) · 😼 Squats : **${restants}/${config.squats_par_distribution}**${suivante ? ` jusqu'à ${quand}${suivante.h}h` : ""}`,
+    `🐱 **${chats(j.stock)}** à appeler (${config.stock_max} max) · 😼 Squats : **${restants}/${config.squats_par_distribution}**${suivante ? ` jusqu'à ${quand}${formatHeure(suivante.h)}` : ""}`,
     ...(suivante
       ? [
-          `⏳ Prochaine distribution ${quand ? "demain " : ""}à **${suivante.h}h** (dans ${delai(suivante.t - now)})${j.stock >= config.stock_max ? " : ta réserve est pleine, appelle tes chats sinon le prochain sera perdu." : "."}`,
+          `⏳ Prochaine distribution ${quand ? "demain " : ""}à **${formatHeure(suivante.h)}** (dans ${delai(suivante.t - now)})${j.stock >= config.stock_max ? " : ta réserve est pleine, appelle tes chats sinon le prochain sera perdu." : "."}`,
         ]
       : []),
     ...(sieste
       ? [
-          `😴 C'est la sieste jusqu'à ${config.fin_sieste}h : pas de squat, mais tu peux appeler tes chats.`,
+          `😴 C'est la sieste jusqu'à ${formatHeure(config.fin_sieste)} : pas de squat, mais tu peux appeler tes chats.`,
         ]
       : []),
     // Chat posé tout seul cette nuit (sieste), rappelé le jour même
@@ -1613,7 +1629,7 @@ export async function handleJournal(webhookUrl, discordId) {
     const suivante = prochaineDistribution(maintenant, config);
     blocs.unshift(
       [
-        `**Ont joué depuis la distribution de ${creneau.h}h** (prochaine à ${suivante.h}h)`,
+        `**Ont joué depuis la distribution de ${formatHeure(creneau.h)}** (prochaine à ${formatHeure(suivante.h)})`,
         ...actionsDistribution(partie, j.bande, creneau.t).map(
           (a) => `- ${a.username} : ${texteActions(a)}`,
         ),

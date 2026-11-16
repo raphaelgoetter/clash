@@ -5,8 +5,8 @@ permissions:
 
 on:
   # Créneau réservé : minute 22 à 7h UTC (8h22 à Paris en hiver, 9h22 en
-  # été), juste après la première distribution de chats (8h, heure de
-  # Paris) ; jamais la même minute que les autres crons (voir
+  # été), juste après le bilan de 8h (heure de Paris), avant la première
+  # distribution de chats (8h30) ; jamais la même minute que les autres crons (voir
   # jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) »). Le cron passe --require-active : il
   # n'avance qu'une partie déjà lancée à la main (workflow_dispatch). Les
   # événements horaires (distributions, décompte, sieste) n'ont pas besoin
