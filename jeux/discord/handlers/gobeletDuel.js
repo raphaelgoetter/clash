@@ -465,31 +465,29 @@ export async function handleGobeletRoleRejected(webhookUrl) {
 
 // ── Main du joueur — Jouer / conserver un dé / Relancer ─────────────
 
-function buildHandStatusMessage(hand, kept, manche) {
+function buildHandStatusMessage(hand, manche) {
   if (hand.status === "termine") {
     return `🎯 Combinaison retenue : **${hand.category}**.\nTu gagnes **${hand.points} point${hand.points > 1 ? "s" : ""}** cette manche !`;
   }
   if (hand.status === "choix") {
     return "🎯 Plusieurs combinaisons possibles : choisis celle à retenir dans la liste pour terminer ta main.";
   }
-  const toReroll = kept.filter((k) => !k).length;
   const rerollsLeft = 3 - hand.tirage;
   // Consigne détaillée à la première manche seulement, ensuite le joueur sait quoi faire
   if (manche > 1) {
     return `Tirage ${hand.tirage}/3. Il te reste ${rerollsLeft} lancer${rerollsLeft > 1 ? "s" : ""}.`;
   }
-  return `Tirage ${hand.tirage}/3 : sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
+  return `Tirage ${hand.tirage}/3 : sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les autres. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
 // Image de la main (gobeletImage.js) : dés (gardés cadenassés), tirages,
 // combinaison retenue, grille des combinaisons (réalisées barrées, celles
 // de l'adversaire marquées : chacune ne rapporte qu'une fois par partie).
-function urlImageMain(state, hand, kept, used, opponents = []) {
+function urlImageMain(state, hand, used, opponents = []) {
   const adv = opponents[0];
   const param = encodeMain({
     nom: hand.username ?? "Toi",
     des: hand.dice,
-    gardes: kept,
     tirage: hand.tirage,
     statut: hand.status,
     category: hand.category,
@@ -501,11 +499,13 @@ function urlImageMain(state, hand, kept, used, opponents = []) {
   return `${TRUST_ROYALE_URL}/api/gobelet/main?d=${param}`;
 }
 
-function buildHandEmbed(state, hand, kept, used, opponents) {
+// Indépendant des dés gardés (affichés par les boutons) : un clic sur un dé
+// n'édite que les composants, sans recharger l'image.
+function buildHandEmbed(state, hand, used, opponents) {
   return {
     title: `🎲 Ta main (Manche ${state.manche})`,
-    description: buildHandStatusMessage(hand, kept, state.manche),
-    image: { url: urlImageMain(state, hand, kept, used, opponents) },
+    description: buildHandStatusMessage(hand, state.manche),
+    image: { url: urlImageMain(state, hand, used, opponents) },
     color: GOBELETDUEL_COLOR,
   };
 }
@@ -715,7 +715,7 @@ export async function handleJouer(webhookUrl, gid, discordId, username) {
 
     const state = result.state;
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(state, result.hand, result.kept, result.used, result.opponents)],
+      embeds: [buildHandEmbed(state, result.hand, result.used, result.opponents)],
       components: buildHandComponents(state, result.hand, result.kept, result.used),
     });
 
@@ -745,14 +745,14 @@ export async function handleToggle(webhookUrl, gid, discordId, index) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, NO_KEPT, result.used, result.opponents)],
+        embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
         components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
     }
 
+    // Composants seuls : l'embed (et son image) ne bouge pas
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
   } catch (err) {
@@ -780,14 +780,14 @@ export async function handleRelancer(webhookUrl, gid, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, NO_KEPT, result.used, result.opponents)],
+        embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
         components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state, result.hand, result.kept, result.used, result.opponents)],
+      embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
       components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
 
@@ -817,7 +817,7 @@ export async function handleValider(webhookUrl, gid, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, NO_KEPT, result.used, result.opponents)],
+        embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
         components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
@@ -827,14 +827,14 @@ export async function handleValider(webhookUrl, gid, discordId) {
       // Garde-fou : le bouton ne devrait normalement pas être cliquable
       // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, result.kept, result.used, result.opponents)],
+        embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
         components: buildHandComponents(result.state, result.hand, result.kept, result.used),
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state, result.hand, result.kept, result.used, result.opponents)],
+      embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
       components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
 
@@ -865,7 +865,7 @@ export async function handleChoisir(webhookUrl, gid, discordId, category) {
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state, result.hand, NO_KEPT, result.used, result.opponents)],
+      embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
       components: buildHandComponents(result.state, result.hand, NO_KEPT, result.used),
     });
 

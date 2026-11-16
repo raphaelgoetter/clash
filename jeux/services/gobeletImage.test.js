@@ -18,7 +18,6 @@ test("encodeMain / decodeMain : aller-retour d'une main en cours, adversaire com
     encodeMain({
       nom: "Raphaël 🎉",
       des: [5, 6, 3, 3, 2],
-      gardes: [false, false, true, true, false],
       tirage: 2,
       statut: "en_cours",
       used: ["Brelan", "Full"],
@@ -29,7 +28,6 @@ test("encodeMain / decodeMain : aller-retour d'une main en cours, adversaire com
   assert.deepEqual(main, {
     nom: "Raphaël",
     des: [5, 6, 3, 3, 2],
-    gardes: [false, false, true, true, false],
     tirage: 2,
     statut: "en_cours",
     category: null,

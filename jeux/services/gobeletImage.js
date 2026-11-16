@@ -1,8 +1,9 @@
 // ============================================================
 // gobeletImage.js — Images du Gobelet Duel, format portrait 600 px pensé
 // pour le mobile, sur une piste de dés (cadre bois, feutrine violette) :
-// - main du joueur (éphémère) : 5 dés réalistes (dés gardés cadenassés),
-//   tirages restants, combinaison retenue, grille des combinaisons
+// - main du joueur (éphémère) : 5 dés réalistes (les dés gardés ne sont
+//   montrés que par les boutons : un clic sur un dé ne recharge pas l'image),
+//   tirages joués, combinaison retenue, grille des combinaisons
 //   (réalisées barrées, celles de l'adversaire marquées d'un point) ;
 // - dernière manche terminée (message public) : dés finaux, combinaison et
 //   total de chaque joueur ;
@@ -63,7 +64,7 @@ const depuisMasque = (m) => CATEGORIES.filter((_, i) => (Number(m) || 0) & (1 <<
 
 // ── Dé réaliste ─────────────────────────────────────────────────────
 // Cube ivoire arrondi : ombre portée floue, dégradé de face, biseau clair,
-// points creusés (dégradé radial). Dé gardé : liseré doré et cadenas.
+// points creusés (dégradé radial).
 
 const PIPS = {
   1: [[0, 0]],
@@ -80,14 +81,8 @@ const DEFS_DES = `<filter id="ombreDe" x="-30%" y="-30%" width="160%" height="16
 <radialGradient id="pointDe" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#4a4a4a"/><stop offset="0.6" stop-color="#151515"/><stop offset="1" stop-color="#000000"/></radialGradient>
 <radialGradient id="feutrine" cx="50%" cy="40%" r="80%"><stop offset="0" stop-color="#5e2f8c"/><stop offset="1" stop-color="#26103d"/></radialGradient>`;
 
-// Cadenas centré en (cx, cy), pastille dorée
-const cadenas = (cx, cy, s = 1) =>
-  `<g transform="translate(${cx},${cy}) scale(${s})"><circle r="19" fill="${OR}" stroke="${BLANC}" stroke-width="2.5"/>
-  <path d="M-6,-2 v-5 a6,6 0 0 1 12,0 v5" fill="none" stroke="#3a2a00" stroke-width="3"/>
-  <rect x="-9" y="-2" width="18" height="14" rx="3" fill="#3a2a00"/></g>`;
-
 // Dé de côté `t` centré en (cx, cy), incliné de `angle` degrés
-function de(cx, cy, valeur, { t = 88, garde = false, angle = 0 } = {}) {
+function de(cx, cy, valeur, { t = 88, angle = 0 } = {}) {
   const r = t * 0.2;
   const ecart = t * 0.27;
   const rp = t * 0.085;
@@ -97,21 +92,19 @@ function de(cx, cy, valeur, { t = 88, garde = false, angle = 0 } = {}) {
   const h = t / 2;
   return `<g transform="translate(${cx},${cy}) rotate(${angle})">
   <rect x="${-h + 4}" y="${-h + 9}" width="${t}" height="${t}" rx="${r}" fill="#000" opacity="0.45" filter="url(#ombreDe)"/>
-  ${garde ? `<rect x="${-h - 6}" y="${-h - 6}" width="${t + 12}" height="${t + 12}" rx="${r + 5}" fill="none" stroke="${OR}" stroke-width="5"/>` : ""}
   <rect x="${-h}" y="${-h}" width="${t}" height="${t}" rx="${r}" fill="url(#faceDe)" stroke="#b9ae9a" stroke-width="1.5"/>
   <rect x="${-h + 4}" y="${-h + 4}" width="${t - 8}" height="${t - 8}" rx="${r - 3}" fill="none" stroke="url(#biseauDe)" stroke-width="3"/>
-  ${points}
-  ${garde ? cadenas(h - 4, -h + 4, t / 88) : ""}</g>`;
+  ${points}</g>`;
 }
 
 // Légère inclinaison des dés lancés (fixe par position : rendu stable)
 const ANGLES = [-7, 4, -3, 6, -5];
 
-function rangeeDes(des, cy, { t = 86, gardes = [], centre = LARGEUR / 2, ecart = 16, incline = true } = {}) {
+function rangeeDes(des, cy, { t = 86, centre = LARGEUR / 2, ecart = 16, incline = true } = {}) {
   const total = des.length * t + (des.length - 1) * ecart;
   const x0 = centre - total / 2 + t / 2;
   return des
-    .map((v, i) => de(x0 + i * (t + ecart), cy, v, { t, garde: !!gardes[i], angle: incline && !gardes[i] ? ANGLES[i % 5] : 0 }))
+    .map((v, i) => de(x0 + i * (t + ecart), cy, v, { t, angle: incline ? ANGLES[i % 5] : 0 }))
     .join("");
 }
 
@@ -138,7 +131,7 @@ const libelleCombinaison = (category, points) =>
   category === NO_COMBINATION || !category ? "Aucune combinaison" : `${category} +${points}`;
 
 // ── Main du joueur (éphémère) ───────────────────────────────────────
-// { n: pseudo, d: dés, k: gardés ("10010"), t: tirage, s: statut,
+// { n: pseudo, d: dés, t: tirage, s: statut,
 //   c: combinaison retenue (index, -1), p: points, u: réalisées (masque),
 //   o: [pseudo adversaire, masque] ou absent, l: légende }
 
@@ -146,7 +139,6 @@ const libelleCombinaison = (category, points) =>
  * @param {object} p
  * @param {string} p.nom
  * @param {number[]} p.des
- * @param {boolean[]} p.gardes
  * @param {number} p.tirage 1 à 3
  * @param {string} p.statut en_cours | choix | termine
  * @param {string|null} p.category combinaison retenue (main terminée)
@@ -155,11 +147,10 @@ const libelleCombinaison = (category, points) =>
  * @param {{ nom: string, used: string[] }|null} p.adversaire
  * @param {string} p.legende « Manche 2/5 »
  */
-export function encodeMain({ nom, des, gardes = [], tirage, statut, category = null, points = null, used = [], adversaire = null, legende = "" }) {
+export function encodeMain({ nom, des, tirage, statut, category = null, points = null, used = [], adversaire = null, legende = "" }) {
   const d = {
     n: tronquer(sansEmoji(nom), 18),
     d: versDes(des),
-    k: [0, 1, 2, 3, 4].map((i) => (gardes[i] ? 1 : 0)).join(""),
     t: borner(tirage, 1, 3),
     s: Math.max(0, STATUTS.indexOf(statut)),
     c: indexCategorie(category),
@@ -179,7 +170,6 @@ export function decodeMain(param) {
     return {
       nom: String(d.n ?? "?"),
       des,
-      gardes: String(d.k ?? "").split("").map((c) => c === "1"),
       tirage: borner(d.t, 1, 3),
       statut: STATUTS[Number(d.s)] ?? "en_cours",
       category: categorie(d.c),
@@ -241,12 +231,12 @@ function grille(y0, { used, adversaire, retenue }) {
   }).join("");
 }
 
-export function buildMainSvg({ nom, des, gardes, tirage, statut, category, points, used, adversaire, legende }) {
+export function buildMainSvg({ nom, des, tirage, statut, category, points, used, adversaire, legende }) {
   const enCours = statut === "en_cours";
   let c = texte(MARGE, 74, tronquer(nom, 14), { size: 34, weight: 800 });
   if (enCours) c += texte(LARGEUR - MARGE - 118, 74, `${tirage}/3`, { size: 30, weight: 700, anchor: "end" });
   c += tirages(LARGEUR - MARGE - 48, 64, enCours ? tirage : 3);
-  c += rangeeDes(des, 168, { gardes: enCours ? gardes : [], incline: enCours });
+  c += rangeeDes(des, 168, { incline: enCours });
   // Bandeau sous les dés : combinaison retenue, ou choix à faire
   let y = 230;
   if (statut === "termine") {
