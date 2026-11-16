@@ -304,7 +304,6 @@ function donnerIndice(partie, id, { config, rng }) {
   const cible = partie.joueurs[moi.cible];
   const valeur = partie.cartes[cible.carte].profil[q];
   ajouterInfo(moi.enquete, q, valeur, "depart");
-  prive(partie, id, `🗂️ Indice de départ sur **${cible.username}** : ${QUESTIONS[q].nom.toLowerCase()} **${valeur}**.`);
   return { q, valeur };
 }
 
@@ -405,13 +404,11 @@ export function poser(partie, id, q, { config }) {
   }
   if (cible.brouillard) {
     stats(moi).brouillees += 1;
-    prive(partie, id, `🌫️ ${QUESTIONS[q].nom} de la carte de **${cible.username}** : réponse brouillée.`);
     return { q, brouille: true };
   }
   const valeur = partie.cartes[cible.carte].profil[q];
   ajouterInfo(moi.enquete, q, valeur, "question");
   moi.enquete.posees += 1;
-  prive(partie, id, `🔎 ${QUESTIONS[q].nom} de la carte de **${cible.username}** : **${valeur}**.`);
   return { q, valeur };
 }
 
@@ -452,7 +449,6 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
     bilan(partie).erreurs += 1;
     const malus = (partie.numeroJour ?? 1) > (config.erreur_gratuite_jours ?? 0) ? (config.malus_erreur ?? 0) : 0;
     moi.malus = (moi.malus ?? 0) + malus;
-    prive(partie, id, `❌ Raté : **${cible.username}** n'a pas la carte ${nomCarte(partie, cardKey)}${malus ? ` (-${malus} pt)` : ""}.`);
     return { correct: false, malus };
   }
   // Bonus d'efficacité (décision du 12/10, `bonus_efficacite` : +3 avec 1
@@ -487,7 +483,6 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
     objetGagne = tirerObjet(config, rng);
     moi.objets.push(objetGagne);
     compter(stats(moi).recus, objetGagne);
-    prive(partie, id, `🎁 Objet gagné : ${OBJETS[objetGagne].emoji} ${OBJETS[objetGagne].nom}.`);
   }
   return { correct: true, cible: cibleId, points: config.points_carte ?? 1, bonus, nbIndices, objetGagne };
 }
@@ -592,7 +587,9 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
       }
     }
     bilan(partie).desamorcages += 1;
-    noter(partie, "desamorcage", { s: id, v: moi.cible, objet: detruit });
+    // L'auteur (et la victime d'une destruction) ont leur note privée : pas
+    // d'entrée en double dans leur Journal
+    noter(partie, "desamorcage", { s: id, v: moi.cible, objet: detruit, ids: detruit ? [] : [moi.cible] });
     prive(partie, id, detruit ? `🧨 Désamorçage : tu détruis le ${OBJETS[detruit].nom} de **${cible.username}**.` : `🧨 Désamorçage : **${cible.username}** n'avait rien à désamorcer.`);
     if (detruit) prive(partie, moi.cible, `🧨 **${moi.username}** a détruit ton ${OBJETS[detruit].nom} !`);
     return { objet, cible: moi.cible, detruit };

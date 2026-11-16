@@ -1434,6 +1434,8 @@ export async function handleObjet(webhookUrl, discordId, username, objet) {
 
 // ── Bouton [📜 Journal] (éphémère) ───────────────────────────────────
 
+const NOTES_MASQUEES = ["🗂️ Indice de départ", "🔎 ", "🌫️ ", "❌ Raté", "🎁 Objet gagné"];
+
 // Ce qui concerne le joueur (ses actions, celles qui le visent, ses notes
 // privées : réponses, accusations), précédé de sa carte secrète, regroupé
 // par jour, du plus récent au plus ancien (jours anciens coupés au-delà de 4096 caractères).
@@ -1457,6 +1459,11 @@ export async function handleJournal(webhookUrl, discordId) {
       if (e.p !== discordId && !e.ids?.includes(discordId)) continue;
       // Son propre démasquage figure déjà dans sa note privée (avec la carte)
       if (e.k === "demasque" && e.s === discordId) continue;
+      // Désamorçage déjà dans la note privée de l'auteur (et de la victime d'une destruction)
+      if (e.k === "desamorcage" && (e.s === discordId || e.objet)) continue;
+      // Notes privées retirées du Journal (questions, ratés, indices de départ,
+      // objets gagnés) : encore présentes dans les parties commencées avant
+      if (e.t && NOTES_MASQUEES.some((pre) => e.t.startsWith(pre))) continue;
       if (!jours.has(e.j)) jours.set(e.j, []);
       jours.get(e.j).push(texteJournal(partie, e, discordId));
     }
