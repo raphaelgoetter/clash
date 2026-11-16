@@ -1009,10 +1009,12 @@ Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `t
 | ----- | ------- | ----- |
 | 🔍 Loupe | offensif | 4e question au choix aujourd'hui (`pool_loupe`), toujours une seule question. Inutilisable une fois la question posée. |
 | 🎯 Double accusation | offensif | Deux accusations aujourd'hui sur la cible actuelle (`doubleCible`), même si une accusation a déjà visé une cible précédente. |
-| 🧨 Désamorçage | offensif | Coupe le Brouillard ou le Miroir actif de la cible, sinon détruit un objet défensif de sa réserve. La cible est prévenue. |
+| 🎧 Écoute | offensif | Secret : un indice sur la cible, tiré au hasard parmi ceux que son autre enquêteur connaît et pas soi (source « Écoute », compte dans `bonus_efficacite`). Toujours utilisable : sans rival ou si le rival n'en sait pas plus, l'objet est consommé sans rien apprendre (à chacun de vérifier s'il y a un rival). Le rival n'est pas prévenu ; le Brouillard ne la bloque pas (ce n'est pas une question). |
+| 🧨 Désamorçage | offensif | Coupe la défense active de la cible (Brouillard, sinon Miroir, sinon Bouclier), sinon détruit un objet défensif de sa réserve. La cible est prévenue. |
 | 🌫️ Brouillard | défensif | Public, jusqu'à la clôture : questions sur le joueur sans réponse (question perdue) et, avec `brouillard_bloque_accusation`, aucune accusation possible. |
 | 🎭 Déguisement | défensif | **Hors tirage** (retiré de `tirage_objets` : l'effacement des indices frustrait les enquêteurs ; code conservé). Carte échangée contre une carte libre (`cartesLibres()` : ni attribuée ni déjà découverte) ; indices des enquêteurs et renseignements du Miroir sur lui effacés ; annoncé publiquement. |
 | 🪞 Miroir | défensif | Secret, jusqu'à la clôture : la prochaine question posée sur le joueur lui révèle la même caractéristique de la carte de son enquêteur (`renseignements`, réinjectés si cet enquêteur devient sa cible). |
+| 🛡️ Bouclier | défensif | Secret, jusqu'à la clôture : le prochain démasquage ne coûte pas `malus_demasque` au joueur (démasquage compté, l'enquêteur marque normalement), puis s'use. Le joueur est prévenu par note privée. |
 
 ### Interface (Qui est-ce ?)
 
@@ -1033,7 +1035,7 @@ Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `t
 | Clé | Type | Contenu |
 | --- | ---- | ------- |
 | `quiestce:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, openedAt, cloture }` |
-| `quiestce:partie` | STRING | `{ demarree, grille, cartes, joueurs, journal, numeroJour, seq, termine, jour, veille }` ; joueur : `{ username, avatar, arrivee, carte, anciennesCartes, cible, enquete: { infos, ordre, sources, posees, eliminees }, demasques, cartesConnues, nbDemasque, pointsCartes, bonus, survie, malus, actifJour, demasqueJour, erreurs, seqScore, objets, renseignements, questionsJour, loupe, accusationsJour, accusationsCible, doubleCible, objetJour, objetsJour, objetRecuJour, brouillard, miroir, stats: { recus, utilises, pileFaceGagnes, pileFacePerdus, brouillees } }` ; compte-rendu : `soirs` (points de chacun à chaque clôture), `coup` (`{ s, v, n, j }`). Réécrite sous verrou. |
+| `quiestce:partie` | STRING | `{ demarree, grille, cartes, joueurs, journal, numeroJour, seq, termine, jour, veille }` ; joueur : `{ username, avatar, arrivee, carte, anciennesCartes, cible, enquete: { infos, ordre, sources, posees, eliminees }, demasques, cartesConnues, nbDemasque, pointsCartes, bonus, survie, malus, actifJour, demasqueJour, erreurs, seqScore, objets, renseignements, questionsJour, loupe, accusationsJour, accusationsCible, doubleCible, objetJour, objetsJour, objetRecuJour, brouillard, miroir, bouclier, stats: { recus, utilises, pileFaceGagnes, pileFacePerdus, brouillees } }` ; compte-rendu : `soirs` (points de chacun à chaque clôture), `coup` (`{ s, v, n, j }`). Réécrite sous verrou. |
 | `quiestce:resultat` | STRING | classement final |
 | `quiestce:lock` | STRING | verrou (10 s) |
 | `quiestce:manches` / `quiestce:manche_seq` | HASH / compteur | `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }`, jamais nettoyé sauf `--manches` |

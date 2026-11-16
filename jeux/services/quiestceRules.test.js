@@ -306,6 +306,68 @@ function main() {
     assert.strictEqual(utiliserObjet(p, "j0", "desamorcage", { config: CONFIG, rng }).detruit, null);
   }
 
+  // ── Écoute : un indice du rival sur la même cible, utilisable même sans gain ──
+  {
+    const p = partieTest(6);
+    const moi = p.joueurs.j0;
+    const cibleId = moi.cible;
+    const autre = Object.keys(p.joueurs).find((id) => id !== "j0" && id !== cibleId && p.joueurs[id].cible !== cibleId);
+    for (const id of Object.keys(p.joueurs)) if (id !== "j0" && p.joueurs[id].cible === cibleId) p.joueurs[id].cible = null;
+    // Sans rival : objet consommé, rien appris
+    moi.objets = ["ecoute"];
+    assert.ok(etatObjet(p, "j0", "ecoute", { config: CONFIG }).ok, "utilisable sans rival");
+    const avant = moi.enquete.ordre.length;
+    let r = utiliserObjet(p, "j0", "ecoute", { config: CONFIG, rng });
+    assert.deepStrictEqual([r.rival, r.q], [null, null]);
+    assert.strictEqual(moi.objets.length, 0);
+    assert.strictEqual(moi.enquete.ordre.length, avant);
+    // Rival qui ne sait rien de plus : rien appris
+    const rival = p.joueurs[autre];
+    rival.cible = cibleId;
+    rival.enquete = { ...enqueteVide(), infos: { ...moi.enquete.infos }, ordre: [...moi.enquete.ordre] };
+    moi.objets = ["ecoute"];
+    r = utiliserObjet(p, "j0", "ecoute", { config: CONFIG, rng });
+    assert.deepStrictEqual([r.rival, r.q], [autre, null]);
+    // Rival qui en sait plus : un indice de plus, vrai, source « ecoute »
+    const carte = p.cartes[p.joueurs[cibleId].carte].profil;
+    const inconnues = QIDS.filter((q) => !(q in moi.enquete.infos)).slice(0, 2);
+    for (const q of inconnues) { rival.enquete.infos[q] = carte[q]; rival.enquete.ordre.push(q); }
+    moi.objets = ["ecoute"];
+    r = utiliserObjet(p, "j0", "ecoute", { config: CONFIG, rng });
+    assert.ok(inconnues.includes(r.q));
+    assert.strictEqual(moi.enquete.infos[r.q], carte[r.q]);
+    assert.strictEqual(moi.enquete.sources[r.q], "ecoute");
+    assert.strictEqual(moi.enquete.ordre.length, avant + 1, "un seul indice");
+    assert.ok(!p.journal.some((e) => e.p === autre && e.t?.includes("Écoute")), "le rival n'est pas prévenu");
+  }
+
+  // ── Bouclier : le prochain démasquage ne coûte aucun point, puis s'use ──
+  {
+    const p = partieTest(6);
+    const cibleId = p.joueurs.j0.cible;
+    const cible = p.joueurs[cibleId];
+    cible.objets = ["bouclier"];
+    assert.ok(!utiliserObjet(p, cibleId, "bouclier", { config: CONFIG }).erreur);
+    cible.objets = ["bouclier"];
+    assert.strictEqual(etatObjet(p, cibleId, "bouclier", { config: CONFIG }).raison, "dejaActif");
+    const avant = points(cible);
+    const r = accuser(p, "j0", cible.carte, { config: CONFIG, rng });
+    assert.strictEqual(r.correct, true, "l'enquêteur marque normalement");
+    assert.strictEqual(points(cible), avant, "aucun point perdu");
+    assert.strictEqual(cible.nbDemasque, 1, "démasquage compté");
+    assert.strictEqual(cible.bouclier, false, "une seule fois");
+    // Désamorçage : coupe le Bouclier actif ; clôture : Bouclier retombé
+    const p2 = partieTest(6);
+    const c2 = p2.joueurs[p2.joueurs.j0.cible];
+    c2.bouclier = true;
+    p2.joueurs.j0.objets = ["desamorcage"];
+    assert.strictEqual(utiliserObjet(p2, "j0", "desamorcage", { config: CONFIG, rng }).detruit, "bouclier");
+    assert.strictEqual(c2.bouclier, false);
+    c2.bouclier = true;
+    cloturer(p2, { config: CONFIG });
+    assert.strictEqual(c2.bouclier, false);
+  }
+
   // ── Accusation ratée : gratuite le jour 1, -malus_erreur ensuite ──
   {
     const p = partieTest(8);

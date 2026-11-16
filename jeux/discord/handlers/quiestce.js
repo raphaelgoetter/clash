@@ -909,6 +909,7 @@ function statutLigne(partie, discordId) {
   const actifs = [
     j.brouillard && "🌫️ Brouillard",
     j.miroir && "🪞 Miroir",
+    j.bouclier && "🛡️ Bouclier",
   ].filter(Boolean);
   const detail = [
     nbCartes(j.demasques.length),
@@ -987,7 +988,7 @@ function objetsRow(partie, discordId, config) {
   };
 }
 
-const SOURCES = { miroir: " (Miroir)", depart: " (indice de départ)" };
+const SOURCES = { miroir: " (Miroir)", ecoute: " (Écoute)", depart: " (indice de départ)" };
 
 function chunk(arr, n) {
   const out = [];
@@ -1367,6 +1368,13 @@ function texteObjet(r, partie) {
     return `🔍 Loupe : 4e question débloquée aujourd'hui (${QUESTIONS[r.q].nom}), à choisir ci-dessous.`;
   if (r.objet === "double")
     return `🎯 Double accusation : deux accusations aujourd'hui sur **${partie.joueurs[r.cible].username}**.`;
+  if (r.objet === "ecoute") {
+    const nom = partie.joueurs[r.cible].username;
+    const rival = partie.joueurs[r.rival]?.username;
+    if (!r.rival) return `🎧 Écoute : personne d'autre n'enquête sur **${nom}**, tu n'apprends rien.`;
+    if (!r.q) return `🎧 Écoute : **${rival}** n'en sait pas plus que toi sur **${nom}**.`;
+    return `🎧 Écoute (via **${rival}**) : ${QUESTIONS[r.q].nom.toLowerCase()} de la carte de **${nom}** : **${r.valeur}**.`;
+  }
   if (r.objet === "desamorcage") {
     const nom = partie.joueurs[r.cible].username;
     return r.detruit
@@ -1377,6 +1385,8 @@ function texteObjet(r, partie) {
     return "🌫️ Brouillard : jusqu'à la clôture, les questions sur ta carte restent sans réponse et personne ne peut t'accuser.";
   if (r.objet === "miroir")
     return "🪞 Miroir posé (secret) : la prochaine question sur toi te révélera la même caractéristique de ton enquêteur.";
+  if (r.objet === "bouclier")
+    return "🛡️ Bouclier levé (secret) : jusqu'à la clôture, le prochain démasquage ne te coûtera aucun point.";
   return `🎭 Déguisement : ta carte secrète est maintenant **${nomCarte(partie, r.carte)}**.${r.enqueteurs ? ` ${r.enqueteurs > 1 ? "Tes enquêteurs perdent" : "Ton enquêteur perd"} ses indices !` : ""}`;
 }
 

@@ -152,6 +152,7 @@ function nouveauJoueur(username, arrivee) {
     objetRecuJour: false,
     brouillard: false,
     miroir: false,
+    bouclier: false,
     // A fait une action ce jour-là (question, accusation, objet ou choix de
     // cible) : condition du bonus de survie (décision du 13/10)
     actifJour: false,
@@ -470,7 +471,11 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
   moi.cible = null;
   moi.enquete = nouvelleEnquete();
   cible.nbDemasque += 1;
-  cible.malus = (cible.malus ?? 0) + (config.malus_demasque ?? 1);
+  // Bouclier (secret) : ce démasquage ne coûte aucun point à la cible
+  if (cible.bouclier) {
+    cible.bouclier = false;
+    prive(partie, cibleId, `🛡️ Bouclier : **${moi.username}** t'a démasqué, mais tu ne perds aucun point.`);
+  } else cible.malus = (cible.malus ?? 0) + (config.malus_demasque ?? 1);
   cible.demasqueJour = true;
   bilan(partie).demasquages.push({ s: id, v: cibleId });
   noter(partie, "demasque", { s: id, v: cibleId, crucial: true });
@@ -496,10 +501,12 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
 export const OBJETS = {
   loupe: { nom: "Loupe", emoji: "🔍", famille: "offensif", effet: "Débloque une 4e question au choix aujourd'hui." },
   double: { nom: "Double accusation", emoji: "🎯", famille: "offensif", effet: "Deux accusations aujourd'hui sur ta cible actuelle." },
-  desamorcage: { nom: "Désamorçage", emoji: "🧨", famille: "offensif", effet: "Coupe le Brouillard ou le Miroir de ta cible, sinon détruit un objet défensif de sa réserve." },
+  ecoute: { nom: "Écoute", emoji: "🎧", famille: "offensif", effet: "Te révèle un indice sur ta cible que son autre enquêteur connaît et toi non, s'il y en a un." },
+  desamorcage: { nom: "Désamorçage", emoji: "🧨", famille: "offensif", effet: "Coupe la défense active de ta cible, sinon détruit un objet défensif de sa réserve." },
   brouillard: { nom: "Brouillard", emoji: "🌫️", famille: "defensif", effet: "Jusqu'à la clôture, questions sans réponse et accusations impossibles contre toi." },
   deguisement: { nom: "Déguisement", emoji: "🎭", famille: "defensif", effet: "Change ta carte contre une carte libre : tes enquêteurs perdent leurs indices." },
   miroir: { nom: "Miroir", emoji: "🪞", famille: "defensif", effet: "Secret : la prochaine question sur toi te révèle la même caractéristique de ton enquêteur." },
+  bouclier: { nom: "Bouclier", emoji: "🛡️", famille: "defensif", effet: "Secret : jusqu'à la clôture, le prochain démasquage ne te coûte aucun point." },
 };
 
 export const DEFENSIFS = Object.keys(OBJETS).filter((o) => OBJETS[o].famille === "defensif");
@@ -518,6 +525,7 @@ export function etatObjet(partie, id, objet, { config }) {
   if (objet === "loupe" && questionsRestantes(moi, config) < 1) return { ok: false, raison: "questionPosee" };
   if (objet === "brouillard" && moi.brouillard) return { ok: false, raison: "dejaActif" };
   if (objet === "miroir" && moi.miroir) return { ok: false, raison: "dejaActif" };
+  if (objet === "bouclier" && moi.bouclier) return { ok: false, raison: "dejaActif" };
   if (objet === "deguisement" && !cartesLibres(partie).length) return { ok: false, raison: "aucuneCarteLibre" };
   return { ok: true };
 }
@@ -545,6 +553,25 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
     prive(partie, id, `🎯 Double accusation : deux accusations aujourd'hui sur **${partie.joueurs[moi.cible].username}**.`);
     return { objet, cible: moi.cible };
   }
+  // Écoute (secrète, utilisable même sans rival : à chacun de vérifier) :
+  // un indice sur la cible connu de son autre enquêteur et pas de soi,
+  // tiré au hasard ; rien si personne d'autre n'enquête ou s'il n'en sait
+  // pas plus. Le rival n'est pas prévenu.
+  if (objet === "ecoute") {
+    const cible = partie.joueurs[moi.cible];
+    const rivalId = enqueteurs(partie, moi.cible).find((h) => h !== id) ?? null;
+    const rival = rivalId ? partie.joueurs[rivalId] : null;
+    const nouvelles = rival ? rival.enquete.ordre.filter((q) => !(q in moi.enquete.infos)) : [];
+    if (!nouvelles.length) {
+      prive(partie, id, rival ? `🎧 Écoute : **${rival.username}** n'en sait pas plus que toi sur **${cible.username}**.` : `🎧 Écoute : personne d'autre n'enquête sur **${cible.username}**.`);
+      return { objet, cible: moi.cible, rival: rivalId, q: null };
+    }
+    const q = nouvelles[Math.floor(rng() * nouvelles.length)];
+    const valeur = rival.enquete.infos[q];
+    ajouterInfo(moi.enquete, q, valeur, "ecoute");
+    prive(partie, id, `🎧 Écoute (via **${rival.username}**) : ${QUESTIONS[q].nom.toLowerCase()} de la carte de **${cible.username}** : **${valeur}**.`);
+    return { objet, cible: moi.cible, rival: rivalId, q, valeur };
+  }
   if (objet === "desamorcage") {
     const cible = partie.joueurs[moi.cible];
     let detruit = null;
@@ -554,6 +581,9 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
     } else if (cible.miroir) {
       cible.miroir = false;
       detruit = "miroir";
+    } else if (cible.bouclier) {
+      cible.bouclier = false;
+      detruit = "bouclier";
     } else {
       const defensifs = cible.objets.filter((o) => DEFENSIFS.includes(o));
       if (defensifs.length) {
@@ -578,6 +608,11 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
     prive(partie, id, "🪞 Miroir posé (secret) jusqu'à la clôture.");
     return { objet };
   }
+  if (objet === "bouclier") {
+    moi.bouclier = true;
+    prive(partie, id, "🛡️ Bouclier levé (secret) jusqu'à la clôture.");
+    return { objet };
+  }
   // Déguisement : nouvelle carte libre ; indices des enquêteurs et
   // renseignements du Miroir sur l'ancienne carte devenus faux
   const libres = cartesLibres(partie);
@@ -598,7 +633,7 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
 // Clôture du jour : +`bonus_survie_jour` pour chaque joueur non démasqué
 // ce jour-là (décision du 12/10) et qui a joué ce jour-là (décision du
 // 13/10 : un inscrit absent ne marque rien) ; compteurs quotidiens,
-// Brouillard et Miroir remis à zéro.
+// Brouillard, Miroir et Bouclier remis à zéro.
 export function cloturer(partie, { config = {} } = {}) {
   // Inscrits n'ayant rien fait de la journée (bilan public du lendemain)
   bilan(partie).absents = Object.entries(partie.joueurs)
@@ -618,6 +653,7 @@ export function cloturer(partie, { config = {} } = {}) {
     j.objetRecuJour = false;
     j.brouillard = false;
     j.miroir = false;
+    j.bouclier = false;
   }
   // Points de chacun au soir de chaque jour (déroulé du compte-rendu)
   (partie.soirs ??= []).push(Object.fromEntries(Object.entries(partie.joueurs).filter(([, j]) => j.carte).map(([cid, j]) => [cid, points(j)])));
@@ -683,7 +719,7 @@ function compter(table, cle) {
   table[cle] = (table[cle] ?? 0) + 1;
 }
 
-const PLURIELS = { loupe: "Loupes", double: "Doubles accusations", desamorcage: "Désamorçages", brouillard: "Brouillards", deguisement: "Déguisements", miroir: "Miroirs" };
+const PLURIELS = { loupe: "Loupes", double: "Doubles accusations", desamorcage: "Désamorçages", brouillard: "Brouillards", deguisement: "Déguisements", miroir: "Miroirs", ecoute: "Écoutes", bouclier: "Boucliers" };
 
 // Joueur au plus haut `valeur`, seulement s'il est seul en tête et atteint
 // `seuil` (sinon rien à raconter)
