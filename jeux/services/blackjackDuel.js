@@ -19,7 +19,7 @@
 // - pas d'historique persistant (aucun équivalent à archiveManche /
 //   writeHistoriqueEntry) ;
 // - comme les autres duels : une partie par joueur contre le Croupier,
-//   une seule à 2 joueurs, chacune expirée 1 h après la dernière action
+//   une seule à 2 joueurs, chacune expirée 2 min après la dernière action
 //   (TTL Redis, ni cron ni nettoyage manuel) ; `npm run blackjackduel:status`
 //   liste les parties, `npm run blackjackduel:reset` les efface toutes.
 // ============================================================
@@ -105,7 +105,7 @@ async function scanDelete(pattern) {
 // une seule à 2 joueurs (`pvp`), comme les autres duels. Chaque écriture
 // relance l'expiration : sans action pendant INACTIVITE_SECONDES, la partie
 // disparaît d'elle-même (pas de cron).
-export const INACTIVITE_SECONDES = 3600;
+export const INACTIVITE_SECONDES = 120;
 
 // Identifiant de la partie lancée par `discordId` avec `maxPlayers` places.
 export function gameIdFor(maxPlayers, discordId) {

@@ -39,6 +39,8 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
 
 const BLACKJACKDUEL_COLOR = 0x2ecc71;
+// « 2 minutes » : délai d'abandon d'une partie sans action
+const DELAI_INACTIVITE = `${INACTIVITE_SECONDES / 60} minutes`;
 
 // Cartes : en image (blackjackImage.js), sauf la carte visible du Croupier
 // dans le message public.
@@ -331,9 +333,9 @@ async function buildTableEmbed(
   }
 
   // Pas de cron : le message d'une partie expirée resterait figé, d'où le
-  // rappel de l'échéance (relancée à chaque action).
-  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
-  lines.push("", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`);
+  // rappel du délai (relancé à chaque action). Texte fixe plutôt qu'un
+  // horodatage relatif <t:…:R>, affiché dans la langue du client Discord.
+  lines.push("", `⏰ Sans action pendant ${DELAI_INACTIVITE}, partie abandonnée.`);
 
   return {
     title: `🃏 Blackjack Duel${isSolo ? " contre le Croupier" : ""} (Manche ${state.manche}/${state.totalManches})`,
@@ -426,7 +428,7 @@ export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, tot
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie de Blackjack Duel à 2 joueurs est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle soit abandonnée après 1 h sans action).`,
+        content: `Une partie de Blackjack Duel à 2 joueurs est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle soit abandonnée après ${DELAI_INACTIVITE} sans action).`,
         embeds: [],
         components: [],
       });
@@ -670,7 +672,7 @@ async function activateNextButtons(state, webhookUrls) {
   await Promise.all(webhookUrls.map((url) => patchOriginal(url, { components })));
 }
 
-const MESSAGE_INACTIVE = "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/blackjack` !";
+const MESSAGE_INACTIVE = `⏰ Aucune partie en cours (abandonnée après ${DELAI_INACTIVITE} sans action). Relance \`/blackjack\` !`;
 
 export async function handleJouer(webhookUrl, gid, discordId, username) {
   try {
@@ -803,7 +805,7 @@ function buildReglesEmbed() {
       "",
       "**Résultat d'une manche :** le vainqueur gagne **2 points** (si le Croupier dépasse 21, toute main valide gagne). Égalité = **1 point**. **Blackjack** (21 avec tes 2 premières cartes) = **3 points**, et il bat un 21 en 3 cartes ou plus. Main doublée = points doublés. Une manche se termine dès que toutes les places sont prises et que chaque joueur a joué.",
       "",
-      "Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Sans action pendant 1 h, la partie est abandonnée.",
+      `Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Sans action pendant ${DELAI_INACTIVITE}, la partie est abandonnée.`,
     ].join("\n"),
     color: BLACKJACKDUEL_COLOR,
   };

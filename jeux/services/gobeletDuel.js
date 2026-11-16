@@ -20,7 +20,7 @@
 // - pas d'historique persistant (aucun équivalent à archiveManche /
 //   writeHistoriqueEntry) ;
 // - comme les autres duels : une partie par joueur en solo, une seule à
-//   2 joueurs, chacune expirée 1 h après la dernière action (TTL Redis, ni
+//   2 joueurs, chacune expirée 2 min après la dernière action (TTL Redis, ni
 //   cron ni nettoyage manuel) ; `npm run gobeletduel:status` liste les
 //   parties, `npm run gobeletduel:reset` les efface toutes.
 // ============================================================
@@ -106,7 +106,7 @@ async function scanDelete(pattern) {
 // à 2 joueurs (`pvp`), comme les autres duels. Chaque écriture relance
 // l'expiration : sans action pendant INACTIVITE_SECONDES, la partie
 // disparaît d'elle-même (pas de cron).
-export const INACTIVITE_SECONDES = 3600;
+export const INACTIVITE_SECONDES = 120;
 
 // Identifiant de la partie lancée par `discordId` avec `maxPlayers` places.
 export function gameIdFor(maxPlayers, discordId) {
@@ -536,19 +536,6 @@ export async function checkAndResolveManche(gid) {
   return { resolved: true, ...outcome };
 }
 
-// Pure : meilleure combinaison de chaque joueur sur la partie, affichée dans
-// le récap de fin. Seul un score strictement supérieur la remplace (à
-// égalité, la première obtenue reste) ; une manche à 0 point ne compte pas.
-export function withBestCombos(bestCombos = {}, results) {
-  const next = { ...bestCombos };
-  for (const r of results) {
-    if (r.points > 0 && r.points > (next[r.discordId]?.points ?? 0)) {
-      next[r.discordId] = { category: r.category, points: r.points };
-    }
-  }
-  return next;
-}
-
 // Pure : calcule les résultats de la manche et le classement mis à jour,
 // sans écrire dans Redis.
 export function computeMancheOutcome(state, hands, currentPoints) {
@@ -557,11 +544,15 @@ export function computeMancheOutcome(state, hands, currentPoints) {
   for (const r of results) {
     pointsAfter[r.discordId] = (pointsAfter[r.discordId] || 0) + r.points;
   }
-  const bestCombos = withBestCombos(state.bestCombos, results);
+  // Dés, combinaison et points de chaque manche : image de fin de partie
+  const history = [
+    ...(state.history || []),
+    { manche: state.manche, results: results.map(({ discordId, username, dice, category, points }) => ({ discordId, username, dice, category, points })) },
+  ];
   const mancheSuivante = state.manche + 1;
   const estFinDePartie = mancheSuivante > state.totalManches;
   const ranking = estFinDePartie ? buildRanking(pointsAfter) : null;
-  return { results, pointsAfter, bestCombos, mancheSuivante, estFinDePartie, ranking };
+  return { results, pointsAfter, history, mancheSuivante, estFinDePartie, ranking };
 }
 
 async function resolveManche(gid, state, hands) {
@@ -576,7 +567,7 @@ async function resolveManche(gid, state, hands) {
   }
 
   if (outcome.estFinDePartie) {
-    const newState = { ...state, bestCombos: outcome.bestCombos, lastActivityAt: new Date().toISOString(), termine: true };
+    const newState = { ...state, history: outcome.history, lastActivityAt: new Date().toISOString(), termine: true };
     await writeState(gid, newState);
     const highScore = await updateHighScore(gid, state.totalManches, outcome.ranking);
     // 1v1 : victoire au passeport si le premier est seul en tête. En solo,
@@ -600,7 +591,7 @@ async function resolveManche(gid, state, hands) {
     // Conservé pour réafficher le bilan de la manche précédente à chaque
     // rafraîchissement du message public (pas seulement à la résolution).
     lastResults: outcome.results,
-    bestCombos: outcome.bestCombos,
+    history: outcome.history,
     lastActivityAt: new Date().toISOString(),
   };
   await writeState(gid, newState);

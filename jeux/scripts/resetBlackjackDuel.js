@@ -2,7 +2,7 @@
 // resetBlackjackDuel.js
 // Efface toutes les parties de Blackjack Duel en cours (points, mains,
 // verrous de résolution), quel que soit leur état ; le high score est
-// préservé. Rarement utile : chaque partie expire d'elle-même 1 h après la
+// préservé. Rarement utile : chaque partie expire d'elle-même 2 min après la
 // dernière action (voir jeux/services/blackjackDuel.js).
 //
 // Usage : node jeux/scripts/resetBlackjackDuel.js

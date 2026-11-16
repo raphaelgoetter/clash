@@ -2,7 +2,7 @@
 // resetGobeletDuel.js
 // Efface toutes les parties du Jeu du Gobelet Duel en cours (points,
 // mains, verrous de résolution), quel que soit leur état ; le high score
-// est préservé. Rarement utile : chaque partie expire d'elle-même 1 h après
+// est préservé. Rarement utile : chaque partie expire d'elle-même 2 min après
 // la dernière action (voir jeux/services/gobeletDuel.js).
 //
 // Usage : node jeux/scripts/resetGobeletDuel.js

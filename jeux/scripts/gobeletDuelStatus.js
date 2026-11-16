@@ -3,7 +3,7 @@
 // Liste les parties du Jeu du Gobelet Duel en cours (une par joueur en
 // solo, une seule à 2 joueurs) : manche, joueurs inscrits, mains jouées
 // cette manche, classement cumulé et dernière activité. Chaque partie
-// expire d'elle-même 1 h après la dernière action.
+// expire d'elle-même 2 min après la dernière action.
 //
 // Usage : node jeux/scripts/gobeletDuelStatus.js
 

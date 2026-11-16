@@ -24,6 +24,7 @@ import {
   choisir,
   checkAndResolveManche,
   listHands,
+  readPoints,
   saveHandWebhook,
   readHandWebhooks,
   INACTIVITE_SECONDES,
@@ -35,6 +36,7 @@ import {
   JOKER,
   NO_COMBINATION,
 } from "../../services/gobelet.js";
+import { encodeFin, encodeMain, encodeManche, meilleureCombinaison } from "../../services/gobeletImage.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -43,28 +45,14 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
 
 const GOBELETDUEL_COLOR = 0x9b59b6;
+// « 2 minutes » : délai d'abandon d'une partie sans action
+const DELAI_INACTIVITE = `${INACTIVITE_SECONDES / 60} minutes`;
 const NO_KEPT = [false, false, false, false, false];
 
-// Chiffres "keycap" (1️⃣-6️⃣) plutôt que les glyphes Unicode de dés
-// (⚀-⚅) : mêmes raisons que le choix rang+couleur pour les cartes de
-// Blackjack (29/08) — les keycaps sont de vrais emoji couleur qui
-// s'agrandissent normalement sous un titre H1, contrairement aux glyphes
-// texte qui resteraient minuscules. Les faces de dé communes
-// (jeux/services/dices.js) ne servent pas ici : la sélection des dés était
-// moins lisible (décision du 27/10).
-const DICE_FACES = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
-function formatDie(value) {
-  return DICE_FACES[value - 1];
-}
-
-function formatDice(dice) {
-  return dice.map(formatDie).join(" ");
-}
-
-function formatDiceBlock(dice) {
-  return [`# ${formatDice(dice)}`];
-}
+// Dés en image (gobeletImage.js) : main du joueur, dernière manche (message
+// public) et fin de partie. Les boutons de dés gardent la valeur en libellé.
 
 // ── Résolution des rôles/utilisateurs ────────────────────────────────
 
@@ -265,13 +253,33 @@ async function buildPendingLabel(state, hands) {
   return lines.join("\n");
 }
 
-// Bilan d'une manche : en solo, pas de « meilleur » score, juste le score
-// du joueur.
-function formatMancheScoreLine(state, points, names) {
-  const pts = `${points} pt${points > 1 ? "s" : ""}`;
-  if (state.maxPlayers === 1) return `🎲 Score (${pts}) : ${names.join(", ")}`;
-  const plural = names.length > 1 ? "s" : "";
-  return `🏆 Meilleur${plural} score${plural} (${pts}) : ${names.join(", ")}`;
+// Image de la dernière manche terminée (gobeletImage.js) : dés finaux,
+// combinaison et total de chaque joueur, dans l'ordre des sièges. Titre :
+// les points en solo, le meilleur score de la manche à 2.
+async function urlImageManche(state, results) {
+  const totaux = await readPoints(state.gid);
+  const rang = (r) => (state.players.includes(r.discordId) ? state.players.indexOf(r.discordId) : state.players.length);
+  const joueurs = await Promise.all(
+    [...results]
+      .sort((x, y) => rang(x) - rang(y))
+      .map(async (r) => ({
+        nom: await resolveDisplayName(r.discordId, r.username),
+        des: r.dice,
+        category: r.category,
+        points: r.points,
+        total: totaux[r.discordId] ?? 0,
+      })),
+  );
+  const numero = state.manche - 1;
+  let titre;
+  if (joueurs.length === 1) {
+    titre = `Manche ${numero} : ${joueurs[0].points > 0 ? `+${joueurs[0].points}` : "0 pt"}`;
+  } else {
+    const max = Math.max(...joueurs.map((j) => j.points));
+    const tete = joueurs.filter((j) => j.points === max);
+    titre = tete.length > 1 ? `Manche ${numero} : égalité à ${max}` : `Manche ${numero} : ${tete[0].nom} +${max}`;
+  }
+  return `${TRUST_ROYALE_URL}/api/gobelet/manche?d=${encodeManche({ titre, joueurs })}`;
 }
 
 // Sans `previousResults` explicite (rafraîchissement après un clic Jouer,
@@ -284,18 +292,8 @@ async function buildTableEmbed(
   const hands = await listHands(state.gid, state.manche);
   const lines = [];
 
-  if (previousResults) {
-    const maxPoints = Math.max(...previousResults.map((r) => r.points));
-    const winners = previousResults.filter((r) => r.points === maxPoints);
-    const winnerNames = await Promise.all(
-      winners.map((w) => resolveDisplayName(w.discordId, w.username)),
-    );
-    lines.push(
-      `**📊 Bilan de la manche ${state.manche - 1}**`,
-      formatMancheScoreLine(state, maxPoints, winnerNames),
-      "",
-    );
-  }
+  // Bilan de la manche précédente : en image (pas d'image en manche 1)
+  const imageManche = previousResults?.length ? await urlImageManche(state, previousResults) : null;
 
   // Pas de "Manche X/Y" ici : déjà dans le titre de l'embed (buildTableEmbed
   // est utilisé pour le body) — même principe que buildTodaySection du jeu
@@ -319,13 +317,14 @@ async function buildTableEmbed(
   }
 
   // Pas de cron : le message d'une partie expirée resterait figé, d'où le
-  // rappel de l'échéance (relancée à chaque action).
-  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
-  lines.push("", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`);
+  // rappel du délai (relancé à chaque action). Texte fixe plutôt qu'un
+  // horodatage relatif <t:…:R>, affiché dans la langue du client Discord.
+  lines.push("", `⏰ Sans action pendant ${DELAI_INACTIVITE}, partie abandonnée.`);
 
   return {
     title: `🎲 Gobelet Duel (Manche ${state.manche}/${state.totalManches})`,
     description: lines.join("\n"),
+    ...(imageManche ? { image: { url: imageManche } } : {}),
     color: GOBELETDUEL_COLOR,
     footer: {
       text: state.rosterLocked
@@ -335,64 +334,67 @@ async function buildTableEmbed(
   };
 }
 
-// Meilleure combinaison de la partie par joueur (`state.bestCombos`) : une
-// ligne en solo, une par joueur (ordre du classement) à 2.
-function formatBestCombosLines(state, resolvedRanking) {
-  const combos = state.bestCombos || {};
-  const label = (combo) =>
-    combo ? `**${combo.category}** (${combo.points} pt${combo.points > 1 ? "s" : ""})` : "aucune";
-  if (state.maxPlayers === 1) {
-    return [`🎯 Meilleure combinaison : ${label(combos[state.players[0]])}`];
-  }
-  return [
-    "**🎯 Meilleures combinaisons :**",
-    ...resolvedRanking.map((r) => `${r.username} : ${label(combos[r.discordId])}`),
-  ];
+// Image de fin (gobeletImage.js) : pour chaque joueur, son total, les
+// points de chaque manche et sa meilleure combinaison avec ses dés.
+async function urlImageFin(state, ranking, pseudos) {
+  const history = state.history || [];
+  const points = Object.fromEntries(ranking.map((r) => [r.discordId, r.points]));
+  const joueurs = await Promise.all(
+    state.players.map(async (discordId) => {
+      const manches = history
+        .map((h) => h.results.find((r) => r.discordId === discordId))
+        .filter(Boolean)
+        .map((r) => ({ points: r.points, category: r.category, des: r.dice }));
+      const best = meilleureCombinaison(manches);
+      return {
+        nom: await resolveDisplayName(discordId, pseudos.get(discordId)),
+        points: points[discordId] ?? 0,
+        manches,
+        meilleure: best ? { des: best.des, category: best.category, points: best.points } : null,
+      };
+    }),
+  );
+  return `${TRUST_ROYALE_URL}/api/gobelet/fin?d=${encodeFin({ joueurs, totalManches: state.totalManches })}`;
 }
 
+// Le détail des manches est dans l'image : le texte se limite au total
+// (solo) ou au classement (1v1) et au high score.
 async function buildFinalEmbed(state, results, ranking, highScore) {
+  // Pseudos de la partie (mains jouées), en repli de l'affichage Discord
+  const pseudos = new Map(
+    [...(state.history || []).flatMap((h) => h.results), ...results].map((r) => [r.discordId, r.username]),
+  );
   const resolvedRanking = await Promise.all(
     ranking.map(async (r) => ({
       ...r,
-      username: await resolveDisplayName(r.discordId, r.username),
+      username: await resolveDisplayName(r.discordId, r.username ?? pseudos.get(r.discordId)),
     })),
   );
-
-  const lines = [];
-  // Solo : pas de bilan de la dernière manche, redondant avec le classement.
-  if (state.maxPlayers > 1) {
-    const lastManchePoints = Math.max(...results.map((r) => r.points));
-    const lastWinners = results.filter((r) => r.points === lastManchePoints);
-    const lastWinnerNames = await Promise.all(
-      lastWinners.map((w) => resolveDisplayName(w.discordId, w.username)),
-    );
-    lines.push(
-      `**📊 Bilan de la dernière manche**`,
-      formatMancheScoreLine(state, lastManchePoints, lastWinnerNames),
-      "",
-    );
-  }
-
-  lines.push(
-    "**Classement final :**",
-    ...(resolvedRanking.length
-      ? resolvedRanking.map(
-          (r, i, list) =>
-            `${rangExAequo(list, i)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
-        )
-      : ["Personne n'a marqué de point."]),
-    "",
-    ...formatBestCombosLines(state, resolvedRanking),
-  );
+  const ptsLabel = (n) => `${n} pt${n > 1 ? "s" : ""}`;
+  const isSolo = state.maxPlayers === 1;
+  const partie = `Partie en ${state.totalManches} manches.`;
+  const lines = isSolo
+    ? [`${partie} Total : **${ptsLabel(resolvedRanking[0]?.points ?? 0)}**`]
+    : [
+        partie,
+        ...(resolvedRanking.length
+          ? resolvedRanking.map((r, i, list) => `${rangExAequo(list, i)}. ${r.username} (${ptsLabel(r.points)})`)
+          : ["Personne n'a marqué de point."]),
+      ];
 
   if (highScore) {
     const name = await resolveDisplayName(highScore.discordId, highScore.username);
-    lines.push("", `<:topplayers:1563107730397601792> High score : ${name} (${highScore.points} pt${highScore.points > 1 ? "s" : ""})`);
+    lines.push(`<:topplayers:1563107730397601792> High score : ${name} (${ptsLabel(highScore.points)})`);
   }
 
+  // Titre au format des autres duels, joueurs dans l'ordre des sièges
+  const noms = await Promise.all(state.players.map((id) => resolveDisplayName(id, pseudos.get(id))));
+  const titre = isSolo ? `${noms[0]} en solo` : noms.join(" contre ");
+
   return {
-    title: `🏁 Gobelet Duel : partie terminée (${state.totalManches} manches)`,
+    title: `🎲 Gobelet · ${titre}`,
     description: lines.join("\n"),
+    image: { url: await urlImageFin(state, ranking, pseudos) },
     color: GOBELETDUEL_COLOR,
   };
 }
@@ -411,7 +413,7 @@ export async function handleGobeletCommand(
 
     if (result.alreadyActive) {
       await patchOriginal(webhookUrl, {
-        content: `Une partie du Jeu du Gobelet Duel à 2 joueurs est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle soit abandonnée après 1 h sans action).`,
+        content: `Une partie du Jeu du Gobelet Duel à 2 joueurs est déjà en cours dans <#${result.state.channelId}>, attends qu'elle se termine (ou qu'elle soit abandonnée après ${DELAI_INACTIVITE} sans action).`,
         embeds: [],
         components: [],
       });
@@ -479,31 +481,31 @@ function buildHandStatusMessage(hand, kept, manche) {
   return `Tirage ${hand.tirage}/3 : sélectionne les dés à conserver (🔒) puis clique sur **Relancer** pour relancer les ${toReroll} dé${toReroll > 1 ? "s" : ""} restant${toReroll > 1 ? "s" : ""}. Il te reste ${rerollsLeft} relance${rerollsLeft > 1 ? "s" : ""}.`;
 }
 
-// Combinaisons réalisées aux manches précédentes : chacune ne rapporte
-// qu'une fois par partie, le joueur doit donc savoir lesquelles tenter.
-function formatUsedLine(used) {
-  return used.length ? ["", `🚫 Déjà réalisées : ${used.join(", ")}`] : [];
+// Image de la main (gobeletImage.js) : dés (gardés cadenassés), tirages,
+// combinaison retenue, grille des combinaisons (réalisées barrées, celles
+// de l'adversaire marquées : chacune ne rapporte qu'une fois par partie).
+function urlImageMain(state, hand, kept, used, opponents = []) {
+  const adv = opponents[0];
+  const param = encodeMain({
+    nom: hand.username ?? "Toi",
+    des: hand.dice,
+    gardes: kept,
+    tirage: hand.tirage,
+    statut: hand.status,
+    category: hand.category,
+    points: hand.points,
+    used: used ?? [],
+    adversaire: adv ? { nom: adv.username || "Adversaire", used: adv.used } : null,
+    legende: `Manche ${state.manche}/${state.totalManches}`,
+  });
+  return `${TRUST_ROYALE_URL}/api/gobelet/main?d=${param}`;
 }
 
-// Combinaisons déjà réalisées par chaque adversaire (aspect tactique, duel
-// uniquement). Un adversaire qui n'a encore rien réalisé n'est pas listé.
-function formatOpponentsLines(opponents = []) {
-  const lines = opponents
-    .filter((o) => o.used.length > 0)
-    .map((o) => `👀 ${o.username || "Adversaire"} : ${o.used.join(", ")}`);
-  return lines.length ? ["", ...lines] : [];
-}
-
-function buildHandEmbed(manche, hand, kept, used, opponents) {
+function buildHandEmbed(state, hand, kept, used, opponents) {
   return {
-    title: `🎲 Ta main (Manche ${manche})`,
-    description: [
-      ...formatDiceBlock(hand.dice),
-      "",
-      buildHandStatusMessage(hand, kept, manche),
-      ...formatUsedLine(used),
-      ...formatOpponentsLines(opponents),
-    ].join("\n"),
+    title: `🎲 Ta main (Manche ${state.manche})`,
+    description: buildHandStatusMessage(hand, kept, state.manche),
+    image: { url: urlImageMain(state, hand, kept, used, opponents) },
     color: GOBELETDUEL_COLOR,
   };
 }
@@ -681,7 +683,7 @@ async function activateNextButtons(state, webhookUrls) {
   await Promise.all(webhookUrls.map((url) => patchOriginal(url, { components })));
 }
 
-const MESSAGE_INACTIVE = "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/gobelet` !";
+const MESSAGE_INACTIVE = `⏰ Aucune partie en cours (abandonnée après ${DELAI_INACTIVITE} sans action). Relance \`/gobelet\` !`;
 
 export async function handleJouer(webhookUrl, gid, discordId, username) {
   try {
@@ -713,7 +715,7 @@ export async function handleJouer(webhookUrl, gid, discordId, username) {
 
     const state = result.state;
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(state.manche, result.hand, result.kept, result.used, result.opponents)],
+      embeds: [buildHandEmbed(state, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(state, result.hand, result.kept, result.used),
     });
 
@@ -743,14 +745,14 @@ export async function handleToggle(webhookUrl, gid, discordId, index) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
-        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, null, result.used) : [],
+        embeds: [buildHandEmbed(result.state, result.hand, NO_KEPT, result.used, result.opponents)],
+        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
+      embeds: [buildHandEmbed(result.state, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
   } catch (err) {
@@ -778,14 +780,14 @@ export async function handleRelancer(webhookUrl, gid, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
-        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, null, result.used) : [],
+        embeds: [buildHandEmbed(result.state, result.hand, NO_KEPT, result.used, result.opponents)],
+        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
+      embeds: [buildHandEmbed(result.state, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
 
@@ -815,8 +817,8 @@ export async function handleValider(webhookUrl, gid, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
-        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, null, result.used) : [],
+        embeds: [buildHandEmbed(result.state, result.hand, NO_KEPT, result.used, result.opponents)],
+        components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
     }
@@ -825,14 +827,14 @@ export async function handleValider(webhookUrl, gid, discordId) {
       // Garde-fou : le bouton ne devrait normalement pas être cliquable
       // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
+        embeds: [buildHandEmbed(result.state, result.hand, result.kept, result.used, result.opponents)],
         components: buildHandComponents(result.state, result.hand, result.kept, result.used),
       });
       return;
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, result.kept, result.used, result.opponents)],
+      embeds: [buildHandEmbed(result.state, result.hand, result.kept, result.used, result.opponents)],
       components: buildHandComponents(result.state, result.hand, result.kept, result.used),
     });
 
@@ -863,8 +865,8 @@ export async function handleChoisir(webhookUrl, gid, discordId, category) {
     }
 
     await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state.manche, result.hand, NO_KEPT, result.used, result.opponents)],
-      components: buildHandComponents(result.state, result.hand, NO_KEPT, null, result.used),
+      embeds: [buildHandEmbed(result.state, result.hand, NO_KEPT, result.used, result.opponents)],
+      components: buildHandComponents(result.state, result.hand, NO_KEPT, result.used),
     });
 
     if (!result.alreadyDone) {
@@ -897,7 +899,7 @@ function buildReglesEmbed() {
       "**Barème :**",
       ...formatBaremeLines(),
       "",
-      "Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini sa main (combinaison choisie). Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Sans action pendant 1 h, la partie est abandonnée.",
+      `Une manche se termine dès que toutes les places sont prises et que chaque joueur a fini sa main (combinaison choisie). Le classement cumulé à la fin de la dernière manche désigne le(s) vainqueur(s) de la partie. Sans action pendant ${DELAI_INACTIVITE}, la partie est abandonnée.`,
     ].join("\n"),
     color: GOBELETDUEL_COLOR,
   };

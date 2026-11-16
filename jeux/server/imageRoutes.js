@@ -65,6 +65,14 @@ import {
   getMainImage as getBlackjackMainImage,
   getMancheImage as getBlackjackMancheImage,
 } from "../services/blackjackImage.js";
+import {
+  decodeFin as decodeGobeletFin,
+  decodeMain as decodeGobeletMain,
+  decodeManche as decodeGobeletManche,
+  getFinImage as getGobeletFinImage,
+  getMainImage as getGobeletMainImage,
+  getMancheImage as getGobeletMancheImage,
+} from "../services/gobeletImage.js";
 
 const router = express.Router();
 
@@ -383,6 +391,23 @@ router.get("/api/blackjack/manche", async (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
   res.send(image.buffer);
 });
+
+// Gobelet Duel : images sans état (d, voir gobeletImage.js) : main du
+// joueur (éphémère), dernière manche (message public), fin de partie.
+for (const [chemin, decode, rendu] of [
+  ["main", decodeGobeletMain, getGobeletMainImage],
+  ["manche", decodeGobeletManche, getGobeletMancheImage],
+  ["fin", decodeGobeletFin, getGobeletFinImage],
+]) {
+  router.get(`/api/gobelet/${chemin}`, async (req, res) => {
+    const donnees = decode(req.query.d);
+    const image = donnees ? await rendu(donnees).catch(() => null) : null;
+    if (!image) return res.status(404).end();
+    res.setHeader("Content-Type", image.mimeType);
+    res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+    res.send(image.buffer);
+  });
+}
 
 // Frise : la frise d'une partie (ids des cartes dans l'URL, voir
 // encodeFrise), rendu sans état.

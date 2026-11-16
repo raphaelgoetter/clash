@@ -1,5 +1,5 @@
 import assert from "assert";
-import { applyJoin, gameIdFor, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking, withBestCombos } from "./gobeletDuel.js";
+import { applyJoin, gameIdFor, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking } from "./gobeletDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -123,22 +123,22 @@ async function main() {
     assert.strictEqual(outcome.pointsAfter.a, 60);
   }
 
-  // ── withBestCombos — meilleure combinaison de la partie par joueur ──
+  // ── computeMancheOutcome — historique des manches (image de fin) ──
   {
-    const before = { a: { category: "Full", points: 25 } };
-    const next = withBestCombos(before, [
-      { discordId: "a", category: "Brelan", points: 25 }, // égalité : la première reste
-      { discordId: "b", category: "Aucune combinaison", points: 0 }, // 0 point : ignoré
-    ]);
-    assert.deepStrictEqual(next, { a: { category: "Full", points: 25 } });
-    const after = withBestCombos(next, [{ discordId: "a", category: "Gobelet", points: 60 }]);
-    assert.deepStrictEqual(after.a, { category: "Gobelet", points: 60 });
-    assert.deepStrictEqual(before.a, { category: "Full", points: 25 }); // jamais muté
-    const state = baseState({ manche: 2, totalManches: 5, bestCombos: before });
+    const state = baseState({
+      manche: 2,
+      totalManches: 5,
+      history: [{ manche: 1, results: [{ discordId: "a", username: "Alice", dice: [1, 1, 2, 3, 4], category: "Double quelconque", points: 10 }] }],
+    });
     const outcome = computeMancheOutcome(state, {
       a: { dice: [6, 6, 6, 6, 6], status: "termine", category: "Gobelet", points: 60, username: "Alice" },
-    }, {});
-    assert.deepStrictEqual(outcome.bestCombos.a, { category: "Gobelet", points: 60 });
+    }, { a: 10 });
+    assert.strictEqual(outcome.history.length, 2);
+    assert.deepStrictEqual(outcome.history[1], {
+      manche: 2,
+      results: [{ discordId: "a", username: "Alice", dice: [6, 6, 6, 6, 6], category: "Gobelet", points: 60 }],
+    });
+    assert.strictEqual(state.history.length, 1); // jamais muté
   }
 
   // ── applyJoin — en solo, réservé au joueur qui a lancé ──
