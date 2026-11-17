@@ -239,18 +239,33 @@ export function colonneLibre(d, depart, sens = 1, { inclus = true } = {}) {
 export const colonneCurseur = (d, curseur = null) =>
   colonneLibre(d, Number.isInteger(curseur) ? curseur : COLONNE_CENTRALE, 1);
 
-// ◀️ ⬇️ N ▶️ : flèches vers la colonne libre voisine (colonnes pleines
-// sautées, tour de la grille), ⬇️ lâche le pion. `ids` : { gauche(c),
-// droite(c), poser(c) } → custom_id. Flèches grisées s'il ne reste qu'une
-// colonne libre.
-export function boutonsCurseur(d, curseur, ids) {
+// Discord ne règle pas la largeur d'un bouton (celle de son libellé) :
+// flèches élargies par des caractères vides (U+3164, rendu comme un blanc
+// pleine chasse) de part et d'autre de l'emoji, pour viser sans erreur
+// sur mobile. Une seule rangée de 4 boutons (~270 px utiles sur mobile) :
+// à baisser si le dernier bouton passe à la ligne.
+const VIDE = "\u3164";
+const BLANCS_FLECHE = 1;
+const flecheLarge = (emoji) => `${VIDE.repeat(BLANCS_FLECHE)}${emoji}${VIDE.repeat(BLANCS_FLECHE)}`;
+
+// Une rangée : ◀️ (large) · ⬇️ N · ▶️ (large) puis `suite` (🏳️). Flèches
+// vers la colonne libre voisine (colonnes pleines sautées, tour de la
+// grille), grisées s'il ne reste qu'une colonne libre. `ids` :
+// { gauche(c), droite(c), poser(c) } → custom_id.
+export function boutonsCurseur(d, curseur, ids, suite = []) {
   const gauche = colonneLibre(d, curseur, -1, { inclus: false });
   const droite = colonneLibre(d, curseur, 1, { inclus: false });
   const seule = gauche === curseur;
   return [
-    { type: 2, style: 2, emoji: { name: "◀️" }, custom_id: ids.gauche(gauche), disabled: seule },
-    { type: 2, style: 1, label: String(curseur + 1), emoji: { name: "⬇️" }, custom_id: ids.poser(curseur) },
-    { type: 2, style: 2, emoji: { name: "▶️" }, custom_id: ids.droite(droite), disabled: seule },
+    {
+      type: 1,
+      components: [
+        { type: 2, style: 2, label: flecheLarge("◀️"), custom_id: ids.gauche(gauche), disabled: seule },
+        { type: 2, style: 1, label: String(curseur + 1), emoji: { name: "⬇️" }, custom_id: ids.poser(curseur) },
+        { type: 2, style: 2, label: flecheLarge("▶️"), custom_id: ids.droite(droite), disabled: seule },
+        ...suite,
+      ],
+    },
   ];
 }
 
@@ -385,7 +400,7 @@ function buildVue(
     droite: (c) => `quatreduel_droite:${c}${sfx}`,
     poser: (c) => `quatreduel_poser:${c}${sfx}`,
   };
-  return { embeds: [embed], components: [{ type: 1, components: [...boutonsCurseur(d, colonne, ids), boutonAbandon(sfx)] }] };
+  return { embeds: [embed], components: boutonsCurseur(d, colonne, ids, [boutonAbandon(sfx)]) };
 }
 
 function buildReglesEmbed(config) {

@@ -39,7 +39,7 @@ export const VUE_QUATRE = {
           color: couleur,
         },
       ],
-      components: colonne === null ? [] : [{ type: 1, components: boutonsCurseur(d, colonne, ids) }],
+      components: colonne === null ? [] : boutonsCurseur(d, colonne, ids),
     };
   },
   action: ([colonne]) => ({ colonne: Number(colonne) }),
