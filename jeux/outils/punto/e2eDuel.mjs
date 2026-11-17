@@ -92,6 +92,19 @@ await h.handlePuntoPoser(W, ID, 12, 5, { channelId: "salon", pseudo: "Testeur" }
 if (!texte(vues.at(-1)).includes("Le plateau a changé")) throw new Error("clic sur une vue dépassée accepté");
 if ((await readDuel(ID)).coups !== 0) throw new Error("coup d'une vue dépassée joué");
 
+// ── Délai contre Kévina : coup trop tard = défaite publiée ──
+{
+  await h.handlePuntoCommand(W, lancement);
+  const d = await readDuel(ID);
+  if (!d.tourDepuis) throw new Error("chrono contre Kévina absent");
+  await new Redis({}).set(`puntoduel:${ID}`, JSON.stringify({ ...d, tourDepuis: Date.now() - 3 * 60_000 }));
+  await h.handlePuntoPoser(W, ID, 0, (await readDuel(ID)).coups, { channelId: "salon", pseudo: "Testeur" });
+  const fin = await readDuel(ID);
+  if (!fin.delai || fin.gagnant !== "bot") throw new Error("délai contre Kévina non appliqué");
+  if (!texte(salon.at(-1)).includes("n'a pas joué à temps")) throw new Error("fin au délai non publiée");
+  console.log("Délai contre Kévina : défaite publiée");
+}
+
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });
 await h.handlePuntoPvpCommand("https://discord.test/a", body("A", "Alice"));

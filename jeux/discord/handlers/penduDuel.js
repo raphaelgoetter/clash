@@ -562,7 +562,7 @@ const PAS_TA_PARTIE = {
 const aucunePartie = (solo) => ({
   embeds: [
     {
-      description: solo ? "⏰ Aucune partie solo en cours (abandonnée après 1 h sans action). Relance `/pendu` !" : "⏰ Aucun duel en cours. Lance-en un avec `/pendu` (1v1) !",
+      description: solo ? "⏰ Aucune partie solo en cours. Relance `/pendu` !" : "⏰ Aucun duel en cours. Lance-en un avec `/pendu` (1v1) !",
       color: PENDU_COLOR,
     },
   ],

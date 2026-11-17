@@ -7,8 +7,9 @@
 // Stockage : Upstash Redis. Contre Kévina : une clé par joueur
 // (`quatreduel:<discordId>`), plusieurs parties en même temps possibles.
 // 1v1 : une seule partie à la fois (`quatreduel:pvp`).
-// Chaque écriture relance l'expiration : sans action pendant
-// `INACTIVITE_SECONDES`, la partie disparaît. Seules les séries de
+// Délai par coup (`delai_tour_minutes`) dans les deux modes, dépassé =
+// défaite. Chaque écriture relance aussi l'expiration (nettoyage) : sans
+// action pendant `INACTIVITE_SECONDES`, la partie disparaît. Seules les séries de
 // victoires (et leurs records) sont conservées, une par mode.
 //
 // ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
@@ -99,21 +100,40 @@ export async function nouveauDuel(discordId) {
     // Partie précédente abandonnée ou remplacée : comptée comme une défaite
     await ecrireSerie("bot", discordId, { serie: s.enCours ? 0 : s.serie, enCours: true });
     const duel = creerDuel({ commence: "joueur" });
+    duel.tourDepuis = Date.now();
     await writeDuel(discordId, duel);
     return { duel, ancien };
   });
 }
 
+// Délai d'un coup contre Kévina dépassé (`delai_tour_minutes` depuis
+// `tourDepuis`, début du tour du joueur) : il perd (`duel.delai`).
+export function verifierDelaiSolo(duel, config, now = Date.now()) {
+  if (duel.termine || !duel.tourDepuis || now - duel.tourDepuis <= config.delai_tour_minutes * 60_000) return false;
+  Object.assign(duel, { termine: true, gagnant: "bot", delai: true });
+  return true;
+}
+
 // Action du joueur sous verrou : `fn(duel)` modifie le duel (fonctions de
-// quatreRules.js) et renvoie un résultat. En fin de partie, la série est
-// mise à jour et jointe au duel (`duel.series`). `nom` : pseudo du record.
-// Renvoie { duel, resultat } ou { duel: null } sans partie en cours.
+// quatreRules.js) et renvoie un résultat. Le délai est vérifié avant
+// (`resultat` vaut alors { delai: true } sans appeler fn) ; un coup joué
+// (`resultat.coup`) relance le chrono, décalé de `resultat.decalageMs`
+// (réflexion de Kévina affichée avant le retour de la main au joueur). En
+// fin de partie, la série est mise à jour et jointe au duel
+// (`duel.series`). `nom` : pseudo du record. Renvoie { duel, resultat } ou
+// { duel: null } sans partie en cours.
 export async function agirDuel(discordId, fn, { nom = null, now = new Date() } = {}) {
+  const config = await loadDuelConfig();
   return withLock(discordId, async () => {
     const duel = await readDuel(discordId);
     if (!duel) return { duel: null };
     const finiAvant = duel.termine;
-    const resultat = await fn(duel);
+    let resultat;
+    if (verifierDelaiSolo(duel, config)) resultat = { delai: true };
+    else {
+      resultat = (await fn(duel)) || {};
+      if (resultat.coup) duel.tourDepuis = Date.now() + (resultat.decalageMs ?? 0);
+    }
     if (!finiAvant && duel.termine) duel.series = await finSerieSolo(discordId, nom, duel.gagnant, now);
     await writeDuel(discordId, duel);
     return { duel, resultat };

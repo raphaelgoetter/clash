@@ -117,7 +117,7 @@ if ((await readDuel(ID)).vue !== d0.vue) throw new Error("chauffe interdite jou�
 // Délai dépassé contre Kévina : défaite publiée au clic suivant
 {
   const d = await readDuel(ID);
-  await new Redis({}).set(`potatoduel:${ID}`, JSON.stringify({ ...d, tourDepuis: Date.now() - 120_000 }));
+  await new Redis({}).set(`potatoduel:${ID}`, JSON.stringify({ ...d, tourDepuis: Date.now() - 3 * 60_000 }));
   await h.handlePotatoChauffer(W, ID, 0, d.vue, opts);
   if (!texte(salon.at(-1)).includes("n'a pas joué à temps")) throw new Error("délai dépassé contre Kévina non publié");
   if (!(await readDuel(ID)).delai) throw new Error("délai contre Kévina non enregistré");

@@ -706,7 +706,7 @@ const AUCUNE_PARTIE_SOLO = {
   embeds: [
     {
       description:
-        "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/bac` !",
+        "⏰ Aucune partie en cours. Relance `/bac` !",
       color: BAC_COLOR,
     },
   ],

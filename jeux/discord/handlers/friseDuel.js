@@ -27,7 +27,6 @@ import {
   agirDuel,
   agirPvp,
   enregistrerMessagePvp,
-  INACTIVITE_SECONDES,
   loadDuelConfig,
   nouveauDuel,
   ouvrirPvp,
@@ -386,7 +385,7 @@ function buildVue(
         "",
         ...(monTour ? [...lignesMain(d, moi), ""] : []),
         monTour
-          ? `👉 À toi : choisis une carte puis son créneau${d.dernierTour ? " (dernier tour !)" : ""}${pvp && echeance ? `, limite <t:${echeance}:R>` : ""}.`
+          ? `👉 À toi : choisis une carte puis son créneau${d.dernierTour ? " (dernier tour !)" : ""}${echeance ? `, limite <t:${echeance}:R>` : ""}.`
           : `⏳ ${attente ? `${A.Sujet} réfléchit…` : `Au tour de ${A.Sujet}`}${pvp && echeance && !attente ? `, limite <t:${echeance}:R>` : ""}.`,
       ];
   const titre = `${TITRE} · Toi ${d.mains[moi].length} – ${d.mains[autre].length} ${A.Sujet}${pvp && monTour ? " · À toi !" : ""}`;
@@ -409,7 +408,7 @@ function buildReglesEmbed(config) {
       "**🏆 Fin** : le premier à vider sa main gagne. Si c'est celui qui a commencé, l'autre joue encore un tour : s'il vide aussi sa main, match nul.",
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
-      `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
+      `⏰ ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite.`,
     ].join("\n"),
     color: FRISE_COLOR,
   };
@@ -443,18 +442,16 @@ function corpsPublic(d, nom, tour) {
   return [tour, `Cartes en main : **${nom("joueur")}** ${d.mains.joueur.length} · **${nom("bot")}** ${d.mains.bot.length}`];
 }
 
-// Message public d'une partie contre Kévina, en cours. Expiration rappelée,
-// sinon le message d'une partie abandonnée resterait figé.
-function messageSolo(d, pseudo, { attente = false } = {}) {
-  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
+// Message public d'une partie contre Kévina, en cours. Limite du coup rappelée.
+function messageSolo(d, pseudo, config, { attente = false } = {}) {
   const nom = (s) => (s === "bot" ? "🤖 Kévina" : pseudo);
-  const tour = attente || d.actif === "bot" ? "⏳ Kévina réfléchit…" : `Au tour de **${pseudo}**.`;
+  const tour = attente || d.actif === "bot" ? "⏳ Kévina réfléchit…" : `Au tour de **${pseudo}**, limite <t:${echeanceSolo(d, config)}:R>.`;
   const derniere = d.dernier ? [`${recit(d, "joueur", BOT).replace(/^Tu places/, `${pseudo} place`).replace(", tu pioches", ", et pioche")}`, ""] : [];
   return {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [...derniere, ...corpsPublic(d, nom, tour), "", `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`, ligneChances("frise")]
+        description: [...derniere, ...corpsPublic(d, nom, tour), "", ligneChances("frise")]
           .join("\n")
           .slice(0, 4096),
         color: FRISE_COLOR,
@@ -464,9 +461,17 @@ function messageSolo(d, pseudo, { attente = false } = {}) {
   };
 }
 
-async function majSalonSolo(d, pseudo, opts) {
-  if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?", opts));
+async function majSalonSolo(d, pseudo, config, opts) {
+  if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?", config, opts));
 }
+
+// Échéance du tour du joueur contre Kévina (secondes)
+const echeanceSolo = (d, config) => Math.floor(((d.tourDepuis ?? Date.now()) + config.delai_tour_minutes * 60_000) / 1000);
+
+// Vue du joueur contre Kévina : limite de son tour (à son tour seulement),
+// raison de la fin.
+const vueSolo = (d, config, opts = {}) =>
+  buildVue(d, { ...opts, echeance: d.actif === "joueur" && !opts.attente ? echeanceSolo(d, config) : null, raison: d.delai ? "delai" : null });
 
 // Lance une nouvelle partie (remplace une éventuelle partie en cours) :
 // message public dans le salon, puis vue éphémère du joueur EN DESSOUS.
@@ -475,17 +480,20 @@ export async function handleFriseCommand(webhookUrl, body) {
     const { discordId, username } = extractMember(body);
     const { duel, ancien } = await nouveauDuel(discordId);
     if (ancien?.salon && !ancien.termine) await messageSalon("DELETE", ancien.salon.channelId, ancien.salon.messageId);
-    const message = await messageSalon("POST", body.channel_id, null, messageSolo(duel, username));
+    const config = await loadDuelConfig();
+    const message = await messageSalon("POST", body.channel_id, null, messageSolo(duel, username, config));
     const enregistre = message?.id
       ? await agirDuel(discordId, (d) => {
           d.salon = { channelId: body.channel_id, messageId: message.id };
         })
       : null;
-    const vue = buildVue(enregistre?.duel ?? duel, {
+    const vue = vueSolo(enregistre?.duel ?? duel, config, {
       texte: "Nouvelle partie contre Kévina ! Tu commences.",
     });
-    if (enregistre && (await supprimerOriginal(webhookUrl)) && (await envoyerEphemere(webhookUrl, vue))) return;
-    await patchOriginal(webhookUrl, vue);
+    const followup = enregistre && (await supprimerOriginal(webhookUrl)) ? await envoyerEphemere(webhookUrl, vue) : null;
+    if (!followup) await patchOriginal(webhookUrl, vue);
+    // Premier tour jamais joué : partie close au délai
+    await surveillerDelaiSolo(followup ?? webhookUrl, discordId, duel, config, { channelId: body.channel_id, pseudo: username });
   } catch (err) {
     console.error("[Frise] Échec lancement:", err.message);
   }
@@ -521,7 +529,9 @@ function messageFinalSolo(d, pseudo) {
     : [];
   const resultat = d.abandon
     ? `🏳️ ${pseudo} abandonne face à Kévina.`
-    : d.gagnant === "nul"
+    : d.delai
+      ? `⏰ ${pseudo} n'a pas joué à temps : Kévina gagne.`
+      : d.gagnant === "nul"
       ? `🤝 Match nul entre ${pseudo} et Kévina : mains vidées au même tour.`
       : d.gagnant === "joueur"
         ? `🏆 ${pseudo} bat Kévina (il lui restait ${cartes(d.mains.bot.length)}) !`
@@ -544,7 +554,7 @@ function messageFinalSolo(d, pseudo) {
 const AUCUNE_PARTIE_SOLO = {
   embeds: [
     {
-      description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/frise` !",
+      description: "⏰ Aucune partie en cours. Relance `/frise` !",
       color: FRISE_COLOR,
     },
   ],
@@ -553,6 +563,9 @@ const AUCUNE_PARTIE_SOLO = {
 
 async function executerSolo(webhookUrl, discordId, creneau, vue, { channelId, pseudo } = {}) {
   const config = await loadDuelConfig();
+  // Réflexion de Kévina tirée d'avance : le chrono du joueur repart après
+  // les étapes affichées (résultat du coup, réflexion)
+  const reflexion = REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min);
   const { duel, resultat } = await agirDuel(
     discordId,
     (d) => {
@@ -569,7 +582,8 @@ async function executerSolo(webhookUrl, discordId, creneau, vue, { channelId, ps
         placer(d, "bot", k.creneau);
         lignes.push(recit(d, "joueur", BOT));
       }
-      return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes };
+      const decalageMs = etapes.reduce((t, _e, n) => t + DELAI_RESULTAT_MS + (n === 0 ? reflexion : 0), 0);
+      return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes, coup: true, decalageMs };
     },
     { nom: pseudo },
   );
@@ -579,25 +593,40 @@ async function executerSolo(webhookUrl, discordId, creneau, vue, { channelId, ps
   }
   for (const [n, etape] of (resultat.etapes ?? []).entries()) {
     await Promise.all([
-      patchOriginal(webhookUrl, buildVue(etape.duel, { texte: etape.texte, attente: etape.attente })),
-      majSalonSolo(etape.duel, pseudo, { attente: etape.attente }),
+      patchOriginal(webhookUrl, vueSolo(etape.duel, config, { texte: etape.texte, attente: etape.attente })),
+      majSalonSolo(etape.duel, pseudo, config, { attente: etape.attente }),
     ]);
-    await pause(n === 0 ? DELAI_RESULTAT_MS + REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min) : DELAI_RESULTAT_MS);
+    await pause(n === 0 ? DELAI_RESULTAT_MS + reflexion : DELAI_RESULTAT_MS);
   }
-  if (resultat.vientDeFinir && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
+  if ((resultat.vientDeFinir || resultat.delai) && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
   await Promise.all([
-    patchOriginal(webhookUrl, buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
-    ...(resultat.erreur || duel.termine ? [] : [majSalonSolo(duel, pseudo)]),
+    patchOriginal(webhookUrl, vueSolo(duel, config, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
+    ...(resultat.erreur || duel.termine ? [] : [majSalonSolo(duel, pseudo, config)]),
   ]);
+  if (resultat.coup) await surveillerDelaiSolo(webhookUrl, discordId, duel, config, { channelId, pseudo });
 }
 
-async function choisirSolo(webhookUrl, discordId, index, vue) {
-  const { duel, resultat } = await agirDuel(discordId, (d) => actionChoisir(d, "joueur", index, vue));
+// Choix de la carte : pas un coup, le chrono du tour continue.
+async function choisirSolo(webhookUrl, discordId, index, vue, { channelId, pseudo } = {}) {
+  const config = await loadDuelConfig();
+  const { duel, resultat } = await agirDuel(discordId, (d) => actionChoisir(d, "joueur", index, vue), { nom: pseudo });
   if (!duel) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
     return;
   }
-  await patchOriginal(webhookUrl, buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : null }));
+  if (resultat.delai && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
+  await patchOriginal(webhookUrl, vueSolo(duel, config, { texte: resultat.erreur ? avertissement(resultat.erreur) : null }));
+}
+
+// Fin au délai sans attendre un clic : l'invocation attend l'échéance puis
+// clôt la partie si le joueur n'a pas joué (comme surveillerDelai() en 1v1).
+async function surveillerDelaiSolo(webhookUrl, discordId, d, config, { channelId, pseudo }) {
+  if (d.termine) return;
+  await pause(Math.max(0, echeanceSolo(d, config) * 1000 - Date.now()) + 1000);
+  const { duel, resultat } = await agirDuel(discordId, () => ({}), { nom: pseudo });
+  if (duel && resultat.delai && !(await publierFinSolo(webhookUrl, channelId, duel, pseudo))) {
+    await patchOriginal(webhookUrl, vueSolo(duel, config));
+  }
 }
 
 // Fin contre Kévina : récapitulatif dans un NOUVEAU message, message public
@@ -629,7 +658,7 @@ async function abandonSolo(webhookUrl, discordId, { channelId, pseudo } = {}) {
     return;
   }
   if (!resultat.erreur && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
-  await patchOriginal(webhookUrl, buildVue(duel));
+  await patchOriginal(webhookUrl, vueSolo(duel, await loadDuelConfig()));
 }
 
 // ── 1v1 ──────────────────────────────────────────────────────────────
@@ -974,7 +1003,7 @@ export async function handleFriseAbandon(webhookUrl, discordId, etape, { pvp = f
     const confirmerAbandon = etape === "demande";
     if (!pvp) {
       const duel = await readDuel(discordId);
-      await patchOriginal(webhookUrl, duel ? buildVue(duel, { confirmerAbandon }) : AUCUNE_PARTIE_SOLO);
+      await patchOriginal(webhookUrl, duel ? vueSolo(duel, await loadDuelConfig(), { confirmerAbandon }) : AUCUNE_PARTIE_SOLO);
       return;
     }
     const partie = await readPvp();
@@ -1007,11 +1036,11 @@ export async function handleFrisePlacer(webhookUrl, discordId, creneau, vue, { p
 }
 
 // Menu « Carte à placer » : `index` dans la main.
-export async function handleFriseChoisir(webhookUrl, discordId, index, vue, { pvp = false } = {}) {
+export async function handleFriseChoisir(webhookUrl, discordId, index, vue, { pvp = false, channelId, pseudo } = {}) {
   try {
     if (!Number.isInteger(index) || index < 0) return;
     if (pvp) await choisirPvp(webhookUrl, discordId, index, vue);
-    else await choisirSolo(webhookUrl, discordId, index, vue);
+    else await choisirSolo(webhookUrl, discordId, index, vue, { channelId, pseudo });
   } catch (err) {
     console.error("[Frise] Échec choix de carte:", err.message);
   }

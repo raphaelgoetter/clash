@@ -492,11 +492,12 @@ export async function routeDuels(body, res) {
       const webhookUrl = buildDiscordWebhookUrl(body);
       const valeur = Number(body.data.values?.[0]);
       const pvp = suite.includes("pvp");
+      // Contre Kévina, le résultat final (fin de partie ou délai dépassé)
+      // est publié dans le salon du choix
+      const opts = { pvp, channelId: body.channel_id, pseudo: friseExtractMember(body).username };
       if (action === "friseduel_carte") {
-        runBackground(() => handleFriseChoisir(webhookUrl, discordId, valeur, Number(arg), { pvp }));
+        runBackground(() => handleFriseChoisir(webhookUrl, discordId, valeur, Number(arg), opts));
       } else {
-        // Contre Kévina, le résultat final est publié dans le salon du choix
-        const opts = { pvp, channelId: body.channel_id, pseudo: friseExtractMember(body).username };
         runBackground(() => handleFrisePlacer(webhookUrl, discordId, valeur, Number(arg), opts));
       }
       return;

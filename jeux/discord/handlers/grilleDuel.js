@@ -25,7 +25,6 @@ import {
   agirDuel,
   agirPvp,
   enregistrerMessagePvp,
-  INACTIVITE_SECONDES,
   loadDuelConfig,
   majHighScore,
   nouveauDuel,
@@ -328,7 +327,7 @@ function buildVue(
     ...plateau(grilles ? { ...d, grilles } : d, moi, { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` }),
     "",
     ...(monTour
-      ? [`# Ton dé : ${grilles ? "⏳" : formatDie(d.de, MOI)}`]
+      ? [`# Ton dé : ${grilles ? "⏳" : formatDie(d.de, MOI)}`, ...(echeance && !grilles ? [`⏰ Limite <t:${echeance}:R>.`] : [])]
       : [
           `⏳ Au tour ${A.de}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
           // Dé adverse connu avant qu'il ne le pose (comme la carte dans Punto)
@@ -368,7 +367,7 @@ function buildReglesEmbed(config) {
       "**💥 Destruction** : poser un dé détruit tous les dés de même valeur dans la colonne d'en face de ton adversaire. Les dés restants se resserrent vers le centre.",
       "**🏁 Fin** : dès qu'une grille est pleine. Le plus haut total gagne.",
       "",
-      `⏰ En 1v1 : ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite. Sans action pendant 1 h, la partie est abandonnée.`,
+      `⏰ ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite.`,
     ].join("\n"),
     color: GRILLE_COLOR,
   };
@@ -406,10 +405,8 @@ export async function handleGrilleRoleRejected(webhookUrl) {
 
 // Plateau public d'une partie contre Kévina, en cours : suivi par le salon,
 // le joueur joue depuis sa vue éphémère. `etape` : { grilles (explosion),
-// actif (joueur au trait à cette étape) }. Expiration rappelée, sinon le
-// message d'une partie abandonnée resterait figé sur « Au tour de X ».
-function messageSolo(d, pseudo, { grilles = null, actif = d.actif } = {}) {
-  const expiration = Math.floor(Date.now() / 1000) + INACTIVITE_SECONDES;
+// actif (joueur au trait à cette étape) }. Limite du coup rappelée.
+function messageSolo(d, pseudo, config, { grilles = null, actif = d.actif } = {}) {
   return {
     embeds: [
       {
@@ -417,11 +414,10 @@ function messageSolo(d, pseudo, { grilles = null, actif = d.actif } = {}) {
         description: [
           actif === "bot"
             ? `⏳ Kévina réfléchit…${d.de && !grilles ? ` Dé à poser : ${formatDie(d.de, ADV)}` : ""}`
-            : `Au tour de **${pseudo}**${grilles ? "." : `, dé à poser : ${formatDie(d.de, MOI)}`}`,
+            : `Au tour de **${pseudo}**${grilles ? "." : `, dé à poser : ${formatDie(d.de, MOI)}, limite <t:${echeanceSolo(d, config)}:R>`}`,
           "",
           ...plateauPublic(grilles ? { ...d, grilles } : d, pseudo, "🤖 Kévina"),
           "",
-          `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
           ligneChances("grille"),
         ]
           .join("\n")
@@ -434,9 +430,17 @@ function messageSolo(d, pseudo, { grilles = null, actif = d.actif } = {}) {
 }
 
 // Édite le plateau public (partie lancée avant ce message : rien).
-async function majSalonSolo(d, pseudo, etape) {
-  if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?", etape));
+async function majSalonSolo(d, pseudo, config, etape) {
+  if (d.salon) await messageSalon("PATCH", d.salon.channelId, d.salon.messageId, messageSolo(d, pseudo ?? "?", config, etape));
 }
+
+// Échéance du coup du joueur contre Kévina (secondes)
+const echeanceSolo = (d, config) => Math.floor(((d.tourDepuis ?? Date.now()) + config.delai_tour_minutes * 60_000) / 1000);
+
+// Vue du joueur contre Kévina : limite de son coup (à son tour seulement),
+// raison de la fin.
+const vueSolo = (d, config, opts = {}) =>
+  buildVue(d, { ...opts, echeance: d.actif === "joueur" ? echeanceSolo(d, config) : null, raison: d.delai ? "delai" : null });
 
 // Lance une nouvelle partie (remplace une éventuelle partie en cours) :
 // plateau public dans le salon, puis vue éphémère du joueur EN DESSOUS. La
@@ -449,16 +453,19 @@ export async function handleGrilleCommand(webhookUrl, body) {
     const { duel, ancien } = await nouveauDuel(discordId);
     // Partie remplacée : son plateau public, figé, est retiré du salon
     if (ancien?.salon && !ancien.termine) await messageSalon("DELETE", ancien.salon.channelId, ancien.salon.messageId);
-    const message = await messageSalon("POST", body.channel_id, null, messageSolo(duel, username));
+    const config = await loadDuelConfig();
+    const message = await messageSalon("POST", body.channel_id, null, messageSolo(duel, username, config));
     // Échec du POST : partie jouable quand même, résultat publié à la fin
     const enregistre = message?.id
       ? await agirDuel(discordId, (d) => {
           d.salon = { channelId: body.channel_id, messageId: message.id };
         })
       : null;
-    const vue = buildVue(enregistre?.duel ?? duel, { texte: "Nouvelle partie contre Kévina ! Tu commences." });
-    if (enregistre && (await supprimerOriginal(webhookUrl)) && (await envoyerEphemere(webhookUrl, vue))) return;
-    await patchOriginal(webhookUrl, vue);
+    const vue = vueSolo(enregistre?.duel ?? duel, config, { texte: "Nouvelle partie contre Kévina ! Tu commences." });
+    const followup = enregistre && (await supprimerOriginal(webhookUrl)) ? await envoyerEphemere(webhookUrl, vue) : null;
+    if (!followup) await patchOriginal(webhookUrl, vue);
+    // Premier coup jamais joué : partie close au délai
+    await surveillerDelaiSolo(followup ?? webhookUrl, discordId, duel, config, { channelId: body.channel_id, pseudo: username });
   } catch (err) {
     console.error("[Grille] Échec lancement:", err.message);
   }
@@ -481,8 +488,13 @@ function recitFin(d, nom) {
 // supprimée), high score compris. Pseudo en clair, jamais de mention.
 function messageFinalSolo(d, pseudo, highScore = null) {
   const recit = recitFin(d, (siege) => (siege === "bot" ? "Kévina" : pseudo));
-  const resultat =
-    d.gagnant === "nul" ? `🤝 ${recit}.` : d.gagnant === "joueur" ? `🏆 ${recit} !` : `🤖 ${recit}.`;
+  const resultat = d.delai
+    ? `⏰ ${pseudo} n'a pas joué à temps : Kévina gagne.`
+    : d.gagnant === "nul"
+      ? `🤝 ${recit}.`
+      : d.gagnant === "joueur"
+        ? `🏆 ${recit} !`
+        : `🤖 ${recit}.`;
   return {
     embeds: [
       {
@@ -501,6 +513,10 @@ function messageFinalSolo(d, pseudo, highScore = null) {
 }
 
 async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo } = {}) {
+  const config = await loadDuelConfig();
+  // Réflexion de Kévina tirée d'avance : le chrono du joueur repart après
+  // les étapes affichées (explosions, réflexion)
+  const reflexion = REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min);
   const { duel, resultat } = await agirDuel(discordId, (d) => {
     const r = actionPoser(d, "joueur", colonne, BOT);
     if (r.erreur) return r;
@@ -518,13 +534,14 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
       lignes.push(coupAdverse(d.dernier, BOT));
       if (explosion && !d.termine) etapes.push({ texte: lignes.join("\n"), grilles: explosion, actif: d.actif });
     }
-    return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes };
+    const decalageMs = etapes.reduce((t, e) => t + (e.reflexion ? reflexion : DELAI_EXPLOSION_MS), 0);
+    return { texte: lignes.join("\n"), vientDeFinir: d.termine, etapes, coup: true, decalageMs };
   });
   if (!duel) {
     await patchOriginal(webhookUrl, {
       embeds: [
         {
-          description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/grille` !",
+          description: "⏰ Aucune partie en cours. Relance `/grille` !",
           color: GRILLE_COLOR,
         },
       ],
@@ -536,34 +553,50 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     if (etape.reflexion) {
       // Coup du joueur affiché d'abord, celui de Kévina après sa réflexion
       await Promise.all([
-        patchOriginal(webhookUrl, buildVue(etape.duel, { texte: etape.texte })),
-        majSalonSolo(etape.duel, pseudo),
+        patchOriginal(webhookUrl, vueSolo(etape.duel, config, { texte: etape.texte })),
+        majSalonSolo(etape.duel, pseudo, config),
       ]);
-      await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
+      await pause(reflexion);
       continue;
     }
-    await Promise.all([patchOriginal(webhookUrl, buildVue(duel, etape)), majSalonSolo(duel, pseudo, etape)]);
+    await Promise.all([patchOriginal(webhookUrl, buildVue(duel, etape)), majSalonSolo(duel, pseudo, config, etape)]);
     await pause(DELAI_EXPLOSION_MS);
   }
-  if (resultat.vientDeFinir) {
-    // Récapitulatif dans un NOUVEAU message (visible en bas du salon),
-    // plateau public supprimé (repli : édité en récapitulatif), vue
-    // éphémère supprimée (repli : vue de fin)
-    const highScore = await majHighScore(discordId, pseudo, scoreGrille(duel.grilles.joueur));
-    const final = messageFinalSolo(duel, pseudo ?? "?", highScore);
-    const { salon } = duel;
-    const ok = await messageSalon("POST", salon?.channelId ?? channelId, null, final);
-    if (salon) {
-      if (ok) await messageSalon("DELETE", salon.channelId, salon.messageId);
-      else await messageSalon("PATCH", salon.channelId, salon.messageId, final);
-    }
-    if (ok && (await supprimerOriginal(webhookUrl))) return;
-  }
+  if ((resultat.vientDeFinir || resultat.delai) && (await publierFinSolo(webhookUrl, channelId, discordId, duel, pseudo))) return;
   await Promise.all([
-    patchOriginal(webhookUrl, buildVue(duel, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
+    patchOriginal(webhookUrl, vueSolo(duel, config, { texte: resultat.erreur ? avertissement(resultat.erreur) : resultat.texte })),
     // Fin (repli) : plateau public déjà remplacé par le récapitulatif
-    ...(resultat.erreur || duel.termine ? [] : [majSalonSolo(duel, pseudo)]),
+    ...(resultat.erreur || duel.termine ? [] : [majSalonSolo(duel, pseudo, config)]),
   ]);
+  if (resultat.coup) await surveillerDelaiSolo(webhookUrl, discordId, duel, config, { channelId, pseudo });
+}
+
+// Fin contre Kévina : récapitulatif dans un NOUVEAU message (visible en bas
+// du salon), plateau public supprimé (repli : édité en récapitulatif), vue
+// éphémère supprimée. Faux si le POST ou la suppression de la vue a échoué
+// (l'appelant affiche alors la vue de fin). High score : grille pleine
+// seulement, pas sur un délai dépassé.
+async function publierFinSolo(webhookUrl, channelId, discordId, duel, pseudo) {
+  const highScore = duel.delai ? null : await majHighScore(discordId, pseudo, scoreGrille(duel.grilles.joueur));
+  const final = messageFinalSolo(duel, pseudo ?? "?", highScore);
+  const { salon } = duel;
+  const ok = await messageSalon("POST", salon?.channelId ?? channelId, null, final);
+  if (salon) {
+    if (ok) await messageSalon("DELETE", salon.channelId, salon.messageId);
+    else await messageSalon("PATCH", salon.channelId, salon.messageId, final);
+  }
+  return Boolean(ok) && (await supprimerOriginal(webhookUrl));
+}
+
+// Fin au délai sans attendre un clic : l'invocation attend l'échéance puis
+// clôt la partie si le joueur n'a pas joué (comme surveillerDelai() en 1v1).
+async function surveillerDelaiSolo(webhookUrl, discordId, d, config, { channelId, pseudo }) {
+  if (d.termine) return;
+  await pause(Math.max(0, echeanceSolo(d, config) * 1000 - Date.now()) + 1000);
+  const { duel, resultat } = await agirDuel(discordId, () => ({}));
+  if (duel && resultat.delai && !(await publierFinSolo(webhookUrl, channelId, discordId, duel, pseudo))) {
+    await patchOriginal(webhookUrl, vueSolo(duel, config));
+  }
 }
 
 // ── 1v1 ──────────────────────────────────────────────────────────────

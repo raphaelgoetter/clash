@@ -96,20 +96,38 @@ export async function nouveauDuel(discordId) {
   return withLock(discordId, async () => {
     const ancien = await readDuel(discordId);
     const duel = creerDuel({ commence: "joueur" });
+    duel.tourDepuis = Date.now();
     await writeDuel(discordId, duel);
     return { duel, ancien };
   });
 }
 
+// Délai d'un coup contre Kévina dépassé (`delai_tour_minutes` depuis
+// `tourDepuis`, début du tour du joueur) : il perd (`duel.delai`).
+export function verifierDelaiSolo(duel, config, now = Date.now()) {
+  if (duel.termine || !duel.tourDepuis || now - duel.tourDepuis <= config.delai_tour_minutes * 60_000) return false;
+  Object.assign(duel, { termine: true, gagnant: "bot", delai: true });
+  return true;
+}
+
 // Action du joueur sous verrou : `fn(duel)` modifie le duel (fonctions de
 // grilleRules.js) et renvoie un résultat.
+// Le délai est vérifié avant (`resultat` vaut alors { delai: true } sans
+// appeler fn) ; un coup joué (`resultat.coup`) relance le chrono, décalé de
+// `resultat.decalageMs` (réflexion de Kévina affichée).
 // Renvoie { duel, resultat } ou { duel: null } sans partie en cours.
 export async function agirDuel(discordId, fn) {
+  const config = await loadDuelConfig();
   return withLock(discordId, async () => {
     const duel = await readDuel(discordId);
     if (!duel) return { duel: null };
     const finiAvant = duel.termine;
-    const resultat = await fn(duel);
+    let resultat;
+    if (verifierDelaiSolo(duel, config)) resultat = { delai: true };
+    else {
+      resultat = (await fn(duel)) || {};
+      if (resultat.coup) duel.tourDepuis = Date.now() + (resultat.decalageMs ?? 0);
+    }
     if (!finiAvant && duel.termine && duel.gagnant === "joueur") await noterVictoireDuel(discordId, "grille", "bot");
     await writeDuel(discordId, duel);
     return { duel, resultat };

@@ -125,7 +125,7 @@ if (!texte(vues.at(-1)).includes("joue une de tes deux cartes")) throw new Error
 // Délai dépassé contre Kévina : défaite publiée au clic suivant
 {
   const d = await readDuel(ID);
-  await new Redis({}).set(`mascaradeduel:${ID}`, JSON.stringify({ ...d, tourDepuis: Date.now() - 120_000 }));
+  await new Redis({}).set(`mascaradeduel:${ID}`, JSON.stringify({ ...d, tourDepuis: Date.now() - 3 * 60_000 }));
   await h.handleMascaradeAction(W, ID, "jouer", d.main.joueur[0], d.vue, opts);
   if (!texte(salon.at(-1)).includes("n'a pas joué à temps")) throw new Error("délai dépassé contre Kévina non publié");
   if (!(await readDuel(ID)).delai) throw new Error("délai contre Kévina non enregistré");

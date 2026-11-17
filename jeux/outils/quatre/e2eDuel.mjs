@@ -132,6 +132,18 @@ await h.handleQuatreCurseur(W, ID, 6);
 if (!boutons(vues.at(-1)).some((b) => b.custom_id === "quatreduel_droite:0")) throw new Error("pas de tour de la grille");
 console.log("Pion à jouer : déplacé sans changer la grille, colonnes pleines sautées");
 
+// ── Délai contre Kévina : coup trop tard = défaite publiée ──
+await h.handleQuatreCommand(W, lancement);
+if (!texte(salon.filter((m) => m.method === "POST").at(-1)).includes("limite <t:")) throw new Error("limite absente du plateau public");
+await agirDuel(ID, (d) => {
+  d.tourDepuis = Date.now() - 3 * 60_000;
+});
+await h.handleQuatrePoser(W, ID, 3, { channelId: "salon", pseudo: "Testeur" });
+const finDelai = await readDuel(ID);
+if (!finDelai.delai || finDelai.gagnant !== "bot") throw new Error("délai contre Kévina non appliqué");
+if (!texte(salon.at(-1)).includes("n'a pas joué à temps")) throw new Error("fin au délai non publiée");
+console.log("Délai contre Kévina : défaite publiée");
+
 // ── Abandon (🏳️ puis confirmation) ──
 await h.handleQuatreCommand(W, lancement);
 await h.handleQuatreAbandon(W, ID, "demande", { channelId: "salon", pseudo: "Testeur" });

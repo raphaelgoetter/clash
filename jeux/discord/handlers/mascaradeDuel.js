@@ -571,7 +571,7 @@ function buildReglesEmbed(config) {
       "Un Prince alors qu'il ne reste rien à piocher (ni pioche ni Réserve) élimine l'adversaire.",
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
-      `⏰ ${plural(config.delai_tour_minutes, "minute")} par action, sinon défaite.`,
+      `⏰ ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite.`,
     ].join("\n"),
     color: MASCARADE_COLOR,
   };
@@ -814,7 +814,7 @@ async function surveillerDelaiSolo(webhookUrl, discordId, d, config, { channelId
 }
 
 const AUCUNE_PARTIE_SOLO = {
-  embeds: [{ description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/mascarade` !", color: MASCARADE_COLOR }],
+  embeds: [{ description: "⏰ Aucune partie en cours. Relance `/mascarade` !", color: MASCARADE_COLOR }],
   components: [],
 };
 

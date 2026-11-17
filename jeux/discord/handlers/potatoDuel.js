@@ -419,7 +419,7 @@ function buildReglesEmbed(config) {
       `**🏁 Manches** : le perdant commence la suivante. **Premier à ${MANCHES_GAGNANTES} manches.**`,
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
-      `⏰ ${plural(config.delai_tour_minutes, "minute")} par action, sinon défaite.`,
+      `⏰ ${plural(config.delai_tour_minutes, "minute")} par coup, sinon défaite.`,
     ].join("\n"),
     color: POTATO_COLOR,
   };
@@ -637,7 +637,7 @@ async function surveillerDelaiSolo(webhookUrl, discordId, d, config, { channelId
 }
 
 const AUCUNE_PARTIE_SOLO = {
-  embeds: [{ description: "⏰ Aucune partie en cours (abandonnée après 1 h sans action). Relance `/potato` !", color: POTATO_COLOR }],
+  embeds: [{ description: "⏰ Aucune partie en cours. Relance `/potato` !", color: POTATO_COLOR }],
   components: [],
 };
 

@@ -14,7 +14,7 @@
       "excludeFiles": "jeux/data/card-sounds/**"
     },
     "api/discord/jeux.js": {
-      "maxDuration": 120,
+      "maxDuration": 180,
       "excludeFiles": "jeux/data/card-sounds/**"
     }
   },

@@ -75,6 +75,19 @@ if (!salon.some((m) => m.method === "PATCH" && m.embeds?.[0]?.description.includ
   throw new Error("plateau public non suivi");
 }
 
+// ── Délai contre Kévina : coup trop tard = défaite publiée ──
+{
+  await h.handleGrilleCommand(W, lancement);
+  const d = await readDuel(ID);
+  if (!d.tourDepuis) throw new Error("chrono contre Kévina absent");
+  await new Redis({}).set(`grilleduel:${ID}`, JSON.stringify({ ...d, tourDepuis: Date.now() - 3 * 60_000 }));
+  await h.handleGrillePoser(W, ID, 0, { channelId: "salon", pseudo: "Testeur" });
+  const fin = await readDuel(ID);
+  if (!fin.delai || fin.gagnant !== "bot") throw new Error("délai contre Kévina non appliqué");
+  if (!salon.at(-1).embeds?.[0]?.description?.includes("n'a pas joué à temps")) throw new Error("fin au délai non publiée");
+  console.log("Délai contre Kévina : défaite publiée");
+}
+
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });
 await h.handleGrillePvpCommand("https://discord.test/a", body("A", "Alice"));

@@ -124,6 +124,19 @@ if ((await readDuel(ID)).vue !== d0.vue) throw new Error("créneau invalide jou�
   verifier(vues.at(-1));
 }
 
+// ── Délai contre Kévina : coup trop tard = défaite publiée ──
+{
+  await h.handleFriseCommand(W, lancement);
+  const d = await readDuel(ID);
+  if (!d.tourDepuis) throw new Error("chrono contre Kévina absent");
+  await new Redis({}).set(`friseduel:${ID}`, JSON.stringify({ ...d, tourDepuis: Date.now() - 3 * 60_000 }));
+  await h.handleFriseChoisir(W, ID, 0, (await readDuel(ID)).vue, { channelId: "salon", pseudo: "Testeur" });
+  const fin = await readDuel(ID);
+  if (!fin.delai || fin.gagnant !== "bot") throw new Error("délai contre Kévina non appliqué");
+  if (!texte(salon.at(-1)).includes("n'a pas joué à temps")) throw new Error("fin au délai non publiée");
+  console.log("Délai contre Kévina : défaite publiée");
+}
+
 // ── 1v1 ──
 const body = (id, nom) => ({ member: { user: { id, username: nom } }, channel_id: "salon" });
 await h.handleFrisePvpCommand("https://discord.test/a", body("A", "Alice"));
@@ -183,7 +196,8 @@ console.log("\n--- Vue contre Kévina ---\n" + texte(exemple) + "\n[image] " + i
 console.log("Menus :\n" + menus(exemple).map((m) => `[${m.placeholder}] ${m.options.map((o) => o.label).join(" | ")}`).join("\n"));
 const recapSolo = salon.find((m) => m.method === "POST" && /bat (Kévina|Testeur)/.test(texte(m)));
 // Récapitulatifs : frise décorative, jamais la frise de la partie ; erreurs listées
-for (const m of salon.filter((m) => m.method === "POST" && /bat |Match nul|abandonne/.test(texte(m)))) {
+// Messages en cours exclus : leur ligne « 🎯 Un bon joueur bat Kévina… » n'est pas un récapitulatif
+for (const m of salon.filter((m) => m.method === "POST" && !texte(m).includes("Au tour de") && /bat |Match nul|abandonne|à temps/.test(texte(m)))) {
   if (images(m)[0] !== "https://trustroyale.vercel.app/api/frise/decor") throw new Error("récapitulatif sans frise décorative");
 }
 if (!salon.some((m) => m.method === "POST" && texte(m).includes("**Erreurs**"))) throw new Error("erreurs jamais listées");
