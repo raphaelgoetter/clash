@@ -262,7 +262,9 @@ function main() {
     assert.strictEqual(accusationsRestantes(moi), 2, "deux accusations sur la nouvelle cible");
     moi.enquete = enqueteVide();
     const fausse2 = candidats(p, "j0").find((k) => k !== p.joueurs[c2].carte);
-    accuser(p, "j0", fausse2, { config: CONFIG });
+    const malusAvant = moi.malus;
+    assert.strictEqual(accuser(p, "j0", fausse2, { config: CONFIG }).malus, 0, "1re accusation ratée sous Double : gratuite");
+    assert.strictEqual(moi.malus, malusAvant);
     assert.strictEqual(accuser(p, "j0", p.joueurs[c2].carte, { config: CONFIG, rng }).correct, true);
   }
 

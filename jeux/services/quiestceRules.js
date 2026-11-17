@@ -145,9 +145,11 @@ function nouveauJoueur(username, arrivee) {
     loupe: false,
     accusationsJour: 0,
     // Accusations du jour sur la cible actuelle, et cible visée par une
-    // Double accusation (valable pour cette cible seulement)
+    // Double accusation (valable pour cette cible seulement), dont la
+    // première accusation ratée est gratuite
     accusationsCible: 0,
     doubleCible: null,
+    doubleGratuite: false,
     objetJour: false,
     objetRecuJour: false,
     brouillard: false,
@@ -422,7 +424,8 @@ export function poser(partie, id, q, { config }) {
 // Une accusation par jour, toutes cibles confondues ; avec une Double
 // accusation sur la cible actuelle, deux accusations sur elle, même si une
 // accusation a déjà été faite plus tôt dans la journée sur une autre cible
-// (décision du 12/10).
+// (décision du 12/10). Sous Double accusation, la première accusation ratée
+// sur cette cible ne coûte aucun point.
 export function accusationsRestantes(j) {
   if (j.cible && j.doubleCible === j.cible) return 2 - (j.accusationsCible ?? 0);
   return 1 - (j.accusationsJour ?? 0);
@@ -447,7 +450,9 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
     if (possibles.length === 2) stats(moi).pileFacePerdus += 1;
     moi.enquete.eliminees.push(cardKey);
     bilan(partie).erreurs += 1;
-    const malus = (partie.numeroJour ?? 1) > (config.erreur_gratuite_jours ?? 0) ? (config.malus_erreur ?? 0) : 0;
+    const doubleGratuite = moi.doubleGratuite && moi.doubleCible === cibleId;
+    if (doubleGratuite) moi.doubleGratuite = false;
+    const malus = !doubleGratuite && (partie.numeroJour ?? 1) > (config.erreur_gratuite_jours ?? 0) ? (config.malus_erreur ?? 0) : 0;
     moi.malus = (moi.malus ?? 0) + malus;
     return { correct: false, malus };
   }
@@ -495,7 +500,7 @@ export function accuser(partie, id, cardKey, { config, rng = Math.random }) {
 
 export const OBJETS = {
   loupe: { nom: "Loupe", emoji: "🔍", famille: "offensif", effet: "Débloque une 4e question au choix aujourd'hui." },
-  double: { nom: "Double accusation", emoji: "🎯", famille: "offensif", effet: "Deux accusations aujourd'hui sur ta cible actuelle." },
+  double: { nom: "Double accusation", emoji: "🎯", famille: "offensif", effet: "Deux accusations aujourd'hui sur ta cible actuelle, la première ratée ne coûte rien." },
   ecoute: { nom: "Écoute", emoji: "🎧", famille: "offensif", effet: "Te révèle un indice sur ta cible que son autre enquêteur connaît et toi non, s'il y en a un." },
   desamorcage: { nom: "Désamorçage", emoji: "🧨", famille: "offensif", effet: "Coupe la défense active de ta cible, sinon détruit un objet défensif de sa réserve." },
   brouillard: { nom: "Brouillard", emoji: "🌫️", famille: "defensif", effet: "Jusqu'à la clôture, questions sans réponse et accusations impossibles contre toi." },
@@ -545,7 +550,8 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
   }
   if (objet === "double") {
     moi.doubleCible = moi.cible;
-    prive(partie, id, `🎯 Double accusation : deux accusations aujourd'hui sur **${partie.joueurs[moi.cible].username}**.`);
+    moi.doubleGratuite = true;
+    prive(partie, id, `🎯 Double accusation : deux accusations aujourd'hui sur **${partie.joueurs[moi.cible].username}**, la première ratée ne coûte rien.`);
     return { objet, cible: moi.cible };
   }
   // Écoute (secrète, utilisable même sans rival : à chacun de vérifier) :
@@ -645,6 +651,7 @@ export function cloturer(partie, { config = {} } = {}) {
     j.accusationsJour = 0;
     j.accusationsCible = 0;
     j.doubleCible = null;
+    j.doubleGratuite = false;
     j.objetJour = false;
     j.objetsJour = 0;
     j.objetRecuJour = false;

@@ -349,7 +349,7 @@ function buildReglesEmbed(config) {
       `- Efficacité : **+${config.bonus_efficacite.join("/+")}** si tu démasques avec ${config.bonus_efficacite.map((_, i) => i + 1).join("/")} indices (indice de départ compris).`,
       `- Survie : **+${config.bonus_survie_jour}** par jour joué sans être démasqué.`,
       `- Être démasqué : **-${config.malus_demasque} points**.`,
-      `- Accusation ratée : la carte est barrée de ta fiche${config.malus_erreur ? `, **-${config.malus_erreur} point** (gratuite le jour 1)` : ""}.`,
+      `- Accusation ratée : la carte est barrée de ta fiche${config.malus_erreur ? `, **-${config.malus_erreur} point** (gratuite le jour 1 et la première ratée sous Double accusation)` : ""}.`,
       "",
       "**👀 Cibles**",
       "- La première est tirée au sort, les suivantes sont choisies (le meneur t'est proposé).",
