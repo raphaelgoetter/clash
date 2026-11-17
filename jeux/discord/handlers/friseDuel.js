@@ -282,6 +282,14 @@ function boutonsConfirmation(sfx) {
 
 const tronquer = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
+// Main écrite en entier à son tour : Discord mobile coupe les libellés des
+// menus déroulants sur une ligne. Carte choisie en gras.
+export function lignesMain(d, moi) {
+  const main = d.mains[moi];
+  const choix = Math.min(d.choix[moi] ?? 0, main.length - 1);
+  return ["🃏 Ta main :", ...main.map((c, k) => `- ${k === choix ? `**${c.libelle}**` : c.libelle}`)];
+}
+
 // Menus de jeu : carte à placer (si la main en a plusieurs), puis créneau
 // (découpé en plusieurs menus au-delà de 25 créneaux). Chaque créneau
 // rappelle les cartes qui l'encadrent.
@@ -359,7 +367,7 @@ function vueFin(d, { moi, A, raison, texte = null }) {
 }
 
 // Vue d'un joueur : récit, tour, image de la frise, puis menus de jeu à
-// son tour (sa main est dans le menu « Carte à placer » ; mains réduites à
+// son tour (sa main écrite en entier et le menu « Carte à placer » ; mains réduites à
 // leur nombre de cartes, dans le titre). `ctx` : { moi, A, pvp, echeance,
 // raison, confirmerAbandon, attente (Kévina réfléchit : pas de menus) }.
 function buildVue(
@@ -376,6 +384,7 @@ function buildVue(
         legende("**Toi**", `**${A.emoji} ${A.Sujet}**`),
         ...(texte ? ["", texte] : []),
         "",
+        ...(monTour ? [...lignesMain(d, moi), ""] : []),
         monTour
           ? `👉 À toi : choisis une carte puis son créneau${d.dernierTour ? " (dernier tour !)" : ""}${pvp && echeance ? `, limite <t:${echeance}:R>` : ""}.`
           : `⏳ ${attente ? `${A.Sujet} réfléchit…` : `Au tour de ${A.Sujet}`}${pvp && echeance && !attente ? `, limite <t:${echeance}:R>` : ""}.`,

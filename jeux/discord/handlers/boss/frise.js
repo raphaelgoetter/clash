@@ -10,7 +10,7 @@
 // /api/frise/image (frise encodée dans l'URL) : rien à lire en Redis.
 // ============================================================
 
-import { imageFrise, legende, lignesErreurs, menusJeu, versV2 } from "../friseDuel.js";
+import { imageFrise, legende, lignesErreurs, lignesMain, menusJeu, versV2 } from "../friseDuel.js";
 
 const KEVINA = "🐉 Kévina";
 
@@ -40,7 +40,7 @@ export const VUE_FRISE = {
       ...(d.termine
         ? lignesErreurs(d, (s) => (s === "bot" ? KEVINA : "Toi"))
         : monTour
-          ? [`👉 À toi : choisis une carte puis son créneau${d.dernierTour ? " (dernier tour !)" : ""}.`]
+          ? [...lignesMain(d, "joueur"), "", `👉 À toi : choisis une carte puis son créneau${d.dernierTour ? " (dernier tour !)" : ""}.`]
           : attente
             ? []
             : ["⏳ Au tour de Kévina."]),
