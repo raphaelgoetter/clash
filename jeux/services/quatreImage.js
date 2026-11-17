@@ -13,14 +13,16 @@
 // en PNG via @resvg/resvg-js, police Inter embarquée (Vercel Blob). Rendu
 // sans état : la grille est passée dans l'URL (encodeGrille).
 //
-// ⚠️ Taille réelle des PNG : LARGEUR_PNG (dessin à LARGEUR, réduit au
-// rendu). Discord ne permet pas d'imposer la taille d'affichage : sur
-// ordinateur, il borne la hauteur (~350 px), ce qui réduisait la grille
-// (presque carrée) plus que le bandeau (très large) et décalait le pion
-// de sa colonne. Des PNG plus étroits que l'affichage, jamais agrandis,
-// s'affichent à leur taille réelle : bandeau et grille gardent la même
-// largeur, donc l'alignement, sur ordinateur comme sur mobile (réduits
-// ensemble). Prix : un peu de flou sur écran haute densité.
+// ⚠️ Alignement du bandeau sur la grille : Discord ne permet pas
+// d'imposer la taille d'affichage d'une image. Sur ordinateur, il la
+// réduit pour tenir dans 550 × 350 px (non documenté : relevé sur les
+// captures, mêmes bornes que le client modifié Vencord) sans jamais
+// l'agrandir. La grille (600 × GRILLE_H, presque carrée) bute sur la
+// hauteur et s'affiche à 600 × 350 / GRILLE_H ≈ 341 px de large : le
+// bandeau est rendu à cette largeur (LARGEUR_BANDEAU), affiché tel quel,
+// donc aligné. Sur mobile, les deux sont réduites à la largeur de
+// l'écran, ensemble. La grille reste nette (600 px), seul le pion du
+// bandeau est un peu flou sur écran haute densité.
 // Lisibilité mobile : aucun texte sous 24 px sur LARGEUR (~13 px affichés).
 // ============================================================
 
@@ -32,8 +34,6 @@ import { HAUTEUR, NB_COLONNES } from "./quatreRules.js";
 const FONT_FAMILY = "Inter";
 
 const LARGEUR = 600;
-// Grille de 616 de haut sur 600 : 329 px de haut à 320, sous la borne
-const LARGEUR_PNG = 320;
 const CASE = 76;
 const MARGE_GRILLE = 12;
 const LARGEUR_GRILLE = NB_COLONNES * CASE + 2 * MARGE_GRILLE;
@@ -42,6 +42,13 @@ const X_GRILLE = (LARGEUR - LARGEUR_GRILLE) / 2;
 const Y_GRILLE = 14;
 const RAYON = 30;
 const HAUTEUR_BANDEAU = 104;
+// Hauteur de l'image de la grille : grille, numéros, légende
+const Y_NUMEROS = Y_GRILLE + HAUTEUR_GRILLE + 40;
+const Y_LEGENDE = Y_NUMEROS + 54;
+export const GRILLE_H = Y_LEGENDE + 28;
+// Bornes d'affichage de Discord sur ordinateur (voir l'en-tête)
+const AFFICHAGE_MAX_H = 350;
+export const LARGEUR_BANDEAU = Math.round((LARGEUR * AFFICHAGE_MAX_H) / GRILLE_H);
 // Fond commun aux deux images : le bandeau et la grille se raccordent
 const FOND = "#18202f";
 const OR = "#f0c040";
@@ -155,9 +162,9 @@ export function decodeGrille(param) {
 /** Grille décodée par decodeGrille. */
 export function buildGrilleSvg({ colonnes, noms, dernier = null, alignement = [] }) {
   const gagnantes = new Set(alignement.map(([c, r]) => `${c},${r}`));
-  const yNumeros = Y_GRILLE + HAUTEUR_GRILLE + 40;
-  const yLegende = yNumeros + 54;
-  const hauteur = yLegende + 28;
+  const yNumeros = Y_NUMEROS;
+  const yLegende = Y_LEGENDE;
+  const hauteur = GRILLE_H;
   let trous = "";
   let pions = "";
   for (let c = 0; c < NB_COLONNES; c++) {
@@ -195,10 +202,10 @@ export function buildGrilleSvg({ colonnes, noms, dernier = null, alignement = []
 
 // ── Rendu PNG ────────────────────────────────────────────────────────
 
-async function rasterize(contenu) {
+async function rasterize(contenu, largeur = LARGEUR) {
   const fontPaths = await readGameFontPaths();
   const resvg = new Resvg(Buffer.from(texteAffichable(contenu), "utf8"), {
-    fitTo: { mode: "width", value: LARGEUR_PNG },
+    fitTo: { mode: "width", value: largeur },
     font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
   });
   return { buffer: Buffer.from(resvg.render().asPng()), mimeType: "image/png" };
@@ -210,7 +217,7 @@ const bandeaux = new Map();
 export function getBandeauImage(colonne) {
   const c = borner(colonne, 0, NB_COLONNES - 1);
   if (!bandeaux.has(c)) {
-    const rendu = rasterize(buildBandeauSvg(c));
+    const rendu = rasterize(buildBandeauSvg(c), LARGEUR_BANDEAU);
     bandeaux.set(c, rendu);
     rendu.catch(() => bandeaux.delete(c));
   }
