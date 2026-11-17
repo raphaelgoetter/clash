@@ -11,13 +11,19 @@
 //   fois, comme La Grille.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
+// Plateau en images (quatreImage.js) : bandeau du pion à jouer au-dessus
+// de la colonne visée, puis grille. ◀️ ▶️ déplacent le pion (seul le
+// bandeau change), ⬇️ le lâche dans la colonne.
+//
 // custom_id : quatreduel_poser:<colonne> (contre Kévina),
-// quatreduel_poser:<colonne>:pvp (1v1), quatreduel_ouvrir (bouton Jouer du
-// message public), quatreduel_regles, quatreduel_abandon[:pvp] (🏳️, demande
-// confirmation), quatreduel_abandon_ok[:pvp] / quatreduel_abandon_non[:pvp].
+// quatreduel_poser:<colonne>:pvp (1v1), quatreduel_gauche:<colonne>[:pvp] /
+// quatreduel_droite:<colonne>[:pvp] (pion déplacé vers cette colonne),
+// quatreduel_ouvrir (bouton Jouer du message public), quatreduel_regles,
+// quatreduel_abandon[:pvp] (🏳️, demande confirmation),
+// quatreduel_abandon_ok[:pvp] / quatreduel_abandon_non[:pvp].
 //
 // Service : jeux/services/quatreDuel.js (Redis),
-// règles : jeux/services/quatreRules.js.
+// règles : jeux/services/quatreRules.js, images : jeux/services/quatreImage.js.
 // ============================================================
 
 import { ligneChances } from "../../services/chancesKevina.js";
@@ -35,7 +41,7 @@ import {
   siegeDe,
 } from "../../services/quatreDuel.js";
 import { HAUTEUR, NB_COLONNES, adversaire, choixKevina, poser } from "../../services/quatreRules.js";
-import { formatPion } from "../../services/pions.js";
+import { encodeGrille } from "../../services/quatreImage.js";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
@@ -47,12 +53,13 @@ const TITRE = "④ Quatre à la suite";
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 
-// Ses propres pions en bleu, ceux de l'adversaire en rouge (code couleur
-// de Clash Royale) ; alignement gagnant : même couleur, contour jaune
-const MOI = "bleu";
-const ADV = "rouge";
-// Numéros des colonnes au-dessus du plateau, alignés sur les boutons
-const NUMEROS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣"];
+// Images du plateau (routes jeux/server/imageRoutes.js). Suffixe ?v= :
+// Discord met en cache une image par URL EXACTE, à incrémenter quand le
+// dessin change.
+const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
+const QUATRE_IMAGE_VERSION = 1;
+// Le pion à jouer part de la colonne centrale à chaque tour
+const COLONNE_CENTRALE = Math.floor(NB_COLONNES / 2);
 // Contre Kévina : délai avant d'afficher son coup (elle joue en quelques
 // millisecondes, un coup instantané paraît mécanique), durée tirée au sort
 const REFLEXION_MS = { min: 2000, max: 5000 };
@@ -76,10 +83,11 @@ export function extractMember(body) {
 }
 
 // Messages en Components V2 (conteneur à liseré coloré, comme un embed) :
-// le texte y a la taille d'un message (16 px) et non d'un embed (14 px),
-// donc des pions plus grands à interligne serré, comme DraftBot. Les vues
-// sont écrites comme des embeds, converties ici à l'envoi : titre en `###`,
-// description, puis boutons dans le conteneur. `content` seul : texte nu.
+// plusieurs images empilées possibles (bandeau du pion, grille). Les vues
+// sont écrites comme des embeds, converties ici à l'envoi : titre en `###`
+// et description, puis `images` (une galerie par image, dans l'ordre),
+// texte `apres` les images, enfin boutons dans le conteneur. `content`
+// seul : texte nu.
 const IS_COMPONENTS_V2 = 1 << 15;
 const EPHEMERE = 1 << 6;
 // Limite Discord : 4 000 caractères de texte pour tout le message
@@ -91,10 +99,12 @@ export function versV2({ content = null, embeds = [], components = [], ...reste 
   const [embed] = embeds;
   if (embed) {
     const texte = [embed.title ? `### ${embed.title}` : null, embed.description].filter(Boolean).join("\n");
+    const images = (embed.images ?? []).map((url) => ({ type: 12, items: [{ media: { url } }] }));
+    const apres = embed.apres ? [{ type: 10, content: embed.apres.slice(0, TEXTE_MAX - texte.length) }] : [];
     blocs.push({
       type: 17,
       accent_color: embed.color ?? QUATRE_COLOR,
-      components: [{ type: 10, content: texte.slice(0, TEXTE_MAX) }, ...components],
+      components: [{ type: 10, content: texte.slice(0, TEXTE_MAX) }, ...images, ...apres, ...components],
     });
   } else blocs.push(...components);
   return { ...reste, flags: IS_COMPONENTS_V2, components: blocs };
@@ -190,10 +200,10 @@ function plural(n, mot) {
 }
 
 // Désignation de l'adversaire dans les textes : Kévina (le bot) ou un joueur.
-const BOT = { Sujet: "Kévina", emoji: "🤖" };
+const BOT = { Sujet: "Kévina" };
 
 function nomsJoueur(pseudo) {
-  return { Sujet: pseudo, emoji: "⚔️" };
+  return { Sujet: pseudo };
 }
 
 // Adversaire du siège `moi` dans une partie 1v1.
@@ -201,31 +211,47 @@ function nomsAdv(partie, moi) {
   return nomsJoueur(partie.noms[partie.sieges[adversaire(moi)]] ?? "?");
 }
 
-// Plateau vu par le siège `moi` (ses pions en bleu) : emojis à taille de
-// texte séparés par une espace, cases vides rondes, pions qui remplissent
-// toute l'image de l'emoji (comme DraftBot). Une rangée par ligne de texte,
-// sans titre `###` (marge entre les rangées). `noms` : { moi, adv }
-// libellés des deux camps, en légende.
-export function plateau(d, moi, noms) {
-  const gagnantes = new Set((d.alignement ?? []).map(([c, r]) => `${c},${r}`));
-  const pion = (id, c, r) => {
-    if (!id) return formatPion("vide");
-    return formatPion(id === moi ? MOI : ADV, { gagnant: gagnantes.has(`${c},${r}`) });
-  };
-  const rangees = [];
-  for (let r = HAUTEUR - 1; r >= 0; r--) {
-    rangees.push(d.colonnes.map((col, c) => pion(col[r], c, r)).join(" "));
-  }
-  return [
-    `${formatPion(MOI)} **${noms.moi}** · ${formatPion(ADV)} **${noms.adv}**`,
-    NUMEROS.join(" "),
-    ...rangees,
-  ];
+// Image de la grille vue par le siège `moi` (ses pions en bleu). `noms` :
+// { moi, adv } libellés des deux camps, en légende sous la grille.
+export function urlGrille(d, moi, noms) {
+  return `${TRUST_ROYALE_URL}/api/quatre/grille?d=${encodeGrille(d, moi, noms)}&v=${QUATRE_IMAGE_VERSION}`;
 }
 
-// Plateau neutre (message public) : premier joueur en bleu.
-function plateauPublic(d, nomJoueur, nomBot) {
-  return plateau(d, "joueur", { moi: nomJoueur, adv: nomBot });
+// Bandeau du pion à jouer au-dessus de la colonne `colonne` (7 images fixes)
+export const urlBandeau = (colonne) => `${TRUST_ROYALE_URL}/api/quatre/bandeau?c=${colonne}&v=${QUATRE_IMAGE_VERSION}`;
+
+// Grille neutre (messages publics) : premier joueur en bleu.
+const grillePublique = (d, nomJoueur, nomBot) => urlGrille(d, "joueur", { moi: nomJoueur, adv: nomBot });
+
+// Colonne non pleine la plus proche de `depart` dans le sens `sens` (±1),
+// en faisant le tour de la grille ; `depart` lui-même en premier si
+// `inclus`. null si la grille est pleine.
+export function colonneLibre(d, depart, sens = 1, { inclus = true } = {}) {
+  for (let k = inclus ? 0 : 1; k <= NB_COLONNES; k++) {
+    const c = (((depart + sens * k) % NB_COLONNES) + NB_COLONNES) % NB_COLONNES;
+    if (d.colonnes[c].length < HAUTEUR) return c;
+  }
+  return null;
+}
+
+// Colonne du pion à jouer : la demandée (centrale par défaut), ou la
+// suivante non pleine vers la droite.
+export const colonneCurseur = (d, curseur = null) =>
+  colonneLibre(d, Number.isInteger(curseur) ? curseur : COLONNE_CENTRALE, 1);
+
+// ◀️ ⬇️ N ▶️ : flèches vers la colonne libre voisine (colonnes pleines
+// sautées, tour de la grille), ⬇️ lâche le pion. `ids` : { gauche(c),
+// droite(c), poser(c) } → custom_id. Flèches grisées s'il ne reste qu'une
+// colonne libre.
+export function boutonsCurseur(d, curseur, ids) {
+  const gauche = colonneLibre(d, curseur, -1, { inclus: false });
+  const droite = colonneLibre(d, curseur, 1, { inclus: false });
+  const seule = gauche === curseur;
+  return [
+    { type: 2, style: 2, emoji: { name: "◀️" }, custom_id: ids.gauche(gauche), disabled: seule },
+    { type: 2, style: 1, label: String(curseur + 1), emoji: { name: "⬇️" }, custom_id: ids.poser(curseur) },
+    { type: 2, style: 2, emoji: { name: "▶️" }, custom_id: ids.droite(droite), disabled: seule },
+  ];
 }
 
 // Récit d'un coup : « Tu joues en colonne 4. »
@@ -318,46 +344,48 @@ function vueFin(d, { moi, A, raison }) {
   };
 }
 
-// Boutons des 7 colonnes : 5 boutons au plus par rangée Discord, d'où 4 + 3.
-function boutonsColonnes(d, sfx) {
-  const bouton = (c) => ({
-    type: 2,
-    style: 1,
-    label: String(c + 1),
-    custom_id: `quatreduel_poser:${c}${sfx}`,
-    disabled: d.colonnes[c].length >= HAUTEUR,
-  });
-  const colonnes = Array.from({ length: NB_COLONNES }, (_, c) => c);
-  return [
-    { type: 1, components: colonnes.slice(0, 4).map(bouton) },
-    { type: 1, components: colonnes.slice(4).map(bouton) },
-  ];
-}
-
-// Vue d'un joueur : résultat de la dernière action (`texte`), plateau et
-// une colonne par bouton (à son tour), attente (1v1) ou fin.
+// Vue d'un joueur : résultat de la dernière action (`texte`), bandeau du
+// pion à jouer et grille, ◀️ ⬇️ ▶️ 🏳️ (à son tour), attente (1v1) ou fin.
 // `ctx` : { moi (siège du moteur), A (adversaire), pvp, echeance, raison,
-// confirmerAbandon (question à la place des boutons de jeu) }
+// confirmerAbandon (question à la place des boutons de jeu), curseur
+// (colonne du pion à jouer, centrale par défaut) }
 function buildVue(
   d,
-  { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null, confirmerAbandon = false } = {},
+  {
+    texte = null,
+    moi = "joueur",
+    A = BOT,
+    pvp = false,
+    echeance = null,
+    raison = null,
+    confirmerAbandon = false,
+    curseur = null,
+  } = {},
 ) {
   if (d.termine) return vueFin(d, { moi, A, raison });
   const monTour = d.actif === moi;
   const sfx = pvp ? ":pvp" : "";
-  const lignes = [
-    ...(confirmerAbandon ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite.", ""] : texte ? [texte, ""] : []),
-    ...plateau(d, moi, { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` }),
-    ...(monTour ? [] : ["", `⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
-  ];
+  const lignes = confirmerAbandon ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite."] : texte ? [texte] : [];
   const titre = `${TITRE} · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
-  const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: QUATRE_COLOR };
+  const colonne = monTour && !confirmerAbandon ? colonneCurseur(d, curseur) : null;
+  const grille = urlGrille(d, moi, { moi: "Toi", adv: A.Sujet });
+  const embed = {
+    title: titre,
+    description: lignes.join("\n"),
+    images: colonne === null ? [grille] : [urlBandeau(colonne), grille],
+    apres: monTour ? null : `⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`,
+    color: QUATRE_COLOR,
+  };
   if (confirmerAbandon) return { embeds: [embed], components: boutonsConfirmation(sfx) };
   // Contre Kévina, ce n'est jamais son tour qu'en pleine réflexion : pas d'abandon
   // Bouton Règles : sur le message public seulement (jamais en double)
-  const regles = monTour || pvp ? [{ type: 1, components: [boutonAbandon(sfx)] }] : [];
-  if (!monTour) return { embeds: [embed], components: regles };
-  return { embeds: [embed], components: [...boutonsColonnes(d, sfx), ...regles] };
+  if (!monTour) return { embeds: [embed], components: pvp ? [{ type: 1, components: [boutonAbandon(sfx)] }] : [] };
+  const ids = {
+    gauche: (c) => `quatreduel_gauche:${c}${sfx}`,
+    droite: (c) => `quatreduel_droite:${c}${sfx}`,
+    poser: (c) => `quatreduel_poser:${c}${sfx}`,
+  };
+  return { embeds: [embed], components: [{ type: 1, components: [...boutonsCurseur(d, colonne, ids), boutonAbandon(sfx)] }] };
 }
 
 function buildReglesEmbed(config) {
@@ -366,7 +394,7 @@ function buildReglesEmbed(config) {
     description: [
       "Une grille de 7 colonnes sur 6 rangées. Tes pions sont bleus, ceux de ton adversaire rouges.",
       "",
-      "**⬇️ À ton tour** : choisis une colonne non pleine, ton pion tombe tout en bas.",
+      "**⬇️ À ton tour** : place ton pion au-dessus d'une colonne avec ◀️ ▶️, puis lâche-le avec ⬇️ : il tombe tout en bas.",
       "**🏆 Victoire** : le premier qui aligne 4 pions (horizontale, verticale ou diagonale) gagne.",
       "**🤝 Match nul** : la grille est pleine sans alignement.",
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
@@ -404,16 +432,9 @@ function messageSolo(d, pseudo) {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [
-          d.actif === "bot" ? "⏳ Kévina réfléchit…" : `Au tour de **${pseudo}**.`,
-          "",
-          ...plateauPublic(d, pseudo, "🤖 Kévina"),
-          "",
-          `⏰ Sans action, partie abandonnée <t:${expiration}:R>.`,
-          ligneChances("quatre"),
-        ]
-          .join("\n")
-          .slice(0, 4096),
+        description: d.actif === "bot" ? "⏳ Kévina réfléchit…" : `Au tour de **${pseudo}**.`,
+        images: [grillePublique(d, pseudo, "Kévina")],
+        apres: [`⏰ Sans action, partie abandonnée <t:${expiration}:R>.`, ligneChances("quatre")].join("\n"),
         color: QUATRE_COLOR,
       },
     ],
@@ -496,9 +517,9 @@ function messageFinalSolo(d, pseudo) {
     embeds: [
       {
         title: `${TITRE} · ${pseudo} contre Kévina`,
-        description: [resultat, "", ...plateauPublic(d, pseudo, "🤖 Kévina"), ...(series.length ? ["", ...series] : [])]
-          .join("\n")
-          .slice(0, 4096),
+        description: resultat,
+        images: [grillePublique(d, pseudo, "Kévina")],
+        apres: series.length ? series.join("\n") : null,
         color: QUATRE_COLOR,
       },
     ],
@@ -606,7 +627,7 @@ function webhookValide(partie, discordId) {
 
 // Vue éphémère d'un joueur du 1v1 (lobby, partie, fin). Sans `texte`, le
 // dernier coup adverse est raconté.
-function vuePvp(partie, config, discordId, texte = null, { confirmerAbandon = false } = {}) {
+function vuePvp(partie, config, discordId, texte = null, { confirmerAbandon = false, curseur = null } = {}) {
   if (partie.statut === "lobby") {
     return {
       embeds: [
@@ -635,6 +656,7 @@ function vuePvp(partie, config, discordId, texte = null, { confirmerAbandon = fa
     echeance: echeanceDe(partie, config),
     raison: partie.raisonFin,
     confirmerAbandon,
+    curseur,
   });
 }
 
@@ -673,11 +695,8 @@ function messagePublic(partie, config) {
         title: `${TITRE} · ${nom("joueur")} contre ${nom("bot")}`,
         // Plateau neutre, suivi par le salon ; chaque joueur joue depuis sa
         // vue éphémère
-        description: [
-          `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
-          "",
-          ...plateauPublic(d, nom("joueur"), nom("bot")),
-        ].join("\n").slice(0, 4096),
+        description: `Au tour de **${nom(d.actif)}**, limite <t:${echeanceDe(partie, config)}:R>`,
+        images: [grillePublique(d, nom("joueur"), nom("bot"))],
         color: QUATRE_COLOR,
       },
     ],
@@ -720,9 +739,9 @@ function messageFinal(partie) {
     embeds: [
       {
         title: `${TITRE} · ${titreGagnant(g, nom)}`,
-        description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot")), ...(series.length ? ["", ...series] : [])]
-          .join("\n")
-          .slice(0, 4096),
+        description: resultat,
+        images: [grillePublique(d, nom("joueur"), nom("bot"))],
+        apres: series.length ? series.join("\n") : null,
         color: QUATRE_COLOR,
       },
     ],
@@ -961,6 +980,27 @@ export async function handleQuatreAbandon(webhookUrl, discordId, etape, { pvp = 
     await patchOriginal(webhookUrl, vuePvp(partie, config, discordId, null, { confirmerAbandon }));
   } catch (err) {
     console.error("[Quatre] Échec abandon:", err.message);
+  }
+}
+
+// ◀️ ▶️ : pion à jouer déplacé vers `colonne`, sans rien écrire (la
+// colonne est dans le custom_id) ; seul le bandeau change d'image. La vue
+// rappelle le dernier coup adverse.
+export async function handleQuatreCurseur(webhookUrl, discordId, colonne, { pvp = false } = {}) {
+  try {
+    if (!pvp) {
+      const duel = await readDuel(discordId);
+      if (!duel) return await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
+      const texte = duel.dernier?.id === "bot" ? coupAdverse(duel.dernier, BOT) : null;
+      await patchOriginal(webhookUrl, buildVue(duel, { texte, curseur: colonne }));
+      return;
+    }
+    const partie = await readPvp();
+    if (!partie) return await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
+    if (!siegeDe(partie, discordId)) return await patchOriginal(webhookUrl, { content: avertissement("pasJoueur") });
+    await patchOriginal(webhookUrl, vuePvp(partie, await loadDuelConfig(), discordId, null, { curseur: colonne }));
+  } catch (err) {
+    console.error("[Quatre] Échec déplacement du pion:", err.message);
   }
 }
 

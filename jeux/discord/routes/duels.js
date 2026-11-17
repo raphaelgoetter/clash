@@ -50,6 +50,7 @@ import {
   handleQuatrePoser,
   handleQuatreRegles,
   handleQuatreAbandon,
+  handleQuatreCurseur,
 } from "../handlers/quatreDuel.js";
 import {
   memberHasMiniJeuxRole as puntoMemberHasMiniJeuxRole,
@@ -253,6 +254,14 @@ export async function routeDuels(body, res) {
       const webhookUrl = buildDiscordWebhookUrl(body);
       if (action === "quatreduel_regles") runBackground(() => handleQuatreRegles(webhookUrl));
       else runBackground(() => handleQuatreOuvrir(webhookUrl, body));
+      return;
+    }
+    // ◀️ ▶️ : quatreduel_gauche|droite:<colonne>[:pvp], pion déplacé en place
+    if (action === "quatreduel_gauche" || action === "quatreduel_droite") {
+      const discordId = body.member?.user?.id;
+      res.status(200).json({ type: 6 });
+      const webhookUrl = buildDiscordWebhookUrl(body);
+      runBackground(() => handleQuatreCurseur(webhookUrl, discordId, Number(colonne), { pvp: mode === "pvp" }));
       return;
     }
     if (action === "quatreduel_poser") {

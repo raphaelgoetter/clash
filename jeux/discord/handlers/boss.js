@@ -7,7 +7,8 @@
 // custom_id : boss_lancer:<seasonId> (invitation, passeport : ouvre la
 // partie dans un nouveau message), boss_pret:<seasonId> (consomme la
 // tentative), boss_jouer:<seasonId>:<arg…> (coup ; menus : valeur dans
-// data.values), propres à chaque jeu.
+// data.values), boss_curseur:<seasonId>:<arg…> (affichage seul, sans coup),
+// propres à chaque jeu.
 //
 // Service : jeux/services/boss.js ; règles : jeux/services/boss<Jeu>.js ;
 // vues : jeux/discord/handlers/boss/<jeu>.js (interface décrite dans
@@ -88,8 +89,8 @@ function vueConfirmation(boss) {
   };
 }
 
-function vuePartie(boss, etat, texte = null, { attente = false } = {}) {
-  return VUES[boss.jeu].partie(etat, { seasonId: boss.seasonId, titre: titre(boss), texte, attente, couleur: BOSS_COLOR });
+function vuePartie(boss, etat, texte = null, { attente = false, curseur = null } = {}) {
+  return VUES[boss.jeu].partie(etat, { seasonId: boss.seasonId, titre: titre(boss), texte, attente, couleur: BOSS_COLOR, curseur });
 }
 
 const ISSUES = {
@@ -193,6 +194,14 @@ export async function handleBossBouton(webhookUrl, body, now = new Date()) {
       if (r.erreur === "dejaJoue") return envoyer(await vueSelonStatut(boss, discordId, now));
       if (r.erreur) return envoyer(vueTexte(MESSAGES[r.erreur]));
       return envoyer(vuePartie(boss, r.etat, "C'est parti ! Tu commences."));
+    }
+
+    // Affichage seul, sans coup (Quatre à la suite : pion déplacé)
+    if (action === "boss_curseur") {
+      const jeu = await lireJeu(boss, discordId, { now });
+      if (!jeu?.etat) return envoyer(vueTexte(MESSAGES.aucunePartie));
+      if (jeu.tentative.statut === "fini") return envoyer(vueFin(boss, jeu.tentative, jeu.etat));
+      return envoyer(vuePartie(boss, jeu.etat, null, { curseur: Number(args[0]) }));
     }
 
     if (action === "boss_jouer") {

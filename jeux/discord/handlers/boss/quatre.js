@@ -6,34 +6,41 @@
 //   de la partie au format embed ({ embeds, components }) ; boutons et
 //   menus en custom_id `boss_jouer:<seasonId>:<arg…>` ; `attente` : pendant
 //   la réflexion de Kévina, sans contrôle ;
+//   affichage seul (sans coup) : `boss_curseur:<seasonId>:<arg…>`, passé
+//   en `curseur` (premier argument, nombre) ;
 // - action(args, values) : action passée aux règles (boss<Jeu>.js) ;
 // - raisonFin(etat) : phrase de fin de partie ;
 // - versV2 : conversion du message (celle du duel).
 // ============================================================
 
-import { HAUTEUR, NB_COLONNES } from "../../../services/quatreRules.js";
-import { plateau, versV2 } from "../quatreDuel.js";
+// Quatre à la suite ajoute `curseur` (colonne du pion à jouer, ◀️ ▶️ en
+// boss_curseur:<seasonId>:<colonne>:<g|d>, voir boss.js) et, sans `texte`,
+// rappelle le dernier coup de Kévina.
+
+import { boutonsCurseur, colonneCurseur, urlBandeau, urlGrille, versV2 } from "../quatreDuel.js";
 
 export const VUE_QUATRE = {
   regle: "Aligne 4 pions (horizontale, verticale ou diagonale) avant Kévina. Tu commences.",
-  partie(d, { seasonId, titre, texte, attente, couleur }) {
-    const lignes = [...(texte ? [texte, ""] : []), ...plateau(d, "joueur", { moi: "Toi", adv: "🐉 Kévina" })];
-    const bouton = (c) => ({
-      type: 2,
-      style: 1,
-      label: String(c + 1),
-      custom_id: `boss_jouer:${seasonId}:${c}`,
-      disabled: d.colonnes[c].length >= HAUTEUR,
-    });
-    const colonnes = Array.from({ length: NB_COLONNES }, (_, c) => c);
-    const components =
-      attente || d.termine
-        ? []
-        : [
-            { type: 1, components: colonnes.slice(0, 4).map(bouton) },
-            { type: 1, components: colonnes.slice(4).map(bouton) },
-          ];
-    return { embeds: [{ title: titre, description: lignes.join("\n").slice(0, 4096), color: couleur }], components };
+  partie(d, { seasonId, titre, texte, attente, couleur, curseur = null }) {
+    const recit = texte ?? (d.dernier?.id === "bot" ? `Kévina joue en colonne ${d.dernier.colonne + 1}.` : null);
+    const grille = urlGrille(d, "joueur", { moi: "Toi", adv: "Kévina" });
+    const colonne = attente || d.termine ? null : colonneCurseur(d, curseur);
+    const ids = {
+      gauche: (c) => `boss_curseur:${seasonId}:${c}:g`,
+      droite: (c) => `boss_curseur:${seasonId}:${c}:d`,
+      poser: (c) => `boss_jouer:${seasonId}:${c}`,
+    };
+    return {
+      embeds: [
+        {
+          title: titre,
+          description: recit ?? "",
+          images: colonne === null ? [grille] : [urlBandeau(colonne), grille],
+          color: couleur,
+        },
+      ],
+      components: colonne === null ? [] : [{ type: 1, components: boutonsCurseur(d, colonne, ids) }],
+    };
   },
   action: ([colonne]) => ({ colonne: Number(colonne) }),
   raisonFin(d) {

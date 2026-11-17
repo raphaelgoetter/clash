@@ -33,7 +33,8 @@ globalThis.setTimeout = (fn, _ms, ...args) => setTimeoutReel(fn, 0, ...args);
 
 const h = await import("../../discord/handlers/quatreDuel.js");
 const { readDuel, readPvp } = await import("../../services/quatreDuel.js");
-const { colonnesLibres } = await import("../../services/quatreRules.js");
+const { colonnesLibres, poser } = await import("../../services/quatreRules.js");
+const { decodeGrille } = await import("../../services/quatreImage.js");
 
 // Messages en Components V2 : texte (type 10) et rangées de boutons
 // (type 1), éventuellement dans un conteneur (type 17).
@@ -42,6 +43,11 @@ function aplatir(composants = []) {
 }
 const texte = (v) => aplatir(v.components).filter((c) => c.type === 10).map((c) => c.content).join("\n");
 const rangees = (v) => aplatir(v.components).filter((c) => c.type === 1);
+// Images (galeries, type 12) : bandeau du pion puis grille
+const images = (v) => aplatir(v.components).filter((c) => c.type === 12).map((c) => c.items[0].media.url);
+const bandeau = (v) => images(v).find((u) => u.includes("/bandeau?"));
+const grille = (v) => images(v).find((u) => u.includes("/grille?"));
+const boutons = (v) => rangees(v).flatMap((r) => r.components);
 
 function verifier(v) {
   if (!(v.flags & (1 << 15))) throw new Error("message hors Components V2");
@@ -50,6 +56,11 @@ function verifier(v) {
   for (const row of rangees(v)) {
     if (row.components.length > 5) throw new Error("> 5 composants");
     for (const c of row.components) if (c.custom_id.length > 100) throw new Error("custom_id > 100");
+    const ids = row.components.map((c) => c.custom_id);
+    if (new Set(ids).size !== ids.length) throw new Error("custom_id en double");
+  }
+  for (const url of images(v)) {
+    if (url.includes("/grille?") && !decodeGrille(new URL(url).searchParams.get("d"))) throw new Error("grille illisible");
   }
 }
 
@@ -98,12 +109,35 @@ for (let k = 0; ; k++) {
   await h.handleQuatrePoser(`https://discord.test/${actif === "A" ? "a" : "b"}`, actif, libres[0], { pvp: true });
 }
 
+// ── Pion à jouer (◀️ ▶️) : seul le bandeau change ──
+await h.handleQuatreCommand(W, lancement);
+const depart = vues.at(-1);
+if (!bandeau(depart)?.includes("c=3&")) throw new Error("pion pas au centre");
+const droite = boutons(depart).find((b) => b.custom_id.startsWith("quatreduel_droite:"));
+if (droite.custom_id !== "quatreduel_droite:4") throw new Error(`flèche droite inattendue : ${droite.custom_id}`);
+await h.handleQuatreCurseur(W, ID, 4);
+const deplace = vues.at(-1);
+if (!bandeau(deplace).includes("c=4&")) throw new Error("bandeau non déplacé");
+if (grille(deplace) !== grille(depart)) throw new Error("grille modifiée par un simple déplacement");
+if (!boutons(deplace).some((b) => b.custom_id === "quatreduel_poser:4")) throw new Error("⬇️ ne vise pas la colonne du pion");
+// Colonne 5 pleine : ▶️ depuis la 4 saute à la 6
+const { agirDuel } = await import("../../services/quatreDuel.js");
+await agirDuel(ID, (d) => {
+  for (let k = 0; k < 6; k++) poser(d, d.actif, 5);
+});
+await h.handleQuatreCurseur(W, ID, 4);
+if (!boutons(vues.at(-1)).some((b) => b.custom_id === "quatreduel_droite:6")) throw new Error("colonne pleine non sautée");
+// ▶️ depuis la 6 : tour de la grille vers la 0
+await h.handleQuatreCurseur(W, ID, 6);
+if (!boutons(vues.at(-1)).some((b) => b.custom_id === "quatreduel_droite:0")) throw new Error("pas de tour de la grille");
+console.log("Pion à jouer : déplacé sans changer la grille, colonnes pleines sautées");
+
 // ── Abandon (🏳️ puis confirmation) ──
 await h.handleQuatreCommand(W, lancement);
 await h.handleQuatreAbandon(W, ID, "demande", { channelId: "salon", pseudo: "Testeur" });
 if (!texte(vues.at(-1)).includes("Abandonner la partie ?")) throw new Error("confirmation d'abandon absente");
 await h.handleQuatreAbandon(W, ID, "non", { channelId: "salon", pseudo: "Testeur" });
-if (rangees(vues.at(-1)).length !== 3) throw new Error("Annuler ne rend pas les boutons de jeu");
+if (boutons(vues.at(-1)).length !== 4) throw new Error("Annuler ne rend pas les boutons de jeu");
 await h.handleQuatreAbandon(W, ID, "ok", { channelId: "salon", pseudo: "Testeur" });
 if (!(await readDuel(ID)).abandon) throw new Error("abandon contre Kévina non enregistré");
 if (!texte(salon.at(-1)).includes("abandonne face à Kévina")) throw new Error("abandon contre Kévina non publié");
@@ -123,7 +157,8 @@ await h.handleQuatreRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
-const exemple = vues.find((v) => rangees(v).length === 3 && texte(v).includes("Kévina joue"));
+const exemple = vues.find((v) => boutons(v).length === 4 && texte(v).includes("Kévina joue"));
 console.log("\n--- Vue contre Kévina ---\n" + texte(exemple));
-console.log("Boutons :", rangees(exemple).map((r) => r.components.map((c) => `${c.label}${c.disabled ? " (grisé)" : ""}`).join(" | ")).join(" / "));
+console.log("Images :", images(exemple).join("\n        "));
+console.log("Boutons :", boutons(exemple).map((c) => `${c.emoji?.name ?? ""}${c.label ?? ""}${c.disabled ? " (grisé)" : ""}`).join(" | "));
 console.log("\n--- Récap 1v1 ---\n" + texte(salon.filter((m) => m.method === "POST").at(-1)));

@@ -73,6 +73,7 @@ import {
   getMainImage as getGobeletMainImage,
   getMancheImage as getGobeletMancheImage,
 } from "../services/gobeletImage.js";
+import { decodeGrille as decodeQuatreGrille, getBandeauImage as getQuatreBandeauImage, getGrilleImage as getQuatreGrilleImage } from "../services/quatreImage.js";
 
 const router = express.Router();
 
@@ -356,6 +357,28 @@ router.get("/api/potato/public", async (req, res) => {
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Quatre à la suite : grille (d, voir encodeGrille), rendu sans état, et
+// bandeau du pion à jouer au-dessus de la colonne c (0 à 6) : sept images
+// toujours identiques, cache immuable (déplacer le pion ne change que lui).
+router.get("/api/quatre/grille", async (req, res) => {
+  const grille = decodeQuatreGrille(req.query.d);
+  const image = grille ? await getQuatreGrilleImage(grille).catch(() => null) : null;
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+router.get("/api/quatre/bandeau", async (req, res) => {
+  const colonne = Number(req.query.c);
+  if (!Number.isInteger(colonne) || colonne < 0 || colonne > 6) return res.status(404).end();
+  const image = await getQuatreBandeauImage(colonne).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=31536000, s-maxage=31536000, immutable");
   res.send(image.buffer);
 });
 
