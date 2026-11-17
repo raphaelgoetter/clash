@@ -151,6 +151,30 @@ function main() {
     assert.ok([5, 6, 7, 8].includes(c));
   }
   {
+    // Anticipation (Boss) : sans défense, Kévina bloque quand même la ligne
+    // (case 8 ou recouvrir un 3) car elle sait que la prochaine carte du
+    // joueur (🟦2, trop faible pour recouvrir son 5) gagnerait en 8 ; sans
+    // anticipation, elle joue ailleurs
+    const lignes = grilleVide();
+    lignes[1] = "J3J3J3....";
+    lignes[2] = "....B1....";
+    const pioches = { joueur: [{ k: 0, v: 2 }], bot: [{ k: 1, v: 1 }] };
+    const d = duelTest(lignes, { actif: "bot", carte: { k: 1, v: 5 }, pioches });
+    assert.ok(![5, 6, 7, 8].includes(choixKevina(d, "bot", { defense: 0, rng: sansHasard })));
+    for (const anticipation of [1, 2]) assert.ok([5, 6, 7, 8].includes(choixKevina(d, "bot", { defense: 0, anticipation, rng: sansHasard })));
+    // Coups toujours permis, pioches non modifiées
+    for (let n = 0; n < 20; n++) {
+      const p = creerDuel();
+      while (!p.termine) {
+        const pioche = JSON.stringify(p.pioches);
+        const i = choixKevina(p, p.actif, { marge: 6, anticipation: 2 });
+        assert.strictEqual(JSON.stringify(p.pioches), pioche);
+        assert.ok(casesJouables(p.grille, p.carte).includes(i));
+        poser(p, p.actif, i);
+      }
+    }
+  }
+  {
     for (let n = 0; n < 50; n++) {
       const d = creerDuel();
       while (!d.termine) {

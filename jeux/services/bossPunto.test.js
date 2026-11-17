@@ -1,22 +1,23 @@
 import assert from "assert";
 import { BOSS_PUNTO } from "./bossPunto.js";
-import { casesJouables } from "./puntoRules.js";
+import { casesJouables, choixKevina } from "./puntoRules.js";
 import { rngBossDe } from "./bossRng.js";
 
-// Réglages de Kévina du mode normal (duel.json) chargés une fois
+// Réglages de Kévina (duel.json, `boss` compris) chargés une fois
 const config = await BOSS_PUNTO.chargerConfig();
 
 // Joue une partie complète : le joueur pose sur une case tirée de `rngJoueur`
-// (déterministe) parmi les cases permises. Renvoie l'état et les états
-// successifs (copies JSON).
-function partie(graine, rngJoueur) {
+// (déterministe) parmi les cases permises, ou en glouton (`glouton`, sans
+// marge ni anticipation : le joueur de référence des simulations). Renvoie
+// l'état et les états successifs (copies JSON).
+function partie(graine, rngJoueur, { glouton = false } = {}) {
   const d = BOSS_PUNTO.creer({ graine, config });
   const etats = [JSON.stringify(d)];
   let tours = 0;
   while (!d.termine) {
     assert.strictEqual(d.actif, "joueur");
     const cases = casesJouables(d.grille, d.carte);
-    const i = cases[Math.floor(rngJoueur() * cases.length)];
+    const i = glouton ? choixKevina(d, "joueur", { rng: rngJoueur }) : cases[Math.floor(rngJoueur() * cases.length)];
     const r = BOSS_PUNTO.jouer(d, { case: i, coup: d.coups }, { graine, config });
     assert.ok(!r.erreur, r.message);
     assert.ok(r.texte);
@@ -63,10 +64,13 @@ function main() {
     assert.strictEqual(BOSS_PUNTO.jouer(fini, { case: 12, coup: fini.coups }, { graine: "graineC", config }).erreur, "termine");
   }
 
-  // ── Parties complètes : scores dans leur tranche ──
+  // ── Kévina renforcée : réglages `boss` de duel.json ──
+  assert.ok(config.boss?.anticipation_kevina > 0);
+
+  // ── Parties complètes (joueur glouton) : scores dans leur tranche ──
   const vus = { victoire: [], nul: [], defaite: [] };
   for (let n = 0; n < 150; n++) {
-    const { d } = partie(`g${n}`, rngBossDe("joueur", n));
+    const { d } = partie(`g${n}`, rngBossDe("joueur", n), { glouton: true });
     const res = BOSS_PUNTO.resultat(d);
     const s = BOSS_PUNTO.score(d);
     vus[res].push(s);

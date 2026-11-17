@@ -13,8 +13,15 @@
 // en PNG via @resvg/resvg-js, police Inter embarquée (Vercel Blob). Rendu
 // sans état : la grille est passée dans l'URL (encodeGrille).
 //
-// ⚠️ Lisibilité mobile : l'image s'affiche sur ~360 px de large au
-// téléphone (0,6 × LARGEUR). Aucun texte sous 24 px ici.
+// ⚠️ Taille réelle des PNG : LARGEUR_PNG (dessin à LARGEUR, réduit au
+// rendu). Discord ne permet pas d'imposer la taille d'affichage : sur
+// ordinateur, il borne la hauteur (~350 px), ce qui réduisait la grille
+// (presque carrée) plus que le bandeau (très large) et décalait le pion
+// de sa colonne. Des PNG plus étroits que l'affichage, jamais agrandis,
+// s'affichent à leur taille réelle : bandeau et grille gardent la même
+// largeur, donc l'alignement, sur ordinateur comme sur mobile (réduits
+// ensemble). Prix : un peu de flou sur écran haute densité.
+// Lisibilité mobile : aucun texte sous 24 px sur LARGEUR (~13 px affichés).
 // ============================================================
 
 import { Resvg } from "@resvg/resvg-js";
@@ -25,6 +32,8 @@ import { HAUTEUR, NB_COLONNES } from "./quatreRules.js";
 const FONT_FAMILY = "Inter";
 
 const LARGEUR = 600;
+// Grille de 616 de haut sur 600 : 329 px de haut à 320, sous la borne
+const LARGEUR_PNG = 320;
 const CASE = 76;
 const MARGE_GRILLE = 12;
 const LARGEUR_GRILLE = NB_COLONNES * CASE + 2 * MARGE_GRILLE;
@@ -189,7 +198,7 @@ export function buildGrilleSvg({ colonnes, noms, dernier = null, alignement = []
 async function rasterize(contenu) {
   const fontPaths = await readGameFontPaths();
   const resvg = new Resvg(Buffer.from(texteAffichable(contenu), "utf8"), {
-    fitTo: { mode: "width", value: LARGEUR },
+    fitTo: { mode: "width", value: LARGEUR_PNG },
     font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
   });
   return { buffer: Buffer.from(resvg.render().asPng()), mimeType: "image/png" };

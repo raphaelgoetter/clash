@@ -244,18 +244,59 @@ function risque(grille, id) {
 // suivant (`solidite` : voir potentiel()). Elle gagne dès qu'elle peut.
 // `marge` : case tirée au sort parmi celles à `marge` points au plus de la
 // meilleure (variété, et des erreurs qui laissent sa chance au joueur).
-// Réglages : `defense_kevina`, `prudence_kevina`, `solidite_kevina`,
-// `marge_kevina` de duel.json.
-export function choixKevina(d, id, { defense = 1, prudence = 0, solidite = 0, marge = 0, rng = Math.random } = {}) {
+// `anticipation` : voir apresReponse(). Réglages : `defense_kevina`,
+// `prudence_kevina`, `solidite_kevina`, `marge_kevina` de duel.json (Boss :
+// `boss` de duel.json).
+// Réponse de l'adversaire `adv` qui a la carte `carte` (connue) : il gagne
+// s'il le peut, sinon il joue la case la plus forte pour lui (même
+// évaluation que Kévina, vue de son côté). Renvoie la valeur de la grille
+// pour `id` après cette réponse (perte = -1e6). Grille rendue intacte.
+// Elle choisit sa réponse sans connaître `suivante`.
+function peutGagner(grille, id, carte) {
+  for (const j of casesJouables(grille, carte)) {
+    const avant = grille[j];
+    grille[j] = { s: id, k: carte.k, v: carte.v };
+    const gagne = alignementsDepuis(grille, j).length > 0;
+    grille[j] = avant;
+    if (gagne) return true;
+  }
+  return false;
+}
+
+function apresReponse(grille, id, adv, carte, { defense, solidite, suivante = null }) {
+  // `suivante` : prochaine carte de `id`, connue : une victoire assurée au
+  // coup d'après vaut presque une victoire
+  const evaluer = (g) => potentiel(g, id, solidite) - defense * potentiel(g, adv, solidite) + (suivante && peutGagner(g, id, suivante) ? 1e5 : 0);
+  const cases = casesJouables(grille, carte);
+  if (!cases.length) return evaluer(grille);
+  let meilleure = null;
+  for (const j of cases) {
+    const avant = grille[j];
+    grille[j] = { s: adv, k: carte.k, v: carte.v };
+    const gagne = alignementsDepuis(grille, j).length > 0;
+    const pourAdv = gagne ? Infinity : potentiel(grille, adv, solidite) - defense * potentiel(grille, id, solidite);
+    if (!meilleure || pourAdv > meilleure.pourAdv) meilleure = { pourAdv, v: gagne ? -1e6 : evaluer(grille) };
+    grille[j] = avant;
+  }
+  return meilleure.v;
+}
+
+export function choixKevina(d, id, { defense = 1, prudence = 0, solidite = 0, marge = 0, anticipation = 0, rng = Math.random } = {}) {
   const grille = [...d.grille];
   const cases = casesJouables(grille, d.carte);
   const adv = adversaire(id);
+  // Anticipation (Boss seulement) : Kévina connaît la prochaine carte de
+  // l'adversaire (dessus de sa pioche) et évalue sa meilleure réponse.
+  const carteAdv = anticipation ? d.pioches[adv].at(-1) : null;
+  const suivante = anticipation >= 2 ? d.pioches[id].at(-1) : null;
   const valeurs = [];
   for (const i of cases) {
     const avant = grille[i];
     grille[i] = { s: id, k: d.carte.k, v: d.carte.v };
     if (alignementsDepuis(grille, i).length) return i;
-    const v = potentiel(grille, id, solidite) - defense * potentiel(grille, adv, solidite) - prudence * 1000 * risque(grille, adv);
+    const v = carteAdv
+      ? apresReponse(grille, id, adv, carteAdv, { defense, solidite, suivante })
+      : potentiel(grille, id, solidite) - defense * potentiel(grille, adv, solidite) - prudence * 1000 * risque(grille, adv);
     grille[i] = avant;
     valeurs.push({ i, v });
   }

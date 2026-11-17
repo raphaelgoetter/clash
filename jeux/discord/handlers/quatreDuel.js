@@ -57,7 +57,7 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 // Discord met en cache une image par URL EXACTE, à incrémenter quand le
 // dessin change.
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
-const QUATRE_IMAGE_VERSION = 1;
+const QUATRE_IMAGE_VERSION = 2;
 // Le pion à jouer part de la colonne centrale à chaque tour
 const COLONNE_CENTRALE = Math.floor(NB_COLONNES / 2);
 // Contre Kévina : délai avant d'afficher son coup (elle joue en quelques

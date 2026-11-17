@@ -9,7 +9,9 @@
 // - le choix de Kévina parmi ses cases presque égales (`marge_kevina`) :
 //   `rngBossDe(graine, "kevina:<coups>")`, `coups` = cartes posées avant
 //   le sien (unique par coup de Kévina).
-// Kévina garde les réglages du mode normal (duel.json).
+// Kévina est renforcée (`boss` de duel.json, par-dessus les réglages du
+// mode normal) : anticipation de la prochaine carte du joueur et de la
+// sienne (voir choixKevina(), puntoRules.js).
 // ============================================================
 
 import { ALIGNEMENT, TAILLE, choixKevina, creerDuel, poser } from "./puntoRules.js";
@@ -100,11 +102,13 @@ export const BOSS_PUNTO = {
     // joueur est défaussée)
     while (!d.termine && d.actif === "bot") {
       avantKevina ??= structuredClone(d);
+      const reglages = { ...config, ...config.boss };
       const c = choixKevina(d, "bot", {
-        defense: config.defense_kevina,
-        prudence: config.prudence_kevina,
-        solidite: config.solidite_kevina,
-        marge: config.marge_kevina,
+        defense: reglages.defense_kevina,
+        prudence: reglages.prudence_kevina,
+        solidite: reglages.solidite_kevina,
+        marge: reglages.marge_kevina,
+        anticipation: reglages.anticipation_kevina ?? 0,
         rng: rngBossDe(graine, `kevina:${d.coups}`),
       });
       poser(d, "bot", c);

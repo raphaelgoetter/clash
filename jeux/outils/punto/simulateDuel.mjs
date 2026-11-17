@@ -1,5 +1,7 @@
 // Simulation d'équilibrage de Punto sur les vraies règles
-// (jeux/services/puntoRules.js) : profils hasard ou kevina[d<defense>][p<prudence>][s<solidite>][m<marge>].
+// (jeux/services/puntoRules.js) : profils hasard ou kevina[d<defense>][p<prudence>][s<solidite>][m<marge>][a[2]]
+// (a = anticipation du Boss : connaît la prochaine carte adverse ; a2 :
+// et la sienne).
 // Usage : node jeux/outils/punto/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
 // ex. : node jeux/outils/punto/simulateDuel.mjs 2000 kevinap1s0.5 kevinam10
 // (« bon joueur » contre la Kévina de production). Le « joueur » commence
@@ -11,9 +13,9 @@ const PROFILS = { joueur: process.argv[3] || "kevina", bot: process.argv[4] || "
 
 function choix(profil) {
   if (profil === "hasard") return (d, id) => choixHasard(d, id);
-  const m = /^kevina(?:d([\d.]+))?(?:p([\d.]+))?(?:s([\d.]+))?(?:m([\d.]+))?$/.exec(profil);
-  if (!m) throw new Error(`Profil inconnu : ${profil} (hasard, kevina[d<defense>][p<prudence>][s<solidite>][m<marge>])`);
-  const reglages = { defense: Number(m[1] ?? 1), prudence: Number(m[2] ?? 0), solidite: Number(m[3] ?? 0), marge: Number(m[4] ?? 0) };
+  const m = /^kevina(?:d([\d.]+))?(?:p([\d.]+))?(?:s([\d.]+))?(?:m([\d.]+))?(a\d?)?$/.exec(profil);
+  if (!m) throw new Error(`Profil inconnu : ${profil} (hasard, kevina[d<defense>][p<prudence>][s<solidite>][m<marge>][a[2]])`);
+  const reglages = { defense: Number(m[1] ?? 1), prudence: Number(m[2] ?? 0), solidite: Number(m[3] ?? 0), marge: Number(m[4] ?? 0), anticipation: m[5] ? Number(m[5].slice(1) || 1) : 0 };
   return (d, id) => choixKevina(d, id, reglages);
 }
 const CHOIX = { joueur: choix(PROFILS.joueur), bot: choix(PROFILS.bot) };
