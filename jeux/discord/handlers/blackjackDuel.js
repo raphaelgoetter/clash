@@ -26,6 +26,7 @@ import {
   pointsForResult,
   saveHandWebhook,
   readHandWebhooks,
+  readScores,
   INACTIVITE_SECONDES,
 } from "../../services/blackjackDuel.js";
 import { encodeFin, encodeMain, encodeManche, meilleureMain } from "../../services/blackjackImage.js";
@@ -71,11 +72,12 @@ export async function memberHasMiniJeuxRole(body) {
 async function patchOriginal(webhookUrl, payload) {
   if (!webhookUrl) return;
   try {
-    await fetch(`${webhookUrl}/messages/@original`, {
+    const res = await fetch(`${webhookUrl}/messages/@original`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) console.error(`[BlackjackDuel] PATCH refusé (${res.status}) :`, (await res.text()).slice(0, 300));
   } catch (err) {
     console.error("[BlackjackDuel] Échec PATCH:", err.message);
   }
@@ -543,10 +545,21 @@ function urlImageMain(state, hand) {
   return `${TRUST_ROYALE_URL}/api/blackjack/main?d=${param}`;
 }
 
-function buildHandEmbed(state, hand, message) {
+// Ligne de score sous le statut de la main : le sien seul contre
+// le Croupier, les deux en 1v1 (le joueur d'abord).
+async function scoreLine(state, discordId) {
+  const scores = await readScores(state);
+  const moi = scores.find((s) => s.discordId === discordId)?.points ?? 0;
+  const pts = (n) => `${n} pt${n > 1 ? "s" : ""}`;
+  if (state.maxPlayers === 1) return `🏆 Score : **${pts(moi)}**`;
+  const autres = scores.filter((s) => s.discordId !== discordId).map((s) => `${s.username ?? "Adversaire"} **${s.points}**`);
+  return `🏆 Score : toi **${moi}**${autres.length ? `, ${autres.join(", ")}` : ""}`;
+}
+
+async function buildHandEmbed(state, hand, message, discordId) {
   return {
     title: `🃏 Ta main (Manche ${state.manche})`,
-    description: message,
+    description: `${message}\n${await scoreLine(state, discordId)}`,
     image: { url: urlImageMain(state, hand) },
     color: BLACKJACKDUEL_COLOR,
   };
@@ -648,22 +661,34 @@ async function refreshPublicMessage(gid) {
   return outcome;
 }
 
-// Après une action sur la main : mémorise le webhook de l'éphémère si la
-// main est terminée, rafraîchit le message public puis, si la manche vient
-// d'être résolue, active « Manche suivante » sur l'éphémère de chaque joueur.
-async function afterHandAction(webhookUrl, discordId, state, hand) {
-  const done = hand.status !== "en_cours";
-  if (done) await saveHandWebhook(state.gid, state.manche, discordId, webhookUrl);
-  const outcome = await refreshPublicMessage(state.gid);
-  if (!done || outcome.inactive || outcome.final) return;
-  if (outcome.resolved) {
-    const webhooks = await readHandWebhooks(state.gid, state.manche);
-    await activateNextButtons(state, Object.values({ ...webhooks, [discordId]: webhookUrl }));
-  } else if (outcome.alreadyResolving) {
-    // Résolution prise par un clic concurrent qui a pu lire les webhooks
-    // avant l'enregistrement du nôtre.
-    await activateNextButtons(state, [webhookUrl]);
+// Après une action sur la main : PATCH de l'éphémère du joueur et
+// rafraîchissement du message public. Main terminée : la manche est d'abord
+// résolue si possible, puis l'éphémère n'est édité qu'UNE fois, avec
+// « Manche suivante » déjà dans son état final (deux PATCH rapprochés sur le
+// même jeton d'interaction : le second, celui qui activait le bouton, était
+// refusé par Discord). Les éphémères des autres joueurs sont activés ensuite.
+async function afterHandAction(webhookUrl, discordId, state, hand, { refresh = true } = {}) {
+  const message = handStatusMessage(hand, state.dealer, state.maxPlayers === 1);
+  if (hand.status === "en_cours") {
+    const embeds = [await buildHandEmbed(state, hand, message, discordId)];
+    await patchOriginal(webhookUrl, { embeds, components: buildHandComponents(state, hand) });
+    if (refresh) await refreshPublicMessage(state.gid);
+    return;
   }
+  await saveHandWebhook(state.gid, state.manche, discordId, webhookUrl);
+  const outcome = await refreshPublicMessage(state.gid);
+  // Résolution prise par un clic concurrent : la manche est close aussi.
+  const ready = !outcome.inactive && (outcome.resolved || Boolean(outcome.alreadyResolving));
+  // Après la résolution : le score inclut la manche qui vient de finir.
+  const embeds = [await buildHandEmbed(state, hand, message, discordId)];
+  await patchOriginal(webhookUrl, {
+    embeds,
+    components: buildNextComponents(state.gid, state.manche, state.totalManches, ready),
+  });
+  if (!outcome.resolved || outcome.final) return;
+  const webhooks = await readHandWebhooks(state.gid, state.manche);
+  delete webhooks[discordId];
+  await activateNextButtons(state, Object.values(webhooks));
 }
 
 // PATCH des seuls composants : l'embed de la main reste affiché.
@@ -699,21 +724,10 @@ export async function handleJouer(webhookUrl, gid, discordId, username) {
       return;
     }
 
-    const state = result.state;
-    await patchOriginal(webhookUrl, {
-      embeds: [
-        buildHandEmbed(
-          state,
-          result.hand,
-          handStatusMessage(result.hand, state.dealer, state.maxPlayers === 1),
-        ),
-      ],
-      components: buildHandComponents(state, result.hand),
+    // Main déjà en cours : rien à rafraîchir côté public.
+    await afterHandAction(webhookUrl, discordId, result.state, result.hand, {
+      refresh: result.isNew || result.hand.status !== "en_cours",
     });
-
-    if (result.isNew || result.hand.status !== "en_cours") {
-      await afterHandAction(webhookUrl, discordId, state, result.hand);
-    }
   } catch (err) {
     console.error("[BlackjackDuel] Échec Jouer:", err.message);
   }
@@ -737,32 +751,20 @@ async function handleDrawOrStand(webhookUrl, gid, discordId, { draw, double = fa
     }
     if (result.cannotDouble) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, "On ne peut doubler que sur ses 2 premières cartes.")],
+        embeds: [await buildHandEmbed(result.state, result.hand, "On ne peut doubler que sur ses 2 premières cartes.", discordId)],
         components: buildHandComponents(result.state, result.hand),
       });
       return;
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, "Ta main est déjà terminée pour cette manche.")],
+        embeds: [await buildHandEmbed(result.state, result.hand, "Ta main est déjà terminée pour cette manche.", discordId)],
         components: [],
       });
       return;
     }
 
-    const state = result.state;
-    await patchOriginal(webhookUrl, {
-      embeds: [
-        buildHandEmbed(
-          state,
-          result.hand,
-          handStatusMessage(result.hand, state.dealer, state.maxPlayers === 1),
-        ),
-      ],
-      components: buildHandComponents(state, result.hand),
-    });
-
-    await afterHandAction(webhookUrl, discordId, state, result.hand);
+    await afterHandAction(webhookUrl, discordId, result.state, result.hand);
   } catch (err) {
     console.error(`[BlackjackDuel] Échec ${double ? "Doubler" : draw ? "Piocher" : "Arrêter"}:`, err.message);
   }

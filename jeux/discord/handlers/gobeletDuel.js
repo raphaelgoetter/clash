@@ -25,6 +25,7 @@ import {
   checkAndResolveManche,
   listHands,
   readPoints,
+  readScores,
   saveHandWebhook,
   readHandWebhooks,
   INACTIVITE_SECONDES,
@@ -78,11 +79,12 @@ export async function memberHasMiniJeuxRole(body) {
 async function patchOriginal(webhookUrl, payload) {
   if (!webhookUrl) return;
   try {
-    await fetch(`${webhookUrl}/messages/@original`, {
+    const res = await fetch(`${webhookUrl}/messages/@original`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) console.error(`[GobeletDuel] PATCH refusé (${res.status}) :`, (await res.text()).slice(0, 300));
   } catch (err) {
     console.error("[GobeletDuel] Échec PATCH:", err.message);
   }
@@ -499,12 +501,23 @@ function urlImageMain(state, hand, used, opponents = []) {
   return `${TRUST_ROYALE_URL}/api/gobelet/main?d=${param}`;
 }
 
+// Ligne de score sous le statut de la main : le sien seul contre
+// Kévina/le Croupier, les deux en 1v1 (le joueur d'abord).
+async function scoreLine(state, discordId) {
+  const scores = await readScores(state);
+  const moi = scores.find((s) => s.discordId === discordId)?.points ?? 0;
+  const pts = (n) => `${n} pt${n > 1 ? "s" : ""}`;
+  if (state.maxPlayers === 1) return `🏆 Score : **${pts(moi)}**`;
+  const autres = scores.filter((s) => s.discordId !== discordId).map((s) => `${s.username ?? "Adversaire"} **${s.points}**`);
+  return `🏆 Score : toi **${moi}**${autres.length ? `, ${autres.join(", ")}` : ""}`;
+}
+
 // Indépendant des dés gardés (affichés par les boutons) : un clic sur un dé
 // n'édite que les composants, sans recharger l'image.
-function buildHandEmbed(state, hand, used, opponents) {
+async function buildHandEmbed(state, hand, used, opponents, discordId) {
   return {
     title: `🎲 Ta main (Manche ${state.manche})`,
-    description: buildHandStatusMessage(hand, state.manche),
+    description: `${buildHandStatusMessage(hand, state.manche)}\n${await scoreLine(state, discordId)}`,
     image: { url: urlImageMain(state, hand, used, opponents) },
     color: GOBELETDUEL_COLOR,
   };
@@ -659,22 +672,34 @@ async function refreshPublicMessage(gid) {
   return outcome;
 }
 
-// Après une action sur la main : mémorise le webhook de l'éphémère si la
-// main est terminée, rafraîchit le message public puis, si la manche vient
-// d'être résolue, active « Manche suivante » sur l'éphémère de chaque joueur.
-async function afterHandAction(webhookUrl, discordId, state, hand) {
-  const done = hand.status === "termine";
-  if (done) await saveHandWebhook(state.gid, state.manche, discordId, webhookUrl);
-  const outcome = await refreshPublicMessage(state.gid);
-  if (!done || outcome.inactive || outcome.final) return;
-  if (outcome.resolved) {
-    const webhooks = await readHandWebhooks(state.gid, state.manche);
-    await activateNextButtons(state, Object.values({ ...webhooks, [discordId]: webhookUrl }));
-  } else if (outcome.alreadyResolving) {
-    // Résolution prise par un clic concurrent qui a pu lire les webhooks
-    // avant l'enregistrement du nôtre.
-    await activateNextButtons(state, [webhookUrl]);
+// Après une action sur la main : PATCH de l'éphémère du joueur et
+// rafraîchissement du message public. Main terminée : la manche est d'abord
+// résolue si possible, puis l'éphémère n'est édité qu'UNE fois, avec
+// « Manche suivante » déjà dans son état final (deux PATCH rapprochés sur le
+// même jeton d'interaction : le second, celui qui activait le bouton, était
+// refusé par Discord). Les éphémères des autres joueurs sont activés ensuite.
+async function afterHandAction(webhookUrl, discordId, result, kept, { refresh = true } = {}) {
+  const { state, hand, used, opponents } = result;
+  if (hand.status !== "termine") {
+    const embeds = [await buildHandEmbed(state, hand, used, opponents, discordId)];
+    await patchOriginal(webhookUrl, { embeds, components: buildHandComponents(state, hand, kept, used) });
+    if (refresh) await refreshPublicMessage(state.gid);
+    return;
   }
+  await saveHandWebhook(state.gid, state.manche, discordId, webhookUrl);
+  const outcome = await refreshPublicMessage(state.gid);
+  // Résolution prise par un clic concurrent : la manche est close aussi.
+  const ready = !outcome.inactive && (outcome.resolved || Boolean(outcome.alreadyResolving));
+  // Après la résolution : le score inclut la manche qui vient de finir.
+  const embeds = [await buildHandEmbed(state, hand, used, opponents, discordId)];
+  await patchOriginal(webhookUrl, {
+    embeds,
+    components: buildNextComponents(state.gid, state.manche, state.totalManches, ready),
+  });
+  if (!outcome.resolved || outcome.final) return;
+  const webhooks = await readHandWebhooks(state.gid, state.manche);
+  delete webhooks[discordId];
+  await activateNextButtons(state, Object.values(webhooks));
 }
 
 // PATCH des seuls composants : l'embed de la main reste affiché.
@@ -713,15 +738,10 @@ export async function handleJouer(webhookUrl, gid, discordId, username) {
       return;
     }
 
-    const state = result.state;
-    await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(state, result.hand, result.used, result.opponents)],
-      components: buildHandComponents(state, result.hand, result.kept, result.used),
+    // Main déjà en cours : rien à rafraîchir côté public.
+    await afterHandAction(webhookUrl, discordId, result, result.kept, {
+      refresh: result.isNew || result.hand.status !== "en_cours",
     });
-
-    if (result.isNew || result.hand.status !== "en_cours") {
-      await afterHandAction(webhookUrl, discordId, state, result.hand);
-    }
   } catch (err) {
     console.error("[GobeletDuel] Échec Jouer:", err.message);
   }
@@ -745,7 +765,7 @@ export async function handleToggle(webhookUrl, gid, discordId, index) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
+        embeds: [await buildHandEmbed(result.state, result.hand, result.used, result.opponents, discordId)],
         components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
@@ -780,18 +800,13 @@ export async function handleRelancer(webhookUrl, gid, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
+        embeds: [await buildHandEmbed(result.state, result.hand, result.used, result.opponents, discordId)],
         components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
     }
 
-    await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
-      components: buildHandComponents(result.state, result.hand, result.kept, result.used),
-    });
-
-    await afterHandAction(webhookUrl, discordId, result.state, result.hand);
+    await afterHandAction(webhookUrl, discordId, result, result.kept);
   } catch (err) {
     console.error("[GobeletDuel] Échec Relancer:", err.message);
   }
@@ -817,7 +832,7 @@ export async function handleValider(webhookUrl, gid, discordId) {
     }
     if (result.alreadyDone) {
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
+        embeds: [await buildHandEmbed(result.state, result.hand, result.used, result.opponents, discordId)],
         components: result.hand.status === "choix" ? buildHandComponents(result.state, result.hand, NO_KEPT, result.used) : [],
       });
       return;
@@ -827,18 +842,13 @@ export async function handleValider(webhookUrl, gid, discordId) {
       // Garde-fou : le bouton ne devrait normalement pas être cliquable
       // dans ce cas (voir buildHandComponents) — on repeint juste l'état réel.
       await patchOriginal(webhookUrl, {
-        embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
+        embeds: [await buildHandEmbed(result.state, result.hand, result.used, result.opponents, discordId)],
         components: buildHandComponents(result.state, result.hand, result.kept, result.used),
       });
       return;
     }
 
-    await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
-      components: buildHandComponents(result.state, result.hand, result.kept, result.used),
-    });
-
-    await afterHandAction(webhookUrl, discordId, result.state, result.hand);
+    await afterHandAction(webhookUrl, discordId, result, result.kept);
   } catch (err) {
     console.error("[GobeletDuel] Échec Valider:", err.message);
   }
@@ -864,14 +874,15 @@ export async function handleChoisir(webhookUrl, gid, discordId, category) {
       return;
     }
 
-    await patchOriginal(webhookUrl, {
-      embeds: [buildHandEmbed(result.state, result.hand, result.used, result.opponents)],
-      components: buildHandComponents(result.state, result.hand, NO_KEPT, result.used),
-    });
-
-    if (!result.alreadyDone) {
-      await afterHandAction(webhookUrl, discordId, result.state, result.hand);
+    if (result.alreadyDone) {
+      await patchOriginal(webhookUrl, {
+        embeds: [await buildHandEmbed(result.state, result.hand, result.used, result.opponents, discordId)],
+        components: buildHandComponents(result.state, result.hand, NO_KEPT, result.used),
+      });
+      return;
     }
+
+    await afterHandAction(webhookUrl, discordId, result, NO_KEPT);
   } catch (err) {
     console.error("[GobeletDuel] Échec choix de combinaison:", err.message);
   }

@@ -240,6 +240,13 @@ export async function readPoints(gid) {
   return result;
 }
 
+// Score cumulé de chaque joueur inscrit (manches résolues), pour la vue de
+// la main : il oriente les choix en cours de partie.
+export async function readScores(state) {
+  const [points, usernames] = await Promise.all([readPoints(state.gid), hgetallRaw(usernamesKey(state.gid))]);
+  return state.players.map((id) => ({ discordId: id, username: usernames[id] || null, points: points[id] || 0 }));
+}
+
 export { buildRanking };
 
 // ── Remise à zéro ───────────────────────────────────────────────────
