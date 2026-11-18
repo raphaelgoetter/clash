@@ -510,6 +510,17 @@ function main() {
       assert.ok(!p.veille.absents.includes("j1"));
     }
     assert.strictEqual(p.joueurs.j1.erreurs + p.joueurs.j2.erreurs, 0);
+
+    // Partie en cours sans compteur : amorcé par les absents de la veille
+    const q = partieTest(4);
+    for (const j of Object.values(q.joueurs)) j.actifJour = true;
+    q.joueurs.j0.actifJour = false;
+    cloturer(q, { config: CONFIG });
+    for (const j of Object.values(q.joueurs)) delete j.absences;
+    for (const j of Object.values(q.joueurs)) j.actifJour = true;
+    q.joueurs.j0.actifJour = false;
+    cloturer(q, { config: CONFIG });
+    assert.deepStrictEqual(q.veille.remplacements.map((r) => r.id), ["j0"]);
     assert.ok(p.joueurs.j1.demasques.length + p.joueurs.j2.demasques.length > 0, "les bots finissent par démasquer");
   }
 

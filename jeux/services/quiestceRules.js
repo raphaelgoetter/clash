@@ -682,7 +682,10 @@ function remplacerAbsents(partie, absents, { config, avatarsBots = {} }) {
   const pris = new Set(Object.values(partie.joueurs).map((j) => j.bot).filter(Boolean));
   for (const [id, j] of Object.entries(partie.joueurs)) {
     if (!j.carte || j.bot) continue;
-    j.absences = absents.includes(id) ? (j.absences ?? 0) + 1 : 0;
+    // Parties lancées avant les bots (sans compteur) : amorcé par les absents
+    // de la veille
+    const precedent = j.absences ?? (partie.veille?.absents?.includes(id) ? 1 : 0);
+    j.absences = absents.includes(id) ? precedent + 1 : 0;
     if (j.absences < seuil) continue;
     const bot = (config.bots_remplacants ?? []).find((b) => !pris.has(b));
     if (!bot) continue;
