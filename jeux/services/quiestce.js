@@ -24,7 +24,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { noterJeuSpecial } from "./passeport.js";
 import { Redis } from "@upstash/redis";
-import { creerPartie, inscrire, desinscrire, demarrer, debutAction, cloturer, classement, completerCartes, nbInscrits } from "./quiestceRules.js";
+import { creerPartie, inscrire, desinscrire, demarrer, debutAction, cloturer, jouerBots, classement, completerCartes, nbInscrits } from "./quiestceRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "quiestce", "quiestce.json");
@@ -165,6 +165,8 @@ export async function agir(discordId, username, fn = () => null, { inscription =
     const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);
     let nouveau = false;
     const joueur = partie.joueurs[discordId];
+    // Place reprise par un bot après plusieurs jours d'absence
+    if (joueur?.bot) return { erreur: "remplace", partie };
     if (!joueur) {
       if (!inscription) return { erreur: partie.demarree ? "inscriptions" : "pasInscrit", partie };
       const r = inscrire(partie, discordId, username, { config });
@@ -199,18 +201,25 @@ export async function countInscrits() {
 // ── Clôture ─────────────────────────────────────────────────────────
 
 // Lecture seule (aucune écriture Redis) — branche --dry-run du script.
-export async function previewCloture(jour) {
+// `avatarsBots` : { nom du bot: "id/hash" } (avatar Discord de Kévina).
+export async function previewCloture(jour, { avatarsBots } = {}) {
   const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);
-  if (!partie.termine) cloturer(partie, { config });
+  if (!partie.termine) {
+    jouerBots(partie, { config });
+    cloturer(partie, { config, avatarsBots });
+  }
   const termine = partie.termine || jour >= config.duree_jours;
   return { partie, termine, final: termine ? classement(partie) : null, jourSuivant: jour + 1 };
 }
 
-// Compteurs du jour remis à zéro ; classement final au dernier jour.
-export async function closeDayAndAdvance(jour) {
+// Tour des bots remplaçants, puis compteurs du jour remis à zéro ; classement final au dernier jour.
+export async function closeDayAndAdvance(jour, { avatarsBots } = {}) {
   return withLock(async () => {
     const [config, partie] = await Promise.all([loadQuiEstCeConfig(), readPartie()]);
-    if (!partie.termine) cloturer(partie, { config });
+    if (!partie.termine) {
+      jouerBots(partie, { config });
+      cloturer(partie, { config, avatarsBots });
+    }
     const termine = partie.termine || jour >= config.duree_jours;
     if (termine) partie.termine = true;
     const final = termine ? classement(partie) : null;

@@ -234,6 +234,9 @@ function buildClotureEmbed(config, partie, state) {
 const INTRO_J1 =
   "Les cartes secrètes sont distribuées et chacun a reçu une première cible.";
 
+const MESSAGE_REMPLACE =
+  "🔄 Ta place a été reprise par un bot après plusieurs jours d'absence : tu ne participes plus à cette partie.";
+
 function bilanVeilleLignes(partie) {
   const v = partie.veille;
   const n = (id) => `**${partie.joueurs[id]?.username ?? "?"}**`;
@@ -249,8 +252,13 @@ function bilanVeilleLignes(partie) {
     lignes.push(
       `❌ ${plural(v.erreurs, "accusation")} ratée${v.erreurs > 1 ? "s" : ""}.`,
     );
-  if (v.absents?.length)
-    lignes.push(`🤷 N'ont pas joué : ${v.absents.map(n).join(", ")}.`);
+  // Les joueurs remplacés ce jour-là sont cités sous leur ancien pseudo
+  const remplaces = new Set((v.remplacements ?? []).map((r) => r.id));
+  const absents = (v.absents ?? []).filter((id) => !remplaces.has(id));
+  if (absents.length)
+    lignes.push(`🤷 N'ont pas joué : ${absents.map(n).join(", ")}.`);
+  for (const r of v.remplacements ?? [])
+    lignes.push(`🔄 **${r.ancien}** a abandonné l'enquête : **${r.nouveau}** reprend sa place.`);
   return lignes;
 }
 
@@ -348,6 +356,9 @@ function buildReglesEmbed(config) {
       `- Accusation juste : **+${config.points_carte} points**, puis tu choisis ta prochaine cible.`,
       `- Efficacité : **+${config.bonus_efficacite.join("/+")}** si tu démasques avec ${config.bonus_efficacite.map((_, i) => i + 1).join("/")} indices (indice de départ compris).`,
       `- Survie : **+${config.bonus_survie_jour}** par jour joué sans être démasqué.`,
+      ...(config.absences_avant_remplacement
+        ? [`- 💤 Absent ${config.absences_avant_remplacement} jours de suite : un bot reprend ta place.`]
+        : []),
       `- Être démasqué : **-${config.malus_demasque} points**.`,
       `- Accusation ratée : la carte est barrée de ta fiche${config.malus_erreur ? `, **-${config.malus_erreur} point** (gratuite le jour 1 et la première ratée sous Double accusation)` : ""}.`,
       "",
@@ -432,6 +443,19 @@ async function discordFetch(url, init) {
       ...(multipart ? {} : { "Content-Type": "application/json" }),
     },
   });
+}
+
+// Avatar Discord de Kévina (le bot de l'application) pour le bot remplaçant
+// du même nom ; en cas d'échec, sa créature Clay fixe (voir remplacerAbsents).
+async function avatarsDesBots() {
+  try {
+    const res = await discordFetch("/users/@me");
+    if (!res.ok) return {};
+    const moi = await res.json();
+    return moi.avatar ? { Kévina: `${moi.id}/${moi.avatar}` } : {};
+  } catch {
+    return {};
+  }
 }
 
 // Image jointe au message (`attachment://`), grille comme illustration,
@@ -636,10 +660,11 @@ async function terminerPartie(state, partie, final, { dryRun = false } = {}) {
       vainqueur: final[0].username,
       scoreGagnant: final[0].score,
       nbJoueurs: final.length,
+      // Place reprise par un bot : l'humain garde son score au remplacement
       ranking: final.map((r) => ({
         discordId: r.discordId,
-        username: r.username,
-        score: r.score,
+        username: r.remplace?.username ?? r.username,
+        score: r.remplace?.score ?? r.score,
       })),
       resolvedAt: new Date().toISOString(),
     });
@@ -811,9 +836,10 @@ export async function postQuiEstCe(
   }
 
   // 3) Clôture d'un jour (lecture seule en dry-run)
+  const avatarsBots = await avatarsDesBots();
   const closure = dryRun
-    ? await previewCloture(state.jour)
-    : await closeDayAndAdvance(state.jour);
+    ? await previewCloture(state.jour, { avatarsBots })
+    : await closeDayAndAdvance(state.jour, { avatarsBots });
   if (closure.termine) {
     return terminerPartie(
       { ...state, isPublic, noPing },
@@ -1223,6 +1249,7 @@ async function executer(
       "🔒 Les inscriptions sont closes : tu ne participes pas à cette partie. Rendez-vous à la prochaine !",
     complet: `🔒 Désolé, l'effectif maximum (${config.effectif_max} joueurs) est atteint.`,
     pasInscrit: "Tu n'es pas inscrit : clique sur *S'inscrire*.",
+    remplace: MESSAGE_REMPLACE,
   };
   if (refus[r.erreur]) {
     await patchOriginal(webhookUrl, { content: refus[r.erreur] });
@@ -1452,6 +1479,10 @@ export async function handleJournal(webhookUrl, discordId) {
       await patchOriginal(webhookUrl, {
         content: "Tu ne participes pas à cette partie.",
       });
+      return;
+    }
+    if (partie.joueurs[discordId].bot) {
+      await patchOriginal(webhookUrl, { content: MESSAGE_REMPLACE });
       return;
     }
     const jours = new Map();

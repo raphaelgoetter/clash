@@ -145,6 +145,9 @@ function clayDataUrl(i) {
 
 // Avatar Discord (id/hash validés : l'URL vient d'un paramètre public)
 async function avatarDataUrl(av, i) {
+  // Créature Clay fixe (bots remplaçants : « clay-02 »)
+  const clay = /^clay-(\d{2})$/.exec(String(av ?? ""));
+  if (clay) return clayDataUrl(Number(clay[1]) - 1);
   const m = /^(\d{5,22})\/((?:a_)?[0-9a-f]{32})$/.exec(String(av ?? ""));
   if (m) {
     const url = `https://cdn.discordapp.com/avatars/${m[1]}/${m[2]}.png?size=128`;

@@ -637,11 +637,12 @@ export function utiliserObjet(partie, id, objet, { config, rng = Math.random }) 
 // ce jour-là (décision du 12/10) et qui a joué ce jour-là (décision du
 // 13/10 : un inscrit absent ne marque rien) ; compteurs quotidiens,
 // Brouillard, Miroir et Bouclier remis à zéro.
-export function cloturer(partie, { config = {} } = {}) {
+export function cloturer(partie, { config = {}, avatarsBots = {} } = {}) {
   // Inscrits n'ayant rien fait de la journée (bilan public du lendemain)
   bilan(partie).absents = Object.entries(partie.joueurs)
     .filter(([, j]) => j.carte && !j.actifJour)
     .map(([cid]) => cid);
+  bilan(partie).remplacements = remplacerAbsents(partie, bilan(partie).absents, { config, avatarsBots });
   for (const j of Object.values(partie.joueurs)) {
     if (j.carte && j.actifJour && !j.demasqueJour) j.survie = (j.survie ?? 0) + (config.bonus_survie_jour ?? 0);
     j.demasqueJour = false;
@@ -664,6 +665,79 @@ export function cloturer(partie, { config = {} } = {}) {
   partie.veille = bilan(partie);
   partie.jour = bilanVide();
   partie.numeroJour = (partie.numeroJour ?? 1) + 1;
+}
+
+// ── Bots remplaçants ────────────────────────────────────────────────
+// Un joueur absent `absences_avant_remplacement` clôtures de suite est
+// repris par un bot de `bots_remplacants` (s'il en reste un libre) : même
+// identifiant, carte, cible, enquête et points ; pseudo « Kévina (bot) ».
+// Avatar : `avatarsBots[nom]` (« id/hash », avatar Discord de Kévina), sinon
+// la créature Clay fixe du rang du bot (clay-01, clay-02…).
+// L'humain ne peut plus jouer ; son score de manche est figé au moment du
+// remplacement (`pointsRemplacement`). Renvoie [{ id, ancien, nouveau }].
+function remplacerAbsents(partie, absents, { config, avatarsBots = {} }) {
+  const seuil = config.absences_avant_remplacement ?? 0;
+  const remplacements = [];
+  if (!seuil) return remplacements;
+  const pris = new Set(Object.values(partie.joueurs).map((j) => j.bot).filter(Boolean));
+  for (const [id, j] of Object.entries(partie.joueurs)) {
+    if (!j.carte || j.bot) continue;
+    j.absences = absents.includes(id) ? (j.absences ?? 0) + 1 : 0;
+    if (j.absences < seuil) continue;
+    const bot = (config.bots_remplacants ?? []).find((b) => !pris.has(b));
+    if (!bot) continue;
+    pris.add(bot);
+    j.bot = bot;
+    j.usernameOrigine = j.username;
+    j.username = `${bot} (bot)`;
+    j.avatar = avatarsBots[bot] ?? `clay-${String(config.bots_remplacants.indexOf(bot) + 1).padStart(2, "0")}`;
+    j.pointsRemplacement = points(j);
+    remplacements.push({ id, ancien: j.usernameOrigine, nouveau: j.username });
+  }
+  return remplacements;
+}
+
+// Question qui partage le mieux les cartes encore possibles (plus petite
+// somme des carrés des groupes de réponses), parmi les questions permises.
+function meilleureQuestion(partie, id, { config }) {
+  const cands = candidats(partie, id);
+  let meilleure = null;
+  let score = Infinity;
+  for (const q of questionsPossibles(partie, id, { config })) {
+    const groupes = {};
+    for (const k of cands) groupes[partie.cartes[k].profil[q]] = (groupes[partie.cartes[k].profil[q]] ?? 0) + 1;
+    const s = Object.values(groupes).reduce((a, n) => a + n * n, 0);
+    if (s < score) [meilleure, score] = [q, s];
+  }
+  return meilleure;
+}
+
+function botChoisitCible(partie, id, { config, rng }) {
+  const dispo = ciblesDisponibles(partie, id, { config });
+  if (dispo.length) choisirCible(partie, id, dispo[Math.floor(rng() * dispo.length)], { config, rng });
+}
+
+// Tour des bots, joué à la clôture avant cloturer() : cible tirée au hasard
+// parmi les cibles disponibles (pas le meneur, pour rester neutre), la
+// question qui élimine le plus de cartes, une accusation seulement quand il
+// ne reste qu'une carte possible (jamais d'accusation ratée). Aucun objet
+// utilisé. Toujours compté comme actif (survie).
+export function jouerBots(partie, { config, rng = Math.random }) {
+  if (!partie.demarree || partie.termine) return;
+  for (const [id, j] of Object.entries(partie.joueurs)) {
+    if (!j.bot || !j.carte) continue;
+    j.actifJour = true;
+    if (!j.cible) botChoisitCible(partie, id, { config, rng });
+    if (!j.cible) continue;
+    if (questionsRestantes(j, config) > 0) {
+      const q = meilleureQuestion(partie, id, { config });
+      if (q) poser(partie, id, q, { config });
+    }
+    const cands = candidats(partie, id);
+    if (cands.length === 1 && accusationsRestantes(j) > 0 && accuser(partie, id, cands[0], { config, rng }).correct) {
+      botChoisitCible(partie, id, { config, rng });
+    }
+  }
 }
 
 // Classement (décisions des 12 et 13/10) : points = points des cartes
@@ -699,6 +773,9 @@ export function classement(partie) {
     carte: j.carte,
     // Toutes les cartes tenues pendant la partie (Déguisements compris)
     cartes: [...(j.anciennesCartes ?? []), j.carte],
+    // Place reprise par un bot : pseudo et score figé de l'humain remplacé
+    // (historique de saison)
+    ...(j.bot ? { remplace: { username: j.usernameOrigine, score: j.pointsRemplacement ?? 0 } } : {}),
   }));
 }
 

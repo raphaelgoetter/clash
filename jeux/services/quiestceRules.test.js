@@ -28,6 +28,7 @@ import {
   cloturer,
   classement,
   texteJournal,
+  jouerBots,
 } from "./quiestceRules.js";
 
 const CONFIG = JSON.parse(fs.readFileSync(new URL("../data/quiestce/quiestce.json", import.meta.url), "utf8"));
@@ -473,6 +474,43 @@ function main() {
     assert.match(bref, /\*\*j1\*\* a tiré 4 Doubles accusations/);
     assert.match(bref, /Pas de chance pour \*\*j1\*\* : 3 pile ou face perdus/);
     if (n >= 3) assert.match(bref, new RegExp(`Plus beau coup : \\*\\*j0\\*\\* a démasqué .* avec 1 chance sur ${n}`));
+  }
+
+  // ── Bots remplaçants : 2 absences de suite, bot qui enquête sans se tromper ──
+  {
+    const p = partieTest(5);
+    const actifs = (sauf) => {
+      for (const [id, j] of Object.entries(p.joueurs)) j.actifJour = !sauf.includes(id);
+    };
+    // j0 absent J1, revient J2 : compteur remis à zéro
+    actifs(["j0", "j1", "j2", "j3"]);
+    cloturer(p, { config: CONFIG });
+    assert.deepStrictEqual(p.veille.remplacements, []);
+    actifs(["j1", "j2", "j3"]);
+    p.joueurs.j1.survie = 4;
+    const avant = points(p.joueurs.j1);
+    cloturer(p, { config: CONFIG, avatarsBots: { Kévina: "123456/abc" } });
+    assert.strictEqual(p.joueurs.j0.absences, 0);
+    assert.deepStrictEqual([p.joueurs.j1.avatar, p.joueurs.j2.avatar], ["123456/abc", "clay-02"]);
+    // j1, j2, j3 absents 2 jours : 2 bots seulement (Kévina, Georgette)
+    assert.deepStrictEqual(p.veille.remplacements.map((r) => [r.id, r.nouveau]), [["j1", "Kévina (bot)"], ["j2", "Georgette (bot)"]]);
+    assert.strictEqual(p.joueurs.j3.bot, undefined, "plus de bot libre");
+    assert.strictEqual(p.joueurs.j1.usernameOrigine, "j1");
+    assert.strictEqual(p.joueurs.j1.pointsRemplacement, avant);
+    const ligne = classement(p).find((r) => r.discordId === "j1");
+    assert.deepStrictEqual([ligne.username, ligne.remplace], ["Kévina (bot)", { username: "j1", score: avant }]);
+    // Le bot joue : actif, une question, jamais d'accusation ratée
+    for (let k = 0; k < 4; k++) {
+      actifs(Object.keys(p.joueurs));
+      p.joueurs.j1.actifJour = p.joueurs.j2.actifJour = false;
+      jouerBots(p, { config: CONFIG, rng });
+      assert.ok(p.joueurs.j1.actifJour && p.joueurs.j2.actifJour);
+      assert.ok(p.joueurs.j1.questionsJour === 1 || p.joueurs.j1.demasques.length > 0);
+      cloturer(p, { config: CONFIG });
+      assert.ok(!p.veille.absents.includes("j1"));
+    }
+    assert.strictEqual(p.joueurs.j1.erreurs + p.joueurs.j2.erreurs, 0);
+    assert.ok(p.joueurs.j1.demasques.length + p.joueurs.j2.demasques.length > 0, "les bots finissent par démasquer");
   }
 
   console.log("quiestceRules.test.js : OK");
