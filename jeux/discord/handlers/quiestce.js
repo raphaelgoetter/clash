@@ -581,7 +581,7 @@ async function publishAndWriteState(
 
 // Réédite le message officiel (après chaque action) : liste des inscrits
 // le jour de présentation, sinon le message du jour.
-async function rafraichirMessage(state, partie) {
+export async function rafraichirMessage(state, partie) {
   if (!state?.messageId || state.termine) return;
   try {
     const config = await loadQuiEstCeConfig();
