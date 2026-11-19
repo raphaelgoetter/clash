@@ -1,5 +1,5 @@
 // Commandes d'administration et de liaison de comptes : /help,
-// /discord-link, /blacklist, /discord-check.
+// /discord-link, /blacklist, /discord-check, /multi.
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -10,6 +10,7 @@ import {
   setDiscordLinks,
 } from "../../../backend/services/discordLinks.js";
 import { handleBlacklistCommand } from "../_handlers/blacklist.js";
+import { handleMultiCommand } from "../_handlers/multi.js";
 import {
   runBackground,
   buildDiscordWebhookUrl,
@@ -78,6 +79,9 @@ export async function routeAdmin(body, res) {
             "**Discord Check**\n" +
             "Commande : `/discord-check clan:N`\n" +
             "Usage : vérifie la présence Discord des membres d'un clan\n\n" +
+            "**Multi**\n" +
+            "Commande : `/multi`\n" +
+            "Usage : liste les multi-comptes liés à un même compte Discord\n\n" +
             "## Commandes clan\n\n" +
             "**Trust Clan**\n" +
             "Commande : `/trust-clan clan:N`\n" +
@@ -249,6 +253,14 @@ export async function routeAdmin(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleBlacklistCommand(webhookUrl, body));
+    return;
+  }
+
+  // Commande /multi
+  if (body.type === 2 && body.data?.name === "multi") {
+    res.status(200).json({ type: 5 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMultiCommand(webhookUrl));
     return;
   }
 

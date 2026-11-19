@@ -142,6 +142,11 @@ const commands = [
     ],
   },
   {
+    name: "multi",
+    description:
+      "Liste les multi-comptes connus (tags liés à un même compte Discord).",
+  },
+  {
     name: "promote",
     description:
       "Liste les joueurs éligibles à la promotion (2600 pts minimum)",

@@ -116,6 +116,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/matchup tag:#TAG` | Matchup des 6 derniers combats du joueur, tous types |
 | `/discord-link tag:#TAG` | Lie un tag Clash au compte Discord |
 | `/discord-check clan:N` | Vérifie présence Discord des membres |
+| `/multi` | Multi-comptes liés à un même compte Discord (principal = plus de trophées, lien TrustRoyale, clan, 📵 jours sans connexion ; comptes inactifs depuis plus de 30 jours ou date inconnue exclus) |
 | `/promote clan:N` | Joueurs éligibles à la promotion (2600 pts) |
 | `/demote clan:N` | Joueurs n'ayant pas fait 16/16 decks |
 | `/fail clan:N` | Joueurs ayant manqué une journée GDC |

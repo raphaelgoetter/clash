@@ -133,6 +133,10 @@ Plusieurs tags peuvent être liés (ex : pour les comptes secondaires) en ajout
 
 Pratique pour les recrutements et pour s’assurer que tout le monde est bien connecté.
 
+### `/multi`
+
+➡️ Liste les multi-comptes connus (Tags CR liés à un même compte Discord) : compte principal (le plus de trophées) avec son lien TrustRoyale, puis les autres comptes, avec leur clan et le nombre de jours sans connexion (📵). Les comptes inactifs depuis plus de 30 jours sont exclus.
+
 ### 8) `/promote clan:N` (pour chefs de clan)
 
 ➡️ Affiche les joueurs qui ont atteint un minimum de 2600 points la semaine précédente.

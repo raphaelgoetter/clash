@@ -362,14 +362,14 @@ Vérification de signature, lecture du corps brut et liste blanche des serveurs 
 
 | Module | Contenu |
 | --- | --- |
-| `_routes/admin.js` | `/help`, `/discord-link`, `/blacklist`, `/discord-check` |
+| `_routes/admin.js` | `/help`, `/discord-link`, `/blacklist`, `/discord-check`, `/multi` |
 | `_routes/joueur.js` | `/stats`, `/combats`, `/matchup-gdc`, `/matchup` (+ détail), `/collection` |
 | `_routes/clan.js` | `/combats-clan`, `/trust-clan`, `/champion-history`, `/compare`, `/top-clans`, `/clan`, `/family`, `/stats-clan` et leurs boutons |
 | `_routes/suiviGdc.js` | `/promote`, `/demote`, `/chelem`, `/fail`, `/late`, `/late-ping`, `/top-players`, `/recap` et leurs boutons |
 
 - Chaque module expose `routeXxx(body, res, ctx)` : une suite de blocs `if (…) { …; return; }` ; un bloc répond s'il reconnaît l'interaction, sinon la fonction rend la main sans rien envoyer.
 - ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints entre modules : l'ordre des modules n'est pas un mécanisme de priorité.
-- Utilitaires partagés : `api/discord/_lib/commun.js` (`runBackground` et `buildDiscordWebhookUrl` viennent de `@clash/commun/discordInteractions.js`) ; handlers volumineux dans `api/discord/_handlers/` (`blacklist.js`, `championHistory.js`). Les dossiers préfixés `_` ne sont pas exposés comme fonctions par Vercel.
+- Utilitaires partagés : `api/discord/_lib/commun.js` (`runBackground` et `buildDiscordWebhookUrl` viennent de `@clash/commun/discordInteractions.js`) ; handlers volumineux dans `api/discord/_handlers/` (`blacklist.js`, `championHistory.js`, `multi.js`). Les dossiers préfixés `_` ne sont pas exposés comme fonctions par Vercel.
 - `/clan` masque les données de fiabilité GDC pour les clans de `NO_WAR_FAMILY_CLAN_TAGS` (`_routes/clan.js`, actuellement `QU9UQJRL`, GDC non obligatoire).
 
 ### Règles techniques
