@@ -113,16 +113,9 @@ function buildJourEmbed(config, cfg, { estPremierJour, v }) {
     // Titre ### : plus grand que le texte (multiplicateurs du jour)
     `### ${EMOJI[PIERRE]} Pont de pierre : ×${cfg.pierre} · ${EMOJI[CORDES]} Pont de cordes : ×${cfg.cordes}`,
   );
-  if (cfg.evenement === REPU) {
-    lines.push(
-      "",
-      "🍖 **Troll repu** : aujourd'hui, il attrape le pont **le moins** chargé !",
-    );
-  } else {
-    lines.push(
-      "Le troll attrape le pont le plus chargé, les passants de l'autre pont se partagent le butin.",
-    );
-  }
+  // La règle elle-même est dans les Règles : seul l'événement est rappelé
+  if (cfg.evenement === REPU)
+    lines.push("", "🍖 **Troll repu** : aujourd'hui, il attrape le pont **le moins** chargé !");
   if (cfg.evenement === FINALE)
     lines.push("", "🏆 **Grande finale** : gains doublés !");
   if (indiceDisponible(config, cfg.jour))
@@ -257,7 +250,7 @@ function unSeulBloc(title, resultat, suite, { intituleSuite = null } = {}) {
 }
 
 const blocJour = (config, jour, resultat, jourEmbed) =>
-  unSeulBloc(`🧌 Pont du Troll (Jour ${jour}/${config.duree_jours})`, resultat, jourEmbed, { intituleSuite: "🌉 Aujourd'hui" });
+  unSeulBloc(`🧌 Pont du Troll (Jour ${jour}/${config.duree_jours})`, resultat, jourEmbed, { intituleSuite: `🌉 Aujourd'hui · Jour ${jour}/${config.duree_jours}` });
 
 const blocFin = (resultat, finalEmbed) => unSeulBloc("🏁 Pont du Troll : fin de partie", resultat, finalEmbed);
 
