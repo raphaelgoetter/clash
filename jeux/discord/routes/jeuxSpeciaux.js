@@ -12,7 +12,6 @@ import {
 } from "../handlers/tamagotchi.js";
 import {
   handleVoteButton as handleRobinsonVote,
-  handleJournal as handleRobinsonJournal,
   handleRegles as handleRobinsonRegles,
 } from "../handlers/robinson.js";
 import {
@@ -336,14 +335,6 @@ export async function routeJeuxSpeciaux(body, res) {
     runBackground(() =>
       handleRobinsonVote(webhookUrl, jour, actionId, discordId, username, process.env.DISCORD_TOKEN),
     );
-    return;
-  }
-
-  // ── Robinson : bouton "Journal de Bord" (lecture seule, hors-vote) ──
-  if (body.type === 3 && body.data?.custom_id === "robinson_journal") {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleRobinsonJournal(webhookUrl));
     return;
   }
 

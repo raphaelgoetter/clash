@@ -634,13 +634,13 @@ Jeu spécial collaboratif : la communauté, naufragée, doit survivre `duree_jou
 | Rôle | Fichier |
 |---|---|
 | Logique métier, Redis, fonctions pures | `jeux/services/robinson.js` |
-| Embeds, publication, boutons | `jeux/discord/handlers/robinson.js` (`postRobinson()`, `handleVoteButton()`, `handleJournal()`, `handleRegles()`) |
-| Routage des boutons (`robinson_vote:<jour>:<action>`, action, `batir` ou chantier, `robinson_journal`, `robinson_regles`) | `jeux/discord/routes/jeuxSpeciaux.js` |
+| Embeds, publication, boutons | `jeux/discord/handlers/robinson.js` (`postRobinson()`, `handleVoteButton()`, `handleRegles()`) |
+| Routage des boutons (`robinson_vote:<jour>:<action>`, action, `batir` ou chantier, `robinson_regles`) | `jeux/discord/routes/jeuxSpeciaux.js` |
 | Publication (manuel/cron) | `jeux/scripts/postRobinson.js` (pas de commande slash) |
 | Config | `jeux/data/robinson/robinson.json`, `jeux/data/robinson/narratifs.json` |
 | Simulation d'équilibrage | `jeux/outils/robinson-simulation/simuler.mjs` (`--n`, `--v 6,10,14`, surcharges de calibrage `--appauvrissement`, `--points-section`, `--stocks`) |
 | Plateau du jour | `jeux/services/robinsonImage.js` (`GET /api/robinson/plateau?d=`, `jeux/server/imageRoutes.js`) ; rendu local : `node jeux/outils/robinson/renderPlateau.mjs <sortie.png> [jour]` |
-| Illustrations | `frontend/public/images/robinson/rob-01.webp` (annonce) et celle de `duree_jours` (fin de partie) (`robinsonImageUrl(jour)`) |
+| Illustrations | `frontend/public/images/robinson/` (`robinsonImageUrl(n)`) : `rob-01` annonce ; fin de partie selon l'issue (`buildOutcomeEmbed()`) : `rob-10` Radeau, `rob-07` secours, `rob-04` naufrage. Les jours de jeu n'affichent que le plateau |
 
 ### Déroulement
 
@@ -666,7 +666,7 @@ Rendu sans état (`encodePlateau()`, JSON en base64url : état dynamique seuleme
 
 ### Votes
 
-- Message public : une rangée d'actions (Pêcher, Eau, Bois, Explorer, 🔨 Bâtir) et une rangée Journal / Règles. ⚠️ Radeau et constructions restent regroupés derrière Bâtir : un bouton par chantier surchargerait le message (jusqu'à 10 boutons). Bâtir (`robinson_vote:<jour>:batir`, compteur = votes Radeau + constructions du jour) ouvre un menu éphémère sans consommer le vote (`handleBatirMenu()`) : chantiers disponibles (`listChantiers()` : Radeau hors Grosse Houle, constructions inachevées), avancement, effet, Bois restant, mention « gratuit » pour le Chef charpentier ; refus si le joueur a déjà voté. Le vote a lieu au clic sur un chantier du menu, routé comme les autres actions.
+- Message public : une rangée d'actions (Pêcher, Eau, Bois, Explorer, 🔨 Bâtir) et un bouton Règles. Pas de Journal : besoins de la nuit, Radeau et jours à 0 sont sur le plateau. ⚠️ Radeau et constructions restent regroupés derrière Bâtir : un bouton par chantier surchargerait le message (jusqu'à 10 boutons). Bâtir (`robinson_vote:<jour>:batir`, compteur = votes Radeau + constructions du jour) ouvre un menu éphémère sans consommer le vote (`handleBatirMenu()`) : chantiers disponibles (`listChantiers()` : Radeau hors Grosse Houle, constructions inachevées), avancement, effet, Bois restant, mention « gratuit » pour le Chef charpentier ; refus si le joueur a déjà voté. Le vote a lieu au clic sur un chantier du menu, routé comme les autres actions.
 - Un vote par membre et par jour, **définitif** : `recordVote()` en `HSETNX` ; même action = no-op (réaffiche le tirage via `vote_details`), autre action = rejet.
 - **Récoltes appliquées en direct au clic** (pas au cron) : stock incrémenté immédiatement, résultat exact en éphémère (ack `type: 5` puis `PATCH @original`, précisions « zone épuisée −N » / « Filet +1 » seulement si elles jouent) ; message public rafraîchi par un `PATCH` séparé (token bot, `refreshPublicMessage()`).
 - ⚠️ Stocks, points de Radeau et points de construction = clés numériques séparées mutées uniquement en `INCRBY`/`DECRBY`, jamais un blob JSON lu-modifié-réécrit (clics concurrents).
@@ -753,10 +753,8 @@ Score de classement (`computeMancheScore(outcome, jour, dureeJours)`) : victoire
 | `robinson:votes:<jour>` | HASH | `discordId → actionId` (effacé à la clôture) |
 | `robinson:vote_details:<jour>` | HASH | `discordId → { actionId, amount\|yields\|pointsAdded, malus?, bonusConstruction?, isChef?, isCharpentier?, at }` (réaffichage sans re-tirage) |
 | `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` (affichage admin) |
-| `robinson:historique` | HASH | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }`, manche en cours, alimente le Journal de Bord |
+| `robinson:historique` | HASH | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }`, manche en cours (V de la veille, `robinson:status`) |
 | `robinson:manches` / `robinson:manche_seq` | HASH / compteur | archive permanente des manches |
-
-Le bouton `[📜 Journal de Bord]` affiche aussi les points de Radeau et, seulement si une ressource est en streak, les compteurs `zeroStreaks`.
 
 ### Scripts et workflow
 

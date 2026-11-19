@@ -1,6 +1,6 @@
 // ============================================================
 // robinson.js — Handlers Discord pour Robinson (survie insulaire
-// communautaire). Embed, boutons d'action (vote), Journal de Bord.
+// communautaire). Embed, boutons d'action (vote), Règles.
 // La publication/suppression quotidienne passe uniquement par
 // jeux/scripts/postRobinson.js (postRobinson) — les boutons restent gérés par
 // api/discord/interactions.js.
@@ -22,9 +22,7 @@ import {
   writeVoteDetail,
   getVoteDetail,
   tallyVotes,
-  countUniqueVoters,
   listVotes,
-  listHistorique,
   getHistoriqueEntry,
   rollHarvestAmount,
   rollEventCappedAmount,
@@ -36,7 +34,6 @@ import {
   isExplorerDisabled,
   isRadeauDisabled,
   computeDailyConsumption,
-  computeRaftSections,
   computeEpaveBoisBonus,
   computePoissonsPourrisLoss,
   spoilPoisson,
@@ -85,11 +82,11 @@ const ROBINSON_COLOR = 0x1abc9c;
 const RESOURCE_LABELS = { poisson: "poisson(s)", eau: "eau", bois: "bois" };
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
-// Illustration du jour — fichiers statiques frontend/public/images/robinson/
+// Illustrations (annonce, fin de partie) : fichiers statiques frontend/public/images/robinson/
 // (rob-01.webp à rob-10.webp), servis tels quels par Vercel, même principe
 // que tamagotchiImageUrl() dans jeux/discord/handlers/tamagotchi.js.
-function robinsonImageUrl(jour) {
-  return `${TRUST_ROYALE_URL}/images/robinson/rob-${String(jour).padStart(2, "0")}.webp`;
+function robinsonImageUrl(numero) {
+  return `${TRUST_ROYALE_URL}/images/robinson/rob-${String(numero).padStart(2, "0")}.webp`;
 }
 
 // Pitch affiché uniquement au Jour 1 — plante le décor et rappelle le
@@ -416,13 +413,6 @@ function buildRobinsonComponents(jour, config, voteCounts, event, constructions 
         {
           type: 2,
           style: 2,
-          label: "Journal",
-          emoji: { name: "📜" },
-          custom_id: "robinson_journal",
-        },
-        {
-          type: 2,
-          style: 2,
           label: "Règles",
           emoji: { name: "📖" },
           custom_id: "robinson_regles",
@@ -484,7 +474,10 @@ function buildOutcomeEmbed(
   currentManche = null,
   { derniereNuit = false } = {},
 ) {
-  const image = { url: robinsonImageUrl(config.duree_jours) };
+  // Une illustration par issue : évasion en bateau, détente des secourus,
+  // Gobelins balayés par la vague pour le naufrage.
+  const IMAGE_ISSUE = { victoire_radeau: 10, victoire_jour11: 7 };
+  const image = { url: robinsonImageUrl(IMAGE_ISSUE[outcome] ?? 4) };
   const manchesLines = buildManchesSection(manches, config, currentManche);
 
   if (outcome === "victoire_radeau") {
@@ -1569,130 +1562,6 @@ export async function handleVoteButton(
   }
 }
 
-// ── Bouton [📜 Journal de Bord] — lecture seule, hors-vote ──────────
-// Ne consomme jamais le vote du jour, relit toujours l'état courant (pas de
-// garde de fraîcheur nécessaire, contrairement à un vote).
-
-function formatHistoriqueLine(entry) {
-  if (entry.outcome === "victoire_radeau")
-    return `Jour ${entry.jour} : 🛶 Victoire par le Radeau !`;
-  if (entry.outcome === "victoire_jour11")
-    return `Jour ${entry.jour} : 🚢 Les secours sont arrivés !`;
-  if (entry.outcome === "defaite") return `Jour ${entry.jour} : 💀 Naufrage.`;
-  const vol = entry.gobelinsVoleur
-    ? " (🧌 les Gobelins ont volé 5 Poissons)"
-    : "";
-  // radeauVotes absent sur les entrées enregistrées avant le 25/08 (champ
-  // ajouté après coup) — omis proprement plutôt que d'afficher "undefined".
-  const radeau =
-    entry.radeauVotes != null
-      ? `, ${entry.radeauVotes} vote${entry.radeauVotes > 1 ? "s" : ""} radeau`
-      : "";
-  return `Jour ${entry.jour} : ${entry.V} joueur${entry.V > 1 ? "s" : ""}${radeau}${vol}`;
-}
-
-export async function handleJournal(webhookUrl) {
-  try {
-    const state = await readState();
-    if (!state) {
-      await patchOriginal(webhookUrl, {
-        content: "Aucune partie Robinson en cours pour le moment.",
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-    if (state.phase === "annonce") {
-      await patchOriginal(webhookUrl, {
-        content: `La partie commence demain à ${formatUtcTimeAsParis(8)}, rien à consulter pour l’instant.`,
-        embeds: [],
-        components: [],
-      });
-      return;
-    }
-
-    const [stocks, V, radeauPoints, config, { entries }, veille] =
-      await Promise.all([
-        readStocks(),
-        countUniqueVoters(state.jour),
-        readRadeauPoints(),
-        loadRobinsonConfig(),
-        listHistorique({ limit: 10 }),
-        state.jour > 1 ? getHistoriqueEntry(state.jour - 1) : null,
-      ]);
-    // Le besoin projeté se base sur la mobilisation de LA VEILLE (V d'hier),
-    // pas sur le décompte du jour en cours — sinon "couvert" est trivialement
-    // vrai en tout début de journée (peu de votants encore comptés = besoin
-    // minuscule), un signal trompeur qui masque une vraie baisse de
-    // mobilisation au lieu de la révéler. Le Jour 1 n'a pas de veille : seul
-    // cas où on garde le décompte du jour même (comportement historique).
-    const besoin = computeBesoinNuit(state.jour, config, veille?.V ?? null, V);
-    const manque = {
-      poisson: Math.max(0, besoin.poisson - stocks.poisson),
-      eau: Math.max(0, besoin.eau - stocks.eau),
-      bois: Math.max(0, besoin.bois - stocks.bois),
-    };
-    const sections = computeRaftSections(
-      radeauPoints,
-      config.points_par_section,
-    );
-    const baseBesoin =
-      state.jour > 1 && veille
-        ? ` (estimés sur les ${veille.V} joueurs d’hier)`
-        : " (provisions du navire : seule une partie des joueurs du jour compte)";
-
-    const lines = [
-      `**Joueurs aujourd’hui : ${V}**`,
-      `🛶 Radeau : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)`,
-      "",
-      `**Besoins pour la clôture de ${formatUtcTimeAsParis(8)} ${baseBesoin} :**`,
-      `🐟 Nourriture : ${besoin.poisson} nécessaire${manque.poisson > 0 ? ` (**il en manque ${manque.poisson}**)` : " (couvert)"}`,
-      `💧 Eau : ${besoin.eau} nécessaire${manque.eau > 0 ? ` (**il en manque ${manque.eau}**)` : " (couvert)"}`,
-      `🪵 Bois : ${besoin.bois} nécessaire${manque.bois > 0 ? ` (**il en manque ${manque.bois}**)` : " (couvert)"}`,
-    ];
-
-    // Compteurs de jours consécutifs à 0 — invisibles partout ailleurs
-    // (aucun embed public ne les affiche). N'apparaît que si au moins une
-    // ressource est déjà en streak, pour ne pas polluer l'affichage en
-    // temps normal.
-    const streakWarnings = [
-      state.zeroStreaks?.poisson > 0
-        ? `🐟 Nourriture : ${state.zeroStreaks.poisson}/${ZERO_STREAK_LIMIT} jours à 0`
-        : null,
-      state.zeroStreaks?.eau > 0
-        ? `💧 Eau : ${state.zeroStreaks.eau}/${ZERO_STREAK_LIMIT} jours à 0`
-        : null,
-      state.zeroStreaks?.bois > 0
-        ? `🪵 Bois : ${state.zeroStreaks.bois}/${ZERO_STREAK_LIMIT} jours à 0`
-        : null,
-    ].filter(Boolean);
-    if (streakWarnings.length > 0) {
-      lines.push(
-        "",
-        `**⚠️ Jours consécutifs à 0 (naufrage à ${ZERO_STREAK_LIMIT}) :**`,
-        ...streakWarnings,
-      );
-    }
-
-    if (entries.length > 0) {
-      lines.push(
-        "",
-        "**Jours précédents :**",
-        ...entries.map(formatHistoriqueLine),
-      );
-    }
-
-    const embed = {
-      title: "📜 Journal de Bord",
-      description: lines.join("\n"),
-      color: ROBINSON_COLOR,
-    };
-    await patchOriginal(webhookUrl, { embeds: [embed], components: [] });
-  } catch (err) {
-    console.error("[Robinson] Échec Journal de Bord:", err.message);
-  }
-}
-
 // ── Bouton [📖 Règles du jeu] — éphémère, statique ────────────────
 // Ne consomme jamais le vote du jour, contenu généré depuis robinson.json,
 // aucune lecture/écriture d'état (même principe que Tamagotchi).
@@ -1737,8 +1606,6 @@ function buildReglesEmbed(config) {
         ? ["🍂 **L’île s’appauvrit** au fil des jours : les récoltes diminuent (annoncé la veille). Les constructions, elles, gardent leur bonus.", ""]
         : []),
       "🔭 Les événements qui frappent l’île sont annoncés la veille.",
-      "",
-      "📜 **Journal de Bord** : besoins du jour et historique, sans consommer ton vote.",
       "",
       "Un vote n’est pas modifiable une fois qu’il a réellement abouti.",
     ].join("\n"),

@@ -4,9 +4,8 @@
 // qu'une projection du Jour suivant basée sur les votes actuels, sans avoir
 // besoin d'ouvrir Discord — pratique pour suivre l'avancement avant de
 // décider de relancer manuellement `npm run robinson:public`. Comme pour le
-// Tamagoshi, ce script tient lieu d'affichage admin (le bouton Journal de
-// Bord ne montre lui que les besoins et l'historique, jamais le détail des
-// votants).
+// Tamagoshi, ce script tient lieu d'affichage admin (détail des votants et
+// historique, absents de Discord).
 //
 // Usage : node jeux/scripts/robinsonStatus.js
 
