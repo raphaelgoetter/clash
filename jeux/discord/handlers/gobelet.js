@@ -396,6 +396,8 @@ export async function postGobelet(
     force = false,
   } = {},
 ) {
+  // ⚠️ Jamais de ping hors salon public, quel que soit l'appelant
+  if (!isPublic) noPing = true;
   const config = await loadGobeletConfig();
   const state = await readState();
 

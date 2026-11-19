@@ -417,7 +417,11 @@ Jeux spéciaux Blackjack et Gobelet seulement (pas leurs duels) : `jeux/services
 ### Ping `@MINI-JEUX`
 
 - Rôle résolu par `getRoleIdByName(MINI_JEUX_ROLE_NAME)` (`@clash/commun/discordRoles.js`), injecté via `buildRolePingFields()`.
-- ⚠️ Jamais de ping hors salon public : `NO_PING = --no-ping || !PUBLIC` dans chaque `post*.js`.
+- ⚠️ **Jamais de ping pendant les tests d'un jeu** (salon de test, dry-run, outils e2e), ni rôle ni joueurs : double verrou.
+  - Script : `NO_PING = --no-ping || !PUBLIC` dans chaque `post*.js`.
+  - Fonction de publication : `if (!isPublic) noPing = true;` en tête de chaque `post<Jeu>()`, quel que soit l'appelant, et en tête de `publishAndWriteState()` quand une fin de partie peut partir d'un clic avec l'état stocké (Meow, Qui est-ce ?, Bang!).
+  - Tout nouveau jeu reprend ce verrou et un test qui publie hors public en demandant le ping (`noPing: false`) puis vérifie qu'aucun message n'a de `content` ni d'`allowed_mentions` (modèle : `jeux/services/pont.test.js`).
+  - Les mentions dans un embed ne notifient jamais : seul le `content` du message pingue.
 - Au minimum : ping à l'annonce, au Jour 1 et à la fin de partie (y compris annulation). Au Jour 1 des jeux à inscriptions (Meow, Qui est-ce ?, Goblin Hunters), seuls les inscrits sont mentionnés (`buildUserPingFields()`, PNJ exclus), pas le rôle. Jours intermédiaires : selon le jeu (Quiz, Gobelet, Blackjack pinguent à chaque post ; Robinson, Mario Clash, Boss Raid, Meow, Qui est-ce ?, Goblin Hunters, Pont du Troll jamais).
 
 ### Inscriptions (Meow, Qui est-ce ?, Goblin Hunters)
@@ -1430,7 +1434,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
   - `pont/images/pont-fond.jpg` : troll endormi (image du matin, annonce) ;
   - `pont/images/pont-troll-gauche.jpg` / `pont-troll-droite.jpg` : troll qui attrape la pierre / les cordes (résultat ; fond endormi sur une égalité ou si le pont attrapé est vide) ;
   - `pont/images/pont-start.webp` (800 × 450) : illustration d'annonce et du classement final.
-  - Après remplacement : `npm run assets:upload-blob -- pont/images`.
+  - Après remplacement : `npm run assets:upload-blob -- pont/images` (dossier déclaré dans `TARGETS` de `scripts/uploadImageAssetsToBlob.js` : un nouveau fichier ou dossier d'un jeu doit y être ajouté, sinon le script n'envoie rien).
 - **Matin** : bandeau haut « PONT DU TROLL » et « Jour N/7 », étiquette `Pierre ×1` / `Cordes ×3` à l'entrée de chaque pont, règle ou événement du jour sur la corniche du bas.
 - **Résultat** : avatars des passants en deux files décalées sur chaque tablier, tous affichés, plus petits au loin (perspective), regroupés à l'entrée quand ils sont peu nombreux ; anneau rouge pour les attrapés, or pour les gagnants ; nombre de passants dans l'étiquette ; nombre d'attrapés et gain par passant sur la corniche du bas.
 - **Avatars** : `id/hash` de l'avatar Discord mémorisé au clic sur un pont, téléchargé au rendu par `avatarDataUrl()` (`jeux/services/avatarsDiscord.js` : CDN Discord 128 px, délai 4 s, cache mémoire), créature clay (`bang/avatars/clay-XX.png`) si l'avatar manque ou échoue.

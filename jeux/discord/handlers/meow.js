@@ -564,6 +564,8 @@ async function publishAndWriteState(
     mentions = null,
   },
 ) {
+  // ⚠️ Jamais de ping hors salon public (fin de partie déclenchée par un clic comprise)
+  if (!isPublic) noPing = true;
   const image = await joindreImage(embed);
   await supprimerMessage(previousState);
   const roleId =
@@ -801,6 +803,8 @@ export async function postMeow(
     avancer = null,
   } = {},
 ) {
+  // ⚠️ Jamais de ping hors salon public, quel que soit l'appelant
+  if (!isPublic) noPing = true;
   const config = await loadMeowConfig();
   const state = await readState();
 

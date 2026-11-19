@@ -70,6 +70,7 @@ const TARGETS = [
   { file: "meow/images/meow-map.jpg" },
   { file: "meow/images/meow-launch.webp" },
   { file: "bac/images/bac-game.webp" },
+  { dir: "pont/images" },
   { dir: "jeux-visuels/palette/images" },
   { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },

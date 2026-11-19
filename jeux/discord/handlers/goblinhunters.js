@@ -864,6 +864,8 @@ export async function postGoblinHunters(
     force = false,
   } = {},
 ) {
+  // ⚠️ Jamais de ping hors salon public, quel que soit l'appelant
+  if (!isPublic) noPing = true;
   const config = await loadGoblinHuntersConfig();
   const state = await readState();
 

@@ -619,6 +619,8 @@ export async function postTamagotchi(
     force = false,
   } = {},
 ) {
+  // ⚠️ Jamais de ping hors salon public, quel que soit l'appelant
+  if (!isPublic) noPing = true;
   const config = await loadTamagotchiConfig();
   const state = await readState();
 
