@@ -110,7 +110,8 @@ function buildJourEmbed(config, cfg, { estPremierJour, v }) {
       "",
     );
   lines.push(
-    `${EMOJI[PIERRE]} **Pont de pierre** : ×${cfg.pierre} · ${EMOJI[CORDES]} **Pont de cordes** : ×${cfg.cordes}`,
+    // Titre ### : plus grand que le texte (multiplicateurs du jour)
+    `### ${EMOJI[PIERRE]} Pont de pierre : ×${cfg.pierre} · ${EMOJI[CORDES]} Pont de cordes : ×${cfg.cordes}`,
   );
   if (cfg.evenement === REPU) {
     lines.push(
@@ -247,7 +248,7 @@ function unSeulBloc(title, resultat, suite, { intituleSuite = null } = {}) {
     description: `**${resultat.title}**\n${resultat.description}`,
     color: PONT_COLOR,
     image: resultat.image,
-    apres: [intituleSuite ? `**${intituleSuite}**` : null, suite.description].filter(Boolean).join("\n"),
+    apres: [intituleSuite ? `### ${intituleSuite}` : null, suite.description].filter(Boolean).join("\n"),
     footer: suite.footer,
   };
 }
