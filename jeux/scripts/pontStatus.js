@@ -46,7 +46,7 @@ import { rangExAequo } from "@clash/commun/classement.js";
     if (config.jours_indice.includes(state.jour)) console.log(`Indices consultés : ${await compterIndices(state.jour)}`);
 
     console.log("\nProjection au décompte :");
-    if (!res.attrape) console.log("  Égalité, personne n'est attrapé.");
+    if (res.personneAttrape) console.log(`  Personne n'est attrapé : pierre +${formatPieces(res.gainParCote.pierre)}, cordes +${formatPieces(res.gainParCote.cordes)} par passant.`);
     else console.log(`  Le troll attrape ${res.attrape} (${res[res.attrape]}), ${res.gagnant} gagne +${formatPieces(res.gainBase)} par passant.`);
 
     console.log("\nClassement projeté :");

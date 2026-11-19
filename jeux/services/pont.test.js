@@ -58,11 +58,24 @@ test("le troll attrape le pont le plus chargé, butin partagé × multiplicateur
   assert.ok(r.resultats.filter((x) => !x.passe).every((x) => x.gain === 0));
 });
 
-test("égalité : personne n'est attrapé, personne ne gagne", () => {
-  const r = resoudreJour(choix(5, 5), new Set(), cfg(1, 2));
+test("égalité : personne n'est attrapé, chacun gagne le multiplicateur de son pont", () => {
+  const r = resoudreJour(choix(5, 5), new Set(["c0"]), cfg(1, 2));
   assert.equal(r.attrape, null);
-  assert.equal(r.gainBase, 0);
-  assert.ok(r.resultats.every((x) => x.gain === 0 && !x.passe));
+  assert.equal(r.personneAttrape, true);
+  assert.deepEqual(r.gainParCote, { [PIERRE]: 100, [CORDES]: 200 });
+  assert.ok(r.resultats.every((x) => x.passe));
+  assert.equal(r.resultats.find((x) => x.discordId === "p0").gain, 100);
+  assert.equal(r.resultats.find((x) => x.discordId === "c1").gain, 200);
+  assert.equal(r.resultats.find((x) => x.discordId === "c0").gain, 400); // Joker
+});
+
+test("Troll repu sur un pont vide : personne d'attrapé, gains en Grande finale doublés", () => {
+  const r = resoudreJour(choix(4, 0), new Set(), cfg(1, 3, REPU));
+  assert.equal(r.attrape, CORDES);
+  assert.equal(r.personneAttrape, true);
+  assert.ok(r.resultats.every((x) => x.passe && x.gain === 100));
+  const f = resoudreJour(choix(3, 3), new Set(), cfg(1, 3, FINALE));
+  assert.deepEqual(f.gainParCote, { [PIERRE]: 200, [CORDES]: 600 });
 });
 
 test("pont vide en face : aucun butin", () => {
@@ -134,7 +147,10 @@ test("textes de l'image", () => {
   assert.equal(lignesMatin(REPU)[1], "Il attrape le pont le moins chargé");
   const l = lignesResultat({ attrape: PIERRE, gagnant: CORDES, gainBase: 460, pierre: 17, cordes: 11 });
   assert.deepEqual(l, ["17 passants attrapés sur la pierre", "Cordes : +4,6 pièces chacun"]);
-  assert.equal(lignesResultat({ attrape: null, pierre: 3, cordes: 3 })[0], "Égalité : le troll hésite");
+  assert.deepEqual(lignesResultat({ attrape: null, pierre: 3, cordes: 3, gainParCote: { pierre: 100, cordes: 200 } }), [
+    "Égalité : le troll hésite",
+    "Pierre +1 · Cordes +2 pièces chacun",
+  ]);
 });
 
 test("positions des avatars : tous affichés, dans l'image", () => {

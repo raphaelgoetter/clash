@@ -153,23 +153,31 @@ export function resoudreJour(choix, jokers, cfg) {
   const gagnant = attrape ? (attrape === PIERRE ? CORDES : PIERRE) : null;
 
   // Butin : 1 pièce par attrapé, partagée entre les passants de l'autre
-  // pont, × son multiplicateur (× 2 en Grande finale). Pont vide : aucun.
-  let gainBase = 0;
-  if (gagnant && n[gagnant] > 0) {
-    const finale = cfg.evenement === FINALE ? 2 : 1;
-    // Arrondi au dixième de pièce : les totaux s'affichent sans perte
-    gainBase = 10 * Math.round((10 * cfg[gagnant] * finale * n[attrape]) / n[gagnant]);
+  // pont, × son multiplicateur (× 2 en Grande finale). Pont vide en face :
+  // aucun. Personne d'attrapé (égalité, ou Troll repu qui vise un pont
+  // vide) : tout le monde passe et gagne le multiplicateur de son pont
+  // (la formule du butin avec attrapés / passés = 1).
+  // Arrondi au dixième de pièce : les totaux s'affichent sans perte.
+  const finale = cfg.evenement === FINALE ? 2 : 1;
+  const dixiemes = (x) => 10 * Math.round(10 * x);
+  const personneAttrape = !attrape || n[attrape] === 0;
+  const gainParCote = { [PIERRE]: 0, [CORDES]: 0 };
+  if (personneAttrape) {
+    for (const cote of COTES) gainParCote[cote] = dixiemes(cfg[cote] * finale);
+  } else if (n[gagnant] > 0) {
+    gainParCote[gagnant] = dixiemes((cfg[gagnant] * finale * n[attrape]) / n[gagnant]);
   }
+  const gainBase = gagnant ? gainParCote[gagnant] : 0;
 
   const resultats = [];
   for (const cote of COTES) {
     for (const discordId of passants[cote]) {
       const joker = jokers.has(discordId);
-      const passe = cote === gagnant;
-      resultats.push({ discordId, cote, joker, passe, gain: passe ? gainBase * (joker ? 2 : 1) : 0 });
+      const passe = personneAttrape || cote === gagnant;
+      resultats.push({ discordId, cote, joker, passe, gain: passe ? gainParCote[cote] * (joker ? 2 : 1) : 0 });
     }
   }
-  return { pierre: n[PIERRE], cordes: n[CORDES], attrape, gagnant, gainBase, passants, resultats };
+  return { pierre: n[PIERRE], cordes: n[CORDES], attrape, gagnant, personneAttrape, gainBase, gainParCote, passants, resultats };
 }
 
 const ECART_SERRE = 2;

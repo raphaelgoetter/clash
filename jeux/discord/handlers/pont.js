@@ -172,10 +172,13 @@ async function buildResultatEmbed(entry, ranking, { partieId, v }) {
     );
     const nA = entry.attrape ? entry[entry.attrape] : 0;
     const nG = entry.gagnant ? entry[entry.gagnant] : 0;
-    if (!entry.attrape) {
-      lines.push("🧌 Égalité : le troll hésite, personne n'est attrapé.");
-    } else if (nA === 0) {
-      lines.push("🧌 Le troll n'attrape personne, pas de butin à partager.");
+    if (!entry.attrape || nA === 0) {
+      // Personne d'attrapé : chacun gagne le multiplicateur de son pont
+      lines.push(entry.attrape ? "🧌 Le troll n'attrape personne." : "🧌 Égalité : le troll hésite, personne n'est attrapé.");
+      const g = entry.gainParCote ?? {};
+      lines.push(
+        `💰 Tout le monde passe : Pierre **+${pieces(g[PIERRE] ?? 0)}**, Cordes **+${pieces(g[CORDES] ?? 0)}** par passant.`,
+      );
     } else {
       lines.push(
         `🧌 Le troll attrape **${pluriel(nA, "passant")}** ${SUR[entry.attrape]}.`,
@@ -418,6 +421,7 @@ function entreeHistorique(jour, cfg, res) {
     attrape: res.attrape,
     gagnant: res.gagnant,
     gainBase: res.gainBase,
+    gainParCote: res.gainParCote,
     passants: res.passants,
     jokers: res.resultats.filter((r) => r.joker).map((r) => r.discordId),
     jokersGagnants: res.resultats
@@ -842,7 +846,7 @@ function buildReglesEmbed(config) {
       `Chaque jour pendant ${config.duree_jours} jours, traverse le ravin par l'un des deux ponts. Un seul clic par jour, secret et définitif (jour de jeu de 8h à 8h).`,
       "",
       "🧌 **Le troll** attrape le pont qui compte le plus de passants. Les passants de l'autre pont se partagent le butin : 1 pièce par passant attrapé, multipliée par le multiplicateur de leur pont (affiché chaque matin).",
-      "Égalité : personne n'est attrapé, personne ne gagne.",
+      "Égalité : personne n'est attrapé, chacun gagne le multiplicateur de son pont.",
       "",
       "🃏 **Joker** (une fois par partie) : tes gains du jour sont doublés si tu passes. Joue-le avant ou après avoir choisi ton pont.",
       "",

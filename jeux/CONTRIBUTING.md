@@ -1384,7 +1384,8 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 - **Choix du pont** : un clic sur 🪨 Pont de pierre ou 🪢 Pont de cordes, **définitif**, confirmé en éphémère (« Tu traverses par la pierre »). Un second clic rappelle le choix fait, sans le modifier.
 - ⚠️ **Vote secret** : aucune répartition n'est visible avant le résultat (ni dans l'embed, ni dans l'URL de l'image, ni dans `/mini-jeux`). Seul le nombre total de passants du jour est public. Sinon chaque joueur choisit le pont le moins chargé et le jour finit à X contre X-1.
-- **Le troll attrape le pont qui compte le plus de passants.** Égalité : personne n'est attrapé, personne ne gagne. Un pont vide : personne ne gagne (pas de partage possible).
+- **Le troll attrape le pont qui compte le plus de passants.** Pont vide en face du pont attrapé : personne ne gagne (pas de partage possible).
+- **Personne d'attrapé** (égalité, ou Troll repu qui vise un pont vide) : tout le monde passe et gagne le **multiplicateur de son pont** (la formule du butin avec attrapés / passés = 1), doublé par la Grande finale et le Joker ; compte comme un jour passé pour le départage.
 - **Butin** : chaque passant attrapé lâche 1 pièce, partagée entre les passants de l'autre pont, multipliée par le multiplicateur de leur pont : `gain = multiplicateur × attrapés / passés`. Les attrapés ne perdent rien (0 pièce ce jour-là).
 - La pierre est toujours à gauche et les cordes à droite (décor fixe) : le multiplicateur des cordes est toujours supérieur ou égal à celui de la pierre.
 

@@ -144,11 +144,19 @@ export function lignesMatin(evenement) {
 
 const SUR = { [PIERRE]: "sur la pierre", [CORDES]: "sur les cordes" };
 
-export function lignesResultat({ attrape, gagnant, gainBase, pierre, cordes }) {
-  if (!attrape) return ["Égalité : le troll hésite", "Personne n'est attrapé"];
-  const nA = attrape === PIERRE ? pierre : cordes;
+const piecesTexte = (c) => `${formatPieces(c)} pièce${c >= 200 ? "s" : ""}`;
+
+export function lignesResultat({ attrape, gagnant, gainBase, gainParCote = {}, pierre, cordes }) {
+  const nA = attrape === PIERRE ? pierre : attrape === CORDES ? cordes : 0;
   const nG = gagnant === PIERRE ? pierre : cordes;
-  if (nA === 0) return ["Le troll n'attrape personne", "Pas de butin à partager"];
+  // Personne d'attrapé : chacun gagne le multiplicateur de son pont
+  if (!attrape || nA === 0) {
+    if (pierre + cordes === 0) return ["Personne n'a traversé"];
+    return [
+      attrape ? "Le troll n'attrape personne" : "Égalité : le troll hésite",
+      `Pierre +${formatPieces(gainParCote[PIERRE] ?? 0)} · Cordes +${piecesTexte(gainParCote[CORDES] ?? 0)} chacun`,
+    ];
+  }
   const l1 = `${nA} passant${nA > 1 ? "s" : ""} attrapé${nA > 1 ? "s" : ""} ${SUR[attrape]}`;
   if (nG === 0) return [l1, "Personne en face pour le butin"];
   const g = formatPieces(gainBase);
