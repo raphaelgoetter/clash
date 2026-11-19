@@ -60,10 +60,22 @@ export const WEEKLY_GAMES = [
   { key: "palette", title: "🎨 Palette", fetch: getPaletteResults },
   { key: "zoom2", title: "🔍 Zoom logo", fetch: getZoom2Results },
   { key: "platpays", title: "🍽️ Plat Pays", fetch: getPlatPaysResults },
-  { key: "blindroyale", title: "🎧 Blind Royale", fetch: getBlindRoyaleResults },
-  { key: "lajustecarte", title: "🃏 La Juste Carte", fetch: getLaJusteCarteResults },
+  {
+    key: "blindroyale",
+    title: "🎧 Blind Royale",
+    fetch: getBlindRoyaleResults,
+  },
+  {
+    key: "lajustecarte",
+    title: "🃏 La Juste Carte",
+    fetch: getLaJusteCarteResults,
+  },
   { key: "triviageek", title: "🎮 Trivia Geek", fetch: getTriviaGeekResults },
-  { key: "intrus", title: "🎒 Intrus de l'inventaire", fetch: getIntrusResults },
+  {
+    key: "intrus",
+    title: "🎒 Intrus de l'inventaire",
+    fetch: getIntrusResults,
+  },
 ];
 
 export const SPECIAL_GAMES = [
@@ -74,7 +86,7 @@ export const SPECIAL_GAMES = [
   { key: "bang", title: "💣 Bang!", fetch: listBangManches },
   { key: "quiestce", title: "🕵️ Qui est-ce ?", fetch: listQuiEstCeManches },
   { key: "meow", title: "🐱 Meow", fetch: listMeowManches },
-  { key: "pont", title: "🌉 Pont du Troll", fetch: listPontManches },
+  { key: "pont", title: "🧌 Pont du Troll", fetch: listPontManches },
 ];
 
 function mancheParticipantCount(manche) {
@@ -104,19 +116,30 @@ async function collectWeekly(now, players, dates) {
       if (dateStr) {
         const postedAt = new Date(dateStr);
         const seasonId = seasonIdForDate(postedAt);
-        if (!seasons.has(seasonId)) seasons.set(seasonId, { rounds: new Set(), players: new Map(), lastPostedAt: postedAt });
+        if (!seasons.has(seasonId))
+          seasons.set(seasonId, {
+            rounds: new Set(),
+            players: new Map(),
+            lastPostedAt: postedAt,
+          });
         const season = seasons.get(seasonId);
         if (postedAt > season.lastPostedAt) season.lastPostedAt = postedAt;
         const seasonRoundKey = `${game.key}:${roundKey}`;
         season.rounds.add(seasonRoundKey);
-        const entry = season.players.get(r.discordId) || { pseudo: r.pseudo, rounds: new Set() };
+        const entry = season.players.get(r.discordId) || {
+          pseudo: r.pseudo,
+          rounds: new Set(),
+        };
         entry.pseudo = r.pseudo || entry.pseudo;
         entry.rounds.add(seasonRoundKey);
         season.players.set(r.discordId, entry);
       }
     }
     if (rounds.size === 0) return;
-    const totalEntries = [...rounds.values()].reduce((sum, set) => sum + set.size, 0);
+    const totalEntries = [...rounds.values()].reduce(
+      (sum, set) => sum + set.size,
+      0,
+    );
     games.push({
       title: game.title,
       average: totalEntries / rounds.size,
@@ -125,13 +148,17 @@ async function collectWeekly(now, players, dates) {
     });
   });
 
-  games.sort((a, b) => b.average - a.average || b.totalPlayers - a.totalPlayers);
+  games.sort(
+    (a, b) => b.average - a.average || b.totalPlayers - a.totalPlayers,
+  );
 
   // Assidus : nombre de manches jouées sur le total de la saison, du plus
   // assidu au moins assidu. Les 3 premiers paliers sont toujours affichés ;
   // les suivants tant qu'ils comptent au plus ASSIDUS_LOWER_MAX joueurs.
   const seasonId = pickAssidusSeason(seasons, now);
-  const { rounds: seasonRounds, players: seasonPlayers } = seasons.get(seasonId) || { rounds: new Set(), players: new Map() };
+  const { rounds: seasonRounds, players: seasonPlayers } = seasons.get(
+    seasonId,
+  ) || { rounds: new Set(), players: new Map() };
   const totalRounds = seasonRounds.size;
   const tiers = [];
   for (let played = totalRounds; played >= 1; played--) {
@@ -152,7 +179,11 @@ async function collectWeekly(now, players, dates) {
 function pickAssidusSeason(seasons, now) {
   const currentId = seasonIdForDate(now);
   const previous = seasons.get(currentId - 1);
-  if (previous && previous.lastPostedAt.getTime() + ROUND_DURATION_MS > now.getTime()) return currentId - 1;
+  if (
+    previous &&
+    previous.lastPostedAt.getTime() + ROUND_DURATION_MS > now.getTime()
+  )
+    return currentId - 1;
   return currentId;
 }
 
@@ -166,7 +197,8 @@ async function collectSpecial(players, dates) {
     for (const manche of manches) {
       if (manche.resolvedAt) dates.push(manche.resolvedAt);
       const count = mancheParticipantCount(manche);
-      for (const r of manche.ranking || []) if (r.discordId) players.add(r.discordId);
+      for (const r of manche.ranking || [])
+        if (r.discordId) players.add(r.discordId);
       if (!count) continue;
       parties.push({
         key: game.key,
@@ -183,7 +215,10 @@ async function collectSpecial(players, dates) {
 
 // live : partie spéciale en cours ({ key, playerIds }) fournie par le
 // handler /mini-jeux (seul à savoir quel jeu tourne sur le salon public).
-export async function computeMiniJeuxStats({ now = new Date(), live = null } = {}) {
+export async function computeMiniJeuxStats({
+  now = new Date(),
+  live = null,
+} = {}) {
   const players = new Set();
   const dates = [];
   const [weekly, parties] = await Promise.all([

@@ -43,7 +43,10 @@ import {
   jouerPnj,
   estPnj,
 } from "../../services/pont.js";
-import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
+import {
+  getRoleIdByName,
+  MINI_JEUX_ROLE_NAME,
+} from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
 
@@ -56,17 +59,25 @@ export const PONT_ILLUSTRATION_URL = `${TRUST_ROYALE_URL}/api/pont/illustration?
 const EMOJI = { [PIERRE]: "🪨", [CORDES]: "🪢" };
 const NOM_PONT = { [PIERRE]: "Pont de pierre", [CORDES]: "Pont de cordes" };
 const NOM_COURT = { [PIERRE]: "Pierre", [CORDES]: "Cordes" };
-const PAR = { [PIERRE]: "par le pont de pierre", [CORDES]: "par le pont de cordes" };
+const PAR = {
+  [PIERRE]: "par le pont de pierre",
+  [CORDES]: "par le pont de cordes",
+};
 const SUR = { [PIERRE]: "sur la pierre", [CORDES]: "sur les cordes" };
 
 const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? "s" : ""}`;
-const pieces = (centiemes) => `${formatPieces(centiemes)} pièce${centiemes > 100 ? "s" : ""}`;
+const pieces = (centiemes) =>
+  `${formatPieces(centiemes)} pièce${centiemes > 100 ? "s" : ""}`;
 // PNJ du salon de test : pseudo stocké, aucun appel Discord
-const nomAffiche = (discordId, fallback) => (estPnj(discordId) ? Promise.resolve(fallback ?? "PNJ") : resolveDisplayName(discordId, fallback));
+const nomAffiche = (discordId, fallback) =>
+  estPnj(discordId)
+    ? Promise.resolve(fallback ?? "PNJ")
+    : resolveDisplayName(discordId, fallback);
 
 // ── URLs d'images ─────────────────────────────────────────────────
 
-const urlMatin = (jour, v) => `${TRUST_ROYALE_URL}/api/pont/matin?jour=${jour}&v=${v}`;
+const urlMatin = (jour, v) =>
+  `${TRUST_ROYALE_URL}/api/pont/matin?jour=${jour}&v=${v}`;
 const urlResultat = (partieId, jour, v) =>
   `${TRUST_ROYALE_URL}/api/pont/resultat?partie=${encodeURIComponent(partieId)}&jour=${jour}&v=${v}`;
 
@@ -74,7 +85,7 @@ const urlResultat = (partieId, jour, v) =>
 
 function buildAnnonceEmbed(config) {
   return {
-    title: "🌉 Pont du Troll : le troll s'installe demain",
+    title: "🧌 Pont du Troll : le troll s'installe demain",
     description: [
       `Pendant **${config.duree_jours} jours**, traverse chaque jour le ravin par le pont de pierre ou le pont de cordes, en secret.`,
       "Le troll attrape le pont le plus chargé : les passants de l'autre pont se partagent le butin.",
@@ -87,21 +98,36 @@ function buildAnnonceEmbed(config) {
   };
 }
 
-const footerJour = (n) => ({ text: `🚶 ${pluriel(n, "passant")} aujourd'hui · Choix secret et définitif, décompte à 8h` });
+const footerJour = (n) => ({
+  text: `🚶 ${pluriel(n, "passant")} aujourd'hui · Choix secret et définitif, décompte à 8h`,
+});
 
 function buildJourEmbed(config, cfg, { estPremierJour, v }) {
   const lines = [];
-  if (estPremierJour) lines.push("**Le troll s'est installé sous les ponts !** Choisis ton pont, en secret. Résultat demain matin.", "");
-  lines.push(`${EMOJI[PIERRE]} **Pont de pierre** : ×${cfg.pierre} · ${EMOJI[CORDES]} **Pont de cordes** : ×${cfg.cordes}`);
+  if (estPremierJour)
+    lines.push(
+      "**Le troll s'est installé sous les ponts !** Choisis ton pont, en secret. Résultat demain matin.",
+      "",
+    );
+  lines.push(
+    `${EMOJI[PIERRE]} **Pont de pierre** : ×${cfg.pierre} · ${EMOJI[CORDES]} **Pont de cordes** : ×${cfg.cordes}`,
+  );
   if (cfg.evenement === REPU) {
-    lines.push("", "🍖 **Troll repu** : aujourd'hui, il attrape le pont **le moins** chargé !");
+    lines.push(
+      "",
+      "🍖 **Troll repu** : aujourd'hui, il attrape le pont **le moins** chargé !",
+    );
   } else {
-    lines.push("Le troll attrape le pont le plus chargé, les passants de l'autre pont se partagent le butin.");
+    lines.push(
+      "Le troll attrape le pont le plus chargé, les passants de l'autre pont se partagent le butin.",
+    );
   }
-  if (cfg.evenement === FINALE) lines.push("", "🏆 **Grande finale** : gains doublés !");
-  if (indiceDisponible(config, cfg.jour)) lines.push("", "🔎 Indice disponible aujourd'hui.");
+  if (cfg.evenement === FINALE)
+    lines.push("", "🏆 **Grande finale** : gains doublés !");
+  if (indiceDisponible(config, cfg.jour))
+    lines.push("", "🔎 Indice disponible aujourd'hui.");
   return {
-    title: `🌉 Pont du Troll (Jour ${cfg.jour}/${config.duree_jours})`,
+    title: `🧌 Pont du Troll (Jour ${cfg.jour}/${config.duree_jours})`,
     description: lines.join("\n"),
     color: PONT_COLOR,
     image: { url: urlMatin(cfg.jour, v) },
@@ -116,9 +142,20 @@ async function nommer(ids, usernames) {
 async function lignesClassement(ranking, limite) {
   const usernames = await readUsernames();
   const liste = await Promise.all(
-    ranking.slice(0, limite).map(async (r) => ({ ...r, nom: await nomAffiche(r.discordId, r.username ?? usernames[r.discordId]) })),
+    ranking
+      .slice(0, limite)
+      .map(async (r) => ({
+        ...r,
+        nom: await nomAffiche(
+          r.discordId,
+          r.username ?? usernames[r.discordId],
+        ),
+      })),
   );
-  return liste.map((r, i, l) => `${rangExAequo(l, i, memeRang)}. ${r.nom} (${pieces(r.centiemes)})`);
+  return liste.map(
+    (r, i, l) =>
+      `${rangExAequo(l, i, memeRang)}. ${r.nom} (${pieces(r.centiemes)})`,
+  );
 }
 
 // Résultat d'un jour (`entry` : entrée d'historique)
@@ -129,7 +166,9 @@ async function buildResultatEmbed(entry, ranking, { partieId, v }) {
   if (total === 0) {
     lines.push("Personne n'a traversé ce jour-là.");
   } else {
-    lines.push(`${EMOJI[PIERRE]} Pierre : **${entry.pierre}** · ${EMOJI[CORDES]} Cordes : **${entry.cordes}**`);
+    lines.push(
+      `${EMOJI[PIERRE]} Pierre : **${entry.pierre}** · ${EMOJI[CORDES]} Cordes : **${entry.cordes}**`,
+    );
     const nA = entry.attrape ? entry[entry.attrape] : 0;
     const nG = entry.gagnant ? entry[entry.gagnant] : 0;
     if (!entry.attrape) {
@@ -137,15 +176,22 @@ async function buildResultatEmbed(entry, ranking, { partieId, v }) {
     } else if (nA === 0) {
       lines.push("🧌 Le troll n'attrape personne, pas de butin à partager.");
     } else {
-      lines.push(`🧌 Le troll attrape **${pluriel(nA, "passant")}** ${SUR[entry.attrape]}.`);
-      lines.push(nG ? `💰 ${NOM_COURT[entry.gagnant]} : **+${pieces(entry.gainBase)}** par passant.` : "💰 Personne en face pour le butin.");
+      lines.push(
+        `🧌 Le troll attrape **${pluriel(nA, "passant")}** ${SUR[entry.attrape]}.`,
+      );
+      lines.push(
+        nG
+          ? `💰 ${NOM_COURT[entry.gagnant]} : **+${pieces(entry.gainBase)}** par passant.`
+          : "💰 Personne en face pour le butin.",
+      );
     }
     if (entry.jokersGagnants?.length) {
       const noms = await nommer(entry.jokersGagnants, usernames);
       lines.push(`🃏 Joker gagnant (gains doublés) : ${noms.join(", ")}`);
     }
   }
-  if (ranking?.length) lines.push("", "**Classement :**", ...(await lignesClassement(ranking, 5)));
+  if (ranking?.length)
+    lines.push("", "**Classement :**", ...(await lignesClassement(ranking, 5)));
   return {
     title: `📊 Résultat du Jour ${entry.jour}`,
     description: lines.join("\n"),
@@ -156,19 +202,32 @@ async function buildResultatEmbed(entry, ranking, { partieId, v }) {
 
 async function buildFinalEmbed(ranking, manches) {
   const lines = ["**Classement final :**"];
-  lines.push(...(ranking.length ? await lignesClassement(ranking, 20) : ["Personne n'a traversé cette partie."]));
+  lines.push(
+    ...(ranking.length
+      ? await lignesClassement(ranking, 20)
+      : ["Personne n'a traversé cette partie."]),
+  );
   const max = ranking[0]?.centiemes ?? 0;
   if (max > 0) {
     const usernames = await readUsernames();
     const vainqueurs = ranking.filter((r) => memeRang(r, ranking[0]));
-    const noms = await nommer(vainqueurs.map((r) => r.discordId), usernames);
-    lines.push("", `🏆 Vainqueur${noms.length > 1 ? "s" : ""} (${pieces(max)}) : ${noms.join(", ")}`);
+    const noms = await nommer(
+      vainqueurs.map((r) => r.discordId),
+      usernames,
+    );
+    lines.push(
+      "",
+      `🏆 Vainqueur${noms.length > 1 ? "s" : ""} (${pieces(max)}) : ${noms.join(", ")}`,
+    );
   }
   if (manches.length) {
     lines.push(
       "",
       "**Vainqueurs des parties précédentes :**",
-      ...manches.map((m) => `Partie ${m.manche} : 🏆 ${m.winners?.length ? m.winners.join(", ") : "personne"} (${m.maxPoints} pièces)`),
+      ...manches.map(
+        (m) =>
+          `Partie ${m.manche} : 🏆 ${m.winners?.length ? m.winners.join(", ") : "personne"} (${m.maxPoints} pièces)`,
+      ),
     );
   }
   return {
@@ -181,18 +240,50 @@ async function buildFinalEmbed(ranking, manches) {
 
 // ── Boutons ───────────────────────────────────────────────────────
 
-const boutonRegles = { type: 2, style: 2, label: "Règles", emoji: { name: "📖" }, custom_id: "pont_regles" };
+const boutonRegles = {
+  type: 2,
+  style: 2,
+  label: "Règles",
+  emoji: { name: "📖" },
+  custom_id: "pont_regles",
+};
 
 function buildJourComponents(config, jour) {
   return [
     {
       type: 1,
       components: [
-        { type: 2, style: 1, label: "Pont de pierre", emoji: { name: EMOJI[PIERRE] }, custom_id: `pont_pierre:${jour}` },
-        { type: 2, style: 1, label: "Pont de cordes", emoji: { name: EMOJI[CORDES] }, custom_id: `pont_cordes:${jour}` },
-        { type: 2, style: 2, label: "Joker", emoji: { name: "🃏" }, custom_id: `pont_joker:${jour}` },
+        {
+          type: 2,
+          style: 1,
+          label: "Pont de pierre",
+          emoji: { name: EMOJI[PIERRE] },
+          custom_id: `pont_pierre:${jour}`,
+        },
+        {
+          type: 2,
+          style: 1,
+          label: "Pont de cordes",
+          emoji: { name: EMOJI[CORDES] },
+          custom_id: `pont_cordes:${jour}`,
+        },
+        {
+          type: 2,
+          style: 2,
+          label: "Joker",
+          emoji: { name: "🃏" },
+          custom_id: `pont_joker:${jour}`,
+        },
         ...(indiceDisponible(config, jour)
-          ? [{ type: 2, style: 2, label: "Indice", emoji: { name: "🔎" }, custom_id: `pont_indice:${jour}` }]
+          ? [
+              {
+                type: 2,
+                style: 2,
+                label: "Indice",
+                emoji: { name: "🔎" },
+                custom_id: `pont_indice:${jour}`,
+              },
+            ]
           : []),
         boutonRegles,
       ],
@@ -207,25 +298,77 @@ async function discordFetch(chemin, options = {}) {
   if (!token) throw new Error("DISCORD_TOKEN manquant.");
   return fetch(`https://discord.com/api/v10${chemin}`, {
     ...options,
-    headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: {
+      Authorization: `Bot ${token}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
   });
 }
 
-async function publishAndWriteState(channelId, previousState, { phase = "jour", jour, partieId, embeds, components, ping, termine = false }) {
+// Messages en Components V2 : Discord limite la hauteur d'une image d'embed
+// (~300 px sur ordinateur), une galerie (type 12) l'affiche bien plus grande.
+// Les vues sont écrites comme des embeds, converties ici à l'envoi : un
+// conteneur à liseré par embed (titre ###, texte, galerie, pied en petit),
+// boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le
+// ping éventuel est un bloc texte en tête, avec `allowed_mentions`.
+const IS_COMPONENTS_V2 = 1 << 15;
+const TEXTE_MAX = 4000;
+
+export function versV2(embeds, components = [], roleId = null) {
+  const blocs = [];
+  if (roleId) blocs.push({ type: 10, content: `<@&${roleId}>` });
+  embeds.forEach((embed, i) => {
+    const texte = [embed.title ? `### ${embed.title}` : null, embed.description].filter(Boolean).join("\n");
+    blocs.push({
+      type: 17,
+      accent_color: embed.color ?? PONT_COLOR,
+      components: [
+        { type: 10, content: texte.slice(0, TEXTE_MAX) },
+        ...(embed.image?.url ? [{ type: 12, items: [{ media: { url: embed.image.url } }] }] : []),
+        ...(embed.footer?.text ? [{ type: 10, content: `-# ${embed.footer.text}` }] : []),
+        ...(i === embeds.length - 1 ? components : []),
+      ],
+    });
+  });
+  return {
+    flags: IS_COMPONENTS_V2,
+    components: blocs,
+    ...(roleId ? { allowed_mentions: { parse: [], roles: [roleId] } } : {}),
+  };
+}
+
+async function publishAndWriteState(
+  channelId,
+  previousState,
+  { phase = "jour", jour, partieId, embeds, components, ping, termine = false },
+) {
   if (previousState?.messageId && previousState?.channelId) {
     try {
-      const del = await discordFetch(`/channels/${previousState.channelId}/messages/${previousState.messageId}`, { method: "DELETE" });
-      if (!del.ok && del.status !== 404) console.warn(`[Pont] Échec suppression du message de la veille (${del.status}), publication quand même.`);
+      const del = await discordFetch(
+        `/channels/${previousState.channelId}/messages/${previousState.messageId}`,
+        { method: "DELETE" },
+      );
+      if (!del.ok && del.status !== 404)
+        console.warn(
+          `[Pont] Échec suppression du message de la veille (${del.status}), publication quand même.`,
+        );
     } catch (err) {
-      console.warn("[Pont] Erreur réseau à la suppression du message de la veille:", err.message);
+      console.warn(
+        "[Pont] Erreur réseau à la suppression du message de la veille:",
+        err.message,
+      );
     }
   }
   const roleId = ping ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
   const res = await discordFetch(`/channels/${channelId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ embeds, components, ...buildRolePingFields(roleId) }),
+    body: JSON.stringify(versV2(embeds, components, roleId)),
   });
-  if (!res.ok) throw new Error(`Erreur envoi salon Discord (${res.status}): ${await res.text().catch(() => "")}`);
+  if (!res.ok)
+    throw new Error(
+      `Erreur envoi salon Discord (${res.status}): ${await res.text().catch(() => "")}`,
+    );
   const message = await res.json();
   await writeState({
     phase,
@@ -236,6 +379,7 @@ async function publishAndWriteState(channelId, previousState, { phase = "jour", 
     publishedAt: new Date().toISOString(),
     termine,
     embeds,
+    components,
   });
   return { jour, embeds, message, termine };
 }
@@ -254,7 +398,9 @@ function entreeHistorique(jour, cfg, res) {
     gainBase: res.gainBase,
     passants: res.passants,
     jokers: res.resultats.filter((r) => r.joker).map((r) => r.discordId),
-    jokersGagnants: res.resultats.filter((r) => r.joker && r.passe && r.gain > 0).map((r) => r.discordId),
+    jokersGagnants: res.resultats
+      .filter((r) => r.joker && r.passe && r.gain > 0)
+      .map((r) => r.discordId),
     resolvedAt: new Date().toISOString(),
   };
 }
@@ -273,26 +419,54 @@ function classementProjete(points, passes, resultats) {
 // Résout le jour actif sans rien écrire (cron, dry-run, pont:status)
 export async function projeterJour(state, config) {
   const cfg = jourConfig(config, state.jour);
-  const res = resoudreJour(await listChoix(state.jour), await jokersDuJour(state.jour), cfg);
+  const res = resoudreJour(
+    await listChoix(state.jour),
+    await jokersDuJour(state.jour),
+    cfg,
+  );
   const entry = entreeHistorique(state.jour, cfg, res);
-  const ranking = classementProjete(await readPoints(), await readPasses(), res.resultats);
+  const ranking = classementProjete(
+    await readPoints(),
+    await readPasses(),
+    res.resultats,
+  );
   return { cfg, res, entry, ranking };
 }
 
 // `pnj` : 5 joueurs fictifs traversent chaque jour (jamais sur le salon
 // public). ⚠️ Ping seulement si `isPublic` et sans `noPing` : jamais de
 // ping sur le salon de test, quel que soit l'appelant.
-export async function postPont(channelId, { dryRun = false, noPing = false, isPublic = false, requireActiveState = false, force = false, pnj = false } = {}) {
+export async function postPont(
+  channelId,
+  {
+    dryRun = false,
+    noPing = false,
+    isPublic = false,
+    requireActiveState = false,
+    force = false,
+    pnj = false,
+  } = {},
+) {
   const config = await loadPontConfig();
   const ping = isPublic && !noPing;
   const avecPnj = pnj && !isPublic;
   const state = await readState();
 
   if (state?.termine) return { termine: true };
-  if (state && !dryRun && !force && isTooSoonSinceLastClosure(state.publishedAt)) {
-    return { skipped: true, reason: "tooSoonSinceLastClosure", publishedAt: state.publishedAt };
+  if (
+    state &&
+    !dryRun &&
+    !force &&
+    isTooSoonSinceLastClosure(state.publishedAt)
+  ) {
+    return {
+      skipped: true,
+      reason: "tooSoonSinceLastClosure",
+      publishedAt: state.publishedAt,
+    };
   }
-  if (state && state.channelId !== channelId) return { wrongChannel: true, activeChannelId: state.channelId };
+  if (state && state.channelId !== channelId)
+    return { wrongChannel: true, activeChannelId: state.channelId };
   if (!state && requireActiveState) return { skipped: true };
 
   const v = Date.now();
@@ -303,7 +477,14 @@ export async function postPont(channelId, { dryRun = false, noPing = false, isPu
     const components = [{ type: 1, components: [boutonRegles] }];
     if (dryRun) return { dryRun: true, phase: "annonce", embeds, components };
     const partieId = v.toString(36);
-    return publishAndWriteState(channelId, null, { phase: "annonce", jour: null, partieId, embeds, components, ping });
+    return publishAndWriteState(channelId, null, {
+      phase: "annonce",
+      jour: null,
+      partieId,
+      embeds,
+      components,
+      ping,
+    });
   }
 
   // 2) Annonce -> Jour 1 : remise à zéro de la partie, avec ping
@@ -311,9 +492,16 @@ export async function postPont(channelId, { dryRun = false, noPing = false, isPu
     const cfg = jourConfig(config, 1);
     const embeds = [buildJourEmbed(config, cfg, { estPremierJour: true, v })];
     const components = buildJourComponents(config, 1);
-    if (dryRun) return { dryRun: true, phase: "jour", jour: 1, embeds, components };
+    if (dryRun)
+      return { dryRun: true, phase: "jour", jour: 1, embeds, components };
     await resetPartie();
-    const out = await publishAndWriteState(channelId, state, { jour: 1, partieId: state.partieId, embeds, components, ping });
+    const out = await publishAndWriteState(channelId, state, {
+      jour: 1,
+      partieId: state.partieId,
+      embeds,
+      components,
+      ping,
+    });
     if (avecPnj) await faireJouerPnj(1);
     return out;
   }
@@ -323,13 +511,29 @@ export async function postPont(channelId, { dryRun = false, noPing = false, isPu
   const jourSuivant = state.jour + 1;
   const estFin = jourSuivant > config.duree_jours;
   const manches = estFin ? await listManches({ limit: 10 }) : [];
-  const resultatEmbed = await buildResultatEmbed(entry, estFin ? null : ranking, { partieId: state.partieId, v });
+  const resultatEmbed = await buildResultatEmbed(
+    entry,
+    estFin ? null : ranking,
+    { partieId: state.partieId, v },
+  );
 
   if (dryRun) {
     const embeds = estFin
       ? [resultatEmbed, await buildFinalEmbed(ranking, manches)]
-      : [resultatEmbed, buildJourEmbed(config, jourConfig(config, jourSuivant), { estPremierJour: false, v })];
-    return { dryRun: true, final: estFin, jour: estFin ? state.jour : jourSuivant, embeds, entry };
+      : [
+          resultatEmbed,
+          buildJourEmbed(config, jourConfig(config, jourSuivant), {
+            estPremierJour: false,
+            v,
+          }),
+        ];
+    return {
+      dryRun: true,
+      final: estFin,
+      jour: estFin ? state.jour : jourSuivant,
+      embeds,
+      entry,
+    };
   }
 
   for (const r of res.resultats) {
@@ -337,10 +541,17 @@ export async function postPont(channelId, { dryRun = false, noPing = false, isPu
     await addPoints(r.discordId, r.gain);
     if (r.passe) await addPasse(r.discordId);
   }
-  await writeHistoriqueEntry(state.jour, { ...entry, partieId: state.partieId });
+  await writeHistoriqueEntry(state.jour, {
+    ...entry,
+    partieId: state.partieId,
+  });
 
   if (estFin) {
-    const finalRanking = buildRanking(await readPoints(), await readPasses(), await readUsernames());
+    const finalRanking = buildRanking(
+      await readPoints(),
+      await readPasses(),
+      await readUsernames(),
+    );
     if (isPublic) {
       const usernames = await readUsernames();
       const resolu = await Promise.all(
@@ -356,11 +567,22 @@ export async function postPont(channelId, { dryRun = false, noPing = false, isPu
       await archiveManche({
         resolvedAt: new Date().toISOString(),
         ranking: resolu,
-        winners: max > 0 ? resolu.filter((r) => r.centiemes === max && r.passes === finalRanking[0].passes).map((r) => r.username) : [],
+        winners:
+          max > 0
+            ? resolu
+                .filter(
+                  (r) =>
+                    r.centiemes === max && r.passes === finalRanking[0].passes,
+                )
+                .map((r) => r.username)
+            : [],
         maxPoints: formatPieces(max),
       });
     }
-    const embeds = [resultatEmbed, await buildFinalEmbed(finalRanking, manches)];
+    const embeds = [
+      resultatEmbed,
+      await buildFinalEmbed(finalRanking, manches),
+    ];
     const out = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       partieId: state.partieId,
@@ -372,7 +594,13 @@ export async function postPont(channelId, { dryRun = false, noPing = false, isPu
     return { ...out, final: true };
   }
 
-  const embeds = [resultatEmbed, buildJourEmbed(config, jourConfig(config, jourSuivant), { estPremierJour: false, v })];
+  const embeds = [
+    resultatEmbed,
+    buildJourEmbed(config, jourConfig(config, jourSuivant), {
+      estPremierJour: false,
+      v,
+    }),
+  ];
   const out = await publishAndWriteState(channelId, state, {
     jour: jourSuivant,
     partieId: state.partieId,
@@ -410,12 +638,25 @@ const messageSeul = (content) => ({ content, embeds: [], components: [] });
 // Jour cliquable : renvoie l'état, ou null après avoir répondu au joueur
 async function etatJouable(webhookUrl, jour) {
   const state = await readState();
-  if (!state || state.termine || state.phase === "annonce" || String(state.jour) !== String(jour)) {
-    await patchOriginal(webhookUrl, messageSeul("La journée a changé, regarde le nouveau message !"));
+  if (
+    !state ||
+    state.termine ||
+    state.phase === "annonce" ||
+    String(state.jour) !== String(jour)
+  ) {
+    await patchOriginal(
+      webhookUrl,
+      messageSeul("La journée a changé, regarde le nouveau message !"),
+    );
     return null;
   }
   if (!jourOuvert(state.publishedAt)) {
-    await patchOriginal(webhookUrl, messageSeul("Le troll compte les passants (décompte à 8h), le jour suivant arrive vers 8h30."));
+    await patchOriginal(
+      webhookUrl,
+      messageSeul(
+        "Le troll compte les passants (décompte à 8h), le jour suivant arrive vers 8h30.",
+      ),
+    );
     return null;
   }
   return state;
@@ -425,25 +666,49 @@ async function etatJouable(webhookUrl, jour) {
 async function majCompteur(state) {
   if (!state.embeds?.length || !state.messageId) return;
   const n = await compterPassants(state.jour);
-  const embeds = state.embeds.map((e, i) => (i === state.embeds.length - 1 ? { ...e, footer: footerJour(n) } : e));
+  const embeds = state.embeds.map((e, i) =>
+    i === state.embeds.length - 1 ? { ...e, footer: footerJour(n) } : e,
+  );
   try {
-    const res = await discordFetch(`/channels/${state.channelId}/messages/${state.messageId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ embeds }),
-    });
-    if (!res.ok) console.warn(`[Pont] Échec mise à jour du compteur (${res.status}).`);
+    const res = await discordFetch(
+      `/channels/${state.channelId}/messages/${state.messageId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(versV2(embeds, state.components ?? [])),
+      },
+    );
+    if (!res.ok)
+      console.warn(`[Pont] Échec mise à jour du compteur (${res.status}).`);
   } catch (err) {
-    console.warn("[Pont] Erreur réseau à la mise à jour du compteur:", err.message);
+    console.warn(
+      "[Pont] Erreur réseau à la mise à jour du compteur:",
+      err.message,
+    );
   }
 }
 
-export async function handleTraverser(webhookUrl, jour, cote, discordId, username, avatar) {
+export async function handleTraverser(
+  webhookUrl,
+  jour,
+  cote,
+  discordId,
+  username,
+  avatar,
+) {
   try {
     const state = await etatJouable(webhookUrl, jour);
     if (!state) return;
-    const r = await enregistrerChoix(jour, discordId, cote, { username, avatar });
+    const r = await enregistrerChoix(jour, discordId, cote, {
+      username,
+      avatar,
+    });
     if (!r.ok) {
-      await patchOriginal(webhookUrl, messageSeul(`${EMOJI[r.cote] ?? ""} Tu as déjà traversé ${PAR[r.cote] ?? ""} aujourd'hui, ton choix est définitif.`));
+      await patchOriginal(
+        webhookUrl,
+        messageSeul(
+          `${EMOJI[r.cote] ?? ""} Tu as déjà traversé ${PAR[r.cote] ?? ""} aujourd'hui, ton choix est définitif.`,
+        ),
+      );
       return;
     }
     const joker = (await readJoker(discordId)) === Number(jour);
@@ -465,7 +730,10 @@ export async function handleJoker(webhookUrl, jour, discordId) {
     if (!state) return;
     const deja = await readJoker(discordId);
     if (deja != null) {
-      await patchOriginal(webhookUrl, messageSeul(`🃏 Joker déjà utilisé (Jour ${deja}).`));
+      await patchOriginal(
+        webhookUrl,
+        messageSeul(`🃏 Joker déjà utilisé (Jour ${deja}).`),
+      );
       return;
     }
     const config = await loadPontConfig();
@@ -479,7 +747,15 @@ export async function handleJoker(webhookUrl, jour, discordId) {
       components: [
         {
           type: 1,
-          components: [{ type: 2, style: 3, label: "Jouer mon Joker", emoji: { name: "🃏" }, custom_id: `pont_joker_ok:${jour}` }],
+          components: [
+            {
+              type: 2,
+              style: 3,
+              label: "Jouer mon Joker",
+              emoji: { name: "🃏" },
+              custom_id: `pont_joker_ok:${jour}`,
+            },
+          ],
         },
       ],
     });
@@ -494,7 +770,10 @@ export async function handleJokerOk(webhookUrl, jour, discordId) {
     if (!state) return;
     const r = await jouerJoker(jour, discordId);
     if (!r.ok) {
-      await patchOriginal(webhookUrl, messageSeul(`🃏 Joker déjà utilisé (Jour ${r.jour}).`));
+      await patchOriginal(
+        webhookUrl,
+        messageSeul(`🃏 Joker déjà utilisé (Jour ${r.jour}).`),
+      );
       return;
     }
     const choix = await readChoix(jour, discordId);
@@ -515,11 +794,21 @@ export async function handleIndice(webhookUrl, jour, discordId) {
     if (!state) return;
     const config = await loadPontConfig();
     if (!indiceDisponible(config, jour)) {
-      await patchOriginal(webhookUrl, messageSeul("🔎 Pas d'indice aujourd'hui (jours pairs seulement)."));
+      await patchOriginal(
+        webhookUrl,
+        messageSeul("🔎 Pas d'indice aujourd'hui (jours pairs seulement)."),
+      );
       return;
     }
     const { nouveau, texte } = await consulterIndice(jour, discordId);
-    await patchOriginal(webhookUrl, messageSeul(nouveau ? `🔎 ${texte}` : `🔎 Tu as déjà consulté l'indice aujourd'hui : ${texte}`));
+    await patchOriginal(
+      webhookUrl,
+      messageSeul(
+        nouveau
+          ? `🔎 ${texte}`
+          : `🔎 Tu as déjà consulté l'indice aujourd'hui : ${texte}`,
+      ),
+    );
   } catch (err) {
     console.error("[Pont] Échec Indice:", err.message);
   }
@@ -548,7 +837,10 @@ function buildReglesEmbed(config) {
 
 export async function handleRegles(webhookUrl) {
   try {
-    await patchOriginal(webhookUrl, { embeds: [buildReglesEmbed(await loadPontConfig())], components: [] });
+    await patchOriginal(webhookUrl, {
+      embeds: [buildReglesEmbed(await loadPontConfig())],
+      components: [],
+    });
   } catch (err) {
     console.error("[Pont] Échec Règles:", err.message);
   }

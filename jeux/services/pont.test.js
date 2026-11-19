@@ -23,7 +23,7 @@ import {
   readUsernames,
   readAvatars,
 } from "./pont.js";
-import { postPont } from "../discord/handlers/pont.js";
+import { postPont, versV2 } from "../discord/handlers/pont.js";
 import { lignesMatin, lignesResultat, positionsPassants } from "./pontImage.js";
 
 const choix = (pierre, cordes) => {
@@ -145,6 +145,25 @@ test("positions des avatars : tous affichés, dans l'image", () => {
   }
 });
 
+test("Components V2 : un conteneur par embed, image en galerie, ping en bloc texte", () => {
+  const embeds = [
+    { title: "A", description: "a", image: { url: "https://x/1" } },
+    { title: "B", description: "b", image: { url: "https://x/2" }, footer: { text: "pied" } },
+  ];
+  const boutons = [{ type: 1, components: [{ type: 2, style: 2, label: "Règles", custom_id: "pont_regles" }] }];
+  const sansPing = versV2(embeds, boutons);
+  assert.equal(sansPing.flags, 1 << 15);
+  assert.equal(sansPing.content, undefined);
+  assert.equal(sansPing.embeds, undefined);
+  assert.equal(sansPing.allowed_mentions, undefined);
+  assert.equal(sansPing.components.length, 2);
+  assert.deepEqual(sansPing.components[1].components.map((c) => c.type), [10, 12, 10, 1]);
+  assert.equal(sansPing.components[1].components[2].content, "-# pied");
+  const avecPing = versV2(embeds, boutons, "42");
+  assert.deepEqual(avecPing.components[0], { type: 10, content: "<@&42>" });
+  assert.deepEqual(avecPing.allowed_mentions, { parse: [], roles: ["42"] });
+});
+
 if (Redis.isFake) {
   test("choix définitif, Joker unique, Indice mémorisé (faux Redis)", async () => {
     await resetPont({ clearManches: true });
@@ -185,7 +204,14 @@ if (Redis.isFake) {
       for (const p of posts) {
         assert.equal(p.body.content, undefined);
         assert.equal(p.body.allowed_mentions, undefined);
+        assert.ok(!JSON.stringify(p.body).includes("<@"), "aucune mention");
+        assert.equal(p.body.flags, 1 << 15, "Components V2");
       }
+      // Compteur de passants : PATCH du message en V2, galerie conservée
+      const patch = appels.find((a) => a.method === "PATCH");
+      assert.equal(patch.body.flags, 1 << 15);
+      assert.ok(JSON.stringify(patch.body).includes("5 passants"));
+      assert.ok(JSON.stringify(patch.body).includes('"type":12'));
       assert.ok(appels.every((a) => !a.url.includes("/roles")), "aucune lecture des rôles");
       const j2 = await listChoix(2);
       assert.equal(Object.keys(j2).filter((id) => id.startsWith("pnj-")).length, 5);

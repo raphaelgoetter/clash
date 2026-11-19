@@ -11,22 +11,68 @@
 // mois. Date réelle (solvedAt/resolvedAt) à défaut de seasonId.
 // ============================================================
 
-import { getCurrentSeasonBounds, getSeasonBoundsById, seasonIdForDate } from "./saison.js";
+import {
+  getCurrentSeasonBounds,
+  getSeasonBoundsById,
+  seasonIdForDate,
+} from "./saison.js";
 import { groupLabelForDate, isRefonteSeason } from "./refonte.js";
-import { getAllArchivedResults as getFrameResults, readState as readFrameState } from "./frames.js";
-import { getAllArchivedResults as getTriviaResults, readState as readTriviaState } from "./trivia.js";
-import { getAllArchivedResults as getTriviaGeekResults, readState as readTriviaGeekState } from "./triviageek.js";
-import { getAllArchivedResults as getIntrusResults, readState as readIntrusState } from "./intrus.js";
-import { getAllArchivedResults as getAnagramResults, readState as readAnagramState } from "./anagrams.js";
-import { getAllArchivedResults as getPeleMeleResults, readState as readPeleMeleState } from "./pelemele.js";
-import { getAllArchivedResults as getConceptResults, readState as readConceptState } from "./concept.js";
-import { getAllArchivedResults as getSynopsisResults, readState as readSynopsisState } from "./synopsis.js";
-import { getAllArchivedResults as getZoomResults, readState as readZoomState } from "./zoom.js";
-import { getAllArchivedResults as getZoom2Results, readState as readZoom2State } from "./zoom2.js";
-import { getAllArchivedResults as getPlatPaysResults, readState as readPlatPaysState } from "./platpays.js";
-import { getAllArchivedResults as getPaletteResults, readState as readPaletteState } from "./palette.js";
-import { getAllArchivedResults as getBlindRoyaleResults, readState as readBlindRoyaleState } from "./blindroyale.js";
-import { getAllArchivedResults as getLaJusteCarteResults, readState as readLaJusteCarteState } from "./lajustecarte.js";
+import {
+  getAllArchivedResults as getFrameResults,
+  readState as readFrameState,
+} from "./frames.js";
+import {
+  getAllArchivedResults as getTriviaResults,
+  readState as readTriviaState,
+} from "./trivia.js";
+import {
+  getAllArchivedResults as getTriviaGeekResults,
+  readState as readTriviaGeekState,
+} from "./triviageek.js";
+import {
+  getAllArchivedResults as getIntrusResults,
+  readState as readIntrusState,
+} from "./intrus.js";
+import {
+  getAllArchivedResults as getAnagramResults,
+  readState as readAnagramState,
+} from "./anagrams.js";
+import {
+  getAllArchivedResults as getPeleMeleResults,
+  readState as readPeleMeleState,
+} from "./pelemele.js";
+import {
+  getAllArchivedResults as getConceptResults,
+  readState as readConceptState,
+} from "./concept.js";
+import {
+  getAllArchivedResults as getSynopsisResults,
+  readState as readSynopsisState,
+} from "./synopsis.js";
+import {
+  getAllArchivedResults as getZoomResults,
+  readState as readZoomState,
+} from "./zoom.js";
+import {
+  getAllArchivedResults as getZoom2Results,
+  readState as readZoom2State,
+} from "./zoom2.js";
+import {
+  getAllArchivedResults as getPlatPaysResults,
+  readState as readPlatPaysState,
+} from "./platpays.js";
+import {
+  getAllArchivedResults as getPaletteResults,
+  readState as readPaletteState,
+} from "./palette.js";
+import {
+  getAllArchivedResults as getBlindRoyaleResults,
+  readState as readBlindRoyaleState,
+} from "./blindroyale.js";
+import {
+  getAllArchivedResults as getLaJusteCarteResults,
+  readState as readLaJusteCarteState,
+} from "./lajustecarte.js";
 import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listPontManches } from "./pont.js";
@@ -70,8 +116,11 @@ function splitAtClash(fetchFn, { clash }) {
   return async () =>
     (await fetchFn()).filter((r) => {
       const dateStr = r.solvedAt || r.postedAt;
-      const seasonId = r.seasonId ?? (dateStr ? seasonIdForDate(new Date(dateStr)) : null);
-      return seasonId != null && isRefonteSeason("clash", Number(seasonId)) === clash;
+      const seasonId =
+        r.seasonId ?? (dateStr ? seasonIdForDate(new Date(dateStr)) : null);
+      return (
+        seasonId != null && isRefonteSeason("clash", Number(seasonId)) === clash
+      );
     });
 }
 
@@ -85,9 +134,14 @@ function openRound(readStateFn, { clash } = {}) {
   return async (now) => {
     const state = await readStateFn();
     if (!state?.startedAt || state.seasonId == null) return null;
-    if (new Date(state.startedAt).getTime() + ROUND_DURATION_MS <= now.getTime()) return null;
+    if (
+      new Date(state.startedAt).getTime() + ROUND_DURATION_MS <=
+      now.getTime()
+    )
+      return null;
     const seasonId = Number(state.seasonId);
-    if (clash != null && isRefonteSeason("clash", seasonId) !== clash) return null;
+    if (clash != null && isRefonteSeason("clash", seasonId) !== clash)
+      return null;
     return seasonId;
   };
 }
@@ -122,18 +176,29 @@ function openRound(readStateFn, { clash } = {}) {
 const SCORE_GAMES = [
   {
     key: "culture",
-    openRounds: [openRound(readFrameState), openRound(readTriviaState, { clash: false }), openRound(readSynopsisState)],
+    openRounds: [
+      openRound(readFrameState),
+      openRound(readTriviaState, { clash: false }),
+      openRound(readSynopsisState),
+    ],
     // Libellé selon la saison : ancien nom avant la refonte (voir refonte.js).
     labelFor: (seasonStart) => groupLabelForDate("culture", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getFrameResults, "Trouve le film")()),
-      ...(await tagSubGame(splitAtClash(getTriviaResults, { clash: false }), "Trivia")()),
+      ...(await tagSubGame(
+        splitAtClash(getTriviaResults, { clash: false }),
+        "Trivia",
+      )()),
       ...(await tagSubGame(getSynopsisResults, "Synopsis éclaté")()),
     ],
   },
   {
     key: "lettres",
-    openRounds: [openRound(readAnagramState), openRound(readPeleMeleState), openRound(readConceptState)],
+    openRounds: [
+      openRound(readAnagramState),
+      openRound(readPeleMeleState),
+      openRound(readConceptState),
+    ],
     labelFor: (seasonStart) => groupLabelForDate("lettres", seasonStart),
     fetch: async () => [
       ...(await tagSubGame(getAnagramResults, "Anagram")()),
@@ -151,7 +216,10 @@ const SCORE_GAMES = [
     ],
     labelFor: (seasonStart) => groupLabelForDate("visuels", seasonStart),
     fetch: async () => [
-      ...(await tagSubGame(splitAtClash(getZoomResults, { clash: false }), "Zoom carte")()),
+      ...(await tagSubGame(
+        splitAtClash(getZoomResults, { clash: false }),
+        "Zoom carte",
+      )()),
       ...(await tagSubGame(getPaletteResults, "Palette")()),
       ...(await tagSubGame(getZoom2Results, "Zoom logo")()),
       ...(await tagSubGame(getPlatPaysResults, "Plat Pays")()),
@@ -175,11 +243,20 @@ const SCORE_GAMES = [
   },
   {
     key: "clash",
-    openRounds: [openRound(readTriviaState, { clash: true }), openRound(readZoomState, { clash: true })],
+    openRounds: [
+      openRound(readTriviaState, { clash: true }),
+      openRound(readZoomState, { clash: true }),
+    ],
     labelFor: (seasonStart) => groupLabelForDate("clash", seasonStart),
     fetch: async () => [
-      ...(await tagSubGame(splitAtClash(getTriviaResults, { clash: true }), "Trivia")()),
-      ...(await tagSubGame(splitAtClash(getZoomResults, { clash: true }), "Zoom carte")()),
+      ...(await tagSubGame(
+        splitAtClash(getTriviaResults, { clash: true }),
+        "Trivia",
+      )()),
+      ...(await tagSubGame(
+        splitAtClash(getZoomResults, { clash: true }),
+        "Zoom carte",
+      )()),
     ],
   },
 ];
@@ -201,7 +278,7 @@ const MANCHE_SCORE_GAMES = [
   },
   {
     key: "pont",
-    label: "🌉 Pont du Troll",
+    label: "🧌 Pont du Troll",
     fetch: () => listPontManches({ limit: Infinity }),
     scoreField: "points",
   },
@@ -273,14 +350,21 @@ async function bucketScoreGames(seasonMap, now) {
     for (const r of results) {
       const dateStr = r.solvedAt || r.postedAt;
       if (!dateStr) continue;
-      const entry = getOrCreateGameEntry(getOrCreateSeason(seasonMap, dateStr, r.seasonId), game);
+      const entry = getOrCreateGameEntry(
+        getOrCreateSeason(seasonMap, dateStr, r.seasonId),
+        game,
+      );
       if (r.subGame) entry.subGames.add(r.subGame);
       addToTotal(entry, r.discordId, r.pseudo, Number(r.score) || 0);
     }
-    const openSeasonIds = await Promise.all(game.openRounds.map((open) => open(now)));
+    const openSeasonIds = await Promise.all(
+      game.openRounds.map((open) => open(now)),
+    );
     for (const seasonId of openSeasonIds) {
       if (seasonId == null) continue;
-      seasonMap.get(getSeasonBoundsById(seasonId).start.toISOString())?.games.delete(game.key);
+      seasonMap
+        .get(getSeasonBoundsById(seasonId).start.toISOString())
+        ?.games.delete(game.key);
     }
   }
 }
@@ -290,7 +374,10 @@ async function bucketMancheScoreGames(seasonMap) {
     const manches = await game.fetch();
     for (const m of manches) {
       if (!m.resolvedAt || !Array.isArray(m.ranking)) continue;
-      const entry = getOrCreateGameEntry(getOrCreateSeason(seasonMap, m.resolvedAt), game);
+      const entry = getOrCreateGameEntry(
+        getOrCreateSeason(seasonMap, m.resolvedAt),
+        game,
+      );
       for (const r of m.ranking) {
         const amount = Number(r[game.scoreField]) || 0;
         if (amount <= 0) continue;
@@ -305,7 +392,10 @@ async function bucketMancheWinGames(seasonMap) {
     const manches = await game.fetch();
     for (const m of manches) {
       if (!m.resolvedAt || !m.vainqueur || m.vainqueur === "Personne") continue;
-      const entry = getOrCreateGameEntry(getOrCreateSeason(seasonMap, m.resolvedAt), game);
+      const entry = getOrCreateGameEntry(
+        getOrCreateSeason(seasonMap, m.resolvedAt),
+        game,
+      );
       addToTotal(entry, m.vainqueur, m.vainqueur, 1);
     }
   }

@@ -18,11 +18,11 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 - **Transition** : `api/discord/interactions.js` (bot TrustRoyale) route encore `jeux/discord/routes/`, pour les boutons des messages postés par TrustRoyale avant la bascule. ⚠️ Un bot ne peut ni modifier ni supprimer le message d'un autre bot : basculer entre deux jeux spéciaux, jamais pendant une partie.
 - ⚠️ Émojis d'application (`<:nom:id>`) : propres à chaque application ; un émoji du bot TrustRoyale ne s'affiche pas dans un message du bot des jeux.
 
-| Module | Contenu |
-| --- | --- |
-| `jeux/discord/routes/miniJeux.js` | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
-| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow) |
-| `jeux/discord/routes/duels.js` | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/mascarade`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Six et Tourneboule, archivés) |
+| Module                                | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jeux/discord/routes/miniJeux.js`     | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
+| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow)                                                                                                                                                                                                                                                                                                                                                                                            |
+| `jeux/discord/routes/duels.js`        | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/mascarade`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Six et Tourneboule, archivés)                                                                                                                                                                                                                                                                                                                                        |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -36,13 +36,13 @@ S'applique à Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synop
 
 Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numérotation des manches »), en alternance. Décision : écart à `ACTIVE_GAME_REFERENCE_SEASON = 136` pair → 1er jeu, impair → 2nd jeu.
 
-| Groupe | Pair / impair | Publication (UTC) | Workflow | Orchestrateur | Service | npm |
-| --- | --- | --- | --- | --- | --- | --- |
-| 🎬 Jeux de culture | Frame / Trivia | mercredi 18:00 (`0 18 * * 3`) | `jeux-culture.yml` | `jeux/scripts/postJeuxCulture.js` | `jeuxculture.js` | `culture:*` |
-| 🔤 Jeux de lettres | Anagram / Pêle-mêle | samedi 18:00 (`0 18 * * 6`) | `jeux-de-lettres.yml` | `postJeuxDeLettres.js` | `jeuxdelettres.js` | `lettres:*` |
-| 🎨 Jeux visuels | Zoom carte / Palette | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml` | `postJeuxVisuels.js` | `jeuxvisuels.js` | `visuels:*` |
-| 🙈 Jeux à l'aveugle (🎮 Culture geek après la refonte) | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`) | `jeux-aveugle.yml` (affiché « Culture geek ») | `postJeuxAveugle.js` | `jeuxaveugle.js` | `aveugle:*` |
-| ⚔️ Clash (à partir de la refonte) | Trivia / Zoom carte | mardi 18:00 (`0 18 * * 2`) | `jeux-clash.yml` | `postJeuxClash.js` | `jeuxclash.js` | `clash:*` |
+| Groupe                                                 | Pair / impair                 | Publication (UTC)             | Workflow                                      | Orchestrateur                     | Service            | npm         |
+| ------------------------------------------------------ | ----------------------------- | ----------------------------- | --------------------------------------------- | --------------------------------- | ------------------ | ----------- |
+| 🎬 Jeux de culture                                     | Frame / Trivia                | mercredi 18:00 (`0 18 * * 3`) | `jeux-culture.yml`                            | `jeux/scripts/postJeuxCulture.js` | `jeuxculture.js`   | `culture:*` |
+| 🔤 Jeux de lettres                                     | Anagram / Pêle-mêle           | samedi 18:00 (`0 18 * * 6`)   | `jeux-de-lettres.yml`                         | `postJeuxDeLettres.js`            | `jeuxdelettres.js` | `lettres:*` |
+| 🎨 Jeux visuels                                        | Zoom carte / Palette          | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml`                            | `postJeuxVisuels.js`              | `jeuxvisuels.js`   | `visuels:*` |
+| 🙈 Jeux à l'aveugle (🎮 Culture geek après la refonte) | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`)    | `jeux-aveugle.yml` (affiché « Culture geek ») | `postJeuxAveugle.js`              | `jeuxaveugle.js`   | `aveugle:*` |
+| ⚔️ Clash (à partir de la refonte)                      | Trivia / Zoom carte           | mardi 18:00 (`0 18 * * 2`)    | `jeux-clash.yml`                              | `postJeuxClash.js`                | `jeuxclash.js`     | `clash:*`   |
 
 Tous les groupes publient à 18:00 UTC, soit 19h à Paris en hiver et 20h à l'heure d'été (les crons GitHub sont en UTC).
 
@@ -50,13 +50,13 @@ Tous les groupes publient à 18:00 UTC, soit 19h à Paris en hiver et 20h à l'h
 
 `jeux/services/refonte.js` remplace chaque paire par une nouvelle, sans lien avec Clash Royale, à partir de la saison `REFONTE_SEASON[groupe]` (138 = novembre 2026 pour les 5 groupes). Avant cette saison, l'alternance ci-dessus s'applique sans changement ; à partir d'elle, la parité s'ancre sur la saison de bascule : écart pair → 1er jeu, impair → 2nd. Reporter la bascule d'un groupe = augmenter sa saison dans `REFONTE_SEASON`.
 
-| Groupe (clé technique) | Libellé après bascule | Écart pair (nov. 2026) | Écart impair (déc. 2026) |
-| --- | --- | --- | --- |
-| `culture` | 🎬 Ciné-club | `synopsis` (Synopsis éclaté) | `frame` (Trouve le film) |
-| `aveugle` | 🎮 Culture geek | `triviageek` (Trivia Geek) | `intrus` (Intrus de l'inventaire) |
-| `lettres` | 🔤 Jeux de mots | `concept` (Concept) | `pelemele` (Pêle-mêle) |
-| `visuels` | 📸 Coup d'œil | `zoom2` (Zoom logo) | `platpays` (Plat Pays) |
-| `clash` (nouveau) | ⚔️ Clash | `trivia` (Trivia) | `zoom` (Zoom carte) |
+| Groupe (clé technique) | Libellé après bascule | Écart pair (nov. 2026)       | Écart impair (déc. 2026)          |
+| ---------------------- | --------------------- | ---------------------------- | --------------------------------- |
+| `culture`              | 🎬 Ciné-club          | `synopsis` (Synopsis éclaté) | `frame` (Trouve le film)          |
+| `aveugle`              | 🎮 Culture geek       | `triviageek` (Trivia Geek)   | `intrus` (Intrus de l'inventaire) |
+| `lettres`              | 🔤 Jeux de mots       | `concept` (Concept)          | `pelemele` (Pêle-mêle)            |
+| `visuels`              | 📸 Coup d'œil         | `zoom2` (Zoom logo)          | `platpays` (Plat Pays)            |
+| `clash` (nouveau)      | ⚔️ Clash              | `trivia` (Trivia)            | `zoom` (Zoom carte)               |
 
 - Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
 - Groupe Clash : garde un rendez-vous Clash Royale. Aucun jeu avant la bascule (`getActiveClashGame` → `null`, `postJeuxClash.js` sort sans rien poster ni écrire, `/mini-jeux` masque le groupe). Trivia et Zoom carte quittent leurs anciens groupes et y gardent leur identifiant, leur catalogue et leurs archives ; leur jour de publication dépend de la saison (`publicationWeekday`, `jeuxclash.js` : mercredi / vendredi jusqu'en octobre 2026, mardi ensuite), pour l'embed comme pour le total de manches. Zoom carte (décembre, février…) et Zoom logo (novembre, janvier…) ne tombent jamais le même mois.
@@ -92,18 +92,18 @@ Chaque service réexporte `getCurrentSeasonId()` depuis `jeux/services/saison.js
 
 Clés communes (`<p>` = préfixe du jeu) :
 
-| Clé | Type | Contenu |
-| --- | --- | --- |
-| `<p>:state` | STRING (JSON) | Manche active (`gameId`, `currentIndex`, `seasonId`, `seasonManche`, `seasonMancheTotal`, `startedAt`, `channelId`, `messageId`) |
-| `<p>:participants:<gameId>` | HASH | `discordId → résultat` |
-| `<p>:usernames:<gameId>` | HASH | `discordId → pseudo` |
-| `<p>:attempts:<gameId>:<discordId>` | STRING (compteur) ou LIST | Tentatives |
-| `<p>:season:<seasonId>` | ZSET | Score cumulé de la saison (`ZINCRBY`) |
-| `<p>:season:<seasonId>:pseudos` | HASH | Pseudos du classement de saison |
-| `<p>:season:<seasonId>:manche_seq` | STRING (compteur) | Dernier n° de manche attribué |
-| `<p>:season:<seasonId>:manche_numbers` | HASH | `gameId → n° de manche` (`HSETNX`, idempotent) |
-| `<p>:archived:<seasonId>` | HASH | `<gameId>:<discordId> → résultat`, `HSETNX` contre le double comptage |
-| `<p>:posted_games` | SET | Registre anti-spoiler des `gameId` postés, jamais nettoyé (jeux à image) |
+| Clé                                    | Type                      | Contenu                                                                                                                          |
+| -------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `<p>:state`                            | STRING (JSON)             | Manche active (`gameId`, `currentIndex`, `seasonId`, `seasonManche`, `seasonMancheTotal`, `startedAt`, `channelId`, `messageId`) |
+| `<p>:participants:<gameId>`            | HASH                      | `discordId → résultat`                                                                                                           |
+| `<p>:usernames:<gameId>`               | HASH                      | `discordId → pseudo`                                                                                                             |
+| `<p>:attempts:<gameId>:<discordId>`    | STRING (compteur) ou LIST | Tentatives                                                                                                                       |
+| `<p>:season:<seasonId>`                | ZSET                      | Score cumulé de la saison (`ZINCRBY`)                                                                                            |
+| `<p>:season:<seasonId>:pseudos`        | HASH                      | Pseudos du classement de saison                                                                                                  |
+| `<p>:season:<seasonId>:manche_seq`     | STRING (compteur)         | Dernier n° de manche attribué                                                                                                    |
+| `<p>:season:<seasonId>:manche_numbers` | HASH                      | `gameId → n° de manche` (`HSETNX`, idempotent)                                                                                   |
+| `<p>:archived:<seasonId>`              | HASH                      | `<gameId>:<discordId> → résultat`, `HSETNX` contre le double comptage                                                            |
+| `<p>:posted_games`                     | SET                       | Registre anti-spoiler des `gameId` postés, jamais nettoyé (jeux à image)                                                         |
 
 - `startNewGame()` purge les données de progression de la manche **précédente** ; `<p>:season:*` et `<p>:archived:*` ne sont jamais supprimés automatiquement.
 - Changement de saison : une nouvelle clé `<p>:season:<seasonId>` suffit, aucune remise à zéro.
@@ -149,14 +149,14 @@ Prévisualisation : `npm run <groupe>:public:dry` ou `<jeu>:test:dry`.
 
 Dans le `package.json` racine (`node jeux/scripts/…`) :
 
-| Commande | Effet |
-| --- | --- |
-| `<groupe>:test` / `:test:dry` / `:public` / `:public:dry` | Orchestrateur (`culture`, `lettres`, `visuels`, `aveugle`) ; `:public` = cron |
-| `<jeu>:test` | Nouvelle manche sur le salon de test, sans ping |
-| `<jeu>:test:dry` | Aperçu console (+ récap éventuel), sans écrire ni poster |
-| `<jeu>:public` / `:public:dry` | Post direct sur le salon public (avec ping), hors orchestrateur |
-| `<jeu>:scores` | Classement de la manche en cours + score de saison (+ joueurs n'ayant pas encore joué) |
-| `<jeu>:reset` | Remise à zéro complète. **Destructif** |
+| Commande                                                  | Effet                                                                                  |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `<groupe>:test` / `:test:dry` / `:public` / `:public:dry` | Orchestrateur (`culture`, `lettres`, `visuels`, `aveugle`) ; `:public` = cron          |
+| `<jeu>:test`                                              | Nouvelle manche sur le salon de test, sans ping                                        |
+| `<jeu>:test:dry`                                          | Aperçu console (+ récap éventuel), sans écrire ni poster                               |
+| `<jeu>:public` / `:public:dry`                            | Post direct sur le salon public (avec ping), hors orchestrateur                        |
+| `<jeu>:scores`                                            | Classement de la manche en cours + score de saison (+ joueurs n'ayant pas encore joué) |
+| `<jeu>:reset`                                             | Remise à zéro complète. **Destructif**                                                 |
 
 Les scripts propres à un jeu sont listés dans sa section.
 
@@ -195,11 +195,11 @@ Schéma commun, plus `frame:hints:<gameId>:<discordId>` (SET des indices pris). 
 
 Trois instances du même moteur : service `jeux/services/triviaEngine.js` (`createTriviaService`), handlers `jeux/discord/handlers/triviaEngine.js` (`createTriviaHandlers`). Chaque instance a son préfixe Redis, son catalogue et son jour ; aucune donnée partagée.
 
-| Jeu | Groupe | Préfixe Redis | Catalogue | Jour | Boutons |
-| --- | --- | --- | --- | --- | --- |
-| 🧠 Trivia (culture Clash Royale) | Jeux de culture (alternance avec Frame), puis Clash à partir de la refonte (alternance avec Zoom carte) | `trivia:` | `jeux/data/triviaclash/trivia-clash.json` | mercredi, puis mardi | `trivia_answer:` |
-| 🎮 Trivia Geek | Culture geek à partir de la refonte | `triviageek:` | `jeux/data/triviageek/trivia-geek.json` | lundi | `triviageek_answer:` |
-| 🎒 Intrus de l'inventaire | Culture geek à partir de la refonte (alternance avec Trivia Geek) | `intrus:` | `jeux/data/jeux-visuels/intrus/` (voir ci-dessous) | lundi | `intrus_answer:` |
+| Jeu                              | Groupe                                                                                                  | Préfixe Redis | Catalogue                                          | Jour                 | Boutons              |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------- | -------------------- | -------------------- |
+| 🧠 Trivia (culture Clash Royale) | Jeux de culture (alternance avec Frame), puis Clash à partir de la refonte (alternance avec Zoom carte) | `trivia:`     | `jeux/data/triviaclash/trivia-clash.json`          | mercredi, puis mardi | `trivia_answer:`     |
+| 🎮 Trivia Geek                   | Culture geek à partir de la refonte                                                                     | `triviageek:` | `jeux/data/triviageek/trivia-geek.json`            | lundi                | `triviageek_answer:` |
+| 🎒 Intrus de l'inventaire        | Culture geek à partir de la refonte (alternance avec Trivia Geek)                                       | `intrus:`     | `jeux/data/jeux-visuels/intrus/` (voir ci-dessous) | lundi                | `intrus_answer:`     |
 
 - QCM A/B/C/D, essai unique (même mécanique que Palette, archivé). Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
 - Champ optionnel `titre` : affiché en italique au-dessus de la question.
@@ -221,7 +221,7 @@ Trois instances du même moteur : service `jeux/services/triviaEngine.js` (`crea
 - `intrus.json` : manches validées à la main (`numero` = position, `difficulte` = `facile`/`intermediaire`/`difficile`/`expert`, `jeu`, `jeuIntrus`, `theme`, `objets` = 3 ids du jeu, `intrus`, `explication`). Parcourues dans l'ordre, en boucle ; `gameId` = `i` + numéro sur 3 chiffres. Ne jamais réordonner, ajouter en fin.
 - Règles de contenu : objet et nom vérifiés sur le wiki ou l'API du jeu, jamais de mémoire ; l'intrus n'existe pas dans le jeu des 3 autres (ni objet homonyme), et inversement ; même catégorie et style d'icône proche (pas d'intrus reconnaissable à l'œil) ; pas d'objet ultra-emblématique hors « facile » ; chaque objet dans une seule manche, jamais deux manches consécutives sur le même jeu ; au moins 40 manches et les 4 difficultés (vérifié par `intrus.test.js`). Pas d'em dash dans `explication`.
 - Outil : `npm run intrus:verifier` (`jeux/outils/intrus/verifierCatalogue.js`) vérifie chaque page et chaque icône en ligne, télécharge et normalise les icônes manquantes (`--force` : toutes), `--hors-ligne` pour les seuls contrôles locaux, `--planches` pour une planche de relecture par manche dans `temp/intrus-planches/` (intrus en A), `--netteté` pour générer un rapport de cohérence de netteté (`temp/intrus-planches/nettete-report.json`, alertes quand le ratio max/min d'une manche dépasse le seuil), et `--propositions-netteté` pour proposer des remplacements (réserve si dispo, sinon candidats d'échange inter-manches) pour les manches refusées dans `validation.json`. Les objets peuvent pointer vers une source locale versionnée via `source.localFile` (chemin relatif à la racine du dépôt) quand une source distante bloque. Toute manche ajoutée est relue sur sa planche avant d'entrer au catalogue.
-- Relecture : `npm run intrus:demo` (`jeux/outils/intrus/demoValidation.js`, http://localhost:3391/api/intrus/demo). Vue « Planches » : liste compacte (vignettes 64 px, intrus en premier), décision valider / refuser / commentaire (`temp/intrus-planches/validation.json`), alertes (intrus visible, styles mélangés, netteté inégale, objet exclu), bouton ↻ par objet pour choisir un remplaçant parmi les objets hors manche (compatibles d'abord, écrit dans `intrus.json`), « Régler » pour la planche rendue par le code de production et les réglages des objets. Vue « Objets » : filtres par seuil de netteté, style, jeu, étiquette, réserve, et exclusion en lot.
+- Relecture : `npm run intrus:demo` (`jeux/outils/intrus/demoValidation.js`, <http://localhost:3391/api/intrus/demo>). Vue « Planches » : liste compacte (vignettes 64 px, intrus en premier), décision valider / refuser / commentaire (`temp/intrus-planches/validation.json`), alertes (intrus visible, styles mélangés, netteté inégale, objet exclu), bouton ↻ par objet pour choisir un remplaçant parmi les objets hors manche (compatibles d'abord, écrit dans `intrus.json`), « Régler » pour la planche rendue par le code de production et les réglages des objets. Vue « Objets » : filtres par seuil de netteté, style, jeu, étiquette, réserve, et exclusion en lot.
 - Mesures automatiques (`jeux/outils/intrus/analyseObjets.js`) : netteté = écart-type du laplacien (le score brut dépend du style, d'où le rang affiché au sein du style) ; style détecté `pixel`, `carree`, `aplat` ou `peint`, indicatif. Réglages de relecture écrits dans `objets.json` et lus en production : `accentuation` (1 à 3, masque flou appliqué au rendu de la grille par `intrusImage.js`, identique dans la démo), `style` (correction du style détecté), `etiquettes` (thèmes libres : steampunk, fantasy…), `exclu` (jamais dans une manche, vérifié par `intrus.test.js`).
 - Intrus repérable à l'œil, toujours bloquant (`intrusVisible`, `analyseObjets.js`, vérifié par `intrus.test.js` et `intrus:verifier`) : trio de variantes quasi identiques (silhouettes confondues, ex. 3 flacons recolorés), ou silhouette / structure de l'intrus nettement à part d'un trio homogène. Signature indépendante de la teinte (silhouette + luminance 16×16) ; icônes carrées opaques jugées sur la structure seule.
 - Import depuis un wiki hors Fandom : `npm run intrus:importer:wiki -- --wiki <api.php> --categorie "<Catégorie de fichiers>" --jeu "<Jeu>" --prefixe <id> [--max 40] [--retirer "<regex>"]` (`jeux/outils/intrus/importerWiki.js`) : échantillon réparti sur la catégorie, références seulement (`intrus:verifier` télécharge). Sources utilisées : Nookipedia (Pocket Camp), plantsvszombies.wiki.gg (PvZ 2), battlecats.miraheze.org (Battle Cats). Fandom (CDN `static.wikia.nocookie.net`) refuse les scripts.
@@ -298,12 +298,12 @@ Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Toute carte du po
 
 Schéma commun, plus :
 
-| Clé | Type | Contenu |
-| --- | --- | --- |
-| `pelemele:participants:<gameId>` | HASH | `discordId → { foundWords[], score, lastFoundAt }` |
-| `pelemele:attempts:<gameId>:<discordId>` | LIST | Propositions valides (forme canonique), pour le Journal |
-| `pelemele:order` | STRING (JSON) | Rotation des cartes principales |
-| `pelemele:draws` | LIST | Tirages préparés, dans l'ordre |
+| Clé                                      | Type          | Contenu                                                 |
+| ---------------------------------------- | ------------- | ------------------------------------------------------- |
+| `pelemele:participants:<gameId>`         | HASH          | `discordId → { foundWords[], score, lastFoundAt }`      |
+| `pelemele:attempts:<gameId>:<discordId>` | LIST          | Propositions valides (forme canonique), pour le Journal |
+| `pelemele:order`                         | STRING (JSON) | Rotation des cartes principales                         |
+| `pelemele:draws`                         | LIST          | Tirages préparés, dans l'ordre                          |
 
 Les résultats de **tous** les participants sont archivés d'un coup (`finalizeRound`) quand `startNewGame()` remplace la manche.
 
@@ -439,7 +439,6 @@ Jeux spéciaux Blackjack et Gobelet seulement (pas leurs duels) : `jeux/services
 
 - Rangs ex aequo : deux joueurs à égalité partagent le même rang (« 1, 2, 2, 4 ») via `rangExAequo()` (`@clash/commun/classement.js`) ; les récaps utilisent `findTiedRank()`. Départages propres à un jeu : voir sa section.
 
-
 ## Passeport mensuel (« 🛂 Mon passeport »)
 
 Bouton « 🛂 Mon passeport » de `/mini-jeux` (`custom_id: minijeux_participation`, `buildParticipationEmbed()` de `jeux/discord/handlers/minijeux.js`), éphémère :
@@ -464,14 +463,14 @@ Rattrapage (registre en retard sur les jeux : déploiement en cours de mois, inc
 
 Clés Redis (expiration `TTL_SECONDES`, 120 jours, relancée à chaque écriture) :
 
-| Clé | Type | Contenu |
-|---|---|---|
-| `passeport:<seasonId>:<discordId>:manches` | SET | `<jeu>:<gameId>` des manches jouées |
-| `passeport:<seasonId>:<discordId>:duels` | HASH | victoires : `bot`, `pvp` (totaux), `bot:<jeu>`, `pvp:<jeu>` |
-| `passeport:<seasonId>:<discordId>:speciaux` | SET | jeux spéciaux joués |
-| `passeport:<seasonId>:speciaux` | SET | jeux spéciaux ayant eu au moins un participant dans le mois |
-| `passeport:<seasonId>:joueurs` | SET | joueurs ayant au moins une entrée dans le mois (qualifiés du Boss) |
-| `passeport:compteurs` | HASH | `discordId` → `{ passeports, boss }`, compteurs permanents (jamais effacés, sans expiration) |
+| Clé                                         | Type | Contenu                                                                                      |
+| ------------------------------------------- | ---- | -------------------------------------------------------------------------------------------- |
+| `passeport:<seasonId>:<discordId>:manches`  | SET  | `<jeu>:<gameId>` des manches jouées                                                          |
+| `passeport:<seasonId>:<discordId>:duels`    | HASH | victoires : `bot`, `pvp` (totaux), `bot:<jeu>`, `pvp:<jeu>`                                  |
+| `passeport:<seasonId>:<discordId>:speciaux` | SET  | jeux spéciaux joués                                                                          |
+| `passeport:<seasonId>:speciaux`             | SET  | jeux spéciaux ayant eu au moins un participant dans le mois                                  |
+| `passeport:<seasonId>:joueurs`              | SET  | joueurs ayant au moins une entrée dans le mois (qualifiés du Boss)                           |
+| `passeport:compteurs`                       | HASH | `discordId` → `{ passeports, boss }`, compteurs permanents (jamais effacés, sans expiration) |
 
 Sous les tampons, la liste des passeports complets de la saison à ce jour (`listerPasseportsComplets()` : un passeport lu par joueur indexé, 40 pseudos au plus). Le passeport affiche aussi, une fois non nuls, les compteurs permanents (« 🛂 Passeports complétés · 🐉 Boss vaincus », incrémentés à la clôture du Boss) et, pendant la semaine du Boss, le rappel et le bouton « 🐉 Affronter Kévina » pour les qualifiés (`buildPasseportMessage()`).
 
@@ -505,12 +504,12 @@ Déroulé (`postBoss.js`, cron `boss.yml`, chaque jour 8h26 UTC, idempotent) :
 - Hors `--public`, rien n'est ouvert ni clos : annonce ou classement provisoire postés sur le salon de test, MP seulement aux identifiants passés par `--mp <discordId>` (Boss déjà ouvert). `npm run boss:test[:dry]`, `npm run boss:public[:dry]`.
 - Boutons : `boss_lancer:<seasonId>` (nouveau message : éphémère sur le serveur, normal en MP), `boss_pret:<seasonId>`, `boss_jouer:<seasonId>:<arg>` (édités en place). ⚠️ Seules interactions acceptées **hors serveur** par `api/discord/jeux.js` (clics en MP, sans `guild_id`) : l'accès repose sur la qualification, vérifiée à chaque clic.
 
-| Clé | Type | Contenu |
-|---|---|---|
-| `boss:<seasonId>` | STRING (JSON) | `{ seasonId, jeu, graine, ouvertAt, clotureAt, qualifies, cloture }` |
-| `boss:<seasonId>:tentatives` | HASH | `discordId` → `{ pseudo, statut, debutAt, finAt, resultat, score, inactif? }` |
-| `boss:<seasonId>:partie:<discordId>` | STRING (JSON) | `{ etat, dernierCoupAt }` |
-| `boss:<seasonId>:annonce`, `boss:<seasonId>:cloture` | HASH | marqueurs d'idempotence |
+| Clé                                                  | Type          | Contenu                                                                       |
+| ---------------------------------------------------- | ------------- | ----------------------------------------------------------------------------- |
+| `boss:<seasonId>`                                    | STRING (JSON) | `{ seasonId, jeu, graine, ouvertAt, clotureAt, qualifies, cloture }`          |
+| `boss:<seasonId>:tentatives`                         | HASH          | `discordId` → `{ pseudo, statut, debutAt, finAt, resultat, score, inactif? }` |
+| `boss:<seasonId>:partie:<discordId>`                 | STRING (JSON) | `{ etat, dernierCoupAt }`                                                     |
+| `boss:<seasonId>:annonce`, `boss:<seasonId>:cloture` | HASH          | marqueurs d'idempotence                                                       |
 
 Toutes ces clés expirent après 120 jours.
 
@@ -522,18 +521,18 @@ Toutes ces clés expirent après 120 jours.
 
 Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu>.yml`, déclenché à une minute **distincte** de la tranche 7h-8h UTC :
 
-| Jeu            | Workflow            | Cron         |
-| -------------- | ------------------- | ------------ |
-| Meow           | `meow.yml`          | `22 7 * * *` (8h22 à Paris en hiver, après le bilan de 8 h et avant la distribution de 8h30) |
-| Goblin Hunters | `goblinhunters.yml` | `4 8 * * *`  |
-| Quiz           | `quiz.yml`          | `6 8 * * *`  |
-| Robinson       | `robinson.yml`      | `8 8 * * *`  |
-| Blackjack      | `blackjack.yml`     | `12 7 * * *` (8h12 à Paris en hiver, après le décompte de 8 h des deux mains) |
-| Mario Clash    | `marioclash.yml`    | `14 8 * * *` |
-| Jeu du Gobelet | `gobelet.yml`       | `16 7 * * *` (8h16 à Paris en hiver, après le décompte de 8 h des deux mains) |
-| Qui est-ce ?   | `quiestce.yml`      | `20 8 * * *` |
-| Pont du Troll  | `pont.yml`          | `24 7 * * *` (8h24 à Paris en hiver, après le décompte de 8 h) |
-| Boss de fin de saison | `boss.yml`   | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison ») |
+| Jeu                   | Workflow            | Cron                                                                                         |
+| --------------------- | ------------------- | -------------------------------------------------------------------------------------------- |
+| Meow                  | `meow.yml`          | `22 7 * * *` (8h22 à Paris en hiver, après le bilan de 8 h et avant la distribution de 8h30) |
+| Goblin Hunters        | `goblinhunters.yml` | `4 8 * * *`                                                                                  |
+| Quiz                  | `quiz.yml`          | `6 8 * * *`                                                                                  |
+| Robinson              | `robinson.yml`      | `8 8 * * *`                                                                                  |
+| Blackjack             | `blackjack.yml`     | `12 7 * * *` (8h12 à Paris en hiver, après le décompte de 8 h des deux mains)                |
+| Mario Clash           | `marioclash.yml`    | `14 8 * * *`                                                                                 |
+| Jeu du Gobelet        | `gobelet.yml`       | `16 7 * * *` (8h16 à Paris en hiver, après le décompte de 8 h des deux mains)                |
+| Qui est-ce ?          | `quiestce.yml`      | `20 8 * * *`                                                                                 |
+| Pont du Troll         | `pont.yml`          | `24 7 * * *` (8h24 à Paris en hiver, après le décompte de 8 h)                               |
+| Boss de fin de saison | `boss.yml`          | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison »)      |
 
 Tamagotchi (`tamagotchi.yml`, ex-minute 10), Boss Raid (`bossraid.yml`, ex-minute 2) et Bang! (`bang.yml`, ex-minute 18) ont leur cron commenté : voir « Jeux archivés ».
 
@@ -548,13 +547,13 @@ Tamagotchi (`tamagotchi.yml`, ex-minute 10), Boss Raid (`bossraid.yml`, ex-minut
 
 Jeu spécial de 7 jours : une question à choix par jour sur une thématique unique par manche, votes secrets et définitifs, bonnes réponses et classement révélés après le Jour 7. Pas de commande slash.
 
-| Rôle | Fichier |
-| ---- | ------- |
-| Contenu, état, votes, scoring, Redis | `jeux/services/quiz.js` |
-| Discord (embeds, boutons, `postQuiz()`, `handleQuizVote()`) | `jeux/discord/handlers/quiz.js` |
-| Routage du bouton `quiz_vote:*` | `jeux/discord/routes/miniJeux.js` |
-| Publication quotidienne | `jeux/scripts/postQuiz.js` |
-| Contenu | `jeux/data/quiz/quiz.json` (voir Config) |
+| Rôle                                                        | Fichier                                  |
+| ----------------------------------------------------------- | ---------------------------------------- |
+| Contenu, état, votes, scoring, Redis                        | `jeux/services/quiz.js`                  |
+| Discord (embeds, boutons, `postQuiz()`, `handleQuizVote()`) | `jeux/discord/handlers/quiz.js`          |
+| Routage du bouton `quiz_vote:*`                             | `jeux/discord/routes/miniJeux.js`        |
+| Publication quotidienne                                     | `jeux/scripts/postQuiz.js`               |
+| Contenu                                                     | `jeux/data/quiz/quiz.json` (voir Config) |
 
 ### Déroulement (Quiz)
 
@@ -590,41 +589,41 @@ Jeu spécial de 7 jours : une question à choix par jour sur une thématique uni
 { manches: [{ id, theme, questions: [{ type, enonce, image, choix, bonne_reponse }] }] }
 ```
 
-| Champ | Rôle |
-| ----- | ---- |
-| `id` | Slug stable (stocké en `mancheId`, debug) |
-| `theme` | Affiché dans les titres et la révélation |
-| `questions` | ⚠️ **Exactement 7** : `TOTAL_QUESTIONS = 7` est codé en dur (titres, passage à la révélation) |
-| `type` | `"qcm"` ou `"vrai_faux"` (informatif : le nombre de boutons suit `choix.length`) |
-| `image` | Chemin relatif sous `frontend/public/images/` (servi par `https://trustroyale.vercel.app/images/…`) ou `null`, jamais d'URL absolue |
-| `choix` | 2 à 5 propositions (lettres A-E, une seule rangée de boutons) |
-| `bonne_reponse` | Index 0-based dans `choix` |
+| Champ           | Rôle                                                                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | Slug stable (stocké en `mancheId`, debug)                                                                                           |
+| `theme`         | Affiché dans les titres et la révélation                                                                                            |
+| `questions`     | ⚠️ **Exactement 7** : `TOTAL_QUESTIONS = 7` est codé en dur (titres, passage à la révélation)                                       |
+| `type`          | `"qcm"` ou `"vrai_faux"` (informatif : le nombre de boutons suit `choix.length`)                                                    |
+| `image`         | Chemin relatif sous `frontend/public/images/` (servi par `https://trustroyale.vercel.app/images/…`) ou `null`, jamais d'URL absolue |
+| `choix`         | 2 à 5 propositions (lettres A-E, une seule rangée de boutons)                                                                       |
+| `bonne_reponse` | Index 0-based dans `choix`                                                                                                          |
 
 Le fichier est lu une fois et mis en cache (jamais muté). Manches actuelles : `staff-histoire`, `Nombres`.
 
 ### Stockage Redis (`quiz:*`)
 
-| Clé | Type | Contenu |
-| --- | ---- | ------- |
-| `quiz:state` | STRING | `{ phase, manche, mancheIndex, mancheId, theme, jour, channelId, messageId, publishedAt, termine }` |
-| `quiz:votes:<manche>:<jour>` | HASH | `discordId → index du choix` |
-| `quiz:vote_usernames:<manche>:<jour>` | HASH | `discordId → pseudo` (affichage seulement) |
-| `quiz:theme_cursor` | STRING | index de la dernière thématique jouée |
-| `quiz:manche_seq` | STRING | compteur de manches (incrémenté au Jour 1) |
-| `quiz:manches` | HASH | `manche → { manche, mancheId, theme, resolvedAt, ranking, winners, maxScore }` |
+| Clé                                   | Type   | Contenu                                                                                             |
+| ------------------------------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| `quiz:state`                          | STRING | `{ phase, manche, mancheIndex, mancheId, theme, jour, channelId, messageId, publishedAt, termine }` |
+| `quiz:votes:<manche>:<jour>`          | HASH   | `discordId → index du choix`                                                                        |
+| `quiz:vote_usernames:<manche>:<jour>` | HASH   | `discordId → pseudo` (affichage seulement)                                                          |
+| `quiz:theme_cursor`                   | STRING | index de la dernière thématique jouée                                                               |
+| `quiz:manche_seq`                     | STRING | compteur de manches (incrémenté au Jour 1)                                                          |
+| `quiz:manches`                        | HASH   | `manche → { manche, mancheId, theme, resolvedAt, ranking, winners, maxScore }`                      |
 
 `resetQuiz()` efface `quiz:state` et les votes ; `--manches` efface aussi `quiz:manches`, `quiz:manche_seq` et `quiz:theme_cursor` (le cycle repart de la première thématique).
 
 ### Scripts et cron (Quiz)
 
-| Commande | Effet |
-| -------- | ----- |
-| `npm run quiz:test` / `:test:dry` | Salon de test / aperçu console |
-| `npm run quiz:public` / `:public:dry` | Salon public |
-| `npm run quiz:reset` | **Destructif** : partie et votes effacés, archive, compteur et curseur conservés |
-| `npm run quiz:reset:manches` | **Destructif** : efface aussi archive, compteur et curseur |
-| `npm run quiz:status` | Manche, thème, jour, votants du jour (sans le contenu des votes) |
-| `npm run quiz:scores` | Admin : matrice joueur × jour (1/0/`-`) + total, visible avant la révélation |
+| Commande                              | Effet                                                                            |
+| ------------------------------------- | -------------------------------------------------------------------------------- |
+| `npm run quiz:test` / `:test:dry`     | Salon de test / aperçu console                                                   |
+| `npm run quiz:public` / `:public:dry` | Salon public                                                                     |
+| `npm run quiz:reset`                  | **Destructif** : partie et votes effacés, archive, compteur et curseur conservés |
+| `npm run quiz:reset:manches`          | **Destructif** : efface aussi archive, compteur et curseur                       |
+| `npm run quiz:status`                 | Manche, thème, jour, votants du jour (sans le contenu des votes)                 |
+| `npm run quiz:scores`                 | Admin : matrice joueur × jour (1/0/`-`) + total, visible avant la révélation     |
 
 Options de `postQuiz.js` : `--dry-run`, `--public`, `--no-ping`, `--require-active`, `--force`.
 
@@ -636,16 +635,16 @@ Cron `.github/workflows/quiz.yml` : `6 8 * * *`. Variables : `DISCORD_TOKEN`, `D
 
 Jeu spécial collaboratif : la communauté, naufragée, doit survivre `duree_jours` (7) jours jusqu'aux secours (Jour `duree_jours + 1`) ou s'évader plus tôt en Radeau. Chaque jour, chaque membre vote une action : récolter (Pêcher, Eau, Bois, Explorer) ou bâtir (Radeau, Filet, Citerne, Atelier). Les 3 stocks (Nourriture/poisson, Eau, Bois) sont consommés chaque nuit. Mécaniques communes (annonce, cron `--require-active`, salon test/public, ping, manches) : voir « Jeux spéciaux : fonctionnement commun ».
 
-| Rôle | Fichier |
-|---|---|
-| Logique métier, Redis, fonctions pures | `jeux/services/robinson.js` |
-| Embeds, publication, boutons | `jeux/discord/handlers/robinson.js` (`postRobinson()`, `handleVoteButton()`, `handleRegles()`) |
-| Routage des boutons (`robinson_vote:<jour>:<action>`, action, `batir` ou chantier, `robinson_regles`) | `jeux/discord/routes/jeuxSpeciaux.js` |
-| Publication (manuel/cron) | `jeux/scripts/postRobinson.js` (pas de commande slash) |
-| Config | `jeux/data/robinson/robinson.json`, `jeux/data/robinson/narratifs.json` |
-| Simulation d'équilibrage | `jeux/outils/robinson-simulation/simuler.mjs` (`--n`, `--v 6,10,14`, surcharges de calibrage `--appauvrissement`, `--points-section`, `--stocks`) |
-| Plateau du jour | `jeux/services/robinsonImage.js` (`GET /api/robinson/plateau?d=`, `jeux/server/imageRoutes.js`) ; rendu local : `node jeux/outils/robinson/renderPlateau.mjs <sortie.png> [jour]` |
-| Illustrations | `frontend/public/images/robinson/` (`robinsonImageUrl(n)`) : `rob-01` annonce ; fin de partie selon l'issue (`buildOutcomeEmbed()`) : `rob-10` Radeau, `rob-07` secours, `rob-04` naufrage. Les jours de jeu n'affichent que le plateau |
+| Rôle                                                                                                  | Fichier                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logique métier, Redis, fonctions pures                                                                | `jeux/services/robinson.js`                                                                                                                                                                                                             |
+| Embeds, publication, boutons                                                                          | `jeux/discord/handlers/robinson.js` (`postRobinson()`, `handleVoteButton()`, `handleRegles()`)                                                                                                                                          |
+| Routage des boutons (`robinson_vote:<jour>:<action>`, action, `batir` ou chantier, `robinson_regles`) | `jeux/discord/routes/jeuxSpeciaux.js`                                                                                                                                                                                                   |
+| Publication (manuel/cron)                                                                             | `jeux/scripts/postRobinson.js` (pas de commande slash)                                                                                                                                                                                  |
+| Config                                                                                                | `jeux/data/robinson/robinson.json`, `jeux/data/robinson/narratifs.json`                                                                                                                                                                 |
+| Simulation d'équilibrage                                                                              | `jeux/outils/robinson-simulation/simuler.mjs` (`--n`, `--v 6,10,14`, surcharges de calibrage `--appauvrissement`, `--points-section`, `--stocks`)                                                                                       |
+| Plateau du jour                                                                                       | `jeux/services/robinsonImage.js` (`GET /api/robinson/plateau?d=`, `jeux/server/imageRoutes.js`) ; rendu local : `node jeux/outils/robinson/renderPlateau.mjs <sortie.png> [jour]`                                                       |
+| Illustrations                                                                                         | `frontend/public/images/robinson/` (`robinsonImageUrl(n)`) : `rob-01` annonce ; fin de partie selon l'issue (`buildOutcomeEmbed()`) : `rob-10` Radeau, `rob-07` secours, `rob-04` naufrage. Les jours de jeu n'affichent que le plateau |
 
 ### Déroulement
 
@@ -679,12 +678,12 @@ Rendu sans état (`encodePlateau()`, JSON en base64url : état dynamique seuleme
 
 ### Tirages
 
-| Action | Gain |
-|---|---|
-| Pêcher / Eau / Bois | 0-5 uniforme (`rollHarvestAmount()`) |
+| Action                                      | Gain                                                                                                                                                                                                           |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pêcher / Eau / Bois                         | 0-5 uniforme (`rollHarvestAmount()`)                                                                                                                                                                           |
 | Pêcher / Eau / Bois plafonnés par événement | palier « modéré » 0-2 (Canicule, `rollModerateCapAmount()`) ; palier « léger » 1-2 (Ouragan, Indigestion Royale, `rollMildCapAmount()`) ; dispatch `rollEventCappedAmount()`, cible via `harvestCapForEvent()` |
-| Explorer | 3 unités d'une seule ressource tirée au hasard (`rollExplorerYield()`), moins l'épuisement, jamais sous `epuisement.explorer_min` (`computeExplorerAmount()`), jamais plafonné |
-| Radeau | `bois_par_point_radeau` (1) Bois → +1 point, +2 une fois l'Atelier achevé (`raftPointsPerVote()`) |
+| Explorer                                    | 3 unités d'une seule ressource tirée au hasard (`rollExplorerYield()`), moins l'épuisement, jamais sous `epuisement.explorer_min` (`computeExplorerAmount()`), jamais plafonné                                 |
+| Radeau                                      | `bois_par_point_radeau` (1) Bois → +1 point, +2 une fois l'Atelier achevé (`raftPointsPerVote()`)                                                                                                              |
 
 Récolte finale (`computeHarvestAmount()`) : tirage moins l'épuisement (plancher 0), puis +1 Chef explorateur, +1 Filet (Pêcher) ou Citerne (Eau).
 
@@ -698,11 +697,11 @@ Récolte finale (`computeHarvestAmount()`) : tirage moins l'épuisement (planche
 
 Proposée dans le menu Bâtir tant qu'elle est inachevée. 1 vote + 1 Bois commun = 1 point (`attemptConstructionContribution()`), effet immédiat dès le dernier point. Effets liés à l'identifiant :
 
-| Id | Coût | Effet |
-|---|---|---|
-| `filet` | 4 | +1 à chaque Pêche (`constructionHarvestBonus()`) |
-| `citerne` | 4 | +1 à chaque Eau, y compris plafonnée |
-| `atelier` | 4 | 2 points par vote Radeau (pas le Chef charpentier) |
+| Id        | Coût | Effet                                              |
+| --------- | ---- | -------------------------------------------------- |
+| `filet`   | 4    | +1 à chaque Pêche (`constructionHarvestBonus()`)   |
+| `citerne` | 4    | +1 à chaque Eau, y compris plafonnée               |
+| `atelier` | 4    | 2 points par vote Radeau (pas le Chef charpentier) |
 
 Raison d'être : arbitrage entre survivre aujourd'hui, investir pour la suite et avancer le Radeau, tous payés en Bois. Rentables si bâties tôt.
 
@@ -719,14 +718,14 @@ Programme tiré au Jour 1 (`drawEventProgramme(evenements, duree_jours)`) : chaq
 
 `eventForDay(jour, evenements, V_veille, programme)` : lookup dans le programme ; `condition_votants_veille_max` désactive l'événement si `V_veille >=` seuil. Les pertes/dons s'appliquent **une seule fois**, à la publication du jour concerné.
 
-| Événement (`id`) | Effet |
-|---|---|
-| Poissons Pourris (`poissons_pourris`) | Seulement si V_veille `<` 14 (`condition_votants_veille_max`). Perte de Poisson `computePoissonsPourrisLoss(V, seuil) = max(1, min(seuil − V, 4 + V))` (`spoilPoisson()`). ⚠️ `seuil` doit être `event.condition_votants_veille_max`, jamais codé en dur. |
-| Grosse Canicule (`canicule`) | Eau : palier modéré 0-2 |
-| Ouragan Monstrueux (`ouragan`) | Pêcher et Bois : palier léger 1-2 |
-| Invasion de Gobelins (`gobelins`) | Bouton Explorer retiré (`isExplorerDisabled()`) ; vol de 5 Poissons si Bois `< 5` après conso (`computeGobelinsTheft()`) |
-| Indigestion Royale (`indigestion_royale`) | Eau : palier léger 1-2 |
-| Épave échouée (`epave`) | Don de **Bois** `max(bois_min, bois_base − V_veille)` = `max(5, 19 − V)` (`computeEpaveBoisBonus()`). ⚠️ Don de Bois, jamais de points de Radeau directs (rendrait la victoire Radeau quasi certaine). |
+| Événement (`id`)                          | Effet                                                                                                                                                                                                                                                     |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Poissons Pourris (`poissons_pourris`)     | Seulement si V_veille `<` 14 (`condition_votants_veille_max`). Perte de Poisson `computePoissonsPourrisLoss(V, seuil) = max(1, min(seuil − V, 4 + V))` (`spoilPoisson()`). ⚠️ `seuil` doit être `event.condition_votants_veille_max`, jamais codé en dur. |
+| Grosse Canicule (`canicule`)              | Eau : palier modéré 0-2                                                                                                                                                                                                                                   |
+| Ouragan Monstrueux (`ouragan`)            | Pêcher et Bois : palier léger 1-2                                                                                                                                                                                                                         |
+| Invasion de Gobelins (`gobelins`)         | Bouton Explorer retiré (`isExplorerDisabled()`) ; vol de 5 Poissons si Bois `< 5` après conso (`computeGobelinsTheft()`)                                                                                                                                  |
+| Indigestion Royale (`indigestion_royale`) | Eau : palier léger 1-2                                                                                                                                                                                                                                    |
+| Épave échouée (`epave`)                   | Don de **Bois** `max(bois_min, bois_base − V_veille)` = `max(5, 19 − V)` (`computeEpaveBoisBonus()`). ⚠️ Don de Bois, jamais de points de Radeau directs (rendrait la victoire Radeau quasi certaine).                                                    |
 
 Les événements ne sont pas détaillés dans l'embed Règles (`buildReglesEmbed()`), qui indique seulement qu'ils sont annoncés la veille.
 
@@ -747,30 +746,30 @@ Score de classement (`computeMancheScore(outcome, jour, dureeJours)`) : victoire
 
 ### Redis (`robinson:*`)
 
-| Clé | Type | Contenu |
-|---|---|---|
-| `robinson:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, programme, palierEpuisement, eventsVus, event, chefExplorateurId, chefCharpentierId, zeroStreaks, dayVoters }`, muté au cron |
-| `robinson:stock:poisson` / `:eau` / `:bois` | compteur | stocks, `INCRBY`/`DECRBY` uniquement |
-| `robinson:radeau_points` | compteur | points de Radeau |
-| `robinson:construction:<id>` | compteur | points investis dans chaque construction |
-| `robinson:radeau_jour:<jour>` | compteur | points de Radeau gagnés dans la journée (plafond quotidien, effacé à la clôture) |
-| `robinson:zones:<jour>` | HASH | `actionId → nombre de récoltes du jour` (épuisement, effacé à la clôture) |
-| `robinson:votes:<jour>` | HASH | `discordId → actionId` (effacé à la clôture) |
-| `robinson:vote_details:<jour>` | HASH | `discordId → { actionId, amount\|yields\|pointsAdded, malus?, bonusConstruction?, isChef?, isCharpentier?, at }` (réaffichage sans re-tirage) |
-| `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` (affichage admin) |
-| `robinson:historique` | HASH | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }`, manche en cours (V de la veille, `robinson:status`) |
-| `robinson:manches` / `robinson:manche_seq` | HASH / compteur | archive permanente des manches |
+| Clé                                         | Type            | Contenu                                                                                                                                                                                  |
+| ------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `robinson:state`                            | STRING          | `{ phase, jour, channelId, messageId, publishedAt, termine, programme, palierEpuisement, eventsVus, event, chefExplorateurId, chefCharpentierId, zeroStreaks, dayVoters }`, muté au cron |
+| `robinson:stock:poisson` / `:eau` / `:bois` | compteur        | stocks, `INCRBY`/`DECRBY` uniquement                                                                                                                                                     |
+| `robinson:radeau_points`                    | compteur        | points de Radeau                                                                                                                                                                         |
+| `robinson:construction:<id>`                | compteur        | points investis dans chaque construction                                                                                                                                                 |
+| `robinson:radeau_jour:<jour>`               | compteur        | points de Radeau gagnés dans la journée (plafond quotidien, effacé à la clôture)                                                                                                         |
+| `robinson:zones:<jour>`                     | HASH            | `actionId → nombre de récoltes du jour` (épuisement, effacé à la clôture)                                                                                                                |
+| `robinson:votes:<jour>`                     | HASH            | `discordId → actionId` (effacé à la clôture)                                                                                                                                             |
+| `robinson:vote_details:<jour>`              | HASH            | `discordId → { actionId, amount\|yields\|pointsAdded, malus?, bonusConstruction?, isChef?, isCharpentier?, at }` (réaffichage sans re-tirage)                                            |
+| `robinson:vote_usernames:<jour>`            | HASH            | `discordId → pseudo` (affichage admin)                                                                                                                                                   |
+| `robinson:historique`                       | HASH            | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }`, manche en cours (V de la veille, `robinson:status`)                      |
+| `robinson:manches` / `robinson:manche_seq`  | HASH / compteur | archive permanente des manches                                                                                                                                                           |
 
 ### Scripts et workflow
 
-| Commande | Effet |
-|---|---|
-| `npm run robinson:test` / `:test:dry` | salon de test (`DISCORD_CHANNEL_FRAME_TEST`) / aperçu console |
-| `npm run robinson:public` / `:public:dry` | salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) / aperçu |
-| `npm run robinson:reset` | efface état, stocks, votes, historique (**destructif**, garde les manches) |
-| `npm run robinson:reset:manches` | idem + `robinson:manches`/`manche_seq` |
-| `npm run robinson:status` | état courant (stocks, constructions, programme, palier) + projection du jour suivant |
-| `npm run robinson:refresh` / `:refresh:dry` | réédite le message du jour en place (sans clôturer) après un correctif de texte |
+| Commande                                    | Effet                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `npm run robinson:test` / `:test:dry`       | salon de test (`DISCORD_CHANNEL_FRAME_TEST`) / aperçu console                        |
+| `npm run robinson:public` / `:public:dry`   | salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) / aperçu                               |
+| `npm run robinson:reset`                    | efface état, stocks, votes, historique (**destructif**, garde les manches)           |
+| `npm run robinson:reset:manches`            | idem + `robinson:manches`/`manche_seq`                                               |
+| `npm run robinson:status`                   | état courant (stocks, constructions, programme, palier) + projection du jour suivant |
+| `npm run robinson:refresh` / `:refresh:dry` | réédite le message du jour en place (sans clôturer) après un correctif de texte      |
 
 Workflow `.github/workflows/robinson.yml` : cron `8 8 * * *` UTC (avec `--require-active`) + `workflow_dispatch` (lancement). Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`/`_TEST`, `KV_REST_API_URL`/`KV_REST_API_TOKEN` (aucune spécifique).
 
@@ -780,14 +779,14 @@ Workflow `.github/workflows/robinson.yml` : cron `8 8 * * *` UTC (avec `--requir
 
 Jeu spécial de 7 jours (`duree_jours`) : chaque membre affronte le Croupier en solo, deux mains par jour (☀️ 8h30-20h, 🌙 20h-8h, voir « Deux mains par jour »), classement cumulé révélé après le Jour 7. Pas de commande slash.
 
-| Rôle | Fichier |
-| ---- | ------- |
-| Règles, Redis | `jeux/services/blackjack.js` |
-| Discord (embeds, boutons, `postBlackjack()`) | `jeux/discord/handlers/blackjack.js` |
-| Routage des boutons | `jeux/discord/routes/jeuxSpeciaux.js` |
-| Publication quotidienne | `jeux/scripts/postBlackjack.js` |
-| Config | `jeux/data/blackjack/blackjack.json` : `duree_jours` (7) |
-| Simulation (équilibrage des règles) | `jeux/outils/blackjack-simulation/simulation.mjs` |
+| Rôle                                         | Fichier                                                  |
+| -------------------------------------------- | -------------------------------------------------------- |
+| Règles, Redis                                | `jeux/services/blackjack.js`                             |
+| Discord (embeds, boutons, `postBlackjack()`) | `jeux/discord/handlers/blackjack.js`                     |
+| Routage des boutons                          | `jeux/discord/routes/jeuxSpeciaux.js`                    |
+| Publication quotidienne                      | `jeux/scripts/postBlackjack.js`                          |
+| Config                                       | `jeux/data/blackjack/blackjack.json` : `duree_jours` (7) |
+| Simulation (équilibrage des règles)          | `jeux/outils/blackjack-simulation/simulation.mjs`        |
 
 ### Déroulement (Blackjack)
 
@@ -813,12 +812,12 @@ Règles officielles (choix validés par simulation, `jeux/outils/blackjack-simul
 
 ### Barème et classement (Blackjack)
 
-| Résultat (`compareToDealer()`) | Points (`pointsForResult(result, double)`) |
-| -------- | ------ |
-| Blackjack naturel (`blackjack`) | 3 |
-| Victoire (`win`, dont tout dépassement du Croupier) | 2 |
-| Égalité (`push`) | 1 |
-| Défaite, dépassement, main non jouée | 0 |
+| Résultat (`compareToDealer()`)                      | Points (`pointsForResult(result, double)`) |
+| --------------------------------------------------- | ------------------------------------------ |
+| Blackjack naturel (`blackjack`)                     | 3                                          |
+| Victoire (`win`, dont tout dépassement du Croupier) | 2                                          |
+| Égalité (`push`)                                    | 1                                          |
+| Défaite, dépassement, main non jouée                | 0                                          |
 
 - Main doublée : points ×2 (victoire 4, égalité 2). Le drapeau `double` suit la main jusqu'au résultat (`resolveDay()`).
 
@@ -840,26 +839,26 @@ Règles officielles (choix validés par simulation, `jeux/outils/blackjack-simul
 
 ### Stockage Redis (`blackjack:*`)
 
-| Clé | Type | Contenu |
-| --- | ---- | ------- |
-| `blackjack:state` | STRING | `{ phase, jour, dealer, dealerSoir, channelId, messageId, publishedAt, termine }` |
-| `blackjack:points` | HASH | `discordId → points` de la manche (`HINCRBY`) |
-| `blackjack:usernames` | HASH | `discordId → pseudo` (repli d'affichage) |
-| `blackjack:hand:<jour>` / `blackjack:hand:<jour>:2` | HASH | main de la journée / du soir : `discordId → { cards, score, status, username, double? }` |
-| `blackjack:historique` | HASH | `jour → { jour, dealer, results, dealerSoir, resultsSoir, resolvedAt }`, effacé par `resetBlackjack()` |
-| `blackjack:manches` | HASH | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches` |
-| `blackjack:manche_seq` | STRING | compteur de manches |
+| Clé                                                 | Type   | Contenu                                                                                                |
+| --------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| `blackjack:state`                                   | STRING | `{ phase, jour, dealer, dealerSoir, channelId, messageId, publishedAt, termine }`                      |
+| `blackjack:points`                                  | HASH   | `discordId → points` de la manche (`HINCRBY`)                                                          |
+| `blackjack:usernames`                               | HASH   | `discordId → pseudo` (repli d'affichage)                                                               |
+| `blackjack:hand:<jour>` / `blackjack:hand:<jour>:2` | HASH   | main de la journée / du soir : `discordId → { cards, score, status, username, double? }`               |
+| `blackjack:historique`                              | HASH   | `jour → { jour, dealer, results, dealerSoir, resultsSoir, resolvedAt }`, effacé par `resetBlackjack()` |
+| `blackjack:manches`                                 | HASH   | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches`        |
+| `blackjack:manche_seq`                              | STRING | compteur de manches                                                                                    |
 
 ### Scripts et cron (Blackjack)
 
-| Commande | Effet |
-| -------- | ----- |
-| `npm run blackjack:test` / `:test:dry` | Salon de test (`DISCORD_CHANNEL_FRAME_TEST`) / aperçu console |
-| `npm run blackjack:public` / `:public:dry` | Salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) |
-| `npm run blackjack:reset` | **Destructif** : partie en cours effacée, `blackjack:manches` préservé |
-| `npm run blackjack:reset:manches` | **Destructif** : efface aussi l'archive des manches |
-| `npm run blackjack:status` | État courant et projection de la clôture, sans Discord |
-| `npm run blackjack:scores` | Classement cumulé seul |
+| Commande                                   | Effet                                                                  |
+| ------------------------------------------ | ---------------------------------------------------------------------- |
+| `npm run blackjack:test` / `:test:dry`     | Salon de test (`DISCORD_CHANNEL_FRAME_TEST`) / aperçu console          |
+| `npm run blackjack:public` / `:public:dry` | Salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`)                          |
+| `npm run blackjack:reset`                  | **Destructif** : partie en cours effacée, `blackjack:manches` préservé |
+| `npm run blackjack:reset:manches`          | **Destructif** : efface aussi l'archive des manches                    |
+| `npm run blackjack:status`                 | État courant et projection de la clôture, sans Discord                 |
+| `npm run blackjack:scores`                 | Classement cumulé seul                                                 |
 
 Cron `.github/workflows/blackjack.yml` : `12 7 * * *`. Variables : `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
 
@@ -892,12 +891,12 @@ Service `jeux/services/puntoCartes.js` : `formatCarte(couleur, valeur, { gagnant
 
 Jeu spécial de 7 jours sur le squelette de Blackjack, sans adversaire : deux fois par jour (☀️ 8h30-20h, 🌙 20h-8h, voir « Deux mains par jour »), chaque membre lance 5 dés, en conserve 0 à 5 et relance les autres jusqu'à 2 fois (3 tirages), puis marque une combinaison. Pas de commande slash.
 
-| Rôle | Fichier |
-| ---- | ------- |
-| Règles, Redis | `jeux/services/gobelet.js` |
-| Discord (`postGobelet()`) | `jeux/discord/handlers/gobelet.js` |
-| Publication quotidienne | `jeux/scripts/postGobelet.js` |
-| Config | `jeux/data/gobelet/gobelet.json` : `duree_jours` (7), `trophees` |
+| Rôle                      | Fichier                                                          |
+| ------------------------- | ---------------------------------------------------------------- |
+| Règles, Redis             | `jeux/services/gobelet.js`                                       |
+| Discord (`postGobelet()`) | `jeux/discord/handlers/gobelet.js`                               |
+| Publication quotidienne   | `jeux/scripts/postGobelet.js`                                    |
+| Config                    | `jeux/data/gobelet/gobelet.json` : `duree_jours` (7), `trophees` |
 
 Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosure()` : copie propre dans `gobelet.js`, chaque jeu à cron a la sienne). Points et combinaisons utilisées remis à zéro au passage au Jour 1.
 
@@ -905,22 +904,22 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 `COMBINATIONS` (`gobelet.js`, ordre croissant) est la source unique du calcul et des règles affichées (`formatBaremeLines()`). Règles communes au jeu spécial et à Gobelet Duel.
 
-| Résultat | Condition | Points | Proba. visée seule (3 tirages) |
-| -------- | --------- | ------ | ------------------------------ |
-| Aucune combinaison | rien de libre, Joker déjà utilisé | 0 | |
-| Joker (`JOKER`) | voir ci-dessous | somme des 5 dés | |
-| Double quelconque | au moins 2 dés identiques | 10 | 99,9 % |
-| Brelan | au moins 3 dés identiques | 20 | 74 % |
-| Petite Suite | 4 valeurs consécutives parmi les 5 dés (5ᵉ dé libre) | 25 | 62 % |
-| Tout différent | 5 valeurs distinctes, consécutives ou non | 25 | 53 % |
-| Pairs | 5 dés pairs | 30 | 51 % |
-| Impairs | 5 dés impairs | 30 | 51 % |
-| Full | exactement 3 + 2 | 35 | 36 % |
-| Carré | au moins 4 dés identiques | 40 | 29 % |
-| Grande Suite | 1-2-3-4-5 ou 2-3-4-5-6 | 40 | 26 % |
-| Somme ≤ 7 | | 50 | 10 % |
-| Somme ≥ 28 | | 50 | 10 % |
-| Gobelet | 5 dés identiques | 60 | 4,6 % |
+| Résultat           | Condition                                            | Points          | Proba. visée seule (3 tirages) |
+| ------------------ | ---------------------------------------------------- | --------------- | ------------------------------ |
+| Aucune combinaison | rien de libre, Joker déjà utilisé                    | 0               |                                |
+| Joker (`JOKER`)    | voir ci-dessous                                      | somme des 5 dés |                                |
+| Double quelconque  | au moins 2 dés identiques                            | 10              | 99,9 %                         |
+| Brelan             | au moins 3 dés identiques                            | 20              | 74 %                           |
+| Petite Suite       | 4 valeurs consécutives parmi les 5 dés (5ᵉ dé libre) | 25              | 62 %                           |
+| Tout différent     | 5 valeurs distinctes, consécutives ou non            | 25              | 53 %                           |
+| Pairs              | 5 dés pairs                                          | 30              | 51 %                           |
+| Impairs            | 5 dés impairs                                        | 30              | 51 %                           |
+| Full               | exactement 3 + 2                                     | 35              | 36 %                           |
+| Carré              | au moins 4 dés identiques                            | 40              | 29 %                           |
+| Grande Suite       | 1-2-3-4-5 ou 2-3-4-5-6                               | 40              | 26 %                           |
+| Somme ≤ 7          |                                                      | 50              | 10 %                           |
+| Somme ≥ 28         |                                                      | 50              | 10 %                           |
+| Gobelet            | 5 dés identiques                                     | 60              | 4,6 %                          |
 
 - **Calibrage** : barème évalué sur la partie complète en stratégie optimale (5, 7 et 10 manches ; Joker, unicité et choix de la combinaison compris). Critère : une combinaison plus facile à obtenir est marquée au moins aussi souvent qu'une plus difficile, et l'espérance d'une partie reste d'environ 150 / 200 / 265 pts sur 5 / 7 / 10 manches. Gobelet (60) et Double (10) sont fixes par habitude des joueurs. Exceptions assumées : le Full (35) est un peu surpayé (marqué plus souvent que Pairs ou Impairs, pourtant plus faciles) et Tout différent (25) un peu sous-payé (marqué moins souvent que Carré ou Grande Suite, pourtant plus difficiles). Toute modification du barème se revérifie par ce calcul.
 - Avec Tout différent, des dés sans doublon forment toujours une combinaison : « Aucune combinaison » et le Joker automatique ne surviennent qu'une fois les combinaisons présentes déjà réalisées.
@@ -950,17 +949,17 @@ Même déroulement et mêmes garde-fous que Blackjack (`isTooSoonSinceLastClosur
 
 ### Stockage Redis (`gobelet:*`)
 
-| Clé | Type | Contenu |
-| --- | ---- | ------- |
-| `gobelet:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine }` |
-| `gobelet:points` | HASH | `discordId → points` (`HINCRBY`) |
-| `gobelet:usernames` | HASH | `discordId → pseudo` (repli) |
-| `gobelet:hand:<jour>` / `gobelet:hand:<jour>:2` | HASH | main de la journée / du soir : `discordId → { dice, tirage, status, category, points, username }` |
-| `gobelet:kept:<jour>:<discordId>` | HASH | `"0".."4" → "1"/"0"` |
-| `gobelet:lock:<jour>:<discordId>` | STRING | verrou de main (10 s) |
-| `gobelet:used` / `gobelet:used_soir` | HASH | `discordId → [catégories réalisées]` (journée / soir) |
-| `gobelet:historique` | HASH | `jour → { jour, results, resultsSoir, resolvedAt }`, effacé par `resetGobelet()` |
-| `gobelet:manches` / `gobelet:manche_seq` | HASH / compteur | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches` |
+| Clé                                             | Type            | Contenu                                                                                           |
+| ----------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------- |
+| `gobelet:state`                                 | STRING          | `{ phase, jour, channelId, messageId, publishedAt, termine }`                                     |
+| `gobelet:points`                                | HASH            | `discordId → points` (`HINCRBY`)                                                                  |
+| `gobelet:usernames`                             | HASH            | `discordId → pseudo` (repli)                                                                      |
+| `gobelet:hand:<jour>` / `gobelet:hand:<jour>:2` | HASH            | main de la journée / du soir : `discordId → { dice, tirage, status, category, points, username }` |
+| `gobelet:kept:<jour>:<discordId>`               | HASH            | `"0".."4" → "1"/"0"`                                                                              |
+| `gobelet:lock:<jour>:<discordId>`               | STRING          | verrou de main (10 s)                                                                             |
+| `gobelet:used` / `gobelet:used_soir`            | HASH            | `discordId → [catégories réalisées]` (journée / soir)                                             |
+| `gobelet:historique`                            | HASH            | `jour → { jour, results, resultsSoir, resolvedAt }`, effacé par `resetGobelet()`                  |
+| `gobelet:manches` / `gobelet:manche_seq`        | HASH / compteur | `manche → { manche, ranking, winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches`   |
 
 ### Scripts et cron (Gobelet)
 
@@ -970,14 +969,14 @@ Mêmes commandes que Blackjack avec le préfixe `gobelet:` (`test`, `test:dry`, 
 
 Jeu spécial 100 % asynchrone : chaque joueur reçoit en secret une carte d'une grille commune et enquête sur les cartes des autres, avec **une question par jour** sur sa cible puis une accusation. Un objet gratuit par jour et un par démasquage, offensif (contre sa cible) ou défensif (contre son enquêteur).
 
-| Rôle | Fichier |
-| ---- | ------- |
-| Règles pures (testées par `quiestceRules.test.js`) | `jeux/services/quiestceRules.js` |
-| Redis | `jeux/services/quiestce.js` |
-| Grille | `jeux/services/quiestceImage.js` |
-| Discord | `jeux/discord/handlers/quiestce.js` |
-| Publication | `jeux/scripts/postQuiEstCe.js` |
-| Config | `jeux/data/quiestce/quiestce.json` |
+| Rôle                                               | Fichier                             |
+| -------------------------------------------------- | ----------------------------------- |
+| Règles pures (testées par `quiestceRules.test.js`) | `jeux/services/quiestceRules.js`    |
+| Redis                                              | `jeux/services/quiestce.js`         |
+| Grille                                             | `jeux/services/quiestceImage.js`    |
+| Discord                                            | `jeux/discord/handlers/quiestce.js` |
+| Publication                                        | `jeux/scripts/postQuiEstCe.js`      |
+| Config                                             | `jeux/data/quiestce/quiestce.json`  |
 
 Effectif `effectif_min` (10) à `effectif_max` (18), fenêtre d'inscription `fenetre_inscription_jours` (2), clôture calée sur le cron (`dateCloture()` : 8h20 UTC). Roster figé au lancement (aucune arrivée ensuite).
 
@@ -988,13 +987,13 @@ Effectif `effectif_min` (10) à `effectif_max` (18), fenêtre d'inscription `fen
 - **Cartes écartées** (`carteEligible()`) : toute carte sans coût connu (Miroir) ou troupe sans PV/portée après compléments (Gang de gobelins, Fripons, Impératrice spirituelle : réponses ambiguës).
 - **6 questions en tranches** (`QUESTIONS`) :
 
-| Question | Réponses |
-| -------- | -------- |
-| 💎 Rareté | commune, rare, épique, légendaire ou champion (regroupés) |
-| 💧 Élixir | 1 ou 2, 3, 4, 5 ou plus |
-| 🧩 Type | troupe terrestre, troupe aérienne, sort, bâtiment |
-| 🏹 Portée | mêlée, distance ; « sans objet » (sort, bâtiment) |
-| 👪 Famille | humain, gobelin, squelette, gargouille, aucune |
+| Question         | Réponses                                                                 |
+| ---------------- | ------------------------------------------------------------------------ |
+| 💎 Rareté        | commune, rare, épique, légendaire ou champion (regroupés)                |
+| 💧 Élixir        | 1 ou 2, 3, 4, 5 ou plus                                                  |
+| 🧩 Type          | troupe terrestre, troupe aérienne, sort, bâtiment                        |
+| 🏹 Portée        | mêlée, distance ; « sans objet » (sort, bâtiment)                        |
+| 👪 Famille       | humain, gobelin, squelette, gargouille, aucune                           |
 | ❤️ Points de vie | moins de 500, 500 à 1500, plus de 1500 ; « sans objet » (sort, bâtiment) |
 
 - **Questions du jour** : 3 de base (`pool`, par jour) plus une 4e débloquée par la Loupe (`pool_loupe`). Une question déjà connue sur la cible n'est plus proposée ; si toutes celles du jour le sont, choix libre parmi les autres (`questionsPossibles()`).
@@ -1018,16 +1017,16 @@ Effectif `effectif_min` (10) à `effectif_max` (18), fenêtre d'inscription `fen
 
 Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `tirage_objets` équiprobable), plus un à **chaque démasquage** (`objet_demasquage`, note privée et message de l'accusation), gardé jusqu'à `inventaire_max` (3, au-delà rien n'est reçu). **Autant d'objets utilisés par jour que voulu** (`objets_par_jour` : 0 = sans limite ; `etatObjet()` donne la raison d'un objet inutilisable). Seuls les objets de `tirage_objets` sont distribués et affichés dans les Règles.
 
-| Objet | Famille | Effet |
-| ----- | ------- | ----- |
-| 🔍 Loupe | offensif | 4e question au choix aujourd'hui (`pool_loupe`), toujours une seule question. Inutilisable une fois la question posée. |
-| 🎯 Double accusation | offensif | Deux accusations aujourd'hui sur la cible actuelle (`doubleCible`), même si une accusation a déjà visé une cible précédente ; la première accusation ratée sur cette cible ne coûte aucun point (`doubleGratuite`). |
-| 🎧 Écoute | offensif | Secret : un indice sur la cible, tiré au hasard parmi ceux que son autre enquêteur connaît et pas soi (source « Écoute », compte dans `bonus_efficacite`). Toujours utilisable : sans rival ou si le rival n'en sait pas plus, l'objet est consommé sans rien apprendre (à chacun de vérifier s'il y a un rival). Le rival n'est pas prévenu ; le Brouillard ne la bloque pas (ce n'est pas une question). |
-| 🧨 Désamorçage | offensif | Coupe la défense active de la cible (Brouillard, sinon Miroir, sinon Bouclier), sinon détruit un objet défensif de sa réserve. La cible est prévenue. |
-| 🌫️ Brouillard | défensif | Public, jusqu'à la clôture : questions sur le joueur sans réponse (question perdue) et, avec `brouillard_bloque_accusation`, aucune accusation possible. |
-| 🎭 Déguisement | défensif | **Hors tirage** (retiré de `tirage_objets` : l'effacement des indices frustrait les enquêteurs ; code conservé). Carte échangée contre une carte libre (`cartesLibres()` : ni attribuée ni déjà découverte) ; indices des enquêteurs et renseignements du Miroir sur lui effacés ; annoncé publiquement. |
-| 🪞 Miroir | défensif | Secret, jusqu'à la clôture : la prochaine question posée sur le joueur lui révèle la même caractéristique de la carte de son enquêteur (`renseignements`, réinjectés si cet enquêteur devient sa cible). |
-| 🛡️ Bouclier | défensif | Secret, jusqu'à la clôture : le prochain démasquage ne coûte pas `malus_demasque` au joueur (démasquage compté, l'enquêteur marque normalement), puis s'use. Le joueur est prévenu par note privée. |
+| Objet                | Famille  | Effet                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔍 Loupe             | offensif | 4e question au choix aujourd'hui (`pool_loupe`), toujours une seule question. Inutilisable une fois la question posée.                                                                                                                                                                                                                                                                                     |
+| 🎯 Double accusation | offensif | Deux accusations aujourd'hui sur la cible actuelle (`doubleCible`), même si une accusation a déjà visé une cible précédente ; la première accusation ratée sur cette cible ne coûte aucun point (`doubleGratuite`).                                                                                                                                                                                        |
+| 🎧 Écoute            | offensif | Secret : un indice sur la cible, tiré au hasard parmi ceux que son autre enquêteur connaît et pas soi (source « Écoute », compte dans `bonus_efficacite`). Toujours utilisable : sans rival ou si le rival n'en sait pas plus, l'objet est consommé sans rien apprendre (à chacun de vérifier s'il y a un rival). Le rival n'est pas prévenu ; le Brouillard ne la bloque pas (ce n'est pas une question). |
+| 🧨 Désamorçage       | offensif | Coupe la défense active de la cible (Brouillard, sinon Miroir, sinon Bouclier), sinon détruit un objet défensif de sa réserve. La cible est prévenue.                                                                                                                                                                                                                                                      |
+| 🌫️ Brouillard        | défensif | Public, jusqu'à la clôture : questions sur le joueur sans réponse (question perdue) et, avec `brouillard_bloque_accusation`, aucune accusation possible.                                                                                                                                                                                                                                                   |
+| 🎭 Déguisement       | défensif | **Hors tirage** (retiré de `tirage_objets` : l'effacement des indices frustrait les enquêteurs ; code conservé). Carte échangée contre une carte libre (`cartesLibres()` : ni attribuée ni déjà découverte) ; indices des enquêteurs et renseignements du Miroir sur lui effacés ; annoncé publiquement.                                                                                                   |
+| 🪞 Miroir            | défensif | Secret, jusqu'à la clôture : la prochaine question posée sur le joueur lui révèle la même caractéristique de la carte de son enquêteur (`renseignements`, réinjectés si cet enquêteur devient sa cible).                                                                                                                                                                                                   |
+| 🛡️ Bouclier          | défensif | Secret, jusqu'à la clôture : le prochain démasquage ne coûte pas `malus_demasque` au joueur (démasquage compté, l'enquêteur marque normalement), puis s'use. Le joueur est prévenu par note privée.                                                                                                                                                                                                        |
 
 ### Interface (Qui est-ce ?)
 
@@ -1045,22 +1044,22 @@ Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `t
 
 ### Stockage Redis (`quiestce:*`)
 
-| Clé | Type | Contenu |
-| --- | ---- | ------- |
-| `quiestce:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, openedAt, cloture }` |
-| `quiestce:partie` | STRING | `{ demarree, grille, cartes, joueurs, journal, numeroJour, seq, termine, jour, veille }` ; joueur : `{ username, avatar, arrivee, carte, anciennesCartes, cible, enquete: { infos, ordre, sources, posees, eliminees }, demasques, cartesConnues, nbDemasque, pointsCartes, bonus, survie, malus, actifJour, demasqueJour, erreurs, seqScore, objets, renseignements, questionsJour, loupe, accusationsJour, accusationsCible, doubleCible, doubleGratuite, objetJour, objetsJour, objetRecuJour, brouillard, miroir, bouclier, stats: { recus, utilises, pileFaceGagnes, pileFacePerdus, brouillees } }` ; compte-rendu : `soirs` (points de chacun à chaque clôture), `coup` (`{ s, v, n, j }`), `passifs` (à chaque clôture `{ absents, bots }` : joueur passif → sa cible du moment). Réécrite sous verrou. |
-| `quiestce:resultat` | STRING | classement final |
-| `quiestce:lock` | STRING | verrou (10 s) |
-| `quiestce:manches` / `quiestce:manche_seq` | HASH / compteur | `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }`, jamais nettoyé sauf `--manches` |
+| Clé                                        | Type            | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------ | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quiestce:state`                           | STRING          | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, openedAt, cloture }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `quiestce:partie`                          | STRING          | `{ demarree, grille, cartes, joueurs, journal, numeroJour, seq, termine, jour, veille }` ; joueur : `{ username, avatar, arrivee, carte, anciennesCartes, cible, enquete: { infos, ordre, sources, posees, eliminees }, demasques, cartesConnues, nbDemasque, pointsCartes, bonus, survie, malus, actifJour, demasqueJour, erreurs, seqScore, objets, renseignements, questionsJour, loupe, accusationsJour, accusationsCible, doubleCible, doubleGratuite, objetJour, objetsJour, objetRecuJour, brouillard, miroir, bouclier, stats: { recus, utilises, pileFaceGagnes, pileFacePerdus, brouillees } }` ; compte-rendu : `soirs` (points de chacun à chaque clôture), `coup` (`{ s, v, n, j }`), `passifs` (à chaque clôture `{ absents, bots }` : joueur passif → sa cible du moment). Réécrite sous verrou. |
+| `quiestce:resultat`                        | STRING          | classement final                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `quiestce:lock`                            | STRING          | verrou (10 s)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `quiestce:manches` / `quiestce:manche_seq` | HASH / compteur | `{ manche, vainqueur, scoreGagnant, nbJoueurs, ranking, resolvedAt }`, jamais nettoyé sauf `--manches`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ### Scripts et cron (Qui est-ce ?)
 
-| Commande | Effet |
-| -------- | ----- |
-| `npm run quiestce:test` | Salon de test : 1er lancement = inscriptions, 2e = Jour 1 immédiat (clôture forcée), puis un jour par lancement. Inscrit des **PNJ** (6 ou 7, ou plus pour atteindre `effectif_min`) qui ont carte et cible mais ne jouent jamais (`-- --sans-pnj` pour s'en passer). |
-| `npm run quiestce:test:dry` / `quiestce:public` / `quiestce:public:dry` | Aperçu / public / aperçu public |
-| `npm run quiestce:reset` / `quiestce:reset:manches` | **Destructif** |
-| `npm run quiestce:status` | Vue organisateur : une ligne par joueur dans l'ordre du classement (points, carte secrète, cible et cartes encore possibles, actions du jour : √ fait, ✗ accusation ratée), derniers événements |
+| Commande                                                                | Effet                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run quiestce:test`                                                 | Salon de test : 1er lancement = inscriptions, 2e = Jour 1 immédiat (clôture forcée), puis un jour par lancement. Inscrit des **PNJ** (6 ou 7, ou plus pour atteindre `effectif_min`) qui ont carte et cible mais ne jouent jamais (`-- --sans-pnj` pour s'en passer). |
+| `npm run quiestce:test:dry` / `quiestce:public` / `quiestce:public:dry` | Aperçu / public / aperçu public                                                                                                                                                                                                                                       |
+| `npm run quiestce:reset` / `quiestce:reset:manches`                     | **Destructif**                                                                                                                                                                                                                                                        |
+| `npm run quiestce:status`                                               | Vue organisateur : une ligne par joueur dans l'ordre du classement (points, carte secrète, cible et cartes encore possibles, actions du jour : √ fait, ✗ accusation ratée), derniers événements                                                                       |
 
 Options de `postQuiEstCe.js` : `--force` (garde-fou anti-double-avancée), `--force-close` (ignore la date de clôture). E2E local : `node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/quiestce/e2eQuiEstCe.mjs [joueurs]`. Cron `.github/workflows/quiestce.yml` : `20 8 * * *`. Variables : comme Bang! (`BLOB_READ_WRITE_TOKEN` pour la police et l'illustration).
 
@@ -1068,15 +1067,15 @@ Options de `postQuiEstCe.js` : `--force` (garde-fou anti-double-avancée), `--fo
 
 Jeu spécial **en équipe et en temps réel** : un Risk simplifié. Trois bandes (🟠 Roux, ⚫ Chats noirs, 🔵 Chartreux) se disputent les 20 coins d'une maison ; chaque joueur reçoit des chats deux fois par jour (8h30 et 20h, mêmes horaires que Blackjack et Gobelet), les **appelle** sur les coins de sa bande et **squatte** les coins voisins (dés du Risk). Chaque coin rapporte 1 point par heure tenue à sa bande, de 8h30 à minuit ; bilan chaque matin à 8h. Les chats disponibles sont limités pour tous : le volume de clics ne décide pas.
 
-| Rôle | Fichier |
-| ---- | ------- |
-| Règles pures (testées par `meowRules.test.js`) | `jeux/services/meowRules.js` |
-| Redis | `jeux/services/meow.js` |
-| Carte | `jeux/services/meowImage.js` |
-| Discord | `jeux/discord/handlers/meow.js` |
-| Publication | `jeux/scripts/postMeow.js` |
-| Config | `jeux/data/meow/meow.json` |
-| Simulateur | `jeux/outils/meow-simulation/simulate.mjs <parties> <scénario>` |
+| Rôle                                           | Fichier                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------- |
+| Règles pures (testées par `meowRules.test.js`) | `jeux/services/meowRules.js`                                    |
+| Redis                                          | `jeux/services/meow.js`                                         |
+| Carte                                          | `jeux/services/meowImage.js`                                    |
+| Discord                                        | `jeux/discord/handlers/meow.js`                                 |
+| Publication                                    | `jeux/scripts/postMeow.js`                                      |
+| Config                                         | `jeux/data/meow/meow.json`                                      |
+| Simulateur                                     | `jeux/outils/meow-simulation/simulate.mjs <parties> <scénario>` |
 
 Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscription_jours` (2), clôture calée sur le cron (`dateCloture()` : 7h22 UTC).
 
@@ -1127,23 +1126,23 @@ Effectif `effectif_min` (14) à `effectif_max` (22), fenêtre `fenetre_inscripti
 
 ### Stockage Redis (`meow:*`)
 
-| Clé | Type | Contenu |
-| --- | ---- | ------- |
-| `meow:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, openedAt, cloture }` |
-| `meow:partie` | STRING | `{ demarree, termine, joueurs, coins, combats, messages, points, decomptes, journal, exploit, mercenaires, actions, pertes, jourDebut, debut, curseur, decalage, seqInscription, pnjActifs }` (`messages` : 3 listes de `{ p, t, txt }` ; `actions` : actions cumulées par bande ; `pertes` : chats perdus au combat par bande, attaque et défense, chats errants exclus (`chatsPerdus()`) ; `journal` : 400 entrées au plus ; `curseur` : instant du dernier rattrapage) ; joueur : `{ username, arrivee, bande, stock, frac, squats, deplacements, coinsPris, chatsDeloges, jourActif, nuit, messagesJour: { jour, n }, deplacementT, vuMessages }` ; coin : `{ b, n }` |
-| `meow:lock` | STRING | verrou (10 s) |
-| `meow:manches` / `meow:manche_seq` | HASH / compteur | `{ manche, vainqueur, points, nbJoueurs, bandes, ranking, resolvedAt }`, jamais nettoyé sauf `--manches` |
+| Clé                                | Type            | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `meow:state`                       | STRING          | `{ phase, jour, channelId, messageId, publishedAt, termine, isPublic, noPing, closingAt, openedAt, cloture }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `meow:partie`                      | STRING          | `{ demarree, termine, joueurs, coins, combats, messages, points, decomptes, journal, exploit, mercenaires, actions, pertes, jourDebut, debut, curseur, decalage, seqInscription, pnjActifs }` (`messages` : 3 listes de `{ p, t, txt }` ; `actions` : actions cumulées par bande ; `pertes` : chats perdus au combat par bande, attaque et défense, chats errants exclus (`chatsPerdus()`) ; `journal` : 400 entrées au plus ; `curseur` : instant du dernier rattrapage) ; joueur : `{ username, arrivee, bande, stock, frac, squats, deplacements, coinsPris, chatsDeloges, jourActif, nuit, messagesJour: { jour, n }, deplacementT, vuMessages }` ; coin : `{ b, n }` |
+| `meow:lock`                        | STRING          | verrou (10 s)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `meow:manches` / `meow:manche_seq` | HASH / compteur | `{ manche, vainqueur, points, nbJoueurs, bandes, ranking, resolvedAt }`, jamais nettoyé sauf `--manches`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ### Scripts et cron (Meow)
 
-| Commande | Effet |
-| -------- | ----- |
-| `npm run meow:test` | Salon de test : 1er lancement = inscriptions, 2e = Jour 1 immédiat (clôture forcée) avec des **PNJ** pour atteindre l'effectif, qui jouent seuls à chaque distribution (`jouerPnj()`, `partie.pnjActifs` : chats sur le coin le plus menacé, sinon le plus garni, squats tant qu'une cible offre ≥ 60 %). Ensuite un jour par lancement : la partie de test suit sa propre horloge (`horloge()` = heure réelle + `partie.decalage`), avancée au lendemain 8h22, après le bilan de 8h (`avancerHorloge()`), événements sautés rattrapés. |
-| `npm run meow:test:distribution` | Salon de test : avance seulement jusqu'à la prochaine distribution (8h35 ou 20h05). |
-| `npm run meow:test:dry` / `meow:public:dry` | Aperçus console |
-| `npm run meow:status` | Résumé organisateur sans Discord : points des bandes et, par bande, chats en jeu (carte et squats en cours, réserves exclues), chats perdus au combat et actions de chaque joueur depuis la dernière distribution, comme le Journal de bande (un √ par appel, squat ou déplacement), puis le podium du Caïd des coussins ; rattrape les événements en mémoire seulement |
-| `npm run meow:public` | Salon public (heure réelle) ; ne republie jamais deux fois le même jour sans `--force`. |
-| `npm run meow:reset` / `meow:reset:manches` | **Destructif** (le second efface aussi l'archive) |
+| Commande                                    | Effet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run meow:test`                         | Salon de test : 1er lancement = inscriptions, 2e = Jour 1 immédiat (clôture forcée) avec des **PNJ** pour atteindre l'effectif, qui jouent seuls à chaque distribution (`jouerPnj()`, `partie.pnjActifs` : chats sur le coin le plus menacé, sinon le plus garni, squats tant qu'une cible offre ≥ 60 %). Ensuite un jour par lancement : la partie de test suit sa propre horloge (`horloge()` = heure réelle + `partie.decalage`), avancée au lendemain 8h22, après le bilan de 8h (`avancerHorloge()`), événements sautés rattrapés. |
+| `npm run meow:test:distribution`            | Salon de test : avance seulement jusqu'à la prochaine distribution (8h35 ou 20h05).                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `npm run meow:test:dry` / `meow:public:dry` | Aperçus console                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `npm run meow:status`                       | Résumé organisateur sans Discord : points des bandes et, par bande, chats en jeu (carte et squats en cours, réserves exclues), chats perdus au combat et actions de chaque joueur depuis la dernière distribution, comme le Journal de bande (un √ par appel, squat ou déplacement), puis le podium du Caïd des coussins ; rattrape les événements en mémoire seulement                                                                                                                                                                 |
+| `npm run meow:public`                       | Salon public (heure réelle) ; ne republie jamais deux fois le même jour sans `--force`.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `npm run meow:reset` / `meow:reset:manches` | **Destructif** (le second efface aussi l'archive)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 Options de `postMeow.js` : `--force`, `--force-close`. E2E local : `node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/meow/e2eMeow.mjs [joueurs]` ; autres outils de diagnostic dans `jeux/outils/meow/`. Cron `.github/workflows/meow.yml` : `22 7 * * *` (8h22 à Paris en hiver, après le bilan de 8 h). Variables : comme Bang! (`BLOB_READ_WRITE_TOKEN` pour fond, police, illustration).
 
@@ -1168,13 +1167,13 @@ Jeu à identité secrète (Shadow Hunters / Loups-Garous) au rythme quotidien : 
 
 ### Lieux
 
-| N° | Lieu (clé) | Action | Ciblage |
-| --- | --- | --- | --- |
-| 1 | Château (`chateau`) | vote d'accusation | libre sur tout vivant (sauf l'immunisé du jour) |
-| 2 | Arène (`camp_entrainement`) | combat (seul lieu de combat) | joueurs présents à ce lieu sur le **dernier plateau connu** (`joueursAvant`), + joueurs révélés à l'attaquant par sa Clairière de la veille ; sauf l'immunisé |
-| 3 | Tour de Guet (`tour_de_guet`) | enquête (révèle le camp) | présents sur le dernier plateau connu, hors cibles déjà enquêtées |
-| 4 | Taverne (`taverne`) | protection | aucun |
-| 5 | Clairière (`clairiere_mystique`) | vision | aucun : 2 vivants tirés au hasard |
+| N°  | Lieu (clé)                       | Action                       | Ciblage                                                                                                                                                       |
+| --- | -------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Château (`chateau`)              | vote d'accusation            | libre sur tout vivant (sauf l'immunisé du jour)                                                                                                               |
+| 2   | Arène (`camp_entrainement`)      | combat (seul lieu de combat) | joueurs présents à ce lieu sur le **dernier plateau connu** (`joueursAvant`), + joueurs révélés à l'attaquant par sa Clairière de la veille ; sauf l'immunisé |
+| 3   | Tour de Guet (`tour_de_guet`)    | enquête (révèle le camp)     | présents sur le dernier plateau connu, hors cibles déjà enquêtées                                                                                             |
+| 4   | Taverne (`taverne`)              | protection                   | aucun                                                                                                                                                         |
+| 5   | Clairière (`clairiere_mystique`) | vision                       | aucun : 2 vivants tirés au hasard                                                                                                                             |
 
 Les numéros (`numero` dans la config) apparaissent sur l'image, les boutons (`1. Château`) et les règles. Le menu de cible ne propose que des cibles valides ; `computeAttacksFromActions()` / `computeInvestigations()` re-filtrent par défense.
 
@@ -1208,14 +1207,14 @@ Ordre : actions des bots de remplacement → **vote** (l'éliminé est retiré d
 
 `assignCampsAndRoles()` : 1 exemplaire de chaque rôle par partie, quel que soit l'effectif.
 
-| Rôle | Camp | Effet |
-| --- | --- | --- |
-| 🧭 Éclaireur | Villageois | 2 actions/jour, sur 2 lieux différents |
-| 🪓 Bûcheron | Villageois | 1 PV, 2 dégâts |
-| 🪤 Guet-Apens | Villageois | mort au combat → camp de tous ses attaquants du jour révélé publiquement (jamais au vote) |
-| 🎭 Infiltré | Gobelin | une enquête sur lui renvoie toujours Villageois |
-| 💣 Gobelin explosif | Gobelin | à sa mort : `degats_riposte` (1) à un Villageois, jamais mortel (`max(pv - 1, 1)`). Cible : un Villageois qui l'a attaqué (combat) ou un Villageois qui a voté contre lui (vote), hors immunisé |
-| 🧟 Gobelin-zombie | Gobelin | une fois par partie : un Villageois achevé au combat par une attaque du Zombie vivant n'est pas tué mais **converti** (`camp: "gobelin"`, `role: null`, `roleOrigine` conservé, PV max d'un Gobelin, `converti: jour`) ; pas de Guet-Apens ni de riposte. Annonce publique « 🧟 … converti », DM au converti et aux Gobelins (`sendConversionDMs`) |
+| Rôle                | Camp       | Effet                                                                                                                                                                                                                                                                                                                                              |
+| ------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🧭 Éclaireur        | Villageois | 2 actions/jour, sur 2 lieux différents                                                                                                                                                                                                                                                                                                             |
+| 🪓 Bûcheron         | Villageois | 1 PV, 2 dégâts                                                                                                                                                                                                                                                                                                                                     |
+| 🪤 Guet-Apens       | Villageois | mort au combat → camp de tous ses attaquants du jour révélé publiquement (jamais au vote)                                                                                                                                                                                                                                                          |
+| 🎭 Infiltré         | Gobelin    | une enquête sur lui renvoie toujours Villageois                                                                                                                                                                                                                                                                                                    |
+| 💣 Gobelin explosif | Gobelin    | à sa mort : `degats_riposte` (1) à un Villageois, jamais mortel (`max(pv - 1, 1)`). Cible : un Villageois qui l'a attaqué (combat) ou un Villageois qui a voté contre lui (vote), hors immunisé                                                                                                                                                    |
+| 🧟 Gobelin-zombie   | Gobelin    | une fois par partie : un Villageois achevé au combat par une attaque du Zombie vivant n'est pas tué mais **converti** (`camp: "gobelin"`, `role: null`, `roleOrigine` conservé, PV max d'un Gobelin, `converti: jour`) ; pas de Guet-Apens ni de riposte. Annonce publique « 🧟 … converti », DM au converti et aux Gobelins (`sendConversionDMs`) |
 
 - PV : `pv_base` (2) pour tous (+ `gobelin_pv_bonus`, 0 actuellement), Bûcheron 1.
 - `minority_table` (effectif → Gobelins) : 8→3, 9→4, 10→4, 11→5, 12→5, 13→6, 14→6, 15→6, 16→7, 17→7, 18→8. ⚠️ Ne jamais atteindre N/2 : la parité serait acquise dès le Jour 1 (100 % de victoires Gobelins). Les 3 rôles Gobelins doivent tenir à l'effectif plancher.
@@ -1240,34 +1239,34 @@ Ordre : actions des bots de remplacement → **vote** (l'éliminé est retiré d
 
 ### Stockage Redis (`goblinhunters:*`)
 
-| Clé | Type | Contenu |
-| --- | --- | --- |
-| `state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, closingAt?, cloture?, immuneId?, joueurs? }` (roster complet une fois lancé) |
-| `inscriptions` | HASH | `discordId → { username, registeredAt }`, vidée au lancement |
-| `actions:<jour>` | HASH | `discordId → { primary: { lieu, cibleId, pending? }, secondary? }`, purgée après clôture |
-| `action_usernames:<jour>` | HASH | `discordId → username`, purgée après clôture |
-| `historique` | HASH | `jour → { eliminationsParVote, deathIdCombat, investigations, voteTally, explosifRetaliation, guetApensReveal, tourDeGuetSurpeuplee, absents, remplacements, conversionId, immuneId, victory, actions, resolvedAt }` (manche en cours) |
-| `indices` | HASH | `discordId → JSON[]` carnet d'indices (manche en cours) |
-| `messages` | LIST | 3 derniers messages `{ content, jour }` (`RPUSH` + `LTRIM -3 -1`) |
-| `messages_sent:<jour>` | HASH | `discordId → "1"` (quota) |
-| `manches` | HASH | `manche → { manche, victory, jourFinal, resolvedAt }`, jamais nettoyé |
-| `manche_seq` | STRING | compteur `INCR` des manches (jamais en dry-run) |
+| Clé                       | Type   | Contenu                                                                                                                                                                                                                                |
+| ------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state`                   | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, closingAt?, cloture?, immuneId?, joueurs? }` (roster complet une fois lancé)                                                                                               |
+| `inscriptions`            | HASH   | `discordId → { username, registeredAt }`, vidée au lancement                                                                                                                                                                           |
+| `actions:<jour>`          | HASH   | `discordId → { primary: { lieu, cibleId, pending? }, secondary? }`, purgée après clôture                                                                                                                                               |
+| `action_usernames:<jour>` | HASH   | `discordId → username`, purgée après clôture                                                                                                                                                                                           |
+| `historique`              | HASH   | `jour → { eliminationsParVote, deathIdCombat, investigations, voteTally, explosifRetaliation, guetApensReveal, tourDeGuetSurpeuplee, absents, remplacements, conversionId, immuneId, victory, actions, resolvedAt }` (manche en cours) |
+| `indices`                 | HASH   | `discordId → JSON[]` carnet d'indices (manche en cours)                                                                                                                                                                                |
+| `messages`                | LIST   | 3 derniers messages `{ content, jour }` (`RPUSH` + `LTRIM -3 -1`)                                                                                                                                                                      |
+| `messages_sent:<jour>`    | HASH   | `discordId → "1"` (quota)                                                                                                                                                                                                              |
+| `manches`                 | HASH   | `manche → { manche, victory, jourFinal, resolvedAt }`, jamais nettoyé                                                                                                                                                                  |
+| `manche_seq`              | STRING | compteur `INCR` des manches (jamais en dry-run)                                                                                                                                                                                        |
 
 `resetGoblinHunters()` efface tout sauf `manches`/`manche_seq` (sauf `--manches`).
 
 ### Scripts, cron et environnement
 
-| Commande | Effet |
-| --- | --- |
-| `npm run goblinhunters:test` | Étape courante sur `DISCORD_CHANNEL_FRAME_TEST` (sans ping, sans garde-fou 8 h) |
-| `npm run goblinhunters:test:dry` | Aperçu console sans écrire ni poster (en inscription : répartition camps/rôles simulée) |
-| `npm run goblinhunters:test:force-close` | ⚠️ Tests uniquement : ignore `closingAt` et lance dès l'effectif minimum (combinable avec `--dry-run`) |
-| `npm run goblinhunters:seed-test-pool` | ⚠️ Tests : inscrit de faux joueurs `test_fake_N` (10 par défaut, nombre en argument du script) ; leurs DM échouent proprement |
-| `npm run goblinhunters:scatter-test-pool` | ⚠️ Tests : répartit les faux joueurs sur les 5 lieux (à relancer chaque jour de test) |
-| `npm run goblinhunters:public` / `:public:dry` | Salon public `DISCORD_CHANNEL_FRAME_PUBLIC` (cron) |
-| `npm run goblinhunters:reset` | ⚠️ Destructif : efface la manche en cours, garde `manches` |
-| `npm run goblinhunters:reset:manches` | ⚠️ Idem + `manches`/`manche_seq` |
-| `npm run goblinhunters:status` | État complet. ⚠️ Admin uniquement (spoile camps et rôles) |
+| Commande                                       | Effet                                                                                                                         |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `npm run goblinhunters:test`                   | Étape courante sur `DISCORD_CHANNEL_FRAME_TEST` (sans ping, sans garde-fou 8 h)                                               |
+| `npm run goblinhunters:test:dry`               | Aperçu console sans écrire ni poster (en inscription : répartition camps/rôles simulée)                                       |
+| `npm run goblinhunters:test:force-close`       | ⚠️ Tests uniquement : ignore `closingAt` et lance dès l'effectif minimum (combinable avec `--dry-run`)                        |
+| `npm run goblinhunters:seed-test-pool`         | ⚠️ Tests : inscrit de faux joueurs `test_fake_N` (10 par défaut, nombre en argument du script) ; leurs DM échouent proprement |
+| `npm run goblinhunters:scatter-test-pool`      | ⚠️ Tests : répartit les faux joueurs sur les 5 lieux (à relancer chaque jour de test)                                         |
+| `npm run goblinhunters:public` / `:public:dry` | Salon public `DISCORD_CHANNEL_FRAME_PUBLIC` (cron)                                                                            |
+| `npm run goblinhunters:reset`                  | ⚠️ Destructif : efface la manche en cours, garde `manches`                                                                    |
+| `npm run goblinhunters:reset:manches`          | ⚠️ Idem + `manches`/`manche_seq`                                                                                              |
+| `npm run goblinhunters:status`                 | État complet. ⚠️ Admin uniquement (spoile camps et rôles)                                                                     |
 
 - `node jeux/scripts/goblinHuntersRecap.js` : compte-rendu admin (votes, attaques contre son camp, enquêtes, absences) à partir de l'historique. ⚠️ Spoile, lecture seule.
 - **Production** : seule l'ouverture des inscriptions est manuelle (`workflow_dispatch` de `.github/workflows/goblinhunters.yml` ou `npm run goblinhunters:public`). Le cron `4 8 * * *` (8h04 UTC, `--require-active` : ne fait rien sans partie ouverte) gère rappels, lancement/annulation et clôtures.
@@ -1297,25 +1296,25 @@ Garde-fou anti-double-avancée : 8 h minimum entre deux clôtures (`isTooSoonSin
 
 - **🎲 Dé** (résolu **au clic**, `rollDiceForPlayer()`) : le joueur choisit son dé ; l'Or ne s'obtient qu'en lançant le dé.
 
-| Dé | Avance | Or |
-| --- | --- | --- |
-| 🎲 classique | 1 à 6 | 1 |
-| 🐢 prudent | 3 | 1 |
-| 💰 épargne | 1 à 2 | 2 |
-| 🃏 Farceur (`reserve_sort`, imposé par sort uniquement) | 0 ou 7 | 1 |
+| Dé                                                      | Avance | Or  |
+| ------------------------------------------------------- | ------ | --- |
+| 🎲 classique                                            | 1 à 6  | 1   |
+| 🐢 prudent                                              | 3      | 1   |
+| 💰 épargne                                              | 1 à 2  | 2   |
+| 🃏 Farceur (`reserve_sort`, imposé par sort uniquement) | 0 ou 7 | 1   |
 
 - Effets du sort de la veille appliqués à ce dé : Gel (avance 1, Or conservé), Rage (+N), dé imposé.
 - **Cases spéciales**, déclenchées uniquement par un arrêt de dé (jamais par objet/sort, pas d'enchaînement, pas de redéclenchement sur place) : Turbo +3 (4, 27), Coffre +2 Or (7, 22, 41), Glace −2 Or (12, 31), Feu −3 (19, 44), Turbo inversé −2 (36).
 
 - **🛍️ Boutique** (achat au clic, `purchaseItem()`, un achat par jour) : achat = utilisation, l'objet s'applique à la clôture. Cible choisie après l'achat pour un objet « adversaire » (cibles vérifiées avant le débit) ; objet acheté sans cible validée → remboursé à la clôture.
 
-| Objet | Coût | Effet |
-| --- | --- | --- |
-| 🚀 Accélérateur | 2 | +4 cases |
-| 💣 Bombe | 2 | adversaire au choix −3 |
-| ⭐ Étoile | 4 | immunité du jour : bloque les sorts (même les siens) et **renvoie** les objets adverses (l'attaquant recule de `recul_renvoi`, 3) |
-| 🍌 Peau de banane | 5 | échange de place avec un adversaire **devant** soi, à 10 cases au plus (sinon le(s) plus proche(s) devant) |
-| 🔵 Carapace bleue | 5 | le leader (hors lanceur) −5 |
+| Objet             | Coût | Effet                                                                                                                             |
+| ----------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 🚀 Accélérateur   | 2    | +4 cases                                                                                                                          |
+| 💣 Bombe          | 2    | adversaire au choix −3                                                                                                            |
+| ⭐ Étoile         | 4    | immunité du jour : bloque les sorts (même les siens) et **renvoie** les objets adverses (l'attaquant recule de `recul_renvoi`, 3) |
+| 🍌 Peau de banane | 5    | échange de place avec un adversaire **devant** soi, à 10 cases au plus (sinon le(s) plus proche(s) devant)                        |
+| 🔵 Carapace bleue | 5    | le leader (hors lanceur) −5                                                                                                       |
 
 - **✨ Sort** (`castSpellForPlayer()`, avec confirmation) : toujours sur **soi-même**, effet tiré au clic et annoncé, appliqué à la clôture. Sorts actifs : Recul −2, Gel, Dé Farceur demain, Clone (rejoue le déplacement du dé du jour, sans case spéciale), Rage +2 demain, Avance +3. L'échange aléatoire (id 3, `retire: true`) n'est plus tiré mais reste dans la config.
 - **🔋 Concentration** : chaque jour sans sort charge la jauge (max `concentration_max`, 2) ; le prochain sort est tiré sans Gel dès le niveau 1, sans Recul au niveau 2 (`retire_concentration`), puis la jauge retombe à 0.
@@ -1323,7 +1322,6 @@ Garde-fou anti-double-avancée : 8 h minimum entre deux clôtures (`isTooSoonSin
 ### Clôture (`computeCloture()`, pure)
 
 Ordre : 1) Étoiles actives → immunisés ; 2) **sorts** (bloqués si immunisé) ; 3) **objets** (Accélérateur, Bombe, Banane), puis **Carapaces bleues** en dernier sur un classement figé une fois (égalité départagée par pseudo) ; 4) remboursement des objets non utilisés. Gel/Rage/dé imposé de la veille sont purgés avant les sorts.
-
 
 - **Arrivée** (`estArrive()`) : un joueur sur la case 48 ne joue plus, n'est plus ciblable, plus rien ne le déplace ; un objet visant un arrivé est remboursé. Classement : arrivés par `arriveJour` (premier arrivé = vainqueur), puis par position ; ex æquo au même rang.
 - ⚠️ Le classement public n'affiche jamais l'objet possédé (les achats restent cachés jusqu'au bilan, pour le bluff autour de l'Étoile).
@@ -1335,23 +1333,23 @@ Ordre : 1) Étoiles actives → immunisés ; 2) **sorts** (bloqués si immunisé
 
 ### Redis (`marioclash:*`)
 
-| Clé | Type | Contenu |
-| --- | --- | --- |
-| `state` | STRING | `{ phase: "annonce"\|"jour", jour, channelId, messageId, publishedAt, termine }` |
-| `joueurs` | HASH | `discordId → { username, position, points, objet, dernierAchatJour, colorIndex, concentration, gel, rage, deImpose, arriveJour }` |
-| `actions:<jour>` | HASH | `discordId → { dice, diceValue, diceAvance, deId, positionDe, caseSpeciale, item: { target }, spell: { target, sortId, concentration } }`, purgée à la clôture |
-| `historique` | HASH | `jour → { lignes, immunises, positions, resolvedAt }` |
-| `manches` / `manche_seq` | HASH / STRING | `{ manche, vainqueur, positionFinale, nbJoueurs, resolvedAt }` (compté par 📊 Stats de `/mini-jeux`) |
+| Clé                      | Type          | Contenu                                                                                                                                                        |
+| ------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state`                  | STRING        | `{ phase: "annonce"\|"jour", jour, channelId, messageId, publishedAt, termine }`                                                                               |
+| `joueurs`                | HASH          | `discordId → { username, position, points, objet, dernierAchatJour, colorIndex, concentration, gel, rage, deImpose, arriveJour }`                              |
+| `actions:<jour>`         | HASH          | `discordId → { dice, diceValue, diceAvance, deId, positionDe, caseSpeciale, item: { target }, spell: { target, sortId, concentration } }`, purgée à la clôture |
+| `historique`             | HASH          | `jour → { lignes, immunises, positions, resolvedAt }`                                                                                                          |
+| `manches` / `manche_seq` | HASH / STRING | `{ manche, vainqueur, positionFinale, nbJoueurs, resolvedAt }` (compté par 📊 Stats de `/mini-jeux`)                                                           |
 
 ### Scripts et cron
 
-| Commande | Effet |
-| --- | --- |
-| `npm run marioclash:test` / `:test:dry` | Salon de test (sans ping, sans garde-fou 8 h) |
-| `npm run marioclash:public` / `:public:dry` | Salon public (cron) |
-| `npm run marioclash:reset` | Efface la course en cours, garde `manches` |
-| `npm run marioclash:reset:manches` | Idem + `manches`/`manche_seq` |
-| `npm run marioclash:status` | État courant |
+| Commande                                    | Effet                                         |
+| ------------------------------------------- | --------------------------------------------- |
+| `npm run marioclash:test` / `:test:dry`     | Salon de test (sans ping, sans garde-fou 8 h) |
+| `npm run marioclash:public` / `:public:dry` | Salon public (cron)                           |
+| `npm run marioclash:reset`                  | Efface la course en cours, garde `manches`    |
+| `npm run marioclash:reset:manches`          | Idem + `manches`/`manche_seq`                 |
+| `npm run marioclash:status`                 | État courant                                  |
 
 Options du script : `--no-ping`, `--require-active`, `--force`. Production : présentation lancée à la main (`workflow_dispatch` de `.github/workflows/marioclash.yml` ou `npm run marioclash:public`), puis cron `14 8 * * *` (8h14 UTC, `--require-active`). ⚠️ Chaque cron de 8h UTC a sa propre minute (bossraid 2, goblinhunters 4, quiz 6, robinson 8, tamagotchi 10, blackjack 12, marioclash 14). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`).
 
@@ -1361,18 +1359,18 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le ravin par le **pont de pierre** ou le **pont de cordes**, en secret. Le troll attrape le pont le plus chargé ; les passants de l'autre pont se partagent le butin. Classement cumulé en pièces, révélé après le Jour 7. Pas de commande slash. Pas d'inscription : tout membre peut jouer à partir de n'importe quel jour.
 
-| Rôle | Fichier |
-| ---- | ------- |
-| Règles, Redis | `jeux/services/pont.js` |
-| Image (fond illustré + avatars) | `jeux/services/pontImage.js` |
-| Discord (embeds, boutons, `postPont()`) | `jeux/discord/handlers/pont.js` |
-| Routage des boutons | `jeux/discord/routes/jeuxSpeciaux.js` |
-| Publication quotidienne | `jeux/scripts/postPont.js` |
-| Config | `jeux/data/pont/pont.json` : `duree_jours` (7), `jours_indice` (2, 4, 6), `calendrier` |
-| Avatars des passants (partagé avec Qui est-ce ?) | `jeux/services/avatarsDiscord.js` |
-| Statut, remise à zéro | `jeux/scripts/pontStatus.js`, `jeux/scripts/resetPont.js` |
-| Tests | `jeux/services/pont.test.js` |
-| Images (fonds, annonce) | `jeux/data/pont/images/` (Vercel Blob, voir « Image ») |
+| Rôle                                             | Fichier                                                                                |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Règles, Redis                                    | `jeux/services/pont.js`                                                                |
+| Image (fond illustré + avatars)                  | `jeux/services/pontImage.js`                                                           |
+| Discord (embeds, boutons, `postPont()`)          | `jeux/discord/handlers/pont.js`                                                        |
+| Routage des boutons                              | `jeux/discord/routes/jeuxSpeciaux.js`                                                  |
+| Publication quotidienne                          | `jeux/scripts/postPont.js`                                                             |
+| Config                                           | `jeux/data/pont/pont.json` : `duree_jours` (7), `jours_indice` (2, 4, 6), `calendrier` |
+| Avatars des passants (partagé avec Qui est-ce ?) | `jeux/services/avatarsDiscord.js`                                                      |
+| Statut, remise à zéro                            | `jeux/scripts/pontStatus.js`, `jeux/scripts/resetPont.js`                              |
+| Tests                                            | `jeux/services/pont.test.js`                                                           |
+| Images (fonds, annonce)                          | `jeux/data/pont/images/` (Vercel Blob, voir « Image »)                                 |
 
 ### Déroulement (Pont du Troll)
 
@@ -1390,15 +1388,15 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 - **Butin** : chaque passant attrapé lâche 1 pièce, partagée entre les passants de l'autre pont, multipliée par le multiplicateur de leur pont : `gain = multiplicateur × attrapés / passés`. Les attrapés ne perdent rien (0 pièce ce jour-là).
 - La pierre est toujours à gauche et les cordes à droite (décor fixe) : le multiplicateur des cordes est toujours supérieur ou égal à celui de la pierre.
 
-| Jour | Pierre | Cordes | Événement |
-| ---- | ------ | ------ | --------- |
-| 1 | ×1 | ×1 | |
-| 2 | ×1 | ×2 | |
-| 3 | ×1 | ×3 | **Troll repu** : il attrape le pont le **moins** chargé |
-| 4 | ×1 | ×1 | |
-| 5 | ×1 | ×2 | |
-| 6 | ×2 | ×3 | |
-| 7 | ×1 | ×3 | **Grande finale** : gains doublés |
+| Jour | Pierre | Cordes | Événement                                               |
+| ---- | ------ | ------ | ------------------------------------------------------- |
+| 1    | ×1     | ×1     |                                                         |
+| 2    | ×1     | ×2     |                                                         |
+| 3    | ×1     | ×3     | **Troll repu** : il attrape le pont le **moins** chargé |
+| 4    | ×1     | ×1     |                                                         |
+| 5    | ×1     | ×2     |                                                         |
+| 6    | ×2     | ×3     |                                                         |
+| 7    | ×1     | ×3     | **Grande finale** : gains doublés                       |
 
 - Les deux événements sont annoncés dans le message du jour (texte et bandeau de l'image), jamais cachés. Troll repu : la règle du butin est inchangée, les gagnants sont simplement ceux du pont le plus chargé (`gain = multiplicateur × attrapés / passés`, souvent inférieur à 1).
 - **🃏 Joker** : une fois par partie, cliquable à tout moment de la journée, avant ou après le choix du pont. Confirmation éphémère (bouton `[🃏 Jouer mon Joker]`, `pont_joker_ok:<jour>`) : « Jouer ton Joker aujourd'hui ? Tes gains du jour seront doublés si tu passes. N'oublie pas de choisir un pont avant le résultat. » Une fois confirmé (`HSETNX pont:jokers`), il est consommé même si le joueur ne traverse pas ou se fait attraper. Il se cumule avec la Grande finale (×4). Clic suivant : « Joker déjà utilisé (Jour N) ».
@@ -1419,8 +1417,9 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 ### Interface (Pont du Troll)
 
-- **Jour d'annonce** (jour 0) : embed avec l'illustration d'annonce et le seul bouton `[📖 Règles]`.
-- Titre `🌉 Pont du Troll (Jour X/7)`. Boutons du message public (`pont_pierre:<jour>`, `pont_cordes:<jour>`, `pont_joker:<jour>`, `pont_indice:<jour>`, `pont_regles`) : `[🪨 Pont de pierre]`, `[🪢 Pont de cordes]`, `[🃏 Joker]`, `[🔎 Indice]` (jours pairs), `[📖 Règles]` (5 boutons au maximum par rangée).
+- **Messages en Components V2** (`versV2()`, flag `IS_COMPONENTS_V2`) : Discord limite la hauteur d'une image d'embed (~300 px sur ordinateur, une image portrait 600 × 840 y tombe à ~215 px de large) ; une galerie (type 12) l'affiche en grand. Vues écrites comme des embeds, converties à l'envoi : un conteneur à liseré par embed (titre `###`, texte, galerie, pied en `-#`), boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le ping (salon public) est un bloc texte `<@&rôle>` en tête, avec `allowed_mentions`. `state.embeds` et `state.components` servent à republier le message (compteur). 4 000 caractères de texte au plus sur l'ensemble du message.
+- **Jour d'annonce** (jour 0) : illustration d'annonce et le seul bouton `[📖 Règles]`.
+- Titre `🧌 Pont du Troll (Jour X/7)`. Boutons du message public (`pont_pierre:<jour>`, `pont_cordes:<jour>`, `pont_joker:<jour>`, `pont_indice:<jour>`, `pont_regles`) : `[🪨 Pont de pierre]`, `[🪢 Pont de cordes]`, `[🃏 Joker]`, `[🔎 Indice]` (jours pairs), `[📖 Règles]` (5 boutons au maximum par rangée).
 - Message du jour (à partir du Jour 2) : un embed **Résultat du Jour N-1** (image du résultat, répartition, gain par passant, Jokers gagnants nommés, classement provisoire des 5 premiers), puis l'embed **Jour N/7** (image du matin, multiplicateurs, événement éventuel). Le pied de l'embed du jour affiche le nombre total de passants, mis à jour à chaque nouveau passant (`majCompteur()` : PATCH du message à partir de `state.embeds`).
 - Révélation finale : résultat du Jour 7, puis classement complet (20 premiers) avec l'illustration d'annonce et les vainqueurs des parties précédentes.
 
@@ -1446,29 +1445,29 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 ### Stockage Redis (`pont:*`)
 
-| Clé | Type | Contenu |
-| --- | ---- | ------- |
-| `pont:state` | STRING | `{ phase, jour, partieId, channelId, messageId, publishedAt, termine, embeds }` (`partieId` créé à l'annonce ; `embeds` publiés, pour le compteur de passants) |
-| `pont:choix:<jour>` | HASH | `discordId → { cote: "pierre" \| "cordes", at }` |
-| `pont:jokers` | HASH | `discordId → jour` du Joker joué |
-| `pont:indices:<jour>` | HASH | `discordId → { at, texte }` de la consultation |
-| `pont:points` | HASH | `discordId → centièmes de pièce` de la manche |
-| `pont:passes` | HASH | `discordId → jours passés` (départage) |
-| `pont:usernames` | HASH | `discordId → pseudo` |
-| `pont:avatars` | HASH | `discordId → "id/hash"` (vide sans avatar) |
-| `pont:historique` | HASH | `jour → { jour, partieId, multiplicateurs, evenement, pierre, cordes, attrape, gagnant, gainBase, passants: { pierre: [ids], cordes: [ids] }, jokers, jokersGagnants, resolvedAt }` |
-| `pont:manches` | HASH | `manche → { manche, ranking: [{ discordId, username, points, centiemes, passes }], winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches` |
-| `pont:manche_seq` | STRING | compteur de manches |
+| Clé                   | Type   | Contenu                                                                                                                                                                             |
+| --------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pont:state`          | STRING | `{ phase, jour, partieId, channelId, messageId, publishedAt, termine, embeds }` (`partieId` créé à l'annonce ; `embeds` publiés, pour le compteur de passants)                      |
+| `pont:choix:<jour>`   | HASH   | `discordId → { cote: "pierre" \| "cordes", at }`                                                                                                                                    |
+| `pont:jokers`         | HASH   | `discordId → jour` du Joker joué                                                                                                                                                    |
+| `pont:indices:<jour>` | HASH   | `discordId → { at, texte }` de la consultation                                                                                                                                      |
+| `pont:points`         | HASH   | `discordId → centièmes de pièce` de la manche                                                                                                                                       |
+| `pont:passes`         | HASH   | `discordId → jours passés` (départage)                                                                                                                                              |
+| `pont:usernames`      | HASH   | `discordId → pseudo`                                                                                                                                                                |
+| `pont:avatars`        | HASH   | `discordId → "id/hash"` (vide sans avatar)                                                                                                                                          |
+| `pont:historique`     | HASH   | `jour → { jour, partieId, multiplicateurs, evenement, pierre, cordes, attrape, gagnant, gainBase, passants: { pierre: [ids], cordes: [ids] }, jokers, jokersGagnants, resolvedAt }` |
+| `pont:manches`        | HASH   | `manche → { manche, ranking: [{ discordId, username, points, centiemes, passes }], winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches`                               |
+| `pont:manche_seq`     | STRING | compteur de manches                                                                                                                                                                 |
 
 ### Scripts et cron (Pont du Troll)
 
-| Commande | Effet |
-| -------- | ----- |
-| `npm run pont:test` / `:test:dry` | Salon de test (jamais de ping, 5 PNJ) / aperçu console |
-| `npm run pont:public` / `:public:dry` | Salon public (cron) |
-| `npm run pont:reset` | **Destructif** : partie en cours effacée, `pont:manches` préservé |
-| `npm run pont:reset:manches` | **Destructif** : efface aussi l'archive des manches |
-| `npm run pont:status` | État courant : jour, multiplicateurs, événement, répartition **secrète** du jour, Jokers et Indices consultés, projection du résultat, classement. Sans Discord |
+| Commande                              | Effet                                                                                                                                                           |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run pont:test` / `:test:dry`     | Salon de test (jamais de ping, 5 PNJ) / aperçu console                                                                                                          |
+| `npm run pont:public` / `:public:dry` | Salon public (cron)                                                                                                                                             |
+| `npm run pont:reset`                  | **Destructif** : partie en cours effacée, `pont:manches` préservé                                                                                               |
+| `npm run pont:reset:manches`          | **Destructif** : efface aussi l'archive des manches                                                                                                             |
+| `npm run pont:status`                 | État courant : jour, multiplicateurs, événement, répartition **secrète** du jour, Jokers et Indices consultés, projection du résultat, classement. Sans Discord |
 
 Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/pont.yml` : `24 7 * * *` (8h24 à Paris en hiver, après le décompte de 8 h). Ping `@MINI-JEUX` à l'annonce, au Jour 1 et à la fin de partie seulement. Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
 
@@ -1497,12 +1496,12 @@ Dix duels lancés par commande slash, sans cron ni historique de manches : `/bla
 - **Blackjack en 1v1** : pas de Croupier, la meilleure main non dépassée gagne (`resolvePvP()`) ; un Blackjack naturel bat un 21 ordinaire (3 points), égalité au sommet = 1 point chacun ; Doubler et ses points ×2 s'appliquent aussi.
 - **Gobelet en solo** : pas d'adversaire (défi de score), choix « Solo » sur la valeur commune `bot`, sans mention de Kévina.
 
-| | Blackjack Duel | Gobelet Duel |
-| --- | --- | --- |
-| Service | `jeux/services/blackjackDuel.js` | `jeux/services/gobeletDuel.js` |
-| Handler | `jeux/discord/handlers/blackjackDuel.js` | `jeux/discord/handlers/gobeletDuel.js` |
+|                             | Blackjack Duel                                                                                                                                                                 | Gobelet Duel                                                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Service                     | `jeux/services/blackjackDuel.js`                                                                                                                                               | `jeux/services/gobeletDuel.js`                                                                                                                                   |
+| Handler                     | `jeux/discord/handlers/blackjackDuel.js`                                                                                                                                       | `jeux/discord/handlers/gobeletDuel.js`                                                                                                                           |
 | Fonctions pures réutilisées | `blackjack.js` : `dealHand`, `applyHandAction`, `canDouble`, `isNatural`, `dealerHasNatural`, `compareToDealer`, `dealerPlay`, `resolveDay`, `buildRanking`, `pointsForResult` | `gobelet.js` : `rollDice`, `rerollKept`, `computeBestCombination`, `finishHand`, `pickChoice`, `resolveJour`, `buildRanking`, `withUsedCategory`, `withHandLock` |
-| Spécificités | images (`blackjackImage.js`) : main (partagée avec le jeu spécial), dernière manche (message public), fin de partie | images (`gobeletImage.js`) : main, dernière manche (message public), fin de partie ; sélection des dés Jouer/toggle/Relancer dupliquée |
+| Spécificités                | images (`blackjackImage.js`) : main (partagée avec le jeu spécial), dernière manche (message public), fin de partie                                                            | images (`gobeletImage.js`) : main, dernière manche (message public), fin de partie ; sélection des dés Jouer/toggle/Relancer dupliquée                           |
 
 - **Lobby fermé** : inscription par le bouton Jouer jusqu'à ce que tous les sièges soient pris, puis roster verrouillé.
 - **Bouton du message public** : 🎲/🃏 **Jouer** (vert) tant qu'une place est libre, puis **🎮 Reprendre ma partie** (gris) une fois le roster verrouillé, solo compris (règle commune des duels, même `custom_id` `<jeu>_jouer:<gid>`) : il donne la main de la manche courante ou rouvre la vue. Les textes qui nomment le bouton suivent le même libellé (`nomBoutonJouer()`).
@@ -1521,14 +1520,14 @@ Dix duels lancés par commande slash, sans cron ni historique de manches : `/bla
 - **Clés Redis** (`<jeu>` = `blackjackduel` ou `gobeletduel`) : par partie `<jeu>:<gid>:` + `state`, `points`, `usernames`, `resolving`, `hand:<manche>`, `webhook:<manche>`, Gobelet en plus `used`, `kept:<manche>:<discordId>` (expiration 2 min, 15 min pour `webhook`) ; hors partie `<jeu>:highscore` et, Gobelet, `gobeletduel:lock:<discordId>`.
 - **Scripts** (⚠️ aucun cron ni workflow, choix explicite) :
 
-| Commande | Effet |
-| --- | --- |
-| `npm run blackjackduel:status` / `gobeletduel:status` | Liste les parties en cours |
-| `npm run blackjackduel:reset` / `gobeletduel:reset` | Efface toutes les parties (préserve le high score) |
+| Commande                                              | Effet                                              |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| `npm run blackjackduel:status` / `gobeletduel:status` | Liste les parties en cours                         |
+| `npm run blackjackduel:reset` / `gobeletduel:reset`   | Efface toutes les parties (préserve le high score) |
 
 ### La Grille (contre Kévina ou en 1v1)
 
-Adaptation fidèle de Knucklebones (jeu de dés de *Cult of the Lamb*). `/grille adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf le high score contre Kévina.**
+Adaptation fidèle de Knucklebones (jeu de dés de _Cult of the Lamb_). `/grille adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf le high score contre Kévina.**
 
 - Code : `jeux/services/grilleRules.js` (règles pures et Kévina, tests `grilleRules.test.js`), `jeux/services/grilleDuel.js` (Redis), `jeux/discord/handlers/grilleDuel.js` (Discord). Config `jeux/data/grille/duel.json` (`delai_tour_minutes` : 2, dans les deux modes).
 - `custom_id` : `grilleduel_poser:<colonne>` contre Kévina, `grilleduel_poser:<colonne>:pvp` en 1v1 (colonne 0 à 2), `grilleduel_ouvrir` (Jouer du message public 1v1), `grilleduel_regles`.
@@ -1697,18 +1696,18 @@ Duel de cartes à information cachée : chacun garde **une carte secrète** en m
 
 - **Paquet de 17 cartes Clash Royale** (`CARTES`, `PAQUET`), **valeur = coût en élixir** :
 
-| Élixir | Carte | Nb | Effet quand on la joue |
-|---|---|---|---|
-| 1 | Squelettes | 4 | Regarde la carte du dessus de la pioche, puis la laisse ou la glisse sous la pioche |
-| 2 | Gobelins | 2 | Regarde la carte adverse |
-| 2 | Bûche | 1 | Comparez vos cartes : la moins chère perd la manche (égalité : rien) |
-| 3 | Chevalier | 2 | Les effets adverses ne te touchent pas jusqu'à ton prochain tour |
-| 3 | Tornade | 1 | Échange ta carte avec celle de l'adversaire |
-| 4 | Boule de feu | 2 | Annonce un coût (3, 4, 5, 7 ou 9, `COUTS_ANNONCE`) : si la carte adverse coûte autant, il perd la manche |
-| 4 | Gel | 1 | À son prochain tour, l'adversaire doit jouer la carte qu'il pioche |
-| 5 | Prince | 2 | L'adversaire défausse sa carte et en pioche une autre (la Réserve si la pioche est vide ; rien à piocher : il perd la manche) |
-| 7 | Méga chevalier | 1 | Prends la Réserve, puis remets-y face cachée l'une de tes deux cartes (au choix, Trois mousquetaires compris, sans perdre) |
-| 9 | Trois mousquetaires | 1 | Aucun effet. Si elle quitte ta main (jouée, défaussée par un Prince), tu perds la manche |
+| Élixir | Carte               | Nb  | Effet quand on la joue                                                                                                        |
+| ------ | ------------------- | --- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1      | Squelettes          | 4   | Regarde la carte du dessus de la pioche, puis la laisse ou la glisse sous la pioche                                           |
+| 2      | Gobelins            | 2   | Regarde la carte adverse                                                                                                      |
+| 2      | Bûche               | 1   | Comparez vos cartes : la moins chère perd la manche (égalité : rien)                                                          |
+| 3      | Chevalier           | 2   | Les effets adverses ne te touchent pas jusqu'à ton prochain tour                                                              |
+| 3      | Tornade             | 1   | Échange ta carte avec celle de l'adversaire                                                                                   |
+| 4      | Boule de feu        | 2   | Annonce un coût (3, 4, 5, 7 ou 9, `COUTS_ANNONCE`) : si la carte adverse coûte autant, il perd la manche                      |
+| 4      | Gel                 | 1   | À son prochain tour, l'adversaire doit jouer la carte qu'il pioche                                                            |
+| 5      | Prince              | 2   | L'adversaire défausse sa carte et en pioche une autre (la Réserve si la pioche est vide ; rien à piocher : il perd la manche) |
+| 7      | Méga chevalier      | 1   | Prends la Réserve, puis remets-y face cachée l'une de tes deux cartes (au choix, Trois mousquetaires compris, sans perdre)    |
+| 9      | Trois mousquetaires | 1   | Aucun effet. Si elle quitte ta main (jouée, défaussée par un Prince), tu perds la manche                                      |
 
 - **Manche** (`nouvelleManche()`) : 1 carte mise de côté face cachée (la **Réserve**), 2 cartes **écartées face visible**, 1 carte chacun ; 12 cartes à piocher.
 - **À son tour** : on pioche (`debutTour()`), puis on joue l'une de ses deux cartes (`jouer()`) : son coût s'ajoute à l'élixir dépensé (`d.elixir`). Squelettes et Méga chevalier laissent un **choix en attente** (`d.attente`), résolu par `choisir()`. Les Trois mousquetaires ne sont jamais jouables, sauf imposés par le Gel (`cartesJouables()`).
@@ -1775,7 +1774,7 @@ Jeu rapide et léger : un thème, une lettre, une minute pour trouver un mot. `/
 - **8 manches** (`NB_MANCHES`), **8 thèmes différents** tirés en début de partie parmi 20 (`THEMES`), **difficulté croissante** : chaque thème a un niveau (`NIVEAUX` : **facile** Animaux, Prénoms, Fruits et légumes, Métiers, Moyens de transport ; **moyen** Pays, Villes, Sports, Marques automobiles, Acteurs et actrices, Musique, Fromages, Outils, Boissons ; **difficile** Mythologie, Personnages de jeu vidéo, Cartes Clash Royale, Inventions, Écrivains, Scientifiques) et les manches suivent le déroulé de la **difficulté choisie** (`DIFFICULTES`, `d.difficulte` ; une partie sans `difficulte`, lancée avant les modes, suit le normal) ; lettres : « toutes » les lettres jouables du thème, les « courantes » (moitié la plus fournie) ou les « rares » (l'autre moitié) :
   - **normal** : manches 1 à 3 thème facile (courantes, courantes, toutes), 4 à 6 moyen (courantes, toutes, toutes), 7 et 8 difficile (courantes, toutes) ; jamais de lettre rare ;
   - **difficile** : manches 1 et 2 thème facile (toutes, rares), 3 à 5 moyen (toutes, rares, rares), 6 à 8 difficile (toutes, rares, rares) ; Kévina plus forte ; titre « 🔤 Petit Bac difficile », séries et records à part (« Record (difficile) »). Le chrono reste le même (dépend trop de la connexion).
-  Niveau affiché dans la vue (« Manche 4/8 · moyen »). Écartés : « Marques » (catégorie trop ouverte, Wikidata biaisé vers les labels de musique) ; « Inventions » n'a pas de source propre (la propriété « inventeur » de Wikidata mêle découvertes, lois, maladies ; les listes de Wikipédia renvoient lieux et personnes) : sa liste est **relue à la main** (`jeux/outils/bac/inventions.txt`, une invention par ligne : candidats tirés de ces deux sources, inventions anciennes, articles d'histoire-pour-tous.fr et « Liste d'inventions françaises » de Wikipédia, noms d'invention seulement, sans descriptions de procédé ni noms de produits). Un mot peut appartenir à deux thèmes (avion, train : Inventions et Moyens de transport). **Lettre** tirée parmi celles où Kévina connaît au moins `MOTS_MIN_KEVINA` (2) mots et la liste en compte au moins `MOTS_MIN_ACCEPTES` (10) (`lettresJouables()`) : pas de manche injouable. **Lettres** (`lettresDeManche()`) : lettres jouables classées par nombre de mots acceptés ; « courantes » = la moitié la plus fournie, « rares » = l'autre moitié, « toutes ».
+    Niveau affiché dans la vue (« Manche 4/8 · moyen »). Écartés : « Marques » (catégorie trop ouverte, Wikidata biaisé vers les labels de musique) ; « Inventions » n'a pas de source propre (la propriété « inventeur » de Wikidata mêle découvertes, lois, maladies ; les listes de Wikipédia renvoient lieux et personnes) : sa liste est **relue à la main** (`jeux/outils/bac/inventions.txt`, une invention par ligne : candidats tirés de ces deux sources, inventions anciennes, articles d'histoire-pour-tous.fr et « Liste d'inventions françaises » de Wikipédia, noms d'invention seulement, sans descriptions de procédé ni noms de produits). Un mot peut appartenir à deux thèmes (avion, train : Inventions et Moyens de transport). **Lettre** tirée parmi celles où Kévina connaît au moins `MOTS_MIN_KEVINA` (2) mots et la liste en compte au moins `MOTS_MIN_ACCEPTES` (10) (`lettresJouables()`) : pas de manche injouable. **Lettres** (`lettresDeManche()`) : lettres jouables classées par nombre de mots acceptés ; « courantes » = la moitié la plus fournie, « rares » = l'autre moitié, « toutes ».
 - Les deux joueurs répondent **en même temps** ; réponses cachées jusqu'à la fin de la manche. **`delai_manche_secondes` (60 s) par manche** (`debut` de la manche, `tempsEcoule()`).
 - **2 propositions** par manche (`PROPOSITIONS_MAX`), **résultat immédiat** (« ✅ **Koala** accepté », « ❌ **Kzzt** refusé : pas dans la liste », « … : ne commence pas par K ») : une proposition acceptée **remplace** la précédente, une refusée ne change rien. La 2e proposition fige la réponse. **Passer** (« ✅ Valider » si un mot est accepté) fige la réponse : le mot accepté compte, sinon 0.
 - **Fin de manche** : les deux réponses figées, ou temps écoulé (réponses figées en l'état). **Points** (`cloreManche()`) : 1 par bonne réponse, **0,5 chacun pour la même** (même clé de liste : « Kangourous » et « kangourou » sont la même réponse). Après 8 manches, le plus de points gagne ; égalité possible (série intacte, comme un nul).
@@ -1857,10 +1856,19 @@ Sondage ponctuel : chaque question devient un message séparé avec un **sondage
 ### Format (`jeux/data/poll/poll.json`)
 
 ```json
-{ "questions": [
-  { "id": "...", "type": "choice", "question": "...", "answers": ["...", "..."], "allowMultiselect": false, "durationHours": 168 },
-  { "id": "...", "type": "note", "question": "...", "durationHours": 168 }
-] }
+{
+  "questions": [
+    {
+      "id": "...",
+      "type": "choice",
+      "question": "...",
+      "answers": ["...", "..."],
+      "allowMultiselect": false,
+      "durationHours": 168
+    },
+    { "id": "...", "type": "note", "question": "...", "durationHours": 168 }
+  ]
+}
 ```
 
 - `choice` : réponses de `answers` (10 max).
@@ -1875,13 +1883,13 @@ Sondage ponctuel : chaque question devient un message séparé avec un **sondage
 
 ### Scripts npm
 
-| Commande | Effet |
-| --- | --- |
-| `poll:test` / `:test:dry` | Salon `DISCORD_CHANNEL_FRAME_TEST`, sans ping / aperçu console |
-| `poll:test:force` | Supprime les messages d'un sondage actif puis reposte |
+| Commande                      | Effet                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| `poll:test` / `:test:dry`     | Salon `DISCORD_CHANNEL_FRAME_TEST`, sans ping / aperçu console                    |
+| `poll:test:force`             | Supprime les messages d'un sondage actif puis reposte                             |
 | `poll:public` / `:public:dry` | Salon « Annonces » `DISCORD_CHANNEL_ANNONCES`, `@everyone` sur le premier message |
-| `poll:status` | Idées soumises uniquement (les votes sont visibles dans Discord) |
-| `poll:reset` | Supprime les messages postés (best-effort) et l'état. **Destructif** |
+| `poll:status`                 | Idées soumises uniquement (les votes sont visibles dans Discord)                  |
+| `poll:reset`                  | Supprime les messages postés (best-effort) et l'état. **Destructif**              |
 
 Variables : `DISCORD_CHANNEL_FRAME_TEST`, `DISCORD_CHANNEL_ANNONCES`, `DISCORD_TOKEN`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`.
 
@@ -1959,7 +1967,7 @@ Duel de réflexion pure, sans hasard : poser des pions et retourner ceux qu'on e
 - **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
 - **Kévina** (`choixKevina()`, renvoie la case) : recherche negamax alpha-bêta sur `profondeur_kevina` coups (coups qui retournent le plus d'abord ; `evaluerCoups()`). Feuilles : **évaluation positionnelle** (`evaluer()`) : coin 8, case de bord 2, case intérieure 1, et −4 par pion voisin d'un coin encore vide (il ouvre ce coin à l'adversaire) ; l'écart de pions seul se faisait battre par « coins puis bords ». Avec la probabilité `erreur_kevina`, case tirée au sort parmi celles à `marge_kevina` points d'évaluation du meilleur (jamais un coup qui perd ou rate une victoire en vue).
 - **Jeu facile** : entre joueurs qui jouent les coins et les bords avec prudence, celui qui pose le dernier pion (le second) gagne presque toujours ; contre Kévina, le joueur commence (siège défavorable) et ses erreurs fréquentes compensent. ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
-- Pourquoi ces règles (simulations, joueurs negamax à profondeur 2 à 5, et joueur « coins puis bords » sans calcul) : **voisinage et diagonales** ajoutés après tests : avec la pose libre et les seules lignes orthogonales, coins et bords étaient imprenables et « coins puis bords » battait un joueur qui calcule 4 coups (~78 %) ; avec voisinage + diagonales + ce départ, ~24 %, et calculer 4 coups bat calculer 2 coups ~94 % ; équilibre ~43/57 à ~49/51 (léger avantage au second joueur), presque aucun nul. Départ en diagonale du rocher écarté (coins accessibles dès le premier coup, « coins puis bords » ~65 %). Plateau sans bord (lignes qui bouclent) écarté : plus de case sûre mais le dernier coup décide (~90 % pour celui qui le joue). Pose obligatoirement retournante écartée (n'empêche pas la règle des coins sur 5×5). Historique : issu du « Sandwich tactique » (prise par encadrement, pose ou déplacement), qui finissait presque toujours nul entre joueurs prudents (se protéger de l'encadrement est trop facile ; 63 à 100 % de nuls selon les variantes : 5 à 8 pions, pions illimités, victoire à 1 à 3 prises). La **conversion d'une ligne** au lieu de la prise et la **pose obligatoire** jusqu'au plateau plein règlent ce blocage. **Centre bloqué** : sur 25 cases, celui qui pose le dernier pion (le premier joueur) gagne ~65 % ; à 24 cases, la parité est corrigée.  Écartés : premier pion au bord (premier joueur ~74 %), départ dans les coins (~81 %), retrait des pions encadrés (toujours nul).
+- Pourquoi ces règles (simulations, joueurs negamax à profondeur 2 à 5, et joueur « coins puis bords » sans calcul) : **voisinage et diagonales** ajoutés après tests : avec la pose libre et les seules lignes orthogonales, coins et bords étaient imprenables et « coins puis bords » battait un joueur qui calcule 4 coups (~78 %) ; avec voisinage + diagonales + ce départ, ~24 %, et calculer 4 coups bat calculer 2 coups ~94 % ; équilibre ~43/57 à ~49/51 (léger avantage au second joueur), presque aucun nul. Départ en diagonale du rocher écarté (coins accessibles dès le premier coup, « coins puis bords » ~65 %). Plateau sans bord (lignes qui bouclent) écarté : plus de case sûre mais le dernier coup décide (~90 % pour celui qui le joue). Pose obligatoirement retournante écartée (n'empêche pas la règle des coins sur 5×5). Historique : issu du « Sandwich tactique » (prise par encadrement, pose ou déplacement), qui finissait presque toujours nul entre joueurs prudents (se protéger de l'encadrement est trop facile ; 63 à 100 % de nuls selon les variantes : 5 à 8 pions, pions illimités, victoire à 1 à 3 prises). La **conversion d'une ligne** au lieu de la prise et la **pose obligatoire** jusqu'au plateau plein règlent ce blocage. **Centre bloqué** : sur 25 cases, celui qui pose le dernier pion (le premier joueur) gagne ~65 % ; à 24 cases, la parité est corrigée. Écartés : premier pion au bord (premier joueur ~74 %), départ dans les coins (~81 %), retrait des pions encadrés (toujours nul).
 
 ##### Affichage
 
