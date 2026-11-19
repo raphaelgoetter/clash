@@ -206,7 +206,7 @@ export function texteIndice({ pierre, cordes }, now = Date.now(), rng = Math.ran
     const bas = Math.max(1, ecart - decalage);
     const haut = bas + LARGEUR_FOURCHETTE;
     const verbe = devant === PIERRE ? "mène" : "mènent";
-    return `${devant === PIERRE ? "La pierre" : "Les cordes"} ${verbe} de ${bas} à ${haut} passants.`;
+    return `${devant === PIERRE ? "La pierre" : "Les cordes"} ${verbe} de ${bas} à ${haut} joueurs.`;
   }
   return devant === PIERRE ? "La pierre semble plus chargée." : "Les cordes semblent plus chargées.";
 }

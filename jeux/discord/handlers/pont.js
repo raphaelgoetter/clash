@@ -94,8 +94,9 @@ function buildAnnonceEmbed(config) {
   return {
     title: "🧌 Pont du Troll : le troll s'installe demain",
     description: [
-      `Pendant **${config.duree_jours} jours**, traverse chaque jour le ravin par le pont de pierre ou le pont de cordes, en secret.`,
-      "Le troll attrape le pont le plus chargé : les passants de l'autre pont se partagent le butin.",
+      `De l'autre côté du ravin, le village tient son grand marché pendant **${config.duree_jours} jours**. Chaque jour, traverse pour aller y faire fortune, par le pont de pierre ou le pont de cordes, en secret.`,
+      "",
+      "Mais un troll vit sous les ponts. Il attrape le plus chargé : chaque joueur attrapé lâche une pièce, que ceux de l'autre pont ramassent… multipliée par la prime du village affichée à l'entrée de leur pont.",
       "",
       "Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
@@ -106,7 +107,7 @@ function buildAnnonceEmbed(config) {
 }
 
 const footerJour = (n) => ({
-  text: `🚶 ${pluriel(n, "passant")} aujourd'hui · Choix secret et définitif, décompte à 8h`,
+  text: `🚶 ${pluriel(n, "joueur")} aujourd'hui · Choix secret et définitif, décompte à 8h`,
 });
 
 function buildJourEmbed(config, cfg, { estPremierJour, v }) {
@@ -125,10 +126,7 @@ function buildJourEmbed(config, cfg, { estPremierJour, v }) {
     lines.push("", "🍖 **Troll repu** : aujourd'hui, il attrape le pont **le moins** chargé !");
   if (cfg.evenement === FINALE)
     lines.push("", "🏆 **Grande finale** : gains doublés !");
-  if (indiceDisponible(config, cfg.jour))
-    lines.push("", "🔎 Indice disponible aujourd'hui.");
-  if (rumeursDisponibles(config, cfg.jour))
-    lines.push("", "🗣️ Rumeurs disponibles aujourd'hui.");
+  // Indice et Rumeurs : pas de mention, leur bouton suffit
   return {
     title: `🧌 Pont du Troll (Jour ${cfg.jour}/${config.duree_jours})`,
     description: lines.join("\n"),
@@ -157,7 +155,7 @@ async function lignesClassement(ranking, limite) {
   );
   return liste.map(
     (r, i, l) =>
-      `${rangExAequo(l, i, memeRang)}. ${r.nom} (${pieces(r.centiemes)})`,
+      `${rangExAequo(l, i, memeRang)}\\. ${r.nom} (${pieces(r.centiemes)})`,
   );
 }
 
@@ -179,15 +177,15 @@ async function buildResultatEmbed(entry, ranking, { partieId, v }) {
       lines.push(entry.attrape ? "🧌 Le troll n'attrape personne." : "🧌 Égalité : le troll hésite, personne n'est attrapé.");
       const g = entry.gainParCote ?? {};
       lines.push(
-        `💰 Tout le monde passe : Pierre **+${pieces(g[PIERRE] ?? 0)}**, Cordes **+${pieces(g[CORDES] ?? 0)}** par passant.`,
+        `💰 Tout le monde passe : Pierre **+${pieces(g[PIERRE] ?? 0)}**, Cordes **+${pieces(g[CORDES] ?? 0)}** par joueur.`,
       );
     } else {
       lines.push(
-        `🧌 Le troll attrape **${pluriel(nA, "passant")}** ${SUR[entry.attrape]}.`,
+        `🧌 Le troll attrape **${pluriel(nA, "joueur")}** ${SUR[entry.attrape]}.`,
       );
       lines.push(
         nG
-          ? `💰 ${NOM_COURT[entry.gagnant]} : **+${pieces(entry.gainBase)}** par passant.`
+          ? `💰 ${NOM_COURT[entry.gagnant]} : **+${pieces(entry.gainBase)}** par joueur.`
           : "💰 Personne en face pour le butin.",
       );
     }
@@ -679,7 +677,7 @@ async function etatJouable(webhookUrl, jour) {
     await patchOriginal(
       webhookUrl,
       messageSeul(
-        "Le troll compte les passants (décompte à 8h), le jour suivant arrive vers 8h30.",
+        "Le troll compte les joueurs (décompte à 8h), le jour suivant arrive vers 8h30.",
       ),
     );
     return null;
@@ -889,10 +887,10 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles du Pont du Troll",
     description: [
-      `Chaque jour pendant ${config.duree_jours} jours, traverse le ravin par l'un des deux ponts. Un seul clic par jour, secret et définitif (jour de jeu de 8h à 8h).`,
+      `De l'autre côté du ravin, le village tient son grand marché. Chaque jour pendant ${config.duree_jours} jours, traverse par l'un des deux ponts pour aller y faire fortune. Un seul clic par jour, secret et définitif (jour de jeu de 8h à 8h).`,
       "",
-      "🧌 **Le troll** attrape le pont qui compte le plus de passants. Les passants de l'autre pont se partagent le butin : 1 pièce par passant attrapé, multipliée par le multiplicateur de leur pont (affiché chaque matin).",
-      "Égalité : personne n'est attrapé, chacun gagne le multiplicateur de son pont.",
+      "🧌 **Le troll** attrape le pont qui compte le plus de joueurs : chacun lâche 1 pièce. Les joueurs de l'autre pont ramassent ce butin et se le partagent, multiplié par la prime du village (le multiplicateur de leur pont, affiché chaque matin).",
+      "Égalité : le troll hésite, personne n'est attrapé, et chacun touche la prime de son pont.",
       "",
       "🗣️ **Rumeurs** (jours impairs) : vois quel pont chacun annonce, et lance ta propre rumeur une fois par jour (vérité, mensonge ou rien), avant ou après avoir choisi ton pont. Le détecteur de fake-news dévoile les menteurs des rumeurs précédentes.",
       "",

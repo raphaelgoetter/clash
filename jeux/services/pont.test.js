@@ -123,7 +123,7 @@ test("indice : exact le matin, fourchette l'après-midi, tendance le soir", () =
   const rep = { pierre: 12, cordes: 5 };
   assert.equal(texteIndice(rep, A(9)), "Pierre 12, Cordes 5.");
   for (const u of [0, 0.3, 0.6, 0.99]) {
-    const m = /La pierre mène de (\d+) à (\d+) passants\./.exec(texteIndice(rep, A(14), () => u));
+    const m = /La pierre mène de (\d+) à (\d+) joueurs\./.exec(texteIndice(rep, A(14), () => u));
     assert.ok(m);
     const [bas, haut] = [Number(m[1]), Number(m[2])];
     assert.equal(haut - bas, 4);
@@ -162,7 +162,7 @@ test("textes de l'image", () => {
   assert.equal(lignesMatin(null).length, 1);
   assert.equal(lignesMatin(REPU)[1], "Il attrape le pont le moins chargé");
   const l = lignesResultat({ attrape: PIERRE, gagnant: CORDES, gainBase: 460, pierre: 17, cordes: 11 });
-  assert.deepEqual(l, ["17 passants attrapés sur la pierre", "Cordes : +4,6 pièces chacun"]);
+  assert.deepEqual(l, ["17 joueurs attrapés sur la pierre", "Cordes : +4,6 pièces chacun"]);
   assert.deepEqual(lignesResultat({ attrape: null, pierre: 3, cordes: 3, gainParCote: { pierre: 100, cordes: 200 } }), [
     "Égalité : le troll hésite",
     "Pierre +1 · Cordes +2 pièces chacun",
@@ -242,7 +242,7 @@ if (Redis.isFake) {
       // Compteur de passants : PATCH du message en V2, galerie conservée
       const patch = appels.find((a) => a.method === "PATCH");
       assert.equal(patch.body.flags, 1 << 15);
-      assert.ok(JSON.stringify(patch.body).includes("5 passants"));
+      assert.ok(JSON.stringify(patch.body).includes("5 joueurs"));
       assert.ok(JSON.stringify(patch.body).includes('"type":12'));
       assert.ok(appels.every((a) => !a.url.includes("/roles")), "aucune lecture des rôles");
       const j2 = await listChoix(2);

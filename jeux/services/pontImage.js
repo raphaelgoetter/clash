@@ -111,7 +111,7 @@ function etiquette(cote, mult, res) {
   const l = 250;
   const bord = res ? res.couleur : OR;
   const ligne2 = res
-    ? `<text x="${cx}" y="${y + 85}" text-anchor="middle" font-size="36" fill="${res.couleur}">${res.n} passant${res.n > 1 ? "s" : ""}</text>`
+    ? `<text x="${cx}" y="${y + 85}" text-anchor="middle" font-size="36" fill="${res.couleur}">${res.n} joueur${res.n > 1 ? "s" : ""}</text>`
     : "";
   return `<rect x="${cx - l / 2}" y="${y}" width="${l}" height="${res ? 102 : 56}" rx="14" fill="#120c1c" fill-opacity="0.82" stroke="${bord}" stroke-width="3"/>
   <text x="${cx}" y="${y + 41}" text-anchor="middle" font-size="36" fill="${BLANC}">${NOM[cote]} <tspan fill="${OR}">×${mult}</tspan></text>${ligne2}`;
@@ -157,7 +157,7 @@ export function lignesResultat({ attrape, gagnant, gainBase, gainParCote = {}, p
       `Pierre +${formatPieces(gainParCote[PIERRE] ?? 0)} · Cordes +${piecesTexte(gainParCote[CORDES] ?? 0)} chacun`,
     ];
   }
-  const l1 = `${nA} passant${nA > 1 ? "s" : ""} attrapé${nA > 1 ? "s" : ""} ${SUR[attrape]}`;
+  const l1 = `${nA} joueur${nA > 1 ? "s" : ""} attrapé${nA > 1 ? "s" : ""} ${SUR[attrape]}`;
   if (nG === 0) return [l1, "Personne en face pour le butin"];
   const g = formatPieces(gainBase);
   return [l1, `${NOM[gagnant]} : +${g} pièce${gainBase >= 200 ? "s" : ""} chacun`];
