@@ -1,0 +1,13 @@
+{
+  "duree_jours": 7,
+  "jours_indice": [2, 4, 6],
+  "calendrier": [
+    { "jour": 1, "pierre": 1, "cordes": 1 },
+    { "jour": 2, "pierre": 1, "cordes": 2 },
+    { "jour": 3, "pierre": 1, "cordes": 3, "evenement": "repu" },
+    { "jour": 4, "pierre": 1, "cordes": 1 },
+    { "jour": 5, "pierre": 1, "cordes": 2 },
+    { "jour": 6, "pierre": 2, "cordes": 3 },
+    { "jour": 7, "pierre": 1, "cordes": 3, "evenement": "finale" }
+  ]
+}

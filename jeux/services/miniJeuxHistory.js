@@ -29,6 +29,7 @@ import { getAllArchivedResults as getBlindRoyaleResults, readState as readBlindR
 import { getAllArchivedResults as getLaJusteCarteResults, readState as readLaJusteCarteState } from "./lajustecarte.js";
 import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
+import { listManches as listPontManches } from "./pont.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
 import { listManches as listBangManches } from "./bang.js";
 import { listManches as listQuiEstCeManches } from "./quiestce.js";
@@ -44,6 +45,7 @@ const GAME_ORDER = [
   "clash",
   "quiz",
   "blackjack",
+  "pont",
   "marioclash",
   "bang",
   "quiestce",
@@ -195,6 +197,12 @@ const MANCHE_SCORE_GAMES = [
     key: "blackjack",
     label: "🂡 Blackjack",
     fetch: () => listBlackjackManches({ limit: Infinity }),
+    scoreField: "points",
+  },
+  {
+    key: "pont",
+    label: "🌉 Pont du Troll",
+    fetch: () => listPontManches({ limit: Infinity }),
     scoreField: "points",
   },
   {

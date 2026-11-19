@@ -4,7 +4,7 @@ Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spécia
 
 Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale`.
 
-Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash) · faces de dé · duels · sondage public · noms des cartes · jeux archivés.
+Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash, Pont du Troll) · faces de dé · duels · sondage public · noms des cartes · jeux archivés.
 
 ---
 
@@ -384,7 +384,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 
 ## Jeux spéciaux : fonctionnement commun
 
-Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scripts/post<Jeu>.js`, boutons routés par `jeux/discord/routes/jeuxSpeciaux.js`, sauf le vote du Quiz `quiz_vote:` routé par `miniJeux.js`) : Quiz, Robinson, Mario Clash, Gobelet, Blackjack, Meow, Qui est-ce ?, Goblin Hunters (+ Tamagotchi, Boss Raid et Bang!, archivés). Un seul jeu spécial actif à la fois sur le salon public, affiché dans `/mini-jeux` (`SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`, premier état non terminé sur le salon public).
+Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scripts/post<Jeu>.js`, boutons routés par `jeux/discord/routes/jeuxSpeciaux.js`, sauf le vote du Quiz `quiz_vote:` routé par `miniJeux.js`) : Quiz, Robinson, Mario Clash, Gobelet, Blackjack, Meow, Qui est-ce ?, Goblin Hunters, Pont du Troll (+ Tamagotchi, Boss Raid et Bang!, archivés). Un seul jeu spécial actif à la fois sur le salon public, affiché dans `/mini-jeux` (`SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`, premier état non terminé sur le salon public).
 
 ### Lancement : jour d'annonce obligatoire
 
@@ -418,7 +418,7 @@ Jeux spéciaux Blackjack et Gobelet seulement (pas leurs duels) : `jeux/services
 
 - Rôle résolu par `getRoleIdByName(MINI_JEUX_ROLE_NAME)` (`@clash/commun/discordRoles.js`), injecté via `buildRolePingFields()`.
 - ⚠️ Jamais de ping hors salon public : `NO_PING = --no-ping || !PUBLIC` dans chaque `post*.js`.
-- Au minimum : ping à l'annonce, au Jour 1 et à la fin de partie (y compris annulation). Au Jour 1 des jeux à inscriptions (Meow, Qui est-ce ?, Goblin Hunters), seuls les inscrits sont mentionnés (`buildUserPingFields()`, PNJ exclus), pas le rôle. Jours intermédiaires : selon le jeu (Quiz, Gobelet, Blackjack pinguent à chaque post ; Robinson, Mario Clash, Boss Raid, Meow, Qui est-ce ?, Goblin Hunters jamais).
+- Au minimum : ping à l'annonce, au Jour 1 et à la fin de partie (y compris annulation). Au Jour 1 des jeux à inscriptions (Meow, Qui est-ce ?, Goblin Hunters), seuls les inscrits sont mentionnés (`buildUserPingFields()`, PNJ exclus), pas le rôle. Jours intermédiaires : selon le jeu (Quiz, Gobelet, Blackjack pinguent à chaque post ; Robinson, Mario Clash, Boss Raid, Meow, Qui est-ce ?, Goblin Hunters, Pont du Troll jamais).
 
 ### Inscriptions (Meow, Qui est-ce ?, Goblin Hunters)
 
@@ -528,6 +528,7 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | Mario Clash    | `marioclash.yml`    | `14 8 * * *` |
 | Jeu du Gobelet | `gobelet.yml`       | `16 7 * * *` (8h16 à Paris en hiver, après le décompte de 8 h des deux mains) |
 | Qui est-ce ?   | `quiestce.yml`      | `20 8 * * *` |
+| Pont du Troll  | `pont.yml`          | `24 7 * * *` (8h24 à Paris en hiver, après le décompte de 8 h) |
 | Boss de fin de saison | `boss.yml`   | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison ») |
 
 Tamagotchi (`tamagotchi.yml`, ex-minute 10), Boss Raid (`bossraid.yml`, ex-minute 2) et Bang! (`bang.yml`, ex-minute 18) ont leur cron commenté : voir « Jeux archivés ».
@@ -1349,6 +1350,123 @@ Ordre : 1) Étoiles actives → immunisés ; 2) **sorts** (bloqués si immunisé
 | `npm run marioclash:status` | État courant |
 
 Options du script : `--no-ping`, `--require-active`, `--force`. Production : présentation lancée à la main (`workflow_dispatch` de `.github/workflows/marioclash.yml` ou `npm run marioclash:public`), puis cron `14 8 * * *` (8h14 UTC, `--require-active`). ⚠️ Chaque cron de 8h UTC a sa propre minute (bossraid 2, goblinhunters 4, quiz 6, robinson 8, tamagotchi 10, blackjack 12, marioclash 14). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`).
+
+---
+
+## Pont du Troll (jeu de la minorité sur deux ponts)
+
+Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le ravin par le **pont de pierre** ou le **pont de cordes**, en secret. Le troll attrape le pont le plus chargé ; les passants de l'autre pont se partagent le butin. Classement cumulé en pièces, révélé après le Jour 7. Pas de commande slash. Pas d'inscription : tout membre peut jouer à partir de n'importe quel jour.
+
+| Rôle | Fichier |
+| ---- | ------- |
+| Règles, Redis | `jeux/services/pont.js` |
+| Image (fond illustré + avatars) | `jeux/services/pontImage.js` |
+| Discord (embeds, boutons, `postPont()`) | `jeux/discord/handlers/pont.js` |
+| Routage des boutons | `jeux/discord/routes/jeuxSpeciaux.js` |
+| Publication quotidienne | `jeux/scripts/postPont.js` |
+| Config | `jeux/data/pont/pont.json` : `duree_jours` (7), `jours_indice` (2, 4, 6), `calendrier` |
+| Avatars des passants (partagé avec Qui est-ce ?) | `jeux/services/avatarsDiscord.js` |
+| Statut, remise à zéro | `jeux/scripts/pontStatus.js`, `jeux/scripts/resetPont.js` |
+| Tests | `jeux/services/pont.test.js` |
+| Images (fonds, annonce) | `jeux/data/pont/images/` (Vercel Blob, voir « Image ») |
+
+### Déroulement (Pont du Troll)
+
+- Jour d'annonce, puis Jours 1 à 7 (voir « Lancement : jour d'annonce obligatoire »). Un seul message actif. `postPont()` résout le jour actif (`resolveDay()`), puis publie le jour suivant ou, après le Jour 7, la révélation finale (`termine: true`, les runs suivants sont des no-op). Pièces, Jokers, Indices, choix et historique remis à zéro au passage au Jour 1 (`resetPartie()`).
+- **Jour de jeu de 8 h à 8 h** (heure de Paris) : après 8 h, plus aucun clic n'est accepté pour le jour publié (« le troll compte les passants »), le cron résout ensuite le jour tel qu'il était à 8 h.
+- Garde-fou `isTooSoonSinceLastClosure()` (`MIN_HOURS_BETWEEN_CLOSURES` = 8 h), contourné par `--force` et automatiquement hors `--public`.
+- ⚠️ **Jamais de ping hors salon public** : `postPont()` ne pingue que si `isPublic` et sans `noPing`, quel que soit l'appelant (en plus de `NO_PING` dans `postPont.js`). Testé dans `pont.test.js`.
+- **PNJ du salon de test** : 5 joueurs fictifs (`PNJ` : Josette, Gérard, Ginette, Jean-Mi, Bernadette ; ids `pnj-1` à `pnj-5`, avatars clay `clay-01` à `clay-05`) traversent au hasard (50/50) dès la publication de chaque jour (`jouerPnj()`), et jouent leur Joker un jour au hasard (15 % par jour tant qu'il reste). Jamais sur le salon public, même demandés (`pnj && !isPublic`). Pas de passeport ni d'appel Discord pour leur pseudo (`estPnj()`). `--sans-pnj` les désactive.
+
+### Règles
+
+- **Choix du pont** : un clic sur 🪨 Pont de pierre ou 🪢 Pont de cordes, **définitif**, confirmé en éphémère (« Tu traverses par la pierre »). Un second clic rappelle le choix fait, sans le modifier.
+- ⚠️ **Vote secret** : aucune répartition n'est visible avant le résultat (ni dans l'embed, ni dans l'URL de l'image, ni dans `/mini-jeux`). Seul le nombre total de passants du jour est public. Sinon chaque joueur choisit le pont le moins chargé et le jour finit à X contre X-1.
+- **Le troll attrape le pont qui compte le plus de passants.** Égalité : personne n'est attrapé, personne ne gagne. Un pont vide : personne ne gagne (pas de partage possible).
+- **Butin** : chaque passant attrapé lâche 1 pièce, partagée entre les passants de l'autre pont, multipliée par le multiplicateur de leur pont : `gain = multiplicateur × attrapés / passés`. Les attrapés ne perdent rien (0 pièce ce jour-là).
+- La pierre est toujours à gauche et les cordes à droite (décor fixe) : le multiplicateur des cordes est toujours supérieur ou égal à celui de la pierre.
+
+| Jour | Pierre | Cordes | Événement |
+| ---- | ------ | ------ | --------- |
+| 1 | ×1 | ×1 | |
+| 2 | ×1 | ×2 | |
+| 3 | ×1 | ×3 | **Troll repu** : il attrape le pont le **moins** chargé |
+| 4 | ×1 | ×1 | |
+| 5 | ×1 | ×2 | |
+| 6 | ×2 | ×3 | |
+| 7 | ×1 | ×3 | **Grande finale** : gains doublés |
+
+- Les deux événements sont annoncés dans le message du jour (texte et bandeau de l'image), jamais cachés. Troll repu : la règle du butin est inchangée, les gagnants sont simplement ceux du pont le plus chargé (`gain = multiplicateur × attrapés / passés`, souvent inférieur à 1).
+- **🃏 Joker** : une fois par partie, cliquable à tout moment de la journée, avant ou après le choix du pont. Confirmation éphémère (bouton `[🃏 Jouer mon Joker]`, `pont_joker_ok:<jour>`) : « Jouer ton Joker aujourd'hui ? Tes gains du jour seront doublés si tu passes. N'oublie pas de choisir un pont avant le résultat. » Une fois confirmé (`HSETNX pont:jokers`), il est consommé même si le joueur ne traverse pas ou se fait attraper. Il se cumule avec la Grande finale (×4). Clic suivant : « Joker déjà utilisé (Jour N) ».
+- **🔎 Indice** : jours pairs seulement (2, 4, 6 ; bouton absent les jours impairs), une consultation par jour et par joueur (un nouveau clic réaffiche le même texte, mémorisé), réponse éphémère calculée sur la répartition au moment du clic (`texteIndice()`), de moins en moins précise au fil de la journée (heure de Paris) :
+  - 8 h-12 h : chiffres exacts (« Pierre 9, Cordes 6 ») ;
+  - 12 h-18 h : fourchette de 5 valeurs contenant l'écart réel, placée au hasard (« La pierre mène de 3 à 7 passants », borne basse au moins 1) ;
+  - 18 h-8 h : tendance seule (« La pierre semble plus chargée ») ;
+  - écart de 2 passants ou moins (sauf de 8 h à 12 h) : « Coude à coude ». Aucun passant : « Personne n'a encore traversé ».
+  - Consulté après avoir choisi son pont, il ne sert à rien : aucune protection, c'est au joueur de s'organiser.
+
+### Barème et classement (Pont du Troll)
+
+- Pièces stockées en **centièmes entiers** (`HINCRBY`, jamais de flottant). Le gain par passant est arrondi au **dixième** dès `resoudreJour()` (multiple de 10 centièmes) : les totaux s'affichent avec une décimale (« 4,6 pièces », `formatPieces()`) sans écart d'arrondi entre joueurs.
+- Tout passant entre au classement, même à 0 pièce.
+- `buildRanking()` : pièces décroissantes, puis **nombre de jours passés** (sans être attrapé) décroissant ; ex aequo au-delà (`rangExAequo()`).
+- Score de manche cumulé dans l'historique de saison des mini-jeux (`miniJeuxHistory.js`, champ `points` de l'archive, en pièces arrondies à l'unité) et compté dans les stats de `/mini-jeux` (`miniJeuxStats.js`).
+- `/mini-jeux` : participation du jour (a traversé ou non, jamais le pont choisi) et score de la partie.
+
+### Interface (Pont du Troll)
+
+- **Jour d'annonce** (jour 0) : embed avec l'illustration d'annonce et le seul bouton `[📖 Règles]`.
+- Titre `🌉 Pont du Troll (Jour X/7)`. Boutons du message public (`pont_pierre:<jour>`, `pont_cordes:<jour>`, `pont_joker:<jour>`, `pont_indice:<jour>`, `pont_regles`) : `[🪨 Pont de pierre]`, `[🪢 Pont de cordes]`, `[🃏 Joker]`, `[🔎 Indice]` (jours pairs), `[📖 Règles]` (5 boutons au maximum par rangée).
+- Message du jour (à partir du Jour 2) : un embed **Résultat du Jour N-1** (image du résultat, répartition, gain par passant, Jokers gagnants nommés, classement provisoire des 5 premiers), puis l'embed **Jour N/7** (image du matin, multiplicateurs, événement éventuel). Le pied de l'embed du jour affiche le nombre total de passants, mis à jour à chaque nouveau passant (`majCompteur()` : PATCH du message à partir de `state.embeds`).
+- Révélation finale : résultat du Jour 7, puis classement complet (20 premiers) avec l'illustration d'annonce et les vainqueurs des parties précédentes.
+
+### Image (Pont du Troll)
+
+- `jeux/services/pontImage.js` : SVG 600 × 840 rastérisé par `@resvg/resvg-js` (police `readGameFontPaths()`), encodé en JPEG (qualité 85). Routes (`jeux/server/imageRoutes.js`) :
+  - `/api/pont/matin?jour=<n>&v=<horodatage>` : multiplicateurs et événement tirés de la config, rien de secret ;
+  - `/api/pont/resultat?partie=<partieId>&jour=<n>&v=<horodatage>` : lit l'entrée `pont:historique` du jour, refusée (404) si elle n'existe pas encore ou appartient à une autre partie. Le jour en cours n'a pas d'entrée : aucune répartition ne fuit avant le décompte ;
+  - `/api/pont/illustration?v=<version>` : illustration d'annonce servie telle quelle (`ILLUSTRATION_VERSION` à incrémenter après remplacement).
+- **Fond** : JPG 600 × 840 lu par `readBlobAsset()` (chemins complets, jamais de constante de dossier), embarqué en base64 :
+  - `pont/images/pont-fond.jpg` : troll endormi (image du matin, annonce) ;
+  - `pont/images/pont-troll-gauche.jpg` / `pont-troll-droite.jpg` : troll qui attrape la pierre / les cordes (résultat ; fond endormi sur une égalité ou si le pont attrapé est vide) ;
+  - `pont/images/pont-start.webp` (800 × 450) : illustration d'annonce et du classement final.
+  - Après remplacement : `npm run assets:upload-blob -- pont/images`.
+- **Matin** : bandeau haut « PONT DU TROLL » et « Jour N/7 », étiquette `Pierre ×1` / `Cordes ×3` à l'entrée de chaque pont, règle ou événement du jour sur la corniche du bas.
+- **Résultat** : avatars des passants en deux files décalées sur chaque tablier, tous affichés, plus petits au loin (perspective), regroupés à l'entrée quand ils sont peu nombreux ; anneau rouge pour les attrapés, or pour les gagnants ; nombre de passants dans l'étiquette ; nombre d'attrapés et gain par passant sur la corniche du bas.
+- **Avatars** : `id/hash` de l'avatar Discord mémorisé au clic sur un pont, téléchargé au rendu par `avatarDataUrl()` (`jeux/services/avatarsDiscord.js` : CDN Discord 128 px, délai 4 s, cache mémoire), créature clay (`bang/avatars/clay-XX.png`) si l'avatar manque ou échoue.
+- Lisibilité mobile : aucun texte de moins de 24 px sur 600 px de large.
+
+### Manches (Pont du Troll)
+
+`archiveManche({ ranking, winners, maxPoints, resolvedAt })` archive chaque partie terminée dans `pont:manches` (numéro via `INCR pont:manche_seq`), **uniquement en publication publique**.
+
+### Stockage Redis (`pont:*`)
+
+| Clé | Type | Contenu |
+| --- | ---- | ------- |
+| `pont:state` | STRING | `{ phase, jour, partieId, channelId, messageId, publishedAt, termine, embeds }` (`partieId` créé à l'annonce ; `embeds` publiés, pour le compteur de passants) |
+| `pont:choix:<jour>` | HASH | `discordId → { cote: "pierre" \| "cordes", at }` |
+| `pont:jokers` | HASH | `discordId → jour` du Joker joué |
+| `pont:indices:<jour>` | HASH | `discordId → { at, texte }` de la consultation |
+| `pont:points` | HASH | `discordId → centièmes de pièce` de la manche |
+| `pont:passes` | HASH | `discordId → jours passés` (départage) |
+| `pont:usernames` | HASH | `discordId → pseudo` |
+| `pont:avatars` | HASH | `discordId → "id/hash"` (vide sans avatar) |
+| `pont:historique` | HASH | `jour → { jour, partieId, multiplicateurs, evenement, pierre, cordes, attrape, gagnant, gainBase, passants: { pierre: [ids], cordes: [ids] }, jokers, jokersGagnants, resolvedAt }` |
+| `pont:manches` | HASH | `manche → { manche, ranking: [{ discordId, username, points, centiemes, passes }], winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches` |
+| `pont:manche_seq` | STRING | compteur de manches |
+
+### Scripts et cron (Pont du Troll)
+
+| Commande | Effet |
+| -------- | ----- |
+| `npm run pont:test` / `:test:dry` | Salon de test (jamais de ping, 5 PNJ) / aperçu console |
+| `npm run pont:public` / `:public:dry` | Salon public (cron) |
+| `npm run pont:reset` | **Destructif** : partie en cours effacée, `pont:manches` préservé |
+| `npm run pont:reset:manches` | **Destructif** : efface aussi l'archive des manches |
+| `npm run pont:status` | État courant : jour, multiplicateurs, événement, répartition **secrète** du jour, Jokers et Indices consultés, projection du résultat, classement. Sans Discord |
+
+Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/pont.yml` : `24 7 * * *` (8h24 à Paris en hiver, après le décompte de 8 h). Ping `@MINI-JEUX` à l'annonce, au Jour 1 et à la fin de partie seulement. Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
 
 ---
 

@@ -3,7 +3,7 @@
 // les mini-jeux réguliers (Frame, Jeux de lettres [Anagram/Pêle-mêle en
 // alternance], Jeux visuels [Zoom carte/Palette en alternance], La Juste
 // Carte) et du jeu spécial actuellement actif (Quiz, Robinson,
-// Goblin Hunters, Blackjack, Mario Clash, Gobelet, Bang! ou Qui est-ce ? ;
+// Goblin Hunters, Blackjack, Pont du Troll, Mario Clash, Gobelet, Bang! ou Qui est-ce ? ;
 // Tamagotchi et Boss Raid archivés).
 // Lecture seule, aucune écriture Redis.
 //
@@ -117,6 +117,14 @@ import {
 } from "../../services/meow.js";
 import { BANDES as MEOW_BANDES, jourDe as meowJourDe, horloge as meowHorloge } from "../../services/meowRules.js";
 import { BLACKJACK_START_IMAGE_URL } from "./blackjack.js";
+import {
+  readState as readPontState,
+  loadPontConfig,
+  readChoix as readPontChoix,
+  compterPassants as compterPontPassants,
+  readPoints as readPontPoints,
+  formatPieces as formatPontPieces,
+} from "../../services/pont.js";
 import { CRENEAUX, creneauJouable } from "../../services/creneaux.js";
 
 // Blackjack et Gobelet : deux mains par jour (creneaux.js). « A joué » =
@@ -484,6 +492,36 @@ const SPECIAL_GAMES = [
         jour: state.jour,
         dureeJours: config.duree_jours,
         participantsLabel: formatParticipantsToday(await participantsDuJour(listBlackjackHands, state.jour)),
+      };
+    },
+  },
+  {
+    key: "pont",
+    title: "Pont du Troll",
+    style: "Minorité",
+    readState: readPontState,
+    // Joueurs ayant traversé au moins une fois (bouton "📊 Stats")
+    async livePlayerIds() {
+      return Object.keys(await readPontPoints());
+    },
+    // ⚠️ Jamais le pont choisi (vote secret), seulement « a joué »
+    async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
+      const [choix, points] = await Promise.all([readPontChoix(state.jour, discordId), readPontPoints()]);
+      return {
+        played: choix != null,
+        scoreLabel: `Score de la partie : **${formatPontPieces(points[discordId] ?? 0)} pièces**`,
+      };
+    },
+    async detail(state) {
+      if (state.phase === "annonce") {
+        return { jour: null, dureeJours: null, participantsLabel: null, phaseLabel: "Phase de présentation du jeu" };
+      }
+      const config = await loadPontConfig();
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(await compterPontPassants(state.jour)),
       };
     },
   },

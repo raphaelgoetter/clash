@@ -22,6 +22,7 @@ import { fileURLToPath } from "url";
 import { cardSvg, loadDataUrls, rasterize, RATIO_CARTE } from "@clash/clash-royale/cardImage.js";
 import { tronquer } from "@clash/commun/texteImage.js";
 import { readBlobAsset } from "@clash/commun/blobAssets.js";
+import { avatarDataUrl } from "./avatarsDiscord.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARDS_JSON_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
@@ -117,50 +118,8 @@ export async function getIllustrationImage() {
 // État passé dans l'URL, compressé (deflate + base64url, voir
 // encodeEnquetes) pour rester sous la limite d'URL d'image de Discord.
 
-
 const CH = { cols: 2, w: 540, h: 128, gap: 16, pad: 24 };
 const GOLD = "#f0c040";
-const NB_CLAY = 12;
-const avatarCache = new Map();
-
-async function dataUrlDepuis(url, lire) {
-  if (!avatarCache.has(url)) {
-    avatarCache.set(
-      url,
-      lire()
-        .then((buffer) => `data:image/png;base64,${buffer.toString("base64")}`)
-        .catch(() => {
-          avatarCache.delete(url);
-          return null;
-        }),
-    );
-  }
-  return avatarCache.get(url);
-}
-
-function clayDataUrl(i) {
-  const n = String((((i % NB_CLAY) + NB_CLAY) % NB_CLAY) + 1).padStart(2, "0");
-  return dataUrlDepuis(`clay-${n}`, () => readBlobAsset(`bang/avatars/clay-${n}.png`));
-}
-
-// Avatar Discord (id/hash validés : l'URL vient d'un paramètre public)
-async function avatarDataUrl(av, i) {
-  // Créature Clay fixe (bots remplaçants : « clay-02 »)
-  const clay = /^clay-(\d{2})$/.exec(String(av ?? ""));
-  if (clay) return clayDataUrl(Number(clay[1]) - 1);
-  const m = /^(\d{5,22})\/((?:a_)?[0-9a-f]{32})$/.exec(String(av ?? ""));
-  if (m) {
-    const url = `https://cdn.discordapp.com/avatars/${m[1]}/${m[2]}.png?size=128`;
-    const d = await dataUrlDepuis(url, async () => {
-      const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return Buffer.from(await res.arrayBuffer());
-    });
-    if (d) return d;
-  }
-  return clayDataUrl(i);
-}
-
 // `joueurs` : [{ nom, points, avatar ("id/hash" ou null), cible (index ou
 // -1), enquêteurs, questions, demasque, brouillard, tombe, trouvees }]
 export function encodeEnquetes(joueurs) {

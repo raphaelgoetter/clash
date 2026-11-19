@@ -73,6 +73,12 @@ import {
   getMainImage as getGobeletMainImage,
   getMancheImage as getGobeletMancheImage,
 } from "../services/gobeletImage.js";
+import {
+  getMatinImage as getPontMatinImage,
+  getResultatImage as getPontResultatImage,
+  getIllustrationImage as getPontIllustrationImage,
+} from "../services/pontImage.js";
+import { loadPontConfig, jourConfig, getHistoriqueEntry as getPontHistorique, readAvatars as readPontAvatars } from "../services/pont.js";
 import { decodeGrille as decodeQuatreGrille, getBandeauImage as getQuatreBandeauImage, getGrilleImage as getQuatreGrilleImage } from "../services/quatreImage.js";
 
 const router = express.Router();
@@ -500,6 +506,40 @@ router.get("/api/bac/illustration", async (req, res) => {
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+// Pont du Troll : image du matin (multiplicateurs et événement du jour,
+// tirés de la config : rien de secret), résultat d'un jour déjà résolu
+// (historique de la partie `partie`, jamais le jour en cours : aucune
+// répartition ne fuit avant le décompte), illustration d'annonce.
+router.get("/api/pont/matin", async (req, res) => {
+  const jour = Number(req.query.jour);
+  const config = await loadPontConfig().catch(() => null);
+  if (!config || !Number.isInteger(jour) || jour < 1 || jour > config.duree_jours) return res.status(404).end();
+  const image = await getPontMatinImage(jourConfig(config, jour), config.duree_jours).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+router.get("/api/pont/resultat", async (req, res) => {
+  const entry = await getPontHistorique(String(Number(req.query.jour))).catch(() => null);
+  if (!entry || entry.partieId !== String(req.query.partie ?? "")) return res.status(404).end();
+  const config = await loadPontConfig();
+  const image = await getPontResultatImage(entry, config.duree_jours, await readPontAvatars()).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(image.buffer);
+});
+
+router.get("/api/pont/illustration", async (req, res) => {
+  const image = await getPontIllustrationImage().catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
   res.send(image.buffer);
 });
 

@@ -1,0 +1,47 @@
+name: Pont du Troll
+
+permissions:
+  contents: read
+
+on:
+  # Le lancement se fait uniquement à la main (workflow_dispatch) et publie
+  # le jour de présentation (annonce), jamais le Jour 1 directement. Le cron
+  # ne fait qu'avancer une partie déjà lancée (annonce -> Jour 1 le
+  # lendemain, puis jour après jour, voir --require-active passé
+  # au script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne se
+  # passe rien, ce qui évite qu'un run automatique ne démarre une partie
+  # publique sans prévenir pendant une session de test sur le salon de test
+  # (l'état est partagé entre les deux, voir jeux/CONTRIBUTING.md).
+  schedule:
+    # 8h24 à Paris en hiver (9h24 en été) : après le décompte de 8h du
+    # jour (jeux/services/pont.js, jourOuvert). Minute distincte des autres
+    # crons — voir jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) ».
+    - cron: "24 7 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      # Bot des jeux (jeux/env.js) : vides tant que les secrets n'existent pas.
+      DISCORD_JEUX_TOKEN: ${{ secrets.DISCORD_JEUX_TOKEN }}
+      DISCORD_JEUX_APP_ID: ${{ secrets.DISCORD_JEUX_APP_ID }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Publie le jour du Pont du Troll (salon public)
+        run: npm run pont:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}

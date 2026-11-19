@@ -40,6 +40,7 @@ import { listManches as listGobeletManches } from "./gobelet.js";
 import { listManches as listBangManches } from "./bang.js";
 import { listManches as listQuiEstCeManches } from "./quiestce.js";
 import { listManches as listMeowManches } from "./meow.js";
+import { listManches as listPontManches } from "./pont.js";
 
 // Au-delà des 3 premiers paliers, un palier d'assidus n'est affiché que s'il
 // compte au plus ce nombre de joueurs (l'affichage s'arrête au premier trop peuplé).
@@ -73,6 +74,7 @@ export const SPECIAL_GAMES = [
   { key: "bang", title: "💣 Bang!", fetch: listBangManches },
   { key: "quiestce", title: "🕵️ Qui est-ce ?", fetch: listQuiEstCeManches },
   { key: "meow", title: "🐱 Meow", fetch: listMeowManches },
+  { key: "pont", title: "🌉 Pont du Troll", fetch: listPontManches },
 ];
 
 function mancheParticipantCount(manche) {
