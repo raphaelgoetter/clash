@@ -643,6 +643,12 @@ export function cloturer(partie, { config = {}, avatarsBots = {} } = {}) {
     .filter(([, j]) => j.carte && !j.actifJour)
     .map(([cid]) => cid);
   bilan(partie).remplacements = remplacerAbsents(partie, bilan(partie).absents, { config, avatarsBots });
+  // Joueurs passifs du jour et leur cible (compte-rendu : jours sans jouer,
+  // cibles épargnées) : absents, et bots remplaçants déjà en place
+  (partie.passifs ??= []).push({
+    absents: Object.fromEntries(bilan(partie).absents.map((cid) => [cid, partie.joueurs[cid].cible ?? null])),
+    bots: Object.fromEntries(Object.entries(partie.joueurs).filter(([cid, j]) => j.carte && j.bot && !bilan(partie).absents.includes(cid)).map(([cid, j]) => [cid, j.cible ?? null])),
+  });
   for (const j of Object.values(partie.joueurs)) {
     if (j.carte && j.actifJour && !j.demasqueJour) j.survie = (j.survie ?? 0) + (config.bonus_survie_jour ?? 0);
     j.demasqueJour = false;
@@ -841,6 +847,13 @@ export function compteRendu(partie) {
   }
   const c = partie.coup;
   if (c && c.n >= 3) phrases.push(`Plus beau coup : ${nom(c.s)} a démasqué ${nom(c.v)} au Jour ${c.j} avec 1 chance sur ${c.n}.`);
+  // Meilleure série : le plus de démasquages sur des jours consécutifs
+  // (au moins un par jour), 3 ou plus, détenue par un seul joueur
+  const series = Object.keys(partie.joueurs).map((id) => serieDemasquages(partie, id)).filter(Boolean).sort((a, b) => b.n - a.n || a.jours - b.jours);
+  const serie = series[0];
+  if (serie && serie.n >= 3 && (series[1]?.n !== serie.n || series[1]?.jours !== serie.jours)) {
+    phrases.push(`Série la plus chaude : ${nom(serie.id)} a démasqué ${serie.n} fois en ${serie.jours} jour${serie.jours > 1 ? "s" : ""} (${serie.jours > 1 ? `Jours ${serie.debut} à ${serie.debut + serie.jours - 1}` : `Jour ${serie.debut}`}).`);
+  }
   // Plus chanceux : la plus grosse série d'un même objet, sinon le plus de
   // pile ou face gagnés
   let main = null;
@@ -863,6 +876,68 @@ export function compteRendu(partie) {
   if (brume) phrases.push(`**${brume.j.username}** a perdu ${brume.n} questions dans le Brouillard.`);
   const intouchables = joueurs.filter((j) => !j.nbDemasque && (j.survie ?? 0) > 0);
   if (intouchables.length && intouchables.length <= 3) phrases.push(`Jamais démasqué${intouchables.length > 1 ? "s" : ""} : ${intouchables.map((j) => `**${j.username}**`).join(", ")}.`);
+  phrases.push(...phrasesPassifs(partie));
+  return phrases;
+}
+
+// Plus longue série de jours consécutifs avec au moins un démasquage (la
+// plus riche en démasquages) : { id, n, jours, debut } ou null.
+function serieDemasquages(partie, id) {
+  const parJour = {};
+  for (const e of partie.journal) if (e.k === "demasque" && e.s === id) parJour[e.j] = (parJour[e.j] ?? 0) + 1;
+  let meilleure = null;
+  for (const d of Object.keys(parJour).map(Number)) {
+    if (parJour[d - 1]) continue;
+    let n = 0;
+    let f = d;
+    for (; parJour[f]; f++) n += parJour[f];
+    if (!meilleure || n > meilleure.n || (n === meilleure.n && f - d < meilleure.jours)) meilleure = { id, n, jours: f - d, debut: d };
+  }
+  return meilleure;
+}
+
+// Jours sans jouer de chacun (remplacement par un bot signalé), puis le
+// joueur le plus épargné : le plus de jours avec au moins un enquêteur
+// passif (absent ou bot), 3 ou plus, détenu par un seul joueur.
+function phrasesPassifs(partie) {
+  const passifs = partie.passifs ?? [];
+  const phrases = [];
+  const nomHumain = (id) => partie.joueurs[id]?.usernameOrigine ?? partie.joueurs[id]?.username ?? "?";
+  const absences = {};
+  for (const jour of passifs) for (const id of Object.keys(jour.absents ?? {})) absences[id] = (absences[id] ?? 0) + 1;
+  const absents = Object.entries(absences).sort((a, b) => b[1] - a[1] || nomHumain(a[0]).localeCompare(nomHumain(b[0])));
+  if (absents.length) {
+    const liste = absents.map(([id, n]) => {
+      const bot = partie.joueurs[id]?.bot;
+      return `**${nomHumain(id)}** ${n} jour${n > 1 ? "s" : ""}${bot ? ` (puis remplacé par ${bot})` : ""}`;
+    });
+    phrases.push(`Jours sans jouer : ${liste.join(", ")}.`);
+  }
+  // Par cible : jours avec un enquêteur passif, et qui (absents puis bots)
+  const epargnes = {};
+  for (const jour of passifs) {
+    const vus = new Set();
+    for (const [type, table] of [["absents", jour.absents ?? {}], ["bots", jour.bots ?? {}]]) {
+      for (const [id, cible] of Object.entries(table)) {
+        if (!cible || !partie.joueurs[cible]?.carte) continue;
+        const e = (epargnes[cible] ??= { jours: 0, humains: [], bots: [] });
+        if (!vus.has(cible)) {
+          vus.add(cible);
+          e.jours += 1;
+        }
+        const qui = type === "bots" ? `${partie.joueurs[id].bot} (bot)` : `**${nomHumain(id)}**`;
+        const liste = type === "bots" ? e.bots : e.humains;
+        if (!liste.includes(qui)) liste.push(qui);
+      }
+    }
+  }
+  const tries = Object.entries(epargnes).sort((a, b) => b[1].jours - a[1].jours);
+  const [top, second] = tries;
+  if (top && top[1].jours >= 3 && second?.[1].jours !== top[1].jours) {
+    const { jours, humains, bots } = top[1];
+    const qui = [humains.join(", "), bots.join(", ")].filter(Boolean).join(", puis ");
+    phrases.push(`**${partie.joueurs[top[0]].username}** en a profité : un enquêteur inactif sur lui ${jours} jours (${qui}).`);
+  }
   return phrases;
 }
 

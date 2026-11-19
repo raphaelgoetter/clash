@@ -476,6 +476,29 @@ function main() {
     if (n >= 3) assert.match(bref, new RegExp(`Plus beau coup : \\*\\*j0\\*\\* a démasqué .* avec 1 chance sur ${n}`));
   }
 
+  // ── Compte-rendu : série de démasquages, jours sans jouer, cible épargnée ──
+  {
+    const p = partieTest(6);
+    const [a, b, c] = ["j0", "j1", "j2"];
+    // a : 4 démasquages du Jour 2 au Jour 4 ; b : 3 en 3 jours (moins fort)
+    for (const [s, j] of [[a, 2], [a, 3], [a, 4], [a, 4], [b, 1], [b, 2], [b, 3]]) p.journal.push({ j, k: "demasque", s, v: "j5", c: true });
+    // c absent 3 jours (enquêteur de a), puis remplacé par un bot qui
+    // enquête toujours sur a ; b absent 1 jour
+    p.joueurs[c].cible = a;
+    for (let jour = 1; jour <= 4; jour++) {
+      for (const j of Object.values(p.joueurs)) j.actifJour = true;
+      if (jour <= 3) p.joueurs[c].actifJour = false;
+      if (jour === 1) p.joueurs[b].actifJour = false;
+      cloturer(p, { config: { ...CONFIG, absences_avant_remplacement: 3 } });
+    }
+    assert.deepStrictEqual(p.passifs.map((x) => Object.keys(x.absents).sort()), [[b, c], [c], [c], []]);
+    assert.deepStrictEqual(p.passifs[3].bots, { [c]: a }, "bot en place compté comme passif");
+    const bref = compteRendu(p).join("\n");
+    assert.match(bref, /Série la plus chaude : \*\*j0\*\* a démasqué 4 fois en 3 jours \(Jours 2 à 4\)/);
+    assert.match(bref, new RegExp(`Jours sans jouer : \\*\\*j2\\*\\* 3 jours \\(puis remplacé par ${CONFIG.bots_remplacants[0]}\\), \\*\\*j1\\*\\* 1 jour\\.`));
+    assert.match(bref, new RegExp(`\\*\\*j0\\*\\* en a profité : un enquêteur inactif sur lui 4 jours \\(\\*\\*j2\\*\\*, puis ${CONFIG.bots_remplacants[0]} \\(bot\\)\\)`));
+  }
+
   // ── Bots remplaçants : 2 absences de suite, bot qui enquête sans se tromper ──
   {
     const p = partieTest(5);
