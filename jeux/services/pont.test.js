@@ -141,7 +141,7 @@ test("positions des avatars : tous affichés, dans l'image", () => {
   for (const n of [1, 6, 25, 40]) {
     const pos = positionsPassants("droite", n);
     assert.equal(pos.length, n);
-    assert.ok(pos.every((p) => p.x > 0 && p.x < 600 && p.y > 150 && p.y <= 540 && p.r >= 7));
+    assert.ok(pos.every((p) => p.x > 0 && p.x < 900 && p.y > 100 && p.y <= 385 && p.r >= 8));
   }
 });
 

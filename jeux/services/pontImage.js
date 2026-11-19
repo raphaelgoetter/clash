@@ -1,6 +1,6 @@
 // ============================================================
-// pontImage.js — Images du Pont du Troll, format portrait 600 × 840 pensé
-// pour le mobile, sur un décor illustré fixe (pierre à gauche, cordes à
+// pontImage.js — Images du Pont du Troll, format paysage 900 × 600 (le plus
+// grand affichage possible dans Discord), sur un décor illustré fixe (pierre à gauche, cordes à
 // droite, troll dans le ravin) :
 // - matin (message du jour) : multiplicateurs à l'entrée de chaque pont,
 //   règle ou événement du jour, troll endormi. Aucune répartition ;
@@ -24,8 +24,10 @@ const FOND_ATTRAPE = { [PIERRE]: "pont/images/pont-troll-gauche.jpg", [CORDES]: 
 const ILLUSTRATION_IMAGE_PATH = "pont/images/pont-start.webp";
 
 const FONT_FAMILY = "Inter";
-const W = 600;
-const H = 840;
+// Paysage 3:2 : Discord plafonne la hauteur d'affichage (~350 px sur
+// ordinateur), un format large affiche l'image bien plus grande qu'un portrait
+const W = 900;
+const H = 600;
 const QUALITE_JPEG = 85;
 const OR = "#f5c542";
 const ROUGE = "#ff4d4f";
@@ -35,11 +37,11 @@ const COTE_ECRAN = { [PIERRE]: "gauche", [CORDES]: "droite" };
 
 // Axe central de chaque tablier sur le décor, en (y, x), du proche au lointain
 const AXES = {
-  gauche: [[700, 70], [500, 80], [300, 105], [200, 160], [140, 228]],
-  droite: [[700, 545], [500, 510], [300, 455], [200, 410], [140, 382]],
+  gauche: [[480, 120], [400, 150], [300, 190], [200, 258], [130, 350]],
+  droite: [[480, 768], [400, 738], [300, 688], [200, 620], [130, 555]],
 };
-const Y_PROCHE = 540;
-const Y_LOIN = 200;
+const Y_PROCHE = 385;
+const Y_LOIN = 140;
 
 function xSur(cote, y) {
   const pts = AXES[cote];
@@ -59,22 +61,27 @@ async function fondBase64(chemin) {
 
 // ── Éléments SVG ──────────────────────────────────────────────────
 
-// Positions des avatars d'un pont : deux files décalées, tous affichés, plus
-// petits au loin ; peu nombreux, ils restent groupés à l'entrée.
+// Positions des avatars d'un pont : deux files décalées (trois au-delà de
+// 16 passants), tous affichés, plus petits au loin ; peu nombreux, ils
+// restent groupés à l'entrée.
 export function positionsPassants(cote, n) {
-  const rangs = Math.ceil(n / 2);
-  const haut = Math.max(Y_LOIN, Y_PROCHE - (rangs - 1) * 50);
+  const files = n > 16 ? 3 : 2;
+  const rangs = Math.ceil(n / files);
+  const haut = Math.max(Y_LOIN, Y_PROCHE - (rangs - 1) * 48);
   const out = [];
   for (let i = 0; i < n; i++) {
-    const rang = Math.floor(i / 2);
-    const file = i % 2;
+    const rang = Math.floor(i / files);
+    const file = i % files;
     const t = rangs === 1 ? 0 : rang / (rangs - 1);
-    const y = Y_PROCHE - (Y_PROCHE - haut) * Math.pow(t, 0.85) - (file ? 10 * (1 - t * 0.6) : 0);
+    const decale = file % 2 ? 10 * (1 - t * 0.6) : 0;
+    const y = Y_PROCHE - (Y_PROCHE - haut) * Math.pow(t, 0.85) - decale;
     const p = (y - Y_LOIN) / (Y_PROCHE - Y_LOIN); // 1 = près, 0 = loin
-    const demiLargeur = 28 + 34 * p;
+    const demiLargeur = 30 + 80 * p;
     const pas = rangs === 1 ? 99 : ((Y_PROCHE - haut) / (rangs - 1)) * (0.6 + 0.6 * p);
-    const r = Math.max(7, Math.min(23 * (0.5 + 0.5 * p), demiLargeur * 0.5, pas * 0.75));
-    out.push({ x: xSur(cote, y) + (file ? 1 : -1) * demiLargeur * 0.45, y, r });
+    const r = Math.max(8, Math.min(30 * (0.4 + 0.6 * p), demiLargeur / files, pas * 0.8));
+    // Files réparties sur la largeur du tablier
+    const position = files === 2 ? (file ? 1 : -1) * 0.42 : (file - 1) * 0.6;
+    out.push({ x: xSur(cote, y) + position * demiLargeur, y, r });
   }
   return out;
 }
@@ -99,15 +106,15 @@ function medaillons(cote, dataUrls, couleur) {
 // Étiquette à l'entrée d'un pont : nom + multiplicateur, et nombre de
 // passants au résultat
 function etiquette(cote, mult, res) {
-  const cx = COTE_ECRAN[cote] === "gauche" ? 92 : 518;
-  const y = 588;
-  const l = 164;
+  const cx = COTE_ECRAN[cote] === "gauche" ? 140 : 760;
+  const y = res ? 392 : 430;
+  const l = 250;
   const bord = res ? res.couleur : OR;
   const ligne2 = res
-    ? `<text x="${cx}" y="${y + 62}" text-anchor="middle" font-size="26" fill="${res.couleur}">${res.n} passant${res.n > 1 ? "s" : ""}</text>`
+    ? `<text x="${cx}" y="${y + 85}" text-anchor="middle" font-size="36" fill="${res.couleur}">${res.n} passant${res.n > 1 ? "s" : ""}</text>`
     : "";
-  return `<rect x="${cx - l / 2}" y="${y}" width="${l}" height="${res ? 78 : 44}" rx="12" fill="#120c1c" fill-opacity="0.82" stroke="${bord}" stroke-width="2"/>
-  <text x="${cx}" y="${y + 31}" text-anchor="middle" font-size="26" fill="${BLANC}">${NOM[cote]} <tspan fill="${OR}">×${mult}</tspan></text>${ligne2}`;
+  return `<rect x="${cx - l / 2}" y="${y}" width="${l}" height="${res ? 102 : 56}" rx="14" fill="#120c1c" fill-opacity="0.82" stroke="${bord}" stroke-width="3"/>
+  <text x="${cx}" y="${y + 41}" text-anchor="middle" font-size="36" fill="${BLANC}">${NOM[cote]} <tspan fill="${OR}">×${mult}</tspan></text>${ligne2}`;
 }
 
 function cadre(fond, contenu, droite, [l1, l2], { l1Or = false } = {}) {
@@ -117,13 +124,13 @@ function cadre(fond, contenu, droite, [l1, l2], { l1Or = false } = {}) {
     <linearGradient id="bas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d0818" stop-opacity="0"/><stop offset="0.35" stop-color="#0d0818" stop-opacity="0.8"/><stop offset="1" stop-color="#0d0818" stop-opacity="0.92"/></linearGradient>
   </defs>
   <image href="data:image/jpeg;base64,${fond}" x="0" y="0" width="${W}" height="${H}"/>
-  <rect x="0" y="0" width="${W}" height="80" fill="url(#haut)"/>
-  <text x="24" y="44" font-size="30" fill="${OR}">PONT DU TROLL</text>
-  <text x="${W - 24}" y="44" text-anchor="end" font-size="26" fill="${BLANC}">${droite}</text>
+  <rect x="0" y="0" width="${W}" height="90" fill="url(#haut)"/>
+  <text x="28" y="50" font-size="40" fill="${OR}">PONT DU TROLL</text>
+  <text x="${W - 28}" y="50" text-anchor="end" font-size="36" fill="${BLANC}">${droite}</text>
+  <rect x="0" y="${H - 125}" width="${W}" height="125" fill="url(#bas)"/>
   ${contenu}
-  <rect x="0" y="${H - 130}" width="${W}" height="130" fill="url(#bas)"/>
-  <text x="${W / 2}" y="${l2 ? 784 : 800}" text-anchor="middle" font-size="27" fill="${l1Or ? OR : BLANC}">${l1}</text>
-  ${l2 ? `<text x="${W / 2}" y="822" text-anchor="middle" font-size="27" fill="${l1Or ? BLANC : OR}">${l2}</text>` : ""}
+  <text x="${W / 2}" y="${l2 ? 543 : 565}" text-anchor="middle" font-size="36" fill="${l1Or ? OR : BLANC}">${l1}</text>
+  ${l2 ? `<text x="${W / 2}" y="586" text-anchor="middle" font-size="36" fill="${l1Or ? BLANC : OR}">${l2}</text>` : ""}
 </svg>`;
 }
 

@@ -1417,7 +1417,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 ### Interface (Pont du Troll)
 
-- **Messages en Components V2** (`versV2()`, flag `IS_COMPONENTS_V2`) : Discord limite la hauteur d'une image d'embed (~300 px sur ordinateur, une image portrait 600 × 840 y tombe à ~215 px de large) ; une galerie (type 12) l'affiche en grand. Vues écrites comme des embeds, converties à l'envoi : un conteneur à liseré par embed (titre `###`, texte, galerie, pied en `-#`), boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le ping (salon public) est un bloc texte `<@&rôle>` en tête, avec `allowed_mentions`. `state.embeds` et `state.components` servent à republier le message (compteur). 4 000 caractères de texte au plus sur l'ensemble du message.
+- **Messages en Components V2** (`versV2()`, flag `IS_COMPONENTS_V2`) : Discord limite la hauteur d'une image d'embed (~300 px sur ordinateur, une image portrait 600 × 840 y tombe à ~215 px de large) ; une galerie (type 12) l'affiche plus grande, et le format paysage de l'image fait le reste (voir « Image »). Vues écrites comme des embeds, converties à l'envoi : un conteneur à liseré par embed (titre `###`, texte, galerie, pied en `-#`), boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le ping (salon public) est un bloc texte `<@&rôle>` en tête, avec `allowed_mentions`. `state.embeds` et `state.components` servent à republier le message (compteur). 4 000 caractères de texte au plus sur l'ensemble du message.
 - **Jour d'annonce** (jour 0) : illustration d'annonce et le seul bouton `[📖 Règles]`.
 - Titre `🧌 Pont du Troll (Jour X/7)`. Boutons du message public (`pont_pierre:<jour>`, `pont_cordes:<jour>`, `pont_joker:<jour>`, `pont_indice:<jour>`, `pont_regles`) : `[🪨 Pont de pierre]`, `[🪢 Pont de cordes]`, `[🃏 Joker]`, `[🔎 Indice]` (jours pairs), `[📖 Règles]` (5 boutons au maximum par rangée).
 - Message du jour (à partir du Jour 2) : un embed **Résultat du Jour N-1** (image du résultat, répartition, gain par passant, Jokers gagnants nommés, classement provisoire des 5 premiers), puis l'embed **Jour N/7** (image du matin, multiplicateurs, événement éventuel). Le pied de l'embed du jour affiche le nombre total de passants, mis à jour à chaque nouveau passant (`majCompteur()` : PATCH du message à partir de `state.embeds`).
@@ -1425,19 +1425,21 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 ### Image (Pont du Troll)
 
-- `jeux/services/pontImage.js` : SVG 600 × 840 rastérisé par `@resvg/resvg-js` (police `readGameFontPaths()`), encodé en JPEG (qualité 85). Routes (`jeux/server/imageRoutes.js`) :
+- `jeux/services/pontImage.js` : SVG **900 × 600 (paysage 3:2)** rastérisé par `@resvg/resvg-js` (police `readGameFontPaths()`), encodé en JPEG (qualité 85). Routes (`jeux/server/imageRoutes.js`) :
   - `/api/pont/matin?jour=<n>&v=<horodatage>` : multiplicateurs et événement tirés de la config, rien de secret ;
   - `/api/pont/resultat?partie=<partieId>&jour=<n>&v=<horodatage>` : lit l'entrée `pont:historique` du jour, refusée (404) si elle n'existe pas encore ou appartient à une autre partie. Le jour en cours n'a pas d'entrée : aucune répartition ne fuit avant le décompte ;
   - `/api/pont/illustration?v=<version>` : illustration d'annonce servie telle quelle (`ILLUSTRATION_VERSION` à incrémenter après remplacement).
-- **Fond** : JPG 600 × 840 lu par `readBlobAsset()` (chemins complets, jamais de constante de dossier), embarqué en base64 :
+- ⚠️ **Format paysage obligatoire** : Discord plafonne la hauteur d'affichage d'une image (~300 px en embed, ~350 px en galerie V2 sur ordinateur) ; un portrait 600 × 840 n'y dépassait pas ~250 px de large, un 3:2 s'affiche ~520 × 350.
+- **Fond** : JPG 900 × 600 lu par `readBlobAsset()` (chemins complets, jamais de constante de dossier), embarqué en base64 :
   - `pont/images/pont-fond.jpg` : troll endormi (image du matin, annonce) ;
   - `pont/images/pont-troll-gauche.jpg` / `pont-troll-droite.jpg` : troll qui attrape la pierre / les cordes (résultat ; fond endormi sur une égalité ou si le pont attrapé est vide) ;
   - `pont/images/pont-start.webp` (800 × 450) : illustration d'annonce et du classement final.
   - Après remplacement : `npm run assets:upload-blob -- pont/images` (dossier déclaré dans `TARGETS` de `scripts/uploadImageAssetsToBlob.js` : un nouveau fichier ou dossier d'un jeu doit y être ajouté, sinon le script n'envoie rien).
-- **Matin** : bandeau haut « PONT DU TROLL » et « Jour N/7 », étiquette `Pierre ×1` / `Cordes ×3` à l'entrée de chaque pont, règle ou événement du jour sur la corniche du bas.
-- **Résultat** : avatars des passants en deux files décalées sur chaque tablier, tous affichés, plus petits au loin (perspective), regroupés à l'entrée quand ils sont peu nombreux ; anneau rouge pour les attrapés, or pour les gagnants ; nombre de passants dans l'étiquette ; nombre d'attrapés et gain par passant sur la corniche du bas.
+- **Matin** : bandeau haut « PONT DU TROLL » et « Jour N/7 », étiquette `Pierre ×1` / `Cordes ×3` à l'entrée de chaque pont, règle ou événement du jour sur les rochers du bas, sur toute la largeur.
+- **Résultat** : avatars des passants en deux files décalées sur chaque tablier (trois au-delà de 16 passants), tous affichés, plus petits au loin (perspective), regroupés à l'entrée quand ils sont peu nombreux ; anneau rouge pour les attrapés, or pour les gagnants ; nombre de passants dans l'étiquette ; nombre d'attrapés et gain par passant sur la corniche du bas.
 - **Avatars** : `id/hash` de l'avatar Discord mémorisé au clic sur un pont, téléchargé au rendu par `avatarDataUrl()` (`jeux/services/avatarsDiscord.js` : CDN Discord 128 px, délai 4 s, cache mémoire), créature clay (`bang/avatars/clay-XX.png`) si l'avatar manque ou échoue.
-- Lisibilité mobile : aucun texte de moins de 24 px sur 600 px de large.
+- Lisibilité mobile : aucun texte de moins de 36 px sur 900 px de large (l'équivalent de 24 px sur 600 px).
+- Axes des tabliers (`AXES`, points (y, x) du proche au lointain) calés sur le décor : à recaler si les fonds changent de cadrage.
 
 ### Manches (Pont du Troll)
 
