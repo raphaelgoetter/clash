@@ -811,6 +811,15 @@ function compter(table, cle) {
 
 const PLURIELS = { loupe: "Loupes", double: "Doubles accusations", desamorcage: "Désamorçages", brouillard: "Brouillards", deguisement: "Déguisements", miroir: "Miroirs", ecoute: "Écoutes", bouclier: "Boucliers" };
 
+// Puissance des objets pour « Main la plus chanceuse », d'après le gain de
+// points par utilisation simulé (jeux/outils/quiestce-sim/sim-v2.mjs) :
+// Brouillard en tête, puis Bouclier, Double accusation et Écoute.
+export const POIDS_CHANCE = { brouillard: 3, deguisement: 2, bouclier: 2, double: 2, ecoute: 2, miroir: 1, loupe: 1, desamorcage: 1 };
+
+export function valeurMain(j) {
+  return Object.entries(stats(j).recus).reduce((a, [o, n]) => a + n * (POIDS_CHANCE[o] ?? 0), 0);
+}
+
 // Joueur au plus haut `valeur`, seulement s'il est seul en tête et atteint
 // `seuil` (sinon rien à raconter)
 function record(joueurs, valeur, seuil) {
@@ -854,14 +863,17 @@ export function compteRendu(partie) {
   if (serie && serie.n >= 3 && (series[1]?.n !== serie.n || series[1]?.jours !== serie.jours)) {
     phrases.push(`Série la plus chaude : ${nom(serie.id)} a démasqué ${serie.n} fois en ${serie.jours} jour${serie.jours > 1 ? "s" : ""} (${serie.jours > 1 ? `Jours ${serie.debut} à ${serie.debut + serie.jours - 1}` : `Jour ${serie.debut}`}).`);
   }
-  // Plus chanceux : la plus grosse série d'un même objet, sinon le plus de
-  // pile ou face gagnés
-  let main = null;
-  for (const o of Object.keys(OBJETS)) {
-    const r = record(joueurs, (j) => stats(j).recus[o] ?? 0, 3);
-    if (r && r.n > (main?.n ?? 0)) main = { ...r, o };
+  // Main la plus chanceuse : objets reçus pondérés par leur puissance
+  // (POIDS_CHANCE), citée avec ses 3 objets qui pèsent le plus
+  const main = record(joueurs, valeurMain, 6);
+  if (main) {
+    const objets = Object.entries(stats(main.j).recus)
+      .filter(([o, n]) => n > 0 && POIDS_CHANCE[o])
+      .sort((a, b) => b[1] * POIDS_CHANCE[b[0]] - a[1] * POIDS_CHANCE[a[0]] || POIDS_CHANCE[b[0]] - POIDS_CHANCE[a[0]])
+      .slice(0, 3)
+      .map(([o, n]) => `${n} ${n > 1 ? PLURIELS[o] : OBJETS[o].nom}`);
+    phrases.push(`Main la plus chanceuse : **${main.j.username}** (${objets.join(", ")}).`);
   }
-  if (main) phrases.push(`Main la plus chanceuse : **${main.j.username}** a tiré ${main.n} ${PLURIELS[main.o]}.`);
   const pileFace = record(joueurs, (j) => stats(j).pileFaceGagnes, 2);
   if (pileFace) phrases.push(`**${pileFace.j.username}** a gagné ${pileFace.n} pile ou face (accusations entre 2 cartes).`);
   // Moins chanceux : pile ou face perdus, sinon accusations ratées ;

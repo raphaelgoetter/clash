@@ -465,13 +465,15 @@ function main() {
     const n = candidats(p, "j0").length;
     accuser(p, "j0", p.joueurs[cible].carte, { config: CONFIG, rng });
     assert.deepStrictEqual(p.coup, { s: "j0", v: cible, n, j: 1 });
-    p.joueurs.j1.stats = { recus: { double: 4 }, utilises: {}, pileFaceGagnes: 0, pileFacePerdus: 3, brouillees: 0 };
+    p.joueurs.j1.stats = { recus: { double: 4, loupe: 2, brouillard: 1 }, utilises: {}, pileFaceGagnes: 0, pileFacePerdus: 3, brouillees: 0 };
+    // j2 : plus d'objets (5 Loupes) mais une main moins forte (5 contre 13)
+    p.joueurs.j2.stats = { recus: { loupe: 5 }, utilises: {}, pileFaceGagnes: 0, pileFacePerdus: 0, brouillees: 0 };
     for (const id of ids) p.joueurs[id].actifJour = true;
     cloturer(p, { config: CONFIG });
     assert.strictEqual(p.soirs.length, 1);
     const bref = compteRendu(p).join("\n");
     assert.match(bref, /\*\*j0\*\* a mené de bout en bout/);
-    assert.match(bref, /\*\*j1\*\* a tiré 4 Doubles accusations/);
+    assert.match(bref, /Main la plus chanceuse : \*\*j1\*\* \(4 Doubles accusations, 1 Brouillard, 2 Loupes\)/);
     assert.match(bref, /Pas de chance pour \*\*j1\*\* : 3 pile ou face perdus/);
     if (n >= 3) assert.match(bref, new RegExp(`Plus beau coup : \\*\\*j0\\*\\* a démasqué .* avec 1 chance sur ${n}`));
   }

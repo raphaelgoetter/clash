@@ -83,15 +83,17 @@ function utiliserObjets(p, id, bot) {
 function utiliserUnObjet(p, id, bot) {
   const j = p.joueurs[id];
   const peut = (o) => bot.droits[o] && R.etatObjet(p, id, o, { config: CONFIG }).ok;
-  const chasseursDeMoi = R.chasseurs(p, id);
+  const chasseursDeMoi = R.enqueteurs(p, id);
   const menace = chasseursDeMoi.some((h) => p.joueurs[h].enquete.ordre.length >= 2);
   const cs0 = j.cible ? R.candidats(p, id).length : 0;
   let objet = null;
   if (peut("deguisement") && menace) objet = "deguisement";
   else if (peut("brouillard") && menace) objet = "brouillard";
+  else if (peut("bouclier") && menace) objet = "bouclier";
   else if (peut("desamorcage") && j.cible && (p.joueurs[j.cible].brouillard || cs0 <= 4)) objet = "desamorcage";
   else if (peut("double") && cs0 >= 2 && cs0 <= 3) objet = "double";
   else if (peut("loupe") && cs0 > 2 && R.questionsRestantes(j, CONFIG) > 0) objet = "loupe";
+  else if (peut("ecoute") && cs0 > 2 && R.enqueteurs(p, j.cible).length > 1) objet = "ecoute";
   else if (peut("miroir") && chasseursDeMoi.length) objet = "miroir";
   if (!objet || R.utiliserObjet(p, id, objet, { config: CONFIG, rng }).erreur) return false;
   bot.utilises[objet] = (bot.utilises[objet] || 0) + 1;
