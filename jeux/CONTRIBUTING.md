@@ -1416,7 +1416,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 - Pièces stockées en **centièmes entiers** (`HINCRBY`, jamais de flottant). Le gain par passant est arrondi au **dixième** dès `resoudreJour()` (multiple de 10 centièmes) : les totaux s'affichent avec une décimale (« 4,6 pièces », `formatPieces()`) sans écart d'arrondi entre joueurs.
 - Tout passant entre au classement, même à 0 pièce.
-- `buildRanking()` : pièces décroissantes, puis **nombre de jours passés** (sans être attrapé) décroissant ; ex aequo au-delà (`rangExAequo()`).
+- `buildRanking()` : pièces décroissantes, puis **nombre de jours passés** (sans être attrapé) décroissant ; ex aequo au-delà (`rangExAequo()`). Le classement affiché donne les deux critères pour chaque joueur : « 3. Gérard (9 pièces, 3 passages) ».
 - Score de manche cumulé dans l'historique de saison des mini-jeux (`miniJeuxHistory.js`, champ `points` de l'archive, en pièces arrondies à l'unité) et compté dans les stats de `/mini-jeux` (`miniJeuxStats.js`).
 - `/mini-jeux` : participation du jour (a traversé ou non, jamais le pont choisi) et score de la partie.
 

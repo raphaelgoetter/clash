@@ -29,7 +29,7 @@ import {
   readUsernames,
   readAvatars,
 } from "./pont.js";
-import { postPont, versV2 } from "../discord/handlers/pont.js";
+import { postPont, versV2, lignesClassement } from "../discord/handlers/pont.js";
 import { lignesMatin, lignesResultat, positionsPassants } from "./pontImage.js";
 
 const choix = (pierre, cordes) => {
@@ -164,7 +164,7 @@ test("textes de l'image", () => {
   const l = lignesResultat({ attrape: PIERRE, gagnant: CORDES, gainBase: 460, pierre: 17, cordes: 11 });
   assert.deepEqual(l, ["17 joueurs attrapés sur la pierre", "Cordes : +4,6 pièces chacun"]);
   assert.deepEqual(lignesResultat({ attrape: null, pierre: 3, cordes: 3, gainParCote: { pierre: 100, cordes: 200 } }), [
-    "Égalité : le troll hésite",
+    "Égalité : le troll se rendort",
     "Pierre +1 · Cordes +2 pièces chacun",
   ]);
 });
@@ -261,5 +261,23 @@ if (Redis.isFake) {
       else process.env.DISCORD_TOKEN = tokenAvant;
       await resetPont({ clearManches: true });
     }
+  });
+}
+
+if (Redis.isFake) {
+  test("classement : passages affichés pour tous, rang partagé si pièces et passages égaux", async () => {
+    await resetPont({ clearManches: true });
+    const ranking = buildRanking(
+      { pnj1: 2200, pnj2: 900, pnj3: 900, pnj4: 700, pnj5: 700 },
+      { pnj1: 7, pnj2: 3, pnj3: 2, pnj4: 2, pnj5: 2 },
+      { pnj1: "A", pnj2: "Gérard", pnj3: "Ginette", pnj4: "Bernadette", pnj5: "Jean-Mi" },
+    );
+    assert.deepEqual(await lignesClassement(ranking, 10), [
+      "1\\. A (22 pièces, 7 passages)",
+      "2\\. Gérard (9 pièces, 3 passages)",
+      "3\\. Ginette (9 pièces, 2 passages)",
+      "4\\. Bernadette (7 pièces, 2 passages)",
+      "4\\. Jean-Mi (7 pièces, 2 passages)",
+    ]);
   });
 }

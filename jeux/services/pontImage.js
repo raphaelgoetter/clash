@@ -153,7 +153,7 @@ export function lignesResultat({ attrape, gagnant, gainBase, gainParCote = {}, p
   if (!attrape || nA === 0) {
     if (pierre + cordes === 0) return ["Personne n'a traversé"];
     return [
-      attrape ? "Le troll n'attrape personne" : "Égalité : le troll hésite",
+      attrape ? "Le troll n'attrape personne" : "Égalité : le troll se rendort",
       `Pierre +${formatPieces(gainParCote[PIERRE] ?? 0)} · Cordes +${piecesTexte(gainParCote[CORDES] ?? 0)} chacun`,
     ];
   }

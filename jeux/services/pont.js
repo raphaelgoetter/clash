@@ -150,7 +150,7 @@ export function resoudreJour(choix, cfg) {
   }
   const n = { [PIERRE]: passants[PIERRE].length, [CORDES]: passants[CORDES].length };
 
-  // Égalité : le troll hésite, personne n'est attrapé
+  // Égalité : le troll se rendort, personne n'est attrapé
   let attrape = null;
   if (n[PIERRE] !== n[CORDES]) {
     const plusCharge = n[PIERRE] > n[CORDES] ? PIERRE : CORDES;

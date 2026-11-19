@@ -140,7 +140,7 @@ async function nommer(ids, usernames) {
   return Promise.all(ids.map((id) => nomAffiche(id, usernames[id])));
 }
 
-async function lignesClassement(ranking, limite) {
+export async function lignesClassement(ranking, limite) {
   const usernames = await readUsernames();
   const liste = await Promise.all(
     ranking
@@ -153,9 +153,10 @@ async function lignesClassement(ranking, limite) {
         ),
       })),
   );
+  // Passages (départage) affichés pour tout le monde
   return liste.map(
     (r, i, l) =>
-      `${rangExAequo(l, i, memeRang)}\\. ${r.nom} (${pieces(r.centiemes)})`,
+      `${rangExAequo(l, i, memeRang)}\\. ${r.nom} (${pieces(r.centiemes)}, ${pluriel(r.passes, "passage")})`,
   );
 }
 
@@ -174,7 +175,7 @@ async function buildResultatEmbed(entry, ranking, { partieId, v }) {
     const nG = entry.gagnant ? entry[entry.gagnant] : 0;
     if (!entry.attrape || nA === 0) {
       // Personne d'attrapé : chacun gagne le multiplicateur de son pont
-      lines.push(entry.attrape ? "🧌 Le troll n'attrape personne." : "🧌 Égalité : le troll hésite, personne n'est attrapé.");
+      lines.push(entry.attrape ? "🧌 Le troll n'attrape personne." : "🧌 Égalité : le troll se rendort, personne n'est attrapé.");
       const g = entry.gainParCote ?? {};
       lines.push(
         `💰 Tout le monde passe : Pierre **+${pieces(g[PIERRE] ?? 0)}**, Cordes **+${pieces(g[CORDES] ?? 0)}** par joueur.`,
@@ -890,7 +891,7 @@ function buildReglesEmbed(config) {
       `De l'autre côté du ravin, le village tient son grand marché. Chaque jour pendant ${config.duree_jours} jours, traverse par l'un des deux ponts pour aller y faire fortune. Un seul clic par jour, secret et définitif (jour de jeu de 8h à 8h).`,
       "",
       "🧌 **Le troll** attrape le pont qui compte le plus de joueurs : chacun lâche 1 pièce. Les joueurs de l'autre pont ramassent ce butin et se le partagent, multiplié par la prime du village (le multiplicateur de leur pont, affiché chaque matin).",
-      "Égalité : le troll hésite, personne n'est attrapé, et chacun touche la prime de son pont.",
+      "Égalité : le troll se rendort, personne n'est attrapé, et chacun touche la prime de son pont.",
       "",
       "🗣️ **Rumeurs** (jours impairs) : vois quel pont chacun annonce, et lance ta propre rumeur une fois par jour (vérité, mensonge ou rien), avant ou après avoir choisi ton pont. Le détecteur de fake-news dévoile les menteurs des rumeurs précédentes.",
       "",
