@@ -152,7 +152,7 @@ export function lignesResultat({ attrape, gagnant, gainBase, pierre, cordes }) {
   const l1 = `${nA} passant${nA > 1 ? "s" : ""} attrapé${nA > 1 ? "s" : ""} ${SUR[attrape]}`;
   if (nG === 0) return [l1, "Personne en face pour le butin"];
   const g = formatPieces(gainBase);
-  return [l1, `${NOM[gagnant]} : +${g} pièce${gainBase > 100 ? "s" : ""} chacun`];
+  return [l1, `${NOM[gagnant]} : +${g} pièce${gainBase >= 200 ? "s" : ""} chacun`];
 }
 
 // ── Rendu ─────────────────────────────────────────────────────────

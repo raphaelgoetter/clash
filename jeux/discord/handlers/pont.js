@@ -67,7 +67,7 @@ const SUR = { [PIERRE]: "sur la pierre", [CORDES]: "sur les cordes" };
 
 const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 const pieces = (centiemes) =>
-  `${formatPieces(centiemes)} pièce${centiemes > 100 ? "s" : ""}`;
+  `${formatPieces(centiemes)} pièce${centiemes >= 200 ? "s" : ""}`;
 // PNJ du salon de test : pseudo stocké, aucun appel Discord
 const nomAffiche = (discordId, fallback) =>
   estPnj(discordId)
@@ -238,6 +238,25 @@ async function buildFinalEmbed(ranking, manches) {
   };
 }
 
+// Un seul bloc et une seule image par message : résultat de la veille (texte
+// + image du résultat), puis la suite en texte sous l'image (jour en cours
+// ou classement final), pied et boutons.
+function unSeulBloc(title, resultat, suite, { intituleSuite = null } = {}) {
+  return {
+    title,
+    description: `**${resultat.title}**\n${resultat.description}`,
+    color: PONT_COLOR,
+    image: resultat.image,
+    apres: [intituleSuite ? `**${intituleSuite}**` : null, suite.description].filter(Boolean).join("\n"),
+    footer: suite.footer,
+  };
+}
+
+const blocJour = (config, jour, resultat, jourEmbed) =>
+  unSeulBloc(`🧌 Pont du Troll (Jour ${jour}/${config.duree_jours})`, resultat, jourEmbed, { intituleSuite: "🌉 Aujourd'hui" });
+
+const blocFin = (resultat, finalEmbed) => unSeulBloc("🏁 Pont du Troll : fin de partie", resultat, finalEmbed);
+
 // ── Boutons ───────────────────────────────────────────────────────
 
 const boutonRegles = {
@@ -309,7 +328,8 @@ async function discordFetch(chemin, options = {}) {
 // Messages en Components V2 : Discord limite la hauteur d'une image d'embed
 // (~300 px sur ordinateur), une galerie (type 12) l'affiche bien plus grande.
 // Les vues sont écrites comme des embeds, converties ici à l'envoi : un
-// conteneur à liseré par embed (titre ###, texte, galerie, pied en petit),
+// conteneur à liseré par embed (titre ###, texte, galerie, texte `apres`
+// sous l'image, pied en petit),
 // boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le
 // ping éventuel est un bloc texte en tête, avec `allowed_mentions`.
 const IS_COMPONENTS_V2 = 1 << 15;
@@ -326,6 +346,7 @@ export function versV2(embeds, components = [], roleId = null) {
       components: [
         { type: 10, content: texte.slice(0, TEXTE_MAX) },
         ...(embed.image?.url ? [{ type: 12, items: [{ media: { url: embed.image.url } }] }] : []),
+        ...(embed.apres ? [{ type: 10, content: embed.apres.slice(0, TEXTE_MAX) }] : []),
         ...(embed.footer?.text ? [{ type: 10, content: `-# ${embed.footer.text}` }] : []),
         ...(i === embeds.length - 1 ? components : []),
       ],
@@ -519,13 +540,14 @@ export async function postPont(
 
   if (dryRun) {
     const embeds = estFin
-      ? [resultatEmbed, await buildFinalEmbed(ranking, manches)]
+      ? [blocFin(resultatEmbed, await buildFinalEmbed(ranking, manches))]
       : [
-          resultatEmbed,
-          buildJourEmbed(config, jourConfig(config, jourSuivant), {
-            estPremierJour: false,
-            v,
-          }),
+          blocJour(
+            config,
+            jourSuivant,
+            resultatEmbed,
+            buildJourEmbed(config, jourConfig(config, jourSuivant), { estPremierJour: false, v }),
+          ),
         ];
     return {
       dryRun: true,
@@ -579,10 +601,7 @@ export async function postPont(
         maxPoints: formatPieces(max),
       });
     }
-    const embeds = [
-      resultatEmbed,
-      await buildFinalEmbed(finalRanking, manches),
-    ];
+    const embeds = [blocFin(resultatEmbed, await buildFinalEmbed(finalRanking, manches))];
     const out = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       partieId: state.partieId,
@@ -595,11 +614,12 @@ export async function postPont(
   }
 
   const embeds = [
-    resultatEmbed,
-    buildJourEmbed(config, jourConfig(config, jourSuivant), {
-      estPremierJour: false,
-      v,
-    }),
+    blocJour(
+      config,
+      jourSuivant,
+      resultatEmbed,
+      buildJourEmbed(config, jourConfig(config, jourSuivant), { estPremierJour: false, v }),
+    ),
   ];
   const out = await publishAndWriteState(channelId, state, {
     jour: jourSuivant,
