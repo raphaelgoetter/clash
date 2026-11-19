@@ -161,7 +161,7 @@ async function buildRevealEmbed(manche, mancheConfig, ranking, manchesHistory) {
       ? resolved
           .slice(0, 20)
           .map(
-            (r, i, list) => `${rangExAequo(list, i, "score")}. ${r.username} (${r.score}/${QUESTIONS_PAR_MANCHE})`,
+            (r, i, list) => `${rangExAequo(list, i, "score")}\\. ${r.username} (${r.score}/${QUESTIONS_PAR_MANCHE})`,
           )
       : ["Personne n'a voté cette manche."]),
   ];

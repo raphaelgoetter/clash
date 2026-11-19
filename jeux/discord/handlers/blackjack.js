@@ -290,7 +290,7 @@ async function buildRevealEmbed(bilan, ranking, manchesHistory) {
           .slice(0, 20)
           .map(
             (r, i, list) =>
-              `${rangExAequo(list, i, memeRang)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
+              `${rangExAequo(list, i, memeRang)}\\. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
           )
       : ["Personne n'a marqué de point cette manche."]),
   ];
@@ -888,7 +888,7 @@ export async function handleJournal(webhookUrl, discordId) {
       ...(resolvedRanking.length
         ? resolvedRanking.map(
             (r, i, list) =>
-              `${rangExAequo(list, i, memeRang)}. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
+              `${rangExAequo(list, i, memeRang)}\\. ${r.username} (${r.points} pt${r.points > 1 ? "s" : ""})`,
           )
         : ["Personne n'a encore marqué de point."]),
     );

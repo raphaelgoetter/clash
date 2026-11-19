@@ -398,7 +398,7 @@ async function buildFinalEmbed(state, ranking, highScore) {
     : [
         partie,
         ...(resolvedRanking.length
-          ? resolvedRanking.map((r, i, list) => `${rangExAequo(list, i)}. ${r.username} (${ptsLabel(r.points)})`)
+          ? resolvedRanking.map((r, i, list) => `${rangExAequo(list, i)}\\. ${r.username} (${ptsLabel(r.points)})`)
           : ["Personne n'a marqué de point."]),
       ];
 

@@ -437,7 +437,8 @@ Jeux spéciaux Blackjack et Gobelet seulement (pas leurs duels) : `jeux/services
 
 ### Classements
 
-- Rangs ex aequo : deux joueurs à égalité partagent le même rang (« 1, 2, 2, 4 ») via `rangExAequo()` (`@clash/commun/classement.js`) ; les récaps utilisent `findTiedRank()`. Départages propres à un jeu : voir sa section.
+- Rangs ex aequo : deux joueurs à égalité partagent le même rang (« 1, 2, 2, 4 ») via `rangExAequo()` (`@clash/commun/classement.js`) ; les récaps utilisent `findTiedRank()`.
+- ⚠️ Rang écrit avec le point échappé (`` `${rang}\\. ${nom}` ``, rendu « 1. ») : une ligne « 1. … » est une liste markdown que Discord renumérote (1, 2, 3…), ce qui efface les ex aequo. Appliqué aux classements du Pont du Troll, de Blackjack, Gobelet, Quiz, Blackjack Duel et Gobelet Duel. Départages propres à un jeu : voir sa section.
 
 ## Passeport mensuel (« 🛂 Mon passeport »)
 
@@ -1427,7 +1428,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 - **Un seul bloc et une seule image par message** : à partir du Jour 2, titre `🧌 Pont du Troll (Jour N/7)`, **Résultat du Jour N-1** (répartition, gain par passant, classement provisoire des 5 premiers), image du résultat, puis « 🌉 Aujourd'hui · Jour N/7 » et les multiplicateurs en titres `###` (plus grands que le texte), et l'événement éventuel, sous l'image (Indice et Rumeurs ne sont pas annoncés en texte : leur bouton suffit) (la règle du troll n'est pas répétée : elle est dans les Règles) ; Jour 1 : image du matin. Le pied affiche le nombre total de passants, mis à jour à chaque nouveau passant (`majCompteur()` : PATCH du message à partir de `state.embeds`).
 - Fin de partie : même bloc unique, résultat du Jour 7 et son image, puis classement complet (20 premiers), vainqueurs et vainqueurs des parties précédentes sous l'image.
 - Vocabulaire joueur : « joueur(s) », jamais « passant(s) » (textes et images ; le code garde `passants` pour les listes par pont).
-- ⚠️ Rangs du classement écrits `1\.` (point échappé) : une ligne « 1. … » est une liste markdown que Discord renumérote (1, 2, 3…), ce qui effaçait les ex aequo.
+- Rangs du classement écrits avec le point échappé (voir « Classements »).
 - Accords : « pièce » au singulier sous 2 (« +1,1 pièce »), pluriel à partir de 2.
 
 ### Image (Pont du Troll)
