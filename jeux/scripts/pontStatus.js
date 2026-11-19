@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // pontStatus.js
 // État courant du Pont du Troll sans Discord : jour, multiplicateurs,
-// événement, répartition SECRÈTE du jour, Jokers et Indices, projection du
+// événement, répartition SECRÈTE du jour, Rumeurs et Indices, projection du
 // résultat au décompte, classement projeté.
 //
 // Usage : node jeux/scripts/pontStatus.js
@@ -41,8 +41,11 @@ import { rangExAequo } from "@clash/commun/classement.js";
       const noms = await Promise.all(res.passants[cote].map(nom));
       if (noms.length) console.log(`  ${cote} : ${noms.join(", ")}`);
     }
-    const jokers = await Promise.all(entry.jokers.map(nom));
-    console.log(`Jokers du jour : ${jokers.length ? jokers.join(", ") : "aucun"}`);
+    if (config.jours_rumeurs.includes(state.jour)) {
+      const verite = await Promise.all(entry.rumeurs.verite.map(nom));
+      const mensonge = await Promise.all(entry.rumeurs.mensonge.map(nom));
+      console.log(`Rumeurs : vérité ${verite.length ? verite.join(", ") : "aucune"} · mensonge ${mensonge.length ? mensonge.join(", ") : "aucun"}`);
+    }
     if (config.jours_indice.includes(state.jour)) console.log(`Indices consultés : ${await compterIndices(state.jour)}`);
 
     console.log("\nProjection au décompte :");

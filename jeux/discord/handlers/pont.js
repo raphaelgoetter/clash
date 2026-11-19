@@ -2,7 +2,7 @@
 // pont.js — Handlers Discord du Pont du Troll (jeu spécial de 7 jours).
 // Publication quotidienne (postPont, appelée uniquement par
 // jeux/scripts/postPont.js), boutons du message public (Pont de pierre,
-// Pont de cordes, Joker, Indice, Règles) et confirmation du Joker.
+// Pont de cordes, Rumeurs ou Indice, Règles) et menu des rumeurs.
 // Règles : jeux/CONTRIBUTING.md, section « Pont du Troll ».
 // ============================================================
 
@@ -14,6 +14,8 @@ import {
   loadPontConfig,
   jourConfig,
   indiceDisponible,
+  rumeursDisponibles,
+  rumeursPrecedentes,
   readState,
   writeState,
   isTooSoonSinceLastClosure,
@@ -26,9 +28,14 @@ import {
   readChoix,
   listChoix,
   compterPassants,
-  jouerJoker,
-  readJoker,
-  jokersDuJour,
+  lancerRumeur,
+  readRumeur,
+  listRumeurs,
+  rumeursAnnoncees,
+  menteurs,
+  VERITE,
+  MENSONGE,
+  RIEN,
   consulterIndice,
   addPoints,
   addPasse,
@@ -120,6 +127,8 @@ function buildJourEmbed(config, cfg, { estPremierJour, v }) {
     lines.push("", "🏆 **Grande finale** : gains doublés !");
   if (indiceDisponible(config, cfg.jour))
     lines.push("", "🔎 Indice disponible aujourd'hui.");
+  if (rumeursDisponibles(config, cfg.jour))
+    lines.push("", "🗣️ Rumeurs disponibles aujourd'hui.");
   return {
     title: `🧌 Pont du Troll (Jour ${cfg.jour}/${config.duree_jours})`,
     description: lines.join("\n"),
@@ -181,10 +190,6 @@ async function buildResultatEmbed(entry, ranking, { partieId, v }) {
           ? `💰 ${NOM_COURT[entry.gagnant]} : **+${pieces(entry.gainBase)}** par passant.`
           : "💰 Personne en face pour le butin.",
       );
-    }
-    if (entry.jokersGagnants?.length) {
-      const noms = await nommer(entry.jokersGagnants, usernames);
-      lines.push(`🃏 Joker gagnant (gains doublés) : ${noms.join(", ")}`);
     }
   }
   if (ranking?.length)
@@ -283,13 +288,18 @@ function buildJourComponents(config, jour) {
           emoji: { name: EMOJI[CORDES] },
           custom_id: `pont_cordes:${jour}`,
         },
-        {
-          type: 2,
-          style: 2,
-          label: "Joker",
-          emoji: { name: "🃏" },
-          custom_id: `pont_joker:${jour}`,
-        },
+        // Rumeurs les jours impairs, Indice les jours pairs
+        ...(rumeursDisponibles(config, jour)
+          ? [
+              {
+                type: 2,
+                style: 2,
+                label: "Rumeurs",
+                emoji: { name: "🗣️" },
+                custom_id: `pont_rumeurs:${jour}`,
+              },
+            ]
+          : []),
         ...(indiceDisponible(config, jour)
           ? [
               {
@@ -404,7 +414,7 @@ async function publishAndWriteState(
 
 // Applique le résultat d'un jour : pièces, jours passés, historique.
 // Renvoie l'entrée d'historique (aussi utilisée en projection dry-run).
-function entreeHistorique(jour, cfg, res) {
+function entreeHistorique(jour, cfg, res, rumeurs = {}) {
   return {
     jour,
     multiplicateurs: { pierre: cfg.pierre, cordes: cfg.cordes },
@@ -416,10 +426,11 @@ function entreeHistorique(jour, cfg, res) {
     gainBase: res.gainBase,
     gainParCote: res.gainParCote,
     passants: res.passants,
-    jokers: res.resultats.filter((r) => r.joker).map((r) => r.discordId),
-    jokersGagnants: res.resultats
-      .filter((r) => r.joker && r.passe && r.gain > 0)
-      .map((r) => r.discordId),
+    // Rumeurs lancées ce jour-là (compte-rendu)
+    rumeurs: {
+      verite: Object.keys(rumeurs).filter((id) => rumeurs[id]?.mode === VERITE),
+      mensonge: Object.keys(rumeurs).filter((id) => rumeurs[id]?.mode === MENSONGE),
+    },
     resolvedAt: new Date().toISOString(),
   };
 }
@@ -438,12 +449,8 @@ function classementProjete(points, passes, resultats) {
 // Résout le jour actif sans rien écrire (cron, dry-run, pont:status)
 export async function projeterJour(state, config) {
   const cfg = jourConfig(config, state.jour);
-  const res = resoudreJour(
-    await listChoix(state.jour),
-    await jokersDuJour(state.jour),
-    cfg,
-  );
-  const entry = entreeHistorique(state.jour, cfg, res);
+  const res = resoudreJour(await listChoix(state.jour), cfg);
+  const entry = entreeHistorique(state.jour, cfg, res, await listRumeurs(state.jour));
   const ranking = classementProjete(
     await readPoints(),
     await readPasses(),
@@ -521,7 +528,7 @@ export async function postPont(
       components,
       ping,
     });
-    if (avecPnj) await faireJouerPnj(1);
+    if (avecPnj) await faireJouerPnj(config, 1);
     return out;
   }
 
@@ -626,13 +633,13 @@ export async function postPont(
     components: buildJourComponents(config, jourSuivant),
     ping: false,
   });
-  if (avecPnj) await faireJouerPnj(jourSuivant);
+  if (avecPnj) await faireJouerPnj(config, jourSuivant);
   return out;
 }
 
 // PNJ du salon de test : choix du jour, puis compteur du message public
-async function faireJouerPnj(jour) {
-  await jouerPnj(jour);
+async function faireJouerPnj(config, jour) {
+  await jouerPnj(jour, { rumeurs: rumeursDisponibles(config, jour) });
   await majCompteur(await readState());
 }
 
@@ -729,11 +736,10 @@ export async function handleTraverser(
       );
       return;
     }
-    const joker = (await readJoker(discordId)) === Number(jour);
     await patchOriginal(
       webhookUrl,
       messageSeul(
-        `${EMOJI[cote]} Tu traverses ${PAR[cote]}. Résultat demain matin !${joker ? "\n🃏 Joker actif : gains doublés si tu passes." : ""}`,
+        `${EMOJI[cote]} Tu traverses ${PAR[cote]}. Résultat demain matin !`,
       ),
     );
     await majCompteur(state);
@@ -742,67 +748,114 @@ export async function handleTraverser(
   }
 }
 
-export async function handleJoker(webhookUrl, jour, discordId) {
-  try {
-    const state = await etatJouable(webhookUrl, jour);
-    if (!state) return;
-    const deja = await readJoker(discordId);
-    if (deja != null) {
-      await patchOriginal(
-        webhookUrl,
-        messageSeul(`🃏 Joker déjà utilisé (Jour ${deja}).`),
-      );
-      return;
-    }
-    const config = await loadPontConfig();
-    const finale = jourConfig(config, jour).evenement === FINALE;
-    await patchOriginal(webhookUrl, {
-      content: [
-        `🃏 Jouer ton Joker aujourd'hui ? Tes gains du jour seront doublés si tu passes${finale ? " (×4 avec la Grande finale)" : ""}.`,
-        "Tu n'en as qu'un par partie. N'oublie pas de choisir un pont avant le résultat.",
-      ].join("\n"),
-      embeds: [],
+// ── Rumeurs (jours impairs) ───────────────────────────────────────
+
+// « A, B, C et D »
+function listeNoms(noms) {
+  return noms.length < 2 ? noms.join("") : `${noms.slice(0, -1).join(", ")} et ${noms.at(-1)}`;
+}
+
+const LIBELLE_RUMEUR = {
+  [VERITE]: "vérité (tu annonces ton pont)",
+  [MENSONGE]: "mensonge (tu annonces l'autre pont)",
+  [RIEN]: "aucune annonce",
+};
+
+function menuRumeur(jour) {
+  return [
+    {
+      type: 1,
       components: [
         {
-          type: 1,
-          components: [
-            {
-              type: 2,
-              style: 3,
-              label: "Jouer mon Joker",
-              emoji: { name: "🃏" },
-              custom_id: `pont_joker_ok:${jour}`,
-            },
+          type: 3,
+          custom_id: `pont_rumeur:${jour}`,
+          placeholder: "Lancer une rumeur…",
+          options: [
+            { label: "Vérité", value: VERITE, description: "J'annonce le pont que je choisis aujourd'hui", emoji: { name: "✅" } },
+            { label: "Mensonge", value: MENSONGE, description: "J'annonce l'autre pont", emoji: { name: "🤥" } },
+            { label: "Rien", value: RIEN, description: "Je n'annonce rien du tout", emoji: { name: "🤐" } },
           ],
         },
       ],
-    });
-  } catch (err) {
-    console.error("[Pont] Échec Joker:", err.message);
-  }
+    },
+  ];
 }
 
-export async function handleJokerOk(webhookUrl, jour, discordId) {
+// Vue éphémère : rumeurs du jour (pont annoncé, d'après le pont réellement
+// choisi), menteurs des rumeurs précédentes, puis menu ou rumeur lancée.
+async function vueRumeurs(config, jour, discordId) {
+  const [choix, rumeurs, usernames, maRumeur, monChoix] = await Promise.all([
+    listChoix(jour),
+    listRumeurs(jour),
+    readUsernames(),
+    readRumeur(jour, discordId),
+    readChoix(jour, discordId),
+  ]);
+  const annonces = rumeursAnnoncees(choix, rumeurs);
+  const lignes = ["🗣️ **Selon les rumeurs du jour :**"];
+  if (!annonces[PIERRE].length && !annonces[CORDES].length) {
+    lignes.push("- Aucune rumeur pour l'instant.");
+  } else {
+    for (const cote of [PIERRE, CORDES]) {
+      const ids = annonces[cote];
+      if (!ids.length) {
+        lignes.push(`- Personne n'annonce le pont de ${NOM_COURT[cote].toLowerCase()}`);
+        continue;
+      }
+      const noms = await nommer(ids, usernames);
+      lignes.push(
+        `- ${pluriel(ids.length, "joueur")} ${ids.length > 1 ? "ont" : "a"} pris le pont de ${NOM_COURT[cote].toLowerCase()} : ${listeNoms(noms)}`,
+      );
+    }
+  }
+
+  const precedent = rumeursPrecedentes(config, jour);
+  if (precedent != null) {
+    const ids = menteurs(await listChoix(precedent), await listRumeurs(precedent));
+    lignes.push("", `🤥 **Détecteur de fake-news (Jour ${precedent}) :**`);
+    lignes.push(
+      ids.length
+        ? `- ${pluriel(ids.length, "joueur")} ${ids.length > 1 ? "ont" : "a"} menti : ${listeNoms(await nommer(ids, usernames))}`
+        : "- Personne n'a menti.",
+    );
+  }
+
+  lignes.push("");
+  if (!maRumeur) {
+    lignes.push("📣 **Lance une rumeur si tu le souhaites !**");
+    return { content: lignes.join("\n"), embeds: [], components: menuRumeur(jour) };
+  }
+  lignes.push(`📣 Ta rumeur du jour : ${LIBELLE_RUMEUR[maRumeur]}.`);
+  if (maRumeur !== RIEN && !monChoix) lignes.push("Elle apparaîtra dès que tu auras choisi ton pont.");
+  return { content: lignes.join("\n"), embeds: [], components: [] };
+}
+
+export async function handleRumeurs(webhookUrl, jour, discordId) {
   try {
     const state = await etatJouable(webhookUrl, jour);
     if (!state) return;
-    const r = await jouerJoker(jour, discordId);
-    if (!r.ok) {
-      await patchOriginal(
-        webhookUrl,
-        messageSeul(`🃏 Joker déjà utilisé (Jour ${r.jour}).`),
-      );
+    const config = await loadPontConfig();
+    if (!rumeursDisponibles(config, jour)) {
+      await patchOriginal(webhookUrl, messageSeul("🗣️ Pas de rumeurs aujourd'hui (jours impairs seulement)."));
       return;
     }
-    const choix = await readChoix(jour, discordId);
-    await patchOriginal(
-      webhookUrl,
-      messageSeul(
-        `🃏 Joker joué pour le Jour ${jour} !${choix ? ` Tu traverses ${PAR[choix.cote]}.` : " N'oublie pas de choisir ton pont avant 8h !"}`,
-      ),
-    );
+    await patchOriginal(webhookUrl, await vueRumeurs(config, jour, discordId));
   } catch (err) {
-    console.error("[Pont] Échec confirmation Joker:", err.message);
+    console.error("[Pont] Échec Rumeurs:", err.message);
+  }
+}
+
+// Choix dans le menu (édition en place de l'éphémère), définitif
+export async function handleRumeurChoix(webhookUrl, jour, discordId, mode) {
+  try {
+    const state = await etatJouable(webhookUrl, jour);
+    if (!state) return;
+    const config = await loadPontConfig();
+    if (!rumeursDisponibles(config, jour)) return;
+    await lancerRumeur(jour, discordId, mode);
+    await patchOriginal(webhookUrl, await vueRumeurs(config, jour, discordId));
+  } catch (err) {
+    console.error("[Pont] Échec choix de rumeur:", err.message);
   }
 }
 
@@ -841,7 +894,7 @@ function buildReglesEmbed(config) {
       "🧌 **Le troll** attrape le pont qui compte le plus de passants. Les passants de l'autre pont se partagent le butin : 1 pièce par passant attrapé, multipliée par le multiplicateur de leur pont (affiché chaque matin).",
       "Égalité : personne n'est attrapé, chacun gagne le multiplicateur de son pont.",
       "",
-      "🃏 **Joker** (une fois par partie) : tes gains du jour sont doublés si tu passes. Joue-le avant ou après avoir choisi ton pont.",
+      "🗣️ **Rumeurs** (jours impairs) : vois quel pont chacun annonce, et lance ta propre rumeur une fois par jour (vérité, mensonge ou rien), avant ou après avoir choisi ton pont. Le détecteur de fake-news dévoile les menteurs des rumeurs précédentes.",
       "",
       "🔎 **Indice** (jours pairs, une fois par jour) : la répartition du moment, exacte le matin, de plus en plus floue au fil de la journée. Une fois ton pont choisi, il ne te sert plus à rien !",
       "",

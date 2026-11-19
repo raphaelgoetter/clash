@@ -4,8 +4,9 @@
 // pont de cordes, en secret. Le troll attrape le pont le plus chargé (le
 // moins chargé un jour de Troll repu) ; les passants de l'autre pont se
 // partagent le butin (1 pièce par passant attrapé, × multiplicateur de
-// leur pont). Joker (gains ×2, une fois par partie) et Indice (jours pairs,
-// répartition de moins en moins précise au fil de la journée).
+// leur pont). Indice (jours pairs, répartition de moins en moins précise au
+// fil de la journée) et Rumeurs (jours impairs, ponts annoncés par les
+// joueurs, vrais ou faux, menteurs dévoilés aux rumeurs suivantes).
 // Règles : jeux/CONTRIBUTING.md, section « Pont du Troll ».
 //
 // Stockage : Upstash Redis, espace de clés `pont:*`.
@@ -74,7 +75,6 @@ async function scanDelete(pattern) {
 }
 
 const STATE_KEY = "pont:state";
-const JOKERS_KEY = "pont:jokers";
 const POINTS_KEY = "pont:points";
 const PASSES_KEY = "pont:passes";
 const USERNAMES_KEY = "pont:usernames";
@@ -84,6 +84,7 @@ const MANCHES_KEY = "pont:manches";
 const MANCHE_SEQ_KEY = "pont:manche_seq";
 const choixKey = (jour) => `pont:choix:${jour}`;
 const indicesKey = (jour) => `pont:indices:${jour}`;
+const rumeursKey = (jour) => `pont:rumeurs:${jour}`;
 
 export const PIERRE = "pierre";
 export const CORDES = "cordes";
@@ -107,6 +108,13 @@ export function jourConfig(config, jour) {
 }
 
 export const indiceDisponible = (config, jour) => config.jours_indice.includes(Number(jour));
+export const rumeursDisponibles = (config, jour) => config.jours_rumeurs.includes(Number(jour));
+
+// Jour de rumeurs précédent (détecteur de fake-news), null s'il n'y en a pas
+export function rumeursPrecedentes(config, jour) {
+  const avant = config.jours_rumeurs.filter((j) => j < Number(jour));
+  return avant.length ? Math.max(...avant) : null;
+}
 
 // ── État de la partie (muté uniquement au cron) ───────────────────
 
@@ -133,10 +141,9 @@ export function jourOuvert(publishedAt, now = Date.now()) {
 
 // ── Règles — fonctions pures (testées) ────────────────────────────
 
-// Résout un jour. `choix` : { discordId: { cote } } ; `jokers` : Set des
-// discordId ayant joué leur Joker ce jour-là ; `cfg` : jourConfig().
+// Résout un jour. `choix` : { discordId: { cote } } ; `cfg` : jourConfig().
 // Gains en centièmes de pièce (entiers, multiples de 10).
-export function resoudreJour(choix, jokers, cfg) {
+export function resoudreJour(choix, cfg) {
   const passants = { [PIERRE]: [], [CORDES]: [] };
   for (const [discordId, c] of Object.entries(choix)) {
     if (passants[c?.cote]) passants[c.cote].push(discordId);
@@ -172,9 +179,8 @@ export function resoudreJour(choix, jokers, cfg) {
   const resultats = [];
   for (const cote of COTES) {
     for (const discordId of passants[cote]) {
-      const joker = jokers.has(discordId);
       const passe = personneAttrape || cote === gagnant;
-      resultats.push({ discordId, cote, joker, passe, gain: passe ? gainParCote[cote] * (joker ? 2 : 1) : 0 });
+      resultats.push({ discordId, cote, passe, gain: passe ? gainParCote[cote] : 0 });
     }
   }
   return { pierre: n[PIERRE], cordes: n[CORDES], attrape, gagnant, personneAttrape, gainBase, gainParCote, passants, resultats };
@@ -245,16 +251,16 @@ export async function enregistrerChoix(jour, discordId, cote, { username, avatar
 export const PNJ = ["Josette", "Gérard", "Ginette", "Jean-Mi", "Bernadette"];
 export const estPnj = (discordId) => String(discordId).startsWith("pnj-");
 
-// Les PNJ traversent au hasard (un pont chacun, 50/50) et jouent leur
-// Joker un jour au hasard (15 % de chance par jour tant qu'il reste).
-export async function jouerPnj(jour, rng = Math.random) {
+// Les PNJ traversent au hasard (un pont chacun, 50/50) et, les jours de
+// rumeurs, lancent une rumeur au hasard (vérité, mensonge ou rien).
+export async function jouerPnj(jour, { rumeurs = false } = {}, rng = Math.random) {
   for (const [i, nom] of PNJ.entries()) {
     const id = `pnj-${i + 1}`;
     await enregistrerChoix(jour, id, rng() < 0.5 ? PIERRE : CORDES, {
       username: nom,
       avatarRef: `clay-${String(i + 1).padStart(2, "0")}`,
     });
-    if ((await readJoker(id)) == null && rng() < 0.15) await jouerJoker(jour, id);
+    if (rumeurs) await lancerRumeur(jour, id, RUMEURS[Math.floor(rng() * RUMEURS.length)]);
   }
 }
 
@@ -270,24 +276,49 @@ export async function compterPassants(jour) {
   return Number(await getRedis().hlen(choixKey(jour))) || 0;
 }
 
-// ── Joker (une fois par partie) ───────────────────────────────────
+// ── Rumeurs (jours impairs, une par joueur et par jour) ───────────
 
-// Renvoie { ok, jour } (jour = jour du Joker déjà joué si refus)
-export async function jouerJoker(jour, discordId) {
-  const ok = Boolean(await getRedis().hsetnx(JOKERS_KEY, discordId, String(jour)));
-  if (ok) return { ok: true, jour: Number(jour) };
-  return { ok: false, jour: Number(await getRedis().hget(JOKERS_KEY, discordId)) };
+export const VERITE = "verite";
+export const MENSONGE = "mensonge";
+export const RIEN = "rien";
+export const RUMEURS = [VERITE, MENSONGE, RIEN];
+const AUTRE = { [PIERRE]: CORDES, [CORDES]: PIERRE };
+
+// Intention définitive (HSETNX). Renvoie { ok, mode } (mode retenu).
+export async function lancerRumeur(jour, discordId, mode) {
+  if (!RUMEURS.includes(mode)) return { ok: false, mode: null };
+  const ok = Boolean(await getRedis().hsetnx(rumeursKey(jour), discordId, toJson({ mode, at: new Date().toISOString() })));
+  if (ok) return { ok: true, mode };
+  return { ok: false, mode: fromJson(await getRedis().hget(rumeursKey(jour), discordId))?.mode ?? null };
 }
 
-export async function readJoker(discordId) {
-  const v = await getRedis().hget(JOKERS_KEY, discordId);
-  return v == null ? null : Number(v);
+export async function readRumeur(jour, discordId) {
+  return fromJson(await getRedis().hget(rumeursKey(jour), discordId))?.mode ?? null;
 }
 
-// Set des joueurs ayant joué leur Joker ce jour-là
-export async function jokersDuJour(jour) {
-  const all = await hgetallRaw(JOKERS_KEY);
-  return new Set(Object.entries(all).filter(([, j]) => Number(j) === Number(jour)).map(([id]) => id));
+export async function listRumeurs(jour) {
+  return hgetallJson(rumeursKey(jour));
+}
+
+// Pont annoncé par chacun : l'intention s'applique au pont réellement
+// choisi (vérité : le sien, mensonge : l'autre). Sans pont choisi, ou sans
+// rumeur (« rien »), le joueur n'apparaît pas. Pure.
+export function rumeursAnnoncees(choix, rumeurs) {
+  const annonces = { [PIERRE]: [], [CORDES]: [] };
+  for (const [discordId, r] of Object.entries(rumeurs)) {
+    const cote = choix[discordId]?.cote;
+    if (!cote || !(cote in annonces)) continue;
+    if (r?.mode === VERITE) annonces[cote].push(discordId);
+    else if (r?.mode === MENSONGE) annonces[AUTRE[cote]].push(discordId);
+  }
+  return annonces;
+}
+
+// Menteurs d'un jour de rumeurs : mensonge et pont choisi. Pure.
+export function menteurs(choix, rumeurs) {
+  return Object.entries(rumeurs)
+    .filter(([discordId, r]) => r?.mode === MENSONGE && choix[discordId]?.cote)
+    .map(([discordId]) => discordId);
 }
 
 // ── Indice (une consultation par jour) ────────────────────────────
@@ -359,9 +390,10 @@ export async function listManches({ limit = 10 } = {}) {
 
 // Données d'une partie (au passage au Jour 1 et par resetPont)
 export async function resetPartie() {
-  await getRedis().del(JOKERS_KEY, POINTS_KEY, PASSES_KEY, USERNAMES_KEY, AVATARS_KEY, HISTORIQUE_KEY);
+  await getRedis().del(POINTS_KEY, PASSES_KEY, USERNAMES_KEY, AVATARS_KEY, HISTORIQUE_KEY);
   await scanDelete("pont:choix:*");
   await scanDelete("pont:indices:*");
+  await scanDelete("pont:rumeurs:*");
 }
 
 export async function resetPont({ clearManches = false } = {}) {

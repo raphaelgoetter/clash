@@ -14,8 +14,14 @@ import {
   formatPieces,
   jourOuvert,
   enregistrerChoix,
-  jouerJoker,
-  jokersDuJour,
+  lancerRumeur,
+  listRumeurs,
+  rumeursAnnoncees,
+  menteurs,
+  rumeursPrecedentes,
+  VERITE,
+  MENSONGE,
+  RIEN,
   consulterIndice,
   compterPassants,
   resetPont,
@@ -48,7 +54,7 @@ test("calendrier : Troll repu au Jour 3, Grande finale au Jour 7, cordes ≥ pie
 });
 
 test("le troll attrape le pont le plus chargé, butin partagé × multiplicateur", () => {
-  const r = resoudreJour(choix(17, 11), new Set(), cfg(1, 3));
+  const r = resoudreJour(choix(17, 11), cfg(1, 3));
   assert.equal(r.attrape, PIERRE);
   assert.equal(r.gagnant, CORDES);
   assert.equal(r.gainBase, 460); // 4,64 pièces arrondies au dixième
@@ -59,48 +65,58 @@ test("le troll attrape le pont le plus chargé, butin partagé × multiplicateur
 });
 
 test("égalité : personne n'est attrapé, chacun gagne le multiplicateur de son pont", () => {
-  const r = resoudreJour(choix(5, 5), new Set(["c0"]), cfg(1, 2));
+  const r = resoudreJour(choix(5, 5), cfg(1, 2));
   assert.equal(r.attrape, null);
   assert.equal(r.personneAttrape, true);
   assert.deepEqual(r.gainParCote, { [PIERRE]: 100, [CORDES]: 200 });
   assert.ok(r.resultats.every((x) => x.passe));
   assert.equal(r.resultats.find((x) => x.discordId === "p0").gain, 100);
   assert.equal(r.resultats.find((x) => x.discordId === "c1").gain, 200);
-  assert.equal(r.resultats.find((x) => x.discordId === "c0").gain, 400); // Joker
 });
 
 test("Troll repu sur un pont vide : personne d'attrapé, gains en Grande finale doublés", () => {
-  const r = resoudreJour(choix(4, 0), new Set(), cfg(1, 3, REPU));
+  const r = resoudreJour(choix(4, 0), cfg(1, 3, REPU));
   assert.equal(r.attrape, CORDES);
   assert.equal(r.personneAttrape, true);
   assert.ok(r.resultats.every((x) => x.passe && x.gain === 100));
-  const f = resoudreJour(choix(3, 3), new Set(), cfg(1, 3, FINALE));
+  const f = resoudreJour(choix(3, 3), cfg(1, 3, FINALE));
   assert.deepEqual(f.gainParCote, { [PIERRE]: 200, [CORDES]: 600 });
 });
 
 test("pont vide en face : aucun butin", () => {
-  const r = resoudreJour(choix(6, 0), new Set(), cfg(1, 3));
+  const r = resoudreJour(choix(6, 0), cfg(1, 3));
   assert.equal(r.attrape, PIERRE);
   assert.equal(r.gainBase, 0);
 });
 
 test("Troll repu : il attrape le pont le moins chargé", () => {
-  const r = resoudreJour(choix(9, 4), new Set(), cfg(1, 3, REPU));
+  const r = resoudreJour(choix(9, 4), cfg(1, 3, REPU));
   assert.equal(r.attrape, CORDES);
   assert.equal(r.gagnant, PIERRE);
   assert.equal(r.gainBase, 40); // 0,44
 });
 
-test("Grande finale ×2 et Joker ×2 se cumulent", () => {
-  const r = resoudreJour(choix(4, 2), new Set(["c0"]), cfg(1, 3, FINALE));
+test("Grande finale : gains doublés", () => {
+  const r = resoudreJour(choix(4, 2), cfg(1, 3, FINALE));
   assert.equal(r.gainBase, 1200);
-  assert.equal(r.resultats.find((x) => x.discordId === "c0").gain, r.gainBase * 2);
-  assert.equal(r.resultats.find((x) => x.discordId === "c1").gain, r.gainBase);
+  assert.ok(r.resultats.filter((x) => x.cote === CORDES).every((x) => x.gain === 1200));
 });
 
-test("Joker d'un attrapé : aucun gain", () => {
-  const r = resoudreJour(choix(4, 2), new Set(["p0"]), cfg(1, 1));
-  assert.equal(r.resultats.find((x) => x.discordId === "p0").gain, 0);
+test("rumeurs : pont annoncé d'après le pont choisi, menteurs, sans pont = absent", () => {
+  const choixDuJour = { a: { cote: PIERRE }, b: { cote: CORDES }, c: { cote: PIERRE }, d: { cote: CORDES } };
+  const rumeurs = { a: { mode: VERITE }, b: { mode: MENSONGE }, c: { mode: RIEN }, d: { mode: VERITE }, e: { mode: VERITE } };
+  assert.deepEqual(rumeursAnnoncees(choixDuJour, rumeurs), { [PIERRE]: ["a", "b"], [CORDES]: ["d"] });
+  assert.deepEqual(menteurs(choixDuJour, rumeurs), ["b"]);
+  assert.deepEqual(menteurs(choixDuJour, { e: { mode: MENSONGE } }), [], "pas de pont, pas de mensonge");
+});
+
+test("rumeurs les jours impairs, détecteur sur le jour de rumeurs précédent", async () => {
+  const config = await loadPontConfig();
+  assert.deepEqual(config.jours_rumeurs, [1, 3, 5, 7]);
+  assert.ok(config.jours_indice.every((j) => !config.jours_rumeurs.includes(j)), "Indice et Rumeurs en alternance");
+  assert.equal(rumeursPrecedentes(config, 1), null);
+  assert.equal(rumeursPrecedentes(config, 3), 1);
+  assert.equal(rumeursPrecedentes(config, 7), 5);
 });
 
 test("indice : exact le matin, fourchette l'après-midi, tendance le soir", () => {
@@ -181,17 +197,17 @@ test("Components V2 : un conteneur par embed, image en galerie, ping en bloc tex
 });
 
 if (Redis.isFake) {
-  test("choix définitif, Joker unique, Indice mémorisé (faux Redis)", async () => {
+  test("choix définitif, rumeur définitive, Indice mémorisé (faux Redis)", async () => {
     await resetPont({ clearManches: true });
     assert.deepEqual(await enregistrerChoix(2, "u1", PIERRE, { username: "Un" }), { ok: true, cote: PIERRE });
     assert.deepEqual(await enregistrerChoix(2, "u1", CORDES, {}), { ok: false, cote: PIERRE });
     await enregistrerChoix(2, "u2", CORDES, {});
     assert.equal(await compterPassants(2), 2);
 
-    assert.deepEqual(await jouerJoker(2, "u1"), { ok: true, jour: 2 });
-    assert.deepEqual(await jouerJoker(4, "u1"), { ok: false, jour: 2 });
-    assert.deepEqual([...(await jokersDuJour(2))], ["u1"]);
-    assert.equal((await jokersDuJour(4)).size, 0);
+    assert.deepEqual(await lancerRumeur(3, "u1", MENSONGE), { ok: true, mode: MENSONGE });
+    assert.deepEqual(await lancerRumeur(3, "u1", VERITE), { ok: false, mode: MENSONGE });
+    assert.deepEqual(await lancerRumeur(3, "u2", "n'importe quoi"), { ok: false, mode: null });
+    assert.deepEqual(Object.keys(await listRumeurs(3)), ["u1"]);
 
     const premier = await consulterIndice(2, "u3", A(9));
     assert.deepEqual(premier, { nouveau: true, texte: "Pierre 1, Cordes 1." });

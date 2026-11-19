@@ -99,8 +99,8 @@ import {
 } from "../handlers/meow.js";
 import {
   handleTraverser as handlePontTraverser,
-  handleJoker as handlePontJoker,
-  handleJokerOk as handlePontJokerOk,
+  handleRumeurs as handlePontRumeurs,
+  handleRumeurChoix as handlePontRumeurChoix,
   handleIndice as handlePontIndice,
   handleRegles as handlePontRegles,
 } from "../handlers/pont.js";
@@ -132,9 +132,9 @@ export async function routeJeuxSpeciaux(body, res) {
   }
 
   // ── Pont du Troll : boutons du message public (nouvel éphémère) ──
-  // custom_id : pont_pierre:<jour>, pont_cordes:<jour>, pont_joker:<jour>,
+  // custom_id : pont_pierre:<jour>, pont_cordes:<jour>, pont_rumeurs:<jour>,
   // pont_indice:<jour>, pont_regles
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^pont_(pierre|cordes|joker|indice):\d+$|^pont_regles$/.test(body.data.custom_id)) {
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^pont_(pierre|cordes|rumeurs|indice):\d+$|^pont_regles$/.test(body.data.custom_id)) {
     const [action, jour] = body.data.custom_id.split(":");
     const discordId = body.member?.user?.id;
     const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
@@ -143,19 +143,20 @@ export async function routeJeuxSpeciaux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     if (action === "pont_regles") runBackground(() => handlePontRegles(webhookUrl));
-    else if (action === "pont_joker") runBackground(() => handlePontJoker(webhookUrl, jour, discordId));
+    else if (action === "pont_rumeurs") runBackground(() => handlePontRumeurs(webhookUrl, jour, discordId));
     else if (action === "pont_indice") runBackground(() => handlePontIndice(webhookUrl, jour, discordId));
     else runBackground(() => handlePontTraverser(webhookUrl, jour, action === "pont_pierre" ? "pierre" : "cordes", discordId, username, avatar));
     return;
   }
 
-  // ── Pont du Troll : confirmation du Joker (édition en place de l'éphémère) ──
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("pont_joker_ok:")) {
+  // ── Pont du Troll : menu des rumeurs (édition en place de l'éphémère) ──
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^pont_rumeur:\d+$/.test(body.data.custom_id)) {
     const jour = body.data.custom_id.split(":")[1];
     const discordId = body.member?.user?.id;
+    const mode = body.data.values?.[0];
     res.status(200).json({ type: 6 });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handlePontJokerOk(webhookUrl, jour, discordId));
+    runBackground(() => handlePontRumeurChoix(webhookUrl, jour, discordId, mode));
     return;
   }
 

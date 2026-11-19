@@ -1,6 +1,7 @@
 {
   "duree_jours": 7,
   "jours_indice": [2, 4, 6],
+  "jours_rumeurs": [1, 3, 5, 7],
   "calendrier": [
     { "jour": 1, "pierre": 1, "cordes": 1 },
     { "jour": 2, "pierre": 1, "cordes": 2 },
