@@ -711,6 +711,18 @@ async function majCompteur(state) {
   }
 }
 
+// Position du joueur au classement (jours déjà résolus), pour la
+// confirmation éphémère : « 📊 Tu es 12e : 6,4 pièces, 3 passages. ».
+// Rien tant qu'il n'est pas classé (Jour 1, nouveau joueur).
+export async function maPosition(discordId) {
+  const ranking = buildRanking(await readPoints(), await readPasses());
+  const i = ranking.findIndex((r) => r.discordId === discordId);
+  if (i === -1) return null;
+  const rang = rangExAequo(ranking, i, memeRang);
+  const r = ranking[i];
+  return `📊 Tu es ${rang === 1 ? "1er" : `${rang}e`} : ${pieces(r.centiemes)}, ${pluriel(r.passes, "passage")}.`;
+}
+
 export async function handleTraverser(
   webhookUrl,
   jour,
@@ -730,7 +742,10 @@ export async function handleTraverser(
       await patchOriginal(
         webhookUrl,
         messageSeul(
-          `${EMOJI[r.cote] ?? ""} Tu as déjà traversé ${PAR[r.cote] ?? ""} aujourd'hui, ton choix est définitif.`,
+          [
+            `${EMOJI[r.cote] ?? ""} Tu as déjà traversé ${PAR[r.cote] ?? ""} aujourd'hui, ton choix est définitif.`,
+            await maPosition(discordId),
+          ].filter(Boolean).join("\n"),
         ),
       );
       return;
@@ -738,7 +753,9 @@ export async function handleTraverser(
     await patchOriginal(
       webhookUrl,
       messageSeul(
-        `${EMOJI[cote]} Tu traverses ${PAR[cote]}. Résultat demain matin !`,
+        [`${EMOJI[cote]} Tu traverses ${PAR[cote]}. Résultat demain matin !`, await maPosition(discordId)]
+          .filter(Boolean)
+          .join("\n"),
       ),
     );
     await majCompteur(state);

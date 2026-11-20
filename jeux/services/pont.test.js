@@ -25,11 +25,13 @@ import {
   consulterIndice,
   compterPassants,
   resetPont,
+  addPoints,
+  addPasse,
   listChoix,
   readUsernames,
   readAvatars,
 } from "./pont.js";
-import { postPont, versV2, lignesClassement } from "../discord/handlers/pont.js";
+import { postPont, versV2, lignesClassement, maPosition } from "../discord/handlers/pont.js";
 import { lignesMatin, lignesResultat, positionsPassants } from "./pontImage.js";
 
 const choix = (pierre, cordes) => {
@@ -279,5 +281,22 @@ if (Redis.isFake) {
       "4\\. Bernadette (7 pièces, 2 passages)",
       "4\\. Jean-Mi (7 pièces, 2 passages)",
     ]);
+  });
+}
+
+if (Redis.isFake) {
+  test("position du joueur dans la confirmation : rang partagé, rien sans classement", async () => {
+    await resetPont({ clearManches: true });
+    assert.equal(await maPosition("u9"), null);
+    await addPoints("u1", 640);
+    await addPoints("u2", 900);
+    await addPoints("u3", 640);
+    for (let i = 0; i < 3; i++) await addPasse("u1");
+    for (let i = 0; i < 3; i++) await addPasse("u3");
+    await addPasse("u2");
+    assert.equal(await maPosition("u2"), "📊 Tu es 1er : 9 pièces, 1 passage.");
+    assert.equal(await maPosition("u1"), "📊 Tu es 2e : 6,4 pièces, 3 passages.");
+    assert.equal(await maPosition("u3"), "📊 Tu es 2e : 6,4 pièces, 3 passages.");
+    await resetPont({ clearManches: true });
   });
 }
