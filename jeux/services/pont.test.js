@@ -22,6 +22,7 @@ import {
   VERITE,
   MENSONGE,
   RIEN,
+  JOUR_DE_VERITE,
   consulterIndice,
   compterPassants,
   resetPont,
@@ -45,7 +46,7 @@ const cfg = (pierre, cordes, evenement = null) => ({ jour: 1, pierre, cordes, ev
 // Instants fixes (heure de Paris en hiver = UTC+1)
 const A = (heureParis) => Date.UTC(2026, 10, 20, heureParis - 1, 30);
 
-test("calendrier : Troll repu au Jour 3, Grande finale au Jour 7, cordes ≥ pierre", async () => {
+test("calendrier : Troll repu au Jour 3, Fête du village au Jour 7, cordes ≥ pierre", async () => {
   const config = await loadPontConfig();
   assert.equal(jourConfig(config, 3).evenement, REPU);
   assert.equal(jourConfig(config, 7).evenement, FINALE);
@@ -59,7 +60,7 @@ test("le troll attrape le pont le plus chargé, butin partagé × multiplicateur
   const r = resoudreJour(choix(17, 11), cfg(1, 3));
   assert.equal(r.attrape, PIERRE);
   assert.equal(r.gagnant, CORDES);
-  assert.equal(r.gainBase, 460); // 4,64 pièces arrondies au dixième
+  assert.equal(r.gainBase, 500); // 4,64 pièces, arrondi à l'entier supérieur
   const gagnants = r.resultats.filter((x) => x.passe);
   assert.equal(gagnants.length, 11);
   assert.ok(gagnants.every((x) => x.gain === r.gainBase));
@@ -76,7 +77,7 @@ test("égalité : personne n'est attrapé, chacun gagne le multiplicateur de son
   assert.equal(r.resultats.find((x) => x.discordId === "c1").gain, 200);
 });
 
-test("Troll repu sur un pont vide : personne d'attrapé, gains en Grande finale doublés", () => {
+test("Troll repu sur un pont vide : personne d'attrapé, gains doublés à la Fête du village", () => {
   const r = resoudreJour(choix(4, 0), cfg(1, 3, REPU));
   assert.equal(r.attrape, CORDES);
   assert.equal(r.personneAttrape, true);
@@ -95,10 +96,10 @@ test("Troll repu : il attrape le pont le moins chargé", () => {
   const r = resoudreJour(choix(9, 4), cfg(1, 3, REPU));
   assert.equal(r.attrape, CORDES);
   assert.equal(r.gagnant, PIERRE);
-  assert.equal(r.gainBase, 40); // 0,44
+  assert.equal(r.gainBase, 100); // 0,44 arrondi à 1
 });
 
-test("Grande finale : gains doublés", () => {
+test("Fête du village : gains doublés", () => {
   const r = resoudreJour(choix(4, 2), cfg(1, 3, FINALE));
   assert.equal(r.gainBase, 1200);
   assert.ok(r.resultats.filter((x) => x.cote === CORDES).every((x) => x.gain === 1200));
@@ -110,6 +111,17 @@ test("rumeurs : pont annoncé d'après le pont choisi, menteurs, sans pont = abs
   assert.deepEqual(rumeursAnnoncees(choixDuJour, rumeurs), { [PIERRE]: ["a", "b"], [CORDES]: ["d"] });
   assert.deepEqual(menteurs(choixDuJour, rumeurs), ["b"]);
   assert.deepEqual(menteurs(choixDuJour, { e: { mode: MENSONGE } }), [], "pas de pont, pas de mensonge");
+});
+
+test("Jour de vérité (J5) : tout mensonge annonce le vrai pont, aucun menteur", async () => {
+  const config = await loadPontConfig();
+  assert.equal(jourConfig(config, 5).evenement, JOUR_DE_VERITE);
+  const choixDuJour = { a: { cote: PIERRE }, b: { cote: CORDES } };
+  const rumeurs = { a: { mode: MENSONGE }, b: { mode: VERITE } };
+  assert.deepEqual(rumeursAnnoncees(choixDuJour, rumeurs, { verite: true }), { [PIERRE]: ["a"], [CORDES]: ["b"] });
+  assert.deepEqual(menteurs(choixDuJour, rumeurs, { verite: true }), []);
+  assert.deepEqual(menteurs(choixDuJour, rumeurs), ["a"]);
+  assert.equal(lignesMatin(JOUR_DE_VERITE)[1], "Toutes les rumeurs sont vraies");
 });
 
 test("rumeurs les jours impairs, détecteur sur le jour de rumeurs précédent", async () => {
@@ -163,8 +175,8 @@ test("jour ouvert de 8h à 8h (heure de Paris)", () => {
 test("textes de l'image", () => {
   assert.equal(lignesMatin(null).length, 1);
   assert.equal(lignesMatin(REPU)[1], "Il attrape le pont le moins chargé");
-  const l = lignesResultat({ attrape: PIERRE, gagnant: CORDES, gainBase: 460, pierre: 17, cordes: 11 });
-  assert.deepEqual(l, ["17 joueurs attrapés sur la pierre", "Cordes : +4,6 pièces chacun"]);
+  const l = lignesResultat({ attrape: PIERRE, gagnant: CORDES, gainBase: 500, pierre: 17, cordes: 11 });
+  assert.deepEqual(l, ["17 joueurs attrapés sur la pierre", "Cordes : +5 pièces chacun"]);
   assert.deepEqual(lignesResultat({ attrape: null, pierre: 3, cordes: 3, gainParCote: { pierre: 100, cordes: 200 } }), [
     "Égalité : le troll se rendort",
     "Pierre +1 · Cordes +2 pièces chacun",

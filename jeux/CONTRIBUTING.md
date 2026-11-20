@@ -1386,7 +1386,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 - **Choix du pont** : un clic sur 🪨 Pont de pierre ou 🪢 Pont de cordes, **définitif**, confirmé en éphémère (« Tu traverses par la pierre »), avec la position du joueur au classement des jours déjà résolus (`maPosition()` : « 📊 Tu es 12e : 6,4 pièces, 3 passages. », absente tant qu'il n'est pas classé). Un second clic rappelle le choix fait et la position, sans rien modifier. Le message public ne montre que le top 5.
 - ⚠️ **Vote secret** : aucune répartition n'est visible avant le résultat (ni dans l'embed, ni dans l'URL de l'image, ni dans `/mini-jeux`). Seul le nombre total de passants du jour est public. Sinon chaque joueur choisit le pont le moins chargé et le jour finit à X contre X-1.
 - **Le troll attrape le pont qui compte le plus de passants.** Pont vide en face du pont attrapé : personne ne gagne (pas de partage possible).
-- **Personne d'attrapé** (égalité, ou Troll repu qui vise un pont vide) : tout le monde passe et gagne le **multiplicateur de son pont** (la formule du butin avec attrapés / passés = 1), doublé par la Grande finale ; compte comme un jour passé pour le départage.
+- **Personne d'attrapé** (égalité, ou Troll repu qui vise un pont vide) : tout le monde passe et gagne le **multiplicateur de son pont** (la formule du butin avec attrapés / passés = 1), doublé par la Fête du village ; compte comme un jour passé pour le départage.
 - **Butin** : chaque passant attrapé lâche 1 pièce, partagée entre les passants de l'autre pont, multipliée par le multiplicateur de leur pont : `gain = multiplicateur × attrapés / passés`. Les attrapés ne perdent rien (0 pièce ce jour-là).
 - La pierre est toujours à gauche et les cordes à droite (décor fixe) : le multiplicateur des cordes est toujours supérieur ou égal à celui de la pierre.
 
@@ -1396,11 +1396,12 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 | 2    | ×1     | ×2     |                                                         |
 | 3    | ×1     | ×3     | **Troll repu** : il attrape le pont le **moins** chargé |
 | 4    | ×1     | ×1     |                                                         |
-| 5    | ×1     | ×2     |                                                         |
+| 5    | ×1     | ×2     | **Jour de vérité** : toutes les rumeurs sont vraies     |
 | 6    | ×2     | ×3     |                                                         |
-| 7    | ×1     | ×3     | **Grande finale** : gains doublés                       |
+| 7    | ×1     | ×3     | **Fête du village** : primes doublées                       |
 
-- Les deux événements sont annoncés dans le message du jour (texte et bandeau de l'image), jamais cachés. Troll repu : la règle du butin est inchangée, les gagnants sont simplement ceux du pont le plus chargé (`gain = multiplicateur × attrapés / passés`, souvent inférieur à 1).
+- **Jour de vérité** (`JOUR_DE_VERITE`, jour 5) : un « Mensonge » annonce le vrai pont (`rumeursAnnoncees(…, { verite: true })`), personne n'est menteur ce jour-là (`menteurs()` renvoie `[]`, le détecteur du Jour 7 affiche « Personne n'a menti »). Le menu n'est pas modifié : qui n'a pas lu l'événement peut encore choisir Mensonge, et l'éphémère lui répond ensuite « mensonge… mais c'est le Jour de vérité, tu annonces ton vrai pont ! ». Les rumeurs deviennent un super-indice imprécis (non-lecteurs, joueurs qui n'annoncent rien). Simulation (20 000 jours, 15 à 20 joueurs) : annonces fiables à 67 % (44 % un jour de rumeurs normal), écart moyen resserré (2,4 joueurs au lieu de 3,2), annoncer son pont devient payant (il fait fuir les joueurs qui consultent).
+- Les trois événements sont annoncés dans le message du jour (texte et bandeau de l'image), jamais cachés. Troll repu : la règle du butin est inchangée, les gagnants sont simplement ceux du pont le plus chargé (`gain = multiplicateur × attrapés / passés`, souvent inférieur à 1).
 - **🗣️ Rumeurs** : jours impairs seulement (1, 3, 5, 7 ; `jours_rumeurs`, en alternance avec l'Indice), bouton `[🗣️ Rumeurs]` (`pont_rumeurs:<jour>`) cliquable à tout moment de la journée, avant ou après le choix du pont, autant de fois qu'on veut. Éphémère (`vueRumeurs()`) :
   - « 🗣️ Selon les rumeurs du jour » : par pont, les joueurs qui l'annoncent (« 4 joueurs ont pris le pont de pierre : A, B, C et D »). Le pont annoncé se déduit du pont **réellement choisi** (`rumeursAnnoncees()`) : vérité = son pont, mensonge = l'autre ; un joueur sans pont choisi (ou qui n'annonce rien) n'apparaît pas. Une rumeur peut donc être lancée avant de traverser, sans risque d'erreur.
   - « 🤥 Détecteur de fake-news (Jour N) » : menteurs du **jour de rumeurs précédent** (`rumeursPrecedentes()` : J-2, puisque la veille n'a pas de rumeurs ; absent au Jour 1). Menteur = « mensonge » et pont choisi (`menteurs()`).
@@ -1414,7 +1415,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 ### Barème et classement (Pont du Troll)
 
-- Pièces stockées en **centièmes entiers** (`HINCRBY`, jamais de flottant). Le gain par passant est arrondi au **dixième** dès `resoudreJour()` (multiple de 10 centièmes) : les totaux s'affichent avec une décimale (« 4,6 pièces », `formatPieces()`) sans écart d'arrondi entre joueurs.
+- Pièces stockées en **centièmes entiers** (`HINCRBY`, jamais de flottant). Le gain par joueur est en **pièces entières, arrondi à l'entier supérieur** dès `resoudreJour()` (`Math.ceil`, multiple de 100 centièmes) : « 3 × 12 ÷ 16 = 2,25 » rapporte 3 pièces ; un passage réussi rapporte toujours au moins 1 pièce. Choix validé par simulation (5 000 parties, 15 à 20 joueurs) : même vainqueur qu'au dixième dans 98 % des parties, mais 1re place encore ex aequo après départage dans 14 % des parties (7 % au dixième) ; un barème ×10 sans décimale a été écarté (moins lisible).
 - Tout passant entre au classement, même à 0 pièce.
 - `buildRanking()` : pièces décroissantes, puis **nombre de jours passés** (sans être attrapé) décroissant ; ex aequo au-delà (`rangExAequo()`). Le classement affiché donne les deux critères pour chaque joueur : « 3. Gérard (9 pièces, 3 passages) ».
 - Score de manche cumulé dans l'historique de saison des mini-jeux (`miniJeuxHistory.js`, champ `points` de l'archive, en pièces arrondies à l'unité) et compté dans les stats de `/mini-jeux` (`miniJeuxStats.js`).
@@ -1429,7 +1430,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 - Fin de partie : même bloc unique, résultat du Jour 7 et son image, puis classement complet (20 premiers), vainqueurs et vainqueurs des parties précédentes sous l'image.
 - Vocabulaire joueur : « joueur(s) », jamais « passant(s) » (textes et images ; le code garde `passants` pour les listes par pont).
 - Rangs du classement écrits avec le point échappé (voir « Classements »).
-- Accords : « pièce » au singulier sous 2 (« +1,1 pièce »), pluriel à partir de 2.
+- Accords : « 1 pièce », « 2 pièces ».
 
 ### Image (Pont du Troll)
 

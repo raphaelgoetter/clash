@@ -17,7 +17,7 @@ import jpeg from "jpeg-js";
 import { texteAffichable } from "@clash/commun/texteImage.js";
 import { readBlobAsset, readGameFontPaths } from "@clash/commun/blobAssets.js";
 import { avatarDataUrl } from "./avatarsDiscord.js";
-import { PIERRE, CORDES, REPU, FINALE, formatPieces } from "./pont.js";
+import { PIERRE, CORDES, REPU, FINALE, JOUR_DE_VERITE, formatPieces } from "./pont.js";
 
 const FOND_ENDORMI = "pont/images/pont-fond.jpg";
 const FOND_ATTRAPE = { [PIERRE]: "pont/images/pont-troll-gauche.jpg", [CORDES]: "pont/images/pont-troll-droite.jpg" };
@@ -138,7 +138,8 @@ function cadre(fond, contenu, droite, [l1, l2], { l1Or = false } = {}) {
 
 export function lignesMatin(evenement) {
   if (evenement === REPU) return ["Troll repu aujourd'hui !", "Il attrape le pont le moins chargé"];
-  if (evenement === FINALE) return ["Grande finale !", "Gains doublés aujourd'hui"];
+  if (evenement === FINALE) return ["Fête du village !", "Primes doublées aujourd'hui"];
+  if (evenement === JOUR_DE_VERITE) return ["Jour de vérité !", "Toutes les rumeurs sont vraies"];
   return ["Le troll attrape le pont le plus chargé"];
 }
 

@@ -91,6 +91,8 @@ export const CORDES = "cordes";
 export const COTES = [PIERRE, CORDES];
 export const REPU = "repu";
 export const FINALE = "finale";
+// Jour de vérité : toutes les rumeurs du jour sont vraies, mensonges compris
+export const JOUR_DE_VERITE = "verite";
 
 // ── Config (statique) ─────────────────────────────────────────────
 
@@ -160,19 +162,20 @@ export function resoudreJour(choix, cfg) {
   const gagnant = attrape ? (attrape === PIERRE ? CORDES : PIERRE) : null;
 
   // Butin : 1 pièce par attrapé, partagée entre les passants de l'autre
-  // pont, × son multiplicateur (× 2 en Grande finale). Pont vide en face :
+  // pont, × son multiplicateur (× 2 à la Fête du village). Pont vide en face :
   // aucun. Personne d'attrapé (égalité, ou Troll repu qui vise un pont
   // vide) : tout le monde passe et gagne le multiplicateur de son pont
   // (la formule du butin avec attrapés / passés = 1).
-  // Arrondi au dixième de pièce : les totaux s'affichent sans perte.
+  // Pièces entières, arrondi à l'entier supérieur (calcul entier, sans
+  // flottant) ; stockées en centièmes (multiples de 100).
   const finale = cfg.evenement === FINALE ? 2 : 1;
-  const dixiemes = (x) => 10 * Math.round(10 * x);
+  const entierSuperieur = (num, den) => 100 * Math.ceil(num / den);
   const personneAttrape = !attrape || n[attrape] === 0;
   const gainParCote = { [PIERRE]: 0, [CORDES]: 0 };
   if (personneAttrape) {
-    for (const cote of COTES) gainParCote[cote] = dixiemes(cfg[cote] * finale);
+    for (const cote of COTES) gainParCote[cote] = entierSuperieur(cfg[cote] * finale, 1);
   } else if (n[gagnant] > 0) {
-    gainParCote[gagnant] = dixiemes((cfg[gagnant] * finale * n[attrape]) / n[gagnant]);
+    gainParCote[gagnant] = entierSuperieur(cfg[gagnant] * finale * n[attrape], n[gagnant]);
   }
   const gainBase = gagnant ? gainParCote[gagnant] : 0;
 
@@ -302,20 +305,23 @@ export async function listRumeurs(jour) {
 
 // Pont annoncé par chacun : l'intention s'applique au pont réellement
 // choisi (vérité : le sien, mensonge : l'autre). Sans pont choisi, ou sans
-// rumeur (« rien »), le joueur n'apparaît pas. Pure.
-export function rumeursAnnoncees(choix, rumeurs) {
+// rumeur (« rien »), le joueur n'apparaît pas. Jour de vérité (`verite`) :
+// un mensonge annonce aussi le vrai pont. Pure.
+export function rumeursAnnoncees(choix, rumeurs, { verite = false } = {}) {
   const annonces = { [PIERRE]: [], [CORDES]: [] };
   for (const [discordId, r] of Object.entries(rumeurs)) {
     const cote = choix[discordId]?.cote;
     if (!cote || !(cote in annonces)) continue;
     if (r?.mode === VERITE) annonces[cote].push(discordId);
-    else if (r?.mode === MENSONGE) annonces[AUTRE[cote]].push(discordId);
+    else if (r?.mode === MENSONGE) annonces[verite ? cote : AUTRE[cote]].push(discordId);
   }
   return annonces;
 }
 
-// Menteurs d'un jour de rumeurs : mensonge et pont choisi. Pure.
-export function menteurs(choix, rumeurs) {
+// Menteurs d'un jour de rumeurs : mensonge et pont choisi (aucun un Jour de
+// vérité : le mensonge a été dit vrai). Pure.
+export function menteurs(choix, rumeurs, { verite = false } = {}) {
+  if (verite) return [];
   return Object.entries(rumeurs)
     .filter(([discordId, r]) => r?.mode === MENSONGE && choix[discordId]?.cote)
     .map(([discordId]) => discordId);

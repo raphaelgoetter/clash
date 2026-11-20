@@ -11,6 +11,7 @@ import {
   CORDES,
   REPU,
   FINALE,
+  JOUR_DE_VERITE,
   loadPontConfig,
   jourConfig,
   indiceDisponible,
@@ -125,7 +126,9 @@ function buildJourEmbed(config, cfg, { estPremierJour, v }) {
   if (cfg.evenement === REPU)
     lines.push("", "🍖 **Troll repu** : aujourd'hui, il attrape le pont **le moins** chargé !");
   if (cfg.evenement === FINALE)
-    lines.push("", "🏆 **Grande finale** : gains doublés !");
+    lines.push("", "🎉 **Fête du village** : le village double ses primes !");
+  if (cfg.evenement === JOUR_DE_VERITE)
+    lines.push("", "📢 **Jour de vérité** : toutes les rumeurs du jour sont vraies !");
   // Indice et Rumeurs : pas de mention, leur bouton suffit
   return {
     title: `🧌 Pont du Troll (Jour ${cfg.jour}/${config.duree_jours})`,
@@ -807,7 +810,8 @@ async function vueRumeurs(config, jour, discordId) {
     readRumeur(jour, discordId),
     readChoix(jour, discordId),
   ]);
-  const annonces = rumeursAnnoncees(choix, rumeurs);
+  const estVerite = (j) => jourConfig(config, j).evenement === JOUR_DE_VERITE;
+  const annonces = rumeursAnnoncees(choix, rumeurs, { verite: estVerite(jour) });
   const lignes = ["🗣️ **Selon les rumeurs du jour :**"];
   if (!annonces[PIERRE].length && !annonces[CORDES].length) {
     lignes.push("- Aucune rumeur pour l'instant.");
@@ -827,7 +831,7 @@ async function vueRumeurs(config, jour, discordId) {
 
   const precedent = rumeursPrecedentes(config, jour);
   if (precedent != null) {
-    const ids = menteurs(await listChoix(precedent), await listRumeurs(precedent));
+    const ids = menteurs(await listChoix(precedent), await listRumeurs(precedent), { verite: estVerite(precedent) });
     lignes.push("", `🤥 **Détecteur de fake-news (Jour ${precedent}) :**`);
     lignes.push(
       ids.length
@@ -841,7 +845,11 @@ async function vueRumeurs(config, jour, discordId) {
     lignes.push("📣 **Lance une rumeur si tu le souhaites !**");
     return { content: lignes.join("\n"), embeds: [], components: menuRumeur(jour) };
   }
-  lignes.push(`📣 Ta rumeur du jour : ${LIBELLE_RUMEUR[maRumeur]}.`);
+  lignes.push(
+    maRumeur === MENSONGE && estVerite(jour)
+      ? "📣 Ta rumeur du jour : mensonge… mais c'est le Jour de vérité, tu annonces ton vrai pont !"
+      : `📣 Ta rumeur du jour : ${LIBELLE_RUMEUR[maRumeur]}.`,
+  );
   if (maRumeur !== RIEN && !monChoix) lignes.push("Elle apparaîtra dès que tu auras choisi ton pont.");
   return { content: lignes.join("\n"), embeds: [], components: [] };
 }
@@ -914,7 +922,7 @@ function buildReglesEmbed(config) {
       "",
       "🔎 **Indice** (jours pairs, une fois par jour) : la répartition du moment, exacte le matin, de plus en plus floue au fil de la journée. Une fois ton pont choisi, il ne te sert plus à rien !",
       "",
-      "**Deux jours spéciaux** : 🍖 Troll repu au Jour 3 (il attrape le pont le moins chargé) et 🏆 Grande finale au Jour 7 (gains doublés).",
+      "**Trois jours spéciaux** : 🍖 Troll repu au Jour 3 (il attrape le pont le moins chargé), 📢 Jour de vérité au Jour 5 (toutes les rumeurs sont vraies, mensonges compris) et 🎉 Fête du village au Jour 7 (primes doublées).",
       "",
       "Classement : pièces cumulées, puis nombre de jours passés sans être attrapé.",
     ].join("\n"),
