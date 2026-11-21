@@ -97,7 +97,7 @@ function jouer(p, vMoyen) {
     }
     // Tout le monde embarque dès que le Radeau est prêt (geste gratuit)
     if (planches + (counts.radeau || 0) >= planchesRequises(V, config)) nbABord = Math.max(nbABord, 1);
-    const res = resoudreNuit({ jour, stocks, planches, counts, V, nbABord, meteo, meteoAube: meteoSuivante, config });
+    const res = resoudreNuit({ jour, stocks, planches, counts, V, vRepas: vVeille ?? 0, nbABord, meteo, meteoAube: meteoSuivante, config });
     if (res.issue) return { issue: res.issue, cause: res.cause, jour: res.issue === "victoire_radeau" ? jour + 1 : jour };
     stocks = res.stocks;
     planches = res.planches;

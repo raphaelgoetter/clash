@@ -15,10 +15,10 @@ import {
   readState,
   writeState,
   isTooSoonSinceLastClosure,
+  journeeOuverte,
   tirerMeteo,
   prevoirMeteo,
   rendement,
-  repasDeLaNuit,
   planchesRequises,
   radeauPret,
   stocksDuSoir,
@@ -43,8 +43,8 @@ import {
 import { encodePlateau } from "../../services/robinsonImage.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
-import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
 import { versV2 as versV2Commun } from "../composantsV2.js";
+import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
 
 const ROBINSON_COLOR = 0x1abc9c;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -53,6 +53,10 @@ const NOM_RESSOURCE = { poisson: "du poisson", eau: "de l’eau", bois: "du bois
 
 export const versV2 = (embeds, components = [], roleId = null) =>
   versV2Commun(embeds, components, roleId, ROBINSON_COLOR);
+
+// Heure de Paris du réveil de l'île : publication du cron (7h08 UTC), soit
+// 8h en hiver et 9h en été. « Minuit » reste minuit toute l'année.
+const heureReveil = () => formatUtcTimeAsParis(7).replace("h00", " h");
 
 const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 const listeNoms = (noms) => (noms.length > 1 ? `${noms.slice(0, -1).join(", ")} et ${noms.at(-1)}` : noms[0] ?? "");
@@ -80,14 +84,15 @@ function lignesRendement(config, meteoId) {
 }
 
 function plateauUrl(config, state, { counts, V, nbABord }) {
+  const { apresRecoltes, repas } = stocksDuSoir(state.stocks, counts, state.vVeille ?? 0, state.jour, state.meteo, config);
   const d = encodePlateau({
     jour: state.jour,
     duree: config.duree_jours,
     meteo: state.meteo,
     prevision: state.prevision,
     passees: state.meteosPassees ?? [],
-    stocks: state.stocks,
-    besoin: repasDeLaNuit(state.jour, V, config) ?? {},
+    stocks: apresRecoltes,
+    besoin: repas ?? {},
     planches: state.planches + (counts.radeau || 0),
     objectif: planchesRequises(V, config),
     aBord: nbABord,
@@ -95,13 +100,23 @@ function plateauUrl(config, state, { counts, V, nbABord }) {
   return `${TRUST_ROYALE_URL}/api/robinson/plateau?d=${d}`;
 }
 
-// Lignes sous l'image : stocks, Radeau, embarquement, projection du soir
+// Lignes sous l'image : stocks (récoltes du jour comprises), repas de la
+// nuit, Radeau, embarquement
 function lignesSituation(config, state, { counts, V, nbABord }) {
-  const lignes = [RESSOURCES.map((r) => `${EMOJI_RESSOURCE[r]} **${state.stocks[r]}**`).join(" · ")];
+  const vRepas = state.vVeille ?? 0;
+  const { apresRecoltes, repas, soir } = stocksDuSoir(state.stocks, counts, vRepas, state.jour, state.meteo, config);
+  const lignes = [`${RESSOURCES.map((r) => `${EMOJI_RESSOURCE[r]} **${apresRecoltes[r]}**`).join(" · ")} (récoltes du jour comprises)`];
+  lignes.push(
+    repas
+      ? `🍽️ Repas de cette nuit pour ${pluriel(vRepas, "joueur")} d’hier : ${RESSOURCES.map((r) => `−${repas[r]} ${EMOJI_RESSOURCE[r]}`).join(" ")}`
+      : "🍞 Cette nuit, les vivres du navire suffisent.",
+  );
+  const manques = RESSOURCES.filter((r) => soir[r] < 0).map((r) => `${-soir[r]} ${EMOJI_RESSOURCE[r]}`);
+  if (manques.length) lignes.push(`⚠️ **Il manque encore ${listeNoms(manques)} pour cette nuit !**`);
   const planchesSoir = state.planches + (counts.radeau || 0);
   lignes.push(
     V > 0
-      ? `🛶 Radeau : **${pluriel(planchesSoir, "planche")}** ce soir, il en faut **${planchesRequises(V, config)}** pour ${pluriel(V, "joueur")}`
+      ? `🛶 Radeau : **${pluriel(planchesSoir, "planche")}** à l’aube, il en faut **${planchesRequises(V, config)}** pour ${pluriel(V, "joueur")}`
       : `🛶 Radeau : **${pluriel(planchesSoir, "planche")}** (${config.planches_par_joueur} par joueur du jour pour partir)`,
   );
   if (radeauPret(planchesSoir, V, config)) {
@@ -110,15 +125,6 @@ function lignesSituation(config, state, { counts, V, nbABord }) {
       `🚣 ${pluriel(nbABord, "joueur")} à bord`,
     );
   }
-  if (V > 0) {
-    const { soir, repas } = stocksDuSoir(state.stocks, counts, V, state.jour, state.meteo, config);
-    lignes.push(
-      "",
-      `🌙 Ce soir si rien ne change : ${RESSOURCES.map((r) => `${EMOJI_RESSOURCE[r]} ${Math.max(0, soir[r])}`).join(" · ")}${repas ? "" : " (vivres du navire, pas de repas)"}`,
-    );
-    const manques = RESSOURCES.filter((r) => soir[r] < 0).map((r) => `${-soir[r]} ${EMOJI_RESSOURCE[r]}`);
-    if (manques.length) lignes.push(`⚠️ **Il manquera ${listeNoms(manques)} ce soir !**`);
-  }
   return lignes;
 }
 
@@ -126,7 +132,7 @@ async function buildJourEmbed(config, state, { counts, V, nbABord }) {
   const narratifs = await loadNarratifs();
   const lignes = [];
   if (state.jour === 1) {
-    lignes.push(narratifs.intro_jour1.replaceAll("{duree}", config.duree_jours), "", "🍞 Cette nuit, les vivres du navire suffisent.", "");
+    lignes.push(narratifs.intro_jour1.replaceAll("{jour_tsunami}", config.duree_jours + 1), "");
   } else if (state.bilan?.length) {
     lignes.push("**🌙 Cette nuit**", ...state.bilan, "");
   }
@@ -136,7 +142,7 @@ async function buildJourEmbed(config, state, { counts, V, nbABord }) {
     choisir(narratifs.meteo?.[state.meteo], state.jour),
     state.jour < config.duree_jours
       ? `🔭 Demain : ${meteoLabel(config, state.prevision)} probable`
-      : `🔭 Demain à l’aube : ${meteoLabel(config, state.prevision)} probable (dernière chance de partir)`,
+      : `🔭 Demain à l’aube : ${meteoLabel(config, state.prevision)} probable (dernière chance avant le tsunami)`,
   );
   return {
     title: `🏝️ Robinson (Jour ${state.jour}/${config.duree_jours})`,
@@ -145,7 +151,7 @@ async function buildJourEmbed(config, state, { counts, V, nbABord }) {
     image: { url: plateauUrl(config, state, { counts, V, nbABord }) },
     apres: lignesSituation(config, state, { counts, V, nbABord }).join("\n"),
     footer: {
-      text: `🏝️ ${pluriel(V, "joueur")} aujourd’hui · Un choix par jour, définitif · Nuit à ${formatUtcTimeAsParis(8)}`,
+      text: `🏝️ ${pluriel(V, "joueur")} aujourd’hui · Un choix par jour, définitif · Jusqu’à minuit`,
     },
   };
 }
@@ -193,16 +199,18 @@ async function vueJour(config, state, jourLu = null) {
 
 // ── Bilan de la nuit ───────────────────────────────────────────────
 
-function lignesBilan(config, res, { counts, V, nbABord }) {
-  if (V === 0) return ["Personne n’a travaillé hier : rien n’a bougé au camp."];
+function lignesBilan(config, res, { counts, V, nbABord }, vRepas, jour) {
   const lignes = [];
+  if (V === 0) lignes.push("Personne n’a travaillé hier.");
   const recoltes = RESSOURCES.filter((r) => res.recoltes[r] > 0).map((r) => `+${res.recoltes[r]} ${EMOJI_RESSOURCE[r]}`);
   if (counts.radeau) recoltes.push(`+${pluriel(counts.radeau, "planche")}`);
   if (recoltes.length) lignes.push(`Travail du jour : ${recoltes.join(" · ")}`);
   lignes.push(
     res.repas
-      ? `🍽️ ${pluriel(V, "joueur")} ${V > 1 ? "ont" : "a"} mangé : ${RESSOURCES.map((r) => `−${res.repas[r]} ${EMOJI_RESSOURCE[r]}`).join(" ")}`
-      : "🍞 Les vivres du navire ont suffi pour la première nuit.",
+      ? `🍽️ Repas pour ${pluriel(vRepas, "joueur")} : ${RESSOURCES.map((r) => `−${res.repas[r]} ${EMOJI_RESSOURCE[r]}`).join(" ")}`
+      : jour === 1 && config.nuit1_gratuite
+        ? "🍞 Les vivres du navire ont suffi pour la première nuit."
+        : "🍽️ Personne à nourrir cette nuit.",
   );
   if (res.issue === "defaite" && res.cause === "famine") return lignes;
   const aube = config.meteos[res.meteoAube];
@@ -269,12 +277,12 @@ async function buildFinEmbed(config, res, bilan, manches, currentManche) {
     ? "🛶 Le Radeau a pris la mer !"
     : res.cause === "famine"
       ? "💀 Naufrage : le camp n’a pas tenu"
-      : "⛈️ Le Radeau n’est jamais parti";
+      : "🌊 Le tsunami a emporté le camp";
   const recit = victoire
     ? narratifs.fin.victoire_radeau
     : res.cause === "famine"
       ? narratifs.fin.famine.replaceAll("{manque}", listeNoms(res.manque.map((r) => NOM_RESSOURCE[r])))
-      : narratifs.fin.pas_de_depart;
+      : narratifs.fin.pas_de_depart.replaceAll("{jour_tsunami}", config.duree_jours + 1);
   const badge = await lignesBadge(victoire);
   return {
     title: titre,
@@ -291,13 +299,13 @@ function buildAnnonceEmbed(config) {
   return {
     title: "🏝️ Robinson : le navire lève l’ancre",
     description: [
-      `Le clan embarque pour le prochain tournoi d’Arène… mais la météo s’annonce capricieuse. Naufragés sur une île, vous aurez **${config.duree_jours} jours** pour construire un Radeau et partir.`,
+      `Le clan embarque pour le prochain tournoi d’Arène… mais la météo s’annonce capricieuse. Naufragés sur une île, sans espoir de secours, vous aurez **${config.duree_jours} jours** pour construire un Radeau et partir avant qu’un tsunami ne frappe l’île.`,
       "",
       "Plus d’infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: ROBINSON_COLOR,
     image: { url: robinsonImageUrl(1) },
-    footer: { text: `La partie commence demain à ${formatUtcTimeAsParis(8)}.` },
+    footer: { text: `La partie commence demain à ${heureReveil()}.` },
   };
 }
 
@@ -379,6 +387,7 @@ export async function postRobinson(
       meteoSuivante,
       prevision: prevoirMeteo(meteoSuivante, config),
       meteosPassees: [],
+      vVeille: 0,
       bilan: null,
     };
     const vue = await vueJour(config, jour1, { counts: {}, V: 0, nbABord: 0 });
@@ -397,12 +406,13 @@ export async function postRobinson(
     planches: state.planches,
     counts: lu.counts,
     V: lu.V,
+    vRepas: state.vVeille ?? 0,
     nbABord: lu.nbABord,
     meteo: state.meteo,
     meteoAube: state.meteoSuivante,
     config,
   });
-  const bilan = lignesBilan(config, res, lu);
+  const bilan = lignesBilan(config, res, lu, state.vVeille ?? 0, state.jour);
 
   if (res.issue) {
     // Jour de la manche : aube du départ (victoire) ou dernier jour joué
@@ -443,6 +453,7 @@ export async function postRobinson(
     meteoSuivante,
     prevision: prevoirMeteo(meteoSuivante, config),
     meteosPassees: [...(state.meteosPassees ?? []), state.meteo],
+    vVeille: lu.V,
     bilan,
   };
   const aBord = lu.nbABord;
@@ -497,15 +508,19 @@ async function etatJouable(webhookUrl, jour) {
     await patchOriginal(webhookUrl, messageSeul("La journée a changé, regarde le nouveau message !"));
     return null;
   }
+  if (!journeeOuverte(state.publishedAt)) {
+    await patchOriginal(webhookUrl, messageSeul(`🌙 Toute l’île dort : le nouveau jour arrive vers ${heureReveil()}.`));
+    return null;
+  }
   return state;
 }
 
 function confirmation(config, state, actionId) {
   const action = config.actions[actionId];
-  if (actionId === "radeau") return `${action.emoji} Tu travailles au Radeau : +1 planche ce soir.`;
+  if (actionId === "radeau") return `${action.emoji} Tu travailles au Radeau : +1 planche.`;
   const r = RECOLTES[actionId];
   const verbe = { peche: "Tu pars pêcher", eau: "Tu vas chercher de l’eau", bois: "Tu coupes du bois" }[actionId];
-  return `${action.emoji} ${verbe} : +${rendement(config, state.meteo, actionId)} ${EMOJI_RESSOURCE[r]} pour le camp ce soir (${meteoLabel(config, state.meteo)}).`;
+  return `${action.emoji} ${verbe} : +${rendement(config, state.meteo, actionId)} ${EMOJI_RESSOURCE[r]} pour le camp cette nuit (${meteoLabel(config, state.meteo)}).`;
 }
 
 export async function handleVoteButton(webhookUrl, jour, actionId, discordId, username, botToken) {
@@ -578,18 +593,18 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles du jeu Robinson",
     description: [
-      `Naufragés sur une île, vous avez **${config.duree_jours} jours** pour construire un Radeau et partir.`,
+      `Naufragés sur une île, personne ne viendra vous chercher : vous avez **${config.duree_jours} jours** pour construire un Radeau et partir avant le tsunami.`,
       "",
-      "**Chaque jour**, choisis une action : 🎣 Pêcher, 💧 Eau, 🪵 Bois ou 🛶 Radeau (un choix par jour, définitif).",
+      `**Chaque jour, de ${heureReveil()} à minuit**, choisis une action : 🎣 Pêcher, 💧 Eau, 🪵 Bois ou 🛶 Radeau (un choix par jour, définitif). De minuit à ${heureReveil()}, toute l’île dort.`,
       "",
       "**La météo du jour** décide de ce que rapporte chaque joueur. La prévision pour demain se trompe une fois sur quatre.",
       ...meteos,
       "",
-      "**Chaque nuit**, chaque joueur du jour mange 1 🐟 et boit 1 💧, et le feu brûle 1 🪵 pour 2 joueurs (la première nuit, les vivres du navire suffisent). S’il manque quoi que ce soit, c’est perdu.",
+      "**Chaque nuit**, le camp mange 1 🐟 et boit 1 💧 par joueur de la veille, et le feu brûle 1 🪵 pour 2 (la première nuit, les vivres du navire suffisent). Le repas est donc connu dès le matin. S’il manque quoi que ce soit, c’est perdu.",
       "",
       `**Le Radeau** : chaque vote 🛶 ajoute 1 planche. Avec ${config.planches_par_joueur} planches par joueur du jour, le bouton 🚣 Embarquer apparaît (en plus de ton action du jour). Le Radeau part à l’aube s’il fait ☀️ et qu’au moins un joueur est à bord. Ceux qui n’ont pas embarqué restent sur l’île.`,
       "",
-      `Si le Radeau n’est pas parti à l’aube du Jour ${config.duree_jours + 1}, c’est perdu.`,
+      `🌊 Un tsunami frappe l’île à l’aube du Jour ${config.duree_jours + 1} : si le Radeau n’est pas parti avant, c’est perdu.`,
     ].join("\n"),
     color: ROBINSON_COLOR,
   };

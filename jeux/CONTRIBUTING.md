@@ -527,7 +527,7 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | Meow                  | `meow.yml`          | `22 7 * * *` (8h22 à Paris en hiver, après le bilan de 8 h et avant la distribution de 8h30) |
 | Goblin Hunters        | `goblinhunters.yml` | `4 8 * * *`                                                                                  |
 | Quiz                  | `quiz.yml`          | `6 8 * * *`                                                                                  |
-| Robinson              | `robinson.yml`      | `8 8 * * *`                                                                                  |
+| Robinson              | `robinson.yml`      | `8 7 * * *` (8h08 à Paris en hiver, l'île dort de minuit à 8 h)                              |
 | Blackjack             | `blackjack.yml`     | `12 7 * * *` (8h12 à Paris en hiver, après le décompte de 8 h des deux mains)                |
 | Mario Clash           | `marioclash.yml`    | `14 8 * * *`                                                                                 |
 | Jeu du Gobelet        | `gobelet.yml`       | `16 7 * * *` (8h16 à Paris en hiver, après le décompte de 8 h des deux mains)                |
@@ -634,7 +634,7 @@ Cron `.github/workflows/quiz.yml` : `6 8 * * *`. Variables : `DISCORD_TOKEN`, `D
 
 ## Robinson (survie collaborative)
 
-Jeu spécial collaboratif de 7 jours (`duree_jours`) : la communauté, naufragée, doit construire un Radeau et partir avant l'aube du Jour 8. Chaque jour, chaque membre choisit une action : 🎣 Pêcher, 💧 Eau, 🪵 Bois ou 🛶 Radeau. La météo du jour fixe ce que rapporte chaque action ; le Radeau ne part qu'à une aube ensoleillée. Pas de commande slash, pas d'inscription. Mécaniques communes (annonce, cron `--require-active`, salon test/public, ping) : voir « Jeux spéciaux : fonctionnement commun ».
+Jeu spécial collaboratif de 7 jours (`duree_jours`) : la communauté, naufragée et sans espoir de secours, doit construire un Radeau et partir avant le tsunami de l'aube du Jour 8. Chaque jour, chaque membre choisit une action : 🎣 Pêcher, 💧 Eau, 🪵 Bois ou 🛶 Radeau. La météo du jour fixe ce que rapporte chaque action ; le Radeau ne part qu'à une aube ensoleillée. Pas de commande slash, pas d'inscription. Mécaniques communes (annonce, cron `--require-active`, salon test/public, ping) : voir « Jeux spéciaux : fonctionnement commun ».
 
 | Rôle | Fichier |
 | --- | --- |
@@ -650,6 +650,7 @@ Jeu spécial collaboratif de 7 jours (`duree_jours`) : la communauté, naufragé
 
 ### Règles (Robinson)
 
+- **Journée de 8 h à minuit, heure de Paris** (`journeeOuverte()`, `parisParts()`) : de minuit à 8 h, « toute l'île dort », plus aucun clic n'est accepté (éphémère « 🌙 Toute l'île dort ») ; après 8 h, le jour reste fermé jusqu'à la publication du suivant par le cron (`7h08 UTC`, 8h08 à Paris en hiver, 9h08 en été). Textes joueurs : « minuit » est fixe ; l'heure du réveil (Règles, annonce, éphémère) est calculée selon la saison (`heureReveil()`, 8 h ou 9 h).
 - **Un choix par jour, définitif** (`recordVote()`, `HSETNX`) : même action recliquée = rappel, autre action = refus. **Rien n'est appliqué au clic** : stocks et planches ne bougent qu'à la nuit (cron).
 - **Météo** (`config.meteos`, tirage pondéré indépendant chaque jour, `tirerMeteo()`) : celle du jour est **certaine** et affichée dès la publication ; elle fixe ce que rapporte chaque joueur (`rendement()`).
 
@@ -661,36 +662,37 @@ Jeu spécial collaboratif de 7 jours (`duree_jours`) : la communauté, naufragé
 | ⛈️ Tempête | 10 | 2 | 2 | 2 | non |
 
 - **Prévision de demain** (`prevoirMeteo()`) : la vraie météo de demain avec la probabilité `fiabilite_prevision` (3/4), sinon une des trois autres. La vraie météo de demain (`state.meteoSuivante`) est tirée à l'avance et reste secrète.
-- **Repas de la nuit** (`repasDeLaNuit()`) : 1 🐟 et 1 💧 par joueur du jour (`V` = votants uniques), 1 🪵 pour 2 (arrondi au supérieur). Aucun la nuit du Jour 1 (`nuit1_gratuite`) ni si personne n'a joué. Un stock insuffisant = **défaite** (famine).
+- **Repas de la nuit** (`repasDeLaNuit()`) : 1 🐟 et 1 💧 par joueur **de la veille** (`state.vVeille`, votants uniques du jour précédent), 1 🪵 pour 2 (arrondi au supérieur). Connu dès le matin, il ne bouge pas de la journée ; une baisse de participation coûte donc cher (même repas, moins de bras). Aucun la nuit du Jour 1 (`nuit1_gratuite`) ni si personne n'a joué la veille. Un stock insuffisant = **défaite** (famine).
 - **Radeau** : chaque vote 🛶 ajoute 1 planche (sans coûter de Bois). Il est **prêt** quand `planches ≥ planches_par_joueur × V` (2 par joueur du jour, `radeauPret()`) ; l'objectif suit donc les joueurs du jour.
-- **Embarquement** (`robinson_embarquer:<jour>`, `embarquer()`) : bouton 🚣 sur une seconde rangée dès que le Radeau est prêt (planches du soir comprises, il peut apparaître ou disparaître en cours de journée). Geste gratuit en plus de l'action du jour, refusé sans action du jour, **durable** jusqu'à la fin de la partie (`HSETNX robinson:a_bord`). Ni minimum ni places limitées.
-- **Départ** : à l'aube, si ☀️, Radeau prêt et au moins un joueur à bord → victoire. Ceux qui n'ont pas embarqué « restent sur l'île » (badge). Pas de départ à l'aube du Jour 8 → défaite.
+- **Embarquement** (`robinson_embarquer:<jour>`, `embarquer()`) : bouton 🚣 sur une seconde rangée dès que le Radeau est prêt (planches du jour comprises, il peut apparaître ou disparaître en cours de journée). Geste gratuit en plus de l'action du jour, refusé sans action du jour, **durable** jusqu'à la fin de la partie (`HSETNX robinson:a_bord`). Ni minimum ni places limitées.
+- **Départ** : à l'aube, si ☀️, Radeau prêt et au moins un joueur à bord → victoire. Ceux qui n'ont pas embarqué « restent sur l'île » (badge). Pas de départ à l'aube du Jour 8 → défaite (le tsunami emporte le camp, narré dans l'annonce, l'intro du Jour 1, les Règles et la prévision du Jour 7).
 
 ### Nuit (`postRobinson()` → `resoudreNuit()`, fonction pure)
 
-Ordre : récoltes (`votes × rendement`), planches du jour, repas (défaite si un stock passe sous 0, stocks affichés à 0), puis aube avec la vraie météo du lendemain (départ). Sinon : jour suivant (météo du lendemain révélée, nouvelle météo tirée pour le surlendemain, nouvelle prévision), votes du jour effacés. Le bilan de la nuit (`state.bilan`) s'affiche en tête du message suivant.
+Ordre : récoltes (`votes × rendement`), planches du jour, repas des joueurs de la veille (défaite si un stock passe sous 0, stocks affichés à 0), puis aube avec la vraie météo du lendemain (départ). Sinon : jour suivant (météo du lendemain révélée, nouvelle météo tirée pour le surlendemain, nouvelle prévision), votes du jour effacés. Le bilan de la nuit (`state.bilan`) s'affiche en tête du message suivant.
 
 ⚠️ Le repas passe avant l'aube : une famine empêche le départ, même au soleil.
 
 ### Interface (Robinson)
 
 - **Components V2** (`versV2()`, comme le Pont du Troll) : un seul bloc, l'image en galerie. Titre `🏝️ Robinson (Jour N/7)`.
-- Texte : bilan de la nuit (« 🌙 Cette nuit » : travail, repas, aube), météo du jour en titre `###` et rendements, texte narratif, prévision (« 🔭 Demain : 🌧️ Pluie probable »). Sous l'image : stocks, Radeau (« 21 planches ce soir, il en faut 24 pour 12 joueurs »), « ✅ Le Radeau est prêt : embarquez ! » et « 🚣 N joueurs à bord », projection du soir (« 🌙 Ce soir si rien ne change ») et alerte « ⚠️ Il manquera… ». Pied : joueurs du jour.
+- Texte : bilan de la nuit (« 🌙 Cette nuit » : travail, repas, aube), météo du jour en titre `###` et rendements, texte narratif, prévision (« 🔭 Demain : 🌧️ Pluie probable »). Sous l'image : stocks récoltes du jour comprises, repas de la nuit (« 🍽️ Repas de cette nuit pour 10 joueurs d'hier »), alerte « ⚠️ Il manque encore… pour cette nuit ! », Radeau (« 21 planches à l'aube, il en faut 24 pour 12 joueurs »), « ✅ Le Radeau est prêt : embarquez ! » et « 🚣 N joueurs à bord ». Pied : joueurs du jour.
 - Boutons : `[🎣 Pêcher (n)]` `[💧 Eau (n)]` `[🪵 Bois (n)]` `[🛶 Radeau (n)]` `[📖 Règles]`, puis `[🚣 Embarquer]` quand le Radeau est prêt. Répartition et projection sont visibles (jeu collaboratif, les joueurs se coordonnent).
 - Chaque vote ou embarquement rafraîchit le message (`refreshPublicMessage()`, PATCH direct).
+- Vocabulaire joueur : « cette nuit » (repas) et « à l'aube » (départ, planches), jamais « ce soir ». Pied du message : « Jusqu'à minuit ».
 - **Fin de partie** : bilan de la nuit, récit de l'issue, illustration, **badge de participation** (pas de classement) : « 🚣 Partis en Radeau » et « 🏝️ Restés sur l'île » en cas de victoire, « 🏅 Naufragés de cette aventure » sinon, joueurs groupés par jours joués (`groupesBadge()`, `robinson:jours_joues`), puis les 10 dernières manches (🏆 sur la meilleure).
 - **PNJ du salon de test** : 5 joueurs fictifs (`pnj-1` à `pnj-5`) choisissent une action au hasard à chaque publication et embarquent une fois sur deux quand le Radeau est prêt (`jouerPnj()`). Jamais sur le salon public, même demandés (`pnj && !isPublic`) ; `--sans-pnj` les désactive. Pas de passeport.
 - ⚠️ **Jamais de ping hors salon public** : `postRobinson()` ne pingue que si `isPublic` et sans `noPing` (annonce, Jour 1, fin). Testé dans `robinson.test.js`.
 
 ### Image du jour
 
-`robinsonImage.js` : SVG **900 × 600** rastérisé par `@resvg/resvg-js` (police Inter), JPEG. Bandeau (titre, frise des 7 jours : météo passée, jour courant entouré, prévision de demain en pointillés, « ? » au-delà), météo du jour et rendements, prévision de demain, trois stocks avec le besoin de la nuit (trait blanc ; vert couvert, orange sous le besoin, rouge à 0), Radeau (une case par planche sur l'objectif, « N à bord » quand il est prêt). Icônes dessinées (resvg ne rend pas les emojis en couleur).
+`robinsonImage.js` : SVG **900 × 600** rastérisé par `@resvg/resvg-js` (police Inter), JPEG. Bandeau (titre, frise des 7 jours : météo passée, jour courant entouré, prévision de demain en pointillés, « ? » au-delà), météo du jour et rendements, prévision de demain, trois stocks (stocks du matin + récoltes déjà cliquées, mis à jour à chaque vote) avec le repas de la nuit (trait blanc, fixe de la journée ; vert couvert, orange sous le besoin, rouge à 0), Radeau (une case par planche sur l'objectif, « N à bord » quand il est prêt). Icônes dessinées (resvg ne rend pas les emojis en couleur).
 
 Rendu sans état (`encodePlateau()`, JSON en base64url). ⚠️ Anti-spoiler : seule la **prévision** de demain est encodée, jamais `meteoSuivante` (testé). ⚠️ Lisibilité mobile : aucun texte < 36 px sur 900 px, tout changement vérifié réduit à 360 px (`sips -Z 360`).
 
 ### Équilibrage
 
-⚠️ Calibré par `jeux/outils/robinson-simulation/simuler.mjs` (lit la config réelle et `resoudreNuit()`) : tout changement de météo, de rendements, de repas ou de planches doit être revalidé. Cibles : groupe organisé de 15 joueurs dont 15 % hors plan ≈ 55-60 % de victoire (plan parfait ≈ 64 %), groupe au hasard ≤ 10 %, départs étalés du Jour 5 à l'aube du Jour 8, défaites partagées entre famine et absence de départ. La fiabilité de la prévision (3/4 ou 4/5) ne change presque rien ; la fréquence du soleil règle la difficulté. Les petits groupes (6 joueurs) gagnent moins (≈ 40 %).
+⚠️ Calibré par `jeux/outils/robinson-simulation/simuler.mjs` (lit la config réelle et `resoudreNuit()`) : tout changement de météo, de rendements, de repas ou de planches doit être revalidé. Cibles : groupe organisé de 15 joueurs dont 15 % hors plan ≈ 60 % de victoire, groupe au hasard ≤ 10 %, départs étalés du Jour 5 à l'aube du Jour 8, défaites partagées entre famine et absence de départ. La fiabilité de la prévision (3/4 ou 4/5) ne change presque rien ; la fréquence du soleil règle la difficulté. Les petits groupes gagnent moins (≈ 32 % à 6 joueurs) : une absence y pèse plus lourd, le repas suivant les joueurs de la veille.
 
 Contraintes issues de la simulation :
 - 2 planches par joueur, pas 1 : sinon tout le groupe vote Radeau le même jour et part aussitôt ;
@@ -710,7 +712,7 @@ Contraintes issues de la simulation :
 
 | Clé | Type | Contenu |
 | --- | --- | --- |
-| `robinson:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, stocks, planches, meteo, meteoSuivante, prevision, meteosPassees, bilan, issue, cause }`, muté **uniquement au cron** (`meteoSuivante` secrète) |
+| `robinson:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, stocks, planches, meteo, meteoSuivante, prevision, meteosPassees, vVeille, bilan, issue, cause }`, muté **uniquement au cron** (`meteoSuivante` secrète) |
 | `robinson:votes:<jour>` | HASH | `discordId → action` (`HSETNX`, effacé à la nuit) |
 | `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` (affichage admin, effacé à la nuit) |
 | `robinson:jours_joues` | HASH | `discordId → jours joués` (badge), remis à zéro au Jour 1 |
@@ -731,7 +733,7 @@ Contraintes issues de la simulation :
 | `npm run robinson:status` | état courant, votes du jour, joueurs à bord, projection de la nuit ; vraie météo de demain seulement avec `-- --spoiler` |
 | `npm run robinson:refresh` / `:refresh:dry` | réédite le message du jour en place (sans résoudre la nuit) après un correctif de texte |
 
-Workflow `.github/workflows/robinson.yml` : cron `8 8 * * *` UTC (avec `--require-active`) + `workflow_dispatch` (lancement). Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`/`_TEST`, `KV_REST_API_URL`/`KV_REST_API_TOKEN` (aucune spécifique). Changement de règles : uniquement entre deux parties, suivi de `npm run robinson:reset`.
+Workflow `.github/workflows/robinson.yml` : cron `8 7 * * *` UTC (avec `--require-active`) + `workflow_dispatch` (lancement). Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`/`_TEST`, `KV_REST_API_URL`/`KV_REST_API_TOKEN` (aucune spécifique). Changement de règles : uniquement entre deux parties, suivi de `npm run robinson:reset`.
 
 ---
 
@@ -1311,7 +1313,7 @@ Ordre : 1) Étoiles actives → immunisés ; 2) **sorts** (bloqués si immunisé
 | `npm run marioclash:reset:manches`          | Idem + `manches`/`manche_seq`                 |
 | `npm run marioclash:status`                 | État courant                                  |
 
-Options du script : `--no-ping`, `--require-active`, `--force`. Production : présentation lancée à la main (`workflow_dispatch` de `.github/workflows/marioclash.yml` ou `npm run marioclash:public`), puis cron `14 8 * * *` (8h14 UTC, `--require-active`). ⚠️ Chaque cron de 8h UTC a sa propre minute (bossraid 2, goblinhunters 4, quiz 6, robinson 8, tamagotchi 10, blackjack 12, marioclash 14). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`).
+Options du script : `--no-ping`, `--require-active`, `--force`. Production : présentation lancée à la main (`workflow_dispatch` de `.github/workflows/marioclash.yml` ou `npm run marioclash:public`), puis cron `14 8 * * *` (8h14 UTC, `--require-active`). ⚠️ Chaque cron de 8h UTC a sa propre minute (bossraid 2, goblinhunters 4, quiz 6, tamagotchi 10, blackjack 12, marioclash 14). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`).
 
 ---
 

@@ -14,6 +14,7 @@ import {
   resoudreNuit,
   computeMancheScore,
   isTooSoonSinceLastClosure,
+  journeeOuverte,
   groupesBadge,
   recordVote,
   readVote,
@@ -71,13 +72,16 @@ test("Radeau prêt : 2 planches par joueur du jour, au moins un joueur", () => {
 });
 
 test("stocks du soir : récoltes puis repas, sans plancher", () => {
-  const { soir, recoltes } = stocksDuSoir({ poisson: 3, eau: 0, bois: 1 }, { peche: 2, bois: 1 }, 4, 2, "soleil", config);
+  // Repas pour 4 joueurs d'hier, récoltes des clics du jour
+  const { soir, recoltes, apresRecoltes } = stocksDuSoir({ poisson: 3, eau: 0, bois: 1 }, { peche: 2, bois: 1 }, 4, 2, "soleil", config);
   assert.deepEqual(recoltes, { poisson: 10, eau: 0, bois: 5 });
+  assert.deepEqual(apresRecoltes, { poisson: 13, eau: 0, bois: 6 });
   assert.deepEqual(soir, { poisson: 9, eau: -4, bois: 4 });
 });
 
+// `vRepas` (joueurs de la veille) suit `V` sauf mention contraire
 const nuit = (over) =>
-  resoudreNuit({ jour: 3, stocks: { poisson: 10, eau: 10, bois: 10 }, planches: 0, counts: {}, V: 0, nbABord: 0, meteo: "nuages", meteoAube: "soleil", config, ...over });
+  resoudreNuit({ jour: 3, stocks: { poisson: 10, eau: 10, bois: 10 }, planches: 0, counts: {}, V: 0, nbABord: 0, meteo: "nuages", meteoAube: "soleil", config, ...over, vRepas: over.vRepas ?? over.V ?? 0 });
 
 test("nuit : famine dès qu'une ressource manque, stocks affichés à 0", () => {
   const r = nuit({ counts: { peche: 1, bois: 1 }, V: 3, stocks: { poisson: 0, eau: 2, bois: 0 } });
@@ -87,6 +91,14 @@ test("nuit : famine dès qu'une ressource manque, stocks affichés à 0", () => 
   assert.equal(r.stocks.eau, 0);
   // Exactement assez : pas de famine
   assert.equal(nuit({ counts: { peche: 1, bois: 1 }, V: 3, stocks: { poisson: 0, eau: 3, bois: 0 } }).issue, null);
+});
+
+test("repas : joueurs de la veille, même si personne ne joue aujourd'hui", () => {
+  const r = nuit({ V: 0, vRepas: 12, stocks: { poisson: 12, eau: 11, bois: 6 } });
+  assert.equal(r.cause, "famine");
+  assert.deepEqual(r.manque, ["eau"]);
+  // Plus de joueurs aujourd'hui qu'hier : le repas ne bouge pas
+  assert.equal(nuit({ V: 20, vRepas: 2, counts: { radeau: 20 }, stocks: { poisson: 2, eau: 2, bois: 1 } }).issue, null);
 });
 
 test("nuit 1 : pas de repas", () => {
@@ -127,6 +139,22 @@ test("garde-fou anti-double-avancée", () => {
   const now = Date.UTC(2026, 10, 21, 12);
   assert.equal(isTooSoonSinceLastClosure(new Date(now - 2 * 3_600_000).toISOString(), now), true);
   assert.equal(isTooSoonSinceLastClosure(new Date(now - 20 * 3_600_000).toISOString(), now), false);
+});
+
+test("journée de 8 h à minuit, heure de Paris (hiver et été)", () => {
+  const iso = (s) => new Date(s).toISOString();
+  // Hiver (UTC+1) : publié à 8h08, ouvert jusqu'à 23h59, l'île dort à 0h01
+  const hiver = iso("2026-11-21T07:08:00Z");
+  assert.equal(journeeOuverte(hiver, Date.parse("2026-11-21T22:59:00Z")), true);
+  assert.equal(journeeOuverte(hiver, Date.parse("2026-11-21T23:01:00Z")), false);
+  assert.equal(journeeOuverte(hiver, Date.parse("2026-11-22T06:30:00Z")), false);
+  // Après 8 h, fermé tant que le jour suivant n'est pas publié
+  assert.equal(journeeOuverte(hiver, Date.parse("2026-11-22T07:01:00Z")), false);
+  // Été (UTC+2) : publié à 9h08, minuit à Paris = 22h UTC
+  const ete = iso("2026-07-10T07:08:00Z");
+  assert.equal(journeeOuverte(ete, Date.parse("2026-07-10T21:59:00Z")), true);
+  assert.equal(journeeOuverte(ete, Date.parse("2026-07-10T22:01:00Z")), false);
+  assert.equal(journeeOuverte(null), false);
 });
 
 test("badge : groupes par jours joués, partis et restés", () => {

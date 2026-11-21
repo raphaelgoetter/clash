@@ -17,10 +17,10 @@
       "Le vent couche les palmiers et la mer se déchaîne : la journée sera rude."
     ]
   },
-  "intro_jour1": "⛵ **Naufrage !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré dans la nuit. Tout le monde s’est échoué sain et sauf sur une île déserte. Construisez un Radeau et partez avant la fin du Jour {duree} !",
+  "intro_jour1": "⛵ **Naufrage !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré dans la nuit. Tout le monde s’est échoué sain et sauf sur une île déserte, et personne ne viendra vous chercher. Pire : un tsunami frappera l’île à l’aube du Jour {jour_tsunami}. Construisez un Radeau et partez avant !",
   "fin": {
     "victoire_radeau": "☀️ Au lever du soleil, le Radeau quitte enfin l’île avec tous ceux qui sont à bord. Direction le large !",
     "famine": "La nuit a été fatale au camp : il a manqué {manque}. L’aventure s’arrête ici.",
-    "pas_de_depart": "Le Radeau n’a pas pu prendre la mer à temps : la saison des tempêtes emporte le camp. L’aventure s’arrête ici."
+    "pas_de_depart": "🌊 À l’aube du Jour {jour_tsunami}, le tsunami a déferlé sur l’île avant que le Radeau ne prenne la mer. L’aventure s’arrête ici."
   }
 }

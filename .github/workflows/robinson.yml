@@ -20,7 +20,9 @@ on:
     # se désynchronise silencieusement pendant que `workflow_dispatch`
     # continue de fonctionner — tout commit sur la branche par défaut force
     # un resync côté GitHub (voir jeux/CONTRIBUTING.md).
-    - cron: "8 8 * * *"
+    # 7h08 UTC = 8h08 à Paris en hiver (9h08 en été) : juste après la fin
+    # du sommeil de l'île (minuit-8h, heure de Paris).
+    - cron: "8 7 * * *"
   workflow_dispatch: {}
 
 jobs:

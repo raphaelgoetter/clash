@@ -18,6 +18,8 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { noterJeuSpecial } from "./passeport.js";
+import { jourDeJeu } from "./creneaux.js";
+import { parisParts } from "./meowRules.js";
 import { Redis } from "@upstash/redis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -139,10 +141,12 @@ export function besoinNuit(V, config) {
   return { poisson: V * r.poisson, eau: V * r.eau, bois: Math.ceil(V / r.bois_par_joueurs) };
 }
 
-// Repas de la nuit du Jour `jour` : aucun la première nuit (vivres du navire)
-export function repasDeLaNuit(jour, V, config) {
-  if (V <= 0 || (jour === 1 && config.nuit1_gratuite)) return null;
-  return besoinNuit(V, config);
+// Repas de la nuit du Jour `jour` pour `vRepas` joueurs (ceux de la VEILLE,
+// connus dès le matin : la cible ne bouge pas de la journée, et une baisse
+// de participation coûte cher). Aucun la première nuit (vivres du navire).
+export function repasDeLaNuit(jour, vRepas, config) {
+  if (vRepas <= 0 || (jour === 1 && config.nuit1_gratuite)) return null;
+  return besoinNuit(vRepas, config);
 }
 
 export const planchesRequises = (V, config) => V * config.planches_par_joueur;
@@ -159,21 +163,26 @@ export function recoltesDuJour(counts, meteoId, config) {
   return out;
 }
 
-// Stocks du soir (récoltes puis repas), sans plancher : une valeur
-// négative = ce qui manquera. Sert à la projection et à la résolution.
-export function stocksDuSoir(stocks, counts, V, jour, meteoId, config) {
+// Stocks de la nuit (récoltes puis repas), sans plancher : une valeur
+// négative = ce qui manquera. `apresRecoltes` : jauges de l'image.
+export function stocksDuSoir(stocks, counts, vRepas, jour, meteoId, config) {
   const recoltes = recoltesDuJour(counts, meteoId, config);
-  const repas = repasDeLaNuit(jour, V, config);
+  const repas = repasDeLaNuit(jour, vRepas, config);
+  const apresRecoltes = {};
   const soir = {};
-  for (const r of RESSOURCES) soir[r] = stocks[r] + recoltes[r] - (repas?.[r] ?? 0);
-  return { recoltes, repas, soir };
+  for (const r of RESSOURCES) {
+    apresRecoltes[r] = stocks[r] + recoltes[r];
+    soir[r] = apresRecoltes[r] - (repas?.[r] ?? 0);
+  }
+  return { recoltes, repas, apresRecoltes, soir };
 }
 
-// Résolution de la nuit du Jour `jour` (pure) : récoltes, planches, repas,
-// puis aube du lendemain (`meteoAube`). Issue : "victoire_radeau",
-// "defaite" (cause "famine" ou "pas_de_depart") ou null (on continue).
-export function resoudreNuit({ jour, stocks, planches, counts, V, nbABord, meteo, meteoAube, config }) {
-  const { recoltes, repas, soir } = stocksDuSoir(stocks, counts, V, jour, meteo, config);
+// Résolution de la nuit du Jour `jour` (pure) : récoltes, planches, repas
+// (`vRepas` : joueurs de la veille), puis aube du lendemain (`meteoAube`,
+// départ selon `V` : joueurs du jour). Issue : "victoire_radeau", "defaite"
+// (cause "famine" ou "pas_de_depart") ou null (on continue).
+export function resoudreNuit({ jour, stocks, planches, counts, V, vRepas, nbABord, meteo, meteoAube, config }) {
+  const { recoltes, repas, soir } = stocksDuSoir(stocks, counts, vRepas, jour, meteo, config);
   const planchesSoir = planches + (counts.radeau || 0);
   const manque = RESSOURCES.filter((r) => soir[r] < 0);
   const stocksFinal = Object.fromEntries(RESSOURCES.map((r) => [r, Math.max(0, soir[r])]));
@@ -184,6 +193,15 @@ export function resoudreNuit({ jour, stocks, planches, counts, V, nbABord, meteo
   if (depart) return { ...base, issue: "victoire_radeau", cause: null, depart: true };
   if (jour >= config.duree_jours) return { ...base, issue: "defaite", cause: "pas_de_depart", depart: false };
   return { ...base, issue: null, cause: null, depart: false };
+}
+
+// Journée jouable de 8 h à minuit, heure de Paris : de minuit à 8 h, toute
+// l'île dort (plus aucun clic), puis le cron résout la nuit. Fermé aussi
+// après 8 h tant que le jour suivant n'est pas publié.
+export const HEURE_REVEIL = 8;
+export function journeeOuverte(publishedAt, now = Date.now()) {
+  if (!publishedAt) return false;
+  return parisParts(now).h >= HEURE_REVEIL && jourDeJeu(publishedAt) === jourDeJeu(now);
 }
 
 // Garde-fou anti-double-avancée : un cron en retard après une relance
@@ -303,7 +321,7 @@ export function groupesBadge(joursJoues, aBord = null) {
 export const PNJ = ["Josette", "Gérard", "Ginette", "Jean-Mi", "Bernadette"];
 
 // Les PNJ choisissent une action au hasard, puis embarquent une fois sur
-// deux si le Radeau est prêt (planches du soir et joueurs du jour).
+// deux si le Radeau est prêt (planches de la nuit et joueurs du jour).
 export async function jouerPnj(jour, planches, config, rng = Math.random) {
   for (const [i, nom] of PNJ.entries()) {
     await recordVote(jour, `pnj-${i + 1}`, ACTIONS[Math.floor(rng() * ACTIONS.length)], nom);
