@@ -1,36 +1,12 @@
 {
   "duree_jours": 7,
-  "radeau_sections_max": 5,
-  "bois_par_point_radeau": 1,
-  "points_par_section": 5,
-  "radeau_sections_max_par_jour": 2,
-  "stocks_initiaux": {
-    "poisson": 20,
-    "eau": 20,
-    "bois": 12
-  },
-  "consommation_jour1_ratio": 0.5,
-  "appauvrissement": [
-    0,
-    0,
-    0,
-    1,
-    1,
-    2,
-    2
-  ],
-  "epuisement": {
-    "palier_jour1": 4,
-    "diviseur": 4,
-    "palier_min": 3,
-    "explorer_min": 1
-  },
-  "radeau_verrouille": {
-    "jour_debut": 3,
-    "jour_fin": 4,
-    "nom": "Grosse Houle",
-    "emoji": "🌊",
-    "description": "Au large, la mer forme des creux impressionnants. Impossible de travailler sereinement sur le Radeau avec un temps pareil : mieux vaut ranger les outils, l’abriter des embruns et se concentrer sur l’essentiel en attendant une accalmie."
+  "planches_par_joueur": 2,
+  "fiabilite_prevision": 0.75,
+  "nuit1_gratuite": true,
+  "repas": {
+    "poisson": 1,
+    "eau": 1,
+    "bois_par_joueurs": 2
   },
   "actions": {
     "peche": {
@@ -48,85 +24,36 @@
       "emoji": "🪵",
       "resource": "bois"
     },
-    "explorer": {
-      "label": "Explorer",
-      "emoji": "🔍"
-    },
     "radeau": {
       "label": "Radeau",
       "emoji": "🛶"
     }
   },
-  "constructions": {
-    "filet": {
-      "label": "Filet",
-      "nom": "Filet de pêche",
-      "emoji": "🥅",
-      "cout": 4,
-      "description": "+1 à chaque Pêche"
+  "meteos": {
+    "soleil": {
+      "nom": "Soleil",
+      "emoji": "☀️",
+      "poids": 45,
+      "rendements": { "poisson": 5, "eau": 4, "bois": 5 },
+      "depart": true
     },
-    "citerne": {
-      "label": "Citerne",
-      "nom": "Citerne",
-      "emoji": "🛢️",
-      "cout": 4,
-      "description": "+1 à chaque collecte d’Eau"
+    "nuages": {
+      "nom": "Nuages",
+      "emoji": "☁️",
+      "poids": 25,
+      "rendements": { "poisson": 5, "eau": 4, "bois": 4 }
     },
-    "atelier": {
-      "label": "Atelier",
-      "nom": "Atelier",
-      "emoji": "🪚",
-      "cout": 4,
-      "description": "chaque vote Radeau rapporte 2 points"
+    "pluie": {
+      "nom": "Pluie",
+      "emoji": "🌧️",
+      "poids": 20,
+      "rendements": { "poisson": 4, "eau": 6, "bois": 3 }
+    },
+    "tempete": {
+      "nom": "Tempête",
+      "emoji": "⛈️",
+      "poids": 10,
+      "rendements": { "poisson": 2, "eau": 2, "bois": 2 }
     }
-  },
-  "evenements": [
-    {
-      "id": "poissons_pourris",
-      "nom": "Poissons Pourris !",
-      "emoji": "🐟",
-      "description": "Au réveil, une odeur infecte s’échappe de la réserve de poisson : une partie de la pêche d’hier a mal tourné pendant la nuit et doit être jetée. Plus la mobilisation était faible hier, plus la perte est lourde.",
-      "condition_votants_veille_max": 14,
-      "prevision": "une partie du poisson risque de pourrir cette nuit si vous êtes moins de {seuil} à voter aujourd’hui"
-    },
-    {
-      "id": "canicule",
-      "nom": "Grosse Canicule",
-      "emoji": "🔥",
-      "description": "Un soleil de plomb écrase l’île aujourd’hui : même les Barbares les plus baraqués du camp renoncent à sortir chercher de l’eau. Collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (0 à 2 unités aujourd’hui).",
-      "famille": "eau_limitee",
-      "prevision": "l’Eau ne rapportera que 0 à 2 par volontaire"
-    },
-    {
-      "id": "ouragan",
-      "nom": "Ouragan Monstrueux",
-      "emoji": "🌪️",
-      "description": "Un ouragan monstrueux s’abat sur la plage, retournant les pirogues et couchant les arbres. La mer est trop déchaînée pour pêcher sereinement, et ramasser du bois sous des rafales pareilles relève de l’exploit, chaque volontaire ne rapportera qu’une maigre récolte (1 ou 2 unités aujourd’hui, pour la Pêche comme pour le Bois).",
-      "prevision": "la Pêche et le Bois ne rapporteront que 1 ou 2 par volontaire"
-    },
-    {
-      "id": "gobelins",
-      "nom": "Invasion de Gobelins",
-      "emoji": "🧌",
-      "description": "Des Gobelins rôdent autour du campement, attirés par l’odeur du poisson séché. Trop dangereux d’explorer l’île aujourd’hui, et si le camp n’a pas au moins 5 Bois en réserve ce soir pour fortifier les abris, ils risquent de filer avec une partie des provisions !",
-      "prevision": "exploration impossible, et il faudra au moins 5 Bois en réserve après la nuit pour éviter un vol de 5 Poissons"
-    },
-    {
-      "id": "indigestion_royale",
-      "nom": "Indigestion Royale",
-      "emoji": "🤢",
-      "description": "Le Géant Royal, mal remis d’un festin bien trop généreux, a vomi dans la source d’eau douce de l’île. Le camp devra faire preuve de courage : collecter de l’eau ne rapportera qu’une petite gorgée par volontaire (1 ou 2 unités aujourd’hui).",
-      "famille": "eau_limitee",
-      "prevision": "l’Eau ne rapportera que 1 ou 2 par volontaire"
-    },
-    {
-      "id": "epave",
-      "nom": "Épave échouée",
-      "emoji": "🪸",
-      "description": "Une épave charrie jusqu’au rivage des morceaux de coque encore à dégrossir : un joli stock de Bois pour le Radeau, mais il faudra encore le travailler !",
-      "bois_base": 19,
-      "bois_min": 5,
-      "prevision": "du Bois va s’échouer sur la plage"
-    }
-  ]
+  }
 }

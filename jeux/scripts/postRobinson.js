@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // postRobinson.js
-// Poste manuellement (ou via cron) le jour de Robinson (survie insulaire
-// communautaire). Sans partie en cours : publie le jour de présentation
-// (jamais le Jour 1 directement). Sinon clôture d'abord le jour actif : consomme
-// les ressources, applique l'événement éventuel, vérifie victoire/défaite,
-// puis publie le jour suivant (ou le message de fin de partie).
+// Poste manuellement (ou via cron) le jour de Robinson (survie
+// collaborative). Sans partie en cours : publie le jour de présentation
+// (jamais le Jour 1 directement). Sinon résout la nuit du jour actif
+// (récoltes, repas, départ du Radeau à l'aube), puis publie le jour suivant
+// ou le message de fin de partie.
 //
 // Usage :
 //   node jeux/scripts/postRobinson.js                — poste sur le salon de test
@@ -14,6 +14,7 @@
 //   node jeux/scripts/postRobinson.js --no-ping       — poste sans pinger @MINI JEUX
 //   node jeux/scripts/postRobinson.js --require-active — ne fait rien si aucune partie n'est déjà lancée (cron)
 //   node jeux/scripts/postRobinson.js --force          — ignore le garde-fou anti-double-avancée (jour tout juste ouvert)
+//   node jeux/scripts/postRobinson.js --sans-pnj       — salon de test sans les 5 joueurs fictifs (PNJ)
 
 import "../env.js";
 
@@ -37,6 +38,8 @@ const FORCE = process.argv.includes("--force") || !PUBLIC;
 // jamais sur le salon de test, même sans --no-ping explicite, pour ne pas déranger le
 // serveur à chaque itération de test pendant le développement du jeu.
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
+// Salon de test : 5 PNJ jouent chaque jour (jamais sur le salon public)
+const PNJ = !PUBLIC && !process.argv.includes("--sans-pnj");
 
 // Réutilise les salons du jeu Frame (même principe qu'Anagram/Tamagoshi,
 // voir jeux/CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons
@@ -54,7 +57,7 @@ if (!channelId) {
 
 (async () => {
   try {
-    const result = await postRobinson(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE });
+    const result = await postRobinson(channelId, { dryRun: DRY_RUN, noPing: NO_PING, isPublic: PUBLIC, requireActiveState: REQUIRE_ACTIVE, force: FORCE, pnj: PNJ });
 
     if (result.skipped) {
       if (result.reason === "tooSoonSinceLastClosure") {
@@ -86,11 +89,11 @@ if (!channelId) {
       if (result.phase === "annonce") {
         console.log("  Jour de présentation (annonce, veille du Jour 1)");
       } else if (result.final) {
-        console.log(`  Fin de partie — issue : ${result.outcome}`);
+        console.log(`  Fin de partie : ${result.outcome}${result.cause ? ` (${result.cause})` : ""}`);
       } else {
-        console.log(`  Jour ${result.jour}${result.event ? ` — événement : ${result.event.nom}` : ""}`);
+        console.log(`  Jour ${result.jour}`);
       }
-      console.log(JSON.stringify({ embeds: [result.embed], components: result.components || [] }, null, 2));
+      console.log(JSON.stringify({ embeds: result.embeds, components: result.components || [] }, null, 2));
       return;
     }
 

@@ -13,6 +13,7 @@ import {
 } from "../handlers/tamagotchi.js";
 import {
   handleVoteButton as handleRobinsonVote,
+  handleEmbarquer as handleRobinsonEmbarquer,
   handleRegles as handleRobinsonRegles,
 } from "../handlers/robinson.js";
 import {
@@ -364,14 +365,27 @@ export async function routeJeuxSpeciaux(body, res) {
       body.member?.user?.global_name ||
       body.member?.user?.username ||
       "Inconnu";
-    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : chaque
-    // récolte a un résultat individuel à révéler en privé, le message public
-    // est mis à jour séparément par un PATCH direct au salon (comme Tamagotchi).
+    // type 5 éphémère : confirmation privée, le message public est mis à
+    // jour séparément par un PATCH direct au salon (compteurs, projection).
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() =>
       handleRobinsonVote(webhookUrl, jour, actionId, discordId, username, process.env.DISCORD_TOKEN),
     );
+    return;
+  }
+
+  // ── Robinson : bouton "Embarquer" (Radeau prêt) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("robinson_embarquer:")
+  ) {
+    const [, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleRobinsonEmbarquer(webhookUrl, jour, discordId, process.env.DISCORD_TOKEN));
     return;
   }
 

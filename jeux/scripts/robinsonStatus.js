@@ -1,135 +1,65 @@
 #!/usr/bin/env node
 // robinsonStatus.js
-// Affiche l'état courant de Robinson (stocks, radeau, votes du jour) ainsi
-// qu'une projection du Jour suivant basée sur les votes actuels, sans avoir
-// besoin d'ouvrir Discord — pratique pour suivre l'avancement avant de
-// décider de relancer manuellement `npm run robinson:public`. Comme pour le
-// Tamagoshi, ce script tient lieu d'affichage admin (détail des votants et
-// historique, absents de Discord).
+// État courant de Robinson (météo, stocks, Radeau, votes du jour, joueurs à
+// bord) et projection de la nuit avec les votes actuels, sans ouvrir
+// Discord. ⚠️ La vraie météo de demain n'est affichée qu'avec --spoiler.
 //
-// Usage : node jeux/scripts/robinsonStatus.js
+// Usage : node jeux/scripts/robinsonStatus.js [--spoiler]
 
 import "../env.js";
 
 import {
+  RESSOURCES,
   loadRobinsonConfig,
   readState,
-  readStocks,
-  readRadeauPoints,
-  computeRaftSections,
-  computeDailyConsumption,
-  computeDay1ConsumptionVoters,
-  computeEpaveBoisBonus,
-  readConstructions,
-  isConstructionDone,
-  getHistoriqueEntry,
-  tallyVotes,
   listVotes,
+  readABord,
+  readJoursJoues,
+  planchesRequises,
+  radeauPret,
 } from "../services/robinson.js";
 import { postRobinson, outcomeLabel } from "../discord/handlers/robinson.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 
+const SPOILER = process.argv.includes("--spoiler");
+const EMOJI = { poisson: "🐟", eau: "💧", bois: "🪵" };
+
 (async () => {
   const state = await readState();
-  if (!state) {
-    console.log("Aucune partie Robinson active pour le moment.");
-    return;
-  }
-  if (state.phase === "annonce") {
-    console.log("Jour de présentation publié, la partie commence au prochain cron.");
-    return;
-  }
-  if (state.termine) {
-    console.log("Partie déjà terminée.");
-    return;
-  }
+  if (!state) return console.log("Aucune partie Robinson active pour le moment.");
+  if (state.phase === "annonce") return console.log("Jour de présentation publié, la partie commence au prochain cron.");
+  if (state.termine) return console.log(`Partie terminée : ${outcomeLabel(state.issue)}${state.cause ? ` (${state.cause})` : ""}.`);
 
   const config = await loadRobinsonConfig();
-  const [stocks, radeauPoints] = await Promise.all([readStocks(), readRadeauPoints()]);
-  const sections = computeRaftSections(radeauPoints, config.points_par_section);
-
-  console.log(`Jour ${state.jour}/${config.duree_jours}${state.event ? ` — événement : ${state.event.nom}` : ""}\n`);
-  console.log(`🐟 Nourriture : ${stocks.poisson}`);
-  console.log(`💧 Eau        : ${stocks.eau}`);
-  console.log(`🪵 Bois       : ${stocks.bois}`);
-  console.log(`🛶 Radeau     : ${radeauPoints} pts (${sections}/${config.radeau_sections_max} sections)`);
-  const constructions = await readConstructions(Object.keys(config.constructions ?? {}));
-  for (const [id, c] of Object.entries(config.constructions ?? {})) {
-    const pts = constructions[id] ?? 0;
-    console.log(`${c.emoji} ${c.nom.padEnd(14)} : ${isConstructionDone(pts, c) ? "achevé" : `${pts}/${c.cout}`}`);
-  }
-  if (state.programme) {
-    const prog = Object.entries(state.programme)
-      .map(([j, id]) => `J${j} ${config.evenements.find((e) => e.id === id)?.nom ?? id}`)
-      .join(", ");
-    console.log(`📅 Programme  : ${prog}`);
-  }
-  console.log(`⛏️ Palier d'épuisement : ${state.palierEpuisement ?? "aucun"}\n`);
+  const meteo = (id) => `${config.meteos[id].emoji} ${config.meteos[id].nom}`;
+  console.log(`Jour ${state.jour}/${config.duree_jours} : ${meteo(state.meteo)}, prévision de demain ${meteo(state.prevision)}`);
+  if (SPOILER) console.log(`🔒 Vraie météo de demain : ${meteo(state.meteoSuivante)}`);
+  console.log(`Stocks : ${RESSOURCES.map((r) => `${EMOJI[r]} ${state.stocks[r]}`).join(" · ")} · 🛶 ${state.planches} planches\n`);
 
   const votes = await listVotes(state.jour);
-  // Pseudo actuel résolu en direct pour chaque votant (jamais celui figé au
-  // moment du vote) — voir discordUsers.js. Repli sur le username stocké
-  // (ou le discordId en dernier recours) si l'API Discord échoue.
-  await Promise.all(
-    votes.map(async (v) => {
-      v.username = await resolveDisplayName(v.discordId, v.username || v.discordId);
-    }),
-  );
-
-  const voteCounts = await tallyVotes(state.jour);
+  await Promise.all(votes.map(async (v) => (v.username = await resolveDisplayName(v.discordId, v.username || v.discordId))));
   for (const [id, action] of Object.entries(config.actions)) {
     const votants = votes.filter((v) => v.actionId === id);
-    console.log(`${action.emoji} ${action.label} — ${voteCounts[id] || 0} vote${(voteCounts[id] || 0) > 1 ? "s" : ""}`);
-    if (votants.length > 0) {
-      console.log(`  ${votants.map((v) => v.username).join(", ")}`);
-    }
+    console.log(`${action.emoji} ${action.label} : ${votants.length}${votants.length ? ` (${votants.map((v) => v.username).join(", ")})` : ""}`);
   }
+  const V = votes.length;
+  const planchesSoir = state.planches + votes.filter((v) => v.actionId === "radeau").length;
+  const aBord = Object.keys(await readABord()).length;
+  console.log(`\n${V} joueur${V > 1 ? "s" : ""} aujourd'hui · Radeau ${planchesSoir}/${planchesRequises(V, config)}${radeauPret(planchesSoir, V, config) ? " (prêt)" : ""} · ${aBord} à bord`);
+  console.log(`Joueurs de la partie : ${Object.keys(await readJoursJoues()).length}`);
 
-  console.log(`\nTotal : ${votes.length} votant${votes.length > 1 ? "s" : ""} aujourd'hui.`);
-
-  // Projection : réutilise postRobinson() en --dry-run (lecture seule, aucune
-  // écriture Redis, aucun appel Discord) pour ne pas dupliquer la logique des
-  // événements (Épave, Poissons pourris) — canal factice, la
-  // publication n'est jamais atteinte en dry-run.
-  const projection = await postRobinson(state.channelId, { dryRun: true, noPing: true, isPublic: false });
-  console.log(`\n🔮 Projection si la clôture avait lieu maintenant :`);
-  if (projection.skipped) {
-    console.log(`→ Projection indisponible (${projection.reason ?? "raison inconnue"}).`);
+  // Projection : postRobinson() en dry-run (aucune écriture, aucun appel Discord)
+  const projection = await postRobinson(state.channelId, { dryRun: true, noPing: true, isPublic: false, force: true });
+  console.log("\n🔮 Si la nuit avait lieu maintenant :");
+  // Sans --spoiler, l'issue de l'aube trahirait la vraie météo de demain
+  const dependDeLAube = projection.final && (projection.outcome === "victoire_radeau" || projection.cause === "pas_de_depart");
+  if (dependDeLAube && !SPOILER) {
+    console.log("→ Pas de famine. L'issue dépend de la météo réelle de demain (--spoiler pour la voir).");
   } else if (projection.final) {
-    console.log(`→ Fin de partie : ${outcomeLabel(projection.outcome)}`);
+    console.log(`→ Fin de partie : ${outcomeLabel(projection.outcome)}${projection.cause ? ` (${projection.cause})` : ""}`);
+  } else if (projection.dryRun) {
+    console.log(`→ Jour ${projection.jour} : ${RESSOURCES.map((r) => `${EMOJI[r]} ${projection.stocks[r]}`).join(" · ")} · 🛶 ${projection.planches} planches`);
   } else {
-    const sectionsProjetees = computeRaftSections(projection.radeauPoints, config.points_par_section);
-    const detailEvenement =
-      projection.event?.perte != null ? ` (-${projection.event.perte} Poisson)` : "";
-    console.log(`→ Jour ${projection.jour}/${config.duree_jours}${projection.event ? ` — événement : ${projection.event.nom}${detailEvenement}` : ""} :`);
-
-    // La consommation réelle (computeClosure(), jeux/services/robinson.js)
-    // se base sur la mobilisation de LA VEILLE, pas sur les votes d'aujourd'hui
-    // — sinon une baisse de participation réduirait mécaniquement le besoin
-    // d'autant, rendant le désengagement sans conséquence. On reproduit ici
-    // exactement la même base pour que ce détail corresponde à la vraie
-    // clôture, pas à un autre calcul. Jour 1 : pas de veille, on retombe sur
-    // le décompte du jour même (comportement historique, seule exception).
-    const veille = state.jour > 1 ? await getHistoriqueEntry(state.jour - 1) : null;
-    const vConsommation = veille ? veille.V : computeDay1ConsumptionVoters(votes.length, config.consommation_jour1_ratio);
-    const conso = computeDailyConsumption(vConsommation);
-    // N'inclut pas le vol des Gobelins (Jour 8, conditionnel au Bois final
-    // <5) : trop dépendant des autres lignes pour un calcul indépendant simple.
-    const eventDelta = (resource) => {
-      const e = projection.event;
-      if (!e) return 0;
-      if (e.id === "poissons_pourris" && resource === "poisson") return -(e.perte ?? 0);
-      if (e.id === "epave" && resource === "bois") return computeEpaveBoisBonus(e, votes.length);
-      return 0;
-    };
-    const detailLigne = (emoji, label, resource, consoKey) => {
-      const delta = eventDelta(resource);
-      const detail = delta !== 0 ? ` ${delta > 0 ? "+" : "−"} ${Math.abs(delta)} événement` : "";
-      return `  ${emoji} ${label.padEnd(10)} : ${stocks[resource]} actuel − ${conso[consoKey]} conso${detail} = ${projection.stocks[resource]}`;
-    };
-    console.log(detailLigne("🐟", "Nourriture", "poisson", "poisson"));
-    console.log(detailLigne("💧", "Eau", "eau", "eau"));
-    console.log(detailLigne("🪵", "Bois", "bois", "bois"));
-    console.log(`  🛶 Radeau     : ${projection.radeauPoints} pts (${sectionsProjetees}/${config.radeau_sections_max} sections)`);
+    console.log("→ Projection indisponible.");
   }
 })();

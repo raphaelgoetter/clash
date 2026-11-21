@@ -1,41 +1,26 @@
 {
-  "intro_cocasse": [
-    "🌅 Un nouveau jour se lève sur l’île. Le camp s’organise tant bien que mal.",
-    "🐚 Quelqu’un a trouvé un coquillage en forme de squelette sur la plage — ça ne nourrit personne, mais le moral est bon.",
-    "🦜 Un perroquet égaré tourne autour du campement en répétant « Trois étoiles ! Trois étoiles ! » depuis ce matin.",
-    "🏖️ Journée calme sur l’île — juste le bruit des vagues et quelqu’un qui répare la tente avec des feuilles de palmier bio.",
-    "🔥 Le feu de camp crépite tranquillement. Quelqu’un raconte pour la centième fois comment il a survécu à une Guerre de Clans légendaire.",
-    "🌴 Les cocotiers se balancent doucement. Rien à signaler, si ce n’est la faim qui commence à se faire sentir chez certains.",
-    "🦀 Un crabe s’est invité dans le campement cette nuit et a volé une chaussette. Personne ne l’a revu depuis.",
-    "🐒 Un singe curieux observe le camp depuis les arbres, visiblement pas pressé de se rendre utile."
-  ],
-  "poisson_bas": [
-    "🐟 Les réserves de poisson s’amenuisent dangereusement — il serait temps d’aller pêcher.",
-    "🐟 Le garde-manger sent surtout… le vide, côté poisson."
-  ],
-  "poisson_haut": [
-    "🐟 Le garde-manger déborde presque de poissons séchés — de quoi voir venir.",
-    "🐟 Personne ne mourra de faim aujourd’hui, c’est déjà ça."
-  ],
-  "eau_bas": [
-    "💧 Les gourdes sonnent creux — la soif commence à se faire sentir.",
-    "💧 Plus une goutte en réserve ou presque, il faudrait s’en occuper vite."
-  ],
-  "eau_haut": [
-    "💧 Les réserves d’eau sont bien remplies, le camp peut souffler.",
-    "💧 De quoi étancher la soif de tout le monde sans compter."
-  ],
-  "bois_bas": [
-    "🪵 Le tas de bois a fondu comme neige au soleil.",
-    "🪵 Plus grand-chose à brûler ce soir — il va falloir s’y remettre."
-  ],
-  "bois_haut": [
-    "🪵 Le tas de bois atteint des sommets impressionnants.",
-    "🪵 De quoi construire la moitié d’un Radeau rien qu’avec ce qu’il y a en stock."
-  ],
-  "cloture_votants": [
-    "Merci à {noms} pour leur aide précieuse hier !",
-    "{premier} a particulièrement brillé au campement hier.",
-    "Sans {noms}, la journée d’hier aurait été bien plus dure."
-  ]
+  "meteo": {
+    "soleil": [
+      "Un grand soleil se lève sur l’île : la mer est calme et la forêt sèche.",
+      "Pas un nuage à l’horizon : une belle journée pour travailler (et pour prendre la mer)."
+    ],
+    "nuages": [
+      "Le ciel est gris mais la mer reste calme : une journée ordinaire au camp.",
+      "Quelques nuages filent au-dessus de l’île, rien de bien méchant."
+    ],
+    "pluie": [
+      "Il pleut à verse sur le camp : les gourdes se remplissent toutes seules, le bois, lui, prend l’eau.",
+      "Une pluie fine tombe depuis l’aube : idéal pour remplir les réserves d’eau."
+    ],
+    "tempete": [
+      "La tempête gronde sur l’île : chaque sortie hors du camp devient une aventure.",
+      "Le vent couche les palmiers et la mer se déchaîne : la journée sera rude."
+    ]
+  },
+  "intro_jour1": "⛵ **Naufrage !** Le navire qui emmenait le clan vers le prochain tournoi d’Arène a sombré dans la nuit. Tout le monde s’est échoué sain et sauf sur une île déserte. Construisez un Radeau et partez avant la fin du Jour {duree} !",
+  "fin": {
+    "victoire_radeau": "☀️ Au lever du soleil, le Radeau quitte enfin l’île avec tous ceux qui sont à bord. Direction le large !",
+    "famine": "La nuit a été fatale au camp : il a manqué {manque}. L’aventure s’arrête ici.",
+    "pas_de_depart": "Le Radeau n’a pas pu prendre la mer à temps : la saison des tempêtes emporte le camp. L’aventure s’arrête ici."
+  }
 }

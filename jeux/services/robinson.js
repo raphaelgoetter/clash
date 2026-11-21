@@ -1,26 +1,17 @@
 // ============================================================
-// robinson.js — Robinson, survie insulaire communautaire
-// Couche métier : lecture de la config statique, état du jour courant,
-// stocks de ressources, votes, tirages, clôture quotidienne, historique.
+// robinson.js — Robinson, survie insulaire collaborative (7 jours)
+// Couche métier : config, météo et prévision, résolution de la nuit
+// (récoltes, repas, départ du Radeau à l'aube), votes, embarquement,
+// jours joués (badge), manches. Règles : jeux/CONTRIBUTING.md, section
+// « Robinson ».
 //
-// Stockage : Upstash Redis (même instance et mêmes conventions que
-// jeux/services/tamagotchi.js) — espace de clés `robinson:*`.
+// Stockage : Upstash Redis, espace `robinson:*`. Rien n'est appliqué au
+// clic : stocks et planches vivent dans `robinson:state`, mutés uniquement
+// par le cron (postRobinson), jamais en concurrence. Les clics n'écrivent
+// que des HSETNX (vote du jour, embarquement), sûrs en concurrence.
 //
-// ⚠️ Différence structurelle majeure avec Tamagotchi : chez lui, tout
-// l'impact d'une journée est calculé une seule fois, séquentiellement, au
-// cron. Ici, les récoltes (et le coût du Radeau) sont appliquées EN
-// CONTINU pendant la journée, à chaque clic, par des membres potentiellement
-// concurrents. Un blob JSON muté en lire-modifier-écrire perdrait des mises
-// à jour (deux clics simultanés liraient le même stock de départ, le second
-// SET écraserait le premier). Les stocks vivent donc dans des clés STRING
-// numériques séparées, mutées uniquement via INCRBY/DECRBY (atomiques
-// nativement côté Redis, aucune lecture intermédiaire possible) — jamais un
-// GET puis un SET recalculé à la main.
-//
-// ⚠️ automaticDeserialization désactivée volontairement : le SDK convertit
-// par défaut toute valeur "numérique" en Number JS, y compris les IDs
-// Discord (17-19 chiffres) qui dépassent Number.MAX_SAFE_INTEGER — ça les
-// corrompt silencieusement. On sérialise/désérialise le JSON nous-mêmes.
+// ⚠️ automaticDeserialization désactivée : le SDK convertirait les IDs
+// Discord (17-19 chiffres) en Number JS et les corromprait.
 // ============================================================
 
 import fs from "fs/promises";
@@ -46,10 +37,7 @@ function getRedis() {
   return _redis;
 }
 
-function toJson(value) {
-  return JSON.stringify(value);
-}
-
+const toJson = (value) => JSON.stringify(value);
 function fromJson(raw) {
   if (raw == null) return null;
   try {
@@ -61,26 +49,13 @@ function fromJson(raw) {
 
 function pairsToObject(flat) {
   const obj = {};
-  for (let i = 0; i < flat.length; i += 2) {
-    obj[flat[i]] = flat[i + 1];
-  }
+  for (let i = 0; i < flat.length; i += 2) obj[flat[i]] = flat[i + 1];
   return obj;
 }
 
-async function hgetallRaw(key) {
-  return pairsToObject((await getRedis().hgetall(key)) || []);
-}
+const hgetallRaw = async (key) => pairsToObject((await getRedis().hgetall(key)) || []);
 
-async function hgetallJson(key) {
-  const raw = await hgetallRaw(key);
-  const result = {};
-  for (const [field, value] of Object.entries(raw)) {
-    result[field] = fromJson(value);
-  }
-  return result;
-}
-
-async function scanKeys(pattern) {
+async function scanDelete(pattern) {
   const keys = [];
   let cursor = "0";
   do {
@@ -88,74 +63,38 @@ async function scanKeys(pattern) {
     cursor = next;
     keys.push(...batch);
   } while (cursor !== "0");
-  return keys;
-}
-
-async function scanDelete(pattern) {
-  const keys = await scanKeys(pattern);
   if (keys.length) await getRedis().del(...keys);
 }
 
 const STATE_KEY = "robinson:state";
-const HISTORIQUE_KEY = "robinson:historique";
 const MANCHES_KEY = "robinson:manches";
 const MANCHE_SEQ_KEY = "robinson:manche_seq";
-const RADEAU_POINTS_KEY = "robinson:radeau_points";
-const STOCK_KEYS = {
-  poisson: "robinson:stock:poisson",
-  eau: "robinson:stock:eau",
-  bois: "robinson:stock:bois",
-};
-// Points investis dans chaque construction (filet, citerne, atelier), même
-// règle que les stocks : compteurs séparés mutés en INCRBY/DECRBY uniquement.
-function constructionKey(id) {
-  return `robinson:construction:${id}`;
-}
+const JOURS_JOUES_KEY = "robinson:jours_joues";
+const A_BORD_KEY = "robinson:a_bord";
+const USERNAMES_KEY = "robinson:usernames";
+const votesKey = (jour) => `robinson:votes:${jour}`;
+const voteUsernamesKey = (jour) => `robinson:vote_usernames:${jour}`;
 
-function votesKey(jour) {
-  return `robinson:votes:${jour}`;
-}
-function voteDetailsKey(jour) {
-  return `robinson:vote_details:${jour}`;
-}
-function voteUsernamesKey(jour) {
-  return `robinson:vote_usernames:${jour}`;
-}
-// Nombre de récoltes du jour par action (épuisement des zones) : HINCRBY
-// atomique, la valeur renvoyée est le rang du récolteur sur cette action.
-function zonesKey(jour) {
-  return `robinson:zones:${jour}`;
-}
-// Points de Radeau gagnés aujourd'hui (plafond quotidien).
-function radeauJourKey(jour) {
-  return `robinson:radeau_jour:${jour}`;
-}
+export const RESSOURCES = ["poisson", "eau", "bois"];
+// Action de récolte → ressource récoltée
+export const RECOLTES = { peche: "poisson", eau: "eau", bois: "bois" };
+export const ACTIONS = ["peche", "eau", "bois", "radeau"];
 
-// ── Lecture de la config (statique, jamais mutée) ─────────────────
+// ── Config (statique, jamais mutée) ─────────────────────────────────
 
 let configCache = null;
-
 export async function loadRobinsonConfig() {
-  if (configCache) return configCache;
-  const txt = await fs.readFile(CONFIG_JSON_PATH, "utf-8");
-  configCache = JSON.parse(txt);
+  if (!configCache) configCache = JSON.parse(await fs.readFile(CONFIG_JSON_PATH, "utf-8"));
   return configCache;
 }
 
-// Pools de textes narratifs (variantes par état de stock + phrases de
-// clôture citant les votants) — séparés de tamagotchi.json car purement
-// cosmétiques, n'affectent jamais la logique de jeu. Même principe que
-// jeux/data/tamagotchi/narratifs.json.
 let narratifsCache = null;
-
 export async function loadNarratifs() {
-  if (narratifsCache) return narratifsCache;
-  const txt = await fs.readFile(NARRATIFS_JSON_PATH, "utf-8");
-  narratifsCache = JSON.parse(txt);
+  if (!narratifsCache) narratifsCache = JSON.parse(await fs.readFile(NARRATIFS_JSON_PATH, "utf-8"));
   return narratifsCache;
 }
 
-// ── État séquentiel (muté uniquement au cron, jamais en concurrence) ──
+// ── État (muté uniquement au cron) ──────────────────────────────────
 
 export async function readState() {
   return fromJson(await getRedis().get(STATE_KEY));
@@ -165,197 +104,136 @@ export async function writeState(state) {
   await getRedis().set(STATE_KEY, toJson(state));
 }
 
-// ── Économie (stocks + points de radeau) — clés atomiques ──────────
+// ── Météo (fonctions pures) ─────────────────────────────────────────
 
-export async function initEconomy(stocksInitiaux, constructionIds = []) {
-  await Promise.all([
-    getRedis().set(STOCK_KEYS.poisson, String(stocksInitiaux.poisson)),
-    getRedis().set(STOCK_KEYS.eau, String(stocksInitiaux.eau)),
-    getRedis().set(STOCK_KEYS.bois, String(stocksInitiaux.bois)),
-    getRedis().set(RADEAU_POINTS_KEY, "0"),
-    ...constructionIds.map((id) => getRedis().set(constructionKey(id), "0")),
-  ]);
-}
-
-export async function readStocks() {
-  const [poisson, eau, bois] = await Promise.all([
-    getRedis().get(STOCK_KEYS.poisson),
-    getRedis().get(STOCK_KEYS.eau),
-    getRedis().get(STOCK_KEYS.bois),
-  ]);
-  return {
-    poisson: Number(poisson) || 0,
-    eau: Number(eau) || 0,
-    bois: Number(bois) || 0,
-  };
-}
-
-export async function readRadeauPoints() {
-  return Number(await getRedis().get(RADEAU_POINTS_KEY)) || 0;
-}
-
-// Récolte : jamais d'échec possible, un simple INCRBY atomique suffit.
-export async function harvestResource(resourceId, amount) {
-  if (amount <= 0) return;
-  await getRedis().incrby(STOCK_KEYS[resourceId], amount);
-}
-
-// Coût du Radeau — le seul cas qui peut échouer (stock de Bois insuffisant).
-// Pattern "décrémenter puis vérifier, compenser si négatif" : sûr sans
-// script Lua, car personne d'autre ne lit robinson:stock:bois de façon
-// atomiquement sensible entre les deux appels de ce même flux logique.
-// Réserve `gain` points sur le plafond quotidien du Radeau (INCRBY puis
-// rendu de l'excédent, sûr en concurrence). Renvoie les points réellement
-// accordés (0 = plafond atteint, rien n'est réservé).
-async function reserveRadeauJour(jour, gain, plafond) {
-  if (jour == null || !Number.isFinite(plafond)) return gain;
-  const redis = getRedis();
-  const total = Number(await redis.incrby(radeauJourKey(jour), gain));
-  const accorde = clipRaftGain(gain, total - gain, plafond);
-  if (accorde < gain) await redis.decrby(radeauJourKey(jour), gain - accorde);
-  return accorde;
-}
-
-export async function readRadeauJour(jour) {
-  return Number(await getRedis().get(radeauJourKey(jour))) || 0;
-}
-
-// `pointsGagnes` : 1 par défaut, 2 une fois l'Atelier achevé. `jour` et
-// `plafond` : plafond quotidien (raison "plafond" s'il est déjà atteint, le
-// Bois n'est alors pas consommé ; un gain partiel est accordé s'il reste
-// moins que `pointsGagnes`).
-export async function attemptRaftContribution(boisCost, pointsGagnes = 1, { jour = null, plafond = Infinity } = {}) {
-  const redis = getRedis();
-  const nouveauStock = Number(await redis.decrby(STOCK_KEYS.bois, boisCost));
-  if (nouveauStock < 0) {
-    await redis.incrby(STOCK_KEYS.bois, boisCost); // compensation
-    return { success: false, raison: "bois" };
+// Tirage pondéré par `poids` (indépendant d'un jour à l'autre).
+export function tirerMeteo(config, rng = Math.random) {
+  const entrees = Object.entries(config.meteos);
+  const total = entrees.reduce((s, [, m]) => s + m.poids, 0);
+  let x = rng() * total;
+  for (const [id, m] of entrees) {
+    x -= m.poids;
+    if (x < 0) return id;
   }
-  const accorde = await reserveRadeauJour(jour, pointsGagnes, plafond);
-  if (accorde <= 0) {
-    await redis.incrby(STOCK_KEYS.bois, boisCost);
-    return { success: false, raison: "plafond" };
+  return entrees[entrees.length - 1][0];
+}
+
+// Prévision : la vraie météo avec la probabilité `fiabilite_prevision`,
+// sinon une des autres au hasard (jamais la vraie dans ce cas).
+export function prevoirMeteo(vraie, config, rng = Math.random) {
+  if (rng() < config.fiabilite_prevision) return vraie;
+  const autres = Object.keys(config.meteos).filter((id) => id !== vraie);
+  return autres[Math.floor(rng() * autres.length)] ?? vraie;
+}
+
+// Ce que rapporte un joueur pour une action de récolte, selon la météo
+export function rendement(config, meteoId, actionId) {
+  const ressource = RECOLTES[actionId];
+  return ressource ? (config.meteos[meteoId]?.rendements?.[ressource] ?? 0) : 0;
+}
+
+// ── Économie (fonctions pures) ──────────────────────────────────────
+
+export function besoinNuit(V, config) {
+  const r = config.repas;
+  return { poisson: V * r.poisson, eau: V * r.eau, bois: Math.ceil(V / r.bois_par_joueurs) };
+}
+
+// Repas de la nuit du Jour `jour` : aucun la première nuit (vivres du navire)
+export function repasDeLaNuit(jour, V, config) {
+  if (V <= 0 || (jour === 1 && config.nuit1_gratuite)) return null;
+  return besoinNuit(V, config);
+}
+
+export const planchesRequises = (V, config) => V * config.planches_par_joueur;
+
+// Le Radeau peut emmener les joueurs du jour (au moins un joueur)
+export const radeauPret = (planches, V, config) => V > 0 && planches >= planchesRequises(V, config);
+
+// `counts` : votes par action, `V` : votants uniques du jour
+export function recoltesDuJour(counts, meteoId, config) {
+  const out = { poisson: 0, eau: 0, bois: 0 };
+  for (const [actionId, ressource] of Object.entries(RECOLTES)) {
+    out[ressource] = (counts[actionId] || 0) * rendement(config, meteoId, actionId);
   }
-  const points = Number(await redis.incrby(RADEAU_POINTS_KEY, accorde));
-  return { success: true, boisRestant: nouveauStock, points, pointsAjoutes: accorde };
+  return out;
 }
 
-// ── Constructions (filet, citerne, atelier) ────────────────────────
-
-export async function readConstructions(constructionIds) {
-  const values = await Promise.all(constructionIds.map((id) => getRedis().get(constructionKey(id))));
-  return Object.fromEntries(constructionIds.map((id, i) => [id, Number(values[i]) || 0]));
+// Stocks du soir (récoltes puis repas), sans plancher : une valeur
+// négative = ce qui manquera. Sert à la projection et à la résolution.
+export function stocksDuSoir(stocks, counts, V, jour, meteoId, config) {
+  const recoltes = recoltesDuJour(counts, meteoId, config);
+  const repas = repasDeLaNuit(jour, V, config);
+  const soir = {};
+  for (const r of RESSOURCES) soir[r] = stocks[r] + recoltes[r] - (repas?.[r] ?? 0);
+  return { recoltes, repas, soir };
 }
 
-// Un vote = 1 Bois commun = 1 point de construction. Échoue sans rien
-// consommer si le Bois manque (`raison: "bois"`) ou si la construction est
-// déjà achevée (`raison: "achevee"`, deux clics concurrents sur le dernier
-// point) : même schéma « décrémenter puis compenser » que le Radeau.
-export async function attemptConstructionContribution(id, cout, boisCost = 1) {
-  const redis = getRedis();
-  const nouveauStock = Number(await redis.decrby(STOCK_KEYS.bois, boisCost));
-  if (nouveauStock < 0) {
-    await redis.incrby(STOCK_KEYS.bois, boisCost);
-    return { success: false, raison: "bois" };
-  }
-  const points = Number(await redis.incrby(constructionKey(id), 1));
-  if (points > cout) {
-    await Promise.all([redis.decrby(constructionKey(id), 1), redis.incrby(STOCK_KEYS.bois, boisCost)]);
-    return { success: false, raison: "achevee" };
-  }
-  return { success: true, points, achevee: points === cout, boisRestant: nouveauStock };
+// Résolution de la nuit du Jour `jour` (pure) : récoltes, planches, repas,
+// puis aube du lendemain (`meteoAube`). Issue : "victoire_radeau",
+// "defaite" (cause "famine" ou "pas_de_depart") ou null (on continue).
+export function resoudreNuit({ jour, stocks, planches, counts, V, nbABord, meteo, meteoAube, config }) {
+  const { recoltes, repas, soir } = stocksDuSoir(stocks, counts, V, jour, meteo, config);
+  const planchesSoir = planches + (counts.radeau || 0);
+  const manque = RESSOURCES.filter((r) => soir[r] < 0);
+  const stocksFinal = Object.fromEntries(RESSOURCES.map((r) => [r, Math.max(0, soir[r])]));
+  const base = { recoltes, repas, stocks: stocksFinal, planches: planchesSoir, manque, meteoAube };
+  if (manque.length) return { ...base, issue: "defaite", cause: "famine", depart: false };
+  const depart =
+    Boolean(config.meteos[meteoAube]?.depart) && radeauPret(planchesSoir, V, config) && nbABord > 0;
+  if (depart) return { ...base, issue: "victoire_radeau", cause: null, depart: true };
+  if (jour >= config.duree_jours) return { ...base, issue: "defaite", cause: "pas_de_depart", depart: false };
+  return { ...base, issue: null, cause: null, depart: false };
 }
 
-// Rang du récolteur sur cette action aujourd'hui (1 = premier).
-export async function incrementZone(jour, actionId) {
-  return Number(await getRedis().hincrby(zonesKey(jour), actionId, 1));
+// Garde-fou anti-double-avancée : un cron en retard après une relance
+// manuelle clôturerait un jour tout juste ouvert.
+export const MIN_HOURS_BETWEEN_CLOSURES = 8;
+export function isTooSoonSinceLastClosure(publishedAt, now = Date.now()) {
+  if (!publishedAt) return false;
+  return (now - new Date(publishedAt).getTime()) / 3_600_000 < MIN_HOURS_BETWEEN_CLOSURES;
 }
 
-export async function readZones(jour) {
-  const raw = await hgetallRaw(zonesKey(jour));
-  return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, Number(v) || 0]));
+// Score d'une manche (classement des parties entre elles) : toute victoire
+// bat toute défaite, un départ plus tôt bat un départ plus tard. `jour` :
+// jour de l'aube du départ (2 à duree_jours + 1), ou dernier jour joué en
+// cas de défaite. `victoire_jour11` (victoire par survie) n'existe plus
+// mais reste dans l'archive des anciennes manches.
+export function computeMancheScore(outcome, jour, dureeJours) {
+  if (outcome === "victoire_radeau") return 1000 + Math.max(0, dureeJours + 2 - jour);
+  if (outcome === "victoire_jour11") return 500;
+  return jour;
 }
 
-// Don du Chef Charpentier (30/08) : ajoute des points de Radeau SANS toucher
-// au Bois commun — contrairement à attemptRaftContribution(), ne peut jamais
-// échouer (rien à vérifier), un simple INCRBY suffit.
-export async function grantFreeRadeauPoints(points, { jour = null, plafond = Infinity } = {}) {
-  const accorde = await reserveRadeauJour(jour, points, plafond);
-  if (accorde <= 0) return { success: false, raison: "plafond", points: await readRadeauPoints() };
-  const total = Number(await getRedis().incrby(RADEAU_POINTS_KEY, accorde));
-  return { success: true, points: total, pointsAjoutes: accorde };
-}
+// ── Votes ───────────────────────────────────────────────────────────
 
-// Don direct sur une seule ressource — utilisé par Épave (Bois, depuis son
-// inversion le 28/08). Colis Royal et le bonus Indigestion Royale
-// utilisaient grantEqualResources() (les 3 ressources à la fois) avant
-// d'être retirés le 29/08 (refonte de durcissement, voir jeux/CONTRIBUTING.md) ;
-// fonction supprimée faute d'appelant restant. INCRBY atomique comme
-// partout ailleurs dans ce fichier.
-export async function grantResource(resourceId, amount) {
-  if (amount <= 0) return readStocks();
-  const nouveauStock = Number(await getRedis().incrby(STOCK_KEYS[resourceId], amount));
-  const autres = await readStocks();
-  return { ...autres, [resourceId]: nouveauStock };
-}
+export const estPnj = (discordId) => String(discordId).startsWith("pnj-");
 
-// Perte directe de Poisson (Poissons Pourris) — même mécanique que la
-// consommation nocturne : DECRBY puis plancher 0, jamais négatif.
-export async function spoilPoisson(amount) {
-  if (amount <= 0) return readStocks();
-  const poisson = await decrementFlooredAtZero(STOCK_KEYS.poisson, amount);
-  const [eau, bois] = await Promise.all([getRedis().get(STOCK_KEYS.eau), getRedis().get(STOCK_KEYS.bois)]);
-  return { poisson, eau: Number(eau) || 0, bois: Number(bois) || 0 };
-}
-
-// Consommation quotidienne — contrairement au Radeau, on veut vraiment
-// plafonner à 0 (pas annuler l'opération) : DECRBY puis SET 0 si négatif.
-async function decrementFlooredAtZero(key, amount) {
-  if (amount <= 0) return Number(await getRedis().get(key)) || 0;
-  const redis = getRedis();
-  const nouveauStock = Number(await redis.decrby(key, amount));
-  if (nouveauStock < 0) {
-    await redis.set(key, "0");
-    return 0;
-  }
-  return nouveauStock;
-}
-
-// ── Votes ──────────────────────────────────────────────────────────
-// HSETNX (pas HGET puis HSET comme Tamagotchi) : il faut pouvoir libérer une
-// réservation ratée (Radeau refusé pour stock insuffisant) sans risque de
-// course avec un double-clic concurrent du même joueur.
-
+// Vote définitif (HSETNX). Au premier vote du jour : jour joué (badge),
+// pseudo, passeport (sauf PNJ).
 export async function recordVote(jour, discordId, actionId, username) {
   const redis = getRedis();
   const wasSet = Number(await redis.hsetnx(votesKey(jour), discordId, actionId));
   if (wasSet) {
-    if (username) await redis.hset(voteUsernamesKey(jour), { [discordId]: username });
-    await noterJeuSpecial(discordId, "robinson");
+    await redis.hincrby(JOURS_JOUES_KEY, discordId, 1);
+    if (username) {
+      await redis.hset(voteUsernamesKey(jour), { [discordId]: username });
+      await redis.hset(USERNAMES_KEY, { [discordId]: username });
+    }
+    if (!estPnj(discordId)) await noterJeuSpecial(discordId, "robinson");
     return { status: "recorded" };
   }
   const existing = await redis.hget(votesKey(jour), discordId);
   return existing === actionId ? { status: "already_recorded" } : { status: "rejected", existing };
 }
 
-// Uniquement appelé quand le Radeau échoue (stock insuffisant) — le joueur
-// n'a alors pas réellement voté, il doit pouvoir réessayer plus tard.
-export async function releaseVoteSlot(jour, discordId) {
-  await getRedis().hdel(votesKey(jour), discordId);
-}
-
-export async function writeVoteDetail(jour, discordId, detail) {
-  await getRedis().hset(voteDetailsKey(jour), { [discordId]: toJson(detail) });
-}
-
-export async function getVoteDetail(jour, discordId) {
-  return fromJson(await getRedis().hget(voteDetailsKey(jour), discordId));
+export async function readVote(jour, discordId) {
+  return (await getRedis().hget(votesKey(jour), discordId)) ?? null;
 }
 
 export async function tallyVotes(jour) {
-  const raw = await hgetallRaw(votesKey(jour));
   const counts = {};
-  for (const actionId of Object.values(raw)) {
+  for (const actionId of Object.values(await hgetallRaw(votesKey(jour)))) {
     counts[actionId] = (counts[actionId] || 0) + 1;
   }
   return counts;
@@ -365,13 +243,9 @@ export async function countUniqueVoters(jour) {
   return Number(await getRedis().hlen(votesKey(jour))) || 0;
 }
 
-// Détail des votants (discordId, actionId, pseudo) — utilisé uniquement par
-// jeux/scripts/robinsonStatus.js pour l'affichage admin en terminal.
+// Détail des votants (/mini-jeux, robinson:status)
 export async function listVotes(jour) {
-  const [votes, usernames] = await Promise.all([
-    hgetallRaw(votesKey(jour)),
-    hgetallRaw(voteUsernamesKey(jour)),
-  ]);
+  const [votes, usernames] = await Promise.all([hgetallRaw(votesKey(jour)), hgetallRaw(voteUsernamesKey(jour))]);
   return Object.entries(votes).map(([discordId, actionId]) => ({
     discordId,
     actionId,
@@ -379,408 +253,70 @@ export async function listVotes(jour) {
   }));
 }
 
-async function clearVotes(jour) {
-  await getRedis().del(votesKey(jour), voteDetailsKey(jour), voteUsernamesKey(jour), zonesKey(jour), radeauJourKey(jour));
+export async function clearVotes(jour) {
+  await getRedis().del(votesKey(jour), voteUsernamesKey(jour));
 }
 
-// ── Fonctions pures de logique de jeu (aucun I/O, testées unitairement) ──
+// ── Embarquement (durable jusqu'à la fin de la partie) ──────────────
 
-// Tirage normal 0 à 5, ~16,7% chacun (équilibrage validé par simulation :
-// voir jeux/CONTRIBUTING.md, section Robinson — moyenne 2,5, calibrée pour une
-// survie passive dans la fourchette 50-80% selon le nombre de votants).
-// `max` : borne haute du jour (5 par défaut, réduite par l'appauvrissement
-// de l'île, voir computeAppauvrissement()).
-export function rollHarvestAmount(rng = Math.random, max = 5) {
-  return Math.floor(rng() * (max + 1));
+export async function embarquer(discordId, jour) {
+  return Boolean(Number(await getRedis().hsetnx(A_BORD_KEY, discordId, String(jour))));
 }
 
-// Deux paliers de plafond, remplaçant depuis le 30/08 l'unique palier 0/1
-// (moyenne 0,5) : la simulation a montré que l'Ouragan (double plafond
-// Pêche+Bois) concentrait à lui seul ~35-45% de toutes les défaites à
-// V=12-16 (déficit structurel ≈ V ce jour-là, qu'AUCUN bonus fixe dégressif
-// ne peut compenser pour les gros groupes — voir jeux/CONTRIBUTING.md). Adoucir
-// le palier lui-même (au lieu d'ajouter un bonus fixe) a l'avantage de
-// s'auto-proportionner à V, contrairement aux bonus dégressifs des autres
-// événements.
-// "Modéré" (Canicule) : 0, 1 ou 2 — moyenne 1,0, peut encore tomber à 0.
-export function rollModerateCapAmount(rng = Math.random) {
-  return Math.floor(rng() * 3);
-}
-// "Léger" (Ouragan, Indigestion Royale) : 1 ou 2 — moyenne 1,5, jamais 0.
-export function rollMildCapAmount(rng = Math.random) {
-  return Math.floor(rng() * 2) + 1;
-}
-// Dispatch par événement — Canicule reste le plus dur des trois (seule
-// l'Eau y est touchée, contre Pêche+Bois pour l'Ouragan), les deux autres
-// sont adoucis en "léger".
-export function rollEventCappedAmount(event, rng = Math.random) {
-  if (event?.id === "canicule") return rollModerateCapAmount(rng);
-  return rollMildCapAmount(rng); // ouragan, indigestion_royale
+export async function readABord() {
+  return hgetallRaw(A_BORD_KEY);
 }
 
-// Tirage du Chef parmi les votants RÉELS de la veille (jamais un non-votant)
-// — récompense la régularité, pas le hasard pur. `previousDayVoters` vient
-// de `listVotes()` (tableau `{ discordId, actionId, username }`). Renvoie
-// `null` si personne n'a voté la veille (pas de Chef ce jour-là).
-export function pickChefExplorateur(previousDayVoters, rng = Math.random) {
-  if (!previousDayVoters || previousDayVoters.length === 0) return null;
-  return previousDayVoters[Math.floor(rng() * previousDayVoters.length)].discordId;
+// ── Badge de participation ──────────────────────────────────────────
+
+export async function readJoursJoues() {
+  const raw = await hgetallRaw(JOURS_JOUES_KEY);
+  return Object.fromEntries(Object.entries(raw).map(([id, n]) => [id, Number(n) || 0]));
 }
 
-// Chef Charpentier du jour (30/08, second rôle dédié au Radeau) : même
-// tirage que le Chef Explorateur, mais exclut son identifiant pour éviter
-// de cumuler les deux rôles sur la même personne — sauf si un seul votant
-// existait la veille, auquel cas le cumul est inévitable et accepté.
-export function pickChefCharpentier(previousDayVoters, excludeId, rng = Math.random) {
-  if (!previousDayVoters || previousDayVoters.length === 0) return null;
-  const candidats = excludeId
-    ? previousDayVoters.filter((v) => v.discordId !== excludeId)
-    : previousDayVoters;
-  const pool = candidats.length > 0 ? candidats : previousDayVoters;
-  return pool[Math.floor(rng() * pool.length)].discordId;
+export async function readUsernames() {
+  return hgetallRaw(USERNAMES_KEY);
 }
 
-// Don du Chef Charpentier : converti directement en points de Radeau, SANS
-// coûter de Bois (contrairement à un vote Radeau normal) — un tirage de
-// récolte classique (0-5) +1, doublé (2 à 12 points, moyenne 7). Coût réel :
-// le vote de cette seule personne est retiré du pool de survie ce jour-là
-// (pas une fraction du groupe), donc un coût marginal faible et constant
-// (~1/V) plutôt qu'une ponction proportionnelle qui écraserait la survie —
-// voir jeux/CONTRIBUTING.md pour la simulation qui a invalidé une stratégie de
-// détournement de votes classique (fraction du groupe) avant ce rôle.
-export function rollCharpentierRadeauPoints(rng = Math.random) {
-  return (rollHarvestAmount(rng) + 1) * 2;
-}
-
-// Explorer : toujours 3 unités d'une seule et même ressource, tirée au
-// hasard (pas une répartition entre les 3) — jamais affecté par
-// Canicule/Ouragan (seules Eau / Pêche+Bois le sont).
-export function rollExplorerYield(rng = Math.random) {
-  const resources = ["poisson", "eau", "bois"];
-  const picked = resources[Math.floor(rng() * 3)];
-  const yields = { poisson: 0, eau: 0, bois: 0 };
-  yields[picked] = 3;
-  return yields;
-}
-
-// L'action est-elle plafonnée par l'événement du jour ?
-export function harvestCapForEvent(event, actionId) {
-  if (!event) return false;
-  if (event.id === "canicule") return actionId === "eau";
-  if (event.id === "ouragan") return actionId === "peche" || actionId === "bois";
-  if (event.id === "indigestion_royale") return actionId === "eau";
-  return false;
-}
-
-export function isExplorerDisabled(event) {
-  return event?.id === "gobelins";
-}
-
-// Verrou anti-rush (mécanique du 26/08, narrée par un événement dédié plutôt
-// que codée en dur) : empêche un groupe qui a assez de Bois en réserve (ce
-// qui arrive vite avec le barème 0-5) de finir les 20 points du Radeau en
-// une seule journée et de clore la partie au Jour 4-5, avant même la moitié
-// de l'aventure. La fenêtre (`jour_debut`/`jour_fin`) est lue depuis
-// `config.radeau_verrouille` — jamais une constante figée dans le code —
-// pour rester ajustable (ou désactivable, `radeauVerrouille` peut être
-// `null`/absent) sans toucher au JS.
-export function isRadeauDisabled(jour, radeauVerrouille) {
-  if (!radeauVerrouille) return false;
-  return jour >= radeauVerrouille.jour_debut && jour <= radeauVerrouille.jour_fin;
-}
-
-export function computeDailyConsumption(V) {
-  return { poisson: V, eau: V, bois: Math.ceil(V / 2) };
-}
-
-// Soustrait la consommation, plancher 0 — pure, utilisée par le dry-run pour
-// simuler la clôture sans jamais toucher Redis.
-export function applyFlooredDelta(stocks, consumption) {
-  const out = {};
-  for (const key of Object.keys(stocks)) {
-    out[key] = Math.max(0, stocks[key] - (consumption[key] || 0));
-  }
-  return out;
-}
-
-// Refonte du 29/08 (durcissement délibéré, "chaque mauvais vote doit
-// compromettre le taux de réussite") : repassé de 3 à 2 — un seul jour de
-// répit au lieu de deux avant la défaite, combiné au retrait des dons
-// gratuits (Colis Royal, bonus Jour 5, Indigestion Royale) et au passage à
-// 7 jours. Voir jeux/CONTRIBUTING.md pour les simulations qui ont validé ce choix.
-export const ZERO_STREAK_LIMIT = 2;
-
-// Cœur de la détection de défaite : incrémente le compteur d'une ressource
-// tombée à 0, le remet à 0 sinon. Défaite dès qu'un compteur atteint 2.
-export function updateZeroStreaks(prevStreaks, stocksAfter) {
-  const streaks = {};
-  let defeated = false;
-  for (const key of Object.keys(stocksAfter)) {
-    if (stocksAfter[key] <= 0) {
-      streaks[key] = (prevStreaks?.[key] || 0) + 1;
-      if (streaks[key] >= ZERO_STREAK_LIMIT) defeated = true;
-    } else {
-      streaks[key] = 0;
+// Groupes du badge, du plus assidu au moins assidu : [{ jours, ids }].
+// `aBord` (victoire) : sépare les partis des restés sur l'île.
+export function groupesBadge(joursJoues, aBord = null) {
+  const grouper = (ids) => {
+    const parJours = new Map();
+    for (const id of ids) {
+      const n = joursJoues[id];
+      if (!parJours.has(n)) parJours.set(n, []);
+      parJours.get(n).push(id);
     }
-  }
-  return { streaks, defeated };
-}
-
-export function computeGobelinsTheft(boisApresConsommation, threshold = 5) {
-  return boisApresConsommation < threshold;
-}
-
-export function computeRaftSections(points, pointsParSection) {
-  return Math.floor(points / pointsParSection);
-}
-
-export function isRaftVictory(points, config) {
-  return computeRaftSections(points, config.points_par_section) >= config.radeau_sections_max;
-}
-
-export function isSurvivalVictory(jour, dureeJours) {
-  return jour > dureeJours;
-}
-
-// Garde-fou anti-double-avancée (26/08, incident réel) : un cron `schedule`
-// en retard (best-effort côté GitHub, voir jeux/CONTRIBUTING.md) peut encore se
-// déclencher après qu'un admin a relancé le jour à la main entretemps — sans
-// ce filet, les deux appels à postRobinson() clôtureraient chacun une
-// journée d'affilée, sautant un jour entier de vote quasi sans laisser le
-// temps aux joueurs. `MIN_HOURS_BETWEEN_CLOSURES` reste très en dessous du
-// cycle normal (~24h entre deux vraies clôtures), donc sans impact sur le
-// fonctionnement quotidien légitime.
-export const MIN_HOURS_BETWEEN_CLOSURES = 8;
-
-export function isTooSoonSinceLastClosure(publishedAt, now = Date.now()) {
-  if (!publishedAt) return false;
-  const hoursSince = (now - new Date(publishedAt).getTime()) / 3_600_000;
-  return hoursSince < MIN_HOURS_BETWEEN_CLOSURES;
-}
-
-// ── Programme des événements ─────────────────────────────────────
-// Tiré une fois au Jour 1 et gardé dans l'état : chaque événement de la
-// config tombe une seule fois, sur un jour pris au hasard entre le Jour 2 et
-// `dureeJours`, et deux événements de même `famille` (les deux plafonds
-// d'Eau) ne se suivent jamais. Le jeu étant rejoué, un ordre fixe serait
-// connu d'avance dès la deuxième manche. Renvoie `{ [jour]: eventId }`.
-export function drawEventProgramme(evenements, dureeJours, rng = Math.random) {
-  const shuffle = (arr) => {
-    const out = [...arr];
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
+    return [...parJours.entries()].sort((a, b) => b[0] - a[0]).map(([jours, liste]) => ({ jours, ids: liste }));
   };
-  const jours = [];
-  for (let j = 2; j <= dureeJours; j++) jours.push(j);
-  let programme = {};
-  for (let essai = 0; essai < 200; essai++) {
-    const ids = shuffle(evenements.map((e) => e.id));
-    const joursTires = shuffle(jours).slice(0, ids.length).sort((a, b) => a - b);
-    programme = {};
-    joursTires.forEach((jour, i) => (programme[jour] = ids[i]));
-    if (isProgrammeValide(programme, evenements)) return programme;
+  const joueurs = Object.keys(joursJoues).filter((id) => joursJoues[id] > 0);
+  if (!aBord) return { tous: grouper(joueurs) };
+  return {
+    partis: grouper(joueurs.filter((id) => aBord[id] != null)),
+    restes: grouper(joueurs.filter((id) => aBord[id] == null)),
+  };
+}
+
+// ── PNJ (salon de test uniquement) ──────────────────────────────────
+
+export const PNJ = ["Josette", "Gérard", "Ginette", "Jean-Mi", "Bernadette"];
+
+// Les PNJ choisissent une action au hasard, puis embarquent une fois sur
+// deux si le Radeau est prêt (planches du soir et joueurs du jour).
+export async function jouerPnj(jour, planches, config, rng = Math.random) {
+  for (const [i, nom] of PNJ.entries()) {
+    await recordVote(jour, `pnj-${i + 1}`, ACTIONS[Math.floor(rng() * ACTIONS.length)], nom);
   }
-  return programme; // contrainte impossible à tenir avec cette config : dernier tirage
+  const counts = await tallyVotes(jour);
+  const V = await countUniqueVoters(jour);
+  if (!radeauPret(planches + (counts.radeau || 0), V, config)) return;
+  for (let i = 0; i < PNJ.length; i++) if (rng() < 0.5) await embarquer(`pnj-${i + 1}`, jour);
 }
 
-export function isProgrammeValide(programme, evenements) {
-  const famille = (jour) => evenements.find((e) => e.id === programme[jour])?.famille ?? null;
-  return Object.keys(programme).every((jour) => {
-    const f = famille(Number(jour));
-    return !f || f !== famille(Number(jour) + 1);
-  });
-}
-
-// Événement programmé pour `jour`, ou null. `previousDayVoters` (V du jour
-// qui vient de se clôturer) filtre les événements conditionnels : si la
-// condition n'est pas remplie, la journée reste normale.
-export function eventForDay(jour, evenements, previousDayVoters = 0, programme = null) {
-  const id = programme?.[jour];
-  const candidate = id ? (evenements.find((e) => e.id === id) ?? null) : null;
-  if (!candidate) return null;
-  if (candidate.condition_votants_veille != null && previousDayVoters < candidate.condition_votants_veille) {
-    return null;
-  }
-  if (candidate.condition_votants_veille_max != null && previousDayVoters >= candidate.condition_votants_veille_max) {
-    return null;
-  }
-  return candidate;
-}
-
-// Prévision affichée la veille : l'événement programmé pour `jour`, sans
-// filtre de condition (Poissons Pourris dépend justement des votes du jour
-// en cours, que la prévision doit inciter à augmenter).
-export function forecastForDay(jour, evenements, programme) {
-  const id = programme?.[jour];
-  return id ? (evenements.find((e) => e.id === id) ?? null) : null;
-}
-
-// ── Épuisement des zones ─────────────────────────────────────────
-// Sur une même action, chaque tranche de `palier` récolteurs du jour retire
-// 1 au résultat : se ruer à 15 sur la ressource la plus basse rapporte moins
-// que se répartir. Le palier suit la mobilisation de la veille (un gros
-// groupe a besoin de plus de récolteurs par action), `palier_jour1` au
-// Jour 1 (pas de veille).
-export function computeEpuisementPalier(vVeille, epuisement) {
-  if (!epuisement) return null;
-  if (!vVeille) return epuisement.palier_jour1;
-  return Math.max(epuisement.palier_min, Math.ceil(vVeille / epuisement.diviseur));
-}
-
-// `rang` : 1 pour le premier récolteur du jour sur cette action.
-export function computeEpuisementMalus(rang, palier) {
-  if (!Number.isFinite(palier) || palier <= 0 || !(rang > 0)) return 0;
-  return Math.floor((rang - 1) / palier);
-}
-
-// Récolte finale : tirage (normal ou plafonné) moins l'épuisement (plancher
-// 0), puis les bonus fixes (Chef explorateur, Filet/Citerne).
-export function computeHarvestAmount({ baseRoll, malus = 0, isChef = false, bonusConstruction = 0 }) {
-  return Math.max(0, baseRoll - malus) + (isChef ? 1 : 0) + bonusConstruction;
-}
-
-// Explorer : 3 unités moins l'épuisement, jamais sous `min`.
-export function computeExplorerAmount(malus, min = 1) {
-  return Math.max(min, 3 - malus);
-}
-
-// ── Appauvrissement de l'île ─────────────────────────────────────
-// Malus du jour (`config.appauvrissement[jour - 1]`, 0 au-delà ou si absent) :
-// la récolte normale passe de 0-5 à 0-(5 − malus) et Explorer rapporte
-// 3 − malus (avant épuisement). Les plafonds d'événement, le Chef et
-// Filet/Citerne n'en dépendent pas : les constructions gagnent en valeur à
-// mesure que l'île s'appauvrit. ⚠️ Raison d'être : sans pression croissante,
-// un groupe coordonné planifie ses besoins sans jamais rien risquer.
-export function computeAppauvrissement(jour, config) {
-  const calendrier = config.appauvrissement;
-  if (!Array.isArray(calendrier) || jour < 1) return 0;
-  return calendrier[Math.min(jour, calendrier.length) - 1] ?? 0;
-}
-
-export function harvestMaxForDay(jour, config) {
-  return Math.max(0, 5 - computeAppauvrissement(jour, config));
-}
-
-// ── Constructions ────────────────────────────────────────────────
-// Effets liés à l'identifiant : filet → Pêche +1, citerne → Eau +1,
-// atelier → 2 points par vote Radeau.
-
-export function isConstructionDone(points, construction) {
-  return construction != null && points >= construction.cout;
-}
-
-export function constructionHarvestBonus(actionId, constructions, configConstructions) {
-  const done = (id) => isConstructionDone(constructions?.[id] ?? 0, configConstructions?.[id]);
-  if (actionId === "peche" && done("filet")) return 1;
-  if (actionId === "eau" && done("citerne")) return 1;
-  return 0;
-}
-
-// Plafond quotidien du Radeau : `radeau_sections_max_par_jour` sections
-// (Chef charpentier compris). ⚠️ Sans lui, l'Atelier (2 points par vote)
-// permet de finir le Radeau en une seule journée de votes dès le Jour 2.
-export function computeRadeauPlafondJour(config) {
-  if (config.radeau_sections_max_par_jour == null) return Infinity;
-  return config.radeau_sections_max_par_jour * config.points_par_section;
-}
-
-// Points accordés compte tenu de ceux déjà gagnés aujourd'hui.
-export function clipRaftGain(gain, dejaAujourdhui, plafond) {
-  return Math.max(0, Math.min(gain, plafond - dejaAujourdhui));
-}
-
-export function raftPointsPerVote(constructions, configConstructions) {
-  return isConstructionDone(constructions?.atelier ?? 0, configConstructions?.atelier) ? 2 : 1;
-}
-
-// ── Consommation et fin de partie ────────────────────────────────
-
-// Jour 1 : seule une fraction des votants consomme (provisions du navire).
-// La réserve de départ grandit ainsi avec le groupe au lieu d'être fixe.
-export function computeDay1ConsumptionVoters(V, ratio) {
-  if (ratio == null) return V;
-  return Math.ceil(V * ratio);
-}
-
-// Dernière nuit : les secours n'emmènent que des survivants. Une ressource
-// à 0 après la consommation du dernier jour fait perdre la partie (sauf
-// Radeau achevé, vérifié avant).
-export function hasEmptyResource(stocks) {
-  return Object.values(stocks).some((v) => v <= 0);
-}
-
-// Don de Bois brut de l'événement Épave (inversé le 28/08, initialement un
-// don de points de Radeau directs) — dégressif selon le nombre de votants
-// de la veille, pour favoriser les petits groupes qui ont structurellement
-// moins de votes/jour à consacrer au Radeau (voir jeux/CONTRIBUTING.md, section
-// Robinson, pour le raisonnement complet). Le Bois doit encore être converti
-// en points via de vrais votes Radeau (1 vote = 1 point) — contrairement à
-// l'ancien don direct, qui rendait la victoire par Radeau quasi certaine dès
-// le Jour 7 en contournant le vrai goulot d'étranglement (le nombre de votes
-// disponibles, jamais la ressource elle-même).
-export function computeEpaveBoisBonus(event, previousDayVoters) {
-  return Math.max(event.bois_min, event.bois_base - previousDayVoters);
-}
-
-// Perte de Poisson de l'événement Poissons Pourris — pic à mi-parcours du
-// seuil de désactivation, puis redescend des deux côtés : plus sévère à
-// mesure que la mobilisation baisse jusqu'à un certain point, mais un
-// groupe vraiment minuscule (V=1 ou 2) a de toute façon un stock trop
-// faible pour justifier une perte aussi lourde que celle d'un groupe
-// intermédiaire. `threshold` DOIT être `condition_votants_veille_max` de
-// l'événement (pas une valeur codée en dur) : la courbe est calée dessus,
-// avec un atterrissage en douceur (plancher 1) juste avant que l'événement
-// ne se désactive — un `threshold` figé se déconnecterait dès que la config
-// change (c'est exactement ce qui s'est produit le 24/08 en relevant le
-// seuil sans recaler cette formule, gardée à `10` en dur).
-export function computePoissonsPourrisLoss(previousDayVoters, threshold) {
-  return Math.max(1, Math.min(threshold - previousDayVoters, 4 + previousDayVoters));
-}
-
-// Score comparatif d'une manche, pour classer les parties entre elles (le
-// jeu est rejoué plusieurs fois dans l'année) — Robinson n'a pas de score
-// numérique naturel (c'est une survie, pas un score attack comme Boss
-// Raid), donc ce barème encode une hiérarchie explicite : toute victoire
-// bat toute défaite ; entre victoires Radeau, plus tôt = meilleur (évasion
-// rapide) ; les victoires Jour 11 sont toutes à égalité (aucune notion de
-// vitesse) ; entre défaites, plus de jours survécus = meilleur.
-export function computeMancheScore(outcome, jour, dureeJours) {
-  if (outcome === "victoire_radeau") return 1000 + Math.max(0, dureeJours + 1 - jour);
-  if (outcome === "victoire_jour11") return 500;
-  return jour; // défaite : jours survécus avant le naufrage
-}
-
-// ── Historique (bilans quotidiens) ────────────────────────────────
-
-export async function writeHistoriqueEntry(jour, record) {
-  await getRedis().hset(HISTORIQUE_KEY, { [jour]: toJson(record) });
-}
-
-export async function getHistoriqueEntry(jour) {
-  return fromJson(await getRedis().hget(HISTORIQUE_KEY, String(jour)));
-}
-
-// Trié du jour le plus récent au plus ancien.
-export async function listHistorique({ limit = 10, offset = 0 } = {}) {
-  const all = await hgetallJson(HISTORIQUE_KEY);
-  const entries = Object.entries(all)
-    .map(([jour, record]) => ({ jour: Number(jour), ...record }))
-    .sort((a, b) => b.jour - a.jour);
-  const hasMore = entries.length > offset + limit;
-  return { entries: entries.slice(offset, offset + limit), hasMore };
-}
-
-// ── Manches (bilans de fin de partie) ────────────────────────────
-// Le jeu est destiné à être rejoué plusieurs fois dans l'année (une partie
-// = une "manche"). Contrairement à HISTORIQUE_KEY (bilans quotidiens d'UNE
-// manche, écrasés d'une manche à l'autre puisque les jours 1-10 se
-// répètent), MANCHES_KEY est un HASH permanent indexé par un numéro de
-// manche strictement croissant (`MANCHE_SEQ_KEY`, `INCR` atomique) —
-// jamais nettoyé par resetRobinson(), pour que le récap de fin de partie
-// puisse comparer la manche qui vient de se terminer aux précédentes.
+// ── Manches ─────────────────────────────────────────────────────────
+// Archive permanente (une partie = une manche), jamais effacée par un reset
+// normal ; `--manches` l'efface (tests).
 
 export async function archiveManche(record) {
   const manche = Number(await getRedis().incr(MANCHE_SEQ_KEY));
@@ -788,147 +324,46 @@ export async function archiveManche(record) {
   return manche;
 }
 
-// Trié de la manche la plus récente à la plus ancienne.
 export async function listManches({ limit = 10 } = {}) {
-  const all = await hgetallJson(MANCHES_KEY);
-  return Object.values(all)
+  return Object.values(await hgetallRaw(MANCHES_KEY))
+    .map(fromJson)
+    .filter(Boolean)
     .sort((a, b) => b.manche - a.manche)
     .slice(0, limit);
 }
 
-// ── Résolution/clôture du jour courant ──────────────────────────────
-// Appelée uniquement par postRobinson() (jeux/discord/handlers/robinson.js)
-// au moment du cron quotidien.
+// ── Remise à zéro ───────────────────────────────────────────────────
 
-async function computeClosure(state, config, { write }) {
-  const radeauPoints = await readRadeauPoints();
-
-  // La victoire par Radeau court-circuite tout : aucune consommation ni
-  // vérification de défaite ce jour-là (décision explicite validée).
-  if (isRaftVictory(radeauPoints, config)) {
-    const [V, voters] = await Promise.all([countUniqueVoters(state.jour), listVotes(state.jour)]);
-    const stocks = await readStocks();
-    const record = {
-      V,
-      radeauVotes: voters.filter((v) => v.actionId === "radeau").length,
-      stocksAvant: stocks,
-      stocksApres: stocks,
-      consumption: null,
-      gobelinsVoleur: false,
-      event: state.event ?? null,
-      outcome: "victoire_radeau",
-      resolvedAt: new Date().toISOString(),
-    };
-    if (write) {
-      await writeHistoriqueEntry(state.jour, record);
-      await clearVotes(state.jour);
-    }
-    return { outcome: "victoire_radeau", stocksApres: stocks, radeauPoints, zeroStreaksApres: state.zeroStreaks };
-  }
-
-  const [V, voters] = await Promise.all([countUniqueVoters(state.jour), listVotes(state.jour)]);
-  const stocksAvant = await readStocks();
-  // Consommation basée sur la mobilisation de LA VEILLE, pas sur les votes du
-  // jour qu'on clôture — sinon une baisse de participation aujourd'hui
-  // réduit mécaniquement le besoin d'aujourd'hui d'autant, rendant le
-  // désengagement "gratuit" (production et besoin rétrécissent ensemble,
-  // jamais de vraie pénurie). Exception : le Jour 1 n'a pas de veille, il
-  // compte une fraction de ses propres votants (`consommation_jour1_ratio`).
-  const veille = state.jour > 1 ? await getHistoriqueEntry(state.jour - 1) : null;
-  const vConsommation = veille ? veille.V : computeDay1ConsumptionVoters(V, config.consommation_jour1_ratio);
-  const consumption = computeDailyConsumption(vConsommation);
-
-  let stocksApres;
-  if (write) {
-    stocksApres = {
-      poisson: await decrementFlooredAtZero(STOCK_KEYS.poisson, consumption.poisson),
-      eau: await decrementFlooredAtZero(STOCK_KEYS.eau, consumption.eau),
-      bois: await decrementFlooredAtZero(STOCK_KEYS.bois, consumption.bois),
-    };
-  } else {
-    stocksApres = applyFlooredDelta(stocksAvant, consumption);
-  }
-
-  let gobelinsVoleur = false;
-  if (state.event?.id === "gobelins") {
-    gobelinsVoleur = computeGobelinsTheft(stocksApres.bois);
-    if (gobelinsVoleur) {
-      stocksApres = {
-        ...stocksApres,
-        poisson: write
-          ? await decrementFlooredAtZero(STOCK_KEYS.poisson, 5)
-          : Math.max(0, stocksApres.poisson - 5),
-      };
-    }
-  }
-
-  // ⚠️ La défaite n'est PAS déterminée ici : ce `stocksApres` est encore
-  // intermédiaire (conso + Gobelins seulement), pas le stock final que les
-  // joueurs verront réellement. Un événement du jour SUIVANT (Colis Royal,
-  // Une incroyable découverte, Indigestion Royale) peut encore remonter un
-  // stock qui vient de toucher 0 — vérifier la défaite maintenant compterait
-  // un "jour à 0" invisible pour les joueurs (incident du 26/08 : l'Eau
-  // touchait 0 ici, mais le Colis Royal remontait l'affichage à 2 juste
-  // après sans jamais annuler ce zéro compté en douce). Voir
-  // `finalizeDayClosure()`, appelée par postRobinson() une fois le stock
-  // final connu — jamais en dry-run, jamais avant l'application des bonus.
-  return { stocksApres, stocksAvant, consumption, gobelinsVoleur, radeauPoints, V, voters };
-}
-
-// Finalise la clôture d'un jour une fois le stock FINAL connu (après
-// application des bonus/pertes du jour suivant par postRobinson) — seul
-// moment où la défaite est réellement déterminée, sur la valeur que les
-// joueurs voient vraiment. Écrit l'historique et vide les votes du jour
-// clos ; jamais appelée en dry-run (aucune écriture).
-export async function finalizeDayClosure(
-  jour,
-  { V, radeauVotes, stocksAvant, stocksFinal, consumption, gobelinsVoleur, event, previousZeroStreaks, outcome: outcomeForce = null },
-) {
-  const { streaks, defeated: defaiteStreak } = updateZeroStreaks(previousZeroStreaks, stocksFinal);
-  // `outcomeForce` : défaite de la dernière nuit, décidée par l'appelant.
-  const defeated = defaiteStreak || outcomeForce === "defaite";
-  const outcome = defeated ? "defaite" : null;
-  await writeHistoriqueEntry(jour, {
-    V,
-    radeauVotes,
-    stocksAvant,
-    stocksApres: stocksFinal,
-    consumption,
-    gobelinsVoleur,
-    event,
-    outcome,
-    resolvedAt: new Date().toISOString(),
-  });
-  await clearVotes(jour);
-  return { streaks, defeated, outcome };
-}
-
-// Lecture seule (aucune écriture Redis) — utilisée par la branche --dry-run,
-// qui ne doit jamais faire avancer la partie ni consommer les votes du jour.
-export async function previewCloseDay(state, config) {
-  return computeClosure(state, config, { write: false });
-}
-
-export async function closeDayAndAdvance(state, config) {
-  return computeClosure(state, config, { write: true });
-}
-
-// ── Remise à zéro ────────────────────────────────────────────────────
-
-// `clearManches: false` par défaut — l'archive des manches passées (parties
-// réellement jouées au fil de l'année) survit à un reset normal, pour ne
-// jamais l'effacer par erreur en cours de partie réelle. Seul un reset
-// explicite (`--manches`, voir jeux/scripts/resetRobinson.js) l'efface, utile en
-// phase de test pour ne pas polluer l'archive avec des manches de test.
-export async function resetRobinson({ clearManches = false } = {}) {
-  await getRedis().del(STATE_KEY, HISTORIQUE_KEY, RADEAU_POINTS_KEY, ...Object.values(STOCK_KEYS));
+// Début d'une partie (passage au Jour 1) : badge et embarquement.
+export async function resetPartie() {
+  await getRedis().del(JOURS_JOUES_KEY, A_BORD_KEY, USERNAMES_KEY);
   await scanDelete("robinson:votes:*");
-  await scanDelete("robinson:vote_details:*");
   await scanDelete("robinson:vote_usernames:*");
-  await scanDelete("robinson:zones:*");
-  await scanDelete("robinson:radeau_jour:*");
-  await scanDelete("robinson:construction:*");
-  if (clearManches) {
-    await getRedis().del(MANCHES_KEY, MANCHE_SEQ_KEY);
+}
+
+// Efface aussi les clés de l'ancienne version du jeu (stocks séparés,
+// constructions, épuisement…), sans effet si elles n'existent plus.
+export async function resetRobinson({ clearManches = false } = {}) {
+  await getRedis().del(
+    STATE_KEY,
+    JOURS_JOUES_KEY,
+    A_BORD_KEY,
+    USERNAMES_KEY,
+    "robinson:historique",
+    "robinson:radeau_points",
+    "robinson:stock:poisson",
+    "robinson:stock:eau",
+    "robinson:stock:bois",
+  );
+  for (const motif of [
+    "robinson:votes:*",
+    "robinson:vote_usernames:*",
+    "robinson:vote_details:*",
+    "robinson:zones:*",
+    "robinson:radeau_jour:*",
+    "robinson:construction:*",
+  ]) {
+    await scanDelete(motif);
   }
+  if (clearManches) await getRedis().del(MANCHES_KEY, MANCHE_SEQ_KEY);
 }

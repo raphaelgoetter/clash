@@ -632,147 +632,106 @@ Cron `.github/workflows/quiz.yml` : `6 8 * * *`. Variables : `DISCORD_TOKEN`, `D
 
 ---
 
-## Robinson (survie insulaire communautaire)
+## Robinson (survie collaborative)
 
-Jeu spécial collaboratif : la communauté, naufragée, doit survivre `duree_jours` (7) jours jusqu'aux secours (Jour `duree_jours + 1`) ou s'évader plus tôt en Radeau. Chaque jour, chaque membre vote une action : récolter (Pêcher, Eau, Bois, Explorer) ou bâtir (Radeau, Filet, Citerne, Atelier). Les 3 stocks (Nourriture/poisson, Eau, Bois) sont consommés chaque nuit. Mécaniques communes (annonce, cron `--require-active`, salon test/public, ping, manches) : voir « Jeux spéciaux : fonctionnement commun ».
+Jeu spécial collaboratif de 7 jours (`duree_jours`) : la communauté, naufragée, doit construire un Radeau et partir avant l'aube du Jour 8. Chaque jour, chaque membre choisit une action : 🎣 Pêcher, 💧 Eau, 🪵 Bois ou 🛶 Radeau. La météo du jour fixe ce que rapporte chaque action ; le Radeau ne part qu'à une aube ensoleillée. Pas de commande slash, pas d'inscription. Mécaniques communes (annonce, cron `--require-active`, salon test/public, ping) : voir « Jeux spéciaux : fonctionnement commun ».
 
-| Rôle                                                                                                  | Fichier                                                                                                                                                                                                                                 |
-| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Logique métier, Redis, fonctions pures                                                                | `jeux/services/robinson.js`                                                                                                                                                                                                             |
-| Embeds, publication, boutons                                                                          | `jeux/discord/handlers/robinson.js` (`postRobinson()`, `handleVoteButton()`, `handleRegles()`)                                                                                                                                          |
-| Routage des boutons (`robinson_vote:<jour>:<action>`, action, `batir` ou chantier, `robinson_regles`) | `jeux/discord/routes/jeuxSpeciaux.js`                                                                                                                                                                                                   |
-| Publication (manuel/cron)                                                                             | `jeux/scripts/postRobinson.js` (pas de commande slash)                                                                                                                                                                                  |
-| Config                                                                                                | `jeux/data/robinson/robinson.json`, `jeux/data/robinson/narratifs.json`                                                                                                                                                                 |
-| Simulation d'équilibrage                                                                              | `jeux/outils/robinson-simulation/simuler.mjs` (`--n`, `--v 6,10,14`, surcharges de calibrage `--appauvrissement`, `--points-section`, `--stocks`)                                                                                       |
-| Plateau du jour                                                                                       | `jeux/services/robinsonImage.js` (`GET /api/robinson/plateau?d=`, `jeux/server/imageRoutes.js`) ; rendu local : `node jeux/outils/robinson/renderPlateau.mjs <sortie.png> [jour]`                                                       |
-| Illustrations                                                                                         | `frontend/public/images/robinson/` (`robinsonImageUrl(n)`) : `rob-01` annonce ; fin de partie selon l'issue (`buildOutcomeEmbed()`) : `rob-10` Radeau, `rob-07` secours, `rob-04` naufrage. Les jours de jeu n'affichent que le plateau |
+| Rôle | Fichier |
+| --- | --- |
+| Règles pures, Redis | `jeux/services/robinson.js` |
+| Image du jour | `jeux/services/robinsonImage.js` (`GET /api/robinson/plateau?d=`, `jeux/server/imageRoutes.js`) ; rendu local : `node jeux/outils/robinson/renderPlateau.mjs <sortie.jpg> [jour]` |
+| Discord (message du jour, boutons, `postRobinson()`) | `jeux/discord/handlers/robinson.js` (Components V2 : `jeux/discord/composantsV2.js`, partagé avec le Pont du Troll) |
+| Routage (`robinson_vote:<jour>:<action>`, `robinson_embarquer:<jour>`, `robinson_regles`) | `jeux/discord/routes/jeuxSpeciaux.js` |
+| Publication (manuel/cron) | `jeux/scripts/postRobinson.js` |
+| Config | `jeux/data/robinson/robinson.json`, `jeux/data/robinson/narratifs.json` (textes cosmétiques) |
+| Simulation d'équilibrage | `jeux/outils/robinson-simulation/simuler.mjs` (`--n`, `--v 6,10,15,22`, surcharges `--fiab`, `--soleil`, `--planches`) |
+| Illustrations | `frontend/public/images/robinson/` : `rob-01` annonce, `rob-10` départ du Radeau, `rob-04` défaite |
+| Tests | `jeux/services/robinson.test.js` |
 
-### Déroulement
+### Règles (Robinson)
 
-1. **Annonce** (lancement manuel) : `phase: "annonce"`, `jour: null`, bouton Règles seul, ping MINI-JEUX.
-2. **Jour 1** (cron suivant) : `initEconomy(stocks_initiaux, constructions)` (stocks, Radeau et constructions à 0), tirage du programme des événements (`drawEventProgramme()`, gardé dans `state.programme`), ping MINI-JEUX.
-3. **Clôture quotidienne** (`postRobinson()` → `computeClosure()` puis `finalizeDayClosure()`) :
-   - Radeau achevé (`isRaftVictory()`) → victoire Radeau, sans consommation ni vérification de défaite.
-   - Sinon consommation automatique (`computeDailyConsumption()`) : `-V` Nourriture, `-V` Eau, `-⌈V/2⌉` Bois (plancher 0), où **V = votants uniques de la veille** (`historique[jour-1].V`). Jour 1 : `⌈V × consommation_jour1_ratio⌉` de ses propres votants (`computeDay1ConsumptionVoters()`, provisions du navire : la réserve de départ grandit avec le groupe). ⚠️ Ne pas baser la conso sur le V du jour clos : une baisse de participation deviendrait gratuite.
-   - Événement Gobelins du jour clos : après conso, si Bois `< 5` → vol de 5 Poissons (plancher 0).
-   - Dernier jour (`duree_jours`) : une ressource à 0 après la conso → **défaite** (`hasEmptyResource()`, embed « dernière nuit ») ; sinon victoire par survie. ⚠️ Sans cette règle le dernier jour serait gratuit (tout le monde au Radeau sans risque).
-   - Sinon : résolution de l'événement du jour suivant (pertes/dons Poissons Pourris, Épave) → stock **final**, puis `updateZeroStreaks()` sur ce stock final. Ressource à 0 pendant `ZERO_STREAK_LIMIT` (**2**) jours consécutifs → défaite. ⚠️ Toujours calculer les streaks sur le stock final affiché, jamais sur le stock intermédiaire (sinon « jour à 0 » invisible pour les joueurs).
-   - Palier d'épuisement du jour suivant (`computeEpuisementPalier()`, `state.palierEpuisement`), tirage des Chefs du jour, suppression du message de la veille, publication du jour suivant.
-4. Fin (victoire Radeau, victoire survie, défaite) : `termine: true`, ping, archivage de la manche (salon public).
+- **Un choix par jour, définitif** (`recordVote()`, `HSETNX`) : même action recliquée = rappel, autre action = refus. **Rien n'est appliqué au clic** : stocks et planches ne bougent qu'à la nuit (cron).
+- **Météo** (`config.meteos`, tirage pondéré indépendant chaque jour, `tirerMeteo()`) : celle du jour est **certaine** et affichée dès la publication ; elle fixe ce que rapporte chaque joueur (`rendement()`).
 
-Le message du jour affiche en texte le récit, l'événement, la Grosse Houle, les Chefs, les stocks et le Radeau en une ligne (« 🐟 12 · 💧 9 · 🪵 7 · 🛶 8/25 »), l'alerte des ressources à 0 et la prévision du lendemain (« 🔭 Demain » : événement programmé, appauvrissement, début de la Grosse Houle, ou au dernier jour l'arrivée des secours et la règle de la dernière nuit). Le détail est dans le **plateau** (image du message, régénérée à chaque rafraîchissement) :
+| Météo | Poids | 🐟 | 💧 | 🪵 | Départ à l'aube |
+| --- | --- | --- | --- | --- | --- |
+| ☀️ Soleil | 45 | 5 | 4 | 5 | oui |
+| ☁️ Nuages | 25 | 5 | 4 | 4 | non |
+| 🌧️ Pluie | 20 | 4 | 6 | 3 | non |
+| ⛈️ Tempête | 10 | 2 | 2 | 2 | non |
 
-- frise des jours : jour courant, événements survenus (`state.eventsVus`), celui du jour et celui annoncé pour demain, « ? » au-delà, vagues de la Grosse Houle, feuilles d'appauvrissement (connues jusqu'à demain), bateau des secours ;
-- stocks : barre, valeur (vert couvert, orange sous le besoin, rouge à 0), trait du besoin de la nuit, « nuit −N » ou « à 0 : n / 2 jours » ;
-- Radeau : points sur le total, une planche par section, points du jour sur le plafond (« Houle » les jours fermés) ; constructions : avancement ou ✓ ;
-- récolte du prochain votant par action : fourchette réelle (tirage du jour ou limite d'événement, épuisement, Filet/Citerne), orange si la zone est épuisée, Explorer barré pendant les Gobelins.
+- **Prévision de demain** (`prevoirMeteo()`) : la vraie météo de demain avec la probabilité `fiabilite_prevision` (3/4), sinon une des trois autres. La vraie météo de demain (`state.meteoSuivante`) est tirée à l'avance et reste secrète.
+- **Repas de la nuit** (`repasDeLaNuit()`) : 1 🐟 et 1 💧 par joueur du jour (`V` = votants uniques), 1 🪵 pour 2 (arrondi au supérieur). Aucun la nuit du Jour 1 (`nuit1_gratuite`) ni si personne n'a joué. Un stock insuffisant = **défaite** (famine).
+- **Radeau** : chaque vote 🛶 ajoute 1 planche (sans coûter de Bois). Il est **prêt** quand `planches ≥ planches_par_joueur × V` (2 par joueur du jour, `radeauPret()`) ; l'objectif suit donc les joueurs du jour.
+- **Embarquement** (`robinson_embarquer:<jour>`, `embarquer()`) : bouton 🚣 sur une seconde rangée dès que le Radeau est prêt (planches du soir comprises, il peut apparaître ou disparaître en cours de journée). Geste gratuit en plus de l'action du jour, refusé sans action du jour, **durable** jusqu'à la fin de la partie (`HSETNX robinson:a_bord`). Ni minimum ni places limitées.
+- **Départ** : à l'aube, si ☀️, Radeau prêt et au moins un joueur à bord → victoire. Ceux qui n'ont pas embarqué « restent sur l'île » (badge). Pas de départ à l'aube du Jour 8 → défaite.
 
-Rendu sans état (`encodePlateau()`, JSON en base64url : état dynamique seulement, le reste vient de la config), PNG via `@resvg/resvg-js` et la police Inter (Blob), comme Potato. ⚠️ Anti-spoiler : jamais le programme au-delà de demain dans l'URL. ⚠️ Lisibilité mobile : Discord réduit l'image à la largeur du message (≈ 360 px sur téléphone pour une toile de 800 px) ; texte ≥ 26 px dans l'image, aucun libellé que l'icône suffit à porter, tout changement vérifié sur un rendu réduit à 360 px (`sips -Z 360`).
+### Nuit (`postRobinson()` → `resoudreNuit()`, fonction pure)
 
-### Votes
+Ordre : récoltes (`votes × rendement`), planches du jour, repas (défaite si un stock passe sous 0, stocks affichés à 0), puis aube avec la vraie météo du lendemain (départ). Sinon : jour suivant (météo du lendemain révélée, nouvelle météo tirée pour le surlendemain, nouvelle prévision), votes du jour effacés. Le bilan de la nuit (`state.bilan`) s'affiche en tête du message suivant.
 
-- Message public : une rangée d'actions (Pêcher, Eau, Bois, Explorer, 🔨 Bâtir) et un bouton Règles. Pas de Journal : besoins de la nuit, Radeau et jours à 0 sont sur le plateau. ⚠️ Radeau et constructions restent regroupés derrière Bâtir : un bouton par chantier surchargerait le message (jusqu'à 10 boutons). Bâtir (`robinson_vote:<jour>:batir`, compteur = votes Radeau + constructions du jour) ouvre un menu éphémère sans consommer le vote (`handleBatirMenu()`) : chantiers disponibles (`listChantiers()` : Radeau hors Grosse Houle, constructions inachevées), avancement, effet, Bois restant, mention « gratuit » pour le Chef charpentier ; refus si le joueur a déjà voté. Le vote a lieu au clic sur un chantier du menu, routé comme les autres actions.
-- Un vote par membre et par jour, **définitif** : `recordVote()` en `HSETNX` ; même action = no-op (réaffiche le tirage via `vote_details`), autre action = rejet.
-- **Récoltes appliquées en direct au clic** (pas au cron) : stock incrémenté immédiatement, résultat exact en éphémère (ack `type: 5` puis `PATCH @original`, précisions « zone épuisée −N » / « Filet +1 » seulement si elles jouent) ; message public rafraîchi par un `PATCH` séparé (token bot, `refreshPublicMessage()`).
-- ⚠️ Stocks, points de Radeau et points de construction = clés numériques séparées mutées uniquement en `INCRBY`/`DECRBY`, jamais un blob JSON lu-modifié-réécrit (clics concurrents).
-- Radeau ou construction sans Bois suffisant (`attemptRaftContribution()`, `attemptConstructionContribution()`, décrémentent puis compensent si négatif) : vote rejeté **et slot libéré** (`releaseVoteSlot()`), le joueur peut réessayer. Même chose pour une construction déjà achevée (deux clics concurrents sur le dernier point).
+⚠️ Le repas passe avant l'aube : une famine empêche le départ, même au soleil.
 
-### Tirages
+### Interface (Robinson)
 
-| Action                                      | Gain                                                                                                                                                                                                           |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pêcher / Eau / Bois                         | 0-5 uniforme (`rollHarvestAmount()`)                                                                                                                                                                           |
-| Pêcher / Eau / Bois plafonnés par événement | palier « modéré » 0-2 (Canicule, `rollModerateCapAmount()`) ; palier « léger » 1-2 (Ouragan, Indigestion Royale, `rollMildCapAmount()`) ; dispatch `rollEventCappedAmount()`, cible via `harvestCapForEvent()` |
-| Explorer                                    | 3 unités d'une seule ressource tirée au hasard (`rollExplorerYield()`), moins l'épuisement, jamais sous `epuisement.explorer_min` (`computeExplorerAmount()`), jamais plafonné                                 |
-| Radeau                                      | `bois_par_point_radeau` (1) Bois → +1 point, +2 une fois l'Atelier achevé (`raftPointsPerVote()`)                                                                                                              |
+- **Components V2** (`versV2()`, comme le Pont du Troll) : un seul bloc, l'image en galerie. Titre `🏝️ Robinson (Jour N/7)`.
+- Texte : bilan de la nuit (« 🌙 Cette nuit » : travail, repas, aube), météo du jour en titre `###` et rendements, texte narratif, prévision (« 🔭 Demain : 🌧️ Pluie probable »). Sous l'image : stocks, Radeau (« 21 planches ce soir, il en faut 24 pour 12 joueurs »), « ✅ Le Radeau est prêt : embarquez ! » et « 🚣 N joueurs à bord », projection du soir (« 🌙 Ce soir si rien ne change ») et alerte « ⚠️ Il manquera… ». Pied : joueurs du jour.
+- Boutons : `[🎣 Pêcher (n)]` `[💧 Eau (n)]` `[🪵 Bois (n)]` `[🛶 Radeau (n)]` `[📖 Règles]`, puis `[🚣 Embarquer]` quand le Radeau est prêt. Répartition et projection sont visibles (jeu collaboratif, les joueurs se coordonnent).
+- Chaque vote ou embarquement rafraîchit le message (`refreshPublicMessage()`, PATCH direct).
+- **Fin de partie** : bilan de la nuit, récit de l'issue, illustration, **badge de participation** (pas de classement) : « 🚣 Partis en Radeau » et « 🏝️ Restés sur l'île » en cas de victoire, « 🏅 Naufragés de cette aventure » sinon, joueurs groupés par jours joués (`groupesBadge()`, `robinson:jours_joues`), puis les 10 dernières manches (🏆 sur la meilleure).
+- **PNJ du salon de test** : 5 joueurs fictifs (`pnj-1` à `pnj-5`) choisissent une action au hasard à chaque publication et embarquent une fois sur deux quand le Radeau est prêt (`jouerPnj()`). Jamais sur le salon public, même demandés (`pnj && !isPublic`) ; `--sans-pnj` les désactive. Pas de passeport.
+- ⚠️ **Jamais de ping hors salon public** : `postRobinson()` ne pingue que si `isPublic` et sans `noPing` (annonce, Jour 1, fin). Testé dans `robinson.test.js`.
 
-Récolte finale (`computeHarvestAmount()`) : tirage moins l'épuisement (plancher 0), puis +1 Chef explorateur, +1 Filet (Pêcher) ou Citerne (Eau).
+### Image du jour
 
-**Appauvrissement de l'île** (`config.appauvrissement`, malus par jour, `computeAppauvrissement()`) : `[0, 0, 0, 1, 1, 2, 2]`. La récolte normale passe de 0-5 à 0-(5 − malus) (`harvestMaxForDay()`, borne de `rollHarvestAmount()`) et Explorer rapporte 3 − malus avant épuisement. Les plafonds d'événement, le Chef explorateur, Filet/Citerne et le Chef charpentier n'en dépendent pas. Affiché dans le message du jour (« 🍂 ») et annoncé la veille quand il augmente. ⚠️ Raison d'être : sans pression croissante, un groupe coordonné se contente de récolter ce qui manquera le lendemain et ne perd presque jamais ; l'appauvrissement force à investir tôt (constructions, stocks de départ plus généreux) et fait du Radeau l'échappatoire.
+`robinsonImage.js` : SVG **900 × 600** rastérisé par `@resvg/resvg-js` (police Inter), JPEG. Bandeau (titre, frise des 7 jours : météo passée, jour courant entouré, prévision de demain en pointillés, « ? » au-delà), météo du jour et rendements, prévision de demain, trois stocks avec le besoin de la nuit (trait blanc ; vert couvert, orange sous le besoin, rouge à 0), Radeau (une case par planche sur l'objectif, « N à bord » quand il est prêt). Icônes dessinées (resvg ne rend pas les emojis en couleur).
 
-**Épuisement des zones** : le rang du récolteur sur l'action du jour (`incrementZone()`, `HINCRBY` atomique) donne un malus `⌊(rang − 1) / palier⌋` (`computeEpuisementMalus()`). Palier = `max(palier_min, ⌈V_veille / diviseur⌉)`, `palier_jour1` au Jour 1. ⚠️ Raison d'être : sans lui, tout le monde récolte la ressource la plus basse et la partie est résolue ; le palier suit V pour ne pas pénaliser les gros groupes. Ne s'applique ni au Radeau ni aux constructions.
+Rendu sans état (`encodePlateau()`, JSON en base64url). ⚠️ Anti-spoiler : seule la **prévision** de demain est encodée, jamais `meteoSuivante` (testé). ⚠️ Lisibilité mobile : aucun texte < 36 px sur 900 px, tout changement vérifié réduit à 360 px (`sips -Z 360`).
 
-⚠️ Barème calibré par simulation Monte Carlo (`jeux/outils/robinson-simulation/simuler.mjs`, qui lit la config réelle) : tout changement de barème, palier, stocks, coûts, épuisement, événements ou `ZERO_STREAK_LIMIT` doit être revalidé par cette simulation. Cibles à V=10-18 : groupe « stratège » 10-15 % de défaite, « réaliste » environ 30 %, Radeau environ 40 % des parties d'un bon groupe ; « stratège » (prévisions, constructions tôt) nettement meilleur que « glouton myope » (ressource la plus basse), lui-même meilleur que « aléatoire » (≥ 80 % de défaite) ; aucune stratégie dominante sur le Radeau : « rush Atelier » (Radeau au plafond dès que possible) et « Radeau prudent » gagnent plus souvent au Radeau mais perdent nettement plus souvent que « stratège » ; défaite du profil réaliste peu dépendante de V.
+### Équilibrage
 
-### Constructions (`robinson.json.constructions`)
+⚠️ Calibré par `jeux/outils/robinson-simulation/simuler.mjs` (lit la config réelle et `resoudreNuit()`) : tout changement de météo, de rendements, de repas ou de planches doit être revalidé. Cibles : groupe organisé de 15 joueurs dont 15 % hors plan ≈ 55-60 % de victoire (plan parfait ≈ 64 %), groupe au hasard ≤ 10 %, départs étalés du Jour 5 à l'aube du Jour 8, défaites partagées entre famine et absence de départ. La fiabilité de la prévision (3/4 ou 4/5) ne change presque rien ; la fréquence du soleil règle la difficulté. Les petits groupes (6 joueurs) gagnent moins (≈ 40 %).
 
-Proposée dans le menu Bâtir tant qu'elle est inachevée. 1 vote + 1 Bois commun = 1 point (`attemptConstructionContribution()`), effet immédiat dès le dernier point. Effets liés à l'identifiant :
-
-| Id        | Coût | Effet                                              |
-| --------- | ---- | -------------------------------------------------- |
-| `filet`   | 4    | +1 à chaque Pêche (`constructionHarvestBonus()`)   |
-| `citerne` | 4    | +1 à chaque Eau, y compris plafonnée               |
-| `atelier` | 4    | 2 points par vote Radeau (pas le Chef charpentier) |
-
-Raison d'être : arbitrage entre survivre aujourd'hui, investir pour la suite et avancer le Radeau, tous payés en Bois. Rentables si bâties tôt.
-
-### Chefs du jour
-
-Tirés à chaque ouverture de jour (à partir du Jour 2) parmi les **votants réels de la veille** ; aucun si personne n'a voté ; jamais tirés en dry-run. Annoncés dans l'embed public (`state.chefExplorateurId`, `state.chefCharpentierId`).
-
-- **👑 Chef Explorateur** (`pickChefExplorateur()`) : **+1** au tirage du jour (normal ou plafonné) sur Pêcher/Eau/Bois uniquement (pas Explorer, pas Radeau).
-- **🪓 Chef Charpentier** (`pickChefCharpentier()`) : tiré seulement les jours où le Radeau est déverrouillé, en excluant le Chef Explorateur (sauf votant unique). Son vote Radeau est **gratuit** (aucun Bois, `grantFreeRadeauPoints()`) et vaut `(rollHarvestAmount() + 1) × 2` points (2-12, `rollCharpentierRadeauPoints()`). ⚠️ Raison d'être : détourner une fraction des votes du groupe vers le Radeau fait s'effondrer la survie ; ce rôle ne coûte qu'un vote.
-
-### Événements (`robinson.json.evenements`)
-
-Programme tiré au Jour 1 (`drawEventProgramme(evenements, duree_jours)`) : chaque événement tombe une fois sur un jour au hasard entre le Jour 2 et `duree_jours`, deux événements de même `famille` (les plafonds d'Eau, `eau_limitee`) jamais consécutifs (`isProgrammeValide()`). ⚠️ Jamais d'ordre fixe : le jeu est rejoué, il serait connu d'avance. Prévision la veille (`forecastForDay()`, texte `prevision`, `{seuil}` remplacé par `condition_votants_veille_max`), sans filtre de condition.
-
-`eventForDay(jour, evenements, V_veille, programme)` : lookup dans le programme ; `condition_votants_veille_max` désactive l'événement si `V_veille >=` seuil. Les pertes/dons s'appliquent **une seule fois**, à la publication du jour concerné.
-
-| Événement (`id`)                          | Effet                                                                                                                                                                                                                                                     |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Poissons Pourris (`poissons_pourris`)     | Seulement si V_veille `<` 14 (`condition_votants_veille_max`). Perte de Poisson `computePoissonsPourrisLoss(V, seuil) = max(1, min(seuil − V, 4 + V))` (`spoilPoisson()`). ⚠️ `seuil` doit être `event.condition_votants_veille_max`, jamais codé en dur. |
-| Grosse Canicule (`canicule`)              | Eau : palier modéré 0-2                                                                                                                                                                                                                                   |
-| Ouragan Monstrueux (`ouragan`)            | Pêcher et Bois : palier léger 1-2                                                                                                                                                                                                                         |
-| Invasion de Gobelins (`gobelins`)         | Bouton Explorer retiré (`isExplorerDisabled()`) ; vol de 5 Poissons si Bois `< 5` après conso (`computeGobelinsTheft()`)                                                                                                                                  |
-| Indigestion Royale (`indigestion_royale`) | Eau : palier léger 1-2                                                                                                                                                                                                                                    |
-| Épave échouée (`epave`)                   | Don de **Bois** `max(bois_min, bois_base − V_veille)` = `max(5, 19 − V)` (`computeEpaveBoisBonus()`). ⚠️ Don de Bois, jamais de points de Radeau directs (rendrait la victoire Radeau quasi certaine).                                                    |
-
-Les événements ne sont pas détaillés dans l'embed Règles (`buildReglesEmbed()`), qui indique seulement qu'ils sont annoncés la veille.
-
-### Radeau
-
-- `points_par_section` (5) × `radeau_sections_max` (5) = **25 points** pour la victoire.
-- **Plafond quotidien** : `radeau_sections_max_par_jour` (2) sections, soit 10 points par jour au maximum, Chef charpentier compris (`computeRadeauPlafondJour()`, `clipRaftGain()`, compteur `robinson:radeau_jour:<jour>`). Gain partiel s'il reste moins que le gain du vote ; plafond atteint = vote refusé sans consommer le Bois, slot libéré, Radeau retiré du menu Bâtir. Évasion la plus rapide possible : Jour 5 (Jours 1, 2 puis 5, Grosse Houle les Jours 3-4). ⚠️ Raison d'être : sans plafond, Atelier au Jour 1 puis tout le groupe au Radeau le Jour 2 gagnait dans ~97 % des parties à V=15.
-- Victoire **jamais annoncée au clic** : détectée au cron suivant, qui court-circuite conso et défaite (y compris si c'est l'Épave qui fait franchir le seuil).
-- **Verrou « Grosse Houle »** (`robinson.json.radeau_verrouille`, `isRadeauDisabled(jour, radeau_verrouille)`) : Radeau retiré du menu Bâtir Jours 3-4 (`jour_debut`/`jour_fin`), annoncé la veille et narré dans l'embed, refus au clic en filet de sécurité. Empêche un rush en une journée. `radeau_verrouille` absent/`null` = pas de verrou. Ne bloque pas les constructions.
+Contraintes issues de la simulation :
+- 2 planches par joueur, pas 1 : sinon tout le groupe vote Radeau le même jour et part aussitôt ;
+- nuit du Jour 1 gratuite : sans elle, 10 % de victoire environ ;
+- embarquement gratuit : s'il coûtait l'action du jour, la victoire tomberait à ≈ 16 % à 15 joueurs ;
+- pas de classement individuel : tout score personnel pousse à jouer contre le groupe (seul le badge récompense l'assiduité).
 
 ### Manches
 
-Score de classement (`computeMancheScore(outcome, jour, dureeJours)`) : victoire Radeau `1000 + (dureeJours + 1 − jour)` (plus tôt = mieux) ; victoire survie `500` (identifiant interne `victoire_jour11` conservé, voir `outcomeLabel()`) ; défaite = `jour`. L'embed de fin liste les 10 dernières manches avec 🏆 sur la meilleure. `archiveManche({ outcome, jour, radeauPoints, resolvedAt })`.
+`archiveManche({ outcome, cause, jour, planches, nbJoueurs, nbABord, resolvedAt })`, **uniquement en publication publique**. Score (`computeMancheScore()`) : départ à l'aube du Jour d → `1000 + (duree_jours + 2 − d)` ; défaite = dernier jour joué. `victoire_jour11` (ancienne victoire par survie, 500) n'existe plus que dans l'archive (`outcomeLabel()` garde son libellé).
 
 ### Config (`jeux/data/robinson/robinson.json`)
 
-`duree_jours` (7), `radeau_sections_max` (5), `bois_par_point_radeau` (1), `points_par_section` (5), `radeau_sections_max_par_jour` (2, absent = pas de plafond), `stocks_initiaux` (`{ poisson: 20, eau: 20, bois: 12 }`), `consommation_jour1_ratio` (0,5), `appauvrissement` (`[0, 0, 0, 1, 1, 2, 2]`, absent = aucun), `epuisement` (`{ palier_jour1: 4, diviseur: 4, palier_min: 3, explorer_min: 1 }`, absent = pas d'épuisement), `radeau_verrouille`, `actions`, `constructions` (`label`, `nom`, `emoji`, `cout`, `description`), `evenements` (`id`, `nom`, `emoji`, `description`, `prevision`, `famille` optionnelle, paramètres propres). Chargée une fois (`loadRobinsonConfig()`), jamais mutée. Constantes dans le code : `ZERO_STREAK_LIMIT = 2`, seuil Gobelins 5 et vol de 5 Poissons. `narratifs.json` : textes cosmétiques.
+`duree_jours` (7), `planches_par_joueur` (2), `fiabilite_prevision` (0,75), `nuit1_gratuite` (true), `repas` (`{ poisson: 1, eau: 1, bois_par_joueurs: 2 }`), `actions` (`label`, `emoji`, `resource`), `meteos` (`nom`, `emoji`, `poids`, `rendements`, `depart`). Chargée une fois (`loadRobinsonConfig()`), jamais mutée.
 
 ### Redis (`robinson:*`)
 
-| Clé                                         | Type            | Contenu                                                                                                                                                                                  |
-| ------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `robinson:state`                            | STRING          | `{ phase, jour, channelId, messageId, publishedAt, termine, programme, palierEpuisement, eventsVus, event, chefExplorateurId, chefCharpentierId, zeroStreaks, dayVoters }`, muté au cron |
-| `robinson:stock:poisson` / `:eau` / `:bois` | compteur        | stocks, `INCRBY`/`DECRBY` uniquement                                                                                                                                                     |
-| `robinson:radeau_points`                    | compteur        | points de Radeau                                                                                                                                                                         |
-| `robinson:construction:<id>`                | compteur        | points investis dans chaque construction                                                                                                                                                 |
-| `robinson:radeau_jour:<jour>`               | compteur        | points de Radeau gagnés dans la journée (plafond quotidien, effacé à la clôture)                                                                                                         |
-| `robinson:zones:<jour>`                     | HASH            | `actionId → nombre de récoltes du jour` (épuisement, effacé à la clôture)                                                                                                                |
-| `robinson:votes:<jour>`                     | HASH            | `discordId → actionId` (effacé à la clôture)                                                                                                                                             |
-| `robinson:vote_details:<jour>`              | HASH            | `discordId → { actionId, amount\|yields\|pointsAdded, malus?, bonusConstruction?, isChef?, isCharpentier?, at }` (réaffichage sans re-tirage)                                            |
-| `robinson:vote_usernames:<jour>`            | HASH            | `discordId → pseudo` (affichage admin)                                                                                                                                                   |
-| `robinson:historique`                       | HASH            | `jour → { V, radeauVotes, stocksAvant, stocksApres, consumption, gobelinsVoleur, event, outcome, resolvedAt }`, manche en cours (V de la veille, `robinson:status`)                      |
-| `robinson:manches` / `robinson:manche_seq`  | HASH / compteur | archive permanente des manches                                                                                                                                                           |
+| Clé | Type | Contenu |
+| --- | --- | --- |
+| `robinson:state` | STRING | `{ phase, jour, channelId, messageId, publishedAt, termine, stocks, planches, meteo, meteoSuivante, prevision, meteosPassees, bilan, issue, cause }`, muté **uniquement au cron** (`meteoSuivante` secrète) |
+| `robinson:votes:<jour>` | HASH | `discordId → action` (`HSETNX`, effacé à la nuit) |
+| `robinson:vote_usernames:<jour>` | HASH | `discordId → pseudo` (affichage admin, effacé à la nuit) |
+| `robinson:jours_joues` | HASH | `discordId → jours joués` (badge), remis à zéro au Jour 1 |
+| `robinson:a_bord` | HASH | `discordId → jour d'embarquement` (`HSETNX`), remis à zéro au Jour 1 |
+| `robinson:usernames` | HASH | `discordId → dernier pseudo` (badge), remis à zéro au Jour 1 |
+| `robinson:manches` / `robinson:manche_seq` | HASH / compteur | archive permanente des manches |
+
+`resetRobinson()` efface aussi les clés de l'ancienne version du jeu (stocks séparés, constructions, épuisement, historique) si elles existent encore.
 
 ### Scripts et workflow
 
-| Commande                                    | Effet                                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `npm run robinson:test` / `:test:dry`       | salon de test (`DISCORD_CHANNEL_FRAME_TEST`) / aperçu console                        |
-| `npm run robinson:public` / `:public:dry`   | salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) / aperçu                               |
-| `npm run robinson:reset`                    | efface état, stocks, votes, historique (**destructif**, garde les manches)           |
-| `npm run robinson:reset:manches`            | idem + `robinson:manches`/`manche_seq`                                               |
-| `npm run robinson:status`                   | état courant (stocks, constructions, programme, palier) + projection du jour suivant |
-| `npm run robinson:refresh` / `:refresh:dry` | réédite le message du jour en place (sans clôturer) après un correctif de texte      |
+| Commande | Effet |
+| --- | --- |
+| `npm run robinson:test` / `:test:dry` | salon de test (`DISCORD_CHANNEL_FRAME_TEST`, 5 PNJ, jamais de ping) / aperçu console |
+| `npm run robinson:public` / `:public:dry` | salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) / aperçu |
+| `npm run robinson:reset` | efface la partie en cours (**destructif**, garde les manches) |
+| `npm run robinson:reset:manches` | idem + `robinson:manches`/`manche_seq` |
+| `npm run robinson:status` | état courant, votes du jour, joueurs à bord, projection de la nuit ; vraie météo de demain seulement avec `-- --spoiler` |
+| `npm run robinson:refresh` / `:refresh:dry` | réédite le message du jour en place (sans résoudre la nuit) après un correctif de texte |
 
-Workflow `.github/workflows/robinson.yml` : cron `8 8 * * *` UTC (avec `--require-active`) + `workflow_dispatch` (lancement). Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`/`_TEST`, `KV_REST_API_URL`/`KV_REST_API_TOKEN` (aucune spécifique).
+Workflow `.github/workflows/robinson.yml` : cron `8 8 * * *` UTC (avec `--require-active`) + `workflow_dispatch` (lancement). Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`/`_TEST`, `KV_REST_API_URL`/`KV_REST_API_TOKEN` (aucune spécifique). Changement de règles : uniquement entre deux parties, suivi de `npm run robinson:reset`.
 
 ---
 
@@ -1423,7 +1382,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 ### Interface (Pont du Troll)
 
-- **Messages en Components V2** (`versV2()`, flag `IS_COMPONENTS_V2`) : Discord limite la hauteur d'une image d'embed (~300 px sur ordinateur, une image portrait 600 × 840 y tombe à ~215 px de large) ; une galerie (type 12) l'affiche plus grande, et le format paysage de l'image fait le reste (voir « Image »). Vues écrites comme des embeds, converties à l'envoi : un conteneur à liseré par embed (titre `###`, texte, galerie, pied en `-#`), boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le ping (salon public) est un bloc texte `<@&rôle>` en tête, avec `allowed_mentions`. `state.embeds` et `state.components` servent à republier le message (compteur). 4 000 caractères de texte au plus sur l'ensemble du message.
+- **Messages en Components V2** (`versV2()`, flag `IS_COMPONENTS_V2`, conversion partagée avec Robinson dans `jeux/discord/composantsV2.js`) : Discord limite la hauteur d'une image d'embed (~300 px sur ordinateur, une image portrait 600 × 840 y tombe à ~215 px de large) ; une galerie (type 12) l'affiche plus grande, et le format paysage de l'image fait le reste (voir « Image »). Vues écrites comme des embeds, converties à l'envoi : un conteneur à liseré par embed (titre `###`, texte, galerie, pied en `-#`), boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le ping (salon public) est un bloc texte `<@&rôle>` en tête, avec `allowed_mentions`. `state.embeds` et `state.components` servent à republier le message (compteur). 4 000 caractères de texte au plus sur l'ensemble du message.
 - **Jour d'annonce** (jour 0) : illustration d'annonce et le seul bouton `[📖 Règles]`.
 - Titre `🧌 Pont du Troll (Jour X/7)`. Boutons du message public (`pont_pierre:<jour>`, `pont_cordes:<jour>`, `pont_rumeurs:<jour>`, `pont_indice:<jour>`, `pont_regles`) : `[🪨 Pont de pierre]`, `[🪢 Pont de cordes]`, `[🗣️ Rumeurs]` (jours impairs) ou `[🔎 Indice]` (jours pairs), `[📖 Règles]` (5 boutons au maximum par rangée).
 - **Un seul bloc et une seule image par message** : à partir du Jour 2, titre `🧌 Pont du Troll (Jour N/7)`, **Résultat du Jour N-1** (répartition, gain par passant, classement provisoire des 5 premiers), image du résultat, puis « 🌉 Aujourd'hui · Jour N/7 » et les multiplicateurs en titres `###` (plus grands que le texte), et l'événement éventuel, sous l'image (Indice et Rumeurs ne sont pas annoncés en texte : leur bouton suffit) (la règle du troll n'est pas répétée : elle est dans les Règles) ; Jour 1 : image du matin. Le pied affiche le nombre total de passants, mis à jour à chaque nouveau passant (`majCompteur()` : PATCH du message à partir de `state.embeds`).
@@ -1606,7 +1565,7 @@ Jeu d'alignement façon Puissance 4. `/quatre adversaire:bot|1v1` (option obliga
   - Suffixe `&v=` (`QUATRE_IMAGE_VERSION`) : à incrémenter quand le dessin change (Discord garde une image par URL exacte). Lisibilité mobile : vérifiée à 360 px de large, aucun texte sous 24 px sur 600.
   - **Alignement bandeau / grille** : Discord ne permet pas d'imposer la taille d'affichage d'une image. Sur ordinateur, il la réduit pour tenir dans **550 × 350 px** sans jamais l'agrandir (non documenté : relevé sur les captures, mêmes bornes que le client modifié Vencord). La grille (600 × `GRILLE_H`, presque carrée) bute sur la hauteur et s'affiche à ~341 px de large, alors qu'un bandeau de 600 px prendrait 550 px : le pion serait décalé. Le bandeau est donc rendu à `LARGEUR_BANDEAU` (600 × 350 / `GRILLE_H` ≈ 341 px), affiché tel quel ; sur mobile, les deux sont réduites ensemble à la largeur de l'écran. La grille reste nette (600 px) ; un PNG de grille plus étroit (essayé à 320 px) aligne aussi mais rend tout flou. ⚠️ Toute modification de la hauteur de la grille recalcule `LARGEUR_BANDEAU` (automatique).
 - **Boutons** (à son tour, `boutonsCurseur()`) : une rangée, ◀️ · ⬇️ N · ▶️ · 🏳️. Discord ne règle pas la largeur d'un bouton (celle du libellé) : les flèches sont élargies par des caractères vides U+3164 de part et d'autre de l'emoji (`BLANCS_FLECHE`, emoji dans le libellé pour rester centré), pour être faciles à viser sur mobile sans toucher ⬇️ ; ⚠️ assez peu pour que les 4 boutons tiennent sur une rangée au téléphone. Le pion part de la **colonne centrale** à chaque tour (`colonneCurseur()`, la suivante vers la droite si elle est pleine) ; ◀️ ▶️ vont à la colonne libre voisine en **sautant les colonnes pleines** et **font le tour** de la grille (`colonneLibre()`), grisées s'il ne reste qu'une colonne libre ; ⬇️ N lâche le pion dans la colonne N. Un déplacement (`handleQuatreCurseur()`) relit la partie sans rien écrire (colonne dans le `custom_id`), puis réédite la vue, qui rappelle le dernier coup adverse.
-- **Messages en Components V2** (`versV2()`, flag `IS_COMPONENTS_V2`) : vues et messages publics écrits comme des embeds (`title`, `description`, `images`, `apres` : texte sous les images), convertis à l'envoi en conteneur à liseré coloré (titre `###`, texte, galeries, texte, boutons). ⚠️ Ni `content` ni `embeds` dans un message V2 (refusé par Discord), 4 000 caractères de texte au plus.
+- **Messages en Components V2** (`versV2()`, flag `IS_COMPONENTS_V2`, conversion partagée avec Robinson dans `jeux/discord/composantsV2.js`) : vues et messages publics écrits comme des embeds (`title`, `description`, `images`, `apres` : texte sous les images), convertis à l'envoi en conteneur à liseré coloré (titre `###`, texte, galeries, texte, boutons). ⚠️ Ni `content` ni `embeds` dans un message V2 (refusé par Discord), 4 000 caractères de texte au plus.
 - Chaque vue raconte le dernier coup (« Kévina joue en colonne 4. »).
 - **Vue de fin** (éphémère, `vueFin()`, en repli seulement : normalement supprimée en fin de partie, voir plus bas) : titre avec le résultat et une seule phrase (« Tu alignes 4 pions. La partie est terminée, et c'est une victoire pour toi ! », grille pleine ou délai dépassé), sans plateau ni bouton Règles : le message public posté au même moment l'affiche.
 

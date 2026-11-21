@@ -57,6 +57,7 @@ import {
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
+import { versV2 as versV2Commun } from "../composantsV2.js";
 
 const PONT_COLOR = 0x6b8f3a;
 const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
@@ -334,39 +335,10 @@ async function discordFetch(chemin, options = {}) {
   });
 }
 
-// Messages en Components V2 : Discord limite la hauteur d'une image d'embed
-// (~300 px sur ordinateur), une galerie (type 12) l'affiche bien plus grande.
-// Les vues sont écrites comme des embeds, converties ici à l'envoi : un
-// conteneur à liseré par embed (titre ###, texte, galerie, texte `apres`
-// sous l'image, pied en petit),
-// boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le
-// ping éventuel est un bloc texte en tête, avec `allowed_mentions`.
-const IS_COMPONENTS_V2 = 1 << 15;
-const TEXTE_MAX = 4000;
-
-export function versV2(embeds, components = [], roleId = null) {
-  const blocs = [];
-  if (roleId) blocs.push({ type: 10, content: `<@&${roleId}>` });
-  embeds.forEach((embed, i) => {
-    const texte = [embed.title ? `### ${embed.title}` : null, embed.description].filter(Boolean).join("\n");
-    blocs.push({
-      type: 17,
-      accent_color: embed.color ?? PONT_COLOR,
-      components: [
-        { type: 10, content: texte.slice(0, TEXTE_MAX) },
-        ...(embed.image?.url ? [{ type: 12, items: [{ media: { url: embed.image.url } }] }] : []),
-        ...(embed.apres ? [{ type: 10, content: embed.apres.slice(0, TEXTE_MAX) }] : []),
-        ...(embed.footer?.text ? [{ type: 10, content: `-# ${embed.footer.text}` }] : []),
-        ...(i === embeds.length - 1 ? components : []),
-      ],
-    });
-  });
-  return {
-    flags: IS_COMPONENTS_V2,
-    components: blocs,
-    ...(roleId ? { allowed_mentions: { parse: [], roles: [roleId] } } : {}),
-  };
-}
+// Messages en Components V2 (galerie plus grande qu'une image d'embed),
+// voir jeux/discord/composantsV2.js
+export const versV2 = (embeds, components = [], roleId = null) =>
+  versV2Commun(embeds, components, roleId, PONT_COLOR);
 
 async function publishAndWriteState(
   channelId,
