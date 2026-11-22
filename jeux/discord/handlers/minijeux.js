@@ -194,7 +194,7 @@ async function buildDuelsBlock() {
       // Un record illisible ne doit pas casser l'embed /mini-jeux.
       const r = await record().catch(() => null);
       const libelle = ["Record", valeurRecord(r), precision && `(${precision})`].filter(Boolean).join(" ");
-      return `- \`${commande}\` · ${libelle} : (${r?.username ?? "aucun"})`;
+      return `- \`${commande}\` · ${libelle} : ${r?.username ?? "aucun"}`;
     }),
   );
   return `## Les mini-jeux Duels de Kévina:\n${lignes.join("\n")}`;
