@@ -1481,7 +1481,7 @@ Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (sa
 
 ## Duels à la demande
 
-Dix duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/mascarade`, `/potato`, `/bac`, `/pendu` (Six et Tourneboule sont archivés, voir « Jeux archivés »). `/mini-jeux` les liste sous « Les mini-jeux Duels de Kévina: », une ligne par duel avec le pseudo du détenteur du record du mode par défaut (contre Kévina ou solo, 5 manches pour Blackjack et Gobelet, difficulté normale pour le Petit Bac ; « aucun » sans record) (`DUEL_COMMANDS` dans `minijeux.js`, à tenir à jour). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Dix duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/mascarade`, `/potato`, `/bac`, `/pendu` (Six et Tourneboule sont archivés, voir « Jeux archivés »). `/mini-jeux` les liste sous « Les mini-jeux Duels de Kévina: », une ligne par duel avec le record du mode par défaut et son détenteur (« Record 80 pts (5 manches) : (Pseudo) », « Record 4 victoires : (Pseudo) ») : contre Kévina ou solo, 5 manches pour Blackjack et Gobelet, difficulté difficile pour le Petit Bac ; « Record : (aucun) » sans record (`DUEL_COMMANDS` dans `minijeux.js`, à tenir à jour). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 

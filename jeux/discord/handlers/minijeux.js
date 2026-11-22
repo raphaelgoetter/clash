@@ -164,28 +164,37 @@ import { boutonLancer } from "./boss.js";
 const MINIJEUX_COLOR = 0x5865f2;
 
 // Duels à la demande (voir « Duels à la demande » dans jeux/CONTRIBUTING.md),
-// affichés par /mini-jeux avec le détenteur du record du mode par défaut
-// (contre Kévina ou solo, 5 manches, difficulté normale) : à tenir à jour à
-// chaque ajout ou archivage.
+// affichés par /mini-jeux avec le record du mode par défaut (contre Kévina
+// ou solo, 5 manches, difficulté difficile pour le Petit Bac) et son
+// détenteur. `precision` : mode affiché entre parenthèses après « Record ».
+// À tenir à jour à chaque ajout ou archivage.
 const DUEL_COMMANDS = [
-  { commande: "/blackjack", record: () => blackjackDuelSvc.lireHighScore(5) },
-  { commande: "/gobelet", record: () => gobeletDuelSvc.lireHighScore(5) },
+  { commande: "/blackjack", precision: "5 manches", record: () => blackjackDuelSvc.lireHighScore(5) },
+  { commande: "/gobelet", precision: "5 manches", record: () => gobeletDuelSvc.lireHighScore(5) },
   { commande: "/grille", record: () => grilleDuelSvc.lireHighScore() },
   { commande: "/quatre", record: () => quatreDuelSvc.lireRecord("bot") },
   { commande: "/punto", record: () => puntoDuelSvc.lireRecord("bot") },
   { commande: "/frise", record: () => friseDuelSvc.lireRecord("bot") },
   { commande: "/mascarade", record: () => mascaradeDuelSvc.lireRecord("bot") },
   { commande: "/potato", record: () => potatoDuelSvc.lireRecord("bot") },
-  { commande: "/bac", record: () => bacDuelSvc.lireRecord("bot", "normal") },
+  { commande: "/bac", precision: "difficile", record: () => bacDuelSvc.lireRecord("bot", "difficile") },
   { commande: "/pendu", record: () => penduDuelSvc.lireRecord("solo") },
 ];
 
+// Valeur d'un record : points (high score) ou plus longue série de victoires.
+function valeurRecord(r) {
+  if (r?.points != null) return `${r.points} pt${r.points > 1 ? "s" : ""}`;
+  if (r?.serie != null) return `${r.serie} victoire${r.serie > 1 ? "s" : ""}`;
+  return null;
+}
+
 async function buildDuelsBlock() {
   const lignes = await Promise.all(
-    DUEL_COMMANDS.map(async ({ commande, record }) => {
+    DUEL_COMMANDS.map(async ({ commande, precision, record }) => {
       // Un record illisible ne doit pas casser l'embed /mini-jeux.
       const r = await record().catch(() => null);
-      return `- \`${commande}\` · Record : (${r?.username ?? "aucun"})`;
+      const libelle = ["Record", valeurRecord(r), precision && `(${precision})`].filter(Boolean).join(" ");
+      return `- \`${commande}\` · ${libelle} : (${r?.username ?? "aucun"})`;
     }),
   );
   return `## Les mini-jeux Duels de Kévina:\n${lignes.join("\n")}`;
