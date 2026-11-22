@@ -60,6 +60,43 @@
       "recul_renvoi": 3
     }
   },
+  "vehicules": {
+    "kart": { "label": "Kart classique", "emoji": "🏎️", "emoji_id": "1574014977629491200", "effet": "aucun effet particulier",
+      "couleur": "#e8364b",
+      "fiche": "Le modèle de base, livré sans option, sans garantie et sans ceinture. Il roule, c'est déjà ça.",
+      "stats": { "Vitesse": 3, "Magie": 2, "Économie": 2, "Classe": 4 }
+    },
+    "velo": {
+      "label": "Vélo du Glacier",
+      "emoji": "🚲", "emoji_id": "1574014979211010069",
+      "effet": "dé classique de 2 à 6, mais jamais de Rage ni d'Avance de 3 cases en sort",
+      "couleur": "#8fd14f",
+      "fiche": "Triporteur à glaces réquisitionné pour la course. Le pilote pédale vite pour que les esquimaux ne fondent pas, et reste trop zen pour se mettre en rage.",
+      "stats": { "Vitesse": 4, "Magie": 1, "Économie": 3, "Classe": 2 },
+      "des": { "classique": { "min": 2, "max": 6 } },
+      "sorts_retires": [5, 6]
+    },
+    "van": {
+      "label": "Van de Scoobidoo",
+      "emoji": "🚐", "emoji_id": "1574014980901183592",
+      "effet": "dé classique de 1 à 5, mais Concentration toujours au moins à 1 (jamais de Gel)",
+      "couleur": "#f6c15b",
+      "fiche": "Van d'occasion, contrôle technique refusé trois fois. À bord, tout le monde croit aux fantômes et à la magie. Sent légèrement le sandwich.",
+      "stats": { "Vitesse": 2, "Magie": 5, "Économie": 1, "Classe": 3 },
+      "des": { "classique": { "min": 1, "max": 5 } },
+      "concentration_min": 1
+    },
+    "caddie": {
+      "label": "Caddie Liddl",
+      "emoji": "🛒", "emoji_id": "1574014983594053682",
+      "effet": "dé classique de 1 à 5, mais +1 Or au dé les jours pairs",
+      "couleur": "#b3c9ff",
+      "fiche": "Emprunté sur un parking contre une pièce de 1 €, jamais rendu. Roue avant gauche capricieuse, mais il ramasse toute la monnaie tombée par terre.",
+      "stats": { "Vitesse": 2, "Magie": 1, "Économie": 5, "Classe": 1 },
+      "des": { "classique": { "min": 1, "max": 5 } },
+      "or_jours_pairs": 1
+    }
+  },
   "concentration_max": 2,
   "trophees": [
     { "emoji": "🖱️", "label": "Trophée du missclick", "username": "Snaatchou" }

@@ -63,6 +63,7 @@ const TARGETS = [
   { file: "goblinhunters/images/start.webp" },
   { file: "marioclash/images/mario-clash-board.jpg" },
   { file: "marioclash/images/mario-clash.webp" },
+  { dir: "marioclash/vehicules" },
   { file: "bang/images/bang-table.jpg" },
   { file: "bang/images/bang-launch.webp" },
   { dir: "bang/avatars" },

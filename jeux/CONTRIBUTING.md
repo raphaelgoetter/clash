@@ -1239,7 +1239,7 @@ Ordre : actions des bots de remplacement → **vote** (l'éliminé est retiré d
 
 ## Mario Clash (course communautaire)
 
-Course façon Mario Kart sur un plateau de 49 cases (départ case 0, arrivée `case_arrivee` 48), sur `duree_jours` (7) jours. **Participation libre**, sans inscription : un joueur est créé au premier clic (`ensureJoueur()`, `colorIndex` figé par ordre d'arrivée pour la couleur de son pion).
+Course façon Mario Kart sur un plateau de 49 cases (départ case 0, arrivée `case_arrivee` 48), sur `duree_jours` (7) jours. **Participation libre**, sans inscription : un joueur est créé au premier clic (`ensureJoueur()`, `colorIndex` figé par ordre d'arrivée pour la couleur de son pion, `avatar` Discord `id/hash` mis à jour à chaque clic sur Dé, Boutique ou Sort, `vehicule` choisi une fois pour toutes, voir « Véhicules »).
 
 - Service : `jeux/services/marioclash.js` (tests `marioclash.test.js`) ; handler : `jeux/discord/handlers/marioclash.js` (routé par `jeux/discord/routes/jeuxSpeciaux.js`) ; image : `jeux/services/marioclashImage.js`.
 - Config : `jeux/data/marioclash/marioclash.json` ; textes : `narratifs.json` ; images sources dans `jeux/data/marioclash/images/`.
@@ -1281,6 +1281,23 @@ Garde-fou anti-double-avancée : 8 h minimum entre deux clôtures (`isTooSoonSin
 - **✨ Sort** (`castSpellForPlayer()`, avec confirmation) : toujours sur **soi-même**, effet tiré au clic et annoncé, appliqué à la clôture. Sorts actifs : Recul −2, Gel, Dé Farceur demain, Clone (rejoue le déplacement du dé du jour, sans case spéciale), Rage +2 demain, Avance +3. L'échange aléatoire (id 3, `retire: true`) n'est plus tiré mais reste dans la config.
 - **🔋 Concentration** : chaque jour sans sort charge la jauge (max `concentration_max`, 2) ; le prochain sort est tiré sans Gel dès le niveau 1, sans Recul au niveau 2 (`retire_concentration`), puis la jauge retombe à 0.
 
+### Véhicules
+
+Au premier clic sur Dé, Boutique ou Sort, un message éphémère (« Tu n'as pas encore choisi de véhicule… ») affiche la **fiche technique** d'un véhicule (Kart par défaut) : embed avec description fantaisiste, effet réel et image générée (véhicule, nom, statistiques fantaisistes en étoiles). Les boutons des véhicules servent d'**onglets** (`marioclash_vehicule_voir:<jour>:<action>:<véhicule>`, onglet affiché désactivé), seul le bouton vert « Partir en … » valide (`marioclash_vehicule:<jour>:<action>:<véhicule>`, action `de`/`boutique`/`sort`). Choix **définitif pour toute la course** (`choisirVehicule()` refuse un second choix), puis l'action demandée reprend. Config `config.vehicules` : `label`, `emoji` Unicode de repli, `emoji_id` emoji d'application, `effet` (texte des règles et de la fiche), `couleur` (fiche), `fiche` (description fantaisiste), `stats` (`{ nom: étoiles }`, 4 au plus, pour rire, sans effet en jeu) :
+
+| Véhicule            | Effet                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| 🏎️ Kart classique   | aucun                                                                 |
+| 🚲 Vélo du Glacier  | dé classique 2 à 6 (`des`) ; jamais Rage ni Avance de 3 (`sorts_retires`) |
+| 🚐 Van de Scoobidoo | dé classique 1 à 5 ; Concentration au moins 1 (`concentration_min`, jamais de Gel ; la jauge retombe à 1 après un sort) |
+| 🛒 Caddie Liddl     | dé classique 1 à 5 ; +1 Or au dé les jours pairs (`or_jours_pairs`)   |
+
+- Effets appliqués par `deDuJoueur()` (dé lancé, menu des dés, cases atteignables), `sortsDuJoueur()` et `concentrationMin()` (`castSpellForPlayer()`).
+- Emoji du véhicule devant le pseudo dans les classements (Journal, fin de course), sur les boutons de choix et dans les Règles ; rien sur le plateau (avatar seul).
+- **Fiche** : `GET /api/marioclash/vehicule?id=` (`getFicheVehiculeImage()`, `marioclashImage.js`, 800×480, cache par instance). Images sources `jeux/data/marioclash/vehicules/<id>.png`, servies par Vercel Blob (`npm run assets:upload-blob -- marioclash` après tout ajout ou changement d'image).
+- **Emojis** : images `jeux/data/marioclash/vehicules/<id>.png` (512×512, fond transparent, < 256 Ko) uploadées comme emojis d'application `vehicule_<id>` par `npm run marioclash:emojis` (`jeux/scripts/uploadVehiculeEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`), qui écrit `emoji_id` dans la config (à committer). Options : `--vehicule <id>`, `--remplacer` (obligatoire pour changer une image) ; `npm run marioclash:emojis:dry` vérifie les images sans appel Discord. Repli sur l'emoji Unicode `emoji` tant que `emoji_id` manque.
+- ⚠️ Équilibrage : un véhicule ne doit pas s'écarter de plus de 10 % des chances de victoire du Kart. Simuler toute modification avec `jeux/outils/marioclash-simulation/simulerVehicules.mjs` (lit `config.vehicules`, candidats à tester dans `CANDIDATS`) : `node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/marioclash-simulation/simulerVehicules.mjs [courses] [joueurs]`. Écartés : Diligence blindée (aucun réglage équilibré), 4×4 (aucun effet mesurable).
+
 ### Clôture (`computeCloture()`, pure)
 
 Ordre : 1) Étoiles actives → immunisés ; 2) **sorts** (bloqués si immunisé) ; 3) **objets** (Accélérateur, Bombe, Banane), puis **Carapaces bleues** en dernier sur un classement figé une fois (égalité départagée par pseudo) ; 4) remboursement des objets non utilisés. Gel/Rage/dé imposé de la veille sont purgés avant les sorts.
@@ -1291,14 +1308,14 @@ Ordre : 1) Étoiles actives → immunisés ; 2) **sorts** (bloqués si immunisé
 
 ### Images
 
-- Plateau : `GET /api/marioclash/image?jour=` (`mario-clash-board.jpg` + pions sur `CASE_ANCHORS`, calibrées par détection de pixels). Illustration : `GET /api/marioclash/illustration` (`mario-clash.webp`). Routes dans `jeux/server/imageRoutes.js`, assets et police via Vercel Blob. Mêmes pièges resvg que Goblin Hunters (JPEG obligatoire, police embarquée).
+- Plateau : `GET /api/marioclash/image?jour=` (`mario-clash-board.jpg` + pions sur `CASE_ANCHORS`, calibrées par détection de pixels ; pion = avatar Discord dans un anneau de la couleur du joueur, créature Clay à défaut, pions d'une même case qui se chevauchent). Illustration : `GET /api/marioclash/illustration` (`mario-clash.webp`). Routes dans `jeux/server/imageRoutes.js`, assets et police via Vercel Blob. Mêmes pièges resvg que Goblin Hunters (JPEG obligatoire, police embarquée).
 
 ### Redis (`marioclash:*`)
 
 | Clé                      | Type          | Contenu                                                                                                                                                        |
 | ------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `state`                  | STRING        | `{ phase: "annonce"\|"jour", jour, channelId, messageId, publishedAt, termine }`                                                                               |
-| `joueurs`                | HASH          | `discordId → { username, position, points, objet, dernierAchatJour, colorIndex, concentration, gel, rage, deImpose, arriveJour }`                              |
+| `joueurs`                | HASH          | `discordId → { username, avatar, vehicule, position, points, objet, dernierAchatJour, colorIndex, concentration, gel, rage, deImpose, arriveJour }`            |
 | `actions:<jour>`         | HASH          | `discordId → { dice, diceValue, diceAvance, deId, positionDe, caseSpeciale, item: { target }, spell: { target, sortId, concentration } }`, purgée à la clôture |
 | `historique`             | HASH          | `jour → { lignes, immunises, positions, resolvedAt }`                                                                                                          |
 | `manches` / `manche_seq` | HASH / STRING | `{ manche, vainqueur, positionFinale, nbJoueurs, resolvedAt }` (compté par 📊 Stats de `/mini-jeux`)                                                           |

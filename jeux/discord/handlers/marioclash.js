@@ -37,6 +37,10 @@ import {
   listManches,
   isTooSoonSinceLastClosure,
   ciblesObjet,
+  vehiculeDe,
+  deDuJoueur,
+  concentrationMin,
+  choisirVehicule,
 } from "../../services/marioclash.js";
 import {
   getRoleIdByName,
@@ -108,9 +112,11 @@ function formatRankingLines(
             : `${rang}.`;
     const arrivee = j.position >= config.case_arrivee ? " 🏁" : "";
     const coche = deLances?.has(j.discordId) ? " ✅" : "";
+    const v = vehiculeDe(j, config);
+    const nom = `${v ? `${vehiculeEmojiTexte(v)} ` : ""}**${j.username}**`;
     if (!detailed)
-      return `${medal} **${j.username}** (case ${j.position})${arrivee}`;
-    return `${medal} **${j.username}** (case ${j.position})${arrivee} · ${j.points} Or${coche}`;
+      return `${medal} ${nom} (case ${j.position})${arrivee}`;
+    return `${medal} ${nom} (case ${j.position})${arrivee} · ${j.points} Or${coche}`;
   };
   const lignes = ranking.slice(0, limit).map(formatLigne);
   // Joueur hors du top affiché : on ajoute quand même sa propre ligne.
@@ -600,7 +606,7 @@ function avancesPossibles(joueur, config) {
   const impose = config.des[joueur.deImpose];
   if (impose) return (impose.faces || []).filter((v) => v > 0);
   const avances = new Set();
-  for (const de of desAuChoix(config)) {
+  for (const de of desAuChoix(config, joueur)) {
     for (let v = de.min; v <= de.max; v++) avances.add(v + (joueur.rage || 0));
   }
   return [...avances].sort((a, b) => a - b);
@@ -620,8 +626,11 @@ function casesSpecialesDevant(joueur, config) {
 
 // Dés proposés au choix (le Dé Farceur, `reserve_sort`, n'est imposé que par
 // son sort).
-function desAuChoix(config) {
-  return Object.values(config.des).filter((d) => !d.reserve_sort);
+// `joueur` : dés de son véhicule (`jour` : bonus d'Or des jours pairs).
+function desAuChoix(config, joueur = null, jour = null) {
+  return Object.keys(config.des)
+    .filter((id) => !config.des[id].reserve_sort)
+    .map((id) => (joueur ? deDuJoueur(joueur, id, config, jour) : config.des[id]));
 }
 
 function etatDeLigne(joueur, config) {
@@ -658,7 +667,8 @@ function etatPersonnelLignes(joueur, config) {
 }
 
 // `deImpose` : seul ce dé est proposé (Dé Farceur), sinon les dés au choix.
-function buildDiceSelect(jour, config, deImpose) {
+function buildDiceSelect(jour, config, joueur) {
+  const deImpose = joueur.deImpose;
   return [
     {
       type: 1,
@@ -671,7 +681,7 @@ function buildDiceSelect(jour, config, deImpose) {
             .filter(([id, d]) => (config.des[deImpose] ? id === deImpose : !d.reserve_sort))
             .map(([id, d]) => ({
               label: d.label,
-              description: describeDe(d),
+              description: describeDe(deDuJoueur(joueur, id, config, jour)),
               value: id,
               emoji: { name: d.emoji },
             })),
@@ -695,6 +705,9 @@ function buildReglesEmbed(config) {
   const desLines = desAuChoix(config).map(
     (d) => `${d.emoji} **${d.label}** : ${describeDe(d)}`,
   );
+  const vehiculesLines = Object.values(config.vehicules || {}).map(
+    (v) => `${vehiculeEmojiTexte(v)} **${v.label}** : ${v.effet}`,
+  );
   return {
     title: "📖 Règles de Mario Clash",
     description: [
@@ -713,6 +726,9 @@ function buildReglesEmbed(config) {
       "",
       `🏁 **Arrivée** : le premier à atteindre la case ${config.case_arrivee} gagne. Une fois arrivé, tu ne joues plus et plus rien ne peut te faire reculer.`,
       "",
+      ...(vehiculesLines.length
+        ? ["**Véhicules** *(choisi à ton premier tour, pour toute la course)*", ...vehiculesLines, ""]
+        : []),
       "**Objets spéciaux**",
       ...objetsLines,
       "",
@@ -1088,13 +1104,123 @@ async function guardActiveDay(webhookUrl, jour) {
   return state;
 }
 
-// ── Bouton [🎲 Lancer le dé] + select du type de dé ──────────────────
+// Emoji du véhicule : emoji d'application (images des véhicules,
+// `npm run marioclash:emojis`) ou emoji Unicode tant que l'ID manque.
+// (Discord n'affiche un emoji personnalisé que par son ID, le nom est libre.)
+function vehiculeEmojiTexte(v) {
+  return v.emoji_id ? `<:vehicule:${v.emoji_id}>` : v.emoji;
+}
 
-export async function handleDiceButton(webhookUrl, jour, discordId, username) {
+function vehiculeEmojiComposant(v) {
+  return v.emoji_id ? { id: v.emoji_id, name: "vehicule" } : { name: v.emoji };
+}
+
+// ── Choix du véhicule (premier clic sur Dé, Boutique ou Sort) ─────────
+// Tant que le joueur n'a pas de véhicule, l'action demandée est remplacée
+// par une fiche technique (image générée : véhicule, nom, statistiques
+// fantaisistes en étoiles ; texte : description fantaisiste et effet réel).
+// Les boutons des véhicules servent d'onglets
+// (`marioclash_vehicule_voir:<jour>:<action>:<véhicule>`), seul le bouton
+// vert valide le choix (`marioclash_vehicule:<jour>:<action>:<véhicule>`),
+// puis l'action demandée reprend.
+const ACTIONS_VEHICULE = { de: handleDiceButton, boutique: handleBoutiqueButton, sort: handleSpellButton };
+
+function ficheVehiculeUrl(id) {
+  return `${TRUST_ROYALE_URL}/api/marioclash/vehicule?id=${id}&v=${Date.now()}`;
+}
+
+function buildChoixVehicule(jour, action, config, vehiculeId) {
+  const vehicules = Object.entries(config.vehicules);
+  const id = config.vehicules[vehiculeId] ? vehiculeId : vehicules[0][0];
+  const v = config.vehicules[id];
+  const effet = v.effet.charAt(0).toUpperCase() + v.effet.slice(1);
+  return {
+    content: "🏁 Tu n'as pas encore choisi de véhicule, c'est obligatoire avant de commencer ta course. Choix définitif !",
+    embeds: [
+      {
+        description: [v.fiche ? `*${v.fiche}*` : null, `**En course** : ${effet}.`].filter(Boolean).join("\n\n"),
+        image: { url: ficheVehiculeUrl(id) },
+        color: v.couleur ? parseInt(v.couleur.slice(1), 16) : MARIOCLASH_COLOR,
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: vehicules.map(([vid, vv]) => ({
+          type: 2,
+          style: vid === id ? 1 : 2,
+          label: vv.label,
+          emoji: vehiculeEmojiComposant(vv),
+          custom_id: `marioclash_vehicule_voir:${jour}:${action}:${vid}`,
+          disabled: vid === id,
+        })),
+      },
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            style: 3,
+            label: `Partir en ${v.label}`,
+            emoji: { name: "🏁" },
+            custom_id: `marioclash_vehicule:${jour}:${action}:${id}`,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+async function proposerVehicule(webhookUrl, jour, joueur, config, action) {
+  if (joueur.vehicule || !config.vehicules) return false;
+  await patchOriginal(webhookUrl, buildChoixVehicule(jour, action, config, null));
+  return true;
+}
+
+// Onglet : affiche la fiche d'un autre véhicule, sans rien choisir.
+export async function handleVehiculeVoir(webhookUrl, jour, action, discordId, vehiculeId) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
-    const joueur = await ensureJoueur(discordId, username);
+    const joueur = await readJoueur(discordId);
+    if (joueur?.vehicule) {
+      const v = vehiculeDe(joueur, config);
+      await patchOriginal(webhookUrl, { content: `${vehiculeEmojiTexte(v)} Tu as déjà choisi le **${v.label}**.`, embeds: [], components: [] });
+      return;
+    }
+    await patchOriginal(webhookUrl, buildChoixVehicule(jour, action, config, vehiculeId));
+  } catch (err) {
+    console.error("[MarioClash] Échec fiche véhicule:", err.message);
+  }
+}
+
+export async function handleVehiculeSelect(webhookUrl, jour, action, discordId, username, vehiculeId) {
+  try {
+    if (!(await guardActiveDay(webhookUrl, jour))) return;
+    const config = await loadMarioClashConfig();
+    await ensureJoueur(discordId, username);
+    const result = await choisirVehicule(discordId, vehiculeId, config);
+    if (!result.joueur) {
+      await patchOriginal(webhookUrl, { content: "Véhicule inconnu, réessaie.", embeds: [], components: [] });
+      return;
+    }
+    const v = vehiculeDe(result.joueur, config);
+    const entete = result.status === "ok" ? `${vehiculeEmojiTexte(v)} Tu pars en **${v.label}** !` : null;
+    const suite = ACTIONS_VEHICULE[action];
+    if (suite) await suite(webhookUrl, jour, discordId, username, undefined, entete);
+  } catch (err) {
+    console.error("[MarioClash] Échec choix du véhicule:", err.message);
+  }
+}
+
+// ── Bouton [🎲 Lancer le dé] + select du type de dé ──────────────────
+
+export async function handleDiceButton(webhookUrl, jour, discordId, username, avatar, entete = null) {
+  try {
+    if (!(await guardActiveDay(webhookUrl, jour))) return;
+    const config = await loadMarioClashConfig();
+    const joueur = await ensureJoueur(discordId, username, avatar);
+    if (await proposerVehicule(webhookUrl, jour, joueur, config, "de")) return;
     const actions = await readActions(jour);
     if (actions[discordId]?.dice) {
       await patchOriginal(webhookUrl, {
@@ -1109,6 +1235,7 @@ export async function handleDiceButton(webhookUrl, jour, discordId, username) {
     const impose = config.des[joueur.deImpose];
     const devant = casesSpecialesDevant(joueur, config);
     const lignes = [
+      entete,
       impose
         ? `🎲 Tu es case **${joueur.position}**. Ton sort d'hier t'impose le **${impose.label}** aujourd'hui :`
         : `🎲 Tu es case **${joueur.position}**. Choisis ton dé :`,
@@ -1117,9 +1244,9 @@ export async function handleDiceButton(webhookUrl, jour, discordId, username) {
     if (etat) lignes.push(etat);
     if (devant.length) lignes.push(`Devant toi : ${devant.join(", ")}`);
     await patchOriginal(webhookUrl, {
-      content: lignes.join("\n"),
+      content: lignes.filter(Boolean).join("\n"),
       embeds: [],
-      components: buildDiceSelect(jour, config, joueur.deImpose),
+      components: buildDiceSelect(jour, config, joueur),
     });
   } catch (err) {
     console.error("[MarioClash] Échec bouton dé:", err.message);
@@ -1188,11 +1315,14 @@ export async function handleBoutiqueButton(
   jour,
   discordId,
   username,
+  avatar,
+  entete = null,
 ) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
-    const joueur = await ensureJoueur(discordId, username);
+    const joueur = await ensureJoueur(discordId, username, avatar);
+    if (await proposerVehicule(webhookUrl, jour, joueur, config, "boutique")) return;
     if (joueur.objet) {
       // Objet à cible acheté aujourd'hui mais jamais activé (message
       // éphémère fermé avant le choix de la cible) : on rouvre le select,
@@ -1233,7 +1363,7 @@ export async function handleBoutiqueButton(
       return;
     }
     await patchOriginal(webhookUrl, {
-      content: "🛍️ Choisis ton objet :",
+      content: [entete, "🛍️ Choisis ton objet :"].filter(Boolean).join("\n"),
       embeds: [],
       components: buildBoutiqueSelect(jour, config, joueur),
     });
@@ -1403,11 +1533,12 @@ export async function handleItemTargetSelect(
 // Le clic sur [✨ Lancer un sort] ne fait qu'afficher une confirmation
 // (évite les clics accidentels : le sort est définitif et consomme la
 // Concentration) ; le lancer réel passe par handleSpellConfirm().
-export async function handleSpellButton(webhookUrl, jour, discordId, username) {
+export async function handleSpellButton(webhookUrl, jour, discordId, username, avatar, entete = null) {
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
-    const joueur = await ensureJoueur(discordId, username);
+    const joueur = await ensureJoueur(discordId, username, avatar);
+    if (await proposerVehicule(webhookUrl, jour, joueur, config, "sort")) return;
     const actions = await readActions(Number(jour));
     if (actions[discordId]?.spell) {
       await patchOriginal(webhookUrl, {
@@ -1420,8 +1551,11 @@ export async function handleSpellButton(webhookUrl, jour, discordId, username) {
     const niveau = joueur?.concentration || 0;
     await patchOriginal(webhookUrl, {
       content: [
+        entete,
         "✨ Lancer un sort maintenant ? Il est tiré au hasard et ne peut pas être annulé.",
-        niveau ? `🔋 Ta Concentration (${niveau}/${config.concentration_max}) sera consommée.` : null,
+        niveau > concentrationMin(joueur, config)
+          ? `🔋 Ta Concentration (${niveau}/${config.concentration_max}) sera consommée.`
+          : null,
       ]
         .filter(Boolean)
         .join("\n"),
@@ -1456,7 +1590,7 @@ export async function handleSpellConfirm(webhookUrl, jour, discordId, username) 
   try {
     if (!(await guardActiveDay(webhookUrl, jour))) return;
     const config = await loadMarioClashConfig();
-    await ensureJoueur(discordId, username);
+    const joueur = await ensureJoueur(discordId, username);
     const result = await castSpellForPlayer(Number(jour), discordId, config);
     if (result.status === "arrived") {
       await patchOriginal(webhookUrl, { content: "🏁 Tu as franchi la ligne d'arrivée : ta course est terminée !", embeds: [], components: [] });
@@ -1472,7 +1606,7 @@ export async function handleSpellConfirm(webhookUrl, jour, discordId, username) 
     }
     await patchOriginal(webhookUrl, {
       content: [
-        result.concentration
+        result.concentration > concentrationMin(joueur, config)
           ? `🔋 Concentration ${result.concentration}/${config.concentration_max} utilisée.`
           : null,
         `✨ Sort lancé sur toi-même : *${result.sort.label}*. Appliqué à la clôture du jour !`,

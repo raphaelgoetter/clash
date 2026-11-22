@@ -1,5 +1,6 @@
 import assert from "assert";
-import { computeCloture, rollDice, rollSort, sortsDisponibles, clampPosition, isTooSoonSinceLastClosure, rollDieOfType, applyCaseSpeciale, ciblesObjet, partenairesEchange } from "./marioclash.js";
+import { Redis } from "@upstash/redis";
+import { computeCloture, ensureJoueur, readJoueur, deDuJoueur, sortsDuJoueur, choisirVehicule, castSpellForPlayer, loadMarioClashConfig, rollDice, rollSort, sortsDisponibles, clampPosition, isTooSoonSinceLastClosure, rollDieOfType, applyCaseSpeciale, ciblesObjet, partenairesEchange } from "./marioclash.js";
 
 const CONFIG = {
   duree_jours: 7,
@@ -451,6 +452,53 @@ async function main() {
   assert.strictEqual(isTooSoonSinceLastClosure(null), false);
   assert.strictEqual(isTooSoonSinceLastClosure(new Date().toISOString()), true);
   assert.strictEqual(isTooSoonSinceLastClosure(new Date(Date.now() - 9 * 3_600_000).toISOString()), false);
+
+  // ── ensureJoueur : avatar du pion (« id/hash »), inchangé si inconnu ─
+  if (Redis.isFake) {
+    const hash = "0123456789abcdef0123456789abcdef";
+    let j = await ensureJoueur("111111", "Alice", hash);
+    assert.strictEqual(j.avatar, `111111/${hash}`);
+    j = await ensureJoueur("111111", "Alice");
+    assert.strictEqual(j.avatar, `111111/${hash}`);
+    j = await ensureJoueur("111111", "Alice", null);
+    assert.strictEqual((await readJoueur("111111")).avatar, null);
+    assert.strictEqual((await ensureJoueur("222222", "Bob")).avatar, null);
+  }
+
+  // ── Véhicules (config réelle) ─────────────────────────────────────────
+  {
+    const vraie = await loadMarioClashConfig();
+    const kart = { vehicule: "kart" };
+    assert.deepStrictEqual([deDuJoueur(kart, "classique", vraie, 2).min, deDuJoueur(kart, "classique", vraie, 2).max], [1, 6]);
+    assert.strictEqual(deDuJoueur({ vehicule: "velo" }, "classique", vraie, 1).min, 2);
+    assert.strictEqual(deDuJoueur({ vehicule: "van" }, "classique", vraie, 1).max, 5);
+    assert.strictEqual(deDuJoueur({ vehicule: "van" }, "prudent", vraie, 1).min, 3);
+    // Caddie : +1 Or au dé les jours pairs seulement
+    assert.strictEqual(deDuJoueur({ vehicule: "caddie" }, "classique", vraie, 2).or, 2);
+    assert.strictEqual(deDuJoueur({ vehicule: "caddie" }, "classique", vraie, 3).or, 1);
+    assert.strictEqual(deDuJoueur({ vehicule: "caddie" }, "epargne", vraie, 4).or, 3);
+    // Vélo : ni Rage (5) ni Avance +3 (6)
+    const idsVelo = sortsDuJoueur({ vehicule: "velo" }, 0, vraie).map((x) => x.id);
+    assert.ok(!idsVelo.includes(5) && !idsVelo.includes(6) && idsVelo.includes(4));
+    assert.ok(sortsDuJoueur(kart, 0, vraie).some((x) => x.id === 6));
+
+    if (Redis.isFake) {
+      await ensureJoueur("333333", "Vania");
+      assert.strictEqual((await choisirVehicule("333333", "inconnu", vraie)).status, "unknownVehicle");
+      const r = await choisirVehicule("333333", "van", vraie);
+      assert.strictEqual(r.status, "ok");
+      assert.strictEqual(r.joueur.concentration, 1);
+      // Choix définitif
+      assert.strictEqual((await choisirVehicule("333333", "kart", vraie)).status, "alreadyChosen");
+      assert.strictEqual((await readJoueur("333333")).vehicule, "van");
+      // Van : jamais de Gel, la jauge retombe à 1 après un sort
+      for (let jour = 101; jour < 141; jour++) {
+        const sort = await castSpellForPlayer(jour, "333333", vraie);
+        assert.notStrictEqual(sort.sort.gel, true);
+        assert.strictEqual((await readJoueur("333333")).concentration, 1);
+      }
+    }
+  }
 
   console.log("✓ marioclash service tests passed");
 }

@@ -42,6 +42,8 @@ import {
   handleBoutiqueSelect as handleMarioClashBoutiqueSelect,
   handleItemTargetSelect as handleMarioClashItemTarget,
   handleSpellButton as handleMarioClashSpell,
+  handleVehiculeSelect as handleMarioClashVehicule,
+  handleVehiculeVoir as handleMarioClashVehiculeVoir,
   handleSpellConfirm as handleMarioClashSpellConfirm,
   handleJournal as handleMarioClashJournal,
   handleRegles as handleMarioClashRegles,
@@ -627,11 +629,13 @@ export async function routeJeuxSpeciaux(body, res) {
     const discordId = body.member?.user?.id;
     const username =
       body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    // Hash de l'avatar Discord (pion du plateau), null sans avatar
+    const avatar = body.member?.user?.avatar ?? null;
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "marioclash_dice") runBackground(() => handleMarioClashDice(webhookUrl, jour, discordId, username));
-    else if (action === "marioclash_boutique") runBackground(() => handleMarioClashBoutique(webhookUrl, jour, discordId, username));
-    else if (action === "marioclash_spell") runBackground(() => handleMarioClashSpell(webhookUrl, jour, discordId, username));
+    if (action === "marioclash_dice") runBackground(() => handleMarioClashDice(webhookUrl, jour, discordId, username, avatar));
+    else if (action === "marioclash_boutique") runBackground(() => handleMarioClashBoutique(webhookUrl, jour, discordId, username, avatar));
+    else if (action === "marioclash_spell") runBackground(() => handleMarioClashSpell(webhookUrl, jour, discordId, username, avatar));
     return;
   }
 
@@ -654,6 +658,36 @@ export async function routeJeuxSpeciaux(body, res) {
   // ── Mario Clash : annulation du sort (remplace la confirmation éphémère) ──
   if (body.type === 3 && body.data?.custom_id === "marioclash_spell_cancel") {
     res.status(200).json({ type: 7, data: { content: "Sort annulé.", embeds: [], components: [] } });
+    return;
+  }
+
+  // ── Mario Clash : onglet d'une fiche véhicule (custom_id: marioclash_vehicule_voir:<jour>:<action>:<véhicule>) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("marioclash_vehicule_voir:")
+  ) {
+    const [, jour, action, vehiculeId] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashVehiculeVoir(webhookUrl, jour, action, discordId, vehiculeId));
+    return;
+  }
+
+  // ── Mario Clash : choix du véhicule (custom_id: marioclash_vehicule:<jour>:<action>:<véhicule>) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("marioclash_vehicule:")
+  ) {
+    const [, jour, action, vehiculeId] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleMarioClashVehicule(webhookUrl, jour, action, discordId, username, vehiculeId));
     return;
   }
 

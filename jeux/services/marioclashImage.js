@@ -22,15 +22,15 @@
 // source, pas d'une estimation à l'œil — voir le calibrage réel avant de
 // modifier `mario-clash-board.jpg` sous peine de désynchroniser CASE_ANCHORS.
 //
-// ⚠️ Police embarquée OBLIGATOIRE (data/fonts/Inter-Bold.ttf) : l'initiale
-// du pseudo avait été retirée des pions (commit 0cae4114) au lieu d'être
-// corrigée — la cause réelle était le même piège que documenté dans
+// ⚠️ Police embarquée OBLIGATOIRE (data/fonts/Inter-Bold.ttf, numéros et
+// badges des cases) : l'initiale des anciens pions ne s'affichait pas en
+// production — la cause réelle était le même piège que documenté dans
 // pelemeleImage.js/goblinhuntersImage.js : resvg-js n'a aucune police
 // système disponible sur le runtime serverless Vercel (contrairement à une
 // machine de dev locale, où "Inter, system-ui, sans-serif" retombe
 // silencieusement sur une police système présente) — le texte ne
-// s'affichait pas du tout en production, sans erreur levée. Réintroduite
-// ici avec `font: { fontFiles, loadSystemFonts: false }` dans rasterize().
+// s'affichait pas du tout en production, sans erreur levée. Corrigé
+// avec `font: { fontFiles, loadSystemFonts: false }` dans rasterize().
 //
 // mario-clash-board.jpg/mario-clash.webp et la police sont servis depuis
 // Vercel Blob (voir blobAssets.js) et non plus depuis data/ — évite qu'ils
@@ -43,6 +43,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { texteAffichable } from "@clash/commun/texteImage.js";
 import { readJoueurs, loadMarioClashConfig, getHistoriqueEntry } from "./marioclash.js";
 import { readBlobAsset, readGameFontPaths } from "@clash/commun/blobAssets.js";
+import { avatarDataUrl } from "./avatarsDiscord.js";
 
 const BOARD_IMAGE_PATH = "marioclash/images/mario-clash-board.jpg";
 const ILLUSTRATION_IMAGE_PATH = "marioclash/images/mario-clash.webp";
@@ -112,8 +113,12 @@ const PAWN_COLORS = [
   "#0e6655", "#298397", "#2a3d86", "#111356", "#5a1370",
   "#951f8f", "#8f004e", "#5f3d16", "#4f0000", "#424206",
 ];
-const TOKEN_RADIUS = 15;
-const TOKEN_SPREAD = 32; // écart horizontal entre pions partageant une case
+// Pion = avatar Discord dans un anneau de la couleur du joueur. Rayon
+// lisible sur mobile (plateau réduit à ~360 px) ; les pions d'une même case
+// se chevauchent volontairement (écart < diamètre).
+const TOKEN_RADIUS = 22;
+const TOKEN_RING = 4;
+const TOKEN_SPREAD = 30; // écart horizontal entre pions partageant une case
 
 // Attribution par ORDRE D'ARRIVÉE (`joueur.colorIndex`, assigné une fois
 // pour toutes à la création du joueur — voir ensureJoueur() dans
@@ -134,13 +139,6 @@ function escapeText(value) {
     .replace(/>/g, "&gt;");
 }
 
-// Initiale robuste : ignore emojis/symboles/ponctuation en tête de pseudo
-// (fréquents sur Discord), prend la première vraie lettre/chiffre Unicode.
-function initialOf(username) {
-  const match = String(username || "").match(/[\p{L}\p{N}]/u);
-  return escapeText(match ? match[0].toUpperCase() : "?");
-}
-
 let boardDataUrlCache = null;
 
 async function loadBoardDataUrl() {
@@ -152,8 +150,12 @@ async function loadBoardDataUrl() {
 
 // Regroupe les joueurs par case, puis répartit les pions d'une même case
 // horizontalement (taille FIXE, jamais réduite — un rétrécissement variable
-// donnait des pions d'aspect incohérent d'une case à l'autre).
-function buildTokensSvg(joueurs) {
+// donnait des pions d'aspect incohérent d'une case à l'autre). Avatar
+// Discord (`j.avatar` « id/hash »), créature Clay à défaut.
+async function buildTokensSvg(joueurs) {
+  const avatars = new Map(
+    await Promise.all(joueurs.map(async (j) => [j, await avatarDataUrl(j.avatar, j.colorIndex ?? 0)])),
+  );
   const parCase = new Map();
   for (const j of joueurs) {
     const list = parCase.get(j.position) || [];
@@ -168,9 +170,12 @@ function buildTokensSvg(joueurs) {
       const dx = occupants.length > 1 ? (index - (occupants.length - 1) / 2) * TOKEN_SPREAD : 0;
       const cx = anchor.x + dx;
       const cy = CASES_REPERES.includes(Number(position)) ? anchor.y - REPERE_TOKEN_SHIFT : anchor.y;
+      const id = `pion${circles.length}`;
+      const r = TOKEN_RADIUS - TOKEN_RING;
       circles.push(
-        `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${colorForPlayer(j.colorIndex)}" stroke="#1e293b" stroke-width="2.5"/>`,
-        `<text x="${cx}" y="${cy + 5}" font-family="${FONT_FAMILY}" font-size="15" text-anchor="middle" fill="#1e293b">${initialOf(j.username)}</text>`,
+        `<circle cx="${cx}" cy="${cy}" r="${TOKEN_RADIUS}" fill="${colorForPlayer(j.colorIndex)}" stroke="#1e293b" stroke-width="2"/>`,
+        `<clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>`,
+        `<image x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" href="${avatars.get(j)}" clip-path="url(#${id})" preserveAspectRatio="xMidYMid slice"/>`,
       );
     });
   }
@@ -209,11 +214,11 @@ function buildCasesSpecialesSvg(casesSpeciales) {
 // parcours : texte brun semi-transparent, comme gravé dans la piste, sans
 // fond ni bordure, centré dans la case (y + 9 ≈ 0,35 × font-size pour
 // centrer verticalement les chiffres). Dessiné sous les pions (par-dessus,
-// il rendait illisibles à la fois l'initiale et le numéro) : quand la case
+// il rendait illisible le numéro) : quand la case
 // est occupée, ce sont les pions qui remontent (REPERE_TOKEN_SHIFT, voir
 // buildTokensSvg) pour laisser le numéro visible.
 const CASES_REPERES = [10, 20, 30, 40];
-const REPERE_TOKEN_SHIFT = 24;
+const REPERE_TOKEN_SHIFT = 32;
 
 function buildCasesReperesSvg() {
   return CASES_REPERES.map((numero) => {
@@ -231,7 +236,7 @@ async function buildBoardSvg(joueurs) {
   <image x="0" y="0" width="${BOARD_WIDTH}" height="${BOARD_HEIGHT}" href="${dataUrl}"/>
   ${buildCasesReperesSvg()}
   ${buildCasesSpecialesSvg(config.cases_speciales)}
-  ${buildTokensSvg(joueurs)}
+  ${await buildTokensSvg(joueurs)}
 </svg>`;
 }
 
@@ -251,7 +256,7 @@ async function rasterize(svg) {
 }
 
 // Rendu du plateau pour un état de jeu donné — `joueurs` = liste de
-// { discordId, username, position } (position 0-48). Ne dépend d'aucun
+// { discordId, username, position, colorIndex, avatar } (position 0-48). Ne dépend d'aucun
 // state Redis : l'appelant (jeux/services/marioclash.js, à venir) est
 // responsable de lire l'état et d'appeler cette fonction avec les joueurs
 // vivants du jour.
@@ -284,6 +289,7 @@ export async function getBoardImage(jour) {
       username: j.username,
       position: figees ? figees[discordId].position : j.position,
       colorIndex: j.colorIndex,
+      avatar: j.avatar ?? null,
     }));
   return renderBoardImage(liste);
 }
@@ -302,4 +308,68 @@ export async function getIllustrationImage() {
     illustrationCache = { buffer: await readBlobAsset(ILLUSTRATION_IMAGE_PATH), mimeType: "image/webp" };
   }
   return illustrationCache;
+}
+
+// ── Fiche technique d'un véhicule (choix du véhicule) ─────────────────
+// 800×480 : image du véhicule à gauche sur un panneau à sa couleur, nom et
+// statistiques fantaisistes en étoiles à droite (façon fiche de jeu vidéo).
+// Textes ≥ 34 px pour rester lisibles sur mobile (embed réduit à ~330 px).
+// Image source : Vercel Blob `marioclash/vehicules/<id>.png`
+// (jeux/data/marioclash/vehicules/, `npm run assets:upload-blob -- marioclash`).
+const FICHE_W = 800;
+const FICHE_H = 480;
+
+function etoileSvg(cx, cy, r, plein) {
+  const pts = [];
+  for (let k = 0; k < 10; k++) {
+    const rayon = k % 2 ? r * 0.45 : r;
+    const a = -Math.PI / 2 + (k * Math.PI) / 5;
+    pts.push(`${(cx + rayon * Math.cos(a)).toFixed(1)},${(cy + rayon * Math.sin(a)).toFixed(1)}`);
+  }
+  return plein
+    ? `<polygon points="${pts.join(" ")}" fill="#ffe14d" stroke="#3a2f00" stroke-width="2.5" stroke-linejoin="round"/>`
+    : `<polygon points="${pts.join(" ")}" fill="#ffffff" fill-opacity="0.12" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2" stroke-linejoin="round"/>`;
+}
+
+export function buildFicheVehiculeSvg(v, pngBuffer) {
+  const couleur = v.couleur || "#e74c3c";
+  const image = pngBuffer
+    ? `<image x="40" y="100" width="280" height="280" href="data:image/png;base64,${pngBuffer.toString("base64")}"/>`
+    : "";
+  const stats = Object.entries(v.stats || {}).slice(0, 4);
+  // Titre réduit si le nom est long (largeur utile ~390 px, ~0,6 em par lettre)
+  const tailleTitre = Math.min(44, Math.floor(390 / (v.label.length * 0.6)));
+  const lignes = stats.map(([nom, n], i) => {
+    const y = 200 + i * 72;
+    const etoiles = Array.from({ length: 5 }, (_, k) => etoileSvg(598 + k * 42, y - 12, 19, k < n)).join("");
+    return `<text x="384" y="${y}" font-family="${FONT_FAMILY}" font-size="34" fill="#ffffff">${escapeText(nom)}</text>${etoiles}`;
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${FICHE_W}" height="${FICHE_H}" viewBox="0 0 ${FICHE_W} ${FICHE_H}" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="${BACKGROUND}"/>
+  <rect x="20" y="20" width="320" height="${FICHE_H - 40}" rx="28" fill="${couleur}" fill-opacity="0.35" stroke="${couleur}" stroke-width="4"/>
+  ${image}
+  <text x="384" y="104" font-family="${FONT_FAMILY}" font-size="${tailleTitre}" fill="${couleur}">${escapeText(v.label)}</text>
+  <rect x="384" y="124" width="380" height="4" rx="2" fill="${couleur}" fill-opacity="0.6"/>
+  ${lignes.join("\n  ")}
+</svg>`;
+}
+
+const ficheCache = new Map();
+
+export async function getFicheVehiculeImage(vehiculeId) {
+  const config = await loadMarioClashConfig();
+  const v = config.vehicules?.[vehiculeId];
+  if (!v) return null;
+  if (!ficheCache.has(vehiculeId)) {
+    const png = await readBlobAsset(`marioclash/vehicules/${vehiculeId}.png`).catch(() => null);
+    const fontPaths = await readGameFontPaths();
+    const resvg = new Resvg(Buffer.from(texteAffichable(buildFicheVehiculeSvg(v, png)), "utf8"), {
+      fitTo: { mode: "width", value: FICHE_W },
+      background: BACKGROUND,
+      font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
+    });
+    ficheCache.set(vehiculeId, { buffer: Buffer.from(resvg.render().asPng()), mimeType: "image/png" });
+  }
+  return ficheCache.get(vehiculeId);
 }

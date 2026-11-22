@@ -152,11 +152,17 @@ export async function writeJoueur(discordId, joueur) {
   await getRedis().hset(JOUEURS_KEY, { [discordId]: toJson(joueur) });
 }
 
-export async function ensureJoueur(discordId, username) {
+// `avatar` : hash de l'avatar Discord (pion du plateau), stocké en
+// « id/hash » ; `undefined` = inconnu (clics hors boutons du jour), inchangé.
+export async function ensureJoueur(discordId, username, avatar) {
+  const avatarRef = avatar === undefined ? undefined : avatar ? `${discordId}/${avatar}` : null;
   const existing = await readJoueur(discordId);
   if (existing) {
-    if (username && existing.username !== username) {
-      const updated = { ...existing, username };
+    const maj = {};
+    if (username && existing.username !== username) maj.username = username;
+    if (avatarRef !== undefined && (existing.avatar ?? null) !== avatarRef) maj.avatar = avatarRef;
+    if (Object.keys(maj).length) {
+      const updated = { ...existing, ...maj };
       await writeJoueur(discordId, updated);
       return updated;
     }
@@ -168,7 +174,7 @@ export async function ensureJoueur(discordId, username) {
   // L'index reste stable toute la manche, même si d'autres joueurs
   // rejoignent ensuite.
   const colorIndex = Object.keys(await readJoueurs()).length;
-  const fresh = { username: username || "?", position: 0, points: 0, objet: null, dernierAchatJour: null, colorIndex };
+  const fresh = { username: username || "?", position: 0, points: 0, objet: null, dernierAchatJour: null, colorIndex, avatar: avatarRef ?? null };
   await writeJoueur(discordId, fresh);
   return fresh;
 }
@@ -180,6 +186,44 @@ export async function ensureJoueur(discordId, username) {
 // d'arrivée (`arriveJour`) fixe son rang : premier arrivé = vainqueur.
 export function estArrive(joueur, config) {
   return config?.case_arrivee != null && (joueur?.position ?? 0) >= config.case_arrivee;
+}
+
+// ── Véhicules (config.vehicules) — choisis une fois pour toute la course
+// au premier clic sur Dé, Boutique ou Sort (`joueur.vehicule`). Effets :
+// `des` (surcharge min/max d'un dé), `sorts_retires` (ids jamais tirés),
+// `concentration_min` (plancher de la jauge), `or_jours_pairs` (Or en plus
+// au dé les jours pairs). Équilibrage : jeux/outils/marioclash-simulation/.
+export function vehiculeDe(joueur, config) {
+  return config.vehicules?.[joueur?.vehicule] || null;
+}
+
+// Dé tel que le joueur le lance ce jour-là (véhicule appliqué).
+export function deDuJoueur(joueur, deId, config, jour = null) {
+  const de = config.des[deId];
+  if (!de) return null;
+  const v = vehiculeDe(joueur, config);
+  const bonusOr = v?.or_jours_pairs && jour != null && Number(jour) % 2 === 0 ? v.or_jours_pairs : 0;
+  return { ...de, ...(v?.des?.[deId] || {}), or: de.or + bonusOr };
+}
+
+// Sorts que le joueur peut tirer à `niveau` de Concentration.
+export function sortsDuJoueur(joueur, niveau, config) {
+  const retires = vehiculeDe(joueur, config)?.sorts_retires || [];
+  return sortsDisponibles(config.sorts, niveau).filter((s) => !retires.includes(s.id));
+}
+
+export const concentrationMin = (joueur, config) => vehiculeDe(joueur, config)?.concentration_min || 0;
+
+// Choix définitif : refusé si le joueur a déjà un véhicule.
+export async function choisirVehicule(discordId, vehiculeId, config) {
+  if (!config.vehicules?.[vehiculeId]) return { status: "unknownVehicle" };
+  const joueur = await readJoueur(discordId);
+  if (!joueur) return { status: "unknownPlayer" };
+  if (joueur.vehicule) return { status: "alreadyChosen", joueur };
+  const updated = { ...joueur, vehicule: vehiculeId };
+  updated.concentration = Math.max(updated.concentration || 0, concentrationMin(updated, config));
+  await writeJoueur(discordId, updated);
+  return { status: "ok", joueur: updated };
 }
 
 // ── Boutique — résolution immédiate au clic ─────────────────────────
@@ -339,7 +383,7 @@ export async function rollDiceForPlayer(jour, discordId, deId, config, rng = Mat
   // Un dé `reserve_sort` ne peut jamais être choisi librement.
   if (joueur.deImpose && config.des[joueur.deImpose]) deId = joueur.deImpose;
   else if (config.des[deId]?.reserve_sort) return { status: "unknownDie" };
-  const de = config.des[deId];
+  const de = deDuJoueur(joueur, deId, config, jour);
   if (!de) return { status: "unknownDie" };
   // Gel/Rage/dé imposé : posés par le sort de la veille (voir
   // computeCloture), valables pour le dé de ce jour uniquement. Gel : 1 case
@@ -389,9 +433,10 @@ export async function castSpellForPlayer(jour, discordId, config, rng = Math.ran
   const joueur = joueurs[discordId];
   if (!joueur) return { status: "unknownPlayer" };
   if (estArrive(joueur, config)) return { status: "arrived" };
-  const concentration = joueur.concentration || 0;
-  const sort = rollSort(sortsDisponibles(config.sorts, concentration), rng);
-  await writeJoueur(discordId, { ...joueur, concentration: 0 });
+  const plancher = concentrationMin(joueur, config);
+  const concentration = Math.max(joueur.concentration || 0, plancher);
+  const sort = rollSort(sortsDuJoueur(joueur, concentration, config), rng);
+  await writeJoueur(discordId, { ...joueur, concentration: plancher });
   await updateAction(jour, discordId, { spell: { target: discordId, sortId: sort.id, concentration } });
   return { status: "ok", target: discordId, sort, concentration };
 }

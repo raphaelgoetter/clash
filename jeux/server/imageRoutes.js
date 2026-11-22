@@ -17,6 +17,7 @@ import {
 import {
   getBoardImage as getMarioClashBoardImage,
   getIllustrationImage as getMarioClashIllustrationImage,
+  getFicheVehiculeImage as getMarioClashFicheVehiculeImage,
 } from "../services/marioclashImage.js";
 import {
   getMainImage as getBangMainImage,
@@ -244,6 +245,15 @@ router.get("/api/marioclash/illustration", async (req, res) => {
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Mario Clash : fiche technique d'un véhicule (choix du véhicule).
+router.get("/api/marioclash/vehicule", async (req, res) => {
+  const image = await getMarioClashFicheVehiculeImage(String(req.query.id || "")).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
   res.send(image.buffer);
 });
 
