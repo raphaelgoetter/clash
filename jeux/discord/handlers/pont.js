@@ -112,7 +112,7 @@ function buildAnnonceEmbed(config) {
       "",
       "Mais un troll vit sous les ponts. Il attrape le plus chargé : chaque joueur attrapé lâche une pièce, que ceux de l'autre pont ramassent… multipliée par la prime du village affichée à l'entrée de leur pont.",
       "",
-      "Chaque matin, une question Vrai ou Faux : bonne réponse = 🪙 1 pièce à emporter au marché.",
+      "Chaque matin, une question Vrai ou Faux : bonne réponse = 🪙 1 pièce bonus à emporter au marché.",
       "",
       "Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
@@ -142,7 +142,7 @@ function lignesMatin(cfg, question) {
   const evenement = ligneEvenement(cfg);
   return [
     `> ${question.affirmation}`,
-    "Bonne réponse = 🪙 1 pièce à emporter au marché.",
+    "Bonne réponse = 🪙 1 pièce bonus à emporter au marché.",
     "",
     `🌉 Cet après-midi : ${EMOJI[PIERRE]} Pierre ×${cfg.pierre} · ${EMOJI[CORDES]} Cordes ×${cfg.cordes}`,
     ...(evenement ? [evenement] : []),
@@ -853,7 +853,7 @@ export async function handleVraiFaux(webhookUrl, jour, reponse, discordId, usern
     if (!question) return;
     const r = await repondreVraiFaux(jour, discordId, reponse, question, { username });
     const verdict = r.correct
-      ? "✅ Bonne réponse ! Tu gagnes 🪙 1 pièce à emporter au marché."
+      ? "✅ Bonne réponse ! Tu gagnes 🪙 1 pièce bonus à emporter au marché."
       : `❌ Raté, c'était ${question.reponse ? "vrai" : "faux"}.`;
     const lignes = [r.ok ? verdict : `Tu as déjà répondu ce matin. ${verdict}`];
     if (question.explication) lignes.push(question.explication);
@@ -1011,7 +1011,7 @@ function buildReglesEmbed(config) {
     title: "📖 Règles du Pont du Troll",
     description: [
       `De l'autre côté du ravin, le village tient son grand marché pendant ${config.duree_jours} jours. Chaque jour :`,
-      `☀️ **Le matin (${h.matin}h-${h.ponts}h)** : réponds à la question Vrai ou Faux. Bonne réponse = 🪙 1 pièce à emporter au marché.`,
+      `☀️ **Le matin (${h.matin}h-${h.ponts}h)** : réponds à la question Vrai ou Faux. Bonne réponse = 🪙 1 pièce bonus à emporter au marché.`,
       `🌉 **L'après-midi (${h.ponts}h-minuit)** : traverse par l'un des deux ponts. Un seul clic, secret et définitif.`,
       "",
       "🧌 **Le troll** attrape le pont qui compte le plus de joueurs : chacun lâche 1 pièce, et sa pièce du matin s'il l'a. Les joueurs de l'autre pont ramassent ce butin et se le partagent, multiplié par la prime du village (le multiplicateur de leur pont).",
