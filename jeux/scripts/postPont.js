@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // postPont.js
-// Publie (à la main ou par le cron) le jour du Pont du Troll. Sans partie
-// en cours : jour d'annonce (jamais le Jour 1 directement). Sinon résout
-// d'abord le jour actif (troll, butin, Jokers), puis publie le jour suivant
-// ou le classement final.
+// Publie (à la main ou par le cron, vers 8h et vers 14h) la phase suivante
+// du Pont du Troll. Sans partie en cours : jour d'annonce (jamais le Jour 1
+// directement). Annonce ou après-midi : résout d'abord le jour actif (troll,
+// butin, pièces du matin), puis publie le matin suivant (Vrai/Faux) ou le
+// classement final. Matin : publie l'après-midi (ponts).
 //
 // Usage :
 //   node jeux/scripts/postPont.js                  — salon de test
@@ -11,7 +12,7 @@
 //   node jeux/scripts/postPont.js --dry-run        — aperçu, sans écrire ni publier
 //   node jeux/scripts/postPont.js --no-ping        — sans ping @MINI-JEUX
 //   node jeux/scripts/postPont.js --require-active — rien sans partie lancée (cron)
-//   node jeux/scripts/postPont.js --force          — ignore le garde-fou anti-double-avancée
+//   node jeux/scripts/postPont.js --force          — avance même si la transition n'est pas prête
 //   node jeux/scripts/postPont.js --sans-pnj       — salon de test sans les 5 joueurs fictifs (PNJ)
 
 import "../env.js";
@@ -47,8 +48,8 @@ if (!channelId) {
 
     if (result.skipped) {
       console.log(
-        result.reason === "tooSoonSinceLastClosure"
-          ? `Jour ouvert trop récemment (${result.publishedAt}) pour être résolu : probable double déclenchement. Rien n'est publié. --force si le rattrapage est volontaire.`
+        result.reason === "pasEncore"
+          ? `Rien à faire pour l'instant (phase « ${result.phase} » publiée le ${result.publishedAt}). --force si l'avancée est volontaire.`
           : "Aucune partie active, rien à publier (cron sans lancement manuel préalable).",
       );
       return;
@@ -65,7 +66,7 @@ if (!channelId) {
       return;
     }
     if (DRY_RUN) {
-      const quoi = result.phase === "annonce" ? "Jour d'annonce" : result.final ? "Classement final" : `Jour ${result.jour}`;
+      const quoi = result.phase === "annonce" ? "Jour d'annonce" : result.final ? "Classement final" : `Jour ${result.jour} (${result.phase === "matin" ? "matin" : "après-midi"})`;
       console.log(`DRY-RUN (salon ${channelId}) : ${quoi}`);
       console.log(JSON.stringify({ embeds: result.embeds, components: result.components || [] }, null, 2));
       return;

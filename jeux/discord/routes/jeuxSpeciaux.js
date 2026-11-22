@@ -104,6 +104,7 @@ import {
   handleRumeurChoix as handlePontRumeurChoix,
   handleIndice as handlePontIndice,
   handleRegles as handlePontRegles,
+  handleVraiFaux as handlePontVraiFaux,
 } from "../handlers/pont.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
@@ -147,6 +148,18 @@ export async function routeJeuxSpeciaux(body, res) {
     else if (action === "pont_rumeurs") runBackground(() => handlePontRumeurs(webhookUrl, jour, discordId));
     else if (action === "pont_indice") runBackground(() => handlePontIndice(webhookUrl, jour, discordId));
     else runBackground(() => handlePontTraverser(webhookUrl, jour, action === "pont_pierre" ? "pierre" : "cordes", discordId, username, avatar));
+    return;
+  }
+
+  // ── Pont du Troll : Vrai/Faux du matin (nouvel éphémère) ──
+  // custom_id : pont_vf:<jour>:vrai, pont_vf:<jour>:faux
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^pont_vf:\d+:(vrai|faux)$/.test(body.data.custom_id)) {
+    const [, jour, reponse] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePontVraiFaux(webhookUrl, jour, reponse === "vrai", discordId, username));
     return;
   }
 

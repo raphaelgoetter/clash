@@ -532,7 +532,7 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | Mario Clash           | `marioclash.yml`    | `14 8 * * *`                                                                                 |
 | Jeu du Gobelet        | `gobelet.yml`       | `16 7 * * *` (8h16 à Paris en hiver, après le décompte de 8 h des deux mains)                |
 | Qui est-ce ?          | `quiestce.yml`      | `20 8 * * *`                                                                                 |
-| Pont du Troll         | `pont.yml`          | `24 7 * * *` (8h24 à Paris en hiver, après le décompte de 8 h)                               |
+| Pont du Troll         | `pont.yml`          | `24 7 * * *` (8h24 à Paris en hiver : résultat et Vrai/Faux) et `4 13 * * *` (14h04 en hiver : ponts) |
 | Boss de fin de saison | `boss.yml`          | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison »)      |
 
 Tamagotchi (`tamagotchi.yml`, ex-minute 10), Boss Raid (`bossraid.yml`, ex-minute 2) et Bang! (`bang.yml`, ex-minute 18) ont leur cron commenté : voir « Jeux archivés ».
@@ -1319,7 +1319,7 @@ Options du script : `--no-ping`, `--require-active`, `--force`. Production : pr�
 
 ## Pont du Troll (jeu de la minorité sur deux ponts)
 
-Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le ravin par le **pont de pierre** ou le **pont de cordes**, en secret. Le troll attrape le pont le plus chargé ; les passants de l'autre pont se partagent le butin. Classement cumulé en pièces, révélé après le Jour 7. Pas de commande slash. Pas d'inscription : tout membre peut jouer à partir de n'importe quel jour.
+Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le ravin par le **pont de pierre** ou le **pont de cordes**, en secret. Le troll attrape le pont le plus chargé ; les passants de l'autre pont se partagent le butin. Le matin, une question Vrai/Faux rapporte une pièce bonus à emporter au marché. Classement cumulé en pièces, révélé après le Jour 7. Pas de commande slash. Pas d'inscription : tout membre peut jouer à partir de n'importe quel jour.
 
 | Rôle                                             | Fichier                                                                                |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------- |
@@ -1329,6 +1329,8 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 | Routage des boutons                              | `jeux/discord/routes/jeuxSpeciaux.js`                                                  |
 | Publication quotidienne                          | `jeux/scripts/postPont.js`                                                             |
 | Config                                           | `jeux/data/pont/pont.json` : `duree_jours` (7), `jours_indice` (2, 4, 6), `calendrier` |
+| Questions du matin                               | `jeux/data/pont/vraifaux.json` (voir « Vrai/Faux du matin »)                           |
+| Simulation d'équilibrage de la pièce du matin    | `jeux/outils/pont-simulation/simulerBonusMatin.mjs`                                    |
 | Avatars des passants (partagé avec Qui est-ce ?) | `jeux/services/avatarsDiscord.js`                                                      |
 | Statut, remise à zéro                            | `jeux/scripts/pontStatus.js`, `jeux/scripts/resetPont.js`                              |
 | Tests                                            | `jeux/services/pont.test.js`                                                           |
@@ -1336,11 +1338,23 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 ### Déroulement (Pont du Troll)
 
-- Jour d'annonce, puis Jours 1 à 7 (voir « Lancement : jour d'annonce obligatoire »). Un seul message actif. `postPont()` résout le jour actif (`resolveDay()`), puis publie le jour suivant ou, après le Jour 7, la révélation finale (`termine: true`, les runs suivants sont des no-op). Pièces, rumeurs, Indices, choix et historique remis à zéro au passage au Jour 1 (`resetPartie()`).
-- **Jour de jeu de 8 h à 8 h** (heure de Paris) : après 8 h, plus aucun clic n'est accepté pour le jour publié (« le troll compte les passants »), le cron résout ensuite le jour tel qu'il était à 8 h.
-- Garde-fou `isTooSoonSinceLastClosure()` (`MIN_HOURS_BETWEEN_CLOSURES` = 8 h), contourné par `--force` et automatiquement hors `--public`.
+- Jour d'annonce, puis Jours 1 à 7 (voir « Lancement : jour d'annonce obligatoire »). Un seul message actif. Chaque jour a **deux phases**, un message chacune (`state.phase`). Horaires calés sur les crons, à heure UTC fixe (`horaires()`) : matin à 8h et ponts à 14h en hiver, 9h et 15h en été, fin des ponts à minuit toute l'année. ⚠️ Tout texte joueur qui donne une heure (Règles, pied du matin, Jour 1, ponts fermés, Indice) la calcule avec `horaires()`, jamais en dur. Ci-dessous, horaires d'hiver :
+  - **Matin** (`MATIN`, publié vers 8h) : résultat de la veille, question Vrai/Faux (boutons `[✅ Vrai]` `[❌ Faux]` `[📖 Règles]`), multiplicateurs et événement de l'après-midi en texte ;
+  - **Après-midi** (`APRES_MIDI`, valeur `jour`, publié vers 14h, 15h en été) : le même résultat de la veille (relu dans `pont:historique`), puis les ponts. Les ponts ferment à **minuit** (heure de Paris) : de minuit au passage de 8h, plus aucun clic (`jourOuvert()`, « le troll compte les joueurs »).
+- `postPont()` fait la transition prête : annonce -> matin du Jour 1 ; matin -> après-midi ; après-midi -> résolution du jour (`resoudreJour()`), puis matin suivant ou, après le Jour 7, la révélation finale (`termine: true`, les runs suivants sont des no-op). Pièces, rumeurs, Indices, réponses du matin, choix et historique remis à zéro au passage au Jour 1 (`resetPartie()`).
+- Garde-fou anti-double-avancée `transitionPrete()` : annonce -> Jour 1 au moins 8 h après l'annonce (`isTooSoonSinceLastClosure()`) ; matin -> après-midi à partir de l'heure des ponts (14h, 15h en été), ou dès le jour de jeu suivant si ce passage a manqué (l'après-midi dure alors jusqu'à minuit) ; après-midi -> résolution au jour de jeu suivant (après 8h). Sinon le script ne fait rien (le passage des ponts sur un après-midi déjà publié est normal). Contourné par `--force` et automatiquement hors `--public`.
 - ⚠️ **Jamais de ping hors salon public** : `postPont()` ne pingue que si `isPublic` et sans `noPing`, quel que soit l'appelant (en plus de `NO_PING` dans `postPont.js`). Testé dans `pont.test.js`.
-- **PNJ du salon de test** : 5 joueurs fictifs (`PNJ` : Josette, Gérard, Ginette, Jean-Mi, Bernadette ; ids `pnj-1` à `pnj-5`, avatars clay `clay-01` à `clay-05`) traversent au hasard (50/50) dès la publication de chaque jour (`jouerPnj()`), et, les jours de rumeurs, lancent une rumeur au hasard (vérité, mensonge ou rien). Jamais sur le salon public, même demandés (`pnj && !isPublic`). Pas de passeport ni d'appel Discord pour leur pseudo (`estPnj()`). `--sans-pnj` les désactive.
+- **PNJ du salon de test** : 5 joueurs fictifs (`PNJ` : Josette, Gérard, Ginette, Jean-Mi, Bernadette ; ids `pnj-1` à `pnj-5`, avatars clay `clay-01` à `clay-05`) répondent au Vrai/Faux dès la publication du matin (juste 6 fois sur 10, `jouerPnjMatin()`), traversent au hasard (50/50) dès la publication de l'après-midi (`jouerPnj()`), et, les jours de rumeurs, lancent une rumeur au hasard (vérité, mensonge ou rien). Jamais sur le salon public, même demandés (`pnj && !isPublic`). Pas de passeport ni d'appel Discord pour leur pseudo (`estPnj()`). `--sans-pnj` les désactive.
+
+### Vrai/Faux du matin (Pont du Troll)
+
+- Règle joueur, à garder aussi simple : « Bonne réponse = 🪙 1 pièce à emporter au marché. Si le troll attrape ton pont, elle tombe dans la bourse des joueurs d'en face. » Phase bonus, aucune autre mécanique.
+- Une affirmation par jour (`questionDuJour()`), une réponse par joueur, **définitive** (`HSETNX`) et **corrigée tout de suite** en éphémère, comme Trivia : « ✅ Bonne réponse ! Tu gagnes 🪙 1 pièce à emporter au marché. » ou « ❌ Raté, c'était vrai. », suivi de l'explication. Un second clic rappelle la réponse donnée.
+- Après le passage à l'après-midi, un clic sur un ancien bouton répond « Le Vrai/Faux du matin est terminé ».
+- Porteurs de la pièce (`porteursBonus()`) : bonnes réponses du jour. La pièce est secrète : seul le porteur la voit, dans la confirmation de traversée (« Tu traverses par la pierre avec ta pièce du matin 🪙 »).
+- **Pièce gardée** : un porteur qui passe gagne +1 pièce, sans multiplicateur ni Fête du village. **Attrapé** : sa pièce rejoint le butin de l'autre pont (`bonusPerdus`, voir « Butin »). **Pas de traversée** : la pièce est perdue.
+- `jeux/data/pont/vraifaux.json` : `{ parties: [[7 × { affirmation, reponse (booléen), explication }]], reserve: [...] }`. Chaque partie compte 7 questions (une par jour), 3 ou 4 VRAI (sinon répondre toujours « Vrai » paie), questions proches réparties dans des parties différentes, FAUX variés (pas seulement des noms inventés). Partie tirée au passage au Jour 1 dans l'ordre du fichier (`choisirPartieVraiFaux()`, curseur `pont:vf_cursor`, jamais remis à zéro), mémorisée dans `state.vfPartie`. `reserve` : questions de remplacement, jamais tirées. Questions vérifiées par sources web (voir Trivia), testé dans `pont.test.js`.
+- Simulation (5 000 parties, 15 à 20 joueurs, ponts au hasard, `simulerBonusMatin.mjs`) : vainqueur différent de la règle sans pièce dans 16 % des parties, 1re place ex aequo après départage 5,4 % (9,8 % sans), un expert du Vrai/Faux (95 % de bonnes réponses) gagne 7,2 % des parties (5,9 % sans) ; environ 11,5 pièces par joueur et par partie (7,7 sans). Variante « pièce simplement perdue si attrapé » écartée (plus d'ex aequo, butin inchangé).
 
 ### Règles
 
@@ -1348,7 +1362,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 - ⚠️ **Vote secret** : aucune répartition n'est visible avant le résultat (ni dans l'embed, ni dans l'URL de l'image, ni dans `/mini-jeux`). Seul le nombre total de passants du jour est public. Sinon chaque joueur choisit le pont le moins chargé et le jour finit à X contre X-1.
 - **Le troll attrape le pont qui compte le plus de passants.** Pont vide en face du pont attrapé : personne ne gagne (pas de partage possible).
 - **Personne d'attrapé** (égalité, ou Troll repu qui vise un pont vide) : tout le monde passe et gagne le **multiplicateur de son pont** (la formule du butin avec attrapés / passés = 1), doublé par la Fête du village ; compte comme un jour passé pour le départage.
-- **Butin** : chaque passant attrapé lâche 1 pièce, partagée entre les passants de l'autre pont, multipliée par le multiplicateur de leur pont : `gain = multiplicateur × attrapés / passés`. Les attrapés ne perdent rien (0 pièce ce jour-là).
+- **Butin** : chaque passant attrapé lâche 1 pièce, plus sa pièce du matin s'il la porte, partagées entre les passants de l'autre pont, multipliées par le multiplicateur de leur pont : `gain = multiplicateur × (attrapés + pièces du matin des attrapés) / passés`. Les attrapés ne perdent rien d'autre (0 pièce ce jour-là). Les porteurs qui passent ajoutent +1 à ce gain.
 - La pierre est toujours à gauche et les cordes à droite (décor fixe) : le multiplicateur des cordes est toujours supérieur ou égal à celui de la pierre.
 
 | Jour | Pierre | Cordes | Événement                                               |
@@ -1367,11 +1381,11 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
   - « 🗣️ Selon les rumeurs du jour » : par pont, les joueurs qui l'annoncent (« 4 joueurs ont pris le pont de pierre : A, B, C et D »). Le pont annoncé se déduit du pont **réellement choisi** (`rumeursAnnoncees()`) : vérité = son pont, mensonge = l'autre ; un joueur sans pont choisi (ou qui n'annonce rien) n'apparaît pas. Une rumeur peut donc être lancée avant de traverser, sans risque d'erreur.
   - « 🤥 Détecteur de fake-news (Jour N) » : menteurs du **jour de rumeurs précédent** (`rumeursPrecedentes()` : J-2, puisque la veille n'a pas de rumeurs ; absent au Jour 1). Menteur = « mensonge » et pont choisi (`menteurs()`).
   - « 📣 Lance une rumeur si tu le souhaites ! » et un menu (`pont_rumeur:<jour>`, édition en place) : Vérité (« J'annonce le pont que je choisis aujourd'hui »), Mensonge (« J'annonce l'autre pont »), Rien (« Je n'annonce rien du tout »). Une rumeur par jour, **définitive** (`HSETNX`) ; ensuite la vue rappelle « Ta rumeur du jour » (et qu'elle apparaîtra dès que le pont sera choisi).
-- **🔎 Indice** : jours pairs seulement (2, 4, 6 ; bouton absent les jours impairs), une consultation par jour et par joueur (un nouveau clic réaffiche le même texte, mémorisé), réponse éphémère calculée sur la répartition au moment du clic (`texteIndice()`), de moins en moins précise au fil de la journée (heure de Paris) :
-  - 8 h-12 h : chiffres exacts (« Pierre 9, Cordes 6 ») ;
-  - 12 h-18 h : fourchette de 5 valeurs contenant l'écart réel, placée au hasard (« La pierre mène de 3 à 7 joueurs », borne basse au moins 1) ;
-  - 18 h-8 h : tendance seule (« La pierre semble plus chargée ») ;
-  - écart de 2 passants ou moins (sauf de 8 h à 12 h) : « Coude à coude ». Aucun passant : « Personne n'a encore traversé ».
+- **🔎 Indice** : jours pairs seulement (2, 4, 6 ; bouton absent les jours impairs), une consultation par jour et par joueur (un nouveau clic réaffiche le même texte, mémorisé), réponse éphémère calculée sur la répartition au moment du clic (`texteIndice()`), de moins en moins précise au fil de l'après-midi (heure de Paris) :
+  - les 3 premières heures des ponts, jusqu'à 17 h (18 h en été) : chiffres exacts (« Pierre 9, Cordes 6 ») ;
+  - les 3 heures suivantes, jusqu'à 20 h (21 h en été) : fourchette de 5 valeurs contenant l'écart réel, placée au hasard (« La pierre mène de 3 à 7 joueurs », borne basse au moins 1) ;
+  - puis jusqu'à minuit : tendance seule (« La pierre semble plus chargée ») ;
+  - écart de 2 passants ou moins (sauf pendant les chiffres exacts) : « Coude à coude ». Aucun passant : « Personne n'a encore traversé ».
   - Consulté après avoir choisi son pont, il ne sert à rien : aucune protection, c'est au joueur de s'organiser.
 
 ### Barème et classement (Pont du Troll)
@@ -1380,14 +1394,15 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 - Tout passant entre au classement, même à 0 pièce.
 - `buildRanking()` : pièces décroissantes, puis **nombre de jours passés** (sans être attrapé) décroissant ; ex aequo au-delà (`rangExAequo()`). Le classement affiché donne les deux critères pour chaque joueur : « 3. Gérard (9 pièces, 3 passages) ».
 - Score de manche cumulé dans l'historique de saison des mini-jeux (`miniJeuxHistory.js`, champ `points` de l'archive, en pièces arrondies à l'unité) et compté dans les stats de `/mini-jeux` (`miniJeuxStats.js`).
-- `/mini-jeux` : participation du jour (a traversé ou non, jamais le pont choisi) et score de la partie.
+- `/mini-jeux` : participation du jour (le matin : a répondu au Vrai/Faux ; l'après-midi : a traversé, jamais le pont choisi), nombre de participants de la phase et score de la partie.
 
 ### Interface (Pont du Troll)
 
 - **Messages en Components V2** (`versV2()`, flag `IS_COMPONENTS_V2`, conversion partagée avec Robinson dans `jeux/discord/composantsV2.js`) : Discord limite la hauteur d'une image d'embed (~300 px sur ordinateur, une image portrait 600 × 840 y tombe à ~215 px de large) ; une galerie (type 12) l'affiche plus grande, et le format paysage de l'image fait le reste (voir « Image »). Vues écrites comme des embeds, converties à l'envoi : un conteneur à liseré par embed (titre `###`, texte, galerie, pied en `-#`), boutons dans le dernier conteneur. ⚠️ Ni `content` ni `embeds` en V2 : le ping (salon public) est un bloc texte `<@&rôle>` en tête, avec `allowed_mentions`. `state.embeds` et `state.components` servent à republier le message (compteur). 4 000 caractères de texte au plus sur l'ensemble du message.
 - **Jour d'annonce** (jour 0) : illustration d'annonce et le seul bouton `[📖 Règles]`.
-- Titre `🧌 Pont du Troll (Jour X/7)`. Boutons du message public (`pont_pierre:<jour>`, `pont_cordes:<jour>`, `pont_rumeurs:<jour>`, `pont_indice:<jour>`, `pont_regles`) : `[🪨 Pont de pierre]`, `[🪢 Pont de cordes]`, `[🗣️ Rumeurs]` (jours impairs) ou `[🔎 Indice]` (jours pairs), `[📖 Règles]` (5 boutons au maximum par rangée).
-- **Un seul bloc et une seule image par message** : à partir du Jour 2, titre `🧌 Pont du Troll (Jour N/7)`, **Résultat du Jour N-1** (répartition, gain par passant, classement provisoire des 5 premiers), image du résultat, puis « 🌉 Aujourd'hui · Jour N/7 » et les multiplicateurs en titres `###` (plus grands que le texte), et l'événement éventuel, sous l'image (Indice et Rumeurs ne sont pas annoncés en texte : leur bouton suffit) (la règle du troll n'est pas répétée : elle est dans les Règles) ; Jour 1 : image du matin. Le pied affiche le nombre total de passants, mis à jour à chaque nouveau passant (`majCompteur()` : PATCH du message à partir de `state.embeds`).
+- Titre `🧌 Pont du Troll (Jour X/7)`. Boutons du matin (`pont_vf:<jour>:vrai`, `pont_vf:<jour>:faux`, `pont_regles`) : `[✅ Vrai]`, `[❌ Faux]`, `[📖 Règles]`. Boutons de l'après-midi (`pont_pierre:<jour>`, `pont_cordes:<jour>`, `pont_rumeurs:<jour>`, `pont_indice:<jour>`, `pont_regles`) : `[🪨 Pont de pierre]`, `[🪢 Pont de cordes]`, `[🗣️ Rumeurs]` (jours impairs) ou `[🔎 Indice]` (jours pairs), `[📖 Règles]` (5 boutons au maximum par rangée).
+- **Matin** : sous l'image, « ### ☀️ Ce matin : vrai ou faux ? », l'affirmation en citation, « Bonne réponse = 🪙 1 pièce à emporter au marché. », puis « 🌉 Cet après-midi : 🪨 Pierre ×1 · 🪢 Cordes ×2 » et l'événement éventuel ; pied « Une seule réponse, corrigée tout de suite · Ponts ouverts de 14h à minuit » (15h en été, pas de compteur). Jour 1 : image du matin, « Les ponts ouvrent à 14h » (15h en été). Résultat du jour : « Le troll attrape 3 joueurs sur la pierre (et 1 pièce bonus). » quand des pièces du matin tombent dans le butin ; le gain affiché par joueur est celui du butin, sans la pièce gardée.
+- **Un seul bloc et une seule image par message** (matin comme après-midi) : à partir du Jour 2, titre `🧌 Pont du Troll (Jour N/7)`, **Résultat du Jour N-1** (répartition, gain par passant, classement provisoire des 5 premiers), image du résultat, puis « 🌉 Aujourd'hui · Jour N/7 » et les multiplicateurs en titres `###` (plus grands que le texte), et l'événement éventuel, sous l'image (Indice et Rumeurs ne sont pas annoncés en texte : leur bouton suffit) (la règle du troll n'est pas répétée : elle est dans les Règles) ; Jour 1 : image du matin. Le pied affiche le nombre total de passants, mis à jour à chaque nouveau passant (`majCompteur()` : PATCH du message à partir de `state.embeds`).
 - Fin de partie : même bloc unique, résultat du Jour 7 et son image, puis classement complet (20 premiers), vainqueurs et vainqueurs des parties précédentes sous l'image.
 - Vocabulaire joueur : « joueur(s) », jamais « passant(s) » (textes et images ; le code garde `passants` pour les listes par pont).
 - Rangs du classement écrits avec le point échappé (voir « Classements »).
@@ -1419,7 +1434,9 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 
 | Clé                   | Type   | Contenu                                                                                                                                                                             |
 | --------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pont:state`          | STRING | `{ phase, jour, partieId, channelId, messageId, publishedAt, termine, embeds }` (`partieId` créé à l'annonce ; `embeds` publiés, pour le compteur de passants)                      |
+| `pont:state`          | STRING | `{ phase: "annonce" \| "matin" \| "jour", jour, partieId, vfPartie, channelId, messageId, publishedAt, termine, embeds }` (`partieId` créé à l'annonce ; `vfPartie` : partie de questions ; `embeds` publiés, pour le compteur de passants) |
+| `pont:vf:<jour>`      | HASH   | `discordId → { reponse (booléen), correct, at }` (Vrai/Faux du matin) |
+| `pont:vf_cursor`      | STRING | compteur des parties de questions (jamais remis à zéro) |
 | `pont:choix:<jour>`   | HASH   | `discordId → { cote: "pierre" \| "cordes", at }`                                                                                                                                    |
 | `pont:rumeurs:<jour>` | HASH | `discordId → { mode: "verite" \| "mensonge" \| "rien", at }` (jours impairs) |
 | `pont:indices:<jour>` | HASH   | `discordId → { at, texte }` de la consultation                                                                                                                                      |
@@ -1427,7 +1444,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 | `pont:passes`         | HASH   | `discordId → jours passés` (départage)                                                                                                                                              |
 | `pont:usernames`      | HASH   | `discordId → pseudo`                                                                                                                                                                |
 | `pont:avatars`        | HASH   | `discordId → "id/hash"` (vide sans avatar)                                                                                                                                          |
-| `pont:historique`     | HASH   | `jour → { jour, partieId, multiplicateurs, evenement, pierre, cordes, attrape, gagnant, gainBase, passants: { pierre: [ids], cordes: [ids] }, rumeurs: { verite: [ids], mensonge: [ids] }, resolvedAt }` |
+| `pont:historique`     | HASH   | `jour → { jour, partieId, multiplicateurs, evenement, pierre, cordes, attrape, gagnant, gainBase, gainParCote, bonusPerdus, bonus: [ids des porteurs qui ont traversé], passants: { pierre: [ids], cordes: [ids] }, rumeurs: { verite: [ids], mensonge: [ids] }, resolvedAt }` |
 | `pont:manches`        | HASH   | `manche → { manche, ranking: [{ discordId, username, points, centiemes, passes }], winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches`                               |
 | `pont:manche_seq`     | STRING | compteur de manches                                                                                                                                                                 |
 
@@ -1439,9 +1456,9 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 | `npm run pont:public` / `:public:dry` | Salon public (cron)                                                                                                                                             |
 | `npm run pont:reset`                  | **Destructif** : partie en cours effacée, `pont:manches` préservé                                                                                               |
 | `npm run pont:reset:manches`          | **Destructif** : efface aussi l'archive des manches                                                                                                             |
-| `npm run pont:status`                 | État courant : jour, multiplicateurs, événement, répartition **secrète** du jour, rumeurs (vérité, mensonge) et Indices consultés, projection du résultat, classement. Sans Discord |
+| `npm run pont:status`                 | État courant : jour et phase, réponses et pièces du matin, multiplicateurs, événement, répartition **secrète** du jour, rumeurs (vérité, mensonge) et Indices consultés, projection du résultat, classement. Sans Discord |
 
-Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/pont.yml` : `24 7 * * *` (8h24 à Paris en hiver, après le décompte de 8 h). Ping `@MINI-JEUX` à l'annonce, au Jour 1 et à la fin de partie seulement. Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
+Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/pont.yml` : `24 7 * * *` (8h24 à Paris en hiver : résultat de la veille et Vrai/Faux) et `4 13 * * *` (14h04 : ponts), même commande, le script fait la transition prête (`transitionPrete()`). En été, les deux passages ont lieu une heure plus tard (9h24 et 15h04), et les textes suivent (`horaires()`). Ping `@MINI-JEUX` à l'annonce, au Jour 1 et à la fin de partie seulement. Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
 
 ---
 

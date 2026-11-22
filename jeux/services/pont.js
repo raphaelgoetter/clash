@@ -7,6 +7,9 @@
 // leur pont). Indice (jours pairs, répartition de moins en moins précise au
 // fil de la journée) et Rumeurs (jours impairs, ponts annoncés par les
 // joueurs, vrais ou faux, menteurs dévoilés aux rumeurs suivantes).
+// Journée en deux phases : le matin (8h-14h en hiver, 9h-15h en été), une
+// question Vrai/Faux dont la bonne réponse rapporte une pièce bonus à
+// emporter au marché ; l'après-midi (jusqu'à minuit), la traversée.
 // Règles : jeux/CONTRIBUTING.md, section « Pont du Troll ».
 //
 // Stockage : Upstash Redis, espace de clés `pont:*`.
@@ -24,6 +27,7 @@ import { parisParts } from "./meowRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_JSON_PATH = path.resolve(__dirname, "..", "data", "pont", "pont.json");
+const VRAIFAUX_JSON_PATH = path.resolve(__dirname, "..", "data", "pont", "vraifaux.json");
 
 let _redis = null;
 function getRedis() {
@@ -82,9 +86,12 @@ const AVATARS_KEY = "pont:avatars";
 const HISTORIQUE_KEY = "pont:historique";
 const MANCHES_KEY = "pont:manches";
 const MANCHE_SEQ_KEY = "pont:manche_seq";
+// Partie de questions Vrai/Faux suivante (jamais remis à zéro)
+const VF_CURSOR_KEY = "pont:vf_cursor";
 const choixKey = (jour) => `pont:choix:${jour}`;
 const indicesKey = (jour) => `pont:indices:${jour}`;
 const rumeursKey = (jour) => `pont:rumeurs:${jour}`;
+const vfKey = (jour) => `pont:vf:${jour}`;
 
 export const PIERRE = "pierre";
 export const CORDES = "cordes";
@@ -93,6 +100,12 @@ export const REPU = "repu";
 export const FINALE = "finale";
 // Jour de vérité : toutes les rumeurs du jour sont vraies, mensonges compris
 export const JOUR_DE_VERITE = "verite";
+// Phases d'une journée (`state.phase`) : matin (Vrai/Faux), puis après-midi
+// (traversée, phase historique `jour`)
+export const MATIN = "matin";
+export const APRES_MIDI = "jour";
+// Pièce bonus du matin, en centièmes
+export const BONUS_MATIN = 100;
 
 // ── Config (statique) ─────────────────────────────────────────────
 
@@ -128,24 +141,55 @@ export async function writeState(state) {
   await getRedis().set(STATE_KEY, toJson(state));
 }
 
-// Garde-fou anti-double-avancée (cron en retard après une relance manuelle)
+// Garde-fou du passage annonce -> Jour 1 (lancement manuel suivi du cron)
 export const MIN_HOURS_BETWEEN_CLOSURES = 8;
 export function isTooSoonSinceLastClosure(publishedAt, now = Date.now()) {
   if (!publishedAt) return false;
   return (now - new Date(publishedAt).getTime()) / 3_600_000 < MIN_HOURS_BETWEEN_CLOSURES;
 }
 
-// Jour de jeu de 8h à 8h (heure de Paris) : après le décompte de 8h, plus
-// aucun clic pour le jour publié, même si le cron n'est pas encore passé.
+// Horaires des phases, en heure de Paris du jour de `now`. Les crons
+// tournent à heure UTC fixe (7h24 et 13h04 UTC) : matin à 8h et ponts à 14h
+// en hiver, 9h et 15h en été. Fin de la traversée à minuit dans les deux cas.
+// Indice : chiffres exacts les 3 premières heures des ponts, fourchette les
+// 3 suivantes, tendance ensuite. Pure.
+const HEURE_UTC_MATIN = 7;
+const HEURE_UTC_PONTS = 13;
+export function horaires(now = Date.now()) {
+  const d = new Date(now);
+  const heureParis = (hUtc) => parisParts(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hUtc)).h;
+  const ponts = heureParis(HEURE_UTC_PONTS);
+  return { matin: heureParis(HEURE_UTC_MATIN), ponts, indiceExact: ponts + 3, indiceFourchette: ponts + 6 };
+}
+
+// Le cron passe deux fois par jour (vers le matin et vers l'ouverture des
+// ponts) et fait la transition prête, s'il y en a une (garde-fou
+// anti-double-avancée) : annonce -> matin du Jour 1 (8 h après l'annonce au
+// moins) ; matin -> après-midi (à l'heure des ponts, ou le lendemain si ce
+// passage a manqué) ; après-midi -> résolution et matin suivant (nouveau
+// jour de jeu, après 8h). Pure.
+export function transitionPrete(state, now = Date.now()) {
+  if (!state?.publishedAt) return true;
+  const nouveauJour = jourDeJeu(state.publishedAt) !== jourDeJeu(now);
+  if (state.phase === "annonce") return !isTooSoonSinceLastClosure(state.publishedAt, now);
+  if (state.phase === MATIN) return nouveauJour || parisParts(now).h >= horaires(now).ponts;
+  return nouveauJour;
+}
+
+// Ponts ouverts jusqu'à minuit (heure de Paris) le jour de jeu de leur
+// publication : de minuit au décompte de 8h, plus aucun clic, même si le
+// cron n'est pas encore passé.
 export function jourOuvert(publishedAt, now = Date.now()) {
-  return Boolean(publishedAt) && jourDeJeu(publishedAt) === jourDeJeu(now);
+  return Boolean(publishedAt) && jourDeJeu(publishedAt) === jourDeJeu(now) && parisParts(now).h >= 8;
 }
 
 // ── Règles — fonctions pures (testées) ────────────────────────────
 
-// Résout un jour. `choix` : { discordId: { cote } } ; `cfg` : jourConfig().
-// Gains en centièmes de pièce (entiers, multiples de 10).
-export function resoudreJour(choix, cfg) {
+// Résout un jour. `choix` : { discordId: { cote } } ; `cfg` : jourConfig() ;
+// `bonus` : joueurs qui portent la pièce du matin. Gains en centièmes de
+// pièce (entiers, multiples de 100).
+export function resoudreJour(choix, cfg, bonus = []) {
+  const porteurs = new Set(bonus);
   const passants = { [PIERRE]: [], [CORDES]: [] };
   for (const [discordId, c] of Object.entries(choix)) {
     if (passants[c?.cote]) passants[c.cote].push(discordId);
@@ -161,11 +205,11 @@ export function resoudreJour(choix, cfg) {
   }
   const gagnant = attrape ? (attrape === PIERRE ? CORDES : PIERRE) : null;
 
-  // Butin : 1 pièce par attrapé, partagée entre les passants de l'autre
-  // pont, × son multiplicateur (× 2 à la Fête du village). Pont vide en face :
-  // aucun. Personne d'attrapé (égalité, ou Troll repu qui vise un pont
-  // vide) : tout le monde passe et gagne le multiplicateur de son pont
-  // (la formule du butin avec attrapés / passés = 1).
+  // Butin : 1 pièce par attrapé (2 s'il porte la pièce du matin), partagée
+  // entre les passants de l'autre pont, × son multiplicateur (× 2 à la Fête
+  // du village). Pont vide en face : aucun. Personne d'attrapé (égalité, ou
+  // Troll repu qui vise un pont vide) : tout le monde passe et gagne le
+  // multiplicateur de son pont (la formule du butin avec attrapés / passés = 1).
   // Pièces entières, arrondi à l'entier supérieur (calcul entier, sans
   // flottant) ; stockées en centièmes (multiples de 100).
   const finale = cfg.evenement === FINALE ? 2 : 1;
@@ -174,19 +218,24 @@ export function resoudreJour(choix, cfg) {
   const gainParCote = { [PIERRE]: 0, [CORDES]: 0 };
   if (personneAttrape) {
     for (const cote of COTES) gainParCote[cote] = entierSuperieur(cfg[cote] * finale, 1);
-  } else if (n[gagnant] > 0) {
-    gainParCote[gagnant] = entierSuperieur(cfg[gagnant] * finale * n[attrape], n[gagnant]);
+  }
+  const bonusPerdus = personneAttrape ? 0 : passants[attrape].filter((id) => porteurs.has(id)).length;
+  if (!personneAttrape && n[gagnant] > 0) {
+    gainParCote[gagnant] = entierSuperieur(cfg[gagnant] * finale * (n[attrape] + bonusPerdus), n[gagnant]);
   }
   const gainBase = gagnant ? gainParCote[gagnant] : 0;
 
+  // Pièce du matin : gardée (+1, sans multiplicateur) si son porteur passe
   const resultats = [];
   for (const cote of COTES) {
     for (const discordId of passants[cote]) {
       const passe = personneAttrape || cote === gagnant;
-      resultats.push({ discordId, cote, passe, gain: passe ? gainParCote[cote] : 0 });
+      const aBonus = porteurs.has(discordId);
+      const gain = passe ? gainParCote[cote] + (aBonus ? BONUS_MATIN : 0) : 0;
+      resultats.push({ discordId, cote, passe, bonus: aBonus, gain });
     }
   }
-  return { pierre: n[PIERRE], cordes: n[CORDES], attrape, gagnant, personneAttrape, gainBase, gainParCote, passants, resultats };
+  return { pierre: n[PIERRE], cordes: n[CORDES], attrape, gagnant, personneAttrape, gainBase, gainParCote, bonusPerdus, passants, resultats };
 }
 
 const ECART_SERRE = 2;
@@ -194,17 +243,19 @@ const LARGEUR_FOURCHETTE = 4;
 const NOM_COTE = { [PIERRE]: "la pierre", [CORDES]: "les cordes" };
 
 // Indice : répartition au moment du clic, de moins en moins précise au
-// fil de la journée (heure de Paris). 8h-12h : chiffres exacts ; 12h-18h :
-// fourchette de 5 valeurs contenant l'écart réel, placée au hasard ;
-// 18h-8h : tendance seule. Écart de 2 ou moins (hors 8h-12h) : coude à coude.
+// fil de l'après-midi (heure de Paris, voir horaires()). Jusqu'à 17h (18h en
+// été) : chiffres exacts ; puis 3 h de fourchette de 5 valeurs contenant
+// l'écart réel, placée au hasard ; puis tendance seule jusqu'à minuit.
+// Écart de 2 ou moins (hors chiffres exacts) : coude à coude.
 export function texteIndice({ pierre, cordes }, now = Date.now(), rng = Math.random) {
   if (pierre + cordes === 0) return "Personne n'a encore traversé.";
   const { h } = parisParts(now);
-  if (h >= 8 && h < 12) return `Pierre ${pierre}, Cordes ${cordes}.`;
+  const { indiceExact, indiceFourchette } = horaires(now);
+  if (h >= 8 && h < indiceExact) return `Pierre ${pierre}, Cordes ${cordes}.`;
   const ecart = Math.abs(pierre - cordes);
   if (ecart <= ECART_SERRE) return "Coude à coude entre les deux ponts.";
   const devant = pierre > cordes ? PIERRE : CORDES;
-  if (h >= 12 && h < 18) {
+  if (h >= indiceExact && h < indiceFourchette) {
     const decalage = Math.floor(rng() * (LARGEUR_FOURCHETTE + 1));
     const bas = Math.max(1, ecart - decalage);
     const haut = bas + LARGEUR_FOURCHETTE;
@@ -267,6 +318,15 @@ export async function jouerPnj(jour, { rumeurs = false } = {}, rng = Math.random
   }
 }
 
+// Les PNJ répondent aussi au Vrai/Faux du matin (bonne réponse 6 fois sur 10)
+export async function jouerPnjMatin(jour, question, rng = Math.random) {
+  if (!question) return;
+  for (const [i, nom] of PNJ.entries()) {
+    const juste = rng() < 0.6;
+    await repondreVraiFaux(jour, `pnj-${i + 1}`, juste ? question.reponse : !question.reponse, question, { username: nom });
+  }
+}
+
 export async function readChoix(jour, discordId) {
   return fromJson(await getRedis().hget(choixKey(jour), discordId));
 }
@@ -277,6 +337,54 @@ export async function listChoix(jour) {
 
 export async function compterPassants(jour) {
   return Number(await getRedis().hlen(choixKey(jour))) || 0;
+}
+
+// ── Vrai/Faux du matin (une réponse par jour, définitive) ─────────
+
+let vraiFauxCache = null;
+export async function loadVraiFaux() {
+  if (vraiFauxCache) return vraiFauxCache;
+  vraiFauxCache = JSON.parse(await fs.readFile(VRAIFAUX_JSON_PATH, "utf-8"));
+  return vraiFauxCache;
+}
+
+// Partie de questions d'une nouvelle partie : cycle dans l'ordre du fichier
+export async function choisirPartieVraiFaux() {
+  const { parties } = await loadVraiFaux();
+  const n = Number(await getRedis().incr(VF_CURSOR_KEY));
+  return (n - 1) % parties.length;
+}
+
+// Question du jour : { affirmation, reponse, explication }, null sans partie
+export function questionDuJour(vraiFaux, partieIndex, jour) {
+  return vraiFaux.parties[partieIndex ?? 0]?.[Number(jour) - 1] ?? null;
+}
+
+// Réponse définitive (HSETNX), corrigée tout de suite. `reponse` : booléen.
+// Renvoie { ok, reponse, correct } (réponse retenue).
+export async function repondreVraiFaux(jour, discordId, reponse, question, { username } = {}) {
+  const correct = reponse === question.reponse;
+  const ok = Boolean(await getRedis().hsetnx(vfKey(jour), discordId, toJson({ reponse, correct, at: new Date().toISOString() })));
+  if (!ok) {
+    const r = await readVraiFaux(jour, discordId);
+    return { ok: false, reponse: r?.reponse ?? null, correct: Boolean(r?.correct) };
+  }
+  if (username) await getRedis().hset(USERNAMES_KEY, { [discordId]: username });
+  return { ok: true, reponse, correct };
+}
+
+export async function readVraiFaux(jour, discordId) {
+  return fromJson(await getRedis().hget(vfKey(jour), discordId));
+}
+
+export async function compterReponsesVraiFaux(jour) {
+  return Number(await getRedis().hlen(vfKey(jour))) || 0;
+}
+
+// Porteurs de la pièce du matin : bonnes réponses du jour
+export async function porteursBonus(jour) {
+  const toutes = await hgetallJson(vfKey(jour));
+  return Object.keys(toutes).filter((id) => toutes[id]?.correct);
 }
 
 // ── Rumeurs (jours impairs, une par joueur et par jour) ───────────
@@ -400,6 +508,7 @@ export async function resetPartie() {
   await scanDelete("pont:choix:*");
   await scanDelete("pont:indices:*");
   await scanDelete("pont:rumeurs:*");
+  await scanDelete("pont:vf:*");
 }
 
 export async function resetPont({ clearManches = false } = {}) {

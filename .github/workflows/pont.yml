@@ -13,10 +13,15 @@ on:
   # publique sans prévenir pendant une session de test sur le salon de test
   # (l'état est partagé entre les deux, voir jeux/CONTRIBUTING.md).
   schedule:
-    # 8h24 à Paris en hiver (9h24 en été) : après le décompte de 8h du
-    # jour (jeux/services/pont.js, jourOuvert). Minute distincte des autres
-    # crons — voir jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) ».
+    # Deux passages par jour, le script fait la transition prête
+    # (jeux/services/pont.js, transitionPrete) :
+    # - 8h24 à Paris en hiver (9h24 en été) : résultat de la veille (ponts
+    #   fermés à minuit) et question Vrai/Faux du matin ;
+    # - 14h04 à Paris en hiver (15h04 en été) : ouverture des ponts.
+    # Minutes distinctes des autres crons — voir jeux/CONTRIBUTING.md,
+    # section « Crons GitHub Actions (jeux spéciaux) ».
     - cron: "24 7 * * *"
+    - cron: "4 13 * * *"
   workflow_dispatch: {}
 
 jobs:

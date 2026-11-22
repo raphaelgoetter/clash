@@ -124,6 +124,9 @@ import {
   compterPassants as compterPontPassants,
   readPoints as readPontPoints,
   formatPieces as formatPontPieces,
+  readVraiFaux as readPontVraiFaux,
+  compterReponsesVraiFaux as compterPontReponsesVraiFaux,
+  MATIN as PONT_MATIN,
 } from "../../services/pont.js";
 import { CRENEAUX, creneauJouable } from "../../services/creneaux.js";
 
@@ -504,12 +507,14 @@ const SPECIAL_GAMES = [
     async livePlayerIds() {
       return Object.keys(await readPontPoints());
     },
-    // ⚠️ Jamais le pont choisi (vote secret), seulement « a joué »
+    // ⚠️ Jamais le pont choisi (vote secret), seulement « a joué » : le
+    // matin, a répondu au Vrai/Faux ; l'après-midi, a traversé
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
-      const [choix, points] = await Promise.all([readPontChoix(state.jour, discordId), readPontPoints()]);
+      const lireJeu = state.phase === PONT_MATIN ? readPontVraiFaux : readPontChoix;
+      const [joue, points] = await Promise.all([lireJeu(state.jour, discordId), readPontPoints()]);
       return {
-        played: choix != null,
+        played: joue != null,
         scoreLabel: `Score de la partie : **${formatPontPieces(points[discordId] ?? 0)} pièces**`,
       };
     },
@@ -521,7 +526,9 @@ const SPECIAL_GAMES = [
       return {
         jour: state.jour,
         dureeJours: config.duree_jours,
-        participantsLabel: formatParticipantsToday(await compterPontPassants(state.jour)),
+        participantsLabel: formatParticipantsToday(
+          await (state.phase === PONT_MATIN ? compterPontReponsesVraiFaux : compterPontPassants)(state.jour),
+        ),
       };
     },
   },

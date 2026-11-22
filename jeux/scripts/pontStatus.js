@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // pontStatus.js
-// État courant du Pont du Troll sans Discord : jour, multiplicateurs,
-// événement, répartition SECRÈTE du jour, Rumeurs et Indices, projection du
+// État courant du Pont du Troll sans Discord : jour et phase, Vrai/Faux du
+// matin, multiplicateurs, événement, répartition SECRÈTE du jour, Rumeurs et Indices, projection du
 // résultat au décompte, classement projeté.
 //
 // Usage : node jeux/scripts/pontStatus.js
 
 import "../env.js";
 
-import { loadPontConfig, readState, readUsernames, compterIndices, formatPieces, jourOuvert, memeRang, estPnj } from "../services/pont.js";
+import { loadPontConfig, readState, readUsernames, compterIndices, formatPieces, jourOuvert, memeRang, estPnj, MATIN, porteursBonus, compterReponsesVraiFaux, horaires } from "../services/pont.js";
 import { projeterJour } from "../discord/handlers/pont.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
@@ -33,8 +33,15 @@ import { rangExAequo } from "@clash/commun/classement.js";
 
     const usernames = await readUsernames();
     const nom = (id) => (estPnj(id) ? `${usernames[id]} (PNJ)` : resolveDisplayName(id, usernames[id]));
+    const reponses = await compterReponsesVraiFaux(state.jour);
+    const porteurs = await porteursBonus(state.jour);
+    if (state.phase === MATIN) {
+      console.log(`\nJour ${state.jour}/${config.duree_jours}, matin : ${reponses} réponse(s) au Vrai/Faux, ${porteurs.length} bonne(s). Les ponts ouvrent au passage de ${horaires().ponts}h.`);
+      return;
+    }
     const { cfg, res, entry, ranking } = await projeterJour(state, config);
-    console.log(`\nJour ${state.jour}/${config.duree_jours} (${jourOuvert(state.publishedAt) ? "ouvert" : "décompte passé, en attente du cron"})`);
+    console.log(`\nJour ${state.jour}/${config.duree_jours}, après-midi (${jourOuvert(state.publishedAt) ? "ponts ouverts" : "ponts fermés, en attente du cron"})`);
+    console.log(`Vrai/Faux du matin : ${reponses} réponse(s), ${porteurs.length} pièce(s) bonus`);
     console.log(`Pierre ×${cfg.pierre} · Cordes ×${cfg.cordes}${cfg.evenement ? ` · événement : ${cfg.evenement}` : ""}`);
     console.log(`\nRépartition (secrète) : Pierre ${res.pierre} · Cordes ${res.cordes}`);
     for (const cote of ["pierre", "cordes"]) {
@@ -50,7 +57,7 @@ import { rangExAequo } from "@clash/commun/classement.js";
 
     console.log("\nProjection au décompte :");
     if (res.personneAttrape) console.log(`  Personne n'est attrapé : pierre +${formatPieces(res.gainParCote.pierre)}, cordes +${formatPieces(res.gainParCote.cordes)} par passant.`);
-    else console.log(`  Le troll attrape ${res.attrape} (${res[res.attrape]}), ${res.gagnant} gagne +${formatPieces(res.gainBase)} par passant.`);
+    else console.log(`  Le troll attrape ${res.attrape} (${res[res.attrape]}, ${res.bonusPerdus} pièce(s) bonus), ${res.gagnant} gagne +${formatPieces(res.gainBase)} par passant.`);
 
     console.log("\nClassement projeté :");
     if (!ranking.length) console.log("  (vide)");

@@ -1,8 +1,9 @@
 // ============================================================
 // pont.js — Handlers Discord du Pont du Troll (jeu spécial de 7 jours).
-// Publication quotidienne (postPont, appelée uniquement par
-// jeux/scripts/postPont.js), boutons du message public (Pont de pierre,
-// Pont de cordes, Rumeurs ou Indice, Règles) et menu des rumeurs.
+// Publication deux fois par jour (postPont, appelée uniquement par
+// jeux/scripts/postPont.js) : le matin, la question Vrai/Faux (pièce bonus) ;
+// l'après-midi, les boutons du message public (Pont de pierre, Pont de
+// cordes, Rumeurs ou Indice, Règles) et le menu des rumeurs.
 // Règles : jeux/CONTRIBUTING.md, section « Pont du Troll ».
 // ============================================================
 
@@ -12,6 +13,9 @@ import {
   REPU,
   FINALE,
   JOUR_DE_VERITE,
+  MATIN,
+  APRES_MIDI,
+  horaires,
   loadPontConfig,
   jourConfig,
   indiceDisponible,
@@ -19,7 +23,7 @@ import {
   rumeursPrecedentes,
   readState,
   writeState,
-  isTooSoonSinceLastClosure,
+  transitionPrete,
   jourOuvert,
   resoudreJour,
   buildRanking,
@@ -45,11 +49,19 @@ import {
   readPasses,
   readUsernames,
   writeHistoriqueEntry,
+  getHistoriqueEntry,
   archiveManche,
   listManches,
   resetPartie,
   jouerPnj,
+  jouerPnjMatin,
   estPnj,
+  loadVraiFaux,
+  choisirPartieVraiFaux,
+  questionDuJour,
+  repondreVraiFaux,
+  readVraiFaux,
+  porteursBonus,
 } from "../../services/pont.js";
 import {
   getRoleIdByName,
@@ -100,6 +112,8 @@ function buildAnnonceEmbed(config) {
       "",
       "Mais un troll vit sous les ponts. Il attrape le plus chargé : chaque joueur attrapé lâche une pièce, que ceux de l'autre pont ramassent… multipliée par la prime du village affichée à l'entrée de leur pont.",
       "",
+      "Chaque matin, une question Vrai ou Faux : bonne réponse = 🪙 1 pièce à emporter au marché.",
+      "",
       "Plus d'infos ? Clique sur *Règles* ci-dessous.",
     ].join("\n"),
     color: PONT_COLOR,
@@ -109,14 +123,53 @@ function buildAnnonceEmbed(config) {
 }
 
 const footerJour = (n) => ({
-  text: `🚶 ${pluriel(n, "joueur")} aujourd'hui · Choix secret et définitif, décompte à 8h`,
+  text: `🚶 ${pluriel(n, "joueur")} aujourd'hui · Choix secret et définitif, décompte à minuit`,
 });
+
+function ligneEvenement(cfg) {
+  if (cfg.evenement === REPU) return "🍖 **Troll repu** : aujourd'hui, il attrape le pont **le moins** chargé !";
+  if (cfg.evenement === FINALE) return "🎉 **Fête du village** : le village double ses primes !";
+  if (cfg.evenement === JOUR_DE_VERITE) return "📢 **Jour de vérité** : toutes les rumeurs du jour sont vraies !";
+  return null;
+}
+
+const INTITULE_MATIN = "☀️ Ce matin : vrai ou faux ?";
+// Textes horaires calculés à la publication ou au clic (hiver / été)
+const footerMatin = () => ({ text: `Une seule réponse, corrigée tout de suite · Ponts ouverts de ${horaires().ponts}h à minuit` });
+
+// Question du matin et ponts de l'après-midi (multiplicateurs, événement)
+function lignesMatin(cfg, question) {
+  const evenement = ligneEvenement(cfg);
+  return [
+    `> ${question.affirmation}`,
+    "Bonne réponse = 🪙 1 pièce à emporter au marché.",
+    "",
+    `🌉 Cet après-midi : ${EMOJI[PIERRE]} Pierre ×${cfg.pierre} · ${EMOJI[CORDES]} Cordes ×${cfg.cordes}`,
+    ...(evenement ? [evenement] : []),
+  ];
+}
+
+// Matin du Jour 1 (aucun résultat à montrer)
+function buildPremierMatinEmbed(config, cfg, question, { v }) {
+  return {
+    title: `🧌 Pont du Troll (Jour 1/${config.duree_jours})`,
+    description: [
+      `**Le troll s'est installé sous les ponts !** Les ponts ouvrent à ${horaires().ponts}h.`,
+      "",
+      `### ${INTITULE_MATIN}`,
+      ...lignesMatin(cfg, question),
+    ].join("\n"),
+    color: PONT_COLOR,
+    image: { url: urlMatin(cfg.jour, v) },
+    footer: footerMatin(),
+  };
+}
 
 function buildJourEmbed(config, cfg, { estPremierJour, v }) {
   const lines = [];
   if (estPremierJour)
     lines.push(
-      "**Le troll s'est installé sous les ponts !** Choisis ton pont, en secret. Résultat demain matin.",
+      "**Le troll s'est installé sous les ponts !** Choisis ton pont, en secret, avant minuit. Résultat demain matin.",
       "",
     );
   lines.push(
@@ -124,12 +177,8 @@ function buildJourEmbed(config, cfg, { estPremierJour, v }) {
     `### ${EMOJI[PIERRE]} Pont de pierre : ×${cfg.pierre} · ${EMOJI[CORDES]} Pont de cordes : ×${cfg.cordes}`,
   );
   // La règle elle-même est dans les Règles : seul l'événement est rappelé
-  if (cfg.evenement === REPU)
-    lines.push("", "🍖 **Troll repu** : aujourd'hui, il attrape le pont **le moins** chargé !");
-  if (cfg.evenement === FINALE)
-    lines.push("", "🎉 **Fête du village** : le village double ses primes !");
-  if (cfg.evenement === JOUR_DE_VERITE)
-    lines.push("", "📢 **Jour de vérité** : toutes les rumeurs du jour sont vraies !");
+  const evenement = ligneEvenement(cfg);
+  if (evenement) lines.push("", evenement);
   // Indice et Rumeurs : pas de mention, leur bouton suffit
   return {
     title: `🧌 Pont du Troll (Jour ${cfg.jour}/${config.duree_jours})`,
@@ -186,7 +235,7 @@ async function buildResultatEmbed(entry, ranking, { partieId, v }) {
       );
     } else {
       lines.push(
-        `🧌 Le troll attrape **${pluriel(nA, "joueur")}** ${SUR[entry.attrape]}.`,
+        `🧌 Le troll attrape **${pluriel(nA, "joueur")}** ${SUR[entry.attrape]}${entry.bonusPerdus ? ` (et ${entry.bonusPerdus} pièce${entry.bonusPerdus > 1 ? "s" : ""} bonus)` : ""}.`,
       );
       lines.push(
         nG
@@ -260,6 +309,9 @@ function unSeulBloc(title, resultat, suite, { intituleSuite = null } = {}) {
 const blocJour = (config, jour, resultat, jourEmbed) =>
   unSeulBloc(`🧌 Pont du Troll (Jour ${jour}/${config.duree_jours})`, resultat, jourEmbed, { intituleSuite: `🌉 Aujourd'hui · Jour ${jour}/${config.duree_jours}` });
 
+const blocMatin = (config, jour, resultat, cfg, question) =>
+  unSeulBloc(`🧌 Pont du Troll (Jour ${jour}/${config.duree_jours})`, resultat, { description: lignesMatin(cfg, question).join("\n"), footer: footerMatin() }, { intituleSuite: INTITULE_MATIN });
+
 const blocFin = (resultat, finalEmbed) => unSeulBloc("🏁 Pont du Troll : fin de partie", resultat, finalEmbed);
 
 // ── Boutons ───────────────────────────────────────────────────────
@@ -271,6 +323,19 @@ const boutonRegles = {
   emoji: { name: "📖" },
   custom_id: "pont_regles",
 };
+
+function buildMatinComponents(jour) {
+  return [
+    {
+      type: 1,
+      components: [
+        { type: 2, style: 3, label: "Vrai", emoji: { name: "✅" }, custom_id: `pont_vf:${jour}:vrai` },
+        { type: 2, style: 4, label: "Faux", emoji: { name: "❌" }, custom_id: `pont_vf:${jour}:faux` },
+        boutonRegles,
+      ],
+    },
+  ];
+}
 
 function buildJourComponents(config, jour) {
   return [
@@ -343,7 +408,7 @@ export const versV2 = (embeds, components = [], roleId = null) =>
 async function publishAndWriteState(
   channelId,
   previousState,
-  { phase = "jour", jour, partieId, embeds, components, ping, termine = false },
+  { phase = APRES_MIDI, jour, partieId, vfPartie = null, embeds, components, ping, termine = false },
 ) {
   if (previousState?.messageId && previousState?.channelId) {
     try {
@@ -376,6 +441,7 @@ async function publishAndWriteState(
     phase,
     jour,
     partieId,
+    vfPartie,
     channelId,
     messageId: message.id,
     publishedAt: new Date().toISOString(),
@@ -399,6 +465,9 @@ function entreeHistorique(jour, cfg, res, rumeurs = {}) {
     gagnant: res.gagnant,
     gainBase: res.gainBase,
     gainParCote: res.gainParCote,
+    // Pièces du matin tombées dans le butin, porteurs qui ont traversé
+    bonusPerdus: res.bonusPerdus,
+    bonus: res.resultats.filter((r) => r.bonus).map((r) => r.discordId),
     passants: res.passants,
     // Rumeurs lancées ce jour-là (compte-rendu)
     rumeurs: {
@@ -423,7 +492,7 @@ function classementProjete(points, passes, resultats) {
 // Résout le jour actif sans rien écrire (cron, dry-run, pont:status)
 export async function projeterJour(state, config) {
   const cfg = jourConfig(config, state.jour);
-  const res = resoudreJour(await listChoix(state.jour), cfg);
+  const res = resoudreJour(await listChoix(state.jour), cfg, await porteursBonus(state.jour));
   const entry = entreeHistorique(state.jour, cfg, res, await listRumeurs(state.jour));
   const ranking = classementProjete(
     await readPoints(),
@@ -433,9 +502,14 @@ export async function projeterJour(state, config) {
   return { cfg, res, entry, ranking };
 }
 
-// `pnj` : 5 joueurs fictifs traversent chaque jour (jamais sur le salon
-// public). ⚠️ Ping seulement si `isPublic` et sans `noPing` : jamais de
-// ping sur le salon de test, quel que soit l'appelant.
+// Jour de jeu en deux phases, un message chacune : le matin (vers 8h), le
+// résultat de la veille et la question Vrai/Faux ; l'après-midi (vers 14h,
+// 15h en été),
+// le même résultat et les ponts. Chaque passage du cron fait la transition
+// prête (transitionPrete()), sinon rien.
+// `pnj` : 5 joueurs fictifs répondent et traversent chaque jour (jamais sur
+// le salon public). ⚠️ Ping seulement si `isPublic` et sans `noPing` :
+// jamais de ping sur le salon de test, quel que soit l'appelant.
 export async function postPont(
   channelId,
   {
@@ -448,20 +522,17 @@ export async function postPont(
   } = {},
 ) {
   const config = await loadPontConfig();
+  const vraiFaux = await loadVraiFaux();
   const ping = isPublic && !noPing;
   const avecPnj = pnj && !isPublic;
   const state = await readState();
 
   if (state?.termine) return { termine: true };
-  if (
-    state &&
-    !dryRun &&
-    !force &&
-    isTooSoonSinceLastClosure(state.publishedAt)
-  ) {
+  if (state && !dryRun && !force && !transitionPrete(state)) {
     return {
       skipped: true,
-      reason: "tooSoonSinceLastClosure",
+      reason: "pasEncore",
+      phase: state.phase,
       publishedAt: state.publishedAt,
     };
   }
@@ -487,26 +558,60 @@ export async function postPont(
     });
   }
 
-  // 2) Annonce -> Jour 1 : remise à zéro de la partie, avec ping
+  // 2) Annonce -> matin du Jour 1 : remise à zéro de la partie, partie de
+  // questions suivante, avec ping
   if (state.phase === "annonce") {
     const cfg = jourConfig(config, 1);
-    const embeds = [buildJourEmbed(config, cfg, { estPremierJour: true, v })];
-    const components = buildJourComponents(config, 1);
+    const vfPartie = dryRun ? 0 : await choisirPartieVraiFaux();
+    const question = questionDuJour(vraiFaux, vfPartie, 1);
+    const embeds = [buildPremierMatinEmbed(config, cfg, question, { v })];
+    const components = buildMatinComponents(1);
     if (dryRun)
-      return { dryRun: true, phase: "jour", jour: 1, embeds, components };
+      return { dryRun: true, phase: MATIN, jour: 1, embeds, components };
     await resetPartie();
     const out = await publishAndWriteState(channelId, state, {
+      phase: MATIN,
       jour: 1,
       partieId: state.partieId,
+      vfPartie,
       embeds,
       components,
       ping,
     });
-    if (avecPnj) await faireJouerPnj(config, 1);
+    if (avecPnj) await jouerPnjMatin(1, question);
     return out;
   }
 
-  // 3) Résolution du jour actif, puis jour suivant ou classement final
+  // 3) Matin -> après-midi : les ponts ouvrent (résultat de la veille repris)
+  if (state.phase === MATIN) {
+    const cfg = jourConfig(config, state.jour);
+    const jourEmbed = buildJourEmbed(config, cfg, { estPremierJour: state.jour === 1, v });
+    let embeds = [jourEmbed];
+    if (state.jour > 1) {
+      const entry = await getHistoriqueEntry(state.jour - 1);
+      if (entry?.partieId === state.partieId) {
+        const ranking = buildRanking(await readPoints(), await readPasses());
+        const resultat = await buildResultatEmbed(entry, ranking, { partieId: state.partieId, v });
+        embeds = [blocJour(config, state.jour, resultat, jourEmbed)];
+      }
+    }
+    const components = buildJourComponents(config, state.jour);
+    if (dryRun)
+      return { dryRun: true, phase: APRES_MIDI, jour: state.jour, embeds, components };
+    const out = await publishAndWriteState(channelId, state, {
+      phase: APRES_MIDI,
+      jour: state.jour,
+      partieId: state.partieId,
+      vfPartie: state.vfPartie ?? null,
+      embeds,
+      components,
+      ping: false,
+    });
+    if (avecPnj) await faireJouerPnj(config, state.jour);
+    return out;
+  }
+
+  // 4) Après-midi : résolution du jour, puis matin suivant ou classement final
   const { res, entry, ranking } = await projeterJour(state, config);
   const jourSuivant = state.jour + 1;
   const estFin = jourSuivant > config.duree_jours;
@@ -516,23 +621,19 @@ export async function postPont(
     estFin ? null : ranking,
     { partieId: state.partieId, v },
   );
+  const question = estFin ? null : questionDuJour(vraiFaux, state.vfPartie, jourSuivant);
+  const embedsSuite = async (finalRanking) =>
+    estFin
+      ? [blocFin(resultatEmbed, await buildFinalEmbed(finalRanking, manches))]
+      : [blocMatin(config, jourSuivant, resultatEmbed, jourConfig(config, jourSuivant), question)];
 
   if (dryRun) {
-    const embeds = estFin
-      ? [blocFin(resultatEmbed, await buildFinalEmbed(ranking, manches))]
-      : [
-          blocJour(
-            config,
-            jourSuivant,
-            resultatEmbed,
-            buildJourEmbed(config, jourConfig(config, jourSuivant), { estPremierJour: false, v }),
-          ),
-        ];
     return {
       dryRun: true,
       final: estFin,
+      phase: estFin ? null : MATIN,
       jour: estFin ? state.jour : jourSuivant,
-      embeds,
+      embeds: await embedsSuite(ranking),
       entry,
     };
   }
@@ -580,11 +681,11 @@ export async function postPont(
         maxPoints: formatPieces(max),
       });
     }
-    const embeds = [blocFin(resultatEmbed, await buildFinalEmbed(finalRanking, manches))];
     const out = await publishAndWriteState(channelId, state, {
       jour: state.jour,
       partieId: state.partieId,
-      embeds,
+      vfPartie: state.vfPartie ?? null,
+      embeds: await embedsSuite(finalRanking),
       components: [],
       ping,
       termine: true,
@@ -592,22 +693,16 @@ export async function postPont(
     return { ...out, final: true };
   }
 
-  const embeds = [
-    blocJour(
-      config,
-      jourSuivant,
-      resultatEmbed,
-      buildJourEmbed(config, jourConfig(config, jourSuivant), { estPremierJour: false, v }),
-    ),
-  ];
   const out = await publishAndWriteState(channelId, state, {
+    phase: MATIN,
     jour: jourSuivant,
     partieId: state.partieId,
-    embeds,
-    components: buildJourComponents(config, jourSuivant),
+    vfPartie: state.vfPartie ?? null,
+    embeds: await embedsSuite(ranking),
+    components: buildMatinComponents(jourSuivant),
     ping: false,
   });
-  if (avecPnj) await faireJouerPnj(config, jourSuivant);
+  if (avecPnj) await jouerPnjMatin(jourSuivant, question);
   return out;
 }
 
@@ -634,26 +729,31 @@ async function patchOriginal(webhookUrl, payload) {
 
 const messageSeul = (content) => ({ content, embeds: [], components: [] });
 
-// Jour cliquable : renvoie l'état, ou null après avoir répondu au joueur
-async function etatJouable(webhookUrl, jour) {
+// Phase cliquable (`MATIN` : Vrai/Faux, `APRES_MIDI` : ponts) : renvoie
+// l'état, ou null après avoir répondu au joueur
+async function etatJouable(webhookUrl, jour, phase = APRES_MIDI) {
   const state = await readState();
   if (
     !state ||
     state.termine ||
-    state.phase === "annonce" ||
+    state.phase !== phase ||
     String(state.jour) !== String(jour)
   ) {
     await patchOriginal(
       webhookUrl,
-      messageSeul("La journée a changé, regarde le nouveau message !"),
+      messageSeul(
+        phase === MATIN && state?.phase === APRES_MIDI && String(state.jour) === String(jour)
+          ? "Le Vrai/Faux du matin est terminé : les ponts sont ouverts, regarde le nouveau message !"
+          : "La journée a changé, regarde le nouveau message !",
+      ),
     );
     return null;
   }
-  if (!jourOuvert(state.publishedAt)) {
+  if (phase === APRES_MIDI && !jourOuvert(state.publishedAt)) {
     await patchOriginal(
       webhookUrl,
       messageSeul(
-        "Le troll compte les joueurs (décompte à 8h), le jour suivant arrive vers 8h30.",
+        `Les ponts sont fermés depuis minuit : le troll compte les joueurs, résultat vers ${horaires().matin}h30.`,
       ),
     );
     return null;
@@ -725,10 +825,13 @@ export async function handleTraverser(
       );
       return;
     }
+    const avecPiece = (await readVraiFaux(jour, discordId))?.correct
+      ? " avec ta pièce du matin 🪙"
+      : "";
     await patchOriginal(
       webhookUrl,
       messageSeul(
-        [`${EMOJI[cote]} Tu traverses ${PAR[cote]}. Résultat demain matin !`, await maPosition(discordId)]
+        [`${EMOJI[cote]} Tu traverses ${PAR[cote]}${avecPiece}. Résultat demain matin !`, await maPosition(discordId)]
           .filter(Boolean)
           .join("\n"),
       ),
@@ -736,6 +839,27 @@ export async function handleTraverser(
     await majCompteur(state);
   } catch (err) {
     console.error("[Pont] Échec Traverser:", err.message);
+  }
+}
+
+// ── Vrai/Faux du matin ────────────────────────────────────────────
+
+// Réponse définitive, corrigée tout de suite (`reponse` : booléen)
+export async function handleVraiFaux(webhookUrl, jour, reponse, discordId, username) {
+  try {
+    const state = await etatJouable(webhookUrl, jour, MATIN);
+    if (!state) return;
+    const question = questionDuJour(await loadVraiFaux(), state.vfPartie, jour);
+    if (!question) return;
+    const r = await repondreVraiFaux(jour, discordId, reponse, question, { username });
+    const verdict = r.correct
+      ? "✅ Bonne réponse ! Tu gagnes 🪙 1 pièce à emporter au marché."
+      : `❌ Raté, c'était ${question.reponse ? "vrai" : "faux"}.`;
+    const lignes = [r.ok ? verdict : `Tu as déjà répondu ce matin. ${verdict}`];
+    if (question.explication) lignes.push(question.explication);
+    await patchOriginal(webhookUrl, messageSeul(lignes.join("\n")));
+  } catch (err) {
+    console.error("[Pont] Échec Vrai/Faux:", err.message);
   }
 }
 
@@ -882,17 +1006,20 @@ export async function handleIndice(webhookUrl, jour, discordId) {
 }
 
 function buildReglesEmbed(config) {
+  const h = horaires();
   return {
     title: "📖 Règles du Pont du Troll",
     description: [
-      `De l'autre côté du ravin, le village tient son grand marché. Chaque jour pendant ${config.duree_jours} jours, traverse par l'un des deux ponts pour aller y faire fortune. Un seul clic par jour, secret et définitif (jour de jeu de 8h à 8h).`,
+      `De l'autre côté du ravin, le village tient son grand marché pendant ${config.duree_jours} jours. Chaque jour :`,
+      `☀️ **Le matin (${h.matin}h-${h.ponts}h)** : réponds à la question Vrai ou Faux. Bonne réponse = 🪙 1 pièce à emporter au marché.`,
+      `🌉 **L'après-midi (${h.ponts}h-minuit)** : traverse par l'un des deux ponts. Un seul clic, secret et définitif.`,
       "",
-      "🧌 **Le troll** attrape le pont qui compte le plus de joueurs : chacun lâche 1 pièce. Les joueurs de l'autre pont ramassent ce butin et se le partagent, multiplié par la prime du village (le multiplicateur de leur pont, affiché chaque matin).",
+      "🧌 **Le troll** attrape le pont qui compte le plus de joueurs : chacun lâche 1 pièce, et sa pièce du matin s'il l'a. Les joueurs de l'autre pont ramassent ce butin et se le partagent, multiplié par la prime du village (le multiplicateur de leur pont).",
       "Égalité : le troll se rendort, personne n'est attrapé, et chacun touche la prime de son pont.",
       "",
       "🗣️ **Rumeurs** (jours impairs) : vois quel pont chacun annonce, et lance ta propre rumeur une fois par jour (vérité, mensonge ou rien), avant ou après avoir choisi ton pont. Le détecteur de fake-news dévoile les menteurs des rumeurs précédentes.",
       "",
-      "🔎 **Indice** (jours pairs, une fois par jour) : la répartition du moment, exacte le matin, de plus en plus floue au fil de la journée. Une fois ton pont choisi, il ne te sert plus à rien !",
+      `🔎 **Indice** (jours pairs, une fois par jour) : la répartition du moment, exacte jusqu'à ${h.indiceExact}h, de plus en plus floue ensuite. Une fois ton pont choisi, il ne te sert plus à rien !`,
       "",
       "**Trois jours spéciaux** : 🍖 Troll repu au Jour 3 (il attrape le pont le moins chargé), 📢 Jour de vérité au Jour 5 (toutes les rumeurs sont vraies, mensonges compris) et 🎉 Fête du village au Jour 7 (primes doublées).",
       "",

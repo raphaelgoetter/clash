@@ -31,6 +31,17 @@ import {
   listChoix,
   readUsernames,
   readAvatars,
+  MATIN,
+  APRES_MIDI,
+  transitionPrete,
+  loadVraiFaux,
+  questionDuJour,
+  repondreVraiFaux,
+  porteursBonus,
+  compterReponsesVraiFaux,
+  readPoints,
+  readState,
+  horaires,
 } from "./pont.js";
 import { postPont, versV2, lignesClassement, maPosition } from "../discord/handlers/pont.js";
 import { lignesMatin, lignesResultat, positionsPassants } from "./pontImage.js";
@@ -43,8 +54,9 @@ const choix = (pierre, cordes) => {
 };
 const cfg = (pierre, cordes, evenement = null) => ({ jour: 1, pierre, cordes, evenement });
 
-// Instants fixes (heure de Paris en hiver = UTC+1)
+// Instants fixes (heure de Paris en hiver = UTC+1, en été = UTC+2)
 const A = (heureParis) => Date.UTC(2026, 10, 20, heureParis - 1, 30);
+const E = (heureParis) => Date.UTC(2026, 6, 20, heureParis - 2, 30);
 
 test("calendrier : Troll repu au Jour 3, Fête du village au Jour 7, cordes ≥ pierre", async () => {
   const config = await loadPontConfig();
@@ -105,6 +117,66 @@ test("Fête du village : gains doublés", () => {
   assert.ok(r.resultats.filter((x) => x.cote === CORDES).every((x) => x.gain === 1200));
 });
 
+test("pièce du matin : gardée (+1) si son porteur passe, versée au butin s'il est attrapé", () => {
+  // 9 sur la pierre (attrapés, dont 2 porteurs), 4 sur les cordes (dont 1 porteur)
+  const r = resoudreJour(choix(9, 4), cfg(1, 3), ["p0", "p1", "c0", "absent"]);
+  assert.equal(r.attrape, PIERRE);
+  assert.equal(r.bonusPerdus, 2);
+  assert.equal(r.gainBase, 900); // 3 × (9 + 2) ÷ 4 = 8,25, arrondi à 9
+  const gain = (id) => r.resultats.find((x) => x.discordId === id).gain;
+  assert.equal(gain("c0"), 1000, "butin + sa pièce du matin");
+  assert.equal(gain("c1"), 900);
+  assert.equal(gain("p0"), 0, "attrapé : pièce perdue");
+  assert.ok(!r.resultats.some((x) => x.discordId === "absent"), "sans traversée, pas de pièce");
+  // Égalité : tout le monde passe, les porteurs gardent leur pièce
+  const e = resoudreJour(choix(3, 3), cfg(1, 2), ["p0"]);
+  assert.equal(e.bonusPerdus, 0);
+  assert.equal(e.resultats.find((x) => x.discordId === "p0").gain, 200);
+  // Sans porteur : règle inchangée
+  assert.equal(resoudreJour(choix(17, 11), cfg(1, 3)).gainBase, 500);
+});
+
+test("questions Vrai/Faux : parties de 7, réponses équilibrées", async () => {
+  const config = await loadPontConfig();
+  const vf = await loadVraiFaux();
+  assert.ok(vf.parties.length >= 1);
+  for (const partie of vf.parties) {
+    assert.equal(partie.length, config.duree_jours);
+    assert.ok(partie.every((q) => q.affirmation && typeof q.reponse === "boolean"));
+    const vrais = partie.filter((q) => q.reponse).length;
+    assert.ok(vrais >= 3 && vrais <= 4, "3 ou 4 VRAI par partie");
+  }
+  assert.equal(questionDuJour(vf, 1, 1), vf.parties[1][0]);
+});
+
+test("transitions : annonce 8 h au moins, ponts à 14h, résolution au jour de jeu suivant", () => {
+  const iso = (ms) => new Date(ms).toISOString();
+  const lendemain = (hParis) => A(hParis) + 24 * 3_600_000;
+  const annonce = { phase: "annonce", publishedAt: iso(A(10)) };
+  assert.equal(transitionPrete(annonce, A(14)), false);
+  assert.equal(transitionPrete(annonce, lendemain(8)), true);
+  const matin = { phase: MATIN, publishedAt: iso(A(8)) };
+  assert.equal(transitionPrete(matin, A(13)), false);
+  assert.equal(transitionPrete(matin, A(14)), true); // 14h30
+  assert.equal(transitionPrete(matin, lendemain(8)), true, "passage de 14h manqué : rattrapé");
+  const apresMidi = { phase: APRES_MIDI, publishedAt: iso(A(14)) };
+  assert.equal(transitionPrete(apresMidi, A(23)), false);
+  assert.equal(transitionPrete(apresMidi, lendemain(7)), false); // 7h30
+  assert.equal(transitionPrete(apresMidi, lendemain(8)), true); // 8h30
+  assert.equal(transitionPrete(null, A(10)), true);
+});
+
+test("horaires : matin et ponts suivent les crons UTC (8h/14h en hiver, 9h/15h en été)", () => {
+  assert.deepEqual(horaires(A(10)), { matin: 8, ponts: 14, indiceExact: 17, indiceFourchette: 20 });
+  assert.deepEqual(horaires(E(10)), { matin: 9, ponts: 15, indiceExact: 18, indiceFourchette: 21 });
+  const matinEte = { phase: MATIN, publishedAt: new Date(E(9)).toISOString() };
+  assert.equal(transitionPrete(matinEte, E(14)), false, "14h30 en été : pas encore");
+  assert.equal(transitionPrete(matinEte, E(15)), true);
+  assert.equal(texteIndice({ pierre: 12, cordes: 5 }, E(17)), "Pierre 12, Cordes 5.");
+  assert.match(texteIndice({ pierre: 12, cordes: 5 }, E(20)), /mène de/);
+  assert.equal(texteIndice({ pierre: 12, cordes: 5 }, E(21)), "La pierre semble plus chargée.");
+});
+
 test("rumeurs : pont annoncé d'après le pont choisi, menteurs, sans pont = absent", () => {
   const choixDuJour = { a: { cote: PIERRE }, b: { cote: CORDES }, c: { cote: PIERRE }, d: { cote: CORDES } };
   const rumeurs = { a: { mode: VERITE }, b: { mode: MENSONGE }, c: { mode: RIEN }, d: { mode: VERITE }, e: { mode: VERITE } };
@@ -133,25 +205,25 @@ test("rumeurs les jours impairs, détecteur sur le jour de rumeurs précédent",
   assert.equal(rumeursPrecedentes(config, 7), 5);
 });
 
-test("indice : exact le matin, fourchette l'après-midi, tendance le soir", () => {
+test("indice : exact jusqu'à 17h, fourchette jusqu'à 20h, tendance ensuite", () => {
   const rep = { pierre: 12, cordes: 5 };
-  assert.equal(texteIndice(rep, A(9)), "Pierre 12, Cordes 5.");
+  assert.equal(texteIndice(rep, A(15)), "Pierre 12, Cordes 5.");
   for (const u of [0, 0.3, 0.6, 0.99]) {
-    const m = /La pierre mène de (\d+) à (\d+) joueurs\./.exec(texteIndice(rep, A(14), () => u));
+    const m = /La pierre mène de (\d+) à (\d+) joueurs\./.exec(texteIndice(rep, A(18), () => u));
     assert.ok(m);
     const [bas, haut] = [Number(m[1]), Number(m[2])];
     assert.equal(haut - bas, 4);
     assert.ok(bas >= 1 && bas <= 7 && haut >= 7, "l'écart réel (7) est dans la fourchette");
   }
-  assert.equal(texteIndice(rep, A(20)), "La pierre semble plus chargée.");
+  assert.equal(texteIndice(rep, A(21)), "La pierre semble plus chargée.");
   assert.equal(texteIndice({ pierre: 3, cordes: 9 }, A(23)), "Les cordes semblent plus chargées.");
   assert.equal(texteIndice({ pierre: 3, cordes: 9 }, A(7)), "Les cordes semblent plus chargées.");
 });
 
-test("indice : coude à coude (hors matin) et personne", () => {
-  assert.equal(texteIndice({ pierre: 6, cordes: 4 }, A(14)), "Coude à coude entre les deux ponts.");
-  assert.equal(texteIndice({ pierre: 6, cordes: 4 }, A(10)), "Pierre 6, Cordes 4.");
-  assert.equal(texteIndice({ pierre: 0, cordes: 0 }, A(10)), "Personne n'a encore traversé.");
+test("indice : coude à coude (hors chiffres exacts) et personne", () => {
+  assert.equal(texteIndice({ pierre: 6, cordes: 4 }, A(18)), "Coude à coude entre les deux ponts.");
+  assert.equal(texteIndice({ pierre: 6, cordes: 4 }, A(15)), "Pierre 6, Cordes 4.");
+  assert.equal(texteIndice({ pierre: 0, cordes: 0 }, A(15)), "Personne n'a encore traversé.");
 });
 
 test("classement : pièces puis jours passés", () => {
@@ -165,10 +237,11 @@ test("formatPieces : une décimale, virgule", () => {
   assert.equal(formatPieces(0), "0");
 });
 
-test("jour ouvert de 8h à 8h (heure de Paris)", () => {
-  const publie = A(9);
+test("ponts ouverts jusqu'à minuit (heure de Paris)", () => {
+  const publie = A(14);
   assert.equal(jourOuvert(new Date(publie).toISOString(), A(23)), true);
-  assert.equal(jourOuvert(new Date(publie).toISOString(), Date.UTC(2026, 10, 21, 6, 30)), true); // 7h30 le lendemain
+  assert.equal(jourOuvert(new Date(publie).toISOString(), Date.UTC(2026, 10, 20, 23, 30)), false); // 0h30
+  assert.equal(jourOuvert(new Date(publie).toISOString(), Date.UTC(2026, 10, 21, 6, 30)), false); // 7h30 le lendemain
   assert.equal(jourOuvert(new Date(publie).toISOString(), Date.UTC(2026, 10, 21, 7, 30)), false); // 8h30
 });
 
@@ -244,9 +317,10 @@ if (Redis.isFake) {
     };
     try {
       // noPing: false volontaire : le verrou interne doit suffire hors public
-      for (let i = 0; i < 3; i++) await postPont("salon-test", { force: true, noPing: false, isPublic: false, pnj: true });
+      // Annonce, matin J1, après-midi J1, matin J2
+      for (let i = 0; i < 4; i++) await postPont("salon-test", { force: true, noPing: false, isPublic: false, pnj: true });
       const posts = appels.filter((a) => a.method === "POST");
-      assert.equal(posts.length, 3);
+      assert.equal(posts.length, 4);
       for (const p of posts) {
         assert.equal(p.body.content, undefined);
         assert.equal(p.body.allowed_mentions, undefined);
@@ -259,8 +333,10 @@ if (Redis.isFake) {
       assert.ok(JSON.stringify(patch.body).includes("5 joueurs"));
       assert.ok(JSON.stringify(patch.body).includes('"type":12'));
       assert.ok(appels.every((a) => !a.url.includes("/roles")), "aucune lecture des rôles");
-      const j2 = await listChoix(2);
-      assert.equal(Object.keys(j2).filter((id) => id.startsWith("pnj-")).length, 5);
+      const j1 = await listChoix(1);
+      assert.equal(Object.keys(j1).filter((id) => id.startsWith("pnj-")).length, 5);
+      assert.equal(await compterReponsesVraiFaux(1), 5, "les PNJ répondent au Vrai/Faux");
+      assert.equal(await compterReponsesVraiFaux(2), 5);
       assert.equal((await readUsernames())["pnj-1"], "Josette");
       assert.equal((await readAvatars())["pnj-3"], "clay-03");
 
@@ -269,6 +345,7 @@ if (Redis.isFake) {
       await postPont("salon-public", { force: true, noPing: true, isPublic: true, pnj: true });
       await postPont("salon-public", { force: true, noPing: true, isPublic: true, pnj: true });
       assert.equal(Object.keys(await listChoix(1)).length, 0);
+      assert.equal(await compterReponsesVraiFaux(1), 0);
     } finally {
       globalThis.fetch = vraiFetch;
       if (tokenAvant === undefined) delete process.env.DISCORD_TOKEN;
@@ -310,5 +387,53 @@ if (Redis.isFake) {
     assert.equal(await maPosition("u1"), "📊 Tu es 2e : 6,4 pièces, 3 passages.");
     assert.equal(await maPosition("u3"), "📊 Tu es 2e : 6,4 pièces, 3 passages.");
     await resetPont({ clearManches: true });
+  });
+}
+
+if (Redis.isFake) {
+  test("journée en deux phases : Vrai/Faux le matin, ponts l'après-midi, pièce bonus au résultat (faux Redis)", async () => {
+    await resetPont({ clearManches: true });
+    const vraiFetch = globalThis.fetch;
+    const tokenAvant = process.env.DISCORD_TOKEN;
+    process.env.DISCORD_TOKEN = "test";
+    const posts = [];
+    globalThis.fetch = async (url, opts = {}) => {
+      if (opts.method === "POST") posts.push(JSON.parse(opts.body));
+      return new Response(JSON.stringify({ id: "m1" }), { status: 200 });
+    };
+    const ids = (body) => JSON.stringify(body).match(/pont_[a-z]+:[^"]*/g) ?? [];
+    const opts = { force: true, noPing: true, isPublic: false, pnj: false };
+    try {
+      await postPont("salon-test", opts); // annonce
+      await postPont("salon-test", opts); // matin J1
+      assert.deepEqual(ids(posts[1]), ["pont_vf:1:vrai", "pont_vf:1:faux"]);
+      const question = questionDuJour(await loadVraiFaux(), (await readState()).vfPartie, 1);
+      assert.ok(JSON.stringify(posts[1]).includes(question.affirmation.slice(0, 30)));
+      // u1 et u2 répondent juste, u3 se trompe ; réponse définitive
+      assert.equal((await repondreVraiFaux(1, "u1", question.reponse, question)).correct, true);
+      await repondreVraiFaux(1, "u2", question.reponse, question);
+      assert.equal((await repondreVraiFaux(1, "u3", !question.reponse, question)).correct, false);
+      assert.deepEqual(await repondreVraiFaux(1, "u3", question.reponse, question), { ok: false, reponse: !question.reponse, correct: false });
+      assert.deepEqual((await porteursBonus(1)).sort(), ["u1", "u2"]);
+
+      await postPont("salon-test", opts); // après-midi J1
+      assert.ok(ids(posts[2]).includes("pont_pierre:1"));
+      // u1 (porteur) passe seul sur les cordes ; u2 (porteur) et u3 attrapés
+      await enregistrerChoix(1, "u1", CORDES, {});
+      await enregistrerChoix(1, "u2", PIERRE, {});
+      await enregistrerChoix(1, "u3", PIERRE, {});
+      await postPont("salon-test", opts); // résolution, matin J2
+      // ×1 × (2 attrapés + 1 pièce bonus) ÷ 1 = 3, + sa pièce du matin
+      const points = await readPoints();
+      assert.equal(points.u1, 400);
+      assert.equal(points.u2, 0);
+      assert.ok(JSON.stringify(posts[3]).includes("(et 1 pièce bonus)"));
+      assert.deepEqual(ids(posts[3]), ["pont_vf:2:vrai", "pont_vf:2:faux"]);
+    } finally {
+      globalThis.fetch = vraiFetch;
+      if (tokenAvant === undefined) delete process.env.DISCORD_TOKEN;
+      else process.env.DISCORD_TOKEN = tokenAvant;
+      await resetPont({ clearManches: true });
+    }
   });
 }
