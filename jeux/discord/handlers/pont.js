@@ -49,7 +49,6 @@ import {
   readPasses,
   readUsernames,
   writeHistoriqueEntry,
-  getHistoriqueEntry,
   archiveManche,
   listManches,
   resetPartie,
@@ -306,8 +305,6 @@ function unSeulBloc(title, resultat, suite, { intituleSuite = null } = {}) {
   };
 }
 
-const blocJour = (config, jour, resultat, jourEmbed) =>
-  unSeulBloc(`🧌 Pont du Troll (Jour ${jour}/${config.duree_jours})`, resultat, jourEmbed, { intituleSuite: `🌉 Aujourd'hui · Jour ${jour}/${config.duree_jours}` });
 
 const blocMatin = (config, jour, resultat, cfg, question) =>
   unSeulBloc(`🧌 Pont du Troll (Jour ${jour}/${config.duree_jours})`, resultat, { description: lignesMatin(cfg, question).join("\n"), footer: footerMatin() }, { intituleSuite: INTITULE_MATIN });
@@ -329,8 +326,8 @@ function buildMatinComponents(jour) {
     {
       type: 1,
       components: [
-        { type: 2, style: 3, label: "Vrai", emoji: { name: "✅" }, custom_id: `pont_vf:${jour}:vrai` },
-        { type: 2, style: 4, label: "Faux", emoji: { name: "❌" }, custom_id: `pont_vf:${jour}:faux` },
+        { type: 2, style: 2, label: "Vrai", emoji: { name: "✅" }, custom_id: `pont_vf:${jour}:vrai` },
+        { type: 2, style: 2, label: "Faux", emoji: { name: "❌" }, custom_id: `pont_vf:${jour}:faux` },
         boutonRegles,
       ],
     },
@@ -504,8 +501,7 @@ export async function projeterJour(state, config) {
 
 // Jour de jeu en deux phases, un message chacune : le matin (vers 8h), le
 // résultat de la veille et la question Vrai/Faux ; l'après-midi (vers 14h,
-// 15h en été),
-// le même résultat et les ponts. Chaque passage du cron fait la transition
+// 15h en été), le troll endormi et les ponts du jour. Chaque passage du cron fait la transition
 // prête (transitionPrete()), sinon rien.
 // `pnj` : 5 joueurs fictifs répondent et traversent chaque jour (jamais sur
 // le salon public). ⚠️ Ping seulement si `isPublic` et sans `noPing` :
@@ -582,19 +578,11 @@ export async function postPont(
     return out;
   }
 
-  // 3) Matin -> après-midi : les ponts ouvrent (résultat de la veille repris)
+  // 3) Matin -> après-midi : les ponts ouvrent. Le résultat de la veille a
+  // été montré le matin : image du troll endormi et ponts du jour seulement.
   if (state.phase === MATIN) {
     const cfg = jourConfig(config, state.jour);
-    const jourEmbed = buildJourEmbed(config, cfg, { estPremierJour: state.jour === 1, v });
-    let embeds = [jourEmbed];
-    if (state.jour > 1) {
-      const entry = await getHistoriqueEntry(state.jour - 1);
-      if (entry?.partieId === state.partieId) {
-        const ranking = buildRanking(await readPoints(), await readPasses());
-        const resultat = await buildResultatEmbed(entry, ranking, { partieId: state.partieId, v });
-        embeds = [blocJour(config, state.jour, resultat, jourEmbed)];
-      }
-    }
+    const embeds = [buildJourEmbed(config, cfg, { estPremierJour: state.jour === 1, v })];
     const components = buildJourComponents(config, state.jour);
     if (dryRun)
       return { dryRun: true, phase: APRES_MIDI, jour: state.jour, embeds, components };
