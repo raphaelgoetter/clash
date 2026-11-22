@@ -29,6 +29,16 @@ import * as triviaGeekSvc from "../../services/triviageek.js";
 import * as intrusSvc from "../../services/intrus.js";
 import * as conceptSvc from "../../services/concept.js";
 import * as synopsisSvc from "../../services/synopsis.js";
+import * as blackjackDuelSvc from "../../services/blackjackDuel.js";
+import * as gobeletDuelSvc from "../../services/gobeletDuel.js";
+import * as grilleDuelSvc from "../../services/grilleDuel.js";
+import * as quatreDuelSvc from "../../services/quatreDuel.js";
+import * as puntoDuelSvc from "../../services/puntoDuel.js";
+import * as friseDuelSvc from "../../services/friseDuel.js";
+import * as mascaradeDuelSvc from "../../services/mascaradeDuel.js";
+import * as potatoDuelSvc from "../../services/potatoDuel.js";
+import * as bacDuelSvc from "../../services/bacDuel.js";
+import * as penduDuelSvc from "../../services/penduDuel.js";
 import {
   getCurrentSeasonId as getAveugleSeasonId,
   getActiveBlindGame,
@@ -154,11 +164,31 @@ import { boutonLancer } from "./boss.js";
 const MINIJEUX_COLOR = 0x5865f2;
 
 // Duels à la demande (voir « Duels à la demande » dans jeux/CONTRIBUTING.md),
-// affichés par /mini-jeux : à tenir à jour à chaque ajout ou archivage.
-const DUEL_COMMANDS = ["/blackjack", "/gobelet", "/grille", "/quatre", "/punto", "/frise", "/mascarade", "/potato", "/bac", "/pendu"];
+// affichés par /mini-jeux avec le détenteur du record du mode par défaut
+// (contre Kévina ou solo, 5 manches, difficulté normale) : à tenir à jour à
+// chaque ajout ou archivage.
+const DUEL_COMMANDS = [
+  { commande: "/blackjack", record: () => blackjackDuelSvc.lireHighScore(5) },
+  { commande: "/gobelet", record: () => gobeletDuelSvc.lireHighScore(5) },
+  { commande: "/grille", record: () => grilleDuelSvc.lireHighScore() },
+  { commande: "/quatre", record: () => quatreDuelSvc.lireRecord("bot") },
+  { commande: "/punto", record: () => puntoDuelSvc.lireRecord("bot") },
+  { commande: "/frise", record: () => friseDuelSvc.lireRecord("bot") },
+  { commande: "/mascarade", record: () => mascaradeDuelSvc.lireRecord("bot") },
+  { commande: "/potato", record: () => potatoDuelSvc.lireRecord("bot") },
+  { commande: "/bac", record: () => bacDuelSvc.lireRecord("bot", "normal") },
+  { commande: "/pendu", record: () => penduDuelSvc.lireRecord("solo") },
+];
 
-function buildDuelsBlock() {
-  return `## Les mini-jeux Duels de Kévina:\n${DUEL_COMMANDS.join(", ")}`;
+async function buildDuelsBlock() {
+  const lignes = await Promise.all(
+    DUEL_COMMANDS.map(async ({ commande, record }) => {
+      // Un record illisible ne doit pas casser l'embed /mini-jeux.
+      const r = await record().catch(() => null);
+      return `- \`${commande}\` · Record : (${r?.username ?? "aucun"})`;
+    }),
+  );
+  return `## Les mini-jeux Duels de Kévina:\n${lignes.join("\n")}`;
 }
 const BAR_SEGMENTS = 7;
 
@@ -877,12 +907,13 @@ async function buildSpecialGameBlock() {
 }
 
 export async function buildMiniJeuxEmbed(now = new Date()) {
-  const [regularBlock, specialBlock] = await Promise.all([
+  const [regularBlock, duelsBlock, specialBlock] = await Promise.all([
     buildRegularGamesBlock(now),
+    buildDuelsBlock(),
     buildSpecialGameBlock(),
   ]);
 
-  const description = `${regularBlock}\n\n${buildDuelsBlock()}\n\n${specialBlock}`;
+  const description = `${regularBlock}\n\n${duelsBlock}\n\n${specialBlock}`;
 
   const link = channelLink();
   const fields = [

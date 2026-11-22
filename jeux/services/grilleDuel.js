@@ -147,6 +147,11 @@ export function isNewHighScore(actuel, points) {
   return points > 0 && (!actuel || points > actuel.points);
 }
 
+// Record contre Kévina, null s'il n'y en a pas (/mini-jeux).
+export async function lireHighScore() {
+  return fromJson(await getRedis().get(CLE_HIGHSCORE));
+}
+
 // Renvoie le record à jour (nouveau ou inchangé), null s'il n'y en a pas.
 export async function majHighScore(discordId, username, points, now = new Date()) {
   return withLock("highscore", async () => {

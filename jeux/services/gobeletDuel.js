@@ -613,6 +613,11 @@ export function isNewHighScore(current, points) {
   return points > 0 && (!current || points > current.points);
 }
 
+// Record d'un format (5 ou 10 manches), null s'il n'y en a pas (/mini-jeux).
+export async function lireHighScore(totalManches) {
+  return fromJson(await getRedis().hget(HIGHSCORE_KEY, String(totalManches)));
+}
+
 async function updateHighScore(gid, totalManches, ranking) {
   const field = String(totalManches);
   const current = fromJson(await getRedis().hget(HIGHSCORE_KEY, field));
