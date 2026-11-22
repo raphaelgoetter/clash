@@ -141,7 +141,7 @@ const footerMatin = () => ({ text: `Une seule réponse, corrigée tout de suite 
 function lignesMatin(cfg, question) {
   const evenement = ligneEvenement(cfg);
   return [
-    `> ${question.affirmation}`,
+    `> ### ${question.affirmation}`,
     "Bonne réponse = 🪙 1 pièce bonus à emporter au marché.",
     "",
     `🌉 Cet après-midi : ${EMOJI[PIERRE]} Pierre ×${cfg.pierre} · ${EMOJI[CORDES]} Cordes ×${cfg.cordes}`,
