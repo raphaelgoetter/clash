@@ -22,7 +22,12 @@ import {
 } from "@clash/clash-royale/dateUtils.js";
 import { fetchPlayer } from "@clash/clash-royale/clashApi.js";
 import { getOrSet } from "@clash/commun/cache.js";
-import { buildWarDecksImage } from "../../../backend/services/warDecksImage.js";
+import {
+  buildWarDecksImage,
+  deckNumberEmoji,
+  gdcImageDecks,
+  numberDecks,
+} from "../../../backend/services/warDecksImage.js";
 import {
   summarizeWarDecks,
   summarizeWarDecksForMatchup,
@@ -403,7 +408,7 @@ function formatWarDecksField(warDecks) {
         deckLabel,
         matches: [],
       };
-      deckGroup.matches.push({ matchIndex, ...match });
+      deckGroup.matches.push({ matchIndex, deckNumber: deck.deckNumber, ...match });
       group.decks.set(deckLabel, deckGroup);
       dayGroups.set(dayKey, group);
     });
@@ -443,13 +448,13 @@ function formatWarDecksField(warDecks) {
             : "?";
           // Ligne épurée : résultat en tête, puis type (PvP/Duel/Bateau),
           // adversaire, score et difficulté séparés par "·" (même ordre que
-          // /matchup ; le numéro de deck reste dans le menu "ℹ️ Détails").
+          // /matchup), précédés du numéro du deck (pastille de l'image).
           const typeLabel = getWarMatchTypeLabel(match.type, match.gameMode).replace(
             /^\(|\)$/g,
             "",
           );
           deckLines.push(
-            `• ${resultEmoji} ${[typeLabel, opponentName, score, `⚡${matchup}`]
+            `• ${deckNumberEmoji(match.deckNumber)} ${resultEmoji} ${[typeLabel, opponentName, score, `⚡${matchup}`]
               .filter(Boolean)
               .join(" · ")}`,
           );
@@ -539,7 +544,7 @@ function formatRecentBattlesField(recentBattles) {
   });
 
   const blocks = [...dateGroups.entries()].map(([dateLabel, entries], groupIndex) => {
-    const lines = entries.map(({ match }) => {
+    const lines = entries.map(({ deck, match }) => {
       // GDC : "PvP"/"Duel" suffit (seuls les combats de GDC portent ces
       // types), sans le préfixe "GDC" de getBattleTypeLabel().
       const typeLabel =
@@ -557,7 +562,7 @@ function formatRecentBattlesField(recentBattles) {
         : "?";
       // Même format épuré que /matchup-gdc, avec le type de combat juste
       // après le résultat (modes mélangés ici : GDC, Ladder, Amical...).
-      return `• ${resultEmoji} ${typeLabel.replace(/^\(|\)$/g, "")} · ${opponentName} · ${score} · ⚡${matchup}`;
+      return `• ${deckNumberEmoji(deck.deckNumber)} ${resultEmoji} ${typeLabel.replace(/^\(|\)$/g, "")} · ${opponentName} · ${score} · ⚡${matchup}`;
     });
     const groupLines = groupIndex > 0 ? [""] : [];
     groupLines.push(`**${dateLabel}**`, ...lines);
@@ -749,7 +754,8 @@ async function fetchWarDecksForTag(tag) {
   const { value } = await getOrSet(`matchup_gdc:${cleanTag}`, () =>
     fetchWarDecksForTagUncached(tag),
   );
-  return value;
+  // Numéros de deck (badges de l'image, lignes de l'embed, menu Détails)
+  return { ...value, warDecks: numberDecks(value.warDecks) };
 }
 
 async function fetchRecentBattlesForTagUncached(tag) {
@@ -805,7 +811,8 @@ async function fetchRecentBattlesForTag(tag) {
   const { value } = await getOrSet(`matchup_recent:${cleanTag}`, () =>
     fetchRecentBattlesForTagUncached(tag),
   );
-  return value;
+  // Numéros de deck (badges de l'image, lignes de l'embed, menu Détails)
+  return { ...value, warDecks: numberDecks(value.warDecks) };
 }
 
 // kind distingue les deux commandes qui partagent ce flux "ℹ️ Détails" :
@@ -1626,7 +1633,10 @@ export async function routeJoueur(body, res) {
         let deckImage = null;
         const warDecksField = formatWarDecksField(warDecks);
         try {
-          deckImage = await buildWarDecksImage(warDecks);
+          const imageDecks = gdcImageDecks(warDecks);
+          deckImage = await buildWarDecksImage(imageDecks, {
+            maxRows: imageDecks.length,
+          });
         } catch {
           deckImage = null;
         }

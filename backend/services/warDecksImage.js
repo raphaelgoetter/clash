@@ -8,6 +8,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { fetchCards } from "@clash/clash-royale/clashApi.js";
 import { getOrSet } from "@clash/commun/cache.js";
 import { CARD_ART_OVERRIDES, cardArtUrl, readCardArt } from "@clash/clash-royale/cardArt.js";
+import { readGameFontPaths } from "@clash/commun/blobAssets.js";
 
 const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000;
 const CARD_ICON_CACHE = new Map();
@@ -59,6 +60,55 @@ async function fetchImageDataUrl(url, signal) {
   return dataUrl;
 }
 
+// Numéro du deck (et non de la ligne) : deux combats joués avec les mêmes
+// 8 cartes portent le même numéro, attribué par ordre d'apparition (le plus
+// récent d'abord). L'API ne donne pas l'emplacement du deck en jeu. Le label
+// « Deck N » du menu Détails suit ce numéro.
+export function numberDecks(decks) {
+  if (!Array.isArray(decks)) return decks;
+  const numbers = new Map();
+  return decks.map((deck) => {
+    const signature = (Array.isArray(deck.cardIds) ? deck.cardIds : [])
+      .map(String)
+      .sort()
+      .join("-");
+    if (!numbers.has(signature)) numbers.set(signature, numbers.size + 1);
+    const deckNumber = numbers.get(signature);
+    return { ...deck, deckNumber, label: `Deck ${deckNumber}` };
+  });
+}
+
+// Une ligne par deck distinct (sa première apparition, donc son combat le
+// plus récent) : image de /matchup-gdc, où un même deck revient chaque jour.
+export function uniqueDecks(decks) {
+  const seen = new Set();
+  return (Array.isArray(decks) ? decks : []).filter((deck) => {
+    if (seen.has(deck.deckNumber)) return false;
+    seen.add(deck.deckNumber);
+    return true;
+  });
+}
+
+// Decks de l'image de /matchup-gdc : un par deck distinct joué sur les jours
+// affichés dans le texte (les 4 jours de GDC les plus récents, cf.
+// formatWarDecksField), pour que chaque numéro du texte ait sa pastille et
+// inversement. Numéros contigus : numberDecks part du combat le plus récent.
+export function gdcImageDecks(warDecks, maxDays = 4) {
+  const dayOf = (deck) => deck.matches?.[0]?.dayKey || "";
+  const shownDays = new Set(
+    [...new Set((warDecks ?? []).map(dayOf))].sort().reverse().slice(0, maxDays),
+  );
+  return uniqueDecks((warDecks ?? []).filter((deck) => shownDays.has(dayOf(deck))));
+}
+
+// Numéro de deck en emoji (1️⃣…🔟) pour les lignes de l'embed.
+export function deckNumberEmoji(deckNumber) {
+  if (!Number.isInteger(deckNumber)) return "";
+  if (deckNumber >= 1 && deckNumber <= 9) return `${deckNumber}\uFE0F\u20E3`;
+  if (deckNumber === 10) return "🔟";
+  return `#${deckNumber}`;
+}
+
 export async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" } = {}) {
   if (!Array.isArray(warDecks) || warDecks.length === 0) return null;
   let cardDefinitions = [];
@@ -87,13 +137,24 @@ export async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" }
   const matchTopSpacing = 6;
   const textLineHeight = 16;
   const deckSpacing = 0;
-  const width = padding * 2 + 8 * cardWidth + 7 * cardGap;
+  // Pastille numérotée devant chaque deck (vert = victoire, rouge = défaite)
+  // pour l'associer à sa ligne dans l'embed : seulement si chaque deck
+  // affiché a un résultat (pas sur l'Exploit du jour, deck joueur/adverse).
+  const showBadges = rows.every((deck) => deck.matches?.[0]?.result);
+  // Numéro du deck (numberDecks) s'il a été attribué, sinon calculé ici.
+  const deckNumberOf = (deck, index) =>
+    deck.deckNumber ?? numberDecks(rows)[index].deckNumber;
+  const badgeWidth = showBadges ? 76 : 0;
+  const badgeGap = showBadges ? cardGap : 0;
+  const cardsX = padding + badgeWidth + badgeGap;
+  const width = cardsX + padding + 8 * cardWidth + 7 * cardGap;
   // Sur /matchup (kind="recent"), les lignes "adversaire/score/matchup%"
   // sont déjà affichées dans la description de l'embed (formatRecentBattlesField)
   // — les omettre ici évite la redondance et garde l'image aussi compacte que
   // possible en hauteur (6 decks empilés sur une image height-bound côté
   // Discord font vite rétrécir les cartes si l'image devient trop haute).
-  const showMatchLines = kind !== "recent";
+  // Même chose sur /matchup-gdc : les pastilles renvoient aux lignes de l'embed.
+  const showMatchLines = kind !== "recent" && !showBadges;
   const height =
     padding * 2 +
     topLabelHeight +
@@ -181,7 +242,7 @@ export async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" }
       .map((id, index) => {
         const iconUrl = cardIconUrl(deck, id, index);
         const url = iconUrl ? uniqueUrls.get(iconUrl) : null;
-        const x = padding + index * (cardWidth + cardGap);
+        const x = cardsX + index * (cardWidth + cardGap);
         return url
           ? `<image x="${x}" y="${yStart}" width="${cardWidth}" height="${cardHeight}" href="${url}" preserveAspectRatio="xMidYMid slice"/>`
           : `<rect x="${x}" y="${yStart}" width="${cardWidth}" height="${cardHeight}" rx="12" ry="12" fill="#1f2937"/>`;
@@ -207,7 +268,14 @@ export async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" }
       return `<text x="${padding}" y="${lineY}" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e2e8f0">${escapeText(line)}</text>`;
     });
 
+    const result = deck.matches?.[0]?.result;
+    const badgeSvg = showBadges
+      ? `<rect x="${padding}" y="${yStart + 6}" width="${badgeWidth}" height="${cardHeight - 12}" rx="14" ry="14" fill="${result === "win" ? "#16a34a" : "#dc2626"}"/>` +
+        `<text x="${padding + badgeWidth / 2}" y="${yStart + cardHeight / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="bold" font-size="64" fill="#ffffff">${deckNumberOf(deck, deckIndex)}</text>`
+      : "";
+
     return `
+      ${badgeSvg}
       ${cardsSvg}
       ${renderedMatchLines.join("")}
     `;
@@ -219,11 +287,25 @@ export async function buildWarDecksImage(warDecks, { maxRows = 4, kind = "gdc" }
   ${deckRows.join("")}
 </svg>`;
 
+  // Police embarquée (aucune police système sur Vercel) : sans elle, les
+  // numéros ne s'affichent pas mais les pastilles colorées restent.
+  let fontPaths = [];
+  if (showBadges) {
+    try {
+      fontPaths = await readGameFontPaths();
+    } catch (err) {
+      console.error("Police indisponible pour l'image de deck :", err?.message || err);
+    }
+  }
+
   const svgBuffer = Buffer.from(svg, "utf8");
   try {
     const resvg = new Resvg(svgBuffer, {
       fitTo: { mode: "width", value: width },
       background: "#0f172a",
+      ...(fontPaths.length
+        ? { font: { fontFiles: fontPaths, loadSystemFonts: false, defaultFontFamily: "Inter" } }
+        : {}),
     });
     const pngData = resvg.render();
     return {
