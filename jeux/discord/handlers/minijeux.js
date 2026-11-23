@@ -164,19 +164,21 @@ import { boutonLancer } from "./boss.js";
 const MINIJEUX_COLOR = 0x5865f2;
 
 // Duels à la demande (voir « Duels à la demande » dans jeux/CONTRIBUTING.md),
-// affichés par /mini-jeux avec le record du mode par défaut (contre Kévina
-// ou solo, 5 manches, difficulté difficile pour le Petit Bac) et son
-// détenteur. `precision` : mode affiché entre parenthèses après « Record ».
+// affichés par /mini-jeux avec le record contre Kévina (ou solo) et son
+// détenteur, une ligne par format (5 et 10 manches) ou difficulté (Petit Bac). `precision` : mode affiché entre parenthèses après « Record ».
 // À tenir à jour à chaque ajout ou archivage.
 const DUEL_COMMANDS = [
   { commande: "/blackjack", precision: "5 manches", record: () => blackjackDuelSvc.lireHighScore(5) },
+  { commande: "/blackjack", precision: "10 manches", record: () => blackjackDuelSvc.lireHighScore(10) },
   { commande: "/gobelet", precision: "5 manches", record: () => gobeletDuelSvc.lireHighScore(5) },
+  { commande: "/gobelet", precision: "10 manches", record: () => gobeletDuelSvc.lireHighScore(10) },
   { commande: "/grille", record: () => grilleDuelSvc.lireHighScore() },
   { commande: "/quatre", record: () => quatreDuelSvc.lireRecord("bot") },
   { commande: "/punto", record: () => puntoDuelSvc.lireRecord("bot") },
   { commande: "/frise", record: () => friseDuelSvc.lireRecord("bot") },
   { commande: "/mascarade", record: () => mascaradeDuelSvc.lireRecord("bot") },
   { commande: "/potato", record: () => potatoDuelSvc.lireRecord("bot") },
+  { commande: "/bac", precision: "normal", record: () => bacDuelSvc.lireRecord("bot", "normal") },
   { commande: "/bac", precision: "difficile", record: () => bacDuelSvc.lireRecord("bot", "difficile") },
   { commande: "/pendu", record: () => penduDuelSvc.lireRecord("solo") },
 ];
