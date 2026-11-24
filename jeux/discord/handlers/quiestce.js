@@ -865,7 +865,7 @@ export async function postQuiEstCe(
     jour: closure.jourSuivant,
     embed,
     components,
-    ping: false,
+    ping: true,
     isPublic,
     noPing,
   });

@@ -901,7 +901,6 @@ export async function postMarioClash(
       embed,
       components,
       noPing,
-      estAnnonce: true,
     });
   }
 
@@ -921,8 +920,6 @@ export async function postMarioClash(
       embed,
       components,
       noPing,
-      estAnnonce: false,
-      estPremierJour: true,
     });
   }
 
@@ -959,7 +956,6 @@ export async function postMarioClash(
       embed,
       components: [],
       noPing,
-      estAnnonce: false,
       termine: true,
     });
     return { ...result, final: true };
@@ -989,8 +985,7 @@ export async function postMarioClash(
     jour: closure.jourSuivant,
     embed,
     components,
-    noPing: true,
-    estAnnonce: false,
+    noPing,
   });
 }
 
@@ -1003,8 +998,6 @@ async function publishAndWriteState(
     embed,
     components,
     noPing,
-    estAnnonce,
-    estPremierJour = false,
     termine = false,
   },
 ) {
@@ -1033,10 +1026,8 @@ async function publishAndWriteState(
     }
   }
 
-  const roleId =
-    (estAnnonce || estPremierJour || termine) && !noPing
-      ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
-      : null;
+  // Ping @MINI-JEUX à chaque publication (annonce, chaque jour, fin)
+  const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
   const res = await fetch(
     `https://discord.com/api/v10/channels/${channelId}/messages`,

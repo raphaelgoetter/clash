@@ -932,7 +932,7 @@ export async function postMeow(
     jour,
     embed,
     components,
-    ping: false,
+    ping: true,
     isPublic,
     noPing,
   });

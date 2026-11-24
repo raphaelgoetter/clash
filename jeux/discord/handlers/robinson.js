@@ -346,7 +346,7 @@ async function faireJouerPnj(config, state) {
 }
 
 // `pnj` : 5 joueurs fictifs jouent chaque jour (jamais sur le salon public).
-// ⚠️ Ping seulement si `isPublic` et sans `noPing` (annonce, Jour 1, fin) :
+// ⚠️ Ping seulement si `isPublic` et sans `noPing` (annonce, chaque jour, fin) :
 // jamais de ping sur le salon de test, quel que soit l'appelant.
 export async function postRobinson(
   channelId,
@@ -461,7 +461,7 @@ export async function postRobinson(
   // ⚠️ Projection (dry-run, robinson:status) : jamais la vraie météo de demain
   if (dryRun) return { dryRun: true, jour: suivant.jour, ...vue, res, stocks: res.stocks, planches: res.planches };
   await clearVotes(state.jour);
-  const out = await publishAndWriteState(channelId, state, suivant, { ...vue, ping: false });
+  const out = await publishAndWriteState(channelId, state, suivant, { ...vue, ping });
   if (avecPnj) await faireJouerPnj(config, out.state);
   return out;
 }

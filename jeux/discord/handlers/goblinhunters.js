@@ -1122,8 +1122,9 @@ export async function postGoblinHunters(
   return publishAndWriteState(channelId, freshState, {
     embed,
     components,
-    noPing: true,
+    noPing,
     estAnnonce: false,
+    estJour: true,
     extraState: {},
   });
 }
@@ -1142,6 +1143,8 @@ async function publishAndWriteState(
     components,
     noPing,
     estAnnonce,
+    // Jours 2 et suivants : ping du rôle (le Jour 1 mentionne les inscrits)
+    estJour = false,
     termine = false,
     extraState = {},
     // Jour 1 : mention des inscrits au lieu du rôle
@@ -1171,7 +1174,7 @@ async function publishAndWriteState(
   }
 
   const roleId =
-    (estAnnonce || termine) && !noPing
+    (estAnnonce || estJour || termine) && !noPing
       ? await getRoleIdByName(MINI_JEUX_ROLE_NAME)
       : null;
 

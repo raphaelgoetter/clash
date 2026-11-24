@@ -688,7 +688,7 @@ export async function postPont(
     vfPartie: state.vfPartie ?? null,
     embeds: await embedsSuite(ranking),
     components: buildMatinComponents(jourSuivant),
-    ping: false,
+    ping,
   });
   if (avecPnj) await jouerPnjMatin(jourSuivant, question);
   return out;
