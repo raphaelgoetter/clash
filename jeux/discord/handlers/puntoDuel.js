@@ -229,12 +229,14 @@ export function valeursJouees(d, s) {
 // Valeurs déjà jouées par chaque camp, vues par `moi`, en petit texte gris
 // (`-#`) pour ne pas les confondre avec des cartes du plateau : valeurs
 // seules, triées, sans couleur (un emoji de carte resterait coloré) :
-// « Toi : 2 3 3 5 7 8 ». Camp sans carte jouée omis ; aucune ligne avant
+// « • Toi : 2 3 3 5 7 8 ». Camp sans carte jouée omis ; aucune ligne avant
 // le premier coup. `noms` : { moi, adv }.
 export function legende(d, moi, noms) {
   const ligne = (s, nom) => {
     const valeurs = valeursJouees(d, s).flat().sort((a, b) => a - b);
-    return valeurs.length ? `-# ${nom} : ${valeurs.join(" ")}` : null;
+    // Liste à puces, nom sans emoji (« 🤖 Kévina » → « Kévina »)
+    const sansEmoji = nom.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, "");
+    return valeurs.length ? `-# • ${sansEmoji} : ${valeurs.join(" ")}` : null;
   };
   const lignes = [ligne(moi, noms.moi), ligne(adversaire(moi), noms.adv)].filter(Boolean);
   return lignes.length ? ["-# Tuiles jouées", ...lignes] : [];
