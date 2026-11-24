@@ -215,7 +215,7 @@ export async function handleBossBouton(webhookUrl, body, now = new Date()) {
       if (resultat.inactif) return envoyer(vueFin(boss, tentative, etat));
       if (resultat.avantKevina) {
         // Coup du joueur d'abord, celui de Kévina après sa réflexion
-        await envoyer(vuePartie(boss, resultat.avantKevina, `${resultat.texte}\n⏳ Kévina réfléchit…`, { attente: true }));
+        await envoyer(vuePartie(boss, resultat.avantKevina, [resultat.texte, "⏳ Kévina réfléchit…"].filter(Boolean).join("\n"), { attente: true }));
         await pause(REFLEXION_MS.min + Math.random() * (REFLEXION_MS.max - REFLEXION_MS.min));
       }
       if (tentative.statut === "fini") return envoyer(vueFin(boss, tentative, etat));

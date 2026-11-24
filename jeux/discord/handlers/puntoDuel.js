@@ -43,7 +43,7 @@ import {
 
 // Violet
 const PUNTO_COLOR = 0x8e44c9;
-const TITRE = "🃏 Punto";
+const TITRE = "🀄 Punto";
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 
@@ -52,11 +52,14 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 // indice = couleur de la carte (0 ou 1) dans le moteur
 const MOI = ["bleu", "vert"];
 const ADV = ["rouge", "orange"];
-const PASTILLES = { moi: "🟦🟩", adv: "🟥🟧" };
 // Contre Kévina : délai avant d'afficher son coup (elle joue en quelques
 // millisecondes, un coup instantané paraît mécanique), durée tirée au sort
 const REFLEXION_MS = { min: 2000, max: 5000 };
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+// Carte recouverte : affichée 💥 le temps d'une étape avant la nouvelle
+// carte (comme les dés détruits de La Grille)
+const EXPLOSION = "💥";
+const DELAI_EXPLOSION_MS = 900;
 
 export async function memberHasMiniJeuxRole(body) {
   const roleId = await getRoleIdByName(MINI_JEUX_ROLE_NAME);
@@ -208,9 +211,40 @@ const couleurDe = (s, k, moi) => (s === moi ? MOI : ADV)[k];
 // Carte en emoji vue par `moi` ; `s` : siège du propriétaire.
 const carteVue = (carte, s, moi, opts) => formatCarte(couleurDe(s, carte.k, moi), carte.v, opts);
 
+// Valeurs déjà jouées par le siège `s` (posées ou défaussées), par couleur
+// du moteur, triées : déduites de sa pioche (36 cartes moins celles qui
+// restent et celle à poser).
+export function valeursJouees(d, s) {
+  const restantes = [...(d.pioches?.[s] ?? []), ...(d.carte && d.actif === s ? [d.carte] : [])];
+  return [0, 1].map((k) => {
+    const valeurs = [];
+    for (let v = 1; v <= 9; v++) {
+      const n = 2 - restantes.filter((c) => c.k === k && c.v === v).length;
+      for (let j = 0; j < n; j++) valeurs.push(v);
+    }
+    return valeurs;
+  });
+}
+
+// Valeurs déjà jouées par chaque camp, vues par `moi`, en petit texte gris
+// (`-#`) pour ne pas les confondre avec des cartes du plateau : valeurs
+// seules, triées, sans couleur (un emoji de carte resterait coloré) :
+// « Toi : 2 3 3 5 7 8 ». Camp sans carte jouée omis ; aucune ligne avant
+// le premier coup. `noms` : { moi, adv }.
+export function legende(d, moi, noms) {
+  const ligne = (s, nom) => {
+    const valeurs = valeursJouees(d, s).flat().sort((a, b) => a - b);
+    return valeurs.length ? `-# ${nom} : ${valeurs.join(" ")}` : null;
+  };
+  const lignes = [ligne(moi, noms.moi), ligne(adversaire(moi), noms.adv)].filter(Boolean);
+  return lignes.length ? ["-# Tuiles jouées", ...lignes] : [];
+}
+
 // Plateau vu par le siège `moi` (ses cartes en bleu et vert) : emojis à
-// taille de texte séparés par une espace, une rangée par ligne de texte.
-// `noms` : { moi, adv } libellés des deux camps, en légende.
+// taille de texte séparés par une espace, une rangée par ligne de texte,
+// sous la légende. Contour jaune sur l'alignement gagnant ou, partie en
+// cours, sur la dernière carte posée ; carte recouverte en 💥 pendant une étape d'explosion
+// (`d.explose`). `noms` : { moi, adv } libellés des deux camps.
 export function plateau(d, moi, noms) {
   const gagnantes = new Set(d.alignement ?? []);
   const rangees = [];
@@ -219,11 +253,26 @@ export function plateau(d, moi, noms) {
     for (let c = 0; c < TAILLE; c++) {
       const i = r * TAILLE + c;
       const x = d.grille[i];
-      cases.push(x ? carteVue(x, x.s, moi, { gagnant: gagnantes.has(i) }) : formatCarte("vide"));
+      cases.push(
+        d.explose === i
+          ? EXPLOSION
+          : x
+            ? carteVue(x, x.s, moi, { gagnant: gagnantes.size ? gagnantes.has(i) : d.dernier?.case === i })
+            : formatCarte("vide"),
+      );
     }
     rangees.push(cases.join(" "));
   }
-  return [`${PASTILLES.moi} **${noms.moi}** · ${PASTILLES.adv} **${noms.adv}**`, ...rangees];
+  const l = legende(d, moi, noms);
+  return [...l, ...(l.length ? [""] : []), ...rangees];
+}
+
+// Étape d'explosion après un coup qui recouvre une carte (partie en
+// cours) : copie du duel où la case affiche 💥, null sinon. Clics de
+// l'étape refusés comme ceux d'une vue dépassée (`coups` -1).
+export function etapeExplosion(d) {
+  if (d.termine || !d.dernier?.recouverte) return null;
+  return { ...structuredClone(d), explose: d.dernier.case, coups: -1 };
 }
 
 // Plateau neutre (message public) : premier joueur en bleu et vert.
@@ -231,22 +280,14 @@ function plateauPublic(d, nomJoueur, nomBot) {
   return plateau(d, "joueur", { moi: nomJoueur, adv: nomBot });
 }
 
-// Récit du dernier coup et des cartes défaussées depuis, vu par `moi` :
-// « Kévina pose 🟥7 sur ton 🟦4. », « Ta carte 🟦1 ne peut être posée
-// nulle part : défaussée. »
+// Cartes défaussées depuis le dernier coup, vues par `moi` : « Ta carte
+// 🟦1 ne peut être posée nulle part : défaussée. » Le coup lui-même n'est
+// pas raconté : la dernière carte posée est mise en exergue sur le plateau.
 function recit(d, moi, A) {
   const lignes = [];
-  const x = d.dernier;
-  if (x) {
-    const sujet = x.id === moi ? "Tu poses" : `${A.Sujet} pose`;
-    const sur = x.recouverte
-      ? ` sur ${x.recouverte.s === moi ? "ton" : x.id === moi ? "le" : "son"} ${carteVue(x.recouverte, x.recouverte.s, moi)}`
-      : "";
-    lignes.push(`${sujet} ${carteVue(x.carte, x.id, moi)}${sur}.`);
-  }
   for (const { id, carte } of d.defausses ?? []) {
     lignes.push(
-      `${id === moi ? "Ta carte" : `La carte de ${A.Sujet}`} ${carteVue(carte, id, moi)} ne peut être posée nulle part : défaussée.`,
+      `${id === moi ? "Ta tuile" : `La tuile de ${A.Sujet}`} ${carteVue(carte, id, moi)} ne peut être posée nulle part : défaussée.`,
     );
   }
   return lignes.join("\n") || null;
@@ -255,7 +296,7 @@ function recit(d, moi, A) {
 const ERREURS = {
   termine: "La partie est terminée.",
   pasTonTour: "Ce n'est pas ton tour.",
-  interdite: "Ta carte ne peut pas aller sur cette case.",
+  interdite: "Ta tuile ne peut pas aller sur cette case.",
   perime: "Le plateau a changé depuis : rejoue sur celui-ci.",
   pasJoueur: "Tu ne joues pas dans ce duel.",
   lobby: "En attente d'un adversaire.",
@@ -313,8 +354,8 @@ function vueFin(d, { moi, A, raison }) {
       : d.gagnant === "nul"
         ? "Les pioches sont vides."
         : d.gagnant === moi
-          ? "Tu alignes 4 cartes de la même couleur."
-          : `${A.Sujet} aligne 4 cartes de la même couleur.`;
+          ? "Tu alignes 4 tuiles de la même couleur."
+          : `${A.Sujet} aligne 4 tuiles de la même couleur.`;
   const issue =
     d.gagnant === "nul"
       ? "c'est un match nul."
@@ -349,9 +390,12 @@ export function boutonsPlateau(d, moi, monTour, sfx) {
     for (let c = 0; c < TAILLE; c++) {
       const i = r * TAILLE + c;
       const x = d.grille[i];
-      const emoji = x
-        ? carteButtonEmoji(couleurDe(x.s, x.k, moi), x.v)
-        : carteButtonEmoji(jouables.has(i) ? "jouable" : "vide");
+      const emoji =
+        d.explose === i
+          ? { name: EXPLOSION }
+          : x
+            ? carteButtonEmoji(couleurDe(x.s, x.k, moi), x.v, { gagnant: d.dernier?.case === i })
+            : carteButtonEmoji(jouables.has(i) ? "jouable" : "vide");
       components.push({
         type: 2,
         style: 2,
@@ -370,7 +414,7 @@ export function boutonsPlateau(d, moi, monTour, sfx) {
 export function ligneCarte(d, moi, A) {
   if (!d.carte) return null;
   const carte = carteVue(d.carte, d.actif, moi);
-  return d.actif === moi ? `## Ta carte : ${carte}` : `Carte de ${A.Sujet} : ${carte}`;
+  return d.actif === moi ? `## Ta tuile : ${carte}` : `Tuile de ${A.Sujet} : ${carte}`;
 }
 
 // Vue d'un joueur : résultat de la dernière action (`texte`), carte à
@@ -382,23 +426,31 @@ function buildVue(
   { texte = null, moi = "joueur", A = BOT, pvp = false, echeance = null, raison = null, confirmerAbandon = false } = {},
 ) {
   if (d.termine) return vueFin(d, { moi, A, raison });
-  const monTour = d.actif === moi;
+  // Étape d'explosion : ni tour ni carte à poser, plateau seul
+  const etape = d.explose != null;
+  const monTour = !etape && d.actif === moi;
   const sfx = pvp ? ":pvp" : "";
   const noms = { moi: "Toi", adv: `${A.emoji} ${A.Sujet}` };
   const lignes = confirmerAbandon
     ? ["🏳️ **Abandonner la partie ?** Ce sera une défaite.", "", ...plateau(d, moi, noms)]
     : [
-        // Légende d'abord (fixe), puis le récit du dernier coup, puis la carte
-        `${PASTILLES.moi} **${noms.moi}** · ${PASTILLES.adv} **${noms.adv}**`,
+        // Légende et cartes jouées d'abord, puis les défausses, puis la carte
+        ...legende(d, moi, noms),
         ...(texte ? ["", texte] : []),
-        "",
-        ...(monTour
-          ? echeance
-            ? [`⏰ Limite <t:${echeance}:R>.`]
-            : []
-          : [`⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
-        ligneCarte(d, moi, A),
+        ...(etape
+          ? []
+          : [
+              "",
+              ...(monTour
+                ? echeance
+                  ? [`⏰ Limite <t:${echeance}:R>.`]
+                  : []
+                : [`⏳ Au tour de ${A.Sujet}${echeance ? `, limite <t:${echeance}:R>` : ""}.`]),
+              ligneCarte(d, moi, A),
+            ]),
       ].filter((l) => l !== null);
+  // Sans carte jouée (premier coup) : pas de ligne vide en tête
+  while (lignes[0] === "") lignes.shift();
   const titre = `${TITRE} · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: PUNTO_COLOR };
   if (confirmerAbandon) return { embeds: [embed], components: boutonsConfirmation(sfx) };
@@ -412,14 +464,14 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles de Punto",
     description: [
-      `Une grille de ${TAILLE}×${TAILLE} cases. Chaque joueur a sa pioche de 36 cartes : 2 couleurs, valeurs de 1 à 9, chaque carte en double. Tes cartes sont bleues et vertes, celles de ton adversaire rouges et orange.`,
+      `Une grille de ${TAILLE}×${TAILLE} cases. Chaque joueur a sa pioche de 36 tuiles : 2 couleurs, valeurs de 1 à 9, chaque tuile en double. Tes tuiles sont bleues et vertes, celles de ton adversaire rouges et orange.`,
       "",
-      "**🃏 À ton tour** : tu retournes la carte du dessus de ta pioche et tu la poses :",
-      "• sur une case vide **voisine** d'une carte (côté ou coin) ;",
-      "• ou **sur une carte de valeur plus faible**, quelle que soit sa couleur : elle la recouvre.",
-      "La toute première carte se pose au centre. Les cases vides possibles ont un liseré clair.",
-      "**🏆 Victoire** : le premier qui aligne 4 cartes **de la même couleur** (horizontale, verticale ou diagonale) gagne.",
-      "**🗑️ Carte bloquée** : si elle ne peut aller nulle part, elle est défaussée et ton adversaire joue.",
+      "**🀄 À ton tour** : tu retournes la tuile du dessus de ta pioche et tu la poses :",
+      "• sur une case vide **voisine** d'une tuile (côté ou coin) ;",
+      "• ou **sur une tuile de valeur plus faible**, quelle que soit sa couleur : elle la recouvre.",
+      "La toute première tuile se pose au centre. Les cases vides possibles ont un liseré clair.",
+      "**🏆 Victoire** : le premier qui aligne 4 tuiles **de la même couleur** (horizontale, verticale ou diagonale) gagne.",
+      "**🗑️ Tuile bloquée** : si elle ne peut aller nulle part, elle est défaussée et ton adversaire joue.",
       "**🤝 Match nul** : les pioches sont vides sans alignement.",
       "**🏳️ Abandon** : défaite immédiate (après confirmation).",
       "",
@@ -458,7 +510,7 @@ function messageSolo(d, pseudo, config) {
         description: [
           d.actif === "bot"
             ? "⏳ Kévina réfléchit…"
-            : `Au tour de **${pseudo}**, carte à poser : ${carteVue(d.carte, d.actif, "joueur")}, limite <t:${echeanceSolo(d, config)}:R>`,
+            : `Au tour de **${pseudo}**, tuile à poser : ${carteVue(d.carte, d.actif, "joueur")}, limite <t:${echeanceSolo(d, config)}:R>`,
           "",
           ...plateauPublic(d, pseudo, "🤖 Kévina"),
           "",
@@ -506,7 +558,7 @@ export async function handlePuntoCommand(webhookUrl, body) {
         })
       : null;
     const vue = vueSolo(enregistre?.duel ?? duel, config, {
-      texte: "Nouvelle partie contre Kévina ! Tu commences : ta première carte va au centre.",
+      texte: "Nouvelle partie contre Kévina ! Tu commences : ta première tuile va au centre.",
     });
     const followup = enregistre && (await supprimerOriginal(webhookUrl)) ? await envoyerEphemere(webhookUrl, vue) : null;
     if (!followup) await patchOriginal(webhookUrl, vue);
@@ -557,8 +609,8 @@ function messageFinalSolo(d, pseudo) {
       : d.gagnant === "nul"
       ? `🤝 Match nul entre ${pseudo} et Kévina, les pioches sont vides.`
       : d.gagnant === "joueur"
-        ? `🏆 ${pseudo} aligne 4 cartes et bat Kévina !`
-        : `🤖 Kévina aligne 4 cartes et bat ${pseudo}.`;
+        ? `🏆 ${pseudo} aligne 4 tuiles et bat Kévina !`
+        : `🤖 Kévina aligne 4 tuiles et bat ${pseudo}.`;
   return {
     embeds: [
       {
@@ -582,12 +634,16 @@ async function executerSolo(webhookUrl, discordId, i, coup, { channelId, pseudo 
     if (r.erreur) return r;
     const texteJoueur = recit(d, "joueur", BOT);
     const lignes = [texteJoueur];
-    // Plateau après le coup du joueur, affiché pendant la réflexion de Kévina
-    let avantKevina = null;
+    // Étapes avant la vue finale : explosion du coup du joueur, plateau
+    // après son coup pendant la réflexion de Kévina, explosion de chaque
+    // coup de Kévina (aucune quand un coup termine la partie)
+    const etapes = [];
+    const explosion = etapeExplosion(d);
+    if (explosion) etapes.push({ duel: explosion, texte: texteJoueur, ms: DELAI_EXPLOSION_MS });
     // Kévina joue dans la foulée (sous le même verrou), plusieurs fois si
     // la carte du joueur est défaussée
     while (!d.termine && d.actif === "bot") {
-      avantKevina ??= structuredClone(d);
+      if (!etapes.some((e) => e.reflexion)) etapes.push({ duel: structuredClone(d), texte: texteJoueur, ms: reflexion, reflexion: true });
       poser(d, "bot", choixKevina(d, "bot", {
         defense: config.defense_kevina,
         prudence: config.prudence_kevina,
@@ -595,27 +651,29 @@ async function executerSolo(webhookUrl, discordId, i, coup, { channelId, pseudo 
         marge: config.marge_kevina,
       }));
       lignes.push(recit(d, "joueur", BOT));
+      const explosionKevina = etapeExplosion(d);
+      if (explosionKevina) etapes.push({ duel: explosionKevina, texte: lignes.filter(Boolean).join("\n"), ms: DELAI_EXPLOSION_MS });
     }
     return {
-      texte: lignes.join("\n"),
+      texte: lignes.filter(Boolean).join("\n"),
       vientDeFinir: d.termine,
-      avantKevina,
-      texteJoueur,
+      etapes,
       coup: true,
-      decalageMs: avantKevina ? reflexion : 0,
+      decalageMs: etapes.reduce((t, e) => t + e.ms, 0),
     };
   }, { nom: pseudo });
   if (!duel) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_SOLO);
     return;
   }
-  if (resultat.avantKevina) {
-    // Coup du joueur affiché d'abord, celui de Kévina après sa réflexion
+  // Coup du joueur affiché d'abord (explosion comprise), celui de Kévina
+  // après sa réflexion
+  for (const etape of resultat.etapes ?? []) {
     await Promise.all([
-      patchOriginal(webhookUrl, vueSolo(resultat.avantKevina, config, { texte: resultat.texteJoueur })),
-      majSalonSolo(resultat.avantKevina, pseudo, config),
+      patchOriginal(webhookUrl, vueSolo(etape.duel, config, { texte: etape.texte })),
+      majSalonSolo(etape.duel, pseudo, config),
     ]);
-    await pause(reflexion);
+    await pause(etape.ms);
   }
   if ((resultat.vientDeFinir || resultat.delai) && (await publierFinSolo(webhookUrl, channelId, duel, pseudo))) return;
   await Promise.all([
@@ -764,7 +822,7 @@ function messagePublic(partie, config) {
         // Plateau neutre, suivi par le salon ; chaque joueur joue depuis sa
         // vue éphémère
         description: [
-          `Au tour de **${nom(d.actif)}**, carte à poser : ${carteVue(d.carte, d.actif, "joueur")}, limite <t:${echeanceDe(partie, config)}:R>`,
+          `Au tour de **${nom(d.actif)}**, tuile à poser : ${carteVue(d.carte, d.actif, "joueur")}, limite <t:${echeanceDe(partie, config)}:R>`,
           "",
           ...plateauPublic(d, nom("joueur"), nom("bot")),
         ].join("\n").slice(0, 4096),
@@ -795,7 +853,7 @@ function messageFinal(partie) {
       ? `🤝 Match nul entre ${nom("joueur")} et ${nom("bot")}, les pioches sont vides.`
       : partie.raisonFin === "delai"
         ? `🏆 ${nom(g)} remporte le duel : ${nom(adversaire(g))} n'a pas joué à temps.`
-        : `🏆 ${nom(g)} aligne 4 cartes et bat ${nom(adversaire(g))} !`;
+        : `🏆 ${nom(g)} aligne 4 tuiles et bat ${nom(adversaire(g))} !`;
   const s = partie.series;
   const series = s
     ? lignesSeries({
@@ -822,9 +880,19 @@ function messageFinal(partie) {
 
 // Après un coup : vue de l'auteur, vue de l'adversaire (webhook encore
 // valable), message public ; en fin de partie, récapitulatif seul (vues
-// supprimées).
-async function diffuserPvp(partie, config, discordId, webhookUrl, texte) {
+// supprimées). Avec `explosion` (partie en cours), étape intermédiaire
+// (carte recouverte en 💥) sur les vues et le message public d'abord.
+async function diffuserPvp(partie, config, discordId, webhookUrl, texte, explosion = null) {
   const autres = Object.values(partie.sieges ?? {}).filter((id) => id !== discordId);
+  if (explosion && partie.statut === "enCours") {
+    const etape = { ...partie, duel: explosion };
+    await Promise.all([
+      patchOriginal(webhookUrl, vuePvp(etape, config, discordId, texte)),
+      ...autres.map((id) => patchOriginal(webhookValide(partie, id), vuePvp(etape, config, id))),
+      messageSalon("PATCH", partie.channelId, partie.messageId, messagePublic(etape, config)),
+    ]);
+    await pause(DELAI_EXPLOSION_MS);
+  }
   if (partie.statut === "fini") {
     const ok = await messageSalon("POST", partie.channelId, null, messageFinal(partie));
     if (ok) await messageSalon("DELETE", partie.channelId, partie.messageId);
@@ -905,7 +973,7 @@ export async function handlePuntoPvpCommand(webhookUrl, body) {
     // Vue du lanceur SOUS le message public : réponse différée (créée dès
     // la commande, au-dessus) supprimée, vue renvoyée en followup, dont
     // l'URL est mémorisée pour les mises à jour. Repli : réponse différée.
-    const vue = vuePvp(r.partie, config, discordId, "🃏 Défi lancé dans le salon !");
+    const vue = vuePvp(r.partie, config, discordId, "🀄 Défi lancé dans le salon !");
     const followup = (await supprimerOriginal(webhookUrl)) ? await envoyerEphemere(webhookUrl, vue) : null;
     const { partie } = await agirPvp((p) => {
       memoriserWebhook(p, discordId, followup ?? webhookUrl);
@@ -953,7 +1021,7 @@ export async function handlePuntoOuvrir(webhookUrl, body) {
     if (resultat.rejoint || resultat.vientDeFinir) {
       await supprimerOriginal(ancienneVue);
       const texte = resultat.rejoint
-        ? `⚔️ ${username} relève le défi ! Tirage au sort : ${partie.noms[partie.sieges.joueur]} commence (première carte au centre).`
+        ? `⚔️ ${username} relève le défi ! Tirage au sort : ${partie.noms[partie.sieges.joueur]} commence (première tuile au centre).`
         : null;
       // Le lanceur voit aussi l'arrivée de son adversaire
       await diffuserPvp(partie, config, discordId, webhookUrl, texte);
@@ -977,7 +1045,9 @@ async function executerPvp(webhookUrl, discordId, i, coup) {
     memoriserWebhook(p, discordId, webhookUrl);
     if (p.statut !== "enCours") return { erreur: "termine" };
     const r = actionPoser(p.duel, moi, i, coup);
-    return r.erreur ? r : { texte: recit(p.duel, moi, nomsAdv(p, moi)), coup: true };
+    return r.erreur
+      ? r
+      : { texte: recit(p.duel, moi, nomsAdv(p, moi)), coup: true, explosion: etapeExplosion(p.duel) };
   });
   if (!partie) {
     await patchOriginal(webhookUrl, AUCUNE_PARTIE_PVP);
@@ -989,7 +1059,7 @@ async function executerPvp(webhookUrl, discordId, i, coup) {
   }
   const texte = resultat.erreur ? avertissement(resultat.erreur) : resultat.texte;
   if (resultat.coup || resultat.vientDeFinir) {
-    await diffuserPvp(partie, config, discordId, webhookUrl, texte);
+    await diffuserPvp(partie, config, discordId, webhookUrl, texte, resultat.explosion);
     if (resultat.coup) await surveillerDelai(partie, config, discordId, webhookUrl);
     return;
   }

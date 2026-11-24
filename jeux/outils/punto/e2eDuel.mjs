@@ -151,7 +151,11 @@ await h.handlePuntoRegles(W);
 verifier(vues.at(-1));
 console.log(`${vues.length} vues et ${salon.length} messages de salon conformes`);
 
-const exemple = vues.find((v) => rangees(v).length === 6 && texte(v).includes("Kévina pose"));
+const exemple = vues.findLast((v) => rangees(v).length === 6 && texte(v).includes("Ta tuile") && texte(v).includes("Tuiles jouées") && rangees(v).some((r) => r.components.some((c) => c.emoji?.name?.endsWith("_gagnant"))));
+// Étape d'explosion (carte recouverte en 💥) vue au moins une fois
+const explosion = vues.find((v) => rangees(v).some((r) => r.components.some((c) => c.emoji?.name === "💥")));
+if (!explosion) throw new Error("aucune étape d'explosion");
+console.log("\n--- Étape d'explosion ---\n" + texte(explosion));
 console.log("\n--- Vue contre Kévina ---\n" + texte(exemple));
 console.log(
   "Boutons :\n" +

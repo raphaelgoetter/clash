@@ -9,15 +9,15 @@
 // ============================================================
 
 import { TAILLE } from "../../../services/puntoRules.js";
-import { boutonsPlateau, ligneCarte, plateau, versV2 } from "../puntoDuel.js";
+import { boutonsPlateau, legende, ligneCarte, plateau, versV2 } from "../puntoDuel.js";
 
 const KEVINA = { Sujet: "Kévina", emoji: "🐉" };
 const NOMS = { moi: "Toi", adv: "🐉 Kévina" };
 
 export const VUE_PUNTO = {
   regle: [
-    "Chacun retourne à son tour la carte du dessus de sa pioche (les tiennes sont bleues et vertes) et la pose sur une case vide voisine d'une carte, ou sur une carte plus faible qu'elle recouvre.",
-    "Aligne 4 cartes de la même couleur avant Kévina. Tu commences.",
+    "Chacun retourne à son tour la tuile du dessus de sa pioche (les tiennes sont bleues et vertes) et la pose sur une case vide voisine d'une tuile, ou sur une tuile plus faible qu'elle recouvre.",
+    "Aligne 4 tuiles de la même couleur avant Kévina. Tu commences.",
   ].join("\n"),
   partie(d, { seasonId, titre, texte, attente, couleur }) {
     const carte = d.termine ? null : ligneCarte(d, "joueur", KEVINA);
@@ -26,8 +26,9 @@ export const VUE_PUNTO = {
       const lignes = [...(texte ? [texte, ""] : []), ...plateau(d, "joueur", NOMS), ...(carte ? ["", carte] : [])];
       return { embeds: [{ title: titre, description: lignes.join("\n").slice(0, 4096), color: couleur }], components: [] };
     }
-    const [legende] = plateau(d, "joueur", NOMS);
-    const lignes = [legende, ...(texte ? ["", texte] : []), "", carte];
+    const lignes = [...legende(d, "joueur", NOMS), ...(texte ? ["", texte] : []), "", carte];
+    // Sans carte jouée (premier coup) : pas de ligne vide en tête
+    while (lignes[0] === "") lignes.shift();
     const components = boutonsPlateau(d, "joueur", true, "").map((rangee, r) => ({
       ...rangee,
       components: rangee.components.map((b, c) => ({ ...b, custom_id: `boss_jouer:${seasonId}:${r * TAILLE + c}:${d.coups}` })),
@@ -36,9 +37,9 @@ export const VUE_PUNTO = {
   },
   action: ([i, coup]) => ({ case: Number(i), coup: Number(coup) }),
   raisonFin(d) {
-    if (d.gagnant === "joueur") return "Tu alignes 4 cartes de la même couleur !";
+    if (d.gagnant === "joueur") return "Tu alignes 4 tuiles de la même couleur !";
     if (d.gagnant === "nul") return "Les pioches sont vides.";
-    return "Kévina aligne 4 cartes de la même couleur.";
+    return "Kévina aligne 4 tuiles de la même couleur.";
   },
   versV2,
 };

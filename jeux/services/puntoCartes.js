@@ -89,9 +89,10 @@ export function formatCarte(couleur, valeur, { gagnant = false } = {}) {
 }
 
 // Objet `emoji` d'un bouton Discord, ou null si la variante n'est pas
-// uploadée (à l'appelant de choisir son repli).
-export function carteButtonEmoji(couleur, valeur) {
-  const variante = CASES_VIDES.includes(couleur) ? couleur : varianteDe(couleur, valeur);
+// uploadée (à l'appelant de choisir son repli). `gagnant` : contour jaune
+// (dans le duel, dernière carte posée).
+export function carteButtonEmoji(couleur, valeur, { gagnant = false } = {}) {
+  const variante = CASES_VIDES.includes(couleur) ? couleur : varianteDe(couleur, valeur, { gagnant });
   const id = emojiId(variante);
   return id ? { id, name: emojiName(variante) } : null;
 }

@@ -20,7 +20,8 @@ function partie(graine, rngJoueur, { glouton = false } = {}) {
     const i = glouton ? choixKevina(d, "joueur", { rng: rngJoueur }) : cases[Math.floor(rngJoueur() * cases.length)];
     const r = BOSS_PUNTO.jouer(d, { case: i, coup: d.coups }, { graine, config });
     assert.ok(!r.erreur, r.message);
-    assert.ok(r.texte);
+    // Coup non raconté (contour jaune sur le plateau) : défausses seulement
+    assert.ok(r.texte === null || r.texte.includes("défaussée"));
     if (!d.termine) assert.strictEqual(d.actif, "joueur");
     etats.push(JSON.stringify(d));
     assert.ok(++tours <= 72);
@@ -58,7 +59,7 @@ function main() {
     assert.strictEqual(BOSS_PUNTO.jouer(d, { case: 12, coup: 3 }, { graine: "graineC", config }).erreur, "perime");
     assert.strictEqual(JSON.stringify(d), avant);
     const r = BOSS_PUNTO.jouer(d, { case: 12, coup: 0 }, { graine: "graineC", config });
-    assert.ok(!r.erreur && r.avantKevina && r.texteKevina);
+    assert.ok(!r.erreur && r.avantKevina && d.dernier.id === "bot");
     assert.strictEqual(r.avantKevina.actif, "bot");
     const { d: fini } = partie("graineC", rngBossDe("joueur", 2));
     assert.strictEqual(BOSS_PUNTO.jouer(fini, { case: 12, coup: fini.coups }, { graine: "graineC", config }).erreur, "termine");

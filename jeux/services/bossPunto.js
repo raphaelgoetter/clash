@@ -27,20 +27,13 @@ const MAX_COUPS = 72;
 const COULEURS = { joueur: ["bleu", "vert"], bot: ["rouge", "orange"] };
 const carteTexte = (carte, s) => formatCarte(COULEURS[s][carte.k], carte.v);
 
-// Récit du dernier coup et des défausses qui ont suivi (même phrasé que
-// recit() du handler puntoDuel.js, vu par le joueur)
+// Défausses qui ont suivi le dernier coup (même phrasé que recit() du
+// handler puntoDuel.js, vu par le joueur) ; le coup n'est pas raconté, la
+// dernière carte posée a un contour jaune sur le plateau
 function recit(d) {
   const lignes = [];
-  const x = d.dernier;
-  if (x) {
-    const sujet = x.id === "joueur" ? "Tu poses" : "Kévina pose";
-    const sur = x.recouverte
-      ? ` sur ${x.recouverte.s === "joueur" ? "ton" : x.id === "joueur" ? "le" : "son"} ${carteTexte(x.recouverte, x.recouverte.s)}`
-      : "";
-    lignes.push(`${sujet} ${carteTexte(x.carte, x.id)}${sur}.`);
-  }
   for (const { id, carte } of d.defausses ?? []) {
-    lignes.push(`${id === "joueur" ? "Ta carte" : "La carte de Kévina"} ${carteTexte(carte, id)} ne peut être posée nulle part : défaussée.`);
+    lignes.push(`${id === "joueur" ? "Ta tuile" : "La tuile de Kévina"} ${carteTexte(carte, id)} ne peut être posée nulle part : défaussée.`);
   }
   return lignes.join("\n") || null;
 }
@@ -94,7 +87,7 @@ export const BOSS_PUNTO = {
     if (d.termine) return { erreur: "termine", message: "La partie est terminée." };
     if (coup !== undefined && coup !== d.coups) return { erreur: "perime", message: "Le plateau a changé depuis : rejoue sur celui-ci." };
     const r = poser(d, "joueur", i);
-    if (r.erreur) return { erreur: "interdite", message: "Ta carte ne peut pas aller sur cette case." };
+    if (r.erreur) return { erreur: "interdite", message: "Ta tuile ne peut pas aller sur cette case." };
     const texte = recit(d);
     let avantKevina = null;
     const lignes = [];
