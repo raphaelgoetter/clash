@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // pontStatus.js
 // État courant du Pont du Troll sans Discord : jour et phase, Vrai/Faux du
-// matin, multiplicateurs, événement, répartition SECRÈTE du jour, Rumeurs et Indices, projection du
+// matin (participants), multiplicateurs, événement, répartition SECRÈTE du jour, Rumeurs et Indices, projection du
 // résultat au décompte, classement projeté.
 //
 // Usage : node jeux/scripts/pontStatus.js
 
 import "../env.js";
 
-import { loadPontConfig, readState, readUsernames, compterIndices, formatPieces, jourOuvert, memeRang, estPnj, MATIN, porteursBonus, compterReponsesVraiFaux, horaires } from "../services/pont.js";
+import { loadPontConfig, readState, readUsernames, compterIndices, formatPieces, jourOuvert, memeRang, estPnj, MATIN, porteursBonus, listVraiFaux } from "../services/pont.js";
 import { projeterJour } from "../discord/handlers/pont.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
@@ -27,21 +27,30 @@ import { rangExAequo } from "@clash/commun/classement.js";
       return;
     }
     if (state.phase === "annonce") {
-      console.log("Jour d'annonce : le Jour 1 arrive au prochain passage du cron.");
+      console.log("Jour d'annonce.");
       return;
     }
 
     const usernames = await readUsernames();
     const nom = (id) => (estPnj(id) ? `${usernames[id]} (PNJ)` : resolveDisplayName(id, usernames[id]));
-    const reponses = await compterReponsesVraiFaux(state.jour);
+    // Participants du Vrai/Faux, par ordre de réponse
+    const vf = Object.entries(await listVraiFaux(state.jour)).sort(([, a], [, b]) => String(a?.at).localeCompare(String(b?.at)));
     const porteurs = await porteursBonus(state.jour);
+    const afficherVraiFaux = async () => {
+      console.log(`Vrai/Faux du matin : ${vf.length} réponse(s), ${porteurs.length} bonne(s)`);
+      for (const [label, correct] of [["✅", true], ["❌", false]]) {
+        const noms = await Promise.all(vf.filter(([, r]) => Boolean(r?.correct) === correct).map(([id]) => nom(id)));
+        if (noms.length) console.log(`  ${label} ${noms.join(", ")}`);
+      }
+    };
     if (state.phase === MATIN) {
-      console.log(`\nJour ${state.jour}/${config.duree_jours}, matin : ${reponses} réponse(s) au Vrai/Faux, ${porteurs.length} bonne(s). Les ponts ouvrent au passage de ${horaires().ponts}h.`);
+      console.log(`\nJour ${state.jour}/${config.duree_jours}, matin`);
+      await afficherVraiFaux();
       return;
     }
     const { cfg, res, entry, ranking } = await projeterJour(state, config);
     console.log(`\nJour ${state.jour}/${config.duree_jours}, après-midi (${jourOuvert(state.publishedAt) ? "ponts ouverts" : "ponts fermés, en attente du cron"})`);
-    console.log(`Vrai/Faux du matin : ${reponses} réponse(s), ${porteurs.length} pièce(s) bonus`);
+    await afficherVraiFaux();
     console.log(`Pierre ×${cfg.pierre} · Cordes ×${cfg.cordes}${cfg.evenement ? ` · événement : ${cfg.evenement}` : ""}`);
     console.log(`\nRépartition (secrète) : Pierre ${res.pierre} · Cordes ${res.cordes}`);
     for (const cote of ["pierre", "cordes"]) {

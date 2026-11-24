@@ -381,6 +381,11 @@ export async function compterReponsesVraiFaux(jour) {
   return Number(await getRedis().hlen(vfKey(jour))) || 0;
 }
 
+// Réponses du matin : { discordId: { reponse, correct, at } }
+export async function listVraiFaux(jour) {
+  return hgetallJson(vfKey(jour));
+}
+
 // Porteurs de la pièce du matin : bonnes réponses du jour
 export async function porteursBonus(jour) {
   const toutes = await hgetallJson(vfKey(jour));
