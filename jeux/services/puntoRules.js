@@ -1,7 +1,7 @@
 // ============================================================
 // puntoRules.js — Règles pures de Punto (`/punto`) : grille commune de
-// 5×5 cases. Chaque joueur a sa pioche de 36 cartes, 2 couleurs de 1 à 9
-// en double. À son tour, on retourne la carte du dessus de sa pioche
+// 5×5 cases. Chaque joueur a sa pioche de 18 cartes, 2 couleurs de 1 à 9
+// en un exemplaire. À son tour, on retourne la carte du dessus de sa pioche
 // et on la pose sur une case vide voisine d'une carte (côté ou coin), ou
 // sur une carte de valeur inférieure (quelle que soit sa couleur), qu'elle
 // recouvre. Le premier qui aligne 4 cartes d'une même couleur gagne.
@@ -26,6 +26,9 @@ export const CENTRE = (TAILLE * TAILLE - 1) / 2;
 // Couleurs par joueur (indices 0 et 1), valeurs de 1 à 9, chaque carte en double
 export const NB_COULEURS = 2;
 export const VALEUR_MAX = 9;
+// Exemplaires de chaque carte (couleur × valeur) dans une pioche : 18 cartes
+export const EXEMPLAIRES = 1;
+export const TAILLE_PIOCHE = NB_COULEURS * VALEUR_MAX * EXEMPLAIRES;
 
 export const adversaire = (id) => (id === "joueur" ? "bot" : "joueur");
 
@@ -62,12 +65,12 @@ function melanger(cartes, rng) {
   return cartes;
 }
 
-// Pioche d'un joueur : 2 couleurs × valeurs 1 à 9 × 2 exemplaires, mélangée.
+// Pioche d'un joueur : 2 couleurs × valeurs 1 à 9 × EXEMPLAIRES, mélangée.
 // Carte : { k (couleur 0 ou 1), v (valeur) }.
 function pioche(rng) {
   const cartes = [];
   for (let k = 0; k < NB_COULEURS; k++) {
-    for (let v = 1; v <= VALEUR_MAX; v++) cartes.push({ k, v }, { k, v });
+    for (let v = 1; v <= VALEUR_MAX; v++) for (let e = 0; e < EXEMPLAIRES; e++) cartes.push({ k, v });
   }
   return melanger(cartes, rng);
 }
@@ -113,7 +116,7 @@ export function alignementsDepuis(grille, i) {
 // celles qui ne peuvent être posées nulle part (d.defausses, racontées par
 // la vue) et en passant alors au joueur suivant. Pioches vides : match nul.
 function tourSuivant(d, id) {
-  for (let essai = 0; essai <= 2 * NB_COULEURS * VALEUR_MAX * 2; essai++) {
+  for (let essai = 0; essai <= 2 * TAILLE_PIOCHE; essai++) {
     const carte = d.pioches[id].pop();
     if (!carte) {
       d.termine = true;

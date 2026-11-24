@@ -24,7 +24,7 @@ function partie(graine, rngJoueur, { glouton = false } = {}) {
     assert.ok(r.texte === null || r.texte.includes("défaussée"));
     if (!d.termine) assert.strictEqual(d.actif, "joueur");
     etats.push(JSON.stringify(d));
-    assert.ok(++tours <= 72);
+    assert.ok(++tours <= 36);
   }
   return { d, etats };
 }
@@ -47,8 +47,8 @@ function main() {
       [b.carte, b.pioches.joueur, b.pioches.bot],
     );
     assert.strictEqual(a.actif, "joueur");
-    assert.strictEqual(a.pioches.joueur.length + 1, 36);
-    assert.strictEqual(a.pioches.bot.length, 36);
+    assert.strictEqual(a.pioches.joueur.length + 1, 18);
+    assert.strictEqual(a.pioches.bot.length, 18);
   }
 
   // ── Erreurs : case interdite, vue dépassée, partie finie ──
@@ -85,10 +85,10 @@ function main() {
   // ── Ordre des scores : victoire > nul > défaite (états construits) ──
   {
     const base = BOSS_PUNTO.creer({ graine: "ordre", config });
-    const victoireLente = { ...base, termine: true, gagnant: "joueur", coups: 71 };
+    const victoireLente = { ...base, termine: true, gagnant: "joueur", coups: 35 };
     const victoireRapide = { ...base, termine: true, gagnant: "joueur", coups: 7 };
-    const nul = { ...base, termine: true, gagnant: "nul", coups: 72, grille: base.grille.map(() => ({ s: "joueur", k: 0, v: 9 })) };
-    const defaiteLongue = { ...base, termine: true, gagnant: "bot", coups: 72, grille: base.grille.map(() => ({ s: "joueur", k: 0, v: 9 })) };
+    const nul = { ...base, termine: true, gagnant: "nul", coups: 36, grille: base.grille.map(() => ({ s: "joueur", k: 0, v: 9 })) };
+    const defaiteLongue = { ...base, termine: true, gagnant: "bot", coups: 36, grille: base.grille.map(() => ({ s: "joueur", k: 0, v: 9 })) };
     const defaiteCourte = { ...base, termine: true, gagnant: "bot", coups: 8 };
     const score = (d) => BOSS_PUNTO.score(d);
     assert.ok(score(victoireRapide) > score(victoireLente));

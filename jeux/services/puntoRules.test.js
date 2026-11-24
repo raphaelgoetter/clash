@@ -32,11 +32,11 @@ const grilleVide = () => Array(5).fill(vide[0]);
 const sansHasard = () => 0;
 
 function main() {
-  // ── Pioches : 36 cartes par joueur, 2 couleurs × 1 à 9 en double ──
+  // ── Pioches : 18 cartes par joueur, 2 couleurs × 1 à 9 en un exemplaire ──
   {
     const d = creerDuel();
-    assert.strictEqual(d.pioches.joueur.length + 1, 36);
-    assert.strictEqual(d.pioches.bot.length, 36);
+    assert.strictEqual(d.pioches.joueur.length + 1, 18);
+    assert.strictEqual(d.pioches.bot.length, 18);
     assert.strictEqual(d.actif, "joueur");
     assert.ok(d.carte);
     const toutes = [...d.pioches.bot].map((c) => `${c.k}${c.v}`).sort();
@@ -182,7 +182,7 @@ function main() {
         assert.ok(casesJouables(d.grille, d.carte).includes(i));
         poser(d, d.actif, i);
       }
-      assert.ok(d.coups <= 72 && d.grille.length === NB_CASES);
+      assert.ok(d.coups <= 36 && d.grille.length === NB_CASES);
     }
   }
 

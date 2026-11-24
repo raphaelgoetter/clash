@@ -3,7 +3,7 @@
 // (a = anticipation du Boss : connaît la prochaine carte adverse ; a2 :
 // et la sienne).
 // Usage : node jeux/outils/punto/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
-// ex. : node jeux/outils/punto/simulateDuel.mjs 2000 kevinap1s0.5 kevinam10
+// ex. : node jeux/outils/punto/simulateDuel.mjs 2000 kevinap1s0.5 kevinam6
 // (« bon joueur » contre la Kévina de production). Le « joueur » commence
 // toujours. Par défaut : defense 1, prudence 0, solidite 0, marge 0.
 import { creerDuel, poser, choixKevina, choixHasard } from "../../services/puntoRules.js";

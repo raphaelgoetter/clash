@@ -34,7 +34,7 @@ import {
   rejoindrePvp,
   siegeDe,
 } from "../../services/puntoDuel.js";
-import { TAILLE, NB_CASES, adversaire, casesJouables, choixKevina, poser } from "../../services/puntoRules.js";
+import { TAILLE, NB_CASES, EXEMPLAIRES, VALEUR_MAX, TAILLE_PIOCHE, adversaire, casesJouables, choixKevina, poser } from "../../services/puntoRules.js";
 import { carteButtonEmoji, formatCarte } from "../../services/puntoCartes.js";
 import {
   getRoleIdByName,
@@ -212,14 +212,14 @@ const couleurDe = (s, k, moi) => (s === moi ? MOI : ADV)[k];
 const carteVue = (carte, s, moi, opts) => formatCarte(couleurDe(s, carte.k, moi), carte.v, opts);
 
 // Valeurs déjà jouées par le siège `s` (posées ou défaussées), par couleur
-// du moteur, triées : déduites de sa pioche (36 cartes moins celles qui
+// du moteur, triées : déduites de sa pioche (18 cartes moins celles qui
 // restent et celle à poser).
 export function valeursJouees(d, s) {
   const restantes = [...(d.pioches?.[s] ?? []), ...(d.carte && d.actif === s ? [d.carte] : [])];
   return [0, 1].map((k) => {
     const valeurs = [];
-    for (let v = 1; v <= 9; v++) {
-      const n = 2 - restantes.filter((c) => c.k === k && c.v === v).length;
+    for (let v = 1; v <= VALEUR_MAX; v++) {
+      const n = EXEMPLAIRES - restantes.filter((c) => c.k === k && c.v === v).length;
       for (let j = 0; j < n; j++) valeurs.push(v);
     }
     return valeurs;
@@ -466,7 +466,7 @@ function buildReglesEmbed(config) {
   return {
     title: "📖 Règles de Punto",
     description: [
-      `Une grille de ${TAILLE}×${TAILLE} cases. Chaque joueur a sa pioche de 36 tuiles : 2 couleurs, valeurs de 1 à 9, chaque tuile en double. Tes tuiles sont bleues et vertes, celles de ton adversaire rouges et orange.`,
+      `Une grille de ${TAILLE}×${TAILLE} cases. Chaque joueur a sa pioche de ${TAILLE_PIOCHE} tuiles : 2 couleurs, valeurs de 1 à 9. Tes tuiles sont bleues et vertes, celles de ton adversaire rouges et orange.`,
       "",
       "**🀄 À ton tour** : tu retournes la tuile du dessus de ta pioche et tu la poses :",
       "• sur une case vide **voisine** d'une tuile (côté ou coin) ;",

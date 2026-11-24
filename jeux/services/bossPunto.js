@@ -14,13 +14,13 @@
 // sienne (voir choixKevina(), puntoRules.js).
 // ============================================================
 
-import { ALIGNEMENT, TAILLE, choixKevina, creerDuel, poser } from "./puntoRules.js";
+import { ALIGNEMENT, TAILLE, TAILLE_PIOCHE, choixKevina, creerDuel, poser } from "./puntoRules.js";
 import { formatCarte } from "./puntoCartes.js";
 import { rngBossDe } from "./bossRng.js";
 import { loadDuelConfig } from "./puntoDuel.js";
 
-// Cartes posables au plus (2 pioches de 36)
-const MAX_COUPS = 72;
+// Cartes posables au plus (2 pioches)
+const MAX_COUPS = 2 * TAILLE_PIOCHE;
 
 // Couleurs affichées, comme la vue du duel (handler puntoDuel.js) : les
 // siennes froides, celles de Kévina chaudes
@@ -112,10 +112,10 @@ export const BOSS_PUNTO = {
   resultat: (d) => (d.gagnant === "joueur" ? "victoire" : d.gagnant === "nul" ? "nul" : "defaite"),
   // Score (plus haut = mieux) :
   // - victoire : 100 + cartes posées en moins (MAX_COUPS − coups), donc
-  //   plus elle est rapide, mieux c'est (101 à 165) ;
+  //   plus elle est rapide, mieux c'est (101 à 129) ;
   // - nul (pioches vides) : 50 + cases de la grille finale tenues par le
   //   joueur (50 à 75) ;
-  // - défaite ou inactivité : avoir tenu (coups / 2, jusqu'à 36) et être
+  // - défaite ou inactivité : avoir tenu (coups / 2, jusqu'à 18) et être
   //   passé près (3 × sa meilleure ligne ouverte, 0 à 9), plafonné à 49.
   score(d, { inactif = false } = {}) {
     if (!inactif && d.gagnant === "joueur") return 100 + (MAX_COUPS - d.coups);

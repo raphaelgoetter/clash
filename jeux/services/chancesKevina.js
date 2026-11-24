@@ -7,7 +7,7 @@
 // jeux/CONTRIBUTING.md, « Chances contre Kévina »).
 // ============================================================
 
-export const CHANCES_BON_JOUEUR = { quatre: 35, frise: 36, punto: 62, grille: 50, potato: 59 };
+export const CHANCES_BON_JOUEUR = { quatre: 35, frise: 36, punto: 56, grille: 50, potato: 59 };
 
 /** Ligne affichée sous le plateau public, null si le jeu n'est pas mesuré. */
 export function ligneChances(jeu) {
