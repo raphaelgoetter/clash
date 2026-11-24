@@ -1,5 +1,6 @@
 import assert from "assert";
-import { applyJoin, gameIdFor, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
+import { Redis } from "@upstash/redis";
+import { applyJoin, gameIdFor, startGame, writeState, readState, savePublicMessage, clearPublicMessage, takeAbandonedMessage, isMancheReady, isNewHighScore, computeMancheOutcome, buildRanking, resolvePvP } from "./blackjackDuel.js";
 
 function baseState(overrides = {}) {
   return {
@@ -197,6 +198,25 @@ async function main() {
     };
     const outcome = computeMancheOutcome(state, doubles, {});
     assert.strictEqual(outcome.pointsAfter.a, 4);
+  }
+
+  // ── takeAbandonedMessage — message d'une partie expirée, marqué une seule fois ──
+  if (Redis.isFake) {
+    const opts = { maxPlayers: 1, totalManches: 5 };
+    const { state } = await startGame("salon", "u1", opts);
+    await savePublicMessage(state.gid, "salon", "m1");
+    // Partie en cours : rien à marquer
+    assert.strictEqual(await takeAbandonedMessage(state.gid), null);
+    // État expiré (TTL) : le message est rendu, puis plus jamais
+    await new Redis({}).del(`blackjackduel:${state.gid}:state`);
+    assert.strictEqual(await readState(state.gid), null);
+    assert.deepStrictEqual(await takeAbandonedMessage(state.gid), { channelId: "salon", messageId: "m1" });
+    assert.strictEqual(await takeAbandonedMessage(state.gid), null);
+    // Fin normale : message oublié, jamais marqué abandonné
+    await savePublicMessage(state.gid, "salon", "m2");
+    await writeState(state.gid, { ...state, termine: true });
+    await clearPublicMessage(state.gid);
+    assert.strictEqual(await takeAbandonedMessage(state.gid), null);
   }
 
   console.log("✓ blackjackDuel service tests passed");

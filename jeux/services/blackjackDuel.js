@@ -118,6 +118,11 @@ const usernamesKey = (gid) => `blackjackduel:${gid}:usernames`;
 const resolvingKey = (gid) => `blackjackduel:${gid}:resolving`;
 const handKey = (gid, manche) => `blackjackduel:${gid}:hand:${manche}`;
 const webhookKey = (gid, manche) => `blackjackduel:${gid}:webhook:${manche}`;
+// Message public de la dernière partie lancée, gardé au-delà de l'état (non
+// effacé par resetGame) : une partie expirée n'exécute rien, son message est
+// marqué « abandonnée » au prochain clic ou au prochain /blackjack.
+const publicMessageKey = (gid) => `blackjackduel:${gid}:message`;
+const PUBLIC_MESSAGE_TTL_SECONDS = 7 * 24 * 3600;
 // Meilleur score final de tous les temps, un record par format (5 ou 10
 // manches : des totaux non comparables). JAMAIS effacé par la remise à zéro
 // d'une partie.
@@ -153,6 +158,27 @@ export async function writeState(gid, state) {
   for (const key of [pointsKey(gid), usernamesKey(gid), resolvingKey(gid)]) {
     await getRedis().expire(key, INACTIVITE_SECONDES);
   }
+}
+
+// ── Message public (repérage des parties abandonnées) ──────────────
+
+export async function savePublicMessage(gid, channelId, messageId) {
+  await getRedis().set(publicMessageKey(gid), toJson({ channelId, messageId }), { ex: PUBLIC_MESSAGE_TTL_SECONDS });
+}
+
+export async function clearPublicMessage(gid) {
+  await getRedis().del(publicMessageKey(gid));
+}
+
+// Message public d'une partie expirée sans fin normale (null si la partie
+// est encore en cours ou déjà traitée). Retiré au passage : un seul marquage.
+export async function takeAbandonedMessage(gid) {
+  const state = await readState(gid);
+  if (state && !state.termine) return null;
+  const ref = fromJson(await getRedis().get(publicMessageKey(gid)));
+  if (!ref) return null;
+  await clearPublicMessage(gid);
+  return ref;
 }
 
 // ── Mains des joueurs (une par manche, hash `blackjackduel:<gid>:hand:<manche>`) ──

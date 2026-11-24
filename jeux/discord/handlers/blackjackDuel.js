@@ -27,6 +27,10 @@ import {
   saveHandWebhook,
   readHandWebhooks,
   readScores,
+  gameIdFor,
+  savePublicMessage,
+  clearPublicMessage,
+  takeAbandonedMessage,
   INACTIVITE_SECONDES,
 } from "../../services/blackjackDuel.js";
 import { encodeFin, encodeMain, encodeManche, meilleureMain } from "../../services/blackjackImage.js";
@@ -43,9 +47,6 @@ const BLACKJACKDUEL_COLOR = 0x2ecc71;
 // « 2 minutes » : délai d'abandon d'une partie sans action
 const DELAI_INACTIVITE = `${INACTIVITE_SECONDES / 60} minutes`;
 
-// Cartes : en image (blackjackImage.js), sauf la carte visible du Croupier
-// dans le message public.
-const formatCard = (card) => `${card.rank}${card.suit}`;
 const ptsLabel = (n) => `${n} point${n > 1 ? "s" : ""}`;
 
 // ── Résolution des rôles/utilisateurs ────────────────────────────────
@@ -120,6 +121,22 @@ async function patchPublicMessage(state, payload) {
       err.message,
     );
   }
+}
+
+// Partie expirée (2 min sans action, rien ne s'exécute à ce moment-là) :
+// son message public est marqué abandonné au prochain clic ou au prochain
+// /blackjack, boutons retirés.
+async function markAbandoned(gid) {
+  const ref = await takeAbandonedMessage(gid);
+  if (!ref) return;
+  await patchPublicMessage(ref, {
+    embeds: [{
+      title: `🃏 Blackjack Duel${gid === "pvp" ? "" : " contre le Croupier"}`,
+      description: `⏰ Partie abandonnée (${DELAI_INACTIVITE} sans action).`,
+      color: BLACKJACKDUEL_COLOR,
+    }],
+    components: [],
+  });
 }
 
 // Fin de partie : le récapitulatif complet est publié dans un NOUVEAU post
@@ -307,7 +324,6 @@ async function buildTableEmbed(
   // est utilisé pour le body) — même principe que buildDealerTargetSection
   // du jeu spécial (_handlers/blackjack.js), qui n'affiche pas non plus le
   // "Jour X/Y" en double dans son propre corps de message.
-  const seatsLabel = `${state.players.length}/${state.maxPlayers} joueur${state.maxPlayers > 1 ? "s" : ""} inscrit${state.players.length > 1 ? "s" : ""}`;
   if (!isSolo) {
     // 2 joueurs : pas de Croupier — duel direct, résultat connu dès que
     // tous les joueurs inscrits ont fini leur main.
@@ -315,18 +331,11 @@ async function buildTableEmbed(
       "## 🃏 Duel entre joueurs",
       "La meilleure main l'emporte. Résultat révélé dès que tout le monde a joué.",
       "",
-      seatsLabel,
-    );
-  } else {
-    // Contre le Croupier : sa première carte est visible, la seconde cachée ;
-    // il joue sa main (pioche jusqu'à 17) après le joueur.
-    lines.push(
-      `## 🎩 Carte visible du Croupier : ${formatCard(state.dealer.cards[0])}`,
-      "Sa seconde carte est cachée. Il jouera après toi (il pioche jusqu'à 17).",
-      "",
-      seatsLabel,
+      `${state.players.length}/${state.maxPlayers} joueurs inscrit${state.players.length > 1 ? "s" : ""}`,
     );
   }
+  // Contre le Croupier : ni carte visible ni nombre d'inscrits (toujours
+  // 1/1), la vue joueur montre déjà la table.
 
   if (state.players.length > 0) {
     lines.push(await buildPendingLabel(state, hands));
@@ -334,7 +343,7 @@ async function buildTableEmbed(
     lines.push("Clique sur **Jouer** pour t'inscrire et jouer ta première main.");
   }
 
-  // Pas de cron : le message d'une partie expirée resterait figé, d'où le
+  // Pas de cron : le message d'une partie expirée reste figé jusqu'au prochain clic ou /blackjack (markAbandoned), d'où le
   // rappel du délai (relancé à chaque action). Texte fixe plutôt qu'un
   // horodatage relatif <t:…:R>, affiché dans la langue du client Discord.
   lines.push("", `⏰ Sans action pendant ${DELAI_INACTIVITE}, partie abandonnée.`);
@@ -426,6 +435,7 @@ export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, tot
   try {
     const channelId = body.channel_id;
     const { discordId } = extractMember(body);
+    await markAbandoned(gameIdFor(maxPlayers, discordId));
     const result = await startGame(channelId, discordId, { maxPlayers, totalManches });
 
     if (result.alreadyActive) {
@@ -459,6 +469,7 @@ export async function handleBlackjackCommand(webhookUrl, body, { maxPlayers, tot
     }
     const message = await res.json();
     await writeState(result.state.gid, { ...result.state, messageId: message.id });
+    await savePublicMessage(result.state.gid, channelId, message.id);
 
     await deleteOriginal(webhookUrl);
   } catch (err) {
@@ -647,6 +658,7 @@ async function refreshPublicMessage(gid) {
   if (outcome.final) {
     const embed = await buildFinalEmbed(outcome.state, outcome.ranking, outcome.highScore);
     await postFinalMessage(outcome.state, { embeds: [embed], components: [] });
+    await clearPublicMessage(gid);
     return outcome;
   }
 
@@ -705,6 +717,7 @@ export async function handleJouer(webhookUrl, gid, discordId, username) {
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
+      await markAbandoned(gid);
       return;
     }
     if (result.notYours) {
@@ -739,6 +752,7 @@ async function handleDrawOrStand(webhookUrl, gid, discordId, { draw, double = fa
 
     if (result.inactive) {
       await patchOriginal(webhookUrl, { content: MESSAGE_INACTIVE, embeds: [], components: [] });
+      await markAbandoned(gid);
       return;
     }
     if (result.noHand) {
