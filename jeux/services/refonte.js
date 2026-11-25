@@ -5,12 +5,11 @@
 // qui garde un rendez-vous Clash Royale (Trivia / Zoom carte, rien avant
 // sa saison de bascule).
 //
-// Avant REFONTE_SEASON[groupe], le groupe garde son ancienne paire (parité
-// ancrée sur ACTIVE_GAME_REFERENCE_SEASON dans jeux<groupe>.js). À partir de
-// cette saison, la parité s'ancre sur la saison de bascule elle-même : écart
-// PAIR → 1er jeu de la nouvelle paire, IMPAIR → 2nd. Reporter la bascule d'un
-// groupe = augmenter sa saison ici, rien d'autre (un jeu absent de
-// REFONTE_PRETS n'est jamais lancé : voir les gardes des orchestrateurs).
+// Avant REFONTE_SEASON[groupe], le groupe n'a aucun jeu actif (les anciennes
+// paires sont supprimées). À partir de cette saison, la parité s'ancre sur la
+// saison de bascule : écart PAIR → 1er jeu de la paire, IMPAIR → 2nd. Un jeu
+// absent de REFONTE_PRETS n'est jamais lancé (voir les gardes des
+// orchestrateurs).
 //
 // Les clés de groupe (et donc les clés Redis `<groupe>:last_season_id`)
 // restent les identifiants techniques historiques ; seuls les libellés
@@ -29,11 +28,9 @@ export const REFONTE_SEASON = {
 };
 
 // Nouvelles paires : [jeu des écarts pairs (saison de bascule), jeu des
-// écarts impairs]. Identifiants techniques = préfixes Redis. Pêle-mêle
-// rejoint « Jeux de mots » tel quel (même identifiant, thème Clash Royale
-// conservé). Zoom logo
-// a son propre identifiant (`zoom2`) : Zoom carte (`zoom`) continue de
-// tourner jusqu'à la bascule, puis rejoint le groupe Clash avec Trivia.
+// écarts impairs]. Identifiants techniques = préfixes Redis. Pêle-mêle garde
+// son thème Clash Royale (exception, comme le groupe Clash) ; Zoom logo
+// (`zoom2`) et Zoom carte (`zoom`, groupe Clash) ont des identifiants distincts.
 export const REFONTE_PAIRS = {
   culture: ["synopsis", "frame"],
   aveugle: ["triviageek", "intrus"],
@@ -42,11 +39,9 @@ export const REFONTE_PAIRS = {
   clash: ["trivia", "zoom"],
 };
 
-// Jeux des nouvelles paires réellement prêts. Un jeu absent de cette liste
-// n'est jamais lancé à partir de la bascule, même si son identifiant est
-// déjà branché. Frame est déjà hors Clash Royale, Pêle-mêle, Trivia et
-// Zoom carte tournent déjà. Un jeu n'est prêt que dans sa propre paire : Zoom carte ne
-// revient jamais dans le groupe visuels.
+// Jeux des paires réellement prêts. Un jeu absent de cette liste n'est jamais
+// lancé, même si son identifiant est déjà branché. Un jeu n'est prêt que dans
+// sa propre paire : Zoom carte ne revient jamais dans le groupe visuels.
 export const REFONTE_PRETS = new Set(["frame", "triviageek", "intrus", "concept", "synopsis", "zoom2", "platpays", "pelemele", "trivia", "zoom"]);
 
 const LABELS = {

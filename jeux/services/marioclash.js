@@ -31,7 +31,7 @@
 // Tamagoshi (ressource individuelle, effet immédiat, capée).
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord
-// corrompus sinon, voir bossraid.js) : JSON sérialisé/désérialisé nous-mêmes.
+// corrompus sinon, voir jeux/CONTRIBUTING.md) : JSON sérialisé/désérialisé nous-mêmes.
 // ============================================================
 
 import fs from "fs/promises";

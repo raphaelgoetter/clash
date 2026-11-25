@@ -41,8 +41,8 @@ import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // Brun parchemin
 const FRISE_COLOR = 0xb9770e;
 const TITRE = "🗓️ Frise";
@@ -206,11 +206,11 @@ function nomsAdv(partie, moi) {
 // Image de la frise (voir friseImage.js) : cartes en bleu ou rouge selon
 // qui les a posées ; `bleu` : siège en bleu (le joueur de la vue, comme
 // Tourneboule ; le premier joueur dans les messages publics).
-export const imageFrise = (d, bleu = "joueur") => ({ url: `${TRUST_ROYALE_URL}/api/frise/image?${encodeFrise(d, bleu)}` });
+export const imageFrise = (d, bleu = "joueur") => ({ url: `${URL_JEUX}/api/frise/image?${encodeFrise(d, bleu)}` });
 
 // Récapitulatif de fin : frise horizontale décorative (image fixe), à la
 // place de la frise de la partie.
-const IMAGE_DECOR = { url: `${TRUST_ROYALE_URL}/api/frise/decor` };
+const IMAGE_DECOR = { url: `${URL_JEUX}/api/frise/decor` };
 
 // Erreurs de la partie (récapitulatif de fin), par joueur dans l'ordre des
 // sièges ; rien s'il n'y en a eu aucune. `nom(siege)` : pseudo.

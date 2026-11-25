@@ -59,6 +59,7 @@ import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const BAC_COLOR = 0x2e86c1;
 const TITRE = "🔤 Petit Bac";
@@ -67,9 +68,8 @@ const titreDe = (d) => (d?.difficulte === "difficile" ? `${TITRE} difficile` : T
 // Option `difficulte` de `/bac` : "normal" par défaut
 const difficulteDe = (body) =>
   body.data?.options?.find((o) => o.name === "difficulte")?.value === "difficile" ? "difficile" : "normal";
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // Illustration du message public de fin de partie (bacImage.js)
-const URL_ILLUSTRATION = `${TRUST_ROYALE_URL}/api/bac/illustration`;
+const URL_ILLUSTRATION = `${URL_JEUX}/api/bac/illustration`;
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -539,7 +539,6 @@ const PRECISIONS = {
   scientifiques: ["👤", "les plus connus, seul le nom de famille compte"],
   autos: ["🚗", "marques, pas les modèles"],
   boissons: ["🍺", "marques de bière célèbres comprises"],
-  clash: ["🃏", "noms en français ou en anglais"],
   jeuxvideo: ["🎮", "noms en français ou en anglais"],
 };
 

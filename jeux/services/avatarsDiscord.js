@@ -3,7 +3,7 @@
 // (Qui est-ce ?, Pont du Troll), en data URL PNG prête pour un <image> SVG.
 // Avatar téléchargé sur le CDN Discord (128 px, délai 4 s, cache mémoire
 // par instance) ; repli sur une créature Clay fixe (Vercel Blob,
-// `bang/avatars/clay-XX.png`) si l'avatar manque ou échoue.
+// `avatars/clay-XX.png`) si l'avatar manque ou échoue.
 // ============================================================
 
 import { readBlobAsset } from "@clash/commun/blobAssets.js";
@@ -28,7 +28,7 @@ async function dataUrlDepuis(url, lire) {
 
 export function clayDataUrl(i) {
   const n = String((((i % NB_CLAY) + NB_CLAY) % NB_CLAY) + 1).padStart(2, "0");
-  return dataUrlDepuis(`clay-${n}`, () => readBlobAsset(`bang/avatars/clay-${n}.png`));
+  return dataUrlDepuis(`clay-${n}`, () => readBlobAsset(`avatars/clay-${n}.png`));
 }
 
 // Avatar Discord `"id/hash"` (id/hash validés : la valeur peut venir d'un

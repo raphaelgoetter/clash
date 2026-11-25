@@ -1,28 +1,8 @@
 // ============================================================
-// jeuxvisuels.js — Tronc commun aux mini-jeux "visuels" (Zoom carte,
-// Palette), qui alternent désormais une saison sur deux sous
-// le nom collectif "Jeux visuels" : résolution de quel jeu est actif pour
-// une saison donnée. Contrairement à jeuxdelettres.js, pas de planification
-// hebdomadaire à dupliquer ici : Zoom a toujours eu un créneau fixe unique
-// (vendredi 18h UTC), pas l'historique multi-créneaux d'Anagram — le
-// gating jour/heure reste géré directement par jeux/scripts/postJeuxVisuels.js.
-// jeux/scripts/postJeuxVisuels.js est le seul consommateur destiné à la
-// production (cron unique, remplace .github/workflows/zoom.yml).
-//
-// ⚠️ Ne DUPLIQUE PAS getCurrentSeasonId() : chaque jeu (zoom.js, palette.js,
-// frames.js, anagrams.js, pelemele.js, lajustecarte.js, blindroyale.js)
-// garde sa propre copie de cette fonction — convention assumée du repo (voir
-// jeuxdelettres.js). Ce module en a néanmoins besoin pour SA PROPRE décision
-// (quel jeu est actif), indépendante de celle de chaque jeu.
-//
-// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON (136, septembre 2026,
-// voir saison.js), même référence que jeuxdelettres.js, sans lien entre les
-// deux alternances.
-// Décision produit explicite : Zoom termine CETTE saison avant de céder la
-// main, jamais une bascule en cours de saison. Parité par rapport à cette
-// référence : écart PAIR (0, 2, 4...) → Zoom, écart IMPAIR (1, 3, 5...) →
-// Palette. Donc saison 136 = Zoom (en cours au moment de la mise en place),
-// 137 = Palette ("la saison prochaine"), 138 = Zoom, etc.
+// jeuxvisuels.js — Groupe 📸 Coup d'œil (Zoom logo, Plat Pays) :
+// jeu actif pour une saison donnée (une saison sur deux, paire définie
+// dans refonte.js) et suivi partagé de la dernière saison connue. Seul
+// consommateur en production : jeux/scripts/postJeuxVisuels.js.
 // ============================================================
 
 import { Redis } from "@upstash/redis";
@@ -45,20 +25,14 @@ function getRedis() {
 export { getCurrentSeasonId };
 
 // ── Alternance saisonnière ──────────────────────────────────────
-export const ACTIVE_GAME_REFERENCE_SEASON = 136;
-
-// Fonction pure, testable indépendamment de Redis. À partir de la saison de
-// bascule du groupe, la nouvelle paire prend le relais (voir refonte.js).
+// Fonction pure : jeu de la paire actif pour `seasonId` (voir refonte.js),
+// null avant la bascule de novembre 2026.
 export function getActiveVisualGame(seasonId) {
-  const refonte = getRefonteGame("visuels", seasonId);
-  if (refonte) return refonte;
-  const diff = seasonId - ACTIVE_GAME_REFERENCE_SEASON;
-  const parity = ((diff % 2) + 2) % 2; // toujours 0 ou 1, même si diff était négatif
-  return parity === 0 ? "zoom" : "palette";
+  return getRefonteGame("visuels", seasonId);
 }
 
 // ── Suivi de la dernière saison connue ────────────────────────────
-// Distinct de l'état propre à chaque jeu (zoom:state / palette:state) : un
+// Distinct de l'état propre à chaque jeu (zoom2:state / platpays:state) : un
 // seul jeu tourne par saison, donc l'état interne du jeu qui vient de
 // terminer sa saison ne "voit" la transition suivante que DEUX saisons plus
 // tard (la prochaine fois que CE jeu repostera) — trop tard pour un récap de

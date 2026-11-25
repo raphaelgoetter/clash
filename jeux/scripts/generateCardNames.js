@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // generateCardNames.js
 // Génère jeux/data/cardNames.json — la source de vérité anglais↔français des
-// noms de cartes Clash Royale, partagée par tous les mini-jeux (Anagram,
-// Zoom carte, et tout jeu futur ayant besoin du nom français d'une carte).
+// noms de cartes Clash Royale, partagée par les jeux qui en ont besoin (Zoom
+// carte, Pêle-mêle, Qui est-ce ?, Mascarade).
 // Usage PONCTUEL, jamais dans un flux hebdomadaire.
 //
 // jeux/data/cardNames.json est un fichier ÉDITÉ À LA MAIN une fois généré : ce
@@ -25,12 +25,8 @@
 //      (fetchCards()) — jamais l'inverse, le wiki peut se tromper sur la
 //      casse/l'orthographe anglaise, l'API ne se trompe jamais sur son
 //      propre nom.
-//   2. jeux/data/anagrams/anagrams.json — pour les cartes trop récentes pour
-//      avoir une page sur le wiki FR (constaté : le wiki a un train de
-//      retard sur les sorties de cartes), on retombe sur les noms déjà
-//      traduits à la main par l'équipe pour Anagram — À VÉRIFIER, ces noms
-//      n'ont pas été recoupés avec une source externe.
-//   3. Rien trouvé → `fr: null`. À compléter à la main (voir la liste
+//   2. Rien trouvé (carte trop récente pour le wiki FR, souvent en retard sur
+//      les sorties) → `fr: null`. À compléter à la main (voir la liste
 //      affichée en fin de script).
 //
 // Toutes les valeurs, quelle que soit leur origine, sont à considérer comme
@@ -48,7 +44,6 @@ import { fetchCards } from "@clash/clash-royale/clashApi.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
-const ANAGRAMS_JSON_PATH = path.resolve(__dirname, "..", "data", "anagrams", "anagrams.json");
 
 const WIKI_FR = "https://clashroyale.fandom.com/fr";
 const WIKI_EN = "https://clashroyale.fandom.com";
@@ -171,12 +166,9 @@ async function main() {
   // catégorisation/liaison côté wiki, pas une absence de contenu.
   if (realByNorm.has(normalize("Monk")) && !resolved.has("Monk")) resolved.set("Monk", "Moine");
 
-  const anagrams = JSON.parse(await fs.readFile(ANAGRAMS_JSON_PATH, "utf-8"));
-  const anagramsByCardKey = new Map(anagrams.map((a) => [a.cardKey, a.answer]));
-
   const added = [];
   for (const c of missingCards) {
-    const fr = resolved.get(c.name) ?? anagramsByCardKey.get(c.name) ?? null;
+    const fr = resolved.get(c.name) ?? null;
     const entry = { cardKey: c.name, rarity: c.rarity, fr };
     existingByCardKey.set(c.name, entry);
     added.push(entry);

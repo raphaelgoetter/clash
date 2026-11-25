@@ -3,8 +3,7 @@
 // Enrichit jeux/data/cardNames.json avec les champs `type`, `family` (ajoutés à
 // l'origine pour les anciens jeux de draft), et complète `elixir` pour les
 // cartes qui n'en ont pas encore (sorts, bâtiments, troupes à stats
-// composites — generateCardStats.js ne remplit que les troupes éligibles à
-// La Juste Carte). Usage PONCTUEL, jamais dans un flux hebdomadaire.
+// composites — generateCardStats.js ne remplit que les troupes éligibles). Usage PONCTUEL, jamais dans un flux hebdomadaire.
 //
 // Mêmes garanties que generateCardNames.js / generateCardStats.js : un champ
 // déjà présent (y compris corrigé à la main) n'est JAMAIS réécrit, sauf avec

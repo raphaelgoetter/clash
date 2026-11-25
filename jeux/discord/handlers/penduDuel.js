@@ -55,10 +55,10 @@ import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const PENDU_COLOR = 0x8d6e63;
 const TITRE = "🪢 Pendu";
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -210,12 +210,12 @@ function retour(action, r) {
 }
 
 const urlVue = (d, siege) =>
-  `${TRUST_ROYALE_URL}/api/pendu/vue?d=${encodeVue({ motif: motif(d, siege), fausses: lettresFausses(d, siege), erreurs: d.joueurs[siege].erreurs, fin: d.joueurs[siege].fin })}`;
+  `${URL_JEUX}/api/pendu/vue?d=${encodeVue({ motif: motif(d, siege), fausses: lettresFausses(d, siege), erreurs: d.joueurs[siege].erreurs, fin: d.joueurs[siege].fin })}`;
 
 const urlFinal = (partie) => {
   const d = partie.duel;
   const n = nomDe(partie);
-  return `${TRUST_ROYALE_URL}/api/pendu/final?d=${encodeFinal({
+  return `${URL_JEUX}/api/pendu/final?d=${encodeFinal({
     mot: d.mot,
     joueurs: siegesDe(d).map((s) => ({ nom: n(s), erreurs: d.joueurs[s].erreurs, decouvertes: lettresDecouvertes(d, s), fausses: lettresFausses(d, s), fin: d.joueurs[s].fin })),
     // Solo : pas d'étoile
@@ -817,7 +817,7 @@ export async function handlePenduGeneratorCommand(webhookUrl, body) {
     await patchOriginal(webhookUrl, { content: `⚠️ ${final.erreur}` });
     return;
   }
-  const image = `${TRUST_ROYALE_URL}/api/pendu/final?d=${encodeFinal(final)}`;
+  const image = `${URL_JEUX}/api/pendu/final?d=${encodeFinal(final)}`;
   const ok = await messageSalon("POST", body.channel_id, null, {
     components: [{ type: 17, accent_color: PENDU_COLOR, components: [{ type: 12, items: [{ media: { url: image } }] }] }],
   });

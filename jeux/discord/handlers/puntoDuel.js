@@ -48,7 +48,7 @@ const TITRE = "🀄 Punto";
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 
 // Ses propres couleurs froides (bleu, vert), celles de l'adversaire
-// chaudes (rouge, orange), comme le bleu et le rouge de Clash Royale ;
+// chaudes (rouge, orange), comme ses dés bleus et les rouges adverses ;
 // indice = couleur de la carte (0 ou 1) dans le moteur
 const MOI = ["bleu", "vert"];
 const ADV = ["rouge", "orange"];

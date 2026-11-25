@@ -5,8 +5,8 @@
 // évite de dupliquer la logique de fetch/cache dans chaque handler de jeu.
 // ============================================================
 
-// Rôle pingé aux annonces de lancement/récap des mini-jeux (Frame, Anagram,
-// Zoom, La Juste Carte, Tamagotchi, Robinson, Boss Raid, Quiz) — nom unique,
+// Rôle pingé aux annonces de lancement/récap des mini-jeux et jeux
+// spéciaux — nom unique,
 // pas de variable d'env dédiée nécessaire. Doit correspondre EXACTEMENT au
 // nom du rôle sur le serveur Discord (vérifié le 2026-08-16 : "MINI-JEUX"
 // avec un tiret, pas un espace — un désalignement ici fait échouer le ping

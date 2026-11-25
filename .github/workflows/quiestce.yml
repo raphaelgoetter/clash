@@ -4,12 +4,15 @@ permissions:
   contents: read
 
 on:
-  # Créneau réservé : minute 20 (prochaine libre après bang=18 — jamais la
-  # même minute que les autres crons de 8h UTC, voir jeux/CONTRIBUTING.md,
-  # incident du 27/08). Le cron passe --require-active : il n'avance
-  # qu'une partie déjà lancée à la main (workflow_dispatch).
-  schedule:
-    - cron: "20 8 * * *"
+  # Créneau réservé : minute 20 (jamais la même minute que les autres crons
+  # de 8h UTC, voir jeux/CONTRIBUTING.md). Le cron passe --require-active :
+  # il n'avance qu'une partie déjà lancée à la main (workflow_dispatch).
+  #
+  # 📦 Jeu archivé (cartes Clash Royale) : schedule volontairement commenté,
+  # seul workflow_dispatch reste disponible. Pour relancer : décommenter et
+  # retirer `archived: true` dans jeux/discord/handlers/minijeux.js.
+  # schedule:
+  #   - cron: "20 8 * * *"
   workflow_dispatch: {}
 
 jobs:

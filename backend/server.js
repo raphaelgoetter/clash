@@ -246,7 +246,7 @@ app.use("/api/matchup", matchupRoutes);
 // Discord interactions endpoint (slash commands)
 app.use("/api/discord", discordRoutes);
 
-// Images des jeux (Frame, Zoom, Palette, Goblin Hunters, Bang!, Meow…)
+// Images des jeux (Frame, Zoom, Goblin Hunters, Meow…)
 app.use(jeuxImageRoutes);
 
 // Illustrations à jour des cartes que l'API sert encore avec un ancien

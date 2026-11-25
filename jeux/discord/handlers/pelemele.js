@@ -53,9 +53,9 @@ import {
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const PELEMELE_COLOR = 0x9b59b6;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 // L'image (chevalet de tuiles, voir pelemeleImage.js) n'existe que pour
 // une manche RÉELLEMENT démarrée (gameId != null) — en dry-run/preview,
@@ -86,7 +86,7 @@ function buildPeleMeleEmbed({
     ...(gameId
       ? {
           image: {
-            url: `${TRUST_ROYALE_URL}/api/pelemele/image?gameId=${gameId}&v=${Date.now()}`,
+            url: `${URL_JEUX}/api/pelemele/image?gameId=${gameId}&v=${Date.now()}`,
           },
         }
       : {}),

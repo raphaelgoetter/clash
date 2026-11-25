@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 // postJeuxAveugle.js
-// Point d'entrée UNIQUE en production pour les "Jeux à l'aveugle" (La Juste
-// Carte / Blind Royale, en alternance une saison sur deux —
-// voir jeux/services/jeuxaveugle.js pour le détail de l'alternance).
-// Remplace les deux crons dédiés (.github/workflows/lajustecarte.yml et
-// blindroyale.yml, supprimés) :
+// Point d'entrée UNIQUE en production pour le groupe « 🎮 Culture geek »
+// (Trivia Geek / Intrus de l'inventaire, en alternance une saison sur deux,
+// voir jeux/services/jeuxaveugle.js) :
 //
 //   1. Détecte un changement de saison depuis le dernier passage (suivi
 //      PARTAGÉ, indépendant de l'état interne de chaque jeu — voir
@@ -18,10 +16,7 @@
 //      chaque jeu, comparé à SON état à lui, redéclencherait à tort un
 //      récap déjà posté à l'étape 1).
 //
-// Jour unique retenu : LUNDI 18h UTC (créneau déjà utilisé par Blind
-// Royale) — La Juste Carte tournait jusqu'ici le dimanche, elle migrera sur
-// ce créneau la première fois qu'elle reprendra la main (voir
-// jeux/services/jeuxaveugle.js pour le détail de la bascule).
+// Jour de publication : LUNDI 18h UTC.
 //
 // Usage :
 //   node jeux/scripts/postJeuxAveugle.js               — poste sur le salon de test
@@ -39,10 +34,6 @@ import {
   setLastKnownSeasonId,
 } from "../services/jeuxaveugle.js";
 import { getWiredGame } from "../services/refonte.js";
-import { alreadyPostedThisWeek as justeCarteAlreadyPostedThisWeek } from "../services/lajustecarte.js";
-import { alreadyPostedThisWeek as blindRoyaleAlreadyPostedThisWeek } from "../services/blindroyale.js";
-import { postJusteCarte, postSeasonRecap as postJusteCarteSeasonRecap } from "../discord/handlers/lajustecarte.js";
-import { postBlindRoyale, postSeasonRecap as postBlindRoyaleSeasonRecap } from "../discord/handlers/blindroyale.js";
 import { alreadyPostedThisWeek as triviaGeekAlreadyPostedThisWeek } from "../services/triviageek.js";
 import { postTriviaGeek, postSeasonRecap as postTriviaGeekSeasonRecap } from "../discord/handlers/triviageek.js";
 import { alreadyPostedThisWeek as intrusAlreadyPostedThisWeek } from "../services/intrus.js";
@@ -60,26 +51,18 @@ if (!channelId) {
 }
 
 const ALREADY_POSTED_BY_GAME = {
-  lajustecarte: justeCarteAlreadyPostedThisWeek,
-  blindroyale: blindRoyaleAlreadyPostedThisWeek,
   triviageek: triviaGeekAlreadyPostedThisWeek,
   intrus: intrusAlreadyPostedThisWeek,
 };
 const POST_BY_GAME = {
-  lajustecarte: postJusteCarte,
-  blindroyale: postBlindRoyale,
   triviageek: postTriviaGeek,
   intrus: postIntrus,
 };
 const RECAP_BY_GAME = {
-  lajustecarte: postJusteCarteSeasonRecap,
-  blindroyale: postBlindRoyaleSeasonRecap,
   triviageek: postTriviaGeekSeasonRecap,
   intrus: postIntrusSeasonRecap,
 };
 const LABEL_BY_GAME = {
-  lajustecarte: "La Juste Carte",
-  blindroyale: "Blind Royale",
   triviageek: "Trivia Geek",
   intrus: "Intrus de l'inventaire",
 };
@@ -144,7 +127,7 @@ const LABEL_BY_GAME = {
 
     console.log(`Manche ${LABEL_BY_GAME[activeGame]} postée dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
-    console.error("Échec de la publication Jeux à l'aveugle :", err.message);
+    console.error("Échec de la publication Culture geek :", err.message);
     process.exit(1);
   }
 })();

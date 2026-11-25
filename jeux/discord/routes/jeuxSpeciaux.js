@@ -1,28 +1,15 @@
-// Jeux spéciaux sur 7 jours : Blackjack, Gobelet, Tamagotchi, Robinson,
-// Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow,
-// Pont du Troll
+// Jeux spéciaux sur 7 jours : Blackjack, Gobelet, Robinson, Goblin Hunters,
+// Mario Clash, Qui est-ce ? (archivé), Meow, Pont du Troll
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
 // la main sans rien envoyer et le routeur essaie le module suivant.
 
 import {
-  handleVoteButton as handleTamagotchiVote,
-  handleRegles as handleTamagotchiRegles,
-  handlePilule as handleTamagotchiPilule,
-} from "../handlers/tamagotchi.js";
-import {
   handleVoteButton as handleRobinsonVote,
   handleEmbarquer as handleRobinsonEmbarquer,
   handleRegles as handleRobinsonRegles,
 } from "../handlers/robinson.js";
-import {
-  handleVoteButton as handleBossRaidVote,
-  handlePrincesse as handleBossRaidPrincesse,
-  handleRegles as handleBossRaidRegles,
-  handleJournal as handleBossRaidJournal,
-  handleTuto as handleBossRaidTuto,
-} from "../handlers/bossraid.js";
 import {
   handleRegisterButton as handleGoblinHuntersRegister,
   handleUnregisterButton as handleGoblinHuntersUnregister,
@@ -48,16 +35,6 @@ import {
   handleJournal as handleMarioClashJournal,
   handleRegles as handleMarioClashRegles,
 } from "../handlers/marioclash.js";
-import {
-  handleJouer as handleBangJouer,
-  handlePiocher as handleBangPiocher,
-  handleNbPioche as handleBangNbPioche,
-  handleCarte as handleBangCarte,
-  handleCible as handleBangCible,
-  handlePlacer as handleBangPlacer,
-  handleRegles as handleBangRegles,
-  handleJournal as handleBangJournal,
-} from "../handlers/bang.js";
 import {
   handleParticiper as handleQuiEstCeParticiper,
   handleDesinscrire as handleQuiEstCeDesinscrire,
@@ -111,30 +88,6 @@ import {
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export async function routeJeuxSpeciaux(body, res) {
-  // ── Tamagoshi : boutons d'action (vote) ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("tamagotchi_vote:")
-  ) {
-    const [, jour, actionId] = body.data.custom_id.split(":");
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : on répond
-    // toujours en privé à l'auteur du clic (confirmation/rejet du vote), le
-    // message public est mis à jour séparément via un PATCH direct au salon.
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleTamagotchiVote(webhookUrl, jour, actionId, discordId, username, process.env.DISCORD_TOKEN),
-    );
-    return;
-  }
-
   // ── Pont du Troll : boutons du message public (nouvel éphémère) ──
   // custom_id : pont_pierre:<jour>, pont_cordes:<jour>, pont_rumeurs:<jour>,
   // pont_indice:<jour>, pont_regles
@@ -336,37 +289,6 @@ export async function routeJeuxSpeciaux(body, res) {
     return;
   }
 
-  // ── Tamagoshi : bouton "Règles du jeu" (éphémère, statique) ──
-  if (body.type === 3 && body.data?.custom_id === "tamagotchi_regles") {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleTamagotchiRegles(webhookUrl));
-    return;
-  }
-
-  // ── Tamagoshi : bouton "Pilule" (Jours 4-10, effet instantané, 1/jour + 2/manche max) ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("tamagotchi_pilule:")
-  ) {
-    const jour = body.data.custom_id.split(":")[1];
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // Comme tamagotchi_vote: : la Pilule mute les jauges et doit repatcher
-    // le message public, elle a donc besoin du bot token.
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleTamagotchiPilule(webhookUrl, jour, discordId, username, process.env.DISCORD_TOKEN),
-    );
-    return;
-  }
-
   // ── Robinson : boutons d'action (vote) ──
   if (
     body.type === 3 &&
@@ -409,74 +331,6 @@ export async function routeJeuxSpeciaux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleRobinsonRegles(webhookUrl));
-    return;
-  }
-
-  // ── Boss Raid : boutons de vote (Chevalier/Voleuse/Sorcier/Archères) ──
-  // Vote DÉFINITIF dès qu'il est posé : type 6, édite le message public en
-  // place au premier vote ; un revote envoie un followup éphémère (le
-  // message public ne bouge pas) — voir handleVoteButton().
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("bossraid_vote:")
-  ) {
-    const [, jour, roleId] = body.data.custom_id.split(":");
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleBossRaidVote(webhookUrl, jour, roleId, discordId, username));
-    return;
-  }
-
-  // ── Boss Raid : bouton Princesse — exception, réponse éphémère avec
-  // projection live des dégâts du jour + événement du lendemain ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("bossraid_princesse:")
-  ) {
-    const [, jour] = body.data.custom_id.split(":");
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleBossRaidPrincesse(webhookUrl, jour, discordId, username, process.env.DISCORD_TOKEN),
-    );
-    return;
-  }
-
-  // ── Boss Raid : bouton "Règles & Rôles" (éphémère, statique) ──
-  if (body.type === 3 && body.data?.custom_id === "bossraid_regles") {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleBossRaidRegles(webhookUrl));
-    return;
-  }
-
-  // ── Boss Raid : bouton "Journal" (lecture seule, hors-vote) ──
-  if (body.type === 3 && body.data?.custom_id === "bossraid_journal") {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleBossRaidJournal(webhookUrl));
-    return;
-  }
-
-  // ── Boss Raid : bouton "Tuto complet" (jour d'annonce uniquement) ──
-  if (body.type === 3 && body.data?.custom_id === "bossraid_tuto") {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleBossRaidTuto(webhookUrl));
     return;
   }
 
@@ -596,8 +450,8 @@ export async function routeJeuxSpeciaux(body, res) {
   }
 
   // ── Goblin Hunters : bouton "Écrire un message" → ouverture de la Modal ──
-  // Réponse synchrone immédiate obligatoire (pas de runBackground ici), même
-  // mécanisme que le bouton "Répondre" d'Anagram.
+  // Réponse synchrone immédiate obligatoire (pas de runBackground ici) : une
+  // Modal ne peut pas être différée.
   if (body.type === 3 && body.data?.custom_id === "goblinhunters_messagerie_write") {
     return res.status(200).json({ type: 9, data: buildGoblinHuntersMessagerieModal() });
   }
@@ -754,42 +608,6 @@ export async function routeJeuxSpeciaux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleMarioClashRegles(webhookUrl));
-    return;
-  }
-
-  // ── Bang! : boutons du message officiel (nouveau deck éphémère) ──
-  // custom_id : bang_piocher, bang_jouer, bang_journal, bang_regles
-  if (body.type === 3 && ["bang_piocher", "bang_jouer", "bang_journal", "bang_regles"].includes(body.data?.custom_id)) {
-    const action = body.data.custom_id;
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "bang_regles") runBackground(() => handleBangRegles(webhookUrl));
-    else if (action === "bang_journal") runBackground(() => handleBangJournal(webhookUrl, discordId));
-    else if (action === "bang_piocher") runBackground(() => handleBangPiocher(webhookUrl, discordId, username));
-    else runBackground(() => handleBangJouer(webhookUrl, discordId, username));
-    return;
-  }
-
-  // ── Bang! : composants du deck éphémère, édition en place ──
-  // custom_id : bang_e_piocher, bang_annuler (boutons), bang_nbpioche,
-  // bang_carte, bang_cible:<carte>, bang_placer (menus)
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^bang_(e_piocher|annuler|nbpioche|carte|cible:|placer)/.test(body.data.custom_id)) {
-    const [action, carte] = body.data.custom_id.split(":");
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
-    const value = body.data.values?.[0];
-    res.status(200).json({ type: 6 });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    if (action === "bang_e_piocher") runBackground(() => handleBangPiocher(webhookUrl, discordId, username));
-    else if (action === "bang_nbpioche") runBackground(() => handleBangNbPioche(webhookUrl, discordId, username, value));
-    else if (action === "bang_carte") runBackground(() => handleBangCarte(webhookUrl, discordId, username, value));
-    else if (action === "bang_cible") runBackground(() => handleBangCible(webhookUrl, discordId, username, carte, value));
-    else if (action === "bang_placer") runBackground(() => handleBangPlacer(webhookUrl, discordId, username, value));
-    else runBackground(() => handleBangJouer(webhookUrl, discordId, username));
     return;
   }
 

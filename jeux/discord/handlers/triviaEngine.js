@@ -30,8 +30,8 @@ import {
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const SEASON_RECAP_MAX_PLAYERS = 20;
 const SEASON_RECAP_MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -73,7 +73,7 @@ export function createTriviaHandlers(
     // Cache-buster (?v=) : Discord met en cache l'aperçu d'un embed PAR URL,
     // y compris un échec de fetch (même piège que justecarte/frames/zoom).
     if (imageUrl && gameId) embed.image = { url: `${imageUrl(gameId)}&v=${Date.now()}` };
-    else if (bannerPath) embed.image = { url: `${TRUST_ROYALE_URL}${bannerPath}?v=${Date.now()}` };
+    else if (bannerPath) embed.image = { url: `${URL_JEUX}${bannerPath}?v=${Date.now()}` };
     return embed;
   }
 

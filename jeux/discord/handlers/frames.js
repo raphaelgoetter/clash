@@ -35,8 +35,8 @@ import { nomSaison } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const FRAME_COLOR = 0x2ecc71;
 
 // Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel
@@ -85,7 +85,7 @@ function buildFrameEmbed({
     // que Discord revalidait son cache). v= reste un simple cache-buster
     // pour forcer un fetch frais au moment de la publication.
     image: {
-      url: `${TRUST_ROYALE_URL}/api/frames/image?gameId=${gameId}&v=${cacheBust}`,
+      url: `${URL_JEUX}/api/frames/image?gameId=${gameId}&v=${cacheBust}`,
     },
     color: FRAME_COLOR,
     footer: {

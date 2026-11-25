@@ -61,20 +61,20 @@ import {
   buildUserPingFields,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
-import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
+import { formatUtcTimeAsParis } from "../../services/saison.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const QEC_COLOR = 0x8e44ad;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const JOURNAL_AFFICHE = 10;
 // Heure de la clôture quotidienne (cron quiestce.yml, 8h20 UTC)
 const CLOTURE_UTC = [8, 20];
 
 function illustrationUrl() {
-  return `${TRUST_ROYALE_URL}/api/quiestce/illustration?v=${Date.now()}`;
+  return `${URL_JEUX}/api/quiestce/illustration?v=${Date.now()}`;
 }
 
 async function grilleUrl(partie, barrees = []) {
-  return `${TRUST_ROYALE_URL}/api/quiestce/grille?d=${await encodeGrille(partie.grille, barrees)}`;
+  return `${URL_JEUX}/api/quiestce/grille?d=${await encodeGrille(partie.grille, barrees)}`;
 }
 
 // Tableau des enquêtes en image (message officiel) : une vignette par joueur
@@ -99,7 +99,7 @@ function enquetesUrl(partie) {
       tombe: !!j.demasqueJour,
     };
   });
-  return `${TRUST_ROYALE_URL}/api/quiestce/enquetes?d=${encodeEnquetes(joueurs)}`;
+  return `${URL_JEUX}/api/quiestce/enquetes?d=${encodeEnquetes(joueurs)}`;
 }
 
 // ── Mise en forme ────────────────────────────────────────────────────

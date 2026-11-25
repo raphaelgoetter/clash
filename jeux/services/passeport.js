@@ -38,7 +38,6 @@ export const QUETES_DU_MOIS = [
   { jeu: "punto", libelle: "Gagner un duel de Punto (/punto)" },
   { jeu: "quatre", libelle: "Gagner un duel de Quatre à la suite (/quatre)" },
   { jeu: "grille", libelle: "Gagner un duel de La Grille (/grille)" },
-  { jeu: "mascarade", libelle: "Gagner un duel de Mascarade (/mascarade)" },
   { jeu: "potato", libelle: "Gagner un duel de Potato (/potato)" },
   { jeu: "bac", libelle: "Gagner un duel de Petit Bac (/bac)" },
   { jeu: "pendu", libelle: "Gagner un duel de Pendu en 1v1 (/pendu)" },

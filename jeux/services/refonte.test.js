@@ -19,12 +19,9 @@ const GROUPS = {
   clash: getActiveClashGame,
 };
 
-// Octobre 2026 (137) : dernière saison des anciennes paires, intacte.
-assert.strictEqual(getActiveCultureGame(137), "trivia");
-assert.strictEqual(getActiveBlindGame(137), "blindroyale");
-assert.strictEqual(getActiveLetterGame(137), "pelemele");
-assert.strictEqual(getActiveVisualGame(137), "palette");
-console.log("✓ anciennes paires inchangées avant la bascule");
+// Avant la bascule (octobre 2026 = 137), aucun groupe n'a de jeu actif.
+for (const [group, getActive] of Object.entries(GROUPS)) assert.strictEqual(getActive(137), null, group);
+console.log("✓ aucun jeu avant la bascule");
 
 for (const [group, getActive] of Object.entries(GROUPS)) {
   const bascule = REFONTE_SEASON[group];
@@ -48,9 +45,8 @@ assert.strictEqual(getActiveBlindGame(139), "intrus");
 assert.strictEqual(getActiveLetterGame(139), "pelemele");
 console.log("✓ calendrier novembre/décembre");
 
-// Jeux prêts : avant la bascule tout passe ; après, seuls ceux de
-// REFONTE_PRETS (Zoom carte n'est plus lancé par le groupe visuels).
-assert.strictEqual(getWiredGame("visuels", 137, "palette"), "palette");
+// Jeux prêts : seuls ceux de REFONTE_PRETS, dans leur propre paire (Zoom
+// carte n'est jamais lancé par le groupe visuels).
 assert.strictEqual(getWiredGame("visuels", 139, "zoom"), null);
 for (const [group, getActive] of Object.entries(GROUPS)) {
   for (const s of [138, 139]) assert.strictEqual(getWiredGame(group, s, getActive(s)), getActive(s), `${group} ${s}`);

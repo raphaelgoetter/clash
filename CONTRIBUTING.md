@@ -19,7 +19,7 @@ Le dépôt sépare TrustRoyale (GDC) et les jeux Discord, avec deux packages par
 
 Règles de dépendance :
 
-- `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` : uniquement ses propres fichiers et `@clash/commun` / `@clash/clash-royale` ;
+- `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` : uniquement ses propres fichiers et `@clash/commun`, plus `@clash/clash-royale` pour les seules exceptions listées dans `jeux/CONTRIBUTING.md` (« Exceptions Clash Royale ») ;
 - les packages n'importent jamais une application ;
 - la racine n'importe `jeux/` qu'à deux points de branchement, en attendant le déploiement séparé du bot des jeux : `api/discord/interactions.js` (routes Discord) et `backend/server.js` (`jeux/server/imageRoutes.js`).
 
@@ -382,7 +382,7 @@ Vérification de signature, lecture du corps brut et liste blanche des serveurs 
 
 ### Variables d'environnement
 
-`DISCORD_PUBLIC_KEY`, `DISCORD_APP_ID`, `DISCORD_TOKEN` (requises) ; `AUTHORIZED_GUILD_IDS` (liste blanche des serveurs, vide = tous), `AUTHORIZED_PING_IDS` ; bot des jeux : `DISCORD_JEUX_APP_ID`, `DISCORD_JEUX_PUBLIC_KEY`, `DISCORD_JEUX_TOKEN` (voir `jeux/CONTRIBUTING.md`). Toute nouvelle variable : point d'entrée concerné, `.env.example` et Vercel (voir `AGENTS.md`).
+`DISCORD_PUBLIC_KEY`, `DISCORD_APP_ID`, `DISCORD_TOKEN` (requises) ; `AUTHORIZED_GUILD_IDS` (liste blanche des serveurs, vide = tous), `AUTHORIZED_PING_IDS` ; bot des jeux : `DISCORD_JEUX_APP_ID`, `DISCORD_JEUX_PUBLIC_KEY`, `DISCORD_JEUX_TOKEN`, `JEUX_URL_PUBLIQUE` (facultative, voir `jeux/CONTRIBUTING.md`). Toute nouvelle variable : point d'entrée concerné, `.env.example` et Vercel (voir `AGENTS.md`).
 
 ---
 

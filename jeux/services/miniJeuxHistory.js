@@ -34,10 +34,6 @@ import {
   readState as readIntrusState,
 } from "./intrus.js";
 import {
-  getAllArchivedResults as getAnagramResults,
-  readState as readAnagramState,
-} from "./anagrams.js";
-import {
   getAllArchivedResults as getPeleMeleResults,
   readState as readPeleMeleState,
 } from "./pelemele.js";
@@ -61,23 +57,16 @@ import {
   getAllArchivedResults as getPlatPaysResults,
   readState as readPlatPaysState,
 } from "./platpays.js";
-import {
-  getAllArchivedResults as getPaletteResults,
-  readState as readPaletteState,
-} from "./palette.js";
-import {
-  getAllArchivedResults as getBlindRoyaleResults,
-  readState as readBlindRoyaleState,
-} from "./blindroyale.js";
-import {
-  getAllArchivedResults as getLaJusteCarteResults,
-  readState as readLaJusteCarteState,
-} from "./lajustecarte.js";
 import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listPontManches } from "./pont.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
-import { listManches as listBangManches } from "./bang.js";
+import {
+  getAnagramResults,
+  getPaletteResults,
+  getBlindRoyaleResults,
+  getLaJusteCarteResults,
+} from "./archivesJeuxSupprimes.js";
 import { listManches as listQuiEstCeManches } from "./quiestce.js";
 import { PREMIERE_SAISON_BOSS, championsBoss } from "./boss.js";
 
@@ -93,7 +82,6 @@ const GAME_ORDER = [
   "blackjack",
   "pont",
   "marioclash",
-  "bang",
   "quiestce",
 ];
 
@@ -195,7 +183,6 @@ const SCORE_GAMES = [
   {
     key: "lettres",
     openRounds: [
-      openRound(readAnagramState),
       openRound(readPeleMeleState),
       openRound(readConceptState),
     ],
@@ -210,7 +197,6 @@ const SCORE_GAMES = [
     key: "visuels",
     openRounds: [
       openRound(readZoomState, { clash: false }),
-      openRound(readPaletteState),
       openRound(readZoom2State),
       openRound(readPlatPaysState),
     ],
@@ -228,8 +214,6 @@ const SCORE_GAMES = [
   {
     key: "aveugle",
     openRounds: [
-      openRound(readBlindRoyaleState),
-      openRound(readLaJusteCarteState),
       openRound(readTriviaGeekState),
       openRound(readIntrusState),
     ],
@@ -281,12 +265,6 @@ const MANCHE_SCORE_GAMES = [
     label: "🧌 Pont du Troll",
     fetch: () => listPontManches({ limit: Infinity }),
     scoreField: "points",
-  },
-  {
-    key: "bang",
-    label: "💣 Bang!",
-    fetch: () => listBangManches({ limit: Infinity }),
-    scoreField: "score",
   },
   {
     key: "quiestce",

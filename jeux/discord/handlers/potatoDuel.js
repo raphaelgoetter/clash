@@ -56,11 +56,11 @@ import {
 } from "../../services/potatoRules.js";
 import { encodePublic, encodeVue } from "../../services/potatoImage.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 // Brun patate
 const POTATO_COLOR = 0xc98a3c;
 const TITRE = "🥔 Potato";
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 // Explosion affichée un instant avant la manche suivante
@@ -221,7 +221,7 @@ export function urlVue(d, moi) {
     fourchette: d.fourchettes?.[moi] ?? null,
     ...reperes(d),
   });
-  return `${TRUST_ROYALE_URL}/api/potato/vue?d=${param}`;
+  return `${URL_JEUX}/api/potato/vue?d=${param}`;
 }
 
 // Manche affichée publiquement : la dernière terminée tant que la nouvelle
@@ -240,7 +240,7 @@ function urlPublic(d, nomDe, { deco = false } = {}) {
     explose: h ? cote(h.perdant) : -1,
     deco,
   });
-  return `${TRUST_ROYALE_URL}/api/potato/public?d=${param}`;
+  return `${URL_JEUX}/api/potato/public?d=${param}`;
 }
 
 // Récit d'une action `x` (`d.dernier`) : `S` sujet, `toi` deuxième personne,

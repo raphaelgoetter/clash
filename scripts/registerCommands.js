@@ -30,7 +30,6 @@ const JEUX_COMMANDS = new Set([
   "quatre",
   "punto",
   "frise",
-  "mascarade",
   "potato",
   "bac",
   "pendu",
@@ -571,23 +570,6 @@ const commands = [
   {
     name: "frise",
     description: "Frise : place des événements dans l'ordre chronologique, contre Kévina ou un joueur (MINI-JEUX).",
-    options: [
-      {
-        type: 3, // STRING
-        name: "adversaire",
-        description: "Contre qui jouer ?",
-        required: true,
-        choices: [
-          { name: "Kévina (bot)", value: "bot" },
-          { name: "2 joueurs", value: "1v1" },
-        ],
-      },
-    ],
-  },
-  {
-    name: "mascarade",
-    description:
-      "Mascarade : une carte secrète en main, bluff et déduction, contre Kévina ou un joueur (MINI-JEUX).",
     options: [
       {
         type: 3, // STRING

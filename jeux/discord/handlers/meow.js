@@ -82,17 +82,17 @@ import {
   buildUserPingFields,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const MEOW_COLOR = 0xe8812a;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 function illustrationUrl() {
-  return `${TRUST_ROYALE_URL}/api/meow/illustration?v=${Date.now()}`;
+  return `${URL_JEUX}/api/meow/illustration?v=${Date.now()}`;
 }
 
 function carteUrl(partie) {
-  return `${TRUST_ROYALE_URL}/api/meow/carte?d=${encodeCarte(partie)}`;
+  return `${URL_JEUX}/api/meow/carte?d=${encodeCarte(partie)}`;
 }
 
 // ── Mise en forme ────────────────────────────────────────────────────

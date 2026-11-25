@@ -7,7 +7,6 @@ import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "../servi
 import { getZoom2CardImage, getZoom2HintImage, getZoom2RevealImage } from "../services/zoom2Image.js";
 import { getPlatImage } from "../services/platpaysImage.js";
 import { getIntrusImage } from "../services/intrusImage.js";
-import { getPaletteQuestionImage, getPaletteResultImage } from "../services/paletteImage.js";
 import { getPeleMeleRackImage } from "../services/pelemeleImage.js";
 import {
   getBoardImage as getGoblinHuntersBoardImage,
@@ -19,12 +18,6 @@ import {
   getIllustrationImage as getMarioClashIllustrationImage,
   getFicheVehiculeImage as getMarioClashFicheVehiculeImage,
 } from "../services/marioclashImage.js";
-import {
-  getMainImage as getBangMainImage,
-  getIllustrationImage as getBangIllustrationImage,
-  getTableImage as getBangTableImage,
-  decodeTable as decodeBangTable,
-} from "../services/bangImage.js";
 import {
   decodeGrille as decodeQuiEstCeGrille,
   decodeEnquetes as decodeQuiEstCeEnquetes,
@@ -159,22 +152,6 @@ router.get("/api/intrus/image", async (req, res) => {
   res.send(image.buffer);
 });
 
-// [TEST] Jeu Palette : sert l'image de la manche en cours (carte + 4
-// pastilles A/B/C/D), ou le résultat avec voile + pourcentages
-// (?stage=result) — jamais un fichier brut de jeux/data/jeux-visuels/palette/images ou
-// jeux/data/jeux-visuels/palette/highlights (non exposés statiquement). Anti-spoiler :
-// isGamePosted (palette:order:<gameId>), même garde-fou que Zoom.
-router.get("/api/palette/image", async (req, res) => {
-  const { gameId, stage } = req.query;
-  if (!gameId) return res.status(400).end();
-  const getImage = stage === "result" ? getPaletteResultImage : getPaletteQuestionImage;
-  const image = await getImage(String(gameId)).catch(() => null);
-  if (!image) return res.status(404).end();
-  res.setHeader("Content-Type", "image/png");
-  res.setHeader("Cache-Control", "no-store");
-  res.send(image.buffer);
-});
-
 // [TEST] Jeu Pêle-mêle : sert l'image du chevalet de tuiles pour
 // la manche EN COURS (pas d'anti-spoiler ici, les lettres sont publiques dès
 // la publication — voir pelemeleImage.js). gameId n'est qu'un
@@ -254,39 +231,6 @@ router.get("/api/marioclash/vehicule", async (req, res) => {
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
-  res.send(image.buffer);
-});
-
-// Bang! : main d'un joueur, rendu sans état à partir des cartes passées
-// dans l'URL (c = identifiants de cartes séparés par "|", une carte
-// répétée affiche un badge ×N).
-router.get("/api/bang/main", async (req, res) => {
-  const ids = req.query.c ? String(req.query.c).split("|").filter(Boolean) : [];
-  const image = await getBangMainImage(ids).catch(() => null);
-  if (!image) return res.status(404).end();
-  res.setHeader("Content-Type", image.mimeType);
-  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
-  res.send(image.buffer);
-});
-
-// Bang! : plateau d'avancement (jour, pioche, Rois), rendu sans état à
-// partir de l'état encodé dans l'URL (d = base64url, voir encodeTable) :
-// l'URL change avec l'état, ce qui contourne le cache d'images de Discord.
-router.get("/api/bang/table", async (req, res) => {
-  const etat = decodeBangTable(req.query.d);
-  const image = etat ? await getBangTableImage(etat).catch(() => null) : null;
-  if (!image) return res.status(404).end();
-  res.setHeader("Content-Type", image.mimeType);
-  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
-  res.send(image.buffer);
-});
-
-// Bang! : illustration statique (présentation).
-router.get("/api/bang/illustration", async (req, res) => {
-  const image = await getBangIllustrationImage().catch(() => null);
-  if (!image) return res.status(404).end();
-  res.setHeader("Content-Type", image.mimeType);
-  res.setHeader("Cache-Control", "no-store");
   res.send(image.buffer);
 });
 

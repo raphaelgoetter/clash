@@ -37,14 +37,14 @@ import { nomSaison } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const ZOOM2_COLOR = 0x16a085;
 
 // gameId= épingle l'image de CETTE manche ; ?v= contourne le cache Discord.
 function imageUrl(gameId, stage) {
   const stageParam = stage ? `&stage=${stage}` : "";
-  return `${TRUST_ROYALE_URL}/api/zoom2/image?gameId=${gameId}${stageParam}&v=${Date.now()}`;
+  return `${URL_JEUX}/api/zoom2/image?gameId=${gameId}${stageParam}&v=${Date.now()}`;
 }
 
 // ── Embed / composants du post ────────────────────────────────

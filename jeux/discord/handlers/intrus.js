@@ -8,8 +8,8 @@
 
 import * as svc from "../../services/intrus.js";
 import { createTriviaHandlers } from "./triviaEngine.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 const handlers = createTriviaHandlers(svc, {
   name: "Intrus de l'inventaire",
@@ -18,7 +18,7 @@ const handlers = createTriviaHandlers(svc, {
   jour: "lundi",
   answerPrefix: "intrus_answer",
   bannerPath: null,
-  imageUrl: (gameId) => `${TRUST_ROYALE_URL}/api/intrus/image?gameId=${encodeURIComponent(gameId)}`,
+  imageUrl: (gameId) => `${URL_JEUX}/api/intrus/image?gameId=${encodeURIComponent(gameId)}`,
   // Image seule : les noms des objets trahiraient souvent le jeu, ils ne
   // sont révélés qu'à la réponse.
   afficherPropositions: false,

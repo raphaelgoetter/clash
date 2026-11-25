@@ -1,6 +1,6 @@
 // ============================================================
 // textNormalize.js — Normalisation de texte partagée entre les mini-jeux
-// Discord (Frame, Anagram) pour la comparaison de réponses libres.
+// Discord (Frame, Zoom…) pour la comparaison de réponses libres.
 // ============================================================
 
 export function normalizeAnswer(str) {

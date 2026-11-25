@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Mini-jeux, jeux spéciaux et duels Discord de la famille Resistance",
+  "description": "Kévina : mini-jeux, jeux spéciaux et duels Discord",
   "exports": {
     "./*": "./*"
   },

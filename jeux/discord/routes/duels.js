@@ -1,7 +1,8 @@
 // Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
-// /quatre, /punto, /frise, /mascarade, /potato, /bac, /pendu, Six et Tourneboule (archivés) et leurs
+// /quatre, /punto, /frise, /potato, /bac, /pendu, Mascarade (archivé, commande
+// retirée : seuls les boutons des duels en cours restent routés) et leurs
 // boutons (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
-// tourneboulduel_*, friseduel_*, mascaradeduel_*, potatoduel_*, bacduel_*, penduduel_*, sixduel_*).
+// friseduel_*, mascaradeduel_*, potatoduel_*, bacduel_*, penduduel_*).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -63,28 +64,6 @@ import {
   handlePuntoRegles,
   handlePuntoAbandon,
 } from "../handlers/puntoDuel.js";
-import {
-  memberHasMiniJeuxRole as sixMemberHasMiniJeuxRole,
-  extractMember as sixExtractMember,
-  handleSixRoleRejected,
-  handleSixCommand,
-  handleSixPvpCommand,
-  handleSixOuvrir,
-  handleSixJouer,
-  handleSixRegles,
-  handleSixAbandon,
-} from "../handlers/sixDuel.js";
-import {
-  memberHasMiniJeuxRole as tourneboulMemberHasMiniJeuxRole,
-  extractMember as tourneboulExtractMember,
-  handleTournebouleRoleRejected,
-  handleTournebouleCommand,
-  handleTourneboulePvpCommand,
-  handleTournebouleOuvrir,
-  handleTourneboulePoser,
-  handleTournebouleRegles,
-  handleTournebouleAbandon,
-} from "../handlers/tourneboulDuel.js";
 import {
   memberHasMiniJeuxRole as friseMemberHasMiniJeuxRole,
   extractMember as friseExtractMember,
@@ -339,118 +318,6 @@ export async function routeDuels(body, res) {
       // Le suffixe :pvp est en 2ᵉ position (pas de case)
       const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: puntoExtractMember(body).username };
       runBackground(() => handlePuntoAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
-      return;
-    }
-  }
-
-  // ── /six adversaire:bot : Six contre Kévina (plateau public, plateau et
-  // boutons de coup dans une vue éphémère) ; adversaire:1v1 : contre un
-  // joueur (message public). Réservé au rôle MINI-JEUX pour lancer, même
-  // principe que /blackjack.
-  if (body.type === 2 && body.data?.name === "six") {
-    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(async () => {
-      const allowed = await sixMemberHasMiniJeuxRole(body);
-      if (!allowed) {
-        await handleSixRoleRejected(webhookUrl);
-        return;
-      }
-      if (pvp) await handleSixPvpCommand(webhookUrl, body);
-      else await handleSixCommand(webhookUrl, body);
-    });
-    return;
-  }
-
-  // ── Six : composants. sixduel_jouer:<colonne>:<vue>[:pvp] édite la vue
-  // en place ; sixduel_ouvrir (Jouer du message public 1v1) et
-  // sixduel_regles : nouvel éphémère.
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("sixduel_")) {
-    const [action, arg, ...suite] = body.data.custom_id.split(":");
-    if (action === "sixduel_regles" || action === "sixduel_ouvrir") {
-      res.status(200).json({ type: 5, data: { flags: 64 } });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      if (action === "sixduel_regles") runBackground(() => handleSixRegles(webhookUrl));
-      else runBackground(() => handleSixOuvrir(webhookUrl, body));
-      return;
-    }
-    if (action === "sixduel_jouer") {
-      const discordId = body.member?.user?.id;
-      res.status(200).json({ type: 6 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      // Contre Kévina, le résultat final est publié dans le salon du clic
-      const [coup, mode] = suite;
-      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: sixExtractMember(body).username };
-      runBackground(() => handleSixJouer(webhookUrl, discordId, Number(arg), Number(coup), opts));
-      return;
-    }
-    // [🏳️] : sixduel_abandon[:pvp] (confirmation), sixduel_abandon_ok /
-    // sixduel_abandon_non[:pvp], tous édités en place
-    const ETAPES_ABANDON = { sixduel_abandon: "demande", sixduel_abandon_ok: "ok", sixduel_abandon_non: "non" };
-    if (ETAPES_ABANDON[action]) {
-      const discordId = body.member?.user?.id;
-      res.status(200).json({ type: 6 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      // Le suffixe :pvp est en 2ᵉ position
-      const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: sixExtractMember(body).username };
-      runBackground(() => handleSixAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
-      return;
-    }
-  }
-
-  // ── /tourneboule adversaire:bot : Tourneboule contre Kévina (plateau
-  // public, plateau en boutons dans une vue éphémère) ; adversaire:1v1 :
-  // contre un joueur (message public). Réservé au rôle MINI-JEUX pour
-  // lancer, même principe que /blackjack.
-  if (body.type === 2 && body.data?.name === "tourneboule") {
-    const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(async () => {
-      const allowed = await tourneboulMemberHasMiniJeuxRole(body);
-      if (!allowed) {
-        await handleTournebouleRoleRejected(webhookUrl);
-        return;
-      }
-      if (pvp) await handleTourneboulePvpCommand(webhookUrl, body);
-      else await handleTournebouleCommand(webhookUrl, body);
-    });
-    return;
-  }
-
-  // ── Tourneboule : composants. tourneboulduel_poser:<case>:<vue>[:pvp]
-  // édite la vue en place ; tourneboulduel_ouvrir (Jouer du message public
-  // 1v1) et tourneboulduel_regles : nouvel éphémère.
-  if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("tourneboulduel_")) {
-    const [action, arg, ...suite] = body.data.custom_id.split(":");
-    if (action === "tourneboulduel_regles" || action === "tourneboulduel_ouvrir") {
-      res.status(200).json({ type: 5, data: { flags: 64 } });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      if (action === "tourneboulduel_regles") runBackground(() => handleTournebouleRegles(webhookUrl));
-      else runBackground(() => handleTournebouleOuvrir(webhookUrl, body));
-      return;
-    }
-    if (action === "tourneboulduel_poser") {
-      const discordId = body.member?.user?.id;
-      res.status(200).json({ type: 6 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      // Contre Kévina, le résultat final est publié dans le salon du clic
-      const [vue, mode] = suite;
-      const opts = { pvp: mode === "pvp", channelId: body.channel_id, pseudo: tourneboulExtractMember(body).username };
-      runBackground(() => handleTourneboulePoser(webhookUrl, discordId, Number(arg), Number(vue), opts));
-      return;
-    }
-    // [🏳️] : tourneboulduel_abandon[:pvp] (confirmation), tourneboulduel_abandon_ok /
-    // tourneboulduel_abandon_non[:pvp], tous édités en place
-    const ETAPES_ABANDON = { tourneboulduel_abandon: "demande", tourneboulduel_abandon_ok: "ok", tourneboulduel_abandon_non: "non" };
-    if (ETAPES_ABANDON[action]) {
-      const discordId = body.member?.user?.id;
-      res.status(200).json({ type: 6 });
-      const webhookUrl = buildDiscordWebhookUrl(body);
-      // Le suffixe :pvp est en 2ᵉ position
-      const opts = { pvp: arg === "pvp", channelId: body.channel_id, pseudo: tourneboulExtractMember(body).username };
-      runBackground(() => handleTournebouleAbandon(webhookUrl, discordId, ETAPES_ABANDON[action], opts));
       return;
     }
   }

@@ -29,16 +29,12 @@ import * as frames from "../../services/frames.js";
 import * as trivia from "../../services/trivia.js";
 import * as triviageek from "../../services/triviageek.js";
 import * as intrus from "../../services/intrus.js";
-import * as anagrams from "../../services/anagrams.js";
 import * as pelemele from "../../services/pelemele.js";
 import * as concept from "../../services/concept.js";
 import * as synopsis from "../../services/synopsis.js";
 import * as zoom from "../../services/zoom.js";
 import * as zoom2 from "../../services/zoom2.js";
 import * as platpays from "../../services/platpays.js";
-import * as palette from "../../services/palette.js";
-import * as blindroyale from "../../services/blindroyale.js";
-import * as lajustecarte from "../../services/lajustecarte.js";
 import { readPartie as readQuiEstCe } from "../../services/quiestce.js";
 import { readPartie as readMeow } from "../../services/meow.js";
 
@@ -52,7 +48,7 @@ const { start, end } = getSeasonBoundsById(seasonId);
 const dateCourante = now < end ? now : new Date(end.getTime() - 1000);
 
 // Clé de jeu (préfixe Redis) → service
-const SERVICES = { frame: frames, trivia, triviageek, intrus, anagram: anagrams, pelemele, concept, synopsis, zoom, zoom2, platpays, palette, blindroyale, lajustecarte };
+const SERVICES = { frame: frames, trivia, triviageek, intrus, pelemele, concept, synopsis, zoom, zoom2, platpays };
 
 const redis = new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN, automaticDeserialization: false });
 const dansSaison = (date) => date && seasonIdForDate(new Date(date)) === seasonId;

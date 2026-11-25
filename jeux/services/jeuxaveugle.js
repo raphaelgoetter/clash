@@ -1,40 +1,8 @@
 // ============================================================
-// jeuxaveugle.js — Tronc commun aux mini-jeux "à l'aveugle" (La Juste Carte,
-// Blind Royale), qui alternent désormais une saison sur deux
-// sous le nom collectif "Jeux à l'aveugle" : résolution de quel jeu est
-// actif pour une saison donnée. jeux/scripts/postJeuxAveugle.js est le seul
-// consommateur destiné à la production (cron unique, remplace
-// .github/workflows/lajustecarte.yml et blindroyale.yml).
-//
-// ⚠️ Ne DUPLIQUE PAS getCurrentSeasonId() : chaque jeu (lajustecarte.js,
-// blindroyale.js, zoom.js, palette.js, anagrams.js, pelemele.js, frames.js)
-// garde sa propre copie de cette fonction — convention assumée du repo (voir
-// jeuxdelettres.js). Ce module en a néanmoins besoin pour SA PROPRE décision
-// (quel jeu est actif), indépendante de celle de chaque jeu.
-//
-// Jour de publication — cas particulier par rapport à jeuxvisuels.js et
-// jeuxdelettres.js : les deux jeux tournaient déjà en prod, chacun avec sa
-// saison en cours et son propre jour (La Juste Carte : dimanche 16h UTC ;
-// Blind Royale : lundi 18h UTC), contrairement à Palette/Pêle-mêle qui
-// avaient été conçus dès leur création pour partager le jour du jeu
-// existant. Décision produit explicite (2026-09-21) : le jour commun retenu
-// est LUNDI 18h UTC (créneau actuel de Blind Royale). L'alternance est
-// calée pour que Blind Royale (déjà sur ce jour) prenne la main dès la
-// première saison de bascule (137, voir ci-dessous) — donc aucun jour ne
-// bouge tant que Blind Royale est actif. La Juste Carte migrera de dimanche
-// à lundi seulement quand elle reprendra la main (saison 138).
-//
-// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON (136, septembre 2026,
-// voir saison.js), même référence que jeuxvisuels.js/jeuxdelettres.js, sans
-// lien entre les trois alternances. Décision produit
-// explicite, comme pour les deux autres : chaque jeu termine SA saison en
-// cours avant de céder la main, jamais de bascule en milieu de saison.
-// Parité par rapport à cette référence : écart PAIR (0, 2, 4...) → La Juste
-// Carte (le plus ancien des deux, créé le 2026-08-16), écart IMPAIR (1, 3,
-// 5...) → Blind Royale. Donc saison 136 = La Juste Carte (en cours au
-// moment de la mise en place), 137 = Blind Royale ("la saison prochaine",
-// déjà sur le bon jour), 138 = La Juste Carte (bascule dimanche → lundi à
-// ce moment-là), etc.
+// jeuxaveugle.js — Groupe 🎮 Culture geek (Trivia Geek, Intrus de l'inventaire) :
+// jeu actif pour une saison donnée (une saison sur deux, paire définie
+// dans refonte.js) et suivi partagé de la dernière saison connue. Seul
+// consommateur en production : jeux/scripts/postJeuxAveugle.js.
 // ============================================================
 
 import { Redis } from "@upstash/redis";
@@ -57,21 +25,15 @@ function getRedis() {
 export { getCurrentSeasonId };
 
 // ── Alternance saisonnière ──────────────────────────────────────
-export const ACTIVE_GAME_REFERENCE_SEASON = 136;
-
-// Fonction pure, testable indépendamment de Redis. À partir de la saison de
-// bascule du groupe, la nouvelle paire prend le relais (voir refonte.js).
+// Fonction pure : jeu de la paire actif pour `seasonId` (voir refonte.js),
+// null avant la bascule de novembre 2026.
 export function getActiveBlindGame(seasonId) {
-  const refonte = getRefonteGame("aveugle", seasonId);
-  if (refonte) return refonte;
-  const diff = seasonId - ACTIVE_GAME_REFERENCE_SEASON;
-  const parity = ((diff % 2) + 2) % 2; // toujours 0 ou 1, même si diff était négatif
-  return parity === 0 ? "lajustecarte" : "blindroyale";
+  return getRefonteGame("aveugle", seasonId);
 }
 
 // ── Suivi de la dernière saison connue ────────────────────────────
-// Distinct de l'état propre à chaque jeu (lajustecarte:state /
-// blindroyale:state) : un seul jeu tourne par saison, donc l'état interne du
+// Distinct de l'état propre à chaque jeu (triviageek:state /
+// intrus:state) : un seul jeu tourne par saison, donc l'état interne du
 // jeu qui vient de terminer sa saison ne "voit" la transition suivante que
 // DEUX saisons plus tard (la prochaine fois que CE jeu repostera) — trop
 // tard pour un récap de fin de saison posté en temps voulu. Ce suivi est

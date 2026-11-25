@@ -1,27 +1,11 @@
 import assert from "assert";
-import {
-  ACTIVE_GAME_REFERENCE_SEASON,
-  getActiveLetterGame,
-} from "./jeuxdelettres.js";
+import { getActiveLetterGame } from "./jeuxdelettres.js";
 
-async function main() {
-  // getActiveLetterGame — la saison de référence (celle en cours au moment
-  // de la mise en place) reste Anagram, jamais de bascule en milieu de
-  // saison.
-  assert.strictEqual(getActiveLetterGame(ACTIVE_GAME_REFERENCE_SEASON), "anagram");
-  assert.strictEqual(getActiveLetterGame(ACTIVE_GAME_REFERENCE_SEASON + 1), "pelemele");
-  // À partir de la saison de bascule (138), la nouvelle paire prend le
-  // relais : voir refonte.test.js.
-  // robuste même sur une saison antérieure à la référence (jamais censé
-  // arriver en pratique, mais ne doit pas planter ni renvoyer une parité
-  // fausse à cause d'un modulo négatif en JS)
-  assert.strictEqual(getActiveLetterGame(ACTIVE_GAME_REFERENCE_SEASON - 1), "pelemele");
-  assert.strictEqual(getActiveLetterGame(ACTIVE_GAME_REFERENCE_SEASON - 2), "anagram");
+// Jeux de mots : rien avant la bascule (novembre 2026 = 138), puis Concept
+// et Pêle-mêle une saison sur deux (voir refonte.test.js pour tous les groupes).
+assert.strictEqual(getActiveLetterGame(137), null);
+assert.strictEqual(getActiveLetterGame(138), "concept");
+assert.strictEqual(getActiveLetterGame(139), "pelemele");
+assert.strictEqual(getActiveLetterGame(140), "concept");
 
-  console.log("✓ jeuxdelettres service tests passed");
-}
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+console.log("✓ jeuxdelettres service tests passed");

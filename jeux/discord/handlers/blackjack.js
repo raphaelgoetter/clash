@@ -43,6 +43,7 @@ import {
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 // Ex aequo seulement si points ET cartes piochées égaux (départage officiel,
 // voir buildRanking()).
@@ -59,7 +60,6 @@ import {
 } from "../../services/creneaux.js";
 
 const BLACKJACK_COLOR = 0x2ecc71;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 // Illustrations statiques (frontend/public/images/blackjack/), même
 // principe que robinsonImageUrl() dans jeux/discord/handlers/robinson.js.
@@ -72,10 +72,10 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // que l'URL ne change pas). Incrémenter IMAGE_VERSION force Discord à
 // refaire un fetch à chaque remplacement de fichier.
 const BLACKJACK_IMAGE_VERSION = 2;
-const BLACKJACK_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-game.webp?v=${BLACKJACK_IMAGE_VERSION}`;
+const BLACKJACK_GAME_IMAGE_URL = `${URL_JEUX}/images/blackjack/blackjack-game.webp?v=${BLACKJACK_IMAGE_VERSION}`;
 // Exportée : réutilisée par _handlers/minijeux.js pour illustrer Blackjack
 // quand c'est le jeu spécial du moment.
-export const BLACKJACK_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/blackjack/blackjack-start.webp?v=${BLACKJACK_IMAGE_VERSION}`;
+export const BLACKJACK_START_IMAGE_URL = `${URL_JEUX}/images/blackjack/blackjack-start.webp?v=${BLACKJACK_IMAGE_VERSION}`;
 
 const DAY1_INTRO =
   "**Table ouverte !** Le Croupier s'installe pour 7 jours. Bats-le deux fois par jour pour cumuler des points. Clique sur *Règles* pour les détails.";
@@ -669,7 +669,7 @@ function urlImageMain(jour, hand, dealer, creneau) {
       : { nom: "Croupier", cartes: dealer.cards.slice(0, 1), cache: true },
     legende: `Jour ${jour} · ${NOM_CRENEAU[creneau]}`,
   });
-  return `${TRUST_ROYALE_URL}/api/blackjack/main?d=${param}`;
+  return `${URL_JEUX}/api/blackjack/main?d=${param}`;
 }
 
 function buildHandEmbed(jour, hand, message, dealer, creneau) {

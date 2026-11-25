@@ -1,7 +1,7 @@
 // ============================================================
 // discordUsers.js — Résolution du pseudo Discord ACTUEL d'un membre
 // (surnom serveur, repli global_name/username), pour ne plus dépendre des
-// pseudos figés stockés en base au moment de l'interaction (Frame, Anagram,
+// pseudos figés stockés en base au moment de l'interaction (mini-jeux,
 // Pronostics Champions capturent tous le pseudo une seule fois et ne le
 // rafraîchissent jamais si le joueur change de surnom ensuite).
 //

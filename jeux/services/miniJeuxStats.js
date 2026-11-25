@@ -23,24 +23,25 @@ import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
 import { getAllArchivedResults as getIntrusResults } from "./intrus.js";
-import { getAllArchivedResults as getAnagramResults } from "./anagrams.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getConceptResults } from "./concept.js";
 import { getAllArchivedResults as getSynopsisResults } from "./synopsis.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
 import { getAllArchivedResults as getZoom2Results } from "./zoom2.js";
 import { getAllArchivedResults as getPlatPaysResults } from "./platpays.js";
-import { getAllArchivedResults as getPaletteResults } from "./palette.js";
-import { getAllArchivedResults as getBlindRoyaleResults } from "./blindroyale.js";
-import { getAllArchivedResults as getLaJusteCarteResults } from "./lajustecarte.js";
 import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
 import { listManches as listGobeletManches } from "./gobelet.js";
-import { listManches as listBangManches } from "./bang.js";
 import { listManches as listQuiEstCeManches } from "./quiestce.js";
 import { listManches as listMeowManches } from "./meow.js";
 import { listManches as listPontManches } from "./pont.js";
+import {
+  getAnagramResults,
+  getPaletteResults,
+  getBlindRoyaleResults,
+  getLaJusteCarteResults,
+} from "./archivesJeuxSupprimes.js";
 
 // Au-delà des 3 premiers paliers, un palier d'assidus n'est affiché que s'il
 // compte au plus ce nombre de joueurs (l'affichage s'arrête au premier trop peuplé).
@@ -83,7 +84,6 @@ export const SPECIAL_GAMES = [
   { key: "blackjack", title: "🂡 Blackjack", fetch: listBlackjackManches },
   { key: "marioclash", title: "🏎️ Mario Clash", fetch: listMarioClashManches },
   { key: "gobelet", title: "🎲 Gobelet", fetch: listGobeletManches },
-  { key: "bang", title: "💣 Bang!", fetch: listBangManches },
   { key: "quiestce", title: "🕵️ Qui est-ce ?", fetch: listQuiEstCeManches },
   { key: "meow", title: "🐱 Meow", fetch: listMeowManches },
   { key: "pont", title: "🧌 Pont du Troll", fetch: listPontManches },

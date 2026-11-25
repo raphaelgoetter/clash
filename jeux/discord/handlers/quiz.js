@@ -33,17 +33,17 @@ import {
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
-import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
+import { formatUtcTimeAsParis } from "../../services/saison.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const QUIZ_COLOR = 0x3498db;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const QCM_LETTERS = ["A", "B", "C", "D", "E"];
 
 // Illustration statique fournie dans l'app — chemin relatif déclaré dans
 // jeux/data/quiz/quiz.json (champ `image`, jamais d'URL absolue dedans), même
 // convention que tamagotchiImageUrl() dans handlers/tamagotchi.js.
 function quizImageUrl(relativePath) {
-  return relativePath ? `${TRUST_ROYALE_URL}/images/${relativePath}` : null;
+  return relativePath ? `${URL_JEUX}/images/${relativePath}` : null;
 }
 
 // "JJ/MM/AAAA HH:mm" (heure de Paris) — horaire de POST, calculé au moment de

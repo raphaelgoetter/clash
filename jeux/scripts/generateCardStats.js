@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // generateCardStats.js
 // Enrichit jeux/data/cardNames.json avec les stats de combat (elixir, hp, damage,
-// range) nécessaires au jeu "La Juste Carte" — devine une carte à partir
-// d'indices comparatifs PV/Portée/Dégâts/Élixir. Usage PONCTUEL, jamais dans
-// un flux hebdomadaire (comme generateCardNames.js).
+// range), conçues pour l'ancien jeu La Juste Carte et lues aujourd'hui par
+// Qui est-ce ? (archivé). Usage PONCTUEL, jamais dans un flux hebdomadaire
+// (comme generateCardNames.js).
 //
 // Décision : cardNames.json reste le SEUL fichier source de vérité pour les
 // cartes (au lieu d'un catalogue dérivé séparé) — ce script ne fait
@@ -18,8 +18,7 @@
 // CHAMPIONS SONT inclus (l'énoncé du jeu n'exclut que les évolutions et les
 // troupes de tour, pas les champions — décision confirmée explicitement) —
 // c'est justement CE critère (présence des 4 champs) qui sert
-// de filtre du pool de jeu à l'exécution (jeux/services/lajustecarte.js),
-// aucun champ "type"/"eligible" séparé à maintenir.
+// de filtre du pool, aucun champ "type"/"eligible" séparé à maintenir.
 //
 // Sources :
 //   - Noms FR + rareté : déjà dans jeux/data/cardNames.json (jamais retraduits).

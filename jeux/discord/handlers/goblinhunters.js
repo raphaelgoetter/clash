@@ -43,16 +43,16 @@ import {
   buildUserPingFields,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const GOBLINHUNTERS_COLOR = 0x16a34a;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 function boardImageUrl(jour) {
-  return `${TRUST_ROYALE_URL}/api/goblinhunters/image?jour=${jour}&v=${Date.now()}`;
+  return `${URL_JEUX}/api/goblinhunters/image?jour=${jour}&v=${Date.now()}`;
 }
 
 function startImageUrl() {
-  return `${TRUST_ROYALE_URL}/api/goblinhunters/start-image`;
+  return `${URL_JEUX}/api/goblinhunters/start-image`;
 }
 
 function addDays(date, days) {
@@ -578,7 +578,7 @@ function buildOutcomeEmbed(
       ...mancheLines,
     ].join("\n"),
     color: 0xf1c40f,
-    image: { url: `${TRUST_ROYALE_URL}/api/goblinhunters/end-image` },
+    image: { url: `${URL_JEUX}/api/goblinhunters/end-image` },
   };
 }
 
@@ -1906,7 +1906,7 @@ function buildMessagerieComponents({ alive, alreadySent }) {
 }
 
 // Contenu de la Modal ouverte par le bouton "Écrire un message" — voir
-// anagrams.js pour le mécanisme détaillé (réponse synchrone type:9).
+// jeux/CONTRIBUTING.md (« Interactions Discord ») pour le mécanisme (réponse synchrone type:9).
 export function buildMessagerieModal() {
   return {
     custom_id: "goblinhunters_messagerie_modal",

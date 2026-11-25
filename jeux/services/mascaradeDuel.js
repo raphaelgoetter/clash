@@ -15,7 +15,7 @@
 // Mascarade), source de vérité.
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord
-// corrompus sinon, voir bossraid.js) : JSON sérialisé/désérialisé nous-mêmes.
+// corrompus sinon, voir jeux/CONTRIBUTING.md) : JSON sérialisé/désérialisé nous-mêmes.
 // ============================================================
 
 import { noterVictoireDuel } from "./passeport.js";

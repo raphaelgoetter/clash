@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // postJeuxVisuels.js
-// Point d'entrée UNIQUE en production pour les "Jeux visuels" (Zoom carte /
-// Palette, en alternance une saison sur deux — voir
-// jeux/services/jeuxvisuels.js pour le détail de l'alternance). Remplace
-// l'ancien cron dédié à Zoom seul (.github/workflows/zoom.yml) :
+// Point d'entrée UNIQUE en production pour le groupe « 📸 Coup d'œil »
+// (Zoom logo / Plat Pays, en alternance une saison sur deux, voir
+// jeux/services/jeuxvisuels.js) :
 //
 //   1. Détecte un changement de saison depuis le dernier passage (suivi
 //      PARTAGÉ, indépendant de l'état interne de chaque jeu — voir
@@ -13,14 +12,11 @@
 //      que 2 saisons plus tard (la prochaine fois que LUI repostera).
 //   2. Délègue la publication de la nouvelle manche au jeu actif de la
 //      saison en cours, avec force:true (le gating jour a déjà été fait
-//      ici) et skipSeasonRecap:true pour Zoom (sinon son propre mécanisme
-//      interne de récap, comparé à SON état à lui, redéclencherait à tort
-//      un récap déjà posté à l'étape 1 — sans effet pour Palette, qui n'a
-//      aucune logique de récap interne).
+//      ici) et skipSeasonRecap:true (sinon le mécanisme interne de récap
+//      d'un jeu, comparé à SON état à lui, redéclencherait à tort un récap
+//      déjà posté à l'étape 1).
 //
-// Contrairement à postJeuxDeLettres.js (Anagram/Pêle-mêle, samedi, 2
-// créneaux aléatoires), pas de planification multi-créneaux ici : Zoom a
-// toujours eu un créneau fixe unique (vendredi 18h UTC), simple gating jour.
+// Jour de publication : VENDREDI 18h UTC.
 //
 // Usage :
 //   node jeux/scripts/postJeuxVisuels.js               — poste sur le salon de test
@@ -38,10 +34,6 @@ import {
   setLastKnownSeasonId,
 } from "../services/jeuxvisuels.js";
 import { getWiredGame } from "../services/refonte.js";
-import { alreadyPostedThisWeek as zoomAlreadyPostedThisWeek } from "../services/zoom.js";
-import { alreadyPostedThisWeek as paletteAlreadyPostedThisWeek } from "../services/palette.js";
-import { postZoom, postSeasonRecap as postZoomSeasonRecap } from "../discord/handlers/zoom.js";
-import { postPalette, postSeasonRecap as postPaletteSeasonRecap } from "../discord/handlers/palette.js";
 import { alreadyPostedThisWeek as zoom2AlreadyPostedThisWeek } from "../services/zoom2.js";
 import { postZoom2, postSeasonRecap as postZoom2SeasonRecap } from "../discord/handlers/zoom2.js";
 import { alreadyPostedThisWeek as platPaysAlreadyPostedThisWeek } from "../services/platpays.js";
@@ -58,10 +50,10 @@ if (!channelId) {
   process.exit(1);
 }
 
-const ALREADY_POSTED_BY_GAME = { zoom: zoomAlreadyPostedThisWeek, palette: paletteAlreadyPostedThisWeek, zoom2: zoom2AlreadyPostedThisWeek, platpays: platPaysAlreadyPostedThisWeek };
-const POST_BY_GAME = { zoom: postZoom, palette: postPalette, zoom2: postZoom2, platpays: postPlatPays };
-const RECAP_BY_GAME = { zoom: postZoomSeasonRecap, palette: postPaletteSeasonRecap, zoom2: postZoom2SeasonRecap, platpays: postPlatPaysSeasonRecap };
-const LABEL_BY_GAME = { zoom: "Zoom carte", palette: "Palette", zoom2: "Zoom logo", platpays: "Plat Pays" };
+const ALREADY_POSTED_BY_GAME = { zoom2: zoom2AlreadyPostedThisWeek, platpays: platPaysAlreadyPostedThisWeek };
+const POST_BY_GAME = { zoom2: postZoom2, platpays: postPlatPays };
+const RECAP_BY_GAME = { zoom2: postZoom2SeasonRecap, platpays: postPlatPaysSeasonRecap };
+const LABEL_BY_GAME = { zoom2: "Zoom logo", platpays: "Plat Pays" };
 
 (async () => {
   try {
@@ -123,7 +115,7 @@ const LABEL_BY_GAME = { zoom: "Zoom carte", palette: "Palette", zoom2: "Zoom log
 
     console.log(`Manche ${LABEL_BY_GAME[activeGame]} postée dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
-    console.error("Échec de la publication Jeux visuels :", err.message);
+    console.error("Échec de la publication Coup d'œil :", err.message);
     process.exit(1);
   }
 })();

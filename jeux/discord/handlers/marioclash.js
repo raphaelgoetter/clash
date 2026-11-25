@@ -47,13 +47,13 @@ import {
   buildRolePingFields,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
-import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
+import { formatUtcTimeAsParis } from "../../services/saison.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const MARIOCLASH_COLOR = 0xe74c3c;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 function boardImageUrl(jour) {
-  return `${TRUST_ROYALE_URL}/api/marioclash/image?jour=${jour}&v=${Date.now()}`;
+  return `${URL_JEUX}/api/marioclash/image?jour=${jour}&v=${Date.now()}`;
 }
 
 // Cache-buster dynamique, pas une valeur fixe (?v=1) : Discord met en cache
@@ -62,7 +62,7 @@ function boardImageUrl(jour) {
 // principe que boardImageUrl() ci-dessus, voir aussi le commentaire ?v=2
 // dans bossraid.js pour l'incident équivalent.
 function illustrationUrl() {
-  return `${TRUST_ROYALE_URL}/api/marioclash/illustration?v=${Date.now()}`;
+  return `${URL_JEUX}/api/marioclash/illustration?v=${Date.now()}`;
 }
 
 // ── Classement ───────────────────────────────────────────────────────
@@ -1117,7 +1117,7 @@ function vehiculeEmojiComposant(v) {
 const ACTIONS_VEHICULE = { de: handleDiceButton, boutique: handleBoutiqueButton, sort: handleSpellButton };
 
 function ficheVehiculeUrl(id) {
-  return `${TRUST_ROYALE_URL}/api/marioclash/vehicule?id=${id}&v=${Date.now()}`;
+  return `${URL_JEUX}/api/marioclash/vehicule?id=${id}&v=${Date.now()}`;
 }
 
 function buildChoixVehicule(jour, action, config, vehiculeId) {

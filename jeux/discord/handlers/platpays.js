@@ -42,8 +42,8 @@ import { nomSaison } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const PLATPAYS_COLOR = 0x27ae60;
 
 const HINT_LABELS = {
@@ -75,7 +75,7 @@ function buildPlatEmbed({ entry, gameId, seasonId, seasonManche, seasonMancheTot
     ].join("\n"),
     // gameId= épingle la photo de CETTE manche (anti-spoiler côté route) ;
     // cache-buster (?v=) : Discord met en cache l'aperçu par URL, échecs compris.
-    image: { url: `${TRUST_ROYALE_URL}/api/platpays/image?gameId=${gameId}&v=${cacheBust}` },
+    image: { url: `${URL_JEUX}/api/platpays/image?gameId=${gameId}&v=${cacheBust}` },
     color: PLATPAYS_COLOR,
     // Licence seule : le nom de l'auteur (écriture, langue) pourrait trahir le
     // pays ; il est cité à la résolution (voir creditLine).

@@ -13,7 +13,6 @@
 //   nombre de langues de Wikipédia, première apparition) ;
 // - inventions : liste relue à la main (inventions.txt), candidats tirés de
 //   Wikidata et des listes d'inventions de Wikipédia ;
-// - cartes Clash : jeux/data/cardNames.json (noms français).
 // - transports : aussi la liste de listedemots.com (faite à la main).
 // Fréquence d'usage (choix de Kévina) : Lexique 3.83 (lexique.org).
 //
@@ -742,13 +741,6 @@ const THEMES = {
     return { nom: "Prénoms", mots: liste(500), kevina: liste(20000) };
   },
 
-  async clash() {
-    const cartes = JSON.parse(fs.readFileSync(path.join(RACINE, "jeux", "data", "cardNames.json"), "utf8"));
-    const fr = [...new Set(cartes.map((c) => c.fr))].sort((a, b) => a.localeCompare(b, "fr"));
-    // Noms anglais acceptés aussi (souvent employés en jeu)
-    const mots = [...new Set([...fr, ...cartes.map((c) => c.cardKey)])].sort((a, b) => a.localeCompare(b, "fr"));
-    return { nom: "Cartes Clash Royale", mots, kevina: fr };
-  },
 };
 
 // Personnes ayant l'un des métiers (P106) et un article dans au moins `min`

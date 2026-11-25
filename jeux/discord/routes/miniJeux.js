@@ -1,6 +1,7 @@
-// Mini-jeux quotidiens : Frame, Anagram, Zoom, Blind Royale, La Juste
-// Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées, /mini-jeux et
-// /mini-jeux-history (commandes, boutons, modals de réponse).
+// Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle,
+// Zoom carte, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus), Quiz,
+// sondage d'idées, /mini-jeux et /mini-jeux-history (commandes, boutons,
+// modals de réponse).
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -11,10 +12,6 @@ import {
   handleHintButton as handleFrameHintButton,
   handleModalSubmit as handleFrameModalSubmit,
 } from "../handlers/frames.js";
-import {
-  buildAnswerModal as buildAnagramAnswerModal,
-  handleModalSubmit as handleAnagramModalSubmit,
-} from "../handlers/anagrams.js";
 import {
   buildAnswerModal as buildZoomAnswerModal,
   handleHintButton as handleZoomHintButton,
@@ -27,30 +24,14 @@ import {
   handleModalSubmit as handleZoom2ModalSubmit,
 } from "../handlers/zoom2.js";
 import {
-  buildAnswerModal as buildJusteCarteAnswerModal,
-  handleModalSubmit as handleJusteCarteModalSubmit,
-  handleHintButton as handleJusteCarteHintButton,
-  handleExcludedListButton as handleJusteCarteExcludedListButton,
-} from "../handlers/lajustecarte.js";
-import {
   buildAnswerModal as buildPeleMeleAnswerModal,
   handleModalSubmit as handlePeleMeleModalSubmit,
   buildRulesEmbed as buildPeleMeleRulesEmbed,
   handleJournalButton as handlePeleMeleJournalButton,
 } from "../handlers/pelemele.js";
-import {
-  buildAnswerModal as buildBlindRoyaleAnswerModal,
-  handleHintButton as handleBlindRoyaleHintButton,
-  handleModalSubmit as handleBlindRoyaleModalSubmit,
-} from "../handlers/blindroyale.js";
 import { handleQuizVote } from "../handlers/quiz.js";
-// En alternance avec Zoom carte sous "Jeux visuels" (voir jeuxvisuels.js) —
-// publication via jeux/scripts/postJeuxVisuels.js (ou jeux/scripts/postPalette.js en
-// direct), jamais depuis ce fichier de routing.
-import { handleAnswerButton as handlePaletteAnswer } from "../handlers/palette.js";
-// En alternance avec Frame sous "Mini-jeux de Culture" (voir
-// jeuxculture.js) — publication via jeux/scripts/postJeuxCulture.js (ou
-// jeux/scripts/postTrivia.js en direct), jamais depuis ce fichier de routing.
+// Publication via les orchestrateurs jeux/scripts/postJeux*.js, jamais
+// depuis ce fichier de routing.
 import { handleAnswerButton as handleTriviaAnswer } from "../handlers/trivia.js";
 import { handleAnswerButton as handleTriviaGeekAnswer } from "../handlers/triviageek.js";
 import { handleAnswerButton as handleIntrusAnswer } from "../handlers/intrus.js";
@@ -307,54 +288,6 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu Anagram : bouton "Répondre" → ouverture de la Modal ──
-  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
-  // peut pas être différée (pas de runBackground ici). Pas de bouton indice
-  // pour ce jeu (contrairement à Frame).
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("anagram_answer:")
-  ) {
-    const gameId = body.data.custom_id.split(":")[1];
-    return res
-      .status(200)
-      .json({ type: 9, data: buildAnagramAnswerModal(gameId) });
-  }
-
-  // ── Jeu Anagram : soumission de la Modal (réponse du joueur) ──
-  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
-  // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
-  // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
-  // partagent des valeurs numériques.
-  if (
-    body.type === 5 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("anagram_answer_modal:")
-  ) {
-    const gameId = body.data.custom_id.split(":")[1];
-    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleAnagramModalSubmit(
-        webhookUrl,
-        gameId,
-        discordId,
-        username,
-        rawAnswer,
-      ),
-    );
-    return;
-  }
-
   // ── Jeu Zoom carte : bouton indice ──
   if (
     body.type === 3 &&
@@ -492,73 +425,6 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu Blind Royale : bouton indice "Rareté" ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("blindroyale_hint:")
-  ) {
-    const gameId = body.data.custom_id.split(":")[1];
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleBlindRoyaleHintButton(webhookUrl, gameId, discordId, username),
-    );
-    return;
-  }
-
-  // ── Jeu Blind Royale : bouton "Répondre" → ouverture de la Modal ──
-  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
-  // peut pas être différée (pas de runBackground ici).
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("blindroyale_answer:")
-  ) {
-    const gameId = body.data.custom_id.split(":")[1];
-    return res
-      .status(200)
-      .json({ type: 9, data: buildBlindRoyaleAnswerModal(gameId) });
-  }
-
-  // ── Jeu Blind Royale : soumission de la Modal (réponse du joueur) ──
-  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), voir le
-  // commentaire équivalent dans le bloc Zoom carte ci-dessus.
-  if (
-    body.type === 5 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("blindroyale_answer_modal:")
-  ) {
-    const gameId = body.data.custom_id.split(":")[1];
-    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleBlindRoyaleModalSubmit(
-        webhookUrl,
-        gameId,
-        discordId,
-        username,
-        rawAnswer,
-      ),
-    );
-    return;
-  }
-
   // ── /mini-jeux : état des lieux des mini-jeux réguliers + jeu spécial
   // du moment — réponse publique (pas de flags: 64), c'est un tableau de
   // bord partagé, pas une info personnelle.
@@ -626,94 +492,8 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu La Juste Carte : bouton "Cartes non incluses" sur le post ──
-  // Nouvelle réponse éphémère séparée — type 5 comme pour une commande
-  // initiale.
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id === "lajustecarte_excluded_list"
-  ) {
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleJusteCarteExcludedListButton(webhookUrl));
-    return;
-  }
-
-  // ── Jeu La Juste Carte : bouton "Indice : rareté" ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("lajustecarte_hint:")
-  ) {
-    const gameId = body.data.custom_id.split(":")[1];
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleJusteCarteHintButton(webhookUrl, gameId, discordId, username),
-    );
-    return;
-  }
-
-  // ── Jeu La Juste Carte : bouton "Proposer/Reproposer une carte" → Modal ──
-  // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
-  // peut pas être différée (pas de runBackground ici). Même custom_id que
-  // le bouton du post initial et que le bouton "Reproposer" renvoyé après
-  // chaque tentative infructueuse — les deux rouvrent la même Modal.
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("lajustecarte_answer:")
-  ) {
-    const gameId = body.data.custom_id.split(":")[1];
-    return res
-      .status(200)
-      .json({ type: 9, data: buildJusteCarteAnswerModal(gameId) });
-  }
-
-  // ── Jeu La Juste Carte : soumission de la Modal (réponse du joueur) ──
-  // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
-  // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
-  // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
-  // partagent des valeurs numériques.
-  if (
-    body.type === 5 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("lajustecarte_answer_modal:")
-  ) {
-    const gameId = body.data.custom_id.split(":")[1];
-    const rawAnswer = body.data.components?.[0]?.components?.[0]?.value || "";
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() =>
-      handleJusteCarteModalSubmit(
-        webhookUrl,
-        gameId,
-        discordId,
-        username,
-        rawAnswer,
-      ),
-    );
-    return;
-  }
-
   // ── Jeu Pêle-mêle : bouton "Proposer un mot" → Modal ──
-  // Même mécanique que La Juste Carte (voir juste au-dessus), sauf qu'ici le
-  // MÊME bouton sert à toutes les tentatives (pas de bouton "Reproposer"
+  // Le MÊME bouton sert à toutes les tentatives (pas de bouton "Reproposer"
   // séparé) puisqu'il n'y a pas de notion de victoire qui change son libellé.
   if (
     body.type === 3 &&
@@ -797,34 +577,11 @@ export async function routeMiniJeux(body, res) {
       body.member?.user?.username ||
       "Inconnu";
     // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : confirmation
-    // privée uniquement — contrairement à Tamagoshi, le message public n'est
+    // privée uniquement : le message public n'est
     // JAMAIS repatché (aucun compteur de votes affiché avant la révélation).
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleQuizVote(webhookUrl, manche, jour, choiceIndex, discordId, username));
-    return;
-  }
-
-  // ── Jeu Palette : boutons de réponse A/B/C/D ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("palette_answer:")
-  ) {
-    const [, gameId, letter] = body.data.custom_id.split(":");
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : réponse
-    // définitive au premier clic, un simple QCM ne nécessite pas de Modal
-    // (contrairement au bouton "Répondre" de Zoom) — même principe d'ACK
-    // que quiz_vote ci-dessus.
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handlePaletteAnswer(webhookUrl, gameId, letter, discordId, username));
     return;
   }
 
@@ -842,8 +599,7 @@ export async function routeMiniJeux(body, res) {
       body.member?.user?.username ||
       "Inconnu";
     // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : réponse
-    // définitive au premier clic, un simple QCM ne nécessite pas de Modal —
-    // même principe d'ACK que palette_answer ci-dessus.
+    // définitive au premier clic, un simple QCM ne nécessite pas de Modal.
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleTriviaAnswer(webhookUrl, gameId, letter, discordId, username));

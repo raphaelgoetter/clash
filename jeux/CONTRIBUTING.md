@@ -2,9 +2,9 @@
 
 Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spéciaux sur 7 jours, duels à la demande) : règles, barèmes, données, clés Redis, scripts et crons. **Avant de modifier une règle de jeu, consulter ce document** et le mettre à jour dans le même changement.
 
-Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale`.
+Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale` (ce dernier pour les seules exceptions listées dans « Exceptions Clash Royale »).
 
-Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Qui est-ce ?, Meow, Goblin Hunters, Mario Clash, Pont du Troll) · faces de dé · duels · sondage public · noms des cartes · jeux archivés.
+Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Meow, Goblin Hunters, Mario Clash, Pont du Troll) · faces de dé · duels · sondage public · noms des cartes · exceptions Clash Royale · jeux archivés et supprimés.
 
 ---
 
@@ -20,9 +20,9 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 | Module                                | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `jeux/discord/routes/miniJeux.js`     | Mini-jeux quotidiens (Frame, Anagram, Zoom, Blind Royale, La Juste Carte, Pêle-Mêle, Palette, Trivia, Quiz, sondage d'idées), `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
-| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Tamagotchi, Robinson, Boss Raid, Goblin Hunters, Mario Clash, Bang!, Qui est-ce ?, Meow)                                                                                                                                                                                                                                                                                                                                                                                            |
-| `jeux/discord/routes/duels.js`        | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/mascarade`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Six et Tourneboule, archivés)                                                                                                                                                                                                                                                                                                                                        |
+| `jeux/discord/routes/miniJeux.js`     | Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus), Quiz, sondage d'idées, `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
+| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Robinson, Goblin Hunters, Mario Clash, Qui est-ce ? archivé, Meow, Pont du Troll) |
+| `jeux/discord/routes/duels.js`        | `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/potato`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Mascarade, archivé, pour les parties en cours) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
 
@@ -30,42 +30,27 @@ Les jeux ont leur propre application Discord (« bot des jeux »), servie par `a
 
 ## Mini-jeux hebdomadaires : fonctionnement commun
 
-S'applique à Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo et Plat Pays (Anagram, Palette, La Juste Carte et Blind Royale : voir « Jeux archivés »). Chaque section de jeu ne décrit que ses spécificités.
+S'applique à Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo et Plat Pays. Chaque section de jeu ne décrit que ses spécificités.
 
-### Alternance saisonnière (anciennes paires jusqu'en octobre 2026, 5 groupes ensuite)
+### Groupes et alternance saisonnière
 
-Chaque groupe fait tourner **un seul jeu par saison** (voir « Saison et numérotation des manches »), en alternance. Décision : écart à `ACTIVE_GAME_REFERENCE_SEASON = 136` pair → 1er jeu, impair → 2nd jeu.
+Cinq groupes ; chacun fait tourner **un seul jeu par saison** (voir « Saison et numérotation des manches »), en alternance. Source de vérité : `jeux/services/refonte.js` (`REFONTE_PAIRS`, `REFONTE_SEASON` = 138, novembre 2026, pour les 5 groupes). Écart à la saison de bascule pair → 1er jeu, impair → 2nd ; avant la bascule, aucun jeu (`getRefonteGame()` → `null`).
 
-| Groupe                                                 | Pair / impair                 | Publication (UTC)             | Workflow                                      | Orchestrateur                     | Service            | npm         |
-| ------------------------------------------------------ | ----------------------------- | ----------------------------- | --------------------------------------------- | --------------------------------- | ------------------ | ----------- |
-| 🎬 Jeux de culture                                     | Frame / Trivia                | mercredi 18:00 (`0 18 * * 3`) | `jeux-culture.yml`                            | `jeux/scripts/postJeuxCulture.js` | `jeuxculture.js`   | `culture:*` |
-| 🔤 Jeux de lettres                                     | Anagram / Pêle-mêle           | samedi 18:00 (`0 18 * * 6`)   | `jeux-de-lettres.yml`                         | `postJeuxDeLettres.js`            | `jeuxdelettres.js` | `lettres:*` |
-| 🎨 Jeux visuels                                        | Zoom carte / Palette          | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml`                            | `postJeuxVisuels.js`              | `jeuxvisuels.js`   | `visuels:*` |
-| 🙈 Jeux à l'aveugle (🎮 Culture geek après la refonte) | La Juste Carte / Blind Royale | lundi 18:00 (`0 18 * * 1`)    | `jeux-aveugle.yml` (affiché « Culture geek ») | `postJeuxAveugle.js`              | `jeuxaveugle.js`   | `aveugle:*` |
-| ⚔️ Clash (à partir de la refonte)                      | Trivia / Zoom carte           | mardi 18:00 (`0 18 * * 2`)    | `jeux-clash.yml`                              | `postJeuxClash.js`                | `jeuxclash.js`     | `clash:*`   |
+| Groupe (clé technique) | Libellé            | Pair / impair                              | Publication (UTC)             | Workflow              | Orchestrateur                     | npm         |
+| ---------------------- | ------------------ | ------------------------------------------ | ----------------------------- | --------------------- | --------------------------------- | ----------- |
+| `culture`              | 🎬 Ciné-club       | Synopsis éclaté / Trouve le film (Frame)   | mercredi 18:00 (`0 18 * * 3`) | `jeux-culture.yml`    | `jeux/scripts/postJeuxCulture.js` | `culture:*` |
+| `lettres`              | 🔤 Jeux de mots    | Concept / Pêle-mêle                        | samedi 18:00 (`0 18 * * 6`)   | `jeux-de-lettres.yml` | `postJeuxDeLettres.js`            | `lettres:*` |
+| `visuels`              | 📸 Coup d'œil      | Zoom logo / Plat Pays                      | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml`    | `postJeuxVisuels.js`              | `visuels:*` |
+| `aveugle`              | 🎮 Culture geek    | Trivia Geek / Intrus de l'inventaire       | lundi 18:00 (`0 18 * * 1`)    | `jeux-aveugle.yml`    | `postJeuxAveugle.js`              | `aveugle:*` |
+| `clash`                | ⚔️ Clash           | Trivia / Zoom carte                        | mardi 18:00 (`0 18 * * 2`)    | `jeux-clash.yml`      | `postJeuxClash.js`                | `clash:*`   |
 
-Tous les groupes publient à 18:00 UTC, soit 19h à Paris en hiver et 20h à l'heure d'été (les crons GitHub sont en UTC).
+Tous les groupes publient à 18:00 UTC, soit 19h à Paris en hiver et 20h à l'heure d'été (les crons GitHub sont en UTC). Service d'alternance par groupe : `jeux/services/jeux<groupe>.js` (`getActive<…>Game`, suivi `<groupe>:last_season_id`).
 
-### Refonte hors Clash Royale (bascule par groupe)
-
-`jeux/services/refonte.js` remplace chaque paire par une nouvelle, sans lien avec Clash Royale, à partir de la saison `REFONTE_SEASON[groupe]` (138 = novembre 2026 pour les 5 groupes). Avant cette saison, l'alternance ci-dessus s'applique sans changement ; à partir d'elle, la parité s'ancre sur la saison de bascule : écart pair → 1er jeu, impair → 2nd. Reporter la bascule d'un groupe = augmenter sa saison dans `REFONTE_SEASON`.
-
-| Groupe (clé technique) | Libellé après bascule | Écart pair (nov. 2026)       | Écart impair (déc. 2026)          |
-| ---------------------- | --------------------- | ---------------------------- | --------------------------------- |
-| `culture`              | 🎬 Ciné-club          | `synopsis` (Synopsis éclaté) | `frame` (Trouve le film)          |
-| `aveugle`              | 🎮 Culture geek       | `triviageek` (Trivia Geek)   | `intrus` (Intrus de l'inventaire) |
-| `lettres`              | 🔤 Jeux de mots       | `concept` (Concept)          | `pelemele` (Pêle-mêle)            |
-| `visuels`              | 📸 Coup d'œil         | `zoom2` (Zoom logo)          | `platpays` (Plat Pays)            |
-| `clash` (nouveau)      | ⚔️ Clash              | `trivia` (Trivia)            | `zoom` (Zoom carte)               |
-
-- Les clés de groupe et `<groupe>:last_season_id` ne changent pas ; seul le libellé affiché dépend de la saison (`groupLabel`, utilisé par `/mini-jeux-history`).
-- Groupe Clash : garde un rendez-vous Clash Royale. Aucun jeu avant la bascule (`getActiveClashGame` → `null`, `postJeuxClash.js` sort sans rien poster ni écrire, `/mini-jeux` masque le groupe). Trivia et Zoom carte quittent leurs anciens groupes et y gardent leur identifiant, leur catalogue et leurs archives ; leur jour de publication dépend de la saison (`publicationWeekday`, `jeuxclash.js` : mercredi / vendredi jusqu'en octobre 2026, mardi ensuite), pour l'embed comme pour le total de manches. Zoom carte (décembre, février…) et Zoom logo (novembre, janvier…) ne tombent jamais le même mois.
-- Un jeu n'est prêt que dans sa propre paire (`getWiredGame`) : Zoom carte figure dans `REFONTE_PRETS` pour le groupe Clash mais n'est jamais relancé par l'orchestrateur visuels. `/mini-jeux` n'attribue une manche à un groupe que si le jeu y était actif pour la saison de la manche (`state.seasonId`), et `/mini-jeux-history` range les résultats de Trivia et Zoom carte selon la saison de la manche (`splitAtClash`) : ancien groupe avant la bascule, « ⚔️ Clash » ensuite.
-- Dernière manche de Trivia dans le groupe Culture (mercredi 28 octobre 2026) : le groupe Clash la remplace dès le mardi suivant. `/mini-jeux` compte sa fin jusqu'à ce mardi (`daysUntilEnd`) et masque la ligne Clash tant que ce jeu court encore dans son ancien groupe. Le bas du message d'une dernière manche de saison annonce le jour de la saison suivante (`triviaEngine.js`). Une manche plus ancienne que la saison précédente n'est jamais affichée comme en cours (`resolvePairGame`).
-- Pêle-mêle rejoint « 🔤 Jeux de mots » tel quel (même identifiant, même thème Clash Royale, mêmes clés Redis). Trivia Geek change de groupe et Zoom logo remplace Zoom carte pendant que celui-ci tourne encore, d'où des identifiants distincts (`triviageek`, `zoom2`).
-- À partir de la bascule, un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`) et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon, l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu. Ce garde-fou empêche aussi le groupe visuels de relancer Zoom carte.
+- Les clés de groupe et `<groupe>:last_season_id` sont des identifiants techniques historiques ; seul le libellé est affiché (`groupLabel`, utilisé par `/mini-jeux-history`).
+- Trivia et Zoom carte ont tourné dans d'autres groupes avant novembre 2026 et y gardent leurs résultats : `/mini-jeux` n'attribue une manche à un groupe que si le jeu y était actif pour la saison de la manche (`state.seasonId`), et `/mini-jeux-history` range leurs résultats selon la saison de la manche (`splitAtClash`) : ancien groupe avant la bascule, « ⚔️ Clash » ensuite. Leur jour de publication dépend aussi de la saison (`publicationWeekday`, `jeuxclash.js`). Zoom carte (décembre, février…) et Zoom logo (novembre, janvier…) ne tombent jamais le même mois. Une manche plus ancienne que la saison précédente n'est jamais affichée comme en cours (`resolvePairGame`).
+- Un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`), dans sa propre paire, et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu.
 - Catalogue Trivia Geek : `jeux/data/triviageek/trivia-geek.json`, même format que `trivia-clash.json` (bonne réponse suffixée « √ », parcouru dans l'ordre, ajouts en fin de fichier) plus `numero` (repère humain, 1 = première manche, à garder égal à la position dans le fichier), `titre` (titre humoristique affiché avec la question) et `sourceUrl`. Chaque réponse est vérifiée par une source web avant d'entrer au catalogue.
-- Brancher un nouveau jeu : l'ajouter à `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`).
+- Brancher un nouveau jeu : l'ajouter à `REFONTE_PAIRS` et `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`).
 
 Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque passage :
 
@@ -73,7 +58,7 @@ Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque 
 2. Gating (sauf `--force`/`--dry-run`) : bon jour UTC, puis `alreadyPostedThisWeek()` du jeu actif (date UTC de `<jeu>:state.startedAt` = aujourd'hui).
 3. Délégation à `post<Jeu>(channelId, { force: true, skipSeasonRecap: true, noPing })`.
 
-`skipSeasonRecap` existe sur Frame, Anagram, Zoom, La Juste Carte et Blind Royale (ignoré par Trivia) : un appel direct (`post<Jeu>.js`) détecte lui-même le changement de saison sur son propre état et poste le récap. Pêle-mêle et Palette n'ont pas ce paramètre : leur récap n'est posté **que** par l'orchestrateur. Les scripts `jeux/scripts/post<Jeu>.js` restent utilisables pour un test ou un rattrapage d'un jeu précis.
+`skipSeasonRecap` n'a d'effet que sur Frame et Zoom carte (accepté et ignoré par les autres) : un appel direct (`post<Jeu>.js`) de ces deux jeux détecte lui-même le changement de saison sur son propre état et poste le récap. Pour les autres jeux, le récap n'est posté **que** par l'orchestrateur. Les scripts `jeux/scripts/post<Jeu>.js` restent utilisables pour un test ou un rattrapage d'un jeu précis.
 
 Chaque service réexporte `getCurrentSeasonId()` depuis `jeux/services/saison.js` (aucun appel à l'API Clash Royale).
 
@@ -82,6 +67,7 @@ Chaque service réexporte `getCurrentSeasonId()` depuis `jeux/services/saison.js
 - Salon de test `DISCORD_CHANNEL_FRAME_TEST`, salon public `DISCORD_CHANNEL_FRAME_PUBLIC` : partagés par tous les mini-jeux, ne pas créer de salon dédié.
 - Le salon de test ne pingue jamais (`NO_PING = --no-ping || !--public`). En public, ping du rôle `MINI-JEUX` résolu par son nom (`MINI_JEUX_ROLE_NAME`, `getRoleIdByName`/`buildRolePingFields`, `packages/commun/discordRoles.js`). ⚠️ Le nom doit correspondre exactement au rôle Discord, sinon le ping échoue silencieusement pour tous les jeux.
 - Redis : `KV_REST_API_URL`/`KV_REST_API_TOKEN` (Upstash), un préfixe de clés par jeu, aucun partage de données entre jeux.
+- Adresse publique des images (embeds) : `URL_JEUX` (`jeux/services/urlJeux.js`), lue dans `JEUX_URL_PUBLIQUE`, `https://trustroyale.vercel.app` par défaut. Jamais d'adresse écrite en dur dans un handler.
 - Secrets des 5 workflows : `CLASH_API_KEY`, `DISCORD_TOKEN`, `DISCORD_APP_ID`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`, `KV_REST_API_URL`, `KV_REST_API_TOKEN` (GitHub → Settings → Secrets and variables → Actions). Sans les `KV_*`, échec `[Upstash Redis] The 'url'/'token' property is missing`.
 
 ### Stockage Upstash Redis : pièges et schéma
@@ -126,10 +112,10 @@ Clés communes (`<p>` = préfixe du jeu) :
 
 ### Images servies et anti-spoiler
 
-- Routes d'images : `jeux/server/imageRoutes.js` (monté par `backend/server.js`). URL d'embed `https://trustroyale.vercel.app/api/<jeu>/image?gameId=<gameId>&v=<horodatage>`.
+- Routes d'images : `jeux/server/imageRoutes.js` (monté par `backend/server.js`). URL d'embed `${URL_JEUX}/api/<jeu>/image?gameId=<gameId>&v=<horodatage>`.
 - ⚠️ `gameId` épingle l'image de **cette** manche (sinon les anciens messages affichent la manche en cours quand le proxy Discord revalide son cache). La route refuse tout `gameId` jamais posté (registre `<p>:posted_games` ou équivalent), donc aucune manche future devinable. `v` n'est qu'un cache-buster.
 - Aucun asset de jeu n'est exposé statiquement (rien sous `frontend/public/`).
-- ⚠️ Zoom carte, Zoom logo, Plat Pays, Intrus de l'inventaire et Palette (images, surlignages) et les polices `data/fonts/*.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`/`readGameFontPaths`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- <préfixe>`, avec le préfixe le plus précis possible (ex. `jeux-visuels/platpays`) : le script n'envoie que les chemins qui commencent par ce préfixe, et `jeux-visuels` seul renvoie plus de 400 fichiers.
+- ⚠️ Zoom carte, Zoom logo, Plat Pays, Intrus de l'inventaire (images), les avatars « clay » (`avatars/`) et les polices `data/fonts/*.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`/`readGameFontPaths`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- <préfixe>`, avec le préfixe le plus précis possible (ex. `jeux-visuels/platpays`) : le script n'envoie que les chemins qui commencent par ce préfixe, et `jeux-visuels` seul renvoie plus de 400 fichiers.
 - ⚠️ Un service ne déclare jamais de constante pointant sur un **dossier** de `jeux/data/` (ex. `DATA_DIR = path.resolve(…, "intrus")` puis `path.join(DATA_DIR, "x.json")`) : `@vercel/nft` embarque alors le dossier entier, images comprises, dans chacune des 3 fonctions et chaque déploiement retenu (quota Functions Storage). Écrire le chemin complet de chaque fichier lu (`path.resolve(__dirname, "..", "data", "intrus", "objets.json")`).
 - ⚠️ Rendu SVG → PNG par `@resvg/resvg-js` : tout texte exige la police embarquée (`fontFiles` + `loadSystemFonts: false`), sinon il est invisible sur Vercel, sans erreur. Polices : `readGameFontPaths()` (`packages/commun/blobAssets.js`) charge Inter puis trois sous-ensembles Noto de repli (`data/fonts/Noto*-subset.ttf` : lettres mathématiques stylées 𝕄 𝐋 𝑨, symboles ✰ ♛ et une cinquantaine d'emojis monochromes courants), pour les pseudos stylés ; un repli absent de Blob est ignoré. Format TTF obligatoire (resvg ne lit pas le WOFF/WOFF2), sous-ensembles à garder légers (environ 250 Ko au total). Le SVG passe par `texteAffichable()` (`packages/commun/texteImage.js`) avant `new Resvg` : petites capitales (ᴄ ᴅ…) remplacées par des capitales, sélecteurs de variante U+FE0F retirés (sinon le repli échoue sur tout le texte). Pseudos tronqués avec `tronquer()` du même module (graphèmes, jamais `.length`).
 
@@ -201,7 +187,7 @@ Trois instances du même moteur : service `jeux/services/triviaEngine.js` (`crea
 | 🎮 Trivia Geek                   | Culture geek à partir de la refonte                                                                     | `triviageek:` | `jeux/data/triviageek/trivia-geek.json`            | lundi                | `triviageek_answer:` |
 | 🎒 Intrus de l'inventaire        | Culture geek à partir de la refonte (alternance avec Trivia Geek)                                       | `intrus:`     | `jeux/data/jeux-visuels/intrus/` (voir ci-dessous) | lundi                | `intrus_answer:`     |
 
-- QCM A/B/C/D, essai unique (même mécanique que Palette, archivé). Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
+- QCM A/B/C/D, essai unique. Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
 - Champ optionnel `titre` : affiché en italique au-dessus de la question.
 - Jour : `weekday` (service) et `jour` (handlers) acceptent une fonction `(seasonId) → jour` pour un jeu qui change de créneau (Trivia).
 - Ordre des réponses mélangé par manche (`<préfixe>:order:<gameId>`).
@@ -263,7 +249,7 @@ Groupe « Ciné-club » (mercredi 18:00 UTC) à partir de la refonte, en alterna
 
 ## Pêle-mêle (retrouve les cartes cachées dans les lettres)
 
-Groupe « 🔤 Jeux de mots » (samedi 18:00 UTC), en alternance avec Concept (avec Anagram jusqu'en octobre 2026). Service `jeux/services/pelemele.js`.
+Groupe « 🔤 Jeux de mots » (samedi 18:00 UTC), en alternance avec Concept. Service `jeux/services/pelemele.js`.
 
 Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Toute carte du pool formable avec ces lettres est valide ; la manche n'est jamais « résolue », elle reste ouverte jusqu'à son remplacement. Chaque joueur propose autant de cartes qu'il veut.
 
@@ -317,7 +303,7 @@ Les résultats de **tous** les participants sont archivés d'un coup (`finalizeR
 
 ## Zoom carte (devine la carte zoomée)
 
-Groupe « ⚔️ Clash » (mardi 18:00 UTC), en alternance avec Trivia (dans les Jeux visuels, avec Palette, jusqu'en octobre 2026). Service `jeux/services/zoom.js`, image `jeux/services/zoomImage.js`. Une manche = une carte (base, évolution ou héros) zoomée à l'extrême.
+Groupe « ⚔️ Clash » (mardi 18:00 UTC), en alternance avec Trivia. Service `jeux/services/zoom.js`, image `jeux/services/zoomImage.js`. Une manche = une carte (base, évolution ou héros) zoomée à l'extrême.
 
 ### Barème
 
@@ -325,13 +311,13 @@ Groupe « ⚔️ Clash » (mardi 18:00 UTC), en alternance avec Trivia (dans les
 
 ### Réponse et indice
 
-- Modal, égalité **stricte** normalisée (comme Anagram). DM de fin de manche avec l'image entière.
+- Modal, égalité **stricte** normalisée. DM de fin de manche avec l'image entière.
 - Indice = image dézoomée envoyée en **embed éphémère** (`/api/zoom/image?gameId=&stage=hint`), jamais une édition du post public. Révélation : `stage=reveal`.
 - Limite acceptée : l'URL `stage=hint` est reconstructible par qui a vu la manche, sans perdre les 3 pts.
 
 ### Catalogue (`jeux/data/jeux-visuels/zoom/zoom.json`)
 
-- Généré par `npm run zoom:catalog` (`jeux/scripts/generateZoomCatalog.js`, usage ponctuel). Pool : `cardKey` d'`anagrams.json` + `EXTRA_ENTRIES` ajoutées à la main ; noms FR depuis `cardNames.json` uniquement.
+- Généré par `npm run zoom:catalog` (`jeux/scripts/generateZoomCatalog.js`, usage ponctuel). Pool : `cardKey` de `jeux/data/jeux-visuels/zoom/cartes-source.json` (50 cartes) + `EXTRA_ENTRIES` ajoutées à la main ; noms FR depuis `cardNames.json` uniquement.
 - Icônes de base : `fetchCards()`. Évolutions/héros : `fetchPlayer(REFERENCE_PLAYER_TAG)` (l'API n'expose ces variantes que pour les cartes évoluées par ce joueur ; filtre `countEvolved`/`countHeroes`, `packages/clash-royale/collectionConstants.js`), ou `iconUrls.evolutionMedium`/`heroMedium` pour les ajouts manuels.
 - Entrée : `id` (= `gameId`), `cardKey`, `variant: "base"|"evolution"|"hero"`, `answer`, `accept`, `image`, `width`/`height`, `sourceUrl`, `fetchedAt`, optionnellement `focal`/`zoomStages` (réglage manuel).
 - ⚠️ L'ordre du fichier **est** l'ordre de jeu (`pickNextZoomIndex` : index + 1, en boucle). Il a été mélangé une fois : le script ne le retrie jamais et insère les nouvelles cartes à des positions aléatoires. Un fichier trié rend le jeu prévisible.
@@ -384,7 +370,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 
 ## Jeux spéciaux : fonctionnement commun
 
-Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scripts/post<Jeu>.js`, boutons routés par `jeux/discord/routes/jeuxSpeciaux.js`, sauf le vote du Quiz `quiz_vote:` routé par `miniJeux.js`) : Quiz, Robinson, Mario Clash, Gobelet, Blackjack, Meow, Qui est-ce ?, Goblin Hunters, Pont du Troll (+ Tamagotchi, Boss Raid et Bang!, archivés). Un seul jeu spécial actif à la fois sur le salon public, affiché dans `/mini-jeux` (`SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`, premier état non terminé sur le salon public).
+Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scripts/post<Jeu>.js`, boutons routés par `jeux/discord/routes/jeuxSpeciaux.js`, sauf le vote du Quiz `quiz_vote:` routé par `miniJeux.js`) : Quiz, Robinson, Mario Clash, Gobelet, Blackjack, Meow, Goblin Hunters, Pont du Troll (+ Qui est-ce ?, archivé). Un seul jeu spécial actif à la fois sur le salon public, affiché dans `/mini-jeux` (`SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`, premier état non terminé sur le salon public).
 
 ### Lancement : jour d'annonce obligatoire
 
@@ -419,7 +405,7 @@ Jeux spéciaux Blackjack et Gobelet seulement (pas leurs duels) : `jeux/services
 - Rôle résolu par `getRoleIdByName(MINI_JEUX_ROLE_NAME)` (`@clash/commun/discordRoles.js`), injecté via `buildRolePingFields()`.
 - ⚠️ **Jamais de ping pendant les tests d'un jeu** (salon de test, dry-run, outils e2e), ni rôle ni joueurs : double verrou.
   - Script : `NO_PING = --no-ping || !PUBLIC` dans chaque `post*.js`.
-  - Fonction de publication : `if (!isPublic) noPing = true;` en tête de chaque `post<Jeu>()`, quel que soit l'appelant, et en tête de `publishAndWriteState()` quand une fin de partie peut partir d'un clic avec l'état stocké (Meow, Qui est-ce ?, Bang!).
+  - Fonction de publication : `if (!isPublic) noPing = true;` en tête de chaque `post<Jeu>()`, quel que soit l'appelant, et en tête de `publishAndWriteState()` quand une fin de partie peut partir d'un clic avec l'état stocké (Meow, Qui est-ce ?).
   - Tout nouveau jeu reprend ce verrou et un test qui publie hors public en demandant le ping (`noPing: false`) puis vérifie qu'aucun message n'a de `content` ni d'`allowed_mentions` (modèle : `jeux/services/pont.test.js`).
   - Les mentions dans un embed ne notifient jamais : seul le `content` du message pingue.
 - Ping à l'annonce, à chaque jour de jeu et à la fin de partie (y compris annulation). Au Jour 1 des jeux à inscriptions (Meow, Qui est-ce ?, Goblin Hunters), seuls les inscrits sont mentionnés (`buildUserPingFields()`, PNJ exclus), pas le rôle. Rappels de la fenêtre d'inscription : sans ping. Un jeu à deux messages par jour ne pingue qu'au premier (Pont du Troll : le matin).
@@ -450,13 +436,13 @@ Bouton « 🛂 Mon passeport » de `/mini-jeux` (`custom_id: minijeux_participat
   2. jouer `OBJECTIFS.manches` (10) manches hebdomadaires ;
   3. battre Kévina `OBJECTIFS.kevina` (2) fois en duel (mode contre Kévina seulement) ;
   4. participer à un jeu spécial ; validé d'office si aucun jeu spécial n'a eu de participant dans le mois, **une fois le mois fini** seulement (un jeu peut encore commencer).
-  5. **quête du mois** : gagner un duel du jeu du mois, contre Kévina ou en 1v1 (une entente en 1v1 est acceptée, l'enjeu n'est qu'un tampon). `queteDuMois(seasonId)` fait tourner `QUETES_DU_MOIS` dans l'ordre (novembre 2026 = Frise, puis Punto, Quatre à la suite, La Grille, Mascarade, Potato, Petit Bac, Pendu en 1v1) ; seulement des duels où la victoire est nette (pas Blackjack ni Gobelet). Lit les champs `bot:<jeu>` et `pvp:<jeu>` du registre des duels.
+  5. **quête du mois** : gagner un duel du jeu du mois, contre Kévina ou en 1v1 (une entente en 1v1 est acceptée, l'enjeu n'est qu'un tampon). `queteDuMois(seasonId)` fait tourner `QUETES_DU_MOIS` dans l'ordre (novembre 2026 = Frise, puis Punto, Quatre à la suite, La Grille, Potato, Petit Bac, Pendu en 1v1) ; seulement des duels où la victoire est nette (pas Blackjack ni Gobelet). Lit les champs `bot:<jeu>` et `pvp:<jeu>` du registre des duels.
 
 Objectifs allégés d'une saison (`OBJECTIFS_ALLEGES`, lus par `objectifsDe(seasonId)`, libellés compris) : novembre 2026, entamé à l'arrivée du passeport, demande 3 mini-jeux, 5 manches et 1 victoire contre Kévina (jeu spécial et quête du mois inchangés).
 
 Registre : `jeux/services/passeport.js` (tests `passeport.test.js`). Le mois retenu est celui de l'action (`seasonIdForDate(now)`), pas celui de la manche : une manche de fin novembre jouée le 2 décembre compte pour décembre. Les écritures ne lèvent jamais (erreur journalisée) : un incident Redis ne casse pas le jeu appelant.
 
-- `noterManche(discordId, jeu, gameId)` : première interaction avec une manche, idempotente. Appelée dans le service de chaque jeu hebdomadaire : `touchUsername()` (tentative, indice) et `markSolved()` (bonne réponse du premier coup sans indice, qui n'écrit pas de tentative) ; Pêle-mêle par `touchUsername()` (appelé par `submitWord()`) ; Palette et moteur Trivia (Trivia, Trivia Geek, Intrus) par `recordAnswer()`. Clés de jeu : celles de `WEEKLY_GAMES` (`miniJeuxStats.js`), préfixe pour le moteur Trivia.
+- `noterManche(discordId, jeu, gameId)` : première interaction avec une manche, idempotente. Appelée dans le service de chaque jeu hebdomadaire : `touchUsername()` (tentative, indice) et `markSolved()` (bonne réponse du premier coup sans indice, qui n'écrit pas de tentative) ; Pêle-mêle par `touchUsername()` (appelé par `submitWord()`) ; moteur Trivia (Trivia, Trivia Geek, Intrus) par `recordAnswer()`. Clés de jeu : celles de `WEEKLY_GAMES` (`miniJeuxStats.js`), préfixe pour le moteur Trivia.
 - `noterVictoireDuel(discordId, jeu, mode)`, `mode` = `bot` | `pvp` : dans `finSerieSolo()` / `finSeriesPvp()` (Quatre, Punto, Frise, Mascarade, Potato, Bac), `finSeries()` en 1v1 seulement (Pendu : le solo n'oppose personne), `agirDuel()` / `agirPvp()` (Grille), `resolveManche()` en 1v1 avec un premier seul en tête (Blackjack, Gobelet ; pas de victoire définie en solo). Un match nul ne compte pas.
 - `noterJeuSpecial(discordId, jeu)` : vote enregistré (Quiz, Robinson), inscription ou action (Goblin Hunters), main écrite (Blackjack, Gobelet), action (Mario Clash), toute action sous `agir()` (Qui est-ce ?, Meow). Les archives des jeux spéciaux ne permettent pas de reconstituer après coup qui a joué dans un mois (pas de date de début, pas de participants pour Robinson, Goblin Hunters, Mario Clash).
 
@@ -531,11 +517,10 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | Blackjack             | `blackjack.yml`     | `12 7 * * *` (8h12 à Paris en hiver, après le décompte de 8 h des deux mains)                |
 | Mario Clash           | `marioclash.yml`    | `14 8 * * *`                                                                                 |
 | Jeu du Gobelet        | `gobelet.yml`       | `16 7 * * *` (8h16 à Paris en hiver, après le décompte de 8 h des deux mains)                |
-| Qui est-ce ?          | `quiestce.yml`      | `20 8 * * *`                                                                                 |
 | Pont du Troll         | `pont.yml`          | `24 7 * * *` (8h24 à Paris en hiver : résultat et Vrai/Faux) et `4 13 * * *` (14h04 en hiver : ponts) |
 | Boss de fin de saison | `boss.yml`          | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison »)      |
 
-Tamagotchi (`tamagotchi.yml`, ex-minute 10), Boss Raid (`bossraid.yml`, ex-minute 2) et Bang! (`bang.yml`, ex-minute 18) ont leur cron commenté : voir « Jeux archivés ».
+Qui est-ce ? (`quiestce.yml`, minute 20 réservée) a son cron commenté : voir « Jeux archivés et supprimés ».
 
 - Le cron lance `npm run <jeu>:public -- --require-active` : il n'avance qu'une partie déjà lancée. Le lancement se fait à la main (`workflow_dispatch`, bouton « Run workflow » ou `gh workflow run <fichier>.yml`).
 - ⚠️ Ne jamais caler deux crons sur la même minute ni sur une heure ronde : les triggers `schedule` de GitHub sont _best-effort_ et retardés aux heures chargées.
@@ -596,7 +581,7 @@ Jeu spécial de 7 jours : une question à choix par jour sur une thématique uni
 | `theme`         | Affiché dans les titres et la révélation                                                                                            |
 | `questions`     | ⚠️ **Exactement 7** : `TOTAL_QUESTIONS = 7` est codé en dur (titres, passage à la révélation)                                       |
 | `type`          | `"qcm"` ou `"vrai_faux"` (informatif : le nombre de boutons suit `choix.length`)                                                    |
-| `image`         | Chemin relatif sous `frontend/public/images/` (servi par `https://trustroyale.vercel.app/images/…`) ou `null`, jamais d'URL absolue |
+| `image`         | Chemin relatif sous `frontend/public/images/` (servi par `${URL_JEUX}/images/…`) ou `null`, jamais d'URL absolue |
 | `choix`         | 2 à 5 propositions (lettres A-E, une seule rangée de boutons)                                                                       |
 | `bonne_reponse` | Index 0-based dans `choix`                                                                                                          |
 
@@ -833,17 +818,9 @@ Faces utilisées par La Grille (le Gobelet garde les keycaps ; Gobelet Duel dess
 - **Lisibilité clair/sombre** : points blancs opaques (carré blanc sous le corps) et fin contour clair (`buildColoredDieSvg()`). Couleur de dé moyenne, contraste ≥ 4,5 sur fond blanc ; pas d'orange ni de jaune.
 - **Upload** : `npm run dices:emojis` (`jeux/scripts/uploadDiceEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque face en PNG 128×128 et l'uploade comme emoji d'application `de_<couleur>_<valeur>`, puis écrit les IDs dans `dices.json` (à committer). Options : `--couleur <nom>`, `--remplacer` (supprime d'abord les emojis du même nom, obligatoire pour changer un visuel). `npm run dices:emojis:dry` écrit les PNG dans `temp/dices` sans appel Discord.
 
-## Pions de Quatre à la suite
-
-Service `jeux/services/pions.js` : `formatPion(couleur, { gagnant })` (texte, titre), `pionButtonEmoji(couleur)` (boutons du plateau de Tourneboule, `null` si la variante n'est pas uploadée). Même principe que les faces de dé. Utilisés par Tourneboule (Quatre à la suite, d'où ils viennent, est passé en images : voir `quatreImage.js`).
-
-- **Source** : `jeux/data/pions/pion.svg`. Les pions sont **toujours ronds**, même sur une grille de cases carrées : disque plein coloré et seulement un contour extérieur (pas d'anneau intérieur, qui réduit la part colorée).
-- **Config** `jeux/data/pions/pions.json` : `couleurs` (`bleu` = ses pions, `rouge` = pions adverses), `contours` (`normal` blanc, `gagnant` jaune, trois fois plus épais) `vide` (gris de la case libre) et `emojis` (`variante → id`, variantes `bleu`, `rouge`, `bleu_gagnant`, `rouge_gagnant`, `vide` : disque gris sans contour, même taille que les pions). Le contour est tracé à l'intérieur du disque : même taille de pion pour toutes les variantes. Repli sur 🔵 🔴 (🟦 🟥 pour l'alignement gagnant, ⚫ pour la case vide) tant qu'un ID vaut `null`.
-- **Upload** : `npm run pions:emojis` (`jeux/scripts/uploadPionEmojis.js`, `DISCORD_APP_ID` + `DISCORD_TOKEN`) rend chaque variante en PNG 128×128 et l'uploade comme emoji d'application `pion_<variante>`, puis écrit les IDs dans `pions.json` (à committer). Options : `--variante <nom>`, `--remplacer` (obligatoire pour changer un visuel). `npm run pions:emojis:dry` écrit les PNG dans `temp/pions` sans appel Discord.
-
 ## Cartes de Punto
 
-Service `jeux/services/puntoCartes.js` : `formatCarte(couleur, valeur, { gagnant })` (texte, titre), `carteButtonEmoji(couleur, valeur)` (boutons du plateau). Même principe que les faces de dé et les pions. Également utilisées par Six (archivé).
+Service `jeux/services/puntoCartes.js` : `formatCarte(couleur, valeur, { gagnant })` (texte, titre), `carteButtonEmoji(couleur, valeur)` (boutons du plateau). Même principe que les faces de dé.
 
 - **Source** : `jeux/data/punto/carte.svg` (carré arrondi plein, sans marge : la carte remplit l'emoji) ; les chiffres 1 à 9 sont des **tracés** blancs à bouts arrondis (`CHIFFRES`, style afficheur), jamais du texte SVG : le rendu ne dépend d'aucune police.
 - **Config** `jeux/data/punto/cartes.json` : `couleurs` (`bleu` et `vert` = ses cartes, `rouge` et `orange` = cartes adverses), `contours` (`normal` blanc, `gagnant` jaune, trois fois plus épais ; la variante `gagnant` sert aussi à la dernière carte posée dans le duel), `vide` (gris de la case libre) et `emojis` (`variante → id`). Variantes : `<couleur>_<valeur>`, `<couleur>_<valeur>_gagnant`, `vide`, `jouable` (case vide où la carte peut aller : même gris, fin liseré clair) : 74 en tout. Repli sur les keycaps 1️⃣ à 9️⃣ (couleur perdue), ⬛ et 🔲 pour les cases vides tant qu'un ID manque ; dans les boutons, la valeur (ou `·`, `+`) en libellé.
@@ -929,6 +906,8 @@ Mêmes commandes que Blackjack avec le préfixe `gobelet:` (`test`, `test:dry`, 
 
 ## Qui est-ce ? — démasquer les cartes secrètes en 7 jours
 
+> 📦 **Archivé** (grille de cartes Clash Royale) : absent de `/mini-jeux`, cron commenté. Voir « Jeux archivés et supprimés ».
+
 Jeu spécial 100 % asynchrone : chaque joueur reçoit en secret une carte d'une grille commune et enquête sur les cartes des autres, avec **une question par jour** sur sa cible puis une accusation. Un objet gratuit par jour et un par démasquage, offensif (contre sa cible) ou défensif (contre son enquêteur).
 
 | Rôle                                               | Fichier                             |
@@ -945,7 +924,7 @@ Effectif `effectif_min` (10) à `effectif_max` (18), fenêtre d'inscription `fen
 ### Grille et questions
 
 - **Grille** (`tirerGrille()`) : `taille_grille` (30) cartes de `jeux/data/cardNames.json` (au moins une par joueur), **une seule carte par profil de réponses** (sinon deux cartes seraient indiscernables), au moins 4 sorts, 2 bâtiments, 3 troupes aériennes, 1 ou 2 champions.
-- **Compléments** : les troupes sans PV ni portée dans `cardNames.json` (exclues de La Juste Carte par `jeux/scripts/generateCardStats.js`) sont complétées pour Qui est-ce ? seulement par `complements` de `quiestce.json` (`completerCartes()`) : Gobelin géant, Machine gobeline, Dragon de l'enfer, Maître Mineur, Moine, Cavabélier, Buisson suspicieux, Trois mousquetaires. ⚠️ Ne pas les ajouter à `cardNames.json` (elles entreraient dans La Juste Carte).
+- **Compléments** : les troupes sans PV ni portée dans `cardNames.json` (sans stats dans `jeux/scripts/generateCardStats.js`) sont complétées pour Qui est-ce ? seulement par `complements` de `quiestce.json` (`completerCartes()`) : Gobelin géant, Machine gobeline, Dragon de l'enfer, Maître Mineur, Moine, Cavabélier, Buisson suspicieux, Trois mousquetaires. ⚠️ Ne pas les ajouter à `cardNames.json` (elles entreraient dans La Juste Carte).
 - **Cartes écartées** (`carteEligible()`) : toute carte sans coût connu (Miroir) ou troupe sans PV/portée après compléments (Gang de gobelins, Fripons, Impératrice spirituelle : réponses ambiguës).
 - **6 questions en tranches** (`QUESTIONS`) :
 
@@ -993,9 +972,9 @@ Un objet tiré au hasard à la **première action du jour** (`debutAction()`, `t
 ### Interface (Qui est-ce ?)
 
 - **Message officiel** (réédité après chaque action, `rafraichirMessage()`) : bilan de la veille (« 📰 Hier » : cartes démasquées, nombre d'accusations ratées, inscrits n'ayant pas joué, `veille.absents` noté par `cloturer()`), faits du jour ; pas de classement en texte (l'image l'affiche). **Tableau des enquêtes en image** (`enquetesUrl()`), **joint au message** (`attachment://`, même raison que Bang!) : pensé pour mobile (Discord le réduit à ~360 px de large) : 2 colonnes de vignettes horizontales dans l'ordre du classement, peu d'informations en gros (rang, avatar Discord, pseudo tronqué à 11 caractères, points suivis de deux pictos (viseur doré : cibles démasquées ; masque rouge : fois démasqué, expliqués dans les Règles), flèche vers l'avatar de sa cible ou « ? » sans cible), voile de brume et pastille « Brouillard » sous Brouillard ; aucune carte secrète. Pas de tampon « démasqué » du jour (chacun l'est 2 à 3 fois par partie). La grille des cartes n'est plus publique : chacun la voit dans sa fiche d'enquête. Boutons **Jouer**, **Règles**, **Journal**.
-- **Avatars** : hash de l'avatar Discord (`body.member.user.avatar`) retenu dans `joueur.avatar` (`"id/hash"`, null sans avatar) à l'inscription et à chaque clic sur **Jouer** (`agir()`, option `avatar`) ; sans avatar ou si le CDN Discord ne répond pas, créature « Clay » de Bang! (`bang/avatars/`, selon la position).
+- **Avatars** : hash de l'avatar Discord (`body.member.user.avatar`) retenu dans `joueur.avatar` (`"id/hash"`, null sans avatar) à l'inscription et à chaque clic sur **Jouer** (`agir()`, option `avatar`) ; sans avatar ou si le CDN Discord ne répond pas, créature « Clay » (`avatars/`, selon la position).
 - **Enquête** (`buildEnqueteView()`, éphémère) : objet reçu, carte secrète, points, défenses actives, enquêteurs et nombre de questions posées sur soi, rival sur la même cible, « Ce que tu sais sur X » (indices et source), et trois menus : question du jour, accusation (25 cartes par menu, masqués sous Brouillard), « 🎒 Utiliser un objet » ; fiche d'enquête en image. Sans cible : bouton « Viser » et menu des autres cibles.
-- **Journal** : sa carte secrète en tête (à jour après un Déguisement), puis ce qui concerne le joueur, par jour ; même format d'entrées que Bang! (`texteJournal()`). Seulement l'essentiel : démasquages (faits et subis), nouvelles cibles, qui le prend pour cible, Désamorçages, Déguisements, effets d'objets ; ni réponses aux questions, ni accusations ratées, ni indices de départ, ni objets gagnés (la fiche d'enquête les montre déjà). Une action n'y figure qu'une fois (pas de note privée doublée d'une entrée publique).
+- **Journal** : sa carte secrète en tête (à jour après un Déguisement), puis ce qui concerne le joueur, par jour ; format d'entrées `texteJournal()`. Seulement l'essentiel : démasquages (faits et subis), nouvelles cibles, qui le prend pour cible, Désamorçages, Déguisements, effets d'objets ; ni réponses aux questions, ni accusations ratées, ni indices de départ, ni objets gagnés (la fiche d'enquête les montre déjà). Une action n'y figure qu'une fois (pas de note privée doublée d'une entrée publique).
 - **Fin** : classement aux points avec toutes les cartes tenues (`anciennesCartes`, Déguisements compris), **📰 La partie en bref** (`compteRendu()`, chaque phrase omise si rien ne se démarque : déroulé de la course d'après `partie.soirs` (mené de bout en bout, renversement si le vainqueur a été 4e ou pire un soir, sinon jour de prise de tête ; écart final ≤ 2 pts ou départage), changements de meneur (3 ou plus), plus beau coup `partie.coup` (démasquage avec le plus de cartes possibles, 3 ou plus), série la plus chaude (le plus de démasquages sur des jours consécutifs avec au moins un démasquage chacun, 3 ou plus, d'après le journal ; à égalité, la série la plus courte), main la plus chanceuse (`valeurMain()` : objets reçus pondérés par `POIDS_CHANCE`, Brouillard 3, Bouclier, Double accusation, Écoute et Déguisement 2, Miroir, Loupe et Désamorçage 1, d'après le gain de points par utilisation simulé par `sim-v2.mjs` ; 6 ou plus, citée avec ses 3 objets qui pèsent le plus), pile ou face gagnés (2 ou plus), pas de chance (pile ou face perdus, 2 ou plus, sinon accusations ratées, 3 ou plus), proie favorite (démasqué 3 fois ou plus), questions perdues dans le Brouillard (2 ou plus), jamais démasqués (1 à 3 joueurs actifs), jours sans jouer de chacun (d'après `partie.passifs`, remplacement par un bot signalé), joueur le plus épargné (le plus de jours avec au moins un enquêteur passif, absent ou bot remplaçant, 3 ou plus, avec ces enquêteurs) ; un record n'est cité que s'il est détenu par un seul joueur), manches précédentes, illustration de lancement (`illustrationUrl()`).
 
 ### Images (Qui est-ce ?)
@@ -1439,7 +1418,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
   - Après remplacement : `npm run assets:upload-blob -- pont/images` (dossier déclaré dans `TARGETS` de `scripts/uploadImageAssetsToBlob.js` : un nouveau fichier ou dossier d'un jeu doit y être ajouté, sinon le script n'envoie rien).
 - **Matin** : bandeau haut « PONT DU TROLL » et « Jour N/7 », étiquette `Pierre ×1` / `Cordes ×3` à l'entrée de chaque pont, règle ou événement du jour sur les rochers du bas, sur toute la largeur.
 - **Résultat** : avatars des passants en deux files décalées sur chaque tablier (trois au-delà de 16 passants), tous affichés, plus petits au loin (perspective), regroupés à l'entrée quand ils sont peu nombreux ; anneau rouge pour les attrapés, or pour les gagnants ; nombre de passants dans l'étiquette ; nombre d'attrapés et gain par passant sur la corniche du bas.
-- **Avatars** : `id/hash` de l'avatar Discord mémorisé au clic sur un pont, téléchargé au rendu par `avatarDataUrl()` (`jeux/services/avatarsDiscord.js` : CDN Discord 128 px, délai 4 s, cache mémoire), créature clay (`bang/avatars/clay-XX.png`) si l'avatar manque ou échoue.
+- **Avatars** : `id/hash` de l'avatar Discord mémorisé au clic sur un pont, téléchargé au rendu par `avatarDataUrl()` (`jeux/services/avatarsDiscord.js` : CDN Discord 128 px, délai 4 s, cache mémoire), créature clay (`avatars/clay-XX.png`) si l'avatar manque ou échoue.
 - Lisibilité mobile : aucun texte de moins de 36 px sur 900 px de large (l'équivalent de 24 px sur 600 px).
 - Axes des tabliers (`AXES`, points (y, x) du proche au lointain) calés sur le décor : à recaler si les fonds changent de cadrage.
 
@@ -1481,12 +1460,12 @@ Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (sa
 
 ## Duels à la demande
 
-Dix duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/mascarade`, `/potato`, `/bac`, `/pendu` (Six et Tourneboule sont archivés, voir « Jeux archivés »). `/mini-jeux` les liste sous « Les mini-jeux Duels de Kévina: », une ligne par duel avec le record du mode par défaut et son détenteur (« Record 80 pts (5 manches) : Pseudo », « Record 4 victoires : Pseudo ») : contre Kévina ou solo, une ligne par format pour Blackjack et Gobelet (5 et 10 manches) et par difficulté pour le Petit Bac (normal et difficile) ; « Record : aucun » sans record (`DUEL_COMMANDS` dans `minijeux.js`, à tenir à jour). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
+Neuf duels lancés par commande slash, sans cron ni historique de manches : `/blackjack`, `/gobelet`, `/grille`, `/quatre`, `/punto`, `/frise`, `/potato`, `/bac`, `/pendu` (Mascarade est archivé, voir « Jeux archivés et supprimés »). `/mini-jeux` les liste sous « Les mini-jeux Duels de Kévina: », une ligne par duel avec le record du mode par défaut et son détenteur (« Record 80 pts (5 manches) : Pseudo », « Record 4 victoires : Pseudo ») : contre Kévina ou solo, une ligne par format pour Blackjack et Gobelet (5 et 10 manches) et par difficulté pour le Petit Bac (normal et difficile) ; « Record : aucun » sans record (`DUEL_COMMANDS` dans `minijeux.js`, à tenir à jour). Routage : `jeux/discord/routes/duels.js` ; commandes déclarées dans `scripts/registerCommands.js`.
 
 ### Fonctionnement commun
 
 - **Lancement réservé au rôle MINI-JEUX** : defer éphémère (`type: 5`, `flags: 64`) puis vérification du rôle en arrière-plan (`runBackground`), car `getRoleIdByName()` fait un appel réseau trop lent pour la fenêtre de 3 s. Rejoindre une partie déjà lancée n'exige pas le rôle.
-- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `tourneboulduel:*`, `friseduel:*`, `mascaradeduel:*`, `potatoduel:*`, `bacduel:*`, `penduduel:*`, `sixduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `tourneboulduel_*`, `friseduel_*`, `mascaradeduel_*`, `potatoduel_*`, `bacduel_*`, `penduduel_*`, `sixduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
+- **Indépendants des jeux spéciaux** : espace Redis dédié (`blackjackduel:*`, `gobeletduel:*`, `grilleduel:*`, `quatreduel:*`, `puntoduel:*`, `friseduel:*`, `mascaradeduel:*`, `potatoduel:*`, `bacduel:*`, `penduduel:*`), `custom_id` préfixés (`blackjackduel_*`, `gobeletduel_*`, `grilleduel_*`, `quatreduel_*`, `puntoduel_*`, `friseduel_*`, `mascaradeduel_*`, `potatoduel_*`, `bacduel_*`, `penduduel_*`). Seules les fonctions **pures** du jeu spécial sont importées ; le rendu Discord est dupliqué dans le handler du duel.
 - **Avancement piloté par les actions des joueurs**, jamais par un cron.
 - **Bouton 📖 Règles uniquement sur les messages publics** (lobby, partie en cours, récapitulatif) : jamais dans une vue éphémère ni dans un message éphémère d'erreur (« Aucune partie en cours »…). La vue éphémère ne garde que ses boutons de jeu et 🏳️.
 - **Délai par coup : 2 minutes dans tous les duels à tour de rôle et dans les deux modes** (La Grille, Quatre à la suite, Punto, Frise, Mascarade, Potato : `delai_tour_minutes` = 2), dépassé = défaite. Contre Kévina, même modèle partout : chrono `duel.tourDepuis` (début du tour du joueur, décalé de la durée des étapes affichées : réflexion de Kévina, explosions, résultat), vérifié avant chaque action (`verifierDelaiSolo()` dans `agirDuel()`, fin `duel.delai`) et, sans clic, par l'invocation qui attend l'échéance (`surveillerDelaiSolo()`, après le lancement et après chaque coup). Textes harmonisés : règles « ⏰ 2 minutes par coup, sinon défaite. », vue « ⏰ Limite dans 2 minutes. » (ou « limite » dans la ligne du tour), message public « Au tour de X, limite dans 2 minutes », fin « ⏰ X n'a pas joué à temps : Kévina gagne. », partie introuvable « ⏰ Aucune partie en cours. Relance `/jeu` ! ». La clé Redis d'une partie expire 1 h après la dernière action (`INACTIVITE_SECONDES`) : nettoyage seulement, jamais affiché. ⚠️ Le délai doit tenir dans le `maxDuration` de `api/discord/jeux.js` (180 s), marge comprise. Hors de cette règle : Petit Bac et Pendu (temps de réflexion propres au jeu), Blackjack et Gobelet Duel (abandon après 2 minutes sans action), Boss (1 h).
@@ -1664,7 +1643,7 @@ Adaptation de Punto (Bernhard Weber) en duel. **Vocabulaire : « tuile », jamai
 
 ### Frise (contre Kévina ou en 1v1)
 
-Duel de culture générale : classer des événements par année sur une frise commune (mécanique de placement chronologique, cartes et nom propres au projet). `/frise adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Tourneboule (archivé, voir « Jeux archivés ») (modes, sièges, verrous, délai 1v1, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
+Duel de culture générale : classer des événements par année sur une frise commune (mécanique de placement chronologique, cartes et nom propres au projet). `/frise adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Punto (modes, sièges, verrous, délai 1v1, messages publics, abandon, séries et records) : seules les différences sont décrites ici.
 
 - Code : `jeux/services/friseRules.js` (règles pures et Kévina, tests `friseRules.test.js`, qui vérifient aussi les données), `jeux/services/friseDuel.js` (Redis, tests `friseDuel.test.js`), `jeux/discord/handlers/friseDuel.js` (Discord), `jeux/services/friseImage.js` (image de la frise, route `/api/frise/image` dans `jeux/server/imageRoutes.js`). Config `jeux/data/frise/duel.json` : `taille_main` (4), `ecart_min_annees` (3), `delai_tour_minutes` (2, dans les deux modes ; contre Kévina, le choix de la carte n'est pas un coup : le chrono couvre tout le tour), `erreur_kevina` (0,7), `echelle_kevina` (15, en années).
 - Cartes : `jeux/data/frise/cartes.json` (`libelle` ≤ 60 caractères, `annee` entière, négative avant J.-C., `theme`, `difficulte`, `source`, `note`). **Chaque année est vérifiée sur une source web (Wikipédia FR de préférence), jamais de mémoire.** Le libellé lève toute ambiguïté sur la date visée (« Inauguration de… », « Sortie … au Japon », « Naissance de… ») et ne contient ni la date ni d'indice direct. Les cartes de la partie sont copiées dans l'état Redis avec leur `id` (index dans le fichier), seul identifiant passé dans l'URL de l'image : **ajouter les nouvelles cartes en fin de fichier**, ne jamais réordonner ni supprimer (les images des messages déjà postés changeraient de cartes). Pour écarter une carte (trop difficile, ambiguë), la marquer `"retiree": true` : elle reste dans le fichier mais n'est plus jamais tirée (`construirePaquet()`). Un événement important dont l'année est seulement traditionnelle (discutée par les historiens) est gardé avec « (date traditionnelle) » dans son libellé (ex. « Baptême de Clovis (date traditionnelle) », 496). Avant l'an 1000, ne garder que des événements connus du grand public (les batailles et édits pointus de l'Antiquité ont été retirés). Pas de paquet Clash Royale : une seule carte (sortie mondiale du jeu).
@@ -1695,7 +1674,9 @@ Duel de culture générale : classer des événements par année sur une frise c
 
 ### Mascarade (contre Kévina ou en 1v1)
 
-Duel de cartes à information cachée : chacun garde **une carte secrète** en main, on pioche, on joue l'une de ses deux cartes, on déduit celle de l'adversaire. `/mascarade adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Tourneboule (archivé, voir « Jeux archivés ») (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici. Jeu original de la famille « une carte en main, pioche, joue », ce n'est pas la reproduction d'un jeu existant : ne pas reprendre les rôles d'un jeu publié.
+> 📦 **Archivé** (cartes Clash Royale) : commande `/mascarade` retirée, quête du passeport retirée ; route et boutons gardés pour les parties en cours. Voir « Jeux archivés et supprimés ».
+
+Duel de cartes à information cachée : chacun garde **une carte secrète** en main, on pioche, on joue l'une de ses deux cartes, on déduit celle de l'adversaire. Ex-commande `/mascarade adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Punto (modes, sièges, verrous, délai, messages publics, abandon, séries et records) : seules les différences sont décrites ici. Jeu original de la famille « une carte en main, pioche, joue », ce n'est pas la reproduction d'un jeu existant : ne pas reprendre les rôles d'un jeu publié.
 
 - Code : `jeux/services/mascaradeRules.js` (règles pures et Kévina, tests `mascaradeRules.test.js`), `jeux/services/mascaradeDuel.js` (Redis, tests `mascaradeDuel.test.js`), `jeux/services/mascaradeImage.js` (image de la table), `jeux/discord/handlers/mascaradeDuel.js` (Discord). Config `jeux/data/mascarade/duel.json` : `delai_tour_minutes` (2, dans les deux modes), `mondes_kevina` (40), `erreur_kevina` (0,1).
 - Redis : `mascaradeduel:<discordId>` (contre Kévina), `mascaradeduel:pvp`, verrous `mascaradeduel:lock:*`, séries `mascaradeduel:series:bot` / `mascaradeduel:series:pvp`, records `mascaradeduel:records`.
@@ -1780,7 +1761,7 @@ Jeu rapide et léger : un thème, une lettre, une minute pour trouver un mot. `/
 
 #### Règles
 
-- **8 manches** (`NB_MANCHES`), **8 thèmes différents** tirés en début de partie parmi 20 (`THEMES`), **difficulté croissante** : chaque thème a un niveau (`NIVEAUX` : **facile** Animaux, Prénoms, Fruits et légumes, Métiers, Moyens de transport ; **moyen** Pays, Villes, Sports, Marques automobiles, Acteurs et actrices, Musique, Fromages, Outils, Boissons ; **difficile** Mythologie, Personnages de jeu vidéo, Cartes Clash Royale, Inventions, Écrivains, Scientifiques) et les manches suivent le déroulé de la **difficulté choisie** (`DIFFICULTES`, `d.difficulte` ; une partie sans `difficulte`, lancée avant les modes, suit le normal) ; lettres : « toutes » les lettres jouables du thème, les « courantes » (moitié la plus fournie) ou les « rares » (l'autre moitié) :
+- **8 manches** (`NB_MANCHES`), **8 thèmes différents** tirés en début de partie parmi 19 (`THEMES`), **difficulté croissante** : chaque thème a un niveau (`NIVEAUX` : **facile** Animaux, Prénoms, Fruits et légumes, Métiers, Moyens de transport ; **moyen** Pays, Villes, Sports, Marques automobiles, Acteurs et actrices, Musique, Fromages, Outils, Boissons ; **difficile** Mythologie, Personnages de jeu vidéo, Inventions, Écrivains, Scientifiques) et les manches suivent le déroulé de la **difficulté choisie** (`DIFFICULTES`, `d.difficulte` ; une partie sans `difficulte`, lancée avant les modes, suit le normal) ; lettres : « toutes » les lettres jouables du thème, les « courantes » (moitié la plus fournie) ou les « rares » (l'autre moitié) :
   - **normal** : manches 1 à 3 thème facile (courantes, courantes, toutes), 4 à 6 moyen (courantes, toutes, toutes), 7 et 8 difficile (courantes, toutes) ; jamais de lettre rare ;
   - **difficile** : manches 1 et 2 thème facile (toutes, rares), 3 à 5 moyen (toutes, rares, rares), 6 à 8 difficile (toutes, rares, rares) ; Kévina plus forte ; titre « 🔤 Petit Bac difficile », séries et records à part (« Record (difficile) »). Le chrono reste le même (dépend trop de la connexion).
     Niveau affiché dans la vue (« Manche 4/8 · moyen »). Écartés : « Marques » (catégorie trop ouverte, Wikidata biaisé vers les labels de musique) ; « Inventions » n'a pas de source propre (la propriété « inventeur » de Wikidata mêle découvertes, lois, maladies ; les listes de Wikipédia renvoient lieux et personnes) : sa liste est **relue à la main** (`jeux/outils/bac/inventions.txt`, une invention par ligne : candidats tirés de ces deux sources, inventions anciennes, articles d'histoire-pour-tous.fr et « Liste d'inventions françaises » de Wikipédia, noms d'invention seulement, sans descriptions de procédé ni noms de produits). Un mot peut appartenir à deux thèmes (avion, train : Inventions et Moyens de transport). **Lettre** tirée parmi celles où Kévina connaît au moins `MOTS_MIN_KEVINA` (2) mots et la liste en compte au moins `MOTS_MIN_ACCEPTES` (10) (`lettresJouables()`) : pas de manche injouable. **Lettres** (`lettresDeManche()`) : lettres jouables classées par nombre de mots acceptés ; « courantes » = la moitié la plus fournie, « rares » = l'autre moitié, « toutes ».
@@ -1906,116 +1887,41 @@ Variables : `DISCORD_CHANNEL_FRAME_TEST`, `DISCORD_CHANNEL_ANNONCES`, `DISCORD_T
 
 ## Noms français des cartes (`jeux/data/cardNames.json`)
 
-Source de vérité anglais ↔ français des cartes, partagée par les mini-jeux. Un objet par carte : `cardKey` (nom anglais exact de l'API, `fetchCards()`), `rarity`, `fr`, et selon les jeux `sound`, `elixir`, `hp`, `damage`, `range`, `type`, `family`.
+Source de vérité anglais ↔ français des cartes Clash Royale (exception, voir « Exceptions Clash Royale »), lue par Zoom carte, Pêle-mêle, Qui est-ce ? et Mascarade. Un objet par carte : `cardKey` (nom anglais exact de l'API, `fetchCards()`), `rarity`, `fr`, et selon les jeux `sound`, `elixir`, `hp`, `damage`, `range`, `type`, `family`.
 
 - **Édité à la main**. Les scripts d'enrichissement (usage ponctuel) n'ajoutent que les champs absents et ne réécrivent jamais une entrée existante (sauf `--force` explicite) :
-  - `jeux/scripts/generateCardNames.js` : ajoute les cartes manquantes ; `fr` résolu via les liens interlangues du wiki Fandom FR (vérifiés dans les deux sens) puis repli sur `anagrams.json`. `fr: null` = à compléter à la main (liste en fin d'exécution). Toute valeur automatique est à relire.
+  - `jeux/scripts/generateCardNames.js` : ajoute les cartes manquantes ; `fr` résolu via les liens interlangues du wiki Fandom FR (vérifiés dans les deux sens). `fr: null` = à compléter à la main (liste en fin d'exécution). Toute valeur automatique est à relire.
   - `jeux/scripts/tagCards.js` (`--dry-run`, `--force` pour `type`/`family`) : `type` ∈ `troop|flying|spell|building` (préfixe d'id officiel `26` troupe, `27` bâtiment, `28` sort, puis liste de volants), `family` ∈ `goblin|skeleton|human|minion|null` ; complète `elixir` depuis l'API (sauf Miroir, coût variable).
-  - `jeux/scripts/generateCardStats.js` : stats de La Juste Carte (voir cette section).
-- `generateZoomCatalog.js` lit ses noms FR **uniquement** ici et resynchronise `answer`/`accept` à chaque exécution. `anagrams.json` n'est **pas** resynchronisé : reporter toute correction à la main, en vérifiant que l'anagramme reste valide.
+  - `jeux/scripts/generateCardStats.js` : stats de combat (`elixir`, `hp`, `damage`, `range`) des troupes, lues par Qui est-ce ?.
+- `generateZoomCatalog.js` lit ses noms FR **uniquement** ici et resynchronise `answer`/`accept` à chaque exécution.
 
 ---
 
-## Jeux archivés
+## Exceptions Clash Royale
 
-Code, données et archives conservés dans les deux cas ; seule la façon d'archiver et de relancer diffère entre jeux spéciaux et mini-jeux hebdomadaires.
+Kévina est conçue pour tourner sur n'importe quel serveur : aucune référence à Clash Royale (données, API, images de cartes, `@clash/clash-royale`) hors des exceptions ci-dessous, à tenir à jour. Tout nouveau jeu est sans lien avec Clash Royale.
 
-### Jeux spéciaux
+- **Groupe ⚔️ Clash** (Trivia, `jeux/data/triviaclash/trivia-clash.json` ; Zoom carte, `jeux/data/jeux-visuels/zoom/`) : rendez-vous Clash Royale conservé.
+- **Pêle-mêle** : noms de cartes (`jeux/data/cardNames.json`).
+- **Mario Clash** : thème et nom seulement (aucune image ni donnée de carte).
+- **Jeux archivés** Mascarade et Qui est-ce ? : images de cartes (`@clash/clash-royale/cardImage.js`) et `cardNames.json`.
+- **Scripts de catalogue** (usage ponctuel, API Clash Royale via `@clash/clash-royale/clashApi.js`) : `generateCardNames.js`, `tagCards.js`, `generateCardStats.js` (`cardNames.json`), `generateZoomCatalog.js` (Zoom carte, avec `collectionConstants.js`).
+- **Culture générale** : quelques entrées isolées de catalogues (Frise : sortie de Clash Royale ; Zoom logo : Supercell ; Intrus : un coffre Clash Royale ; Quiz : le choix « TrustRoyale »).
 
-Jeux retirés de `/mini-jeux` (`archived: true` dans `SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`) et dont le `schedule` est commenté dans leur workflow (seul `workflow_dispatch` reste). Code, données et archives Redis des manches sont conservés. Les règles complètes (formules, barèmes, clés Redis) sont dans l'historique git : `CONTRIBUTING.md` avant le 23/10/2026 (avant le 30/10/2026 pour Bang!).
+Vérification : `rg -i "clash|royale|élixir|supercell" jeux/` ne doit renvoyer que ces exceptions (et le préfixe de paquet `@clash/`).
 
-**Pour relancer** : décommenter le `schedule` du workflow, retirer `archived: true`, lancer `npm run <jeu>:reset`, puis lancement manuel (`workflow_dispatch`). Revérifier la conformité aux règles communes des jeux spéciaux (notamment le jour d'annonce, absent du Tamagotchi).
+---
 
-#### Tamagotchi (bébé dragon « Lilith »)
+## Jeux archivés et supprimés
 
-- Jeu collaboratif de 7 jours : vote quotidien (Nourrir, Sieste, Jouer, Câliner, Pilule) pour garder 3 jauges en zone verte ; étoiles de dressage, Confiance, Fatigue, palier final S/B/F.
-- Code : `jeux/services/tamagotchi.js`, `jeux/discord/handlers/tamagotchi.js`, `jeux/scripts/postTamagotchi.js`, `resetTamagotchi.js`, `tamagotchiStatus.js` ; données `jeux/data/tamagotchi/` ; images `frontend/public/images/tamagotchi/` ; Redis `tamagotchi:*` ; workflow `.github/workflows/tamagotchi.yml` ; scripts `npm run tamagotchi:*`.
-- ⚠️ Lance directement le Jour 1 (pas de phase d'annonce) : à ajouter avant toute relance.
+### Jeux archivés (code conservé)
 
-#### Boss Raid (score attack communautaire)
+- **Qui est-ce ?** (jeu spécial) : `archived: true` dans `SPECIAL_GAMES` (`jeux/discord/handlers/minijeux.js`), ignoré par `/mini-jeux` même si un état traîne ; `schedule` commenté dans `.github/workflows/quiestce.yml` (seul `workflow_dispatch` reste). Ses manches restent dans `/mini-jeux-history` et le bouton « 📊 Stats ». **Pour relancer** : décommenter le `schedule`, retirer `archived: true`, `npm run quiestce:reset`, puis lancement manuel (`workflow_dispatch`).
+- **Mascarade** (duel) : absent de `JEUX_COMMANDS` et de la liste de `scripts/registerCommands.js` (la commande disparaît de Discord au prochain enregistrement), de `DUEL_COMMANDS` (`/mini-jeux`), de `QUETES_DU_MOIS` (passeport) et du sondage `poll.json`. Code, route (boutons des parties en cours), tests et outils conservés. **Pour relancer** : rajouter la commande (nom dans `JEUX_COMMANDS` et définition, description de 100 caractères au plus), la ligne de `AGENTS.md` et de `DUEL_COMMANDS`, puis réenregistrer les commandes.
 
-- Jeu collaboratif (annonce + 7 jours) : chaque membre vote un rôle (Chevalier, Voleuse, Sorcier, Archères, Princesse) ; dégâts fixes calculés à la clôture et comparés à la meilleure combinaison possible (note SS à D), événement du Boss chaque jour à partir du Jour 2.
-- Code : `jeux/services/bossraid.js`, `jeux/discord/handlers/bossraid.js`, `jeux/scripts/postBossRaid.js`, `resetBossRaid.js`, `bossRaidStatus.js`, `bossraidRefresh.js` ; données `jeux/data/bossraid/` ; images `frontend/public/images/boss/` ; Redis `bossraid:*` ; workflow `.github/workflows/bossraid.yml` ; scripts `npm run bossraid:*`.
+### Jeux supprimés (code retiré)
 
-#### Bang! (dernier joueur en vie)
+Tamagotchi, Boss Raid et Bang! (jeux spéciaux), Anagram, Palette, La Juste Carte et Blind Royale (mini-jeux hebdomadaires), Six et Tourneboule (duels) : code, données, images, workflows et scripts supprimés. Règles, barèmes et clés Redis : historique git (`jeux/CONTRIBUTING.md` avant le 25/11/2026).
 
-- Jeu de survie de 7 jours inspiré d'Exploding Kittens : pioche commune truffée de Gobelins explosifs, cartes d'action (Gang, Malédiction, Voleuse, Moine, Fût, Sarbacane), Bravoure pour départager les survivants ; score = nombre de joueurs classés derrière.
-- Code : `jeux/services/bang.js`, `bangRules.js` (tests `bangRules.test.js`), `bangImage.js`, `jeux/discord/handlers/bang.js`, `jeux/scripts/postBang.js`, `resetBang.js`, `bangStatus.js` ; données `jeux/data/bang/` ; assets Blob (`npm run assets:upload-blob -- bang`) et routes `/api/bang/*` ; Redis `bang:*` ; workflow `.github/workflows/bang.yml` ; scripts `npm run bang:*` ; outils `jeux/outils/bang/`.
-- Les manches publiques restent dans `/mini-jeux-history` et le bouton « 📊 Stats ».
-
-### Duels
-
-Duels retirés des commandes slash (absents de `JEUX_COMMANDS` et de la liste de `scripts/registerCommands.js` : la commande disparaît de Discord au prochain enregistrement). Code, route, tests et outils sont conservés.
-
-**Pour relancer** : rajouter la commande dans `scripts/registerCommands.js` (nom dans `JEUX_COMMANDS` et définition, description de 100 caractères au plus), la ligne de `AGENTS.md`, puis réenregistrer les commandes.
-
-#### Six (archivé le 31/10/2026)
-
-- Duel de collecte inspiré du 6 qui prend : un paquet par joueur (18 cartes de sa couleur, 4 neutres), 4 colonnes, carte posée sur une colonne dont la dernière carte est plus faible (sinon pose libre), la 6e carte ferme la colonne (+1 point par carte de sa couleur), premier à 5 points.
-- Archivé parce que le concept reste trop aléatoire en partie réelle : avec une carte tirée et un placement contraint par sa valeur, le joueur n'a qu'un ou deux vrais choix par tour. Variantes essayées sans succès : points perdus et couleur maudite, carte passée, ramassage volontaire, échange, réserve, couleurs fétiches, cartes visibles, main de 3 avec placement automatique. Le détail est dans l'historique git de ce document.
-- Code : `jeux/services/sixRules.js` (tests `sixRules.test.js`), `jeux/services/sixDuel.js` (tests `sixDuel.test.js`), `jeux/discord/handlers/sixDuel.js`, route dans `jeux/discord/routes/duels.js` (boutons des anciens messages) ; config `jeux/data/six/duel.json` ; Redis `sixduel:*` ; outils `jeux/outils/six/` (`simulateDuel.mjs`, `e2eDuel.mjs`) ; cartes de Punto (`jeux/services/puntoCartes.js`).
-
-#### Tourneboule (archivé le 13/11/2026)
-
-- Archivé parce que la jouabilité est moindre : les règles s'écartent de celles du jeu de retournement d'origine (plateau 5×5 à rocher central, pose libre à côté de n'importe quel pion), et les parties en pâtissent.
-
-Contre Kévina ou en 1v1. Frise et Mascarade reprennent sa structure (modes, sièges, verrous, délai, messages publics, abandon, séries et records).
-
-Duel de réflexion pure, sans hasard : poser des pions et retourner ceux qu'on encadre. Ex-commande `/tourneboule adversaire:bot|1v1` (option obligatoire). **Jeu libre : aucun score conservé, sauf les séries de victoires.** Même structure que Punto (modes, sièges, verrous, délai, messages publics, abandon, séries et records), avec une étape intermédiaire comme La Grille : seules les différences sont décrites ici.
-
-- Code : `jeux/services/tourneboulRules.js` (règles pures et Kévina, tests `tourneboulRules.test.js`), `jeux/services/tourneboulDuel.js` (Redis, tests `tourneboulDuel.test.js`), `jeux/discord/handlers/tourneboulDuel.js` (Discord). Pions : ceux de Quatre à la suite (`jeux/services/pions.js`, voir « Pions de Quatre à la suite »). Config `jeux/data/tourneboule/duel.json` : `delai_tour_minutes` (1, 1v1 uniquement), `profondeur_kevina` (2), `erreur_kevina` (0,5), `marge_kevina` (10, en points d'évaluation).
-- Redis : `tourneboulduel:<discordId>` (contre Kévina), `tourneboulduel:pvp`, verrous `tourneboulduel:lock:*`, séries `tourneboulduel:series:bot` / `tourneboulduel:series:pvp`, records `tourneboulduel:records`.
-- `custom_id` : `tourneboulduel_poser:<case>:<vue>[:pvp]` (case 0 à 24, ligne × 5 + colonne ; `<vue>` = `d.vue` affiché, +1 à chaque coup : un clic sur une vue dépassée est refusé avec « Le plateau a changé depuis »), `tourneboulduel_ouvrir`, `tourneboulduel_regles`, `tourneboulduel_abandon[:pvp]`, `tourneboulduel_abandon_ok[:pvp]` / `tourneboulduel_abandon_non[:pvp]`.
-
-##### Règles
-
-- **Plateau 5×5** (`d.grille` : `null` vide, `"roc"`, `"joueur"`, `"bot"`), **case centrale bloquée** (`ROC`, 🪨). **Départ** (`DEPART`) : un pion de chaque joueur à côté du centre, le premier joueur au-dessus (case 7), le second en dessous (case 17) ; 22 cases libres.
-- **À son tour**, le joueur pose un pion sur une case vide **voisine (côté ou coin) d'un pion ou du rocher** (`casesJouables()`, `poser()`) : pions illimités, pas de déplacement.
-- **Retournement** (`retournements()`) : chaque ligne **horizontale, verticale ou diagonale** de pions adverses contigus que le pion posé encadre avec un autre pion du joueur **change de camp** (plusieurs directions à la fois possibles). Le rocher ferme une ligne sans encadrer. Poser sans retourner est permis.
-- **Fin** : plateau plein (22 coups, 11 chacun) ; le plus de pions gagne (`resultat()`, `d.fin` = `"majorite"`). Égalité 12-12 : le plus de **coins** (`"coins"`), puis l'**auteur du dernier retournement** (`d.dernierRetournement`, `"retournement"`) ; sinon match nul.
-- **Qui commence** : toujours le joueur contre Kévina ; tiré au sort en 1v1.
-- **Kévina** (`choixKevina()`, renvoie la case) : recherche negamax alpha-bêta sur `profondeur_kevina` coups (coups qui retournent le plus d'abord ; `evaluerCoups()`). Feuilles : **évaluation positionnelle** (`evaluer()`) : coin 8, case de bord 2, case intérieure 1, et −4 par pion voisin d'un coin encore vide (il ouvre ce coin à l'adversaire) ; l'écart de pions seul se faisait battre par « coins puis bords ». Avec la probabilité `erreur_kevina`, case tirée au sort parmi celles à `marge_kevina` points d'évaluation du meilleur (jamais un coup qui perd ou rate une victoire en vue).
-- **Jeu facile** : entre joueurs qui jouent les coins et les bords avec prudence, celui qui pose le dernier pion (le second) gagne presque toujours ; contre Kévina, le joueur commence (siège défavorable) et ses erreurs fréquentes compensent. ⚠️ Kévina doit laisser sa chance au joueur : ne pas la renforcer sans simulation (voir Outils).
-- Pourquoi ces règles (simulations, joueurs negamax à profondeur 2 à 5, et joueur « coins puis bords » sans calcul) : **voisinage et diagonales** ajoutés après tests : avec la pose libre et les seules lignes orthogonales, coins et bords étaient imprenables et « coins puis bords » battait un joueur qui calcule 4 coups (~78 %) ; avec voisinage + diagonales + ce départ, ~24 %, et calculer 4 coups bat calculer 2 coups ~94 % ; équilibre ~43/57 à ~49/51 (léger avantage au second joueur), presque aucun nul. Départ en diagonale du rocher écarté (coins accessibles dès le premier coup, « coins puis bords » ~65 %). Plateau sans bord (lignes qui bouclent) écarté : plus de case sûre mais le dernier coup décide (~90 % pour celui qui le joue). Pose obligatoirement retournante écartée (n'empêche pas la règle des coins sur 5×5). Historique : issu du « Sandwich tactique » (prise par encadrement, pose ou déplacement), qui finissait presque toujours nul entre joueurs prudents (se protéger de l'encadrement est trop facile ; 63 à 100 % de nuls selon les variantes : 5 à 8 pions, pions illimités, victoire à 1 à 3 prises). La **conversion d'une ligne** au lieu de la prise et la **pose obligatoire** jusqu'au plateau plein règlent ce blocage. **Centre bloqué** : sur 25 cases, celui qui pose le dernier pion (le premier joueur) gagne ~65 % ; à 24 cases, la parité est corrigée. Écartés : premier pion au bord (premier joueur ~74 %), départ dans les coins (~81 %), retrait des pions encadrés (toujours nul).
-
-##### Affichage
-
-- **Vue éphémère** : titre avec le score en pions (« 🌀 Tourneboule · Toi 7 – 6 Kévina », « · À toi ! » en 1v1), légende des couleurs, récit du dernier coup (« Tu poses un pion et retournes 2 pions 🌀, Kévina pose un pion. »), puis le **plateau en boutons** (5 rangées de 5, comme Punto) : pion bleu (le sien), rouge (l'adversaire), case vide grise, 🪨 désactivé au centre. Boutons gris ; **à son tour, les cases vides sans voisin sont désactivées (grisées)** ; les pions ne sont jamais désactivés (Discord estomperait l'emoji) ; un clic sur une case prise, sans voisin ou hors de son tour donne un avertissement. ⚠️ 6 rangées de boutons (5 du plateau + 🏳️) : Components V2 obligatoires (40 composants au plus, vérifié par l'e2e).
-- **Retournement** : étape intermédiaire de 0,9 s (`etatRetournement()`) où les pions retournés montrent **🌀**, sur la vue du joueur, celle de l'adversaire en 1v1 et le message public (« 🌀 Kévina retourne 3 pions ! »). Contre Kévina : retournement du coup du joueur, réflexion de Kévina, puis le sien ; montré aussi quand le coup termine la partie.
-- **Messages publics** : plateau en texte (une rangée d'emojis par ligne, titres H3, premier joueur en bleu) et « Score : 🔵 X 7 · 🔴 Kévina 6 » ; récapitulatif de fin : résultat (« 🏆 X bat Kévina : 14 à 10 ! »), plateau final et séries.
-
-##### Outils (`jeux/outils/tourneboule/`, à lancer à la main)
-
-- `simulateDuel.mjs [parties] [profilJoueur] [profilBot]` (profils `hasard`, `coins` (« coins puis bords » sans calcul), `kevina[p<profondeur>][e<erreur>][m<marge>]` (positionnel), ex. `kevinap2e0.5m10` = réglage de production). Repères contre Kévina de production (150 parties) : hasard ~1 % ; « coins puis bords » ~17 % ; joueur positionnel qui calcule 1 coup ~54 %, 2 coups ~85 %, 3 coups ~79 %. Kévina sans erreur bat « coins puis bords » 100 %. Quelques millisecondes par coup à profondeur 4.
-- `e2eDuel.mjs` : handler contre Kévina et 1v1 sur Redis en mémoire, tous les appels Discord interceptés (`node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/tourneboule/e2eDuel.mjs`).
-
-### Mini-jeux hebdomadaires (retirés par la refonte de novembre 2026)
-
-Hors de toute paire depuis la bascule (`REFONTE_PAIRS`, `jeux/services/refonte.js`) : jamais lancés par les orchestrateurs à partir de la saison 138 (garde `getWiredGame`), jamais affichés comme jeu en cours ou à venir dans `/mini-jeux`. Code, données, assets Blob, scripts `npm run <jeu>:*` et archives Redis sont conservés ; leurs résultats restent dans `/mini-jeux-history` et le bouton « 📊 Stats ». Les règles complètes sont dans l'historique git (`jeux/CONTRIBUTING.md` avant novembre 2026).
-
-**Pour relancer** : l'ajouter à une paire de `REFONTE_PAIRS` et à `REFONTE_PRETS`, vérifier sa présence dans les 4 tables de l'orchestrateur du groupe, puis `npm run <jeu>:reset`.
-
-#### Anagram (devine la carte)
-
-- Jeux de lettres (samedi), en alternance avec Pêle-mêle. Anagramme d'un nom de carte publiée en clair, réponse via Modal (égalité stricte normalisée), DM de fin de manche.
-- Barème au rang d'arrivée : `max(1, 11 − position)`, position attribuée atomiquement (`anagram:position_seq:<gameId>`, `anagram:positions:<gameId>`).
-- Code : `jeux/services/anagrams.js`, handler `jeux/discord/handlers/anagrams.js` ; données `jeux/data/anagrams/anagrams.json` ; Redis `anagram:*`.
-
-#### Palette (devine la couleur dominante d'une carte)
-
-- Jeux visuels (vendredi), en alternance avec Zoom carte. QCM A/B/C/D dessiné dans l'image, un seul clic (`HSETNX`).
-- Barème selon le rang de la couleur choisie : 4 / 2 / 1 / 0 pts.
-- Code : `jeux/services/palette.js`, `paletteImage.js`, catalogue généré par `npm run palette:catalog` (`jeux/data/jeux-visuels/palette/`, images et surlignages sur Blob, route `/api/palette/image`) ; Redis `palette:*` (`palette:play_order`, `palette:order:<gameId>`).
-
-#### La Juste Carte (devine la carte par ses stats)
-
-- Jeux à l'aveugle (lundi), en alternance avec Blind Royale. Propositions successives via Modal ; flèches sur PV et Portée, puis Élixir, puis Dégâts ; indice payant « rareté ».
-- Barème : `max(1, 11 − n° de proposition − (indice ? 3 : 0))`.
-- Code : `jeux/services/lajustecarte.js`, handler `jeux/discord/handlers/lajustecarte.js` ; stats dans `jeux/data/cardNames.json` (`npm run justecarte:stats`) ; Redis `lajustecarte:*`.
-
-#### Blind Royale (devine la carte au son)
-
-- Jeux à l'aveugle (lundi), en alternance avec La Juste Carte. Extrait audio en pièce jointe `carte-mystere.mp3`, réponse via Modal, indice « rareté », DM de fin de manche.
-- Barème : `max(1, 10 − 2 × erreurs − (indice ? 3 : 0))`.
-- Code : `jeux/services/blindroyale.js`, handler `jeux/discord/handlers/blindroyale.js` ; sons `jeux/data/card-sounds/` ; Redis `blindroyale:*`.
-- Les sons ne sont lus qu'à la publication (scripts GitHub Actions) : `jeux/data/card-sounds/**` est exclu des fonctions Vercel (`excludeFiles` dans `vercel.json`).
+- Leurs clés Redis restent en place, rien n'est purgé. Les résultats des 4 mini-jeux hebdomadaires restent dans `/mini-jeux-history` et le bouton « 📊 Stats » : `jeux/services/archivesJeuxSupprimes.js` relit seulement `<jeu>:archived:<seasonId>` (`anagram`, `palette`, `blindroyale`, `lajustecarte`). Aucune partie de Bang!, Tamagotchi ni Boss Raid n'avait de classement archivé exploitable.
+- Les avatars « clay » (`jeux/data/avatars/`, Blob `avatars/clay-XX.png`) servent au Pont du Troll, à Qui est-ce ? et à `avatarsDiscord.js`.

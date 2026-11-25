@@ -44,10 +44,10 @@ import { encodePlateau } from "../../services/robinsonImage.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { versV2 as versV2Commun } from "../composantsV2.js";
-import { formatUtcTimeAsParis } from "@clash/clash-royale/dateUtils.js";
+import { formatUtcTimeAsParis } from "../../services/saison.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const ROBINSON_COLOR = 0x1abc9c;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const EMOJI_RESSOURCE = { poisson: "🐟", eau: "💧", bois: "🪵" };
 const NOM_RESSOURCE = { poisson: "du poisson", eau: "de l’eau", bois: "du bois" };
 
@@ -66,7 +66,7 @@ const nomAffiche = (discordId, fallback) =>
 
 // Illustrations (annonce, fin de partie) : frontend/public/images/robinson/
 function robinsonImageUrl(numero) {
-  return `${TRUST_ROYALE_URL}/images/robinson/rob-${String(numero).padStart(2, "0")}.webp`;
+  return `${URL_JEUX}/images/robinson/rob-${String(numero).padStart(2, "0")}.webp`;
 }
 
 // Sélection déterministe (par jour) : le texte ne change pas d'un
@@ -97,7 +97,7 @@ function plateauUrl(config, state, { counts, V, nbABord }) {
     objectif: planchesRequises(V, config),
     aBord: nbABord,
   });
-  return `${TRUST_ROYALE_URL}/api/robinson/plateau?d=${d}`;
+  return `${URL_JEUX}/api/robinson/plateau?d=${d}`;
 }
 
 // Lignes sous l'image : stocks (récoltes du jour comprises), repas de la

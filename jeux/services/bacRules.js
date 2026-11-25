@@ -39,7 +39,6 @@ export const THEMES = {
   fruits: "Fruits et légumes",
   metiers: "Métiers",
   sports: "Sports",
-  clash: "Cartes Clash Royale",
   mythologie: "Mythologie",
   jeuxvideo: "Personnages de jeu vidéo",
   transports: "Moyens de transport",
@@ -58,7 +57,7 @@ export const THEMES = {
 export const NIVEAUX = {
   facile: ["animaux", "prenoms", "fruits", "metiers", "transports"],
   moyen: ["pays", "villes", "sports", "autos", "acteurs", "musique", "fromages", "outils", "boissons"],
-  difficile: ["mythologie", "jeuxvideo", "clash", "inventions", "ecrivains", "scientifiques"],
+  difficile: ["mythologie", "jeuxvideo", "inventions", "ecrivains", "scientifiques"],
 };
 // Déroulé d'une partie selon la difficulté choisie, difficulté croissante :
 // niveau du thème et lettres de chaque manche (« toutes » les lettres

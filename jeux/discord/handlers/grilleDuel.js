@@ -51,8 +51,7 @@ const GRILLE_COLOR = 0x2f6fd6;
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 
-// Ses propres dés en bleu, ceux de l'adversaire en rouge (code couleur de
-// Clash Royale)
+// Ses propres dés en bleu, ceux de l'adversaire en rouge
 export const MOI = "bleu";
 export const ADV = "rouge";
 const CASE_VIDE = "⬛";

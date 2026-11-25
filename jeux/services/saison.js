@@ -4,9 +4,12 @@
 //
 // Identifiant technique : un entier par mois, qui prolonge l'ancienne
 // numérotation (octobre 2026 = 137) ; les clés Redis (`<jeu>:season:<id>`,
-// `<jeu>:archived:<id>`) et l'alternance des groupes
-// (ACTIVE_GAME_REFERENCE_SEASON) continuent donc sans migration. Affichage
-// aux joueurs : le nom du mois (« Saison d'Octobre »), jamais l'identifiant.
+// `<jeu>:archived:<id>`) et l'alternance des groupes (refonte.js)
+// continuent donc sans migration. Affichage aux joueurs : le nom du mois
+// (« Saison d'Octobre »), jamais l'identifiant.
+//
+// Fournit aussi les conversions d'heure de Paris des jeux (parisOffsetMs,
+// formatUtcTimeAsParis), selon l'heure d'été ou d'hiver.
 // ============================================================
 
 const PARIS = "Europe/Paris";
@@ -44,6 +47,22 @@ function parisParts(date) {
   };
 }
 
+/** Décalage (ms) entre l'heure de Paris et l'heure UTC à l'instant `date`
+ * (3 600 000 en hiver, 7 200 000 en été). */
+export function parisOffsetMs(date = new Date()) {
+  const p = parisParts(date);
+  const secondeUtc = Math.floor(date.getTime() / 1000) * 1000;
+  return Date.UTC(p.annee, p.moisIndex, p.jour, p.heure, p.minute, p.seconde) - secondeUtc;
+}
+
+/** Heure UTC `h:m` du jour de `now`, affichée à l'heure de Paris (ex. 8 → « 9h00 »
+ * en hiver, « 10h00 » en été). */
+export function formatUtcTimeAsParis(h, m = 0, now = new Date()) {
+  const utc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h, m);
+  const paris = new Date(utc + parisOffsetMs(new Date(utc)));
+  return `${paris.getUTCHours()}h${String(paris.getUTCMinutes()).padStart(2, "0")}`;
+}
+
 // Instant UTC du 1er du mois à minuit, heure de Paris (moisIndex peut
 // déborder : 12 = janvier de l'année suivante).
 function debutDuMois(annee, moisIndex) {
@@ -64,8 +83,7 @@ export function seasonIdForDate(date = new Date()) {
   );
 }
 
-/** Saison en cours. Asynchrone pour rester compatible avec les appelants
- * (l'ancienne version interrogeait l'API Clash Royale). */
+/** Saison en cours. Asynchrone pour rester compatible avec les appelants. */
 export async function getCurrentSeasonId(now = new Date()) {
   return seasonIdForDate(now);
 }

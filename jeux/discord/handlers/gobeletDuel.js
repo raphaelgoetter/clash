@@ -44,13 +44,13 @@ import {
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const GOBELETDUEL_COLOR = 0x9b59b6;
 // « 2 minutes » : délai d'abandon d'une partie sans action
 const DELAI_INACTIVITE = `${INACTIVITE_SECONDES / 60} minutes`;
 const NO_KEPT = [false, false, false, false, false];
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 // Dés en image (gobeletImage.js) : main du joueur, dernière manche (message
 // public) et fin de partie. Les boutons de dés gardent la valeur en libellé.
@@ -281,7 +281,7 @@ async function urlImageManche(state, results) {
     const tete = joueurs.filter((j) => j.points === max);
     titre = tete.length > 1 ? `Manche ${numero} : égalité à ${max}` : `Manche ${numero} : ${tete[0].nom} +${max}`;
   }
-  return `${TRUST_ROYALE_URL}/api/gobelet/manche?d=${encodeManche({ titre, joueurs })}`;
+  return `${URL_JEUX}/api/gobelet/manche?d=${encodeManche({ titre, joueurs })}`;
 }
 
 // Sans `previousResults` explicite (rafraîchissement après un clic Jouer,
@@ -356,7 +356,7 @@ async function urlImageFin(state, ranking, pseudos) {
       };
     }),
   );
-  return `${TRUST_ROYALE_URL}/api/gobelet/fin?d=${encodeFin({ joueurs, totalManches: state.totalManches })}`;
+  return `${URL_JEUX}/api/gobelet/fin?d=${encodeFin({ joueurs, totalManches: state.totalManches })}`;
 }
 
 // Le détail des manches est dans l'image : le texte se limite au total
@@ -498,7 +498,7 @@ function urlImageMain(state, hand, used, opponents = []) {
     adversaire: adv ? { nom: adv.username || "Adversaire", used: adv.used } : null,
     legende: `Manche ${state.manche}/${state.totalManches}`,
   });
-  return `${TRUST_ROYALE_URL}/api/gobelet/main?d=${param}`;
+  return `${URL_JEUX}/api/gobelet/main?d=${param}`;
 }
 
 // Ligne de score sous le statut de la main : le sien seul contre

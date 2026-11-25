@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // postJeuxDeLettres.js
-// Point d'entrée UNIQUE en production pour les "Jeux de lettres" (Anagram /
-// Pêle-mêle, en alternance une saison sur deux — voir
-// jeux/services/jeuxdelettres.js pour le détail de l'alternance).
-// Remplace l'ancien cron dédié à Anagram seul (.github/workflows/anagrams.yml) :
+// Point d'entrée UNIQUE en production pour le groupe « 🔤 Jeux de mots »
+// (Concept / Pêle-mêle, en alternance une saison sur deux, voir
+// jeux/services/jeuxdelettres.js) :
 //
 //   1. Vérifie le jour (samedi, créneau unique 18h UTC) et l'anti-double-post.
 //   2. Détecte un changement de saison depuis le dernier passage (suivi
@@ -14,9 +13,9 @@
 //      que 2 saisons plus tard (la prochaine fois que LUI repostera).
 //   3. Délègue la publication de la nouvelle manche au jeu actif de la
 //      saison en cours, avec force:true (le gating jour a déjà été
-//      fait ici) et skipSeasonRecap:true pour Anagram (sinon son propre
-//      mécanisme interne de récap, comparé à SON état à lui, redéclencherait
-//      à tort un récap déjà posté à l'étape 2).
+//      fait ici) et skipSeasonRecap:true (sinon le mécanisme interne de
+//      récap d'un jeu, comparé à SON état à lui, redéclencherait à tort un
+//      récap déjà posté à l'étape 2).
 //
 // Usage :
 //   node jeux/scripts/postJeuxDeLettres.js               — poste sur le salon de test
@@ -34,9 +33,7 @@ import {
   setLastKnownSeasonId,
 } from "../services/jeuxdelettres.js";
 import { getWiredGame } from "../services/refonte.js";
-import { alreadyPostedThisWeek as anagramAlreadyPostedThisWeek } from "../services/anagrams.js";
 import { alreadyPostedThisWeek as pelemeleAlreadyPostedThisWeek } from "../services/pelemele.js";
-import { postAnagram, postSeasonRecap as postAnagramSeasonRecap } from "../discord/handlers/anagrams.js";
 import { postPeleMele, postSeasonRecap as postPeleMeleSeasonRecap } from "../discord/handlers/pelemele.js";
 import { alreadyPostedThisWeek as conceptAlreadyPostedThisWeek } from "../services/concept.js";
 import { postConcept, postSeasonRecap as postConceptSeasonRecap } from "../discord/handlers/concept.js";
@@ -53,17 +50,15 @@ if (!channelId) {
 }
 
 const ALREADY_POSTED_BY_GAME = {
-  anagram: anagramAlreadyPostedThisWeek,
   pelemele: pelemeleAlreadyPostedThisWeek,
   concept: conceptAlreadyPostedThisWeek,
 };
-const POST_BY_GAME = { anagram: postAnagram, pelemele: postPeleMele, concept: postConcept };
+const POST_BY_GAME = { pelemele: postPeleMele, concept: postConcept };
 const RECAP_BY_GAME = {
-  anagram: postAnagramSeasonRecap,
   pelemele: postPeleMeleSeasonRecap,
   concept: postConceptSeasonRecap,
 };
-const LABEL_BY_GAME = { anagram: "Anagram", pelemele: "Pêle-mêle", concept: "Concept" };
+const LABEL_BY_GAME = { pelemele: "Pêle-mêle", concept: "Concept" };
 
 (async () => {
   try {
@@ -125,7 +120,7 @@ const LABEL_BY_GAME = { anagram: "Anagram", pelemele: "Pêle-mêle", concept: "C
 
     console.log(`Manche ${LABEL_BY_GAME[activeGame]} postée dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
-    console.error("Échec de la publication Jeux de lettres :", err.message);
+    console.error("Échec de la publication Jeux de mots :", err.message);
     process.exit(1);
   }
 })();

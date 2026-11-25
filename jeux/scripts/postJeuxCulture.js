@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // postJeuxCulture.js
-// Point d'entrée UNIQUE en production pour les "Mini-jeux de Culture" (Frame
-// / Trivia, en alternance une saison sur deux — voir
-// jeux/services/jeuxculture.js pour le détail de l'alternance). Remplace
-// l'ancien cron dédié à Frame seul (.github/workflows/frames.yml) :
+// Point d'entrée UNIQUE en production pour le groupe « 🎬 Ciné-club »
+// (Synopsis éclaté / Trouve le film, en alternance une saison sur deux, voir
+// jeux/services/jeuxculture.js) :
 //
 //   1. Détecte un changement de saison depuis le dernier passage (suivi
 //      PARTAGÉ, indépendant de l'état interne de chaque jeu — voir
@@ -13,14 +12,11 @@
 //      que 2 saisons plus tard (la prochaine fois que LUI repostera).
 //   2. Délègue la publication de la nouvelle manche au jeu actif de la
 //      saison en cours, avec force:true (le gating jour a déjà été fait
-//      ici) et skipSeasonRecap:true pour Frame (sinon son propre mécanisme
-//      interne de récap, comparé à SON état à lui, redéclencherait à tort
-//      un récap déjà posté à l'étape 1 — sans effet pour Trivia, qui n'a
-//      aucune logique de récap interne).
+//      ici) et skipSeasonRecap:true (sinon le mécanisme interne de récap
+//      d'un jeu, comparé à SON état à lui, redéclencherait à tort un récap
+//      déjà posté à l'étape 1).
 //
-// Contrairement à postJeuxDeLettres.js (Anagram/Pêle-mêle, samedi, 2
-// créneaux aléatoires), pas de planification multi-créneaux ici : Frame a
-// toujours eu un créneau fixe unique (mercredi 18h UTC), simple gating jour.
+// Jour de publication : MERCREDI 18h UTC.
 //
 // Usage :
 //   node jeux/scripts/postJeuxCulture.js               — poste sur le salon de test
@@ -39,9 +35,7 @@ import {
 } from "../services/jeuxculture.js";
 import { getWiredGame } from "../services/refonte.js";
 import { alreadyPostedThisWeek as frameAlreadyPostedThisWeek } from "../services/frames.js";
-import { alreadyPostedThisWeek as triviaAlreadyPostedThisWeek } from "../services/trivia.js";
 import { postFrame, postSeasonRecap as postFrameSeasonRecap } from "../discord/handlers/frames.js";
-import { postTrivia, postSeasonRecap as postTriviaSeasonRecap } from "../discord/handlers/trivia.js";
 import { alreadyPostedThisWeek as synopsisAlreadyPostedThisWeek } from "../services/synopsis.js";
 import { postSynopsis, postSeasonRecap as postSynopsisSeasonRecap } from "../discord/handlers/synopsis.js";
 
@@ -58,16 +52,14 @@ if (!channelId) {
 
 const ALREADY_POSTED_BY_GAME = {
   frame: frameAlreadyPostedThisWeek,
-  trivia: triviaAlreadyPostedThisWeek,
   synopsis: synopsisAlreadyPostedThisWeek,
 };
-const POST_BY_GAME = { frame: postFrame, trivia: postTrivia, synopsis: postSynopsis };
+const POST_BY_GAME = { frame: postFrame, synopsis: postSynopsis };
 const RECAP_BY_GAME = {
   frame: postFrameSeasonRecap,
-  trivia: postTriviaSeasonRecap,
   synopsis: postSynopsisSeasonRecap,
 };
-const LABEL_BY_GAME = { frame: "Frame", trivia: "Trivia", synopsis: "Synopsis éclaté" };
+const LABEL_BY_GAME = { frame: "Frame", synopsis: "Synopsis éclaté" };
 
 (async () => {
   try {
@@ -129,7 +121,7 @@ const LABEL_BY_GAME = { frame: "Frame", trivia: "Trivia", synopsis: "Synopsis é
 
     console.log(`Manche ${LABEL_BY_GAME[activeGame]} postée dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
-    console.error("Échec de la publication Jeux de culture :", err.message);
+    console.error("Échec de la publication Ciné-club :", err.message);
     process.exit(1);
   }
 })();

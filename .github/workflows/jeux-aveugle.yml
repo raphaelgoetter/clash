@@ -6,8 +6,8 @@ permissions:
 on:
   # Lundi 18:00 UTC. Groupe technique `aveugle` (ex-Jeux à l'aveugle), devenu
   # « 🎮 Culture geek » à la refonte (jeux/services/refonte.js) : le script
-  # décide lui-même, à chaque déclenchement, quel jeu est actif cette saison
-  # Clash Royale (Trivia Geek / Intrus de l'inventaire en alternance, une
+  # décide lui-même, à chaque déclenchement, quel jeu est actif ce mois-ci
+  # (Trivia Geek / Intrus de l'inventaire en alternance, une
   # saison sur deux) et poste le récap de fin de saison du jeu qui vient de
   # se terminer, le cas échéant.
   schedule:

@@ -37,6 +37,7 @@ import { nomSaison } from "../../services/saison.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const CONCEPT_COLOR = 0xe67e22;
 
@@ -62,7 +63,7 @@ function buildConceptEmbed({ emojis, categorie, seasonId, seasonManche, seasonMa
     ].join("\n"),
     // Bannière fixe (frontend/public/images/concept/). Cache-buster (?v=) :
     // Discord met en cache l'aperçu d'un embed par URL, échecs compris.
-    image: { url: `https://trustroyale.vercel.app/images/concept/concept-game.webp?v=${Date.now()}` },
+    image: { url: `${URL_JEUX}/images/concept/concept-game.webp?v=${Date.now()}` },
     color: CONCEPT_COLOR,
     footer: { text: "Nouvelle manche : samedi prochain. Bonne chance tout le monde !" },
   };

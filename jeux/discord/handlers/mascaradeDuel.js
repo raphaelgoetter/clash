@@ -51,11 +51,11 @@ import {
 } from "../../services/mascaradeRules.js";
 import { encodeResultat, encodeTable } from "../../services/mascaradeImage.js";
 import { getRoleIdByName, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 // Violet masqué
 const MASCARADE_COLOR = 0x7d3c98;
 const TITRE = "🎭 Mascarade";
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // Jeton d'interaction Discord valable 15 min : marge d'une minute
 const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 // Fin de manche affichée un instant avant la manche suivante
@@ -227,7 +227,7 @@ function urlTable(d, moi, A, { avecMain = true, table = null, nomMoi = "toi" } =
     sommet: avecMain && !table && d.attente?.type === "squelettes" && d.attente.id === moi ? d.attente.carte : null,
     derniere,
   });
-  return `${TRUST_ROYALE_URL}/api/mascarade/table?d=${param}`;
+  return `${URL_JEUX}/api/mascarade/table?d=${param}`;
 }
 
 // Cartes qui ont décidé de la manche `h` : [du gagnant, du perdant] (null
@@ -264,7 +264,7 @@ function urlResultat(d, nomDe) {
     });
   if (!manches.length || manches.includes(null)) return null;
   const param = encodeResultat({ noms: cotes.map(nomDe), manches });
-  return `${TRUST_ROYALE_URL}/api/mascarade/resultat?d=${param}`;
+  return `${URL_JEUX}/api/mascarade/resultat?d=${param}`;
 }
 
 // Récit de la dernière action (`d.dernier`) vue par `moi`, sans point final.

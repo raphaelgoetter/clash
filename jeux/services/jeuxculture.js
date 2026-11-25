@@ -1,27 +1,8 @@
 // ============================================================
-// jeuxculture.js — Tronc commun aux mini-jeux "de culture" (Frame, Trivia),
-// qui alternent une saison sur deux sous le nom collectif
-// "Mini-jeux de Culture" : résolution de quel jeu est actif pour une saison
-// donnée. Même position que jeuxvisuels.js (pas de planification
-// hebdomadaire à dupliquer ici : Frame a toujours eu un créneau fixe unique,
-// mercredi 18h UTC, aligné sur les autres groupes — le gating jour/heure reste géré directement par
-// jeux/scripts/postJeuxCulture.js, seul consommateur destiné à la production,
-// remplace .github/workflows/frames.yml).
-//
-// ⚠️ Ne DUPLIQUE PAS getCurrentSeasonId() : chaque jeu (frames.js, trivia.js)
-// garde sa propre copie de cette fonction — convention assumée du repo (voir
-// jeuxvisuels.js). Ce module en a néanmoins besoin pour SA PROPRE décision
-// (quel jeu est actif), indépendante de celle de chaque jeu.
-//
-// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON, la saison technique
-// Clash Royale en cours au moment de la mise en place de l'alternance
-// (vérifiée le 2026-09-21 : saison technique 136, comme jeuxvisuels.js —
-// coïncidence de calendrier, pas un lien entre les deux alternances).
-// Décision produit explicite : Frame termine CETTE saison avant de céder la
-// main, jamais une bascule en cours de saison. Parité par rapport à cette
-// référence : écart PAIR (0, 2, 4...) → Frame, écart IMPAIR (1, 3, 5...) →
-// Trivia. Donc saison 136 = Frame (en cours au moment de la mise en place),
-// 137 = Trivia ("la saison prochaine"), 138 = Frame, etc.
+// jeuxculture.js — Groupe 🎬 Ciné-club (Synopsis éclaté, Trouve le film) :
+// jeu actif pour une saison donnée (une saison sur deux, paire définie
+// dans refonte.js) et suivi partagé de la dernière saison connue. Seul
+// consommateur en production : jeux/scripts/postJeuxCulture.js.
 // ============================================================
 
 import { Redis } from "@upstash/redis";
@@ -44,20 +25,14 @@ function getRedis() {
 export { getCurrentSeasonId };
 
 // ── Alternance saisonnière ──────────────────────────────────────
-export const ACTIVE_GAME_REFERENCE_SEASON = 136;
-
-// Fonction pure, testable indépendamment de Redis. À partir de la saison de
-// bascule du groupe, la nouvelle paire prend le relais (voir refonte.js).
+// Fonction pure : jeu de la paire actif pour `seasonId` (voir refonte.js),
+// null avant la bascule de novembre 2026.
 export function getActiveCultureGame(seasonId) {
-  const refonte = getRefonteGame("culture", seasonId);
-  if (refonte) return refonte;
-  const diff = seasonId - ACTIVE_GAME_REFERENCE_SEASON;
-  const parity = ((diff % 2) + 2) % 2; // toujours 0 ou 1, même si diff était négatif
-  return parity === 0 ? "frame" : "trivia";
+  return getRefonteGame("culture", seasonId);
 }
 
 // ── Suivi de la dernière saison connue ────────────────────────────
-// Distinct de l'état propre à chaque jeu (frame:state / trivia:state) : un
+// Distinct de l'état propre à chaque jeu (synopsis:state / frame:state) : un
 // seul jeu tourne par saison, donc l'état interne du jeu qui vient de
 // terminer sa saison ne "voit" la transition suivante que DEUX saisons plus
 // tard (la prochaine fois que CE jeu repostera) — trop tard pour un récap de

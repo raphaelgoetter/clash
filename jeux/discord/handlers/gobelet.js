@@ -61,6 +61,7 @@ import {
   creneauDepuis,
   messageHorsCreneau,
 } from "../../services/creneaux.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 // Deux mains par jour (creneaux.js) : journée 8h30-20h, soir 20h-8h, chacune
 // avec ses propres combinaisons réalisées et son Joker
@@ -68,7 +69,6 @@ const EMOJI_CRENEAU = { [JOURNEE]: "☀️", [SOIR]: "🌙" };
 const DE_CRENEAU = { [JOURNEE]: "de la journée", [SOIR]: "du soir" };
 
 const GOBELET_COLOR = 0x9b59b6;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 
 // Illustrations statiques (frontend/public/images/gobelet/), même principe
 // que BLACKJACK_*_IMAGE_URL dans _handlers/blackjack.js. gobelet.webp pour
@@ -79,8 +79,8 @@ const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // après remplacement du fichier. Incrémenter IMAGE_VERSION force Discord à
 // refaire un fetch à chaque remplacement de fichier.
 const GOBELET_IMAGE_VERSION = 1;
-const GOBELET_GAME_IMAGE_URL = `${TRUST_ROYALE_URL}/images/gobelet/dices.webp?v=${GOBELET_IMAGE_VERSION}`;
-const GOBELET_START_IMAGE_URL = `${TRUST_ROYALE_URL}/images/gobelet/gobelet.webp?v=${GOBELET_IMAGE_VERSION}`;
+const GOBELET_GAME_IMAGE_URL = `${URL_JEUX}/images/gobelet/dices.webp?v=${GOBELET_IMAGE_VERSION}`;
+const GOBELET_START_IMAGE_URL = `${URL_JEUX}/images/gobelet/gobelet.webp?v=${GOBELET_IMAGE_VERSION}`;
 
 const DAY1_INTRO =
   "**Le Gobelet est prêt !** Lance tes dés deux fois par jour pendant 7 jours pour cumuler des points. Clique sur *Règles* pour le barème complet.";

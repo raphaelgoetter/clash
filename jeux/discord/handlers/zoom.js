@@ -39,8 +39,8 @@ import { CLASH_JOUR } from "../../services/jeuxclash.js";
 import { getRoleIdByName, buildRolePingFields, MINI_JEUX_ROLE_NAME } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { deletePreviousRoundMessage } from "@clash/commun/discordMessages.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const ZOOM_COLOR = 0xe67e22;
 
 // Remplace le pseudo figé de chaque entrée par le pseudo Discord actuel —
@@ -72,7 +72,7 @@ function buildZoomEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cac
     // gameId= épingle l'image de CETTE manche précise, même raisonnement que
     // Frame (getFrameImageByGameId) — voir frames.js.
     image: {
-      url: `${TRUST_ROYALE_URL}/api/zoom/image?gameId=${gameId}&v=${cacheBust}`,
+      url: `${URL_JEUX}/api/zoom/image?gameId=${gameId}&v=${cacheBust}`,
     },
     color: ZOOM_COLOR,
     footer: {
@@ -165,8 +165,8 @@ async function getSeasonManchesPlayed(seasonId) {
   return manches.filter((m) => m.seasonManche != null && m.label != null).sort((a, b) => a.seasonManche - b.seasonManche);
 }
 
-// Exportée : appelée directement par jeux/scripts/postJeuxVisuels.js sous
-// l'alternance avec Palette (voir jeux/services/jeuxvisuels.js) — le jeu
+// Exportée : appelée directement par jeux/scripts/postJeuxClash.js sous
+// l'alternance avec Trivia (voir jeux/services/jeuxclash.js) — le jeu
 // qui reprend la main après la saison de l'autre ne "verrait" sinon la
 // transition que 2 saisons plus tard (voir skipSeasonRecap sur postZoom).
 export async function postSeasonRecap(channelId, endedSeasonId, newSeasonId, { noPing = false } = {}) {
@@ -229,12 +229,12 @@ export async function postZoom(channelId, { dryRun = false, noPing = false, forc
 
   const previousState = await readState();
   const newSeasonId = await getCurrentSeasonId();
-  // skipSeasonRecap : depuis l'alternance avec Palette (une saison sur deux
-  // — voir jeux/services/jeuxvisuels.js), Zoom ne poste plus forcément
-  // CHAQUE saison. Si on se fiait à cette comparaison seule, une reprise
-  // après une saison Palette comparerait previousState.seasonId (vieux d'un
+  // skipSeasonRecap : en alternance avec Trivia (une saison sur deux, voir
+  // jeux/services/jeuxclash.js), Zoom ne poste pas CHAQUE saison. Si on se
+  // fiait à cette comparaison seule, une reprise après une saison Trivia
+  // comparerait previousState.seasonId (vieux d'un
   // cycle complet) au newSeasonId courant et re-déclencherait à tort un
-  // récap déjà posté en temps voulu par jeux/scripts/postJeuxVisuels.js (qui suit
+  // récap déjà posté en temps voulu par jeux/scripts/postJeuxClash.js (qui suit
   // sa PROPRE trace de saison, partagée entre les deux jeux, et passe
   // skipSeasonRecap:true ici pour rester la SEULE source du récap).
   // Comportement inchangé pour un appel direct/manuel (skipSeasonRecap reste
@@ -368,7 +368,7 @@ export async function handleHintButton(webhookUrl, gameId, discordId, username) 
 
     await postEphemeralEmbed(webhookUrl, {
       description: `🔍 Un peu moins zoomée...\n${suffix}`,
-      image: { url: `${TRUST_ROYALE_URL}/api/zoom/image?gameId=${gameId}&stage=hint&v=${Date.now()}` },
+      image: { url: `${URL_JEUX}/api/zoom/image?gameId=${gameId}&stage=hint&v=${Date.now()}` },
       color: ZOOM_COLOR,
     });
   } catch (err) {
@@ -393,7 +393,7 @@ function buildDmEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, answe
       `Score de cette manche : **${score} pts**`,
       `Score total de la saison : **${seasonScore} pts**`,
     ].join("\n"),
-    image: { url: `${TRUST_ROYALE_URL}/api/zoom/image?gameId=${gameId}&stage=reveal&v=${Date.now()}` },
+    image: { url: `${URL_JEUX}/api/zoom/image?gameId=${gameId}&stage=reveal&v=${Date.now()}` },
     color: ZOOM_COLOR,
   };
 }

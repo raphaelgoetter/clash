@@ -5,26 +5,25 @@
 // Pourquoi : une Vercel Function n'a aucun accès au dépôt Git au runtime,
 // seulement aux fichiers tracés dans son bundle au build (@vercel/nft). Les
 // lectures dynamiques (fs.readFile avec un nom de fichier venu d'un
-// catalogue JSON, comme dans paletteImage.js/zoomImage.js) forcent le
+// catalogue JSON, comme dans zoomImage.js) forcent le
 // traceur à embarquer le RÉPERTOIRE ENTIER, pas juste le fichier réellement
-// utilisé — jeux/data/jeux-visuels/ (Palette + Zoom) pèse à lui seul 38 Mo,
+// utilisé (jeux/data/jeux-visuels/ pèse plusieurs dizaines de Mo),
 // réembarqués à CHAQUE déploiement retenu (30j vivant + 30j de récupération
 // après suppression). Cause principale du dépassement de Functions Storage
 // (voir mémoire projet, sept. 2026). Ces fichiers restent versionnés dans
-// Git (source de vérité, regénérables via generatePaletteCatalog.js /
-// generateZoomCatalog.js) — Blob n'est qu'une copie servie au runtime.
+// Git (source de vérité, regénérables via generateZoomCatalog.js…) — Blob n'est qu'une copie servie au runtime.
 //
 // Access "private" (comme championPredictions.js) : pas juste une
-// convention, une NÉCESSITÉ pour Palette/Zoom — ces images sont
+// convention, une NÉCESSITÉ pour les jeux visuels — ces images sont
 // anti-spoiler (la carte de la manche en cours ne doit pas être devinable
 // via une URL publique avant sa résolution).
 //
 // Idempotent : addRandomSuffix=false + allowOverwrite=true, donc relançable
 // sans créer de doublons — à refaire après chaque régénération de catalogue
-// (nouvelle carte Palette/Zoom, changement de police, etc.).
+// (nouvelle carte Zoom, changement de police, etc.).
 //
 // Usage : npm run assets:upload-blob
-//        npm run assets:upload-blob -- bang   — seulement les chemins
+//        npm run assets:upload-blob -- avatars   — seulement les chemins
 //        commençant par l'un des préfixes donnés (ex. nouvel asset d'un jeu)
 // ============================================================
 
@@ -64,16 +63,12 @@ const TARGETS = [
   { file: "marioclash/images/mario-clash-board.jpg" },
   { file: "marioclash/images/mario-clash.webp" },
   { dir: "marioclash/vehicules" },
-  { file: "bang/images/bang-table.jpg" },
-  { file: "bang/images/bang-launch.webp" },
-  { dir: "bang/avatars" },
+  { dir: "avatars" },
   { file: "quiestce/images/quiestce-launch.webp" },
   { file: "meow/images/meow-map.jpg" },
   { file: "meow/images/meow-launch.webp" },
   { file: "bac/images/bac-game.webp" },
   { dir: "pont/images" },
-  { dir: "jeux-visuels/palette/images" },
-  { dir: "jeux-visuels/palette/highlights" },
   { dir: "jeux-visuels/zoom/images" },
   { dir: "jeux-visuels/zoom2/images" },
   { dir: "jeux-visuels/platpays/images" },

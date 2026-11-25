@@ -45,6 +45,7 @@ import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const QUATRE_COLOR = 0x2f6fd6;
 // ④ n'est pas un emoji Discord : symbole de titre seulement
@@ -55,7 +56,6 @@ const WEBHOOK_VALIDITE_MS = 14 * 60_000;
 // Images du plateau (routes jeux/server/imageRoutes.js). Suffixe ?v= :
 // Discord met en cache une image par URL EXACTE, à incrémenter quand le
 // dessin change.
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 const QUATRE_IMAGE_VERSION = 3;
 // Le pion à jouer part de la colonne centrale à chaque tour
 const COLONNE_CENTRALE = Math.floor(NB_COLONNES / 2);
@@ -213,11 +213,11 @@ function nomsAdv(partie, moi) {
 // Image de la grille vue par le siège `moi` (ses pions en bleu). `noms` :
 // { moi, adv } libellés des deux camps, en légende sous la grille.
 export function urlGrille(d, moi, noms) {
-  return `${TRUST_ROYALE_URL}/api/quatre/grille?d=${encodeGrille(d, moi, noms)}&v=${QUATRE_IMAGE_VERSION}`;
+  return `${URL_JEUX}/api/quatre/grille?d=${encodeGrille(d, moi, noms)}&v=${QUATRE_IMAGE_VERSION}`;
 }
 
 // Bandeau du pion à jouer au-dessus de la colonne `colonne` (7 images fixes)
-export const urlBandeau = (colonne) => `${TRUST_ROYALE_URL}/api/quatre/bandeau?c=${colonne}&v=${QUATRE_IMAGE_VERSION}`;
+export const urlBandeau = (colonne) => `${URL_JEUX}/api/quatre/bandeau?c=${colonne}&v=${QUATRE_IMAGE_VERSION}`;
 
 // Grille neutre (messages publics) : premier joueur en bleu.
 const grillePublique = (d, nomJoueur, nomBot) => urlGrille(d, "joueur", { moi: nomJoueur, adv: nomBot });

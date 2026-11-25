@@ -1,26 +1,8 @@
 // ============================================================
-// jeuxdelettres.js — Tronc commun aux mini-jeux "de lettres" (Anagram,
-// Pêle-mêle), qui alternent désormais une saison sur deux sous
-// le nom collectif "Jeux de lettres" (créneau unique samedi 18h UTC) :
-// résolution de quel jeu est actif pour une saison donnée. jeux/scripts/postJeuxDeLettres.js
-// est le seul consommateur destiné à la production (cron unique).
-//
-// ⚠️ Ne DUPLIQUE PAS getCurrentSeasonId() : chaque jeu (anagrams.js,
-// pelemele.js, frames.js, zoom.js, lajustecarte.js, blindroyale.js) garde
-// sa propre copie de cette fonction — convention assumée du repo (voir le
-// commentaire correspondant dans lajustecarte.js), pas une omission. Ce
-// module en a néanmoins besoin pour SA PROPRE décision (quel jeu est actif),
-// indépendante de celle de chaque jeu — copie volontaire, pas une régression
-// de la convention.
-//
-// Alternance : ancrée sur ACTIVE_GAME_REFERENCE_SEASON (136, septembre 2026,
-// voir saison.js), saison encore gérée par Anagram à la mise en place de
-// l'alternance — décision produit explicite : on
-// attend la fin de CETTE saison avant de basculer, jamais une bascule en
-// cours de saison. Parité par rapport à cette référence : écart PAIR (0, 2,
-// 4...) → Anagram, écart IMPAIR (1, 3, 5...) → Pêle-mêle. Donc saison 136 =
-// Anagram (celle en cours au moment de la mise en place), 137 = Pêle-mêle,
-// 138 = Anagram, etc.
+// jeuxdelettres.js — Groupe 🔤 Jeux de mots (Concept, Pêle-mêle) :
+// jeu actif pour une saison donnée (une saison sur deux, paire définie
+// dans refonte.js) et suivi partagé de la dernière saison connue. Seul
+// consommateur en production : jeux/scripts/postJeuxDeLettres.js.
 // ============================================================
 
 import { Redis } from "@upstash/redis";
@@ -43,20 +25,14 @@ function getRedis() {
 export { getCurrentSeasonId };
 
 // ── Alternance saisonnière ──────────────────────────────────────
-export const ACTIVE_GAME_REFERENCE_SEASON = 136;
-
-// Fonction pure, testable indépendamment de Redis. À partir de la saison de
-// bascule du groupe, la nouvelle paire prend le relais (voir refonte.js).
+// Fonction pure : jeu de la paire actif pour `seasonId` (voir refonte.js),
+// null avant la bascule de novembre 2026.
 export function getActiveLetterGame(seasonId) {
-  const refonte = getRefonteGame("lettres", seasonId);
-  if (refonte) return refonte;
-  const diff = seasonId - ACTIVE_GAME_REFERENCE_SEASON;
-  const parity = ((diff % 2) + 2) % 2; // toujours 0 ou 1, même si diff était négatif
-  return parity === 0 ? "anagram" : "pelemele";
+  return getRefonteGame("lettres", seasonId);
 }
 
 // ── Suivi de la dernière saison connue ────────────────────────────
-// Distinct de l'état propre à chaque jeu (anagram:state / pelemele:state) :
+// Distinct de l'état propre à chaque jeu (concept:state / pelemele:state) :
 // un seul jeu tourne par saison, donc l'état interne du jeu qui vient de
 // terminer sa saison ne "voit" la transition suivante que DEUX saisons plus
 // tard (la prochaine fois que CE jeu repostera) — trop tard pour un récap de

@@ -21,7 +21,7 @@
 // Meow), source de vérité. Équilibrage : jeux/outils/meow-simulation/simulate.mjs.
 // ============================================================
 
-import { parisOffsetMs } from "@clash/clash-royale/dateUtils.js";
+import { parisOffsetMs } from "./saison.js";
 
 // ── Bandes et carte ─────────────────────────────────────────────────
 

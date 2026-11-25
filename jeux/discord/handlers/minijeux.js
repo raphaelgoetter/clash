@@ -1,10 +1,9 @@
 // ============================================================
-// minijeux.js — Handler Discord pour /mini-jeux : état des lieux de tous
-// les mini-jeux réguliers (Frame, Jeux de lettres [Anagram/Pêle-mêle en
-// alternance], Jeux visuels [Zoom carte/Palette en alternance], La Juste
-// Carte) et du jeu spécial actuellement actif (Quiz, Robinson,
-// Goblin Hunters, Blackjack, Pont du Troll, Mario Clash, Gobelet, Bang! ou Qui est-ce ? ;
-// Tamagotchi et Boss Raid archivés).
+// minijeux.js — Handler Discord pour /mini-jeux : état des lieux des 5
+// groupes de mini-jeux hebdomadaires (deux jeux en alternance chacun, voir
+// refonte.js), du jeu spécial actuellement actif (Quiz, Robinson, Goblin
+// Hunters, Blackjack, Pont du Troll, Mario Clash, Gobelet ou Meow ; Qui
+// est-ce ? archivé) et des duels.
 // Lecture seule, aucune écriture Redis.
 //
 // ⚠️ Goblin Hunters : ne jamais lire/afficher state.joueurs[].camp/role/pv —
@@ -15,15 +14,11 @@
 // Imports en namespace : /mini-jeux n'a besoin que de readState(), mais le
 // bouton "Mon passeport" lit aussi la progression du joueur
 // (readParticipant, computeSeasonRanking...) — même interface sur les 8 jeux.
-import * as blindRoyaleSvc from "../../services/blindroyale.js";
 import * as frameSvc from "../../services/frames.js";
 import * as zoomSvc from "../../services/zoom.js";
 import * as zoom2Svc from "../../services/zoom2.js";
 import * as platPaysSvc from "../../services/platpays.js";
-import * as paletteSvc from "../../services/palette.js";
-import * as anagramSvc from "../../services/anagrams.js";
 import * as peleMeleSvc from "../../services/pelemele.js";
-import * as justeCarteSvc from "../../services/lajustecarte.js";
 import * as triviaSvc from "../../services/trivia.js";
 import * as triviaGeekSvc from "../../services/triviageek.js";
 import * as intrusSvc from "../../services/intrus.js";
@@ -35,7 +30,6 @@ import * as grilleDuelSvc from "../../services/grilleDuel.js";
 import * as quatreDuelSvc from "../../services/quatreDuel.js";
 import * as puntoDuelSvc from "../../services/puntoDuel.js";
 import * as friseDuelSvc from "../../services/friseDuel.js";
-import * as mascaradeDuelSvc from "../../services/mascaradeDuel.js";
 import * as potatoDuelSvc from "../../services/potatoDuel.js";
 import * as bacDuelSvc from "../../services/bacDuel.js";
 import * as penduDuelSvc from "../../services/penduDuel.js";
@@ -67,22 +61,11 @@ import {
   listVotes as listQuizVotes,
 } from "../../services/quiz.js";
 import {
-  readState as readTamaState,
-  loadTamagotchiConfig,
-  listVotes as listTamaVotes,
-} from "../../services/tamagotchi.js";
-import {
   readState as readRobinsonState,
   loadRobinsonConfig,
   countUniqueVoters as countRobinsonVoters,
   listVotes as listRobinsonVotes,
 } from "../../services/robinson.js";
-import {
-  readState as readBossraidState,
-  loadBossRaidConfig,
-  countUniqueVoters as countBossraidVoters,
-  listVotes as listBossraidVotes,
-} from "../../services/bossraid.js";
 import {
   readState as readGoblinState,
   loadGoblinHuntersConfig,
@@ -109,11 +92,6 @@ import {
   readHand as readGobeletHand,
   readPoints as readGobeletPoints,
 } from "../../services/gobelet.js";
-import {
-  readState as readBangState,
-  loadBangConfig,
-  readPartie as readBangPartie,
-} from "../../services/bang.js";
 import {
   readState as readQuiEstCeState,
   loadQuiEstCeConfig,
@@ -176,7 +154,6 @@ const DUEL_COMMANDS = [
   { commande: "/quatre", record: () => quatreDuelSvc.lireRecord("bot") },
   { commande: "/punto", record: () => puntoDuelSvc.lireRecord("bot") },
   { commande: "/frise", record: () => friseDuelSvc.lireRecord("bot") },
-  { commande: "/mascarade", record: () => mascaradeDuelSvc.lireRecord("bot") },
   { commande: "/potato", record: () => potatoDuelSvc.lireRecord("bot") },
   { commande: "/bac", precision: "normal", record: () => bacDuelSvc.lireRecord("bot", "normal") },
   { commande: "/bac", precision: "difficile", record: () => bacDuelSvc.lireRecord("bot", "difficile") },
@@ -215,67 +192,49 @@ function channelLink() {
   return `https://discord.com/channels/${guildId}/${PUBLIC_CHANNEL_ID}`;
 }
 
-// "Jeux à l'aveugle" (lundi) : Blind Royale et La Juste Carte alternent une
-// saison sur deux (voir jeuxaveugle.js, même fonction utilisée
-// par jeux/scripts/postJeuxAveugle.js pour la publication) — un seul des deux est
-// actif à la fois, jamais les deux en même temps (même mécanisme que
-// VISUELS_GAMES/LETTRES_GAMES/CULTURE_GAMES ci-dessous).
+// Groupes hebdomadaires : deux jeux alternent une saison sur deux (voir
+// refonte.js et jeux<groupe>.js, mêmes fonctions que les orchestrateurs
+// jeux/scripts/postJeux*.js) ; /mini-jeux résout le jeu réellement actif.
+// 🎮 Culture geek (lundi).
 const AVEUGLE_GAMES = {
-  blindroyale: { title: "🎧 Blind Royale", svc: blindRoyaleSvc },
-  lajustecarte: { title: "🃏 La Juste Carte", svc: justeCarteSvc },
-  // Refonte (voir refonte.js) : "Culture geek" à partir de novembre 2026.
   triviageek: { title: "🎮 Trivia Geek", svc: triviaGeekSvc },
   intrus: { title: "🎒 Intrus de l'inventaire", svc: intrusSvc },
 };
 
-// "Jeux visuels" (vendredi) et "Jeux de lettres" (samedi) alternent chacun
-// entre deux jeux une saison sur deux (voir jeuxvisuels.js /
-// jeuxdelettres.js, mêmes fonctions utilisées par jeux/scripts/postJeuxVisuels.js
-// et postJeuxDeLettres.js pour la publication) — /mini-jeux doit donc
-// résoudre le jeu réellement actif plutôt que d'en référencer un seul en dur.
+// 📸 Coup d'œil (vendredi).
 const VISUELS_GAMES = {
-  zoom: { title: "🔍 Zoom carte", svc: zoomSvc },
-  palette: { title: "🎨 Palette", svc: paletteSvc },
-  // Refonte (voir refonte.js) : "Coup d'œil" à partir de novembre 2026.
   zoom2: { title: "🔍 Zoom logo", svc: zoom2Svc },
   platpays: { title: "🍽️ Plat Pays", svc: platPaysSvc },
 };
+// 🔤 Jeux de mots (samedi).
 const LETTRES_GAMES = {
-  anagram: { title: "🔤 Anagram", svc: anagramSvc },
   pelemele: { title: "🔤 Pêle-mêle", svc: peleMeleSvc },
-  // Refonte (voir refonte.js) : "Jeux de mots" à partir de novembre 2026.
   concept: { title: "🧩 Concept", svc: conceptSvc },
 };
-// "Mini-jeux de Culture" (mercredi) : Frame et Trivia alternent une saison
-// sur deux (voir jeuxculture.js), même mécanisme que
-// VISUELS_GAMES/LETTRES_GAMES ci-dessus.
+// 🎬 Ciné-club (mercredi).
 const CULTURE_GAMES = {
   frame: { title: "🎬 Trouve le film !", svc: frameSvc },
-  trivia: { title: "🧠 Trivia", svc: triviaSvc },
-  // Refonte (voir refonte.js) : "Ciné-club" à partir de novembre 2026.
   synopsis: { title: "🎬 Synopsis éclaté", svc: synopsisSvc },
 };
-// "Clash" (mardi, à partir de novembre 2026, voir jeuxclash.js) : Trivia et
-// Zoom carte quittent leurs anciens groupes pour alterner ici.
+// ⚔️ Clash (mardi, voir jeuxclash.js).
 const CLASH_GAMES = {
   trivia: { title: "🧠 Trivia", svc: triviaSvc },
   zoom: { title: "🔍 Zoom carte", svc: zoomSvc },
 };
 
 // Filet de sécurité si getCurrentSeasonId() renvoyait null : on retombe sur
-// le jeu "historique" de la paire plutôt que de planter l'embed /mini-jeux.
+// le premier jeu de la paire plutôt que de planter l'embed /mini-jeux.
 //
 // ⚠️ L'alternance saisonnière désigne le jeu de la saison EN COURS, pas
-// forcément celui dont une manche tourne : au changement de saison Clash
-// Royale, la dernière manche de l'ancien jeu court encore jusqu'à son
-// créneau hebdomadaire. Le jeu affiché est donc celui dont la manche la plus
+// forcément celui dont une manche tourne : au changement de saison, la
+// dernière manche de l'ancien jeu court encore jusqu'à son créneau
+// hebdomadaire. Le jeu affiché est donc celui dont la manche la plus
 // récente a été postée sur le salon public ; le jeu désigné par la saison
 // n'est retenu que si aucune manche publique n'existe encore (et "next"
 // signale la relève quand les deux diffèrent).
 //
-// Un même jeu peut appartenir à deux groupes selon la saison (Trivia et Zoom
-// carte rejoignent le groupe Clash à la refonte) : une manche n'est retenue
-// pour ce groupe que si le jeu y était actif pour la saison de la manche.
+// Une manche n'est retenue pour un groupe que si le jeu y était actif pour
+// la saison de la manche.
 // fallbackKey null : groupe masqué tant qu'il n'a aucun jeu (Clash avant la
 // bascule).
 async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
@@ -313,19 +272,19 @@ async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
 }
 
 function resolveActiveAveugleGame() {
-  return resolvePairGame(AVEUGLE_GAMES, getAveugleSeasonId, (id) => getWiredGame("aveugle", id, getActiveBlindGame(id)), "lajustecarte");
+  return resolvePairGame(AVEUGLE_GAMES, getAveugleSeasonId, (id) => getWiredGame("aveugle", id, getActiveBlindGame(id)), "triviageek");
 }
 
 function resolveActiveVisuelsGame() {
-  return resolvePairGame(VISUELS_GAMES, getVisuelsSeasonId, (id) => getWiredGame("visuels", id, getActiveVisualGame(id)), "zoom");
+  return resolvePairGame(VISUELS_GAMES, getVisuelsSeasonId, (id) => getWiredGame("visuels", id, getActiveVisualGame(id)), "zoom2");
 }
 
 function resolveActiveLettresGame() {
-  return resolvePairGame(LETTRES_GAMES, getLettresSeasonId, (id) => getWiredGame("lettres", id, getActiveLetterGame(id)), "anagram");
+  return resolvePairGame(LETTRES_GAMES, getLettresSeasonId, (id) => getWiredGame("lettres", id, getActiveLetterGame(id)), "concept");
 }
 
 function resolveActiveCultureGame() {
-  return resolvePairGame(CULTURE_GAMES, getCultureSeasonId, (id) => getWiredGame("culture", id, getActiveCultureGame(id)), "frame");
+  return resolvePairGame(CULTURE_GAMES, getCultureSeasonId, (id) => getWiredGame("culture", id, getActiveCultureGame(id)), "synopsis");
 }
 
 function resolveActiveClashGame() {
@@ -371,28 +330,6 @@ const SPECIAL_GAMES = [
     },
   },
   {
-    key: "tamagotchi",
-    title: "Tamagotchi",
-    style: "Collaboratif",
-    // Jeu archivé (04/10, pas de relance prévue) : ignoré par
-    // findActiveSpecialGame(), même si un état périmé traîne dans Redis.
-    archived: true,
-    readState: readTamaState,
-    async participation(state, discordId) {
-      const votes = await listTamaVotes(state.jour);
-      return { played: votes.some((v) => v.discordId === discordId) };
-    },
-    async detail(state) {
-      const config = await loadTamagotchiConfig();
-      const votes = await listTamaVotes(state.jour);
-      return {
-        jour: state.jour,
-        dureeJours: config.duree_jours,
-        participantsLabel: formatParticipantsToday(votes.length),
-      };
-    },
-  },
-  {
     key: "robinson",
     title: "Robinson",
     style: "Collaboratif",
@@ -415,40 +352,6 @@ const SPECIAL_GAMES = [
       }
       const config = await loadRobinsonConfig();
       const participants = await countRobinsonVoters(state.jour);
-      return {
-        jour: state.jour,
-        dureeJours: config.duree_jours,
-        participantsLabel: formatParticipantsToday(participants),
-      };
-    },
-  },
-  {
-    key: "bossraid",
-    title: "Boss Raid",
-    style: "Collaboratif",
-    // Jeu archivé (10/10, pas de relance prévue) : ignoré par
-    // findActiveSpecialGame(), même si un état périmé traîne dans Redis.
-    archived: true,
-    readState: readBossraidState,
-    async participation(state, discordId) {
-      if (state.phase === "annonce") return null;
-      const votes = await listBossraidVotes(state.jour);
-      return { played: votes.some((v) => v.discordId === discordId) };
-    },
-    async detail(state) {
-      const config = await loadBossRaidConfig();
-      if (state.phase === "annonce") {
-        // Jour d'annonce : aucun vote possible encore (jour = null côté
-        // état), donc ni "Jour null/7" ni "0 participant ce jour" n'ont de
-        // sens — voir le même traitement pour Goblin Hunters ci-dessous.
-        return {
-          jour: null,
-          dureeJours: null,
-          participantsLabel: null,
-          phaseLabel: "Phase de présentation du jeu",
-        };
-      }
-      const participants = await countBossraidVoters(state.jour);
       return {
         jour: state.jour,
         dureeJours: config.duree_jours,
@@ -593,7 +496,7 @@ const SPECIAL_GAMES = [
       const config = await loadMarioClashConfig();
       if (state.phase === "annonce") {
         // Jour de présentation : pas encore de jour de course ni d'action
-        // possible — même traitement que Boss Raid/Goblin Hunters ci-dessus.
+        // possible — même traitement que Goblin Hunters ci-dessus.
         return {
           jour: null,
           dureeJours: null,
@@ -647,45 +550,12 @@ const SPECIAL_GAMES = [
     },
   },
   {
-    key: "bang",
-    title: "Bang!",
-    style: "Survie",
-    // Jeu archivé (30/10, aucun intérêt des joueurs) : ignoré par
-    // findActiveSpecialGame(), même si un état périmé traîne dans Redis.
-    archived: true,
-    readState: readBangState,
-    async participation(state, discordId) {
-      if (state.phase === "annonce") return null;
-      const joueur = (await readBangPartie()).joueurs[discordId];
-      if (!joueur) return { played: false, scoreLabel: null };
-      return {
-        played: joueur.tourFait || !joueur.vivant,
-        scoreLabel: joueur.vivant ? `👑 En vie (**${joueur.bravoure ?? 0} Bravoure**)` : "💀 Éliminé de l'Arène",
-      };
-    },
-    async detail(state) {
-      if (state.phase === "annonce") {
-        return {
-          jour: null,
-          dureeJours: null,
-          participantsLabel: null,
-          phaseLabel: "Phase de présentation du jeu",
-        };
-      }
-      const [config, partie] = await Promise.all([loadBangConfig(), readBangPartie()]);
-      const joueurs = Object.values(partie.joueurs);
-      const vivants = joueurs.filter((j) => j.vivant).length;
-      return {
-        jour: state.jour,
-        dureeJours: config.duree_jours,
-        participantsLabel: `${vivants} joueur${vivants > 1 ? "s" : ""} en vie sur ${joueurs.length}`,
-      };
-    },
-  },
-  {
     key: "quiestce",
     title: "Qui est-ce ?",
     style: "Enquête",
+    // Jeu archivé (cartes Clash Royale) : ignoré par findActiveSpecialGame(),
+    // même si un état périmé traîne dans Redis.
+    archived: true,
     readState: readQuiEstCeState,
     async participation(state, discordId) {
       if (state.phase === "annonce") return null;
@@ -762,7 +632,7 @@ const SPECIAL_GAMES = [
   },
 ];
 
-// Quiz/Tamagotchi/Robinson/Boss Raid/Blackjack ne comptent que les votants
+// Quiz/Robinson/Blackjack ne comptent que les votants
 // du JOUR courant (aucune trace des jours précédents n'est agrégée côté
 // service) — le préciser pour ne pas laisser croire à un total sur toute la
 // partie. Goblin Hunters s'exprime différemment (inscrits ou vivants), voir
@@ -986,7 +856,7 @@ function formatRank(rank) {
 }
 
 // Un joueur a-t-il interagi avec la manche en cours ? readParticipant()
-// suffit pour Trivia/Palette (une seule réponse = un document participant),
+// suffit pour les QCM (une seule réponse = un document participant),
 // les autres jeux écrivent d'abord des tentatives/indices sans document
 // participant (voir hasPlayerInteracted() dans chaque service).
 async function hasPlayedRound(svc, gameId, discordId) {

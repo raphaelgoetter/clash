@@ -8,6 +8,8 @@ import {
   getCurrentSeasonBounds,
   countRemainingWednesdays,
   countRemainingWeekdayOccurrences,
+  parisOffsetMs,
+  formatUtcTimeAsParis,
 } from "./saison.js";
 
 console.log("Running saison tests...");
@@ -50,3 +52,15 @@ assert.strictEqual(countRemainingWeekdayOccurrences(new Date("2026-10-23T18:00:0
 // Samedi 31 octobre : dernier jour de la saison, compté depuis le vendredi.
 assert.strictEqual(countRemainingWeekdayOccurrences(new Date("2026-10-30T12:00:00Z"), 6), 1);
 console.log("✓ occurrences restantes dans le mois");
+
+// Heure de Paris : hiver, été et nuits de changement d'heure.
+const H = 3600 * 1000;
+assert.strictEqual(parisOffsetMs(new Date("2026-01-15T07:00:00Z")), H);
+assert.strictEqual(parisOffsetMs(new Date("2026-07-15T07:00:00Z")), 2 * H);
+assert.strictEqual(parisOffsetMs(new Date("2026-03-29T00:30:00Z")), H, "avant le passage à l'heure d'été");
+assert.strictEqual(parisOffsetMs(new Date("2026-03-29T01:30:00Z")), 2 * H, "après le passage à l'heure d'été");
+assert.strictEqual(parisOffsetMs(new Date("2026-10-25T00:30:00Z")), 2 * H, "avant le retour à l'heure d'hiver");
+assert.strictEqual(parisOffsetMs(new Date("2026-10-25T01:30:00Z")), H, "après le retour à l'heure d'hiver");
+assert.strictEqual(formatUtcTimeAsParis(8, 0, new Date("2026-11-25T12:00:00Z")), "9h00");
+assert.strictEqual(formatUtcTimeAsParis(13, 4, new Date("2026-07-01T12:00:00Z")), "15h04");
+console.log("✓ heure de Paris");

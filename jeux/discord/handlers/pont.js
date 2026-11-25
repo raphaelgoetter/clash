@@ -69,12 +69,12 @@ import {
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
 import { versV2 as versV2Commun } from "../composantsV2.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const PONT_COLOR = 0x6b8f3a;
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 // À incrémenter après remplacement de l'illustration d'annonce (cache Discord)
 const ILLUSTRATION_VERSION = 1;
-export const PONT_ILLUSTRATION_URL = `${TRUST_ROYALE_URL}/api/pont/illustration?v=${ILLUSTRATION_VERSION}`;
+export const PONT_ILLUSTRATION_URL = `${URL_JEUX}/api/pont/illustration?v=${ILLUSTRATION_VERSION}`;
 
 const EMOJI = { [PIERRE]: "🪨", [CORDES]: "🪢" };
 const NOM_PONT = { [PIERRE]: "Pont de pierre", [CORDES]: "Pont de cordes" };
@@ -97,9 +97,9 @@ const nomAffiche = (discordId, fallback) =>
 // ── URLs d'images ─────────────────────────────────────────────────
 
 const urlMatin = (jour, v) =>
-  `${TRUST_ROYALE_URL}/api/pont/matin?jour=${jour}&v=${v}`;
+  `${URL_JEUX}/api/pont/matin?jour=${jour}&v=${v}`;
 const urlResultat = (partieId, jour, v) =>
-  `${TRUST_ROYALE_URL}/api/pont/resultat?partie=${encodeURIComponent(partieId)}&jour=${jour}&v=${v}`;
+  `${URL_JEUX}/api/pont/resultat?partie=${encodeURIComponent(partieId)}&jour=${jour}&v=${v}`;
 
 // ── Embeds ────────────────────────────────────────────────────────
 

@@ -6,12 +6,11 @@
 // réseau au moment de servir une manche (voir jeux/services/zoomImage.js,
 // qui lit uniquement des fichiers locaux).
 //
-// Source des cartes : les cardKey présents dans jeux/data/anagrams/anagrams.json
-// (même pool que le jeu Anagram, décision explicite — pas encore étendu aux
-// 122 cartes du jeu). Les noms français, eux, viennent de
-// jeux/data/cardNames.json (source de vérité partagée entre tous les mini-jeux,
-// voir jeux/scripts/generateCardNames.js) — PAS d'anagrams.json directement, pour
-// ne pas dupliquer une donnée qui peut être corrigée à un seul endroit.
+// Source des cartes : les cardKey listés dans
+// jeux/data/jeux-visuels/zoom/cartes-source.json (50 cartes, l'ancien pool
+// d'Anagram ; pas encore étendu à toutes les cartes du jeu). Les noms
+// français, eux, viennent de jeux/data/cardNames.json (source de vérité,
+// voir jeux/scripts/generateCardNames.js).
 //
 // Source des icônes :
 //   - base    : fetchCards() (catalogue générique Clash Royale, universel).
@@ -27,7 +26,7 @@
 // la main après une passe de QA visuelle sont préservés tels quels.
 //
 // Purge : toute entrée dont le cardKey n'est plus dans le pool source
-// (ex. une carte retirée d'anagrams.json) est supprimée du catalogue ainsi
+// (ex. une carte retirée de cartes-source.json) est supprimée du catalogue ainsi
 // que son fichier image — sûr tant que Zoom carte n'est pas encore en
 // production (aucune manche déjà postée ne référence ces id).
 //
@@ -50,7 +49,7 @@ import { fetchCards, fetchPlayer } from "@clash/clash-royale/clashApi.js";
 import { countEvolved, countHeroes } from "@clash/clash-royale/collectionConstants.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ANAGRAMS_JSON_PATH = path.resolve(__dirname, "..", "data", "anagrams", "anagrams.json");
+const SOURCE_CARDS_PATH = path.resolve(__dirname, "..", "data", "jeux-visuels", "zoom", "cartes-source.json");
 const CARD_NAMES_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
 const ZOOM_DIR = path.resolve(__dirname, "..", "data", "jeux-visuels", "zoom");
 const ZOOM_JSON_PATH = path.join(ZOOM_DIR, "zoom.json");
@@ -58,7 +57,7 @@ const ZOOM_IMAGES_DIR = path.join(ZOOM_DIR, "images");
 
 const REFERENCE_PLAYER_TAG = "#YRGJGR8R";
 
-// Cartes/variantes ajoutées à la main, hors pool anagrams.json et hors
+// Cartes/variantes ajoutées à la main, hors pool cartes-source.json et hors
 // collection du joueur de référence. Icônes lues directement dans
 // fetchCards() (iconUrls.evolutionMedium / heroMedium y sont exposées).
 const EXTRA_ENTRIES = [
@@ -114,15 +113,12 @@ async function loadExistingCatalog() {
 }
 
 async function main() {
-  const anagrams = JSON.parse(await fs.readFile(ANAGRAMS_JSON_PATH, "utf-8"));
+  const seedCardKeys = JSON.parse(await fs.readFile(SOURCE_CARDS_PATH, "utf-8"));
   const cardNames = JSON.parse(await fs.readFile(CARD_NAMES_PATH, "utf-8"));
   const frByCardKey = new Map(cardNames.map((c) => [c.cardKey, c.fr]));
 
-  // Le pool de cartes = les cardKey uniques d'anagrams.json ; le NOM, lui,
-  // vient toujours de cardNames.json (source de vérité), jamais du champ
-  // answer/accept d'anagrams.json directement.
-  const seedCardKeys = [...new Set(anagrams.map((a) => a.cardKey))];
-  console.log(`Cartes sources (cardKey uniques d'anagrams.json) : ${seedCardKeys.length}`);
+  // Le NOM vient toujours de cardNames.json (source de vérité).
+  console.log(`Cartes sources (cartes-source.json) : ${seedCardKeys.length}`);
 
   const [catalog, referencePlayer] = await Promise.all([
     fetchCards(),
@@ -227,7 +223,7 @@ async function main() {
   }
 
   // Purge : toute entrée existante dont le cardKey n'est plus dans le pool
-  // source (ex. carte retirée d'anagrams.json) est supprimée, fichier image
+  // source (ex. carte retirée de cartes-source.json) est supprimée, fichier image
   // compris — sûr tant qu'aucune manche Zoom n'a encore été postée.
   const pruned = existingCatalog.filter((e) => !keptIds.has(e.id));
   for (const entry of pruned) {
@@ -238,7 +234,7 @@ async function main() {
   // Préserve l'ordre PHYSIQUE existant du fichier (jamais retrié
   // alphabétiquement) : la position de chaque carte dans data/zoom/zoom.json
   // détermine l'ordre de passage des manches (pickNextZoomIndex,
-  // jeux/services/zoom.js, même principe que Frame/Anagram) — le fichier
+  // jeux/services/zoom.js, même principe que Frame) — le fichier
   // a été mélangé une fois manuellement, un tri alphabétique le rendrait de
   // nouveau totalement prévisible. Les cartes nouvellement ajoutées (jamais
   // vues dans l'ancien fichier) sont insérées dans un ordre aléatoire plutôt

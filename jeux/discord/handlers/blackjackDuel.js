@@ -35,13 +35,13 @@ import {
 } from "../../services/blackjackDuel.js";
 import { encodeFin, encodeMain, encodeManche, meilleureMain } from "../../services/blackjackImage.js";
 
-const TRUST_ROYALE_URL = "https://trustroyale.vercel.app";
 import {
   getRoleIdByName,
   MINI_JEUX_ROLE_NAME,
 } from "@clash/commun/discordRoles.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 import { rangExAequo } from "@clash/commun/classement.js";
+import { URL_JEUX } from "../../services/urlJeux.js";
 
 const BLACKJACKDUEL_COLOR = 0x2ecc71;
 // « 2 minutes » : délai d'abandon d'une partie sans action
@@ -303,7 +303,7 @@ async function urlImageManche(numero, results, dealer, isSolo, players = []) {
     mains = nommes.slice(0, 2).map(main);
   }
   const param = encodeManche({ titre: `Manche ${numero} : ${titre}`, mains });
-  return `${TRUST_ROYALE_URL}/api/blackjack/manche?d=${param}`;
+  return `${URL_JEUX}/api/blackjack/manche?d=${param}`;
 }
 
 async function buildTableEmbed(
@@ -383,7 +383,7 @@ async function urlImageFin(state, ranking) {
     }),
   );
   const param = encodeFin({ joueurs, totalManches: state.totalManches });
-  return `${TRUST_ROYALE_URL}/api/blackjack/fin?d=${param}`;
+  return `${URL_JEUX}/api/blackjack/fin?d=${param}`;
 }
 
 // Le détail des manches est dans l'image : le texte se limite au
@@ -553,7 +553,7 @@ function urlImageMain(state, hand) {
     croupier,
     legende: `Manche ${state.manche}/${state.totalManches}`,
   });
-  return `${TRUST_ROYALE_URL}/api/blackjack/main?d=${param}`;
+  return `${URL_JEUX}/api/blackjack/main?d=${param}`;
 }
 
 // Ligne de score sous le statut de la main : le sien seul contre

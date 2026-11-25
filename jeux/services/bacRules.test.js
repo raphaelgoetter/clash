@@ -58,7 +58,6 @@ assert.strictEqual(valider("villes", "R", "La Rochelle").ok, true); // sans l'ar
 assert.strictEqual(valider("villes", "L", "La Rochelle").ok, true); // avec
 assert.strictEqual(valider("villes", "H", "Le Havre").ok, true);
 assert.strictEqual(valider("prenoms", "J", "jean-pierre").ok, true);
-assert.strictEqual(valider("clash", "B", "Bébé dragon").ok, true);
 assert.strictEqual(valider("fruits", "P", "Pommes").ok, true);
 assert.strictEqual(valider("metiers", "B", "boulanger").ok, true);
 assert.strictEqual(valider("sports", "T", "tennis").ok, true);

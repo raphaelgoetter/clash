@@ -1,11 +1,11 @@
 // ============================================================
 // cardImage.js — Rendu des cartes Clash Royale (illustration officielle,
-// goutte d'élixir facultative) pour les jeux de cartes (Bang!, voir
-// bangImage.js). Même technique que pelemeleImage.js / zoomImage.js : SVG
+// goutte d'élixir facultative) pour les jeux de cartes (Mascarade et Qui
+// est-ce ?, archivés). Même technique que pelemeleImage.js / zoomImage.js : SVG
 // généré à la volée, rastérisé en PNG via @resvg/resvg-js.
 //
-// Illustrations : `iconUrls.medium` de l'API Clash Royale (fetchCards, même
-// cache partagé "clashCardDefinitions" que lajustecarte.js), téléchargées
+// Illustrations : `iconUrls.medium` de l'API Clash Royale (fetchCards, cache
+// partagé "clashCardDefinitions"), téléchargées
 // puis intégrées en data URL (resvg ne charge aucune ressource distante).
 //
 // ⚠️ Police embarquée obligatoire (voir pelemeleImage.js) : aucune police

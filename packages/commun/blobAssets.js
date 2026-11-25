@@ -6,7 +6,7 @@
 // Pourquoi : une Vercel Function n'a aucun accès au dépôt Git au runtime,
 // seulement aux fichiers tracés dans son bundle au build (@vercel/nft). Les
 // lectures dynamiques (fs.readFile avec un nom de fichier venu d'un
-// catalogue JSON, comme dans paletteImage.js/zoomImage.js) forcent le
+// catalogue JSON, comme dans zoomImage.js) forcent le
 // traceur à embarquer le RÉPERTOIRE ENTIER — jeux/data/jeux-visuels/ pèse à lui
 // seul 38 Mo, réembarqués à CHAQUE déploiement retenu (30j vivant + 30j de
 // récupération après suppression). Cause principale du dépassement de
@@ -15,7 +15,7 @@
 // data/ (source de vérité), Blob n'en est qu'une copie servie au runtime.
 //
 // Access "private" (même convention que championPredictions.js) : pas
-// juste un choix, une NÉCESSITÉ pour Palette/Zoom — ces images sont
+// juste un choix, une NÉCESSITÉ pour les jeux visuels — ces images sont
 // anti-spoiler, une URL publique devinable exposerait la réponse avant
 // résolution de la manche.
 //
