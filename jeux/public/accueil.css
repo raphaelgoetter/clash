@@ -1,0 +1,489 @@
+/* Page d'accueil publique de Kévina : un seul fond, aucune bordure, grands
+   textes ; la couleur vient des titres, des emojis et des jours. */
+
+:root {
+  --fond: #fbf8f1;
+  --texte: #1d2340;
+  --doux: #555c7a;
+  --bleu: #1f8fa3;
+  --jaune: #b07800;
+  --corail: #e5534b;
+  --violet: #7356e8;
+  --vert: #2f9e5b;
+  --titre: "Fredoka", system-ui, sans-serif;
+  --corps: "Nunito", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #141830;
+    --texte: #f3f1ea;
+    --doux: #b7bbd4;
+    --bleu: #5cc8d9;
+    --jaune: #ffc93c;
+    --corail: #ff7a72;
+    --violet: #a48dff;
+    --vert: #5fd18e;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  /* La galerie pleine largeur (100vw) ne doit pas créer de défilement
+     horizontal de la page à cause de la barre de défilement verticale. */
+  overflow-x: clip;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--corps);
+  font-size: clamp(1.15rem, 1rem + 0.6vw, 1.4rem);
+  line-height: 1.55;
+}
+
+main {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+h1,
+h2,
+strong {
+  font-family: var(--titre);
+  font-weight: 600;
+}
+
+h1,
+h2 {
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: clamp(2.2rem, 1.6rem + 2.6vw, 3.6rem);
+}
+
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+  color: var(--violet);
+  font-weight: 600;
+}
+
+/* ── Accueil ─────────────────────────────────────────────── */
+
+.hero {
+  min-height: min(92svh, 52rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 0 2rem;
+}
+
+.hero-avatar {
+  width: clamp(9rem, 7rem + 10vw, 14rem);
+  height: auto;
+  border-radius: 50%;
+  animation: flotte 4s ease-in-out infinite;
+}
+
+.hero-hello {
+  margin: 1.5rem 0 0.5rem;
+  font-family: var(--titre);
+  font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2rem);
+  color: var(--bleu);
+  font-weight: 600;
+}
+
+.hero-title {
+  font-size: clamp(2.8rem, 1.6rem + 5.5vw, 6rem);
+  font-weight: 700;
+  max-width: 14ch;
+}
+
+.hero-verbe {
+  display: inline-block;
+  color: var(--corail);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.hero-verbe.sort {
+  opacity: 0;
+  transform: translateY(0.3em);
+}
+
+.hero-lead {
+  max-width: 30ch;
+  margin: 1.5rem auto 2.25rem;
+  font-size: clamp(1.3rem, 1.1rem + 0.9vw, 1.75rem);
+  color: var(--doux);
+}
+
+.bouton {
+  display: inline-block;
+  padding: 0.85em 1.7em;
+  border-radius: 999px;
+  background: var(--texte);
+  color: var(--fond);
+  font-family: var(--titre);
+  font-size: clamp(1.2rem, 1.05rem + 0.6vw, 1.5rem);
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.bouton:hover,
+.bouton:focus-visible {
+  transform: translateY(-3px) rotate(-1.5deg);
+}
+
+.bouton:focus-visible {
+  outline: 3px solid var(--bleu);
+  outline-offset: 4px;
+}
+
+/* ── Sections ────────────────────────────────────────────── */
+
+.section,
+.final {
+  padding: clamp(4rem, 3rem + 5vw, 7.5rem) 0 0;
+}
+
+.section-emoji {
+  margin: 0 0 0.5rem;
+  font-size: clamp(3rem, 2.4rem + 2.5vw, 4.5rem);
+  line-height: 1;
+}
+
+.section-lead {
+  max-width: 38ch;
+  margin: 1rem 0 2.5rem;
+  font-size: clamp(1.25rem, 1.1rem + 0.7vw, 1.6rem);
+  color: var(--doux);
+}
+
+.section-lead strong {
+  color: var(--texte);
+}
+
+/* Semaine : une grande ligne par soirée, couleur du jour. */
+
+.semaine {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.75rem;
+}
+
+.jour {
+  display: grid;
+  grid-template-columns: 9.5rem 3.5rem 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.jour-nom {
+  font-family: var(--titre);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 1.3rem + 1vw, 2.2rem);
+}
+
+.jour-lundi .jour-nom { color: var(--violet); }
+.jour-mardi .jour-nom { color: var(--corail); }
+.jour-mercredi .jour-nom { color: var(--jaune); }
+.jour-vendredi .jour-nom { color: var(--bleu); }
+.jour-samedi .jour-nom { color: var(--vert); }
+
+.jour-emoji {
+  font-size: 2.6rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.jour-texte {
+  color: var(--doux);
+}
+
+.jour-texte strong {
+  display: block;
+  color: var(--texte);
+  font-size: 1.25em;
+}
+
+/* Duels et aventures : grilles aérées, sans cadre. */
+
+.duels,
+.aventures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2.5rem 2rem;
+}
+
+.duels {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+}
+
+.duel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.duel strong {
+  font-size: 1.4em;
+}
+
+.duel span:not(.duel-emoji) {
+  color: var(--doux);
+}
+
+.duel-emoji,
+.aventure-emoji {
+  display: inline-block;
+  width: max-content;
+  font-size: 3.2rem;
+  line-height: 1.2;
+  transition: transform 0.25s ease;
+}
+
+.duel:hover .duel-emoji,
+.aventure:hover .aventure-emoji {
+  transform: rotate(-12deg) scale(1.15);
+}
+
+.aventures {
+  grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
+}
+
+.aventure {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1rem;
+}
+
+.aventure strong {
+  font-size: 1.4em;
+}
+
+.aventure p {
+  margin: 0.15rem 0 0;
+  color: var(--doux);
+}
+
+/* Galerie : bandeau pleine largeur d'écran, collé au bord gauche dès le
+   départ. Images à hauteur fixe et largeur naturelle ; chaque arrêt de
+   défilement cale une image sur le bord gauche (scroll-snap). */
+
+.galerie-piste {
+  list-style: none;
+  width: 100vw;
+  margin: 0 0 0 calc(50% - 50vw);
+  padding: 0 0 1rem;
+  display: flex;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+/* En-tête de la galerie centré (emoji, titre, texte). */
+.galerie {
+  text-align: center;
+}
+
+.galerie .section-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.galerie-item {
+  text-align: left;
+}
+
+.galerie-piste::-webkit-scrollbar {
+  display: none;
+}
+
+.galerie-piste:focus-visible {
+  outline: 3px solid var(--bleu);
+  outline-offset: 6px;
+  border-radius: 1rem;
+}
+
+.galerie-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.galerie-item img {
+  display: block;
+  width: auto;
+  height: clamp(14rem, 9rem + 14vw, 24rem);
+  max-width: 92vw;
+  object-fit: contain;
+  object-position: left top;
+}
+
+.galerie-item p {
+  max-width: 24rem;
+  margin: 1rem 0 0;
+  padding-left: 0.25rem;
+  color: var(--doux);
+}
+
+.galerie-item strong {
+  display: block;
+  color: var(--texte);
+  font-size: 1.25em;
+}
+
+.galerie-nav {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.galerie-bouton {
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--texte);
+  color: var(--fond);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.galerie-bouton:hover,
+.galerie-bouton:focus-visible {
+  transform: scale(1.08);
+}
+
+.galerie-bouton:focus-visible {
+  outline: 3px solid var(--bleu);
+  outline-offset: 3px;
+}
+
+.galerie-bouton:disabled {
+  opacity: 0.25;
+  cursor: default;
+  transform: none;
+}
+
+/* Passeport */
+
+.tampons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin: 0;
+  font-size: clamp(2.6rem, 2rem + 2.5vw, 4rem);
+  line-height: 1;
+}
+
+.tampons span {
+  display: inline-block;
+}
+
+.tampons span:nth-child(odd) { transform: rotate(-8deg); }
+.tampons span:nth-child(even) { transform: rotate(6deg); }
+
+/* Appel final */
+
+.final {
+  text-align: center;
+  padding-bottom: 2rem;
+}
+
+.final h2 {
+  font-size: clamp(2.6rem, 1.8rem + 4vw, 5rem);
+}
+
+.final .section-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pied {
+  padding: 4rem 1.25rem 3rem;
+  text-align: center;
+  color: var(--doux);
+  font-size: 1rem;
+}
+
+/* ── Animations ──────────────────────────────────────────── */
+
+@keyframes flotte {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-avatar { animation: none; }
+  .hero-verbe,
+  .bouton,
+  .duel-emoji,
+  .aventure-emoji { transition: none; }
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+
+@media (max-width: 40rem) {
+  .jour {
+    grid-template-columns: 3rem 1fr;
+    grid-template-areas:
+      "emoji nom"
+      "emoji texte";
+    column-gap: 0.9rem;
+    row-gap: 0;
+  }
+
+  .jour-nom { grid-area: nom; }
+  .jour-emoji { grid-area: emoji; font-size: 2.2rem; }
+  .jour-texte { grid-area: texte; }
+
+  .aventures {
+    grid-template-columns: 1fr;
+  }
+
+  /* Duels en lignes (emoji à gauche) pour raccourcir la page. */
+  .duels {
+    gap: 1.75rem;
+  }
+
+  .duel {
+    display: grid;
+    grid-template-columns: 3.4rem 1fr;
+    column-gap: 1.1rem;
+    row-gap: 0.1rem;
+  }
+
+  .duel-emoji {
+    grid-row: span 3;
+    font-size: 2.8rem;
+  }
+
+  .hero {
+    min-height: min(85svh, 44rem);
+  }
+}

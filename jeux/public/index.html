@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kévina, le bot de jeux Discord</title>
+    <meta name="description" content="Mini-jeux chaque semaine, aventures de 7 jours et duels à toute heure : viens jouer avec Kévina sur Discord." />
+    <meta property="og:title" content="Kévina, le bot de jeux Discord" />
+    <meta property="og:description" content="Mini-jeux chaque semaine, aventures de 7 jours et duels à toute heure." />
+    <meta property="og:image" content="https://kevina-jeux.vercel.app/kevina.png" />
+    <meta property="og:url" content="https://kevina-jeux.vercel.app/" />
+    <meta name="theme-color" content="#fbf8f1" />
+    <link rel="icon" type="image/png" href="/kevina.png" />
+    <link rel="apple-touch-icon" href="/kevina.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="/accueil.css" />
+    <script src="/accueil.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <!-- Accueil -->
+      <header class="hero">
+        <img class="hero-avatar" src="/kevina.png" alt="Kévina, un petit robot bleu aux grands yeux" width="256" height="256" />
+        <p class="hero-hello">Salut, moi c'est Kévina&nbsp;!</p>
+        <h1 class="hero-title">
+          Ton bot pour
+          <span class="hero-verbe" id="verbe">deviner</span>
+          sur Discord.
+        </h1>
+        <p class="hero-lead">Des mini-jeux chaque semaine, des aventures de 7 jours et des duels quand tu veux.</p>
+        <a class="bouton" href="https://discord.gg/kPdQN8zfjM">Viens jouer sur Discord</a>
+      </header>
+
+      <!-- Galerie : vrais rendus des jeux (joueurs fictifs) -->
+      <section class="section galerie" aria-labelledby="titre-galerie">
+        <p class="section-emoji" aria-hidden="true">🖼️</p>
+        <h2 id="titre-galerie">Un aperçu des parties</h2>
+        <p class="section-lead">Chaque partie se joue avec des boutons, et je dessine le plateau à chaque coup.</p>
+
+        <div class="galerie-cadre">
+          <ul class="galerie-piste" id="galerie" tabindex="0" aria-label="Images de parties, faire défiler horizontalement">
+            <li class="galerie-item"><img src="/images/galerie/robinson.webp" alt="Plateau de Robinson : météo du jour, prévision de demain, réserves de poisson, d'eau et de bois, radeau à 31 planches sur 40" width="900" height="600" loading="lazy" /><p><strong>Robinson</strong> Jour 5, le radeau avance.</p></li>
+            <li class="galerie-item"><img src="/images/galerie/marioclash.webp" alt="Plateau de Mario Clash : sept pions sur une piste en serpentin de 48 cases, avec bonus, pièges et coffres" width="840" height="840" loading="lazy" /><p><strong>Mario Clash</strong> La course est serrée en tête.</p></li>
+            <li class="galerie-item"><img src="/images/galerie/quatre.webp" alt="Grille de Quatre à la suite : quatre pions bleus alignés en diagonale" width="600" height="616" loading="lazy" /><p><strong>Quatre à la suite</strong> Victoire en diagonale.</p></li>
+            <li class="galerie-item"><img src="/images/galerie/pont.webp" alt="Pont du Troll : un pont de pierre et un pont de cordes au-dessus d'un ravin où guette un troll" width="900" height="600" loading="lazy" /><p><strong>Pont du Troll</strong> Pierre ou cordes&nbsp;? Choisis bien.</p></li>
+            <li class="galerie-item"><img src="/images/galerie/frise.webp" alt="Frise chronologique de huit événements, de la mort de Cléopâtre au lancement de Wikipédia" width="800" height="560" loading="lazy" /><p><strong>Frise</strong> Mai 68, bien placé&nbsp;!</p></li>
+            <li class="galerie-item"><img src="/images/galerie/blackjack.webp" alt="Main de Blackjack : as et roi contre 20 pour le Croupier" width="600" height="702" loading="lazy" /><p><strong>Blackjack</strong> 21 contre 20, de justesse.</p></li>
+            <li class="galerie-item"><img src="/images/galerie/potato.webp" alt="Potato : thermomètre à 95 degrés, la patate siffle" width="500" height="380" loading="lazy" /><p><strong>Potato</strong> 95°, elle siffle&hellip;</p></li>
+            <li class="galerie-item"><img src="/images/galerie/gobelet.webp" alt="Gobelet : cinq dés formant un Full, grille des combinaisons" width="600" height="740" loading="lazy" /><p><strong>Gobelet</strong> Un Full à 35 points.</p></li>
+            <li class="galerie-item"><img src="/images/galerie/pendu.webp" alt="Pendu en 1v1 : le mot GIRAFE trouvé, Kévina pendue" width="700" height="518" loading="lazy" /><p><strong>Pendu</strong> Cette fois, j'ai perdu.</p></li>
+          </ul>
+          <div class="galerie-nav">
+            <button type="button" class="galerie-bouton" data-sens="-1" aria-controls="galerie" aria-label="Image précédente">←</button>
+            <button type="button" class="galerie-bouton" data-sens="1" aria-controls="galerie" aria-label="Image suivante">→</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mini-jeux hebdomadaires -->
+      <section class="section" aria-labelledby="titre-semaine">
+        <p class="section-emoji" aria-hidden="true">📅</p>
+        <h2 id="titre-semaine">Un rendez-vous presque chaque soir</h2>
+        <p class="section-lead">Une manche par semaine, à <strong class="heure" data-heure-utc="18">19h</strong>, et un classement chaque mois. Les deux jeux de chaque soirée alternent de mois en mois.</p>
+
+        <ol class="semaine">
+          <li class="jour jour-lundi">
+            <span class="jour-nom">Lundi</span>
+            <span class="jour-emoji" aria-hidden="true">🎮</span>
+            <span class="jour-texte"><strong>Culture geek</strong> Trivia Geek ou l'Intrus de l'inventaire</span>
+          </li>
+          <li class="jour jour-mardi">
+            <span class="jour-nom">Mardi</span>
+            <span class="jour-emoji" aria-hidden="true">⚔️</span>
+            <span class="jour-texte"><strong>Clash</strong> Trivia ou Zoom carte</span>
+          </li>
+          <li class="jour jour-mercredi">
+            <span class="jour-nom">Mercredi</span>
+            <span class="jour-emoji" aria-hidden="true">🎬</span>
+            <span class="jour-texte"><strong>Ciné-club</strong> Synopsis éclaté ou Trouve le film</span>
+          </li>
+          <li class="jour jour-vendredi">
+            <span class="jour-nom">Vendredi</span>
+            <span class="jour-emoji" aria-hidden="true">📸</span>
+            <span class="jour-texte"><strong>Coup d'œil</strong> Zoom logo ou Plat Pays</span>
+          </li>
+          <li class="jour jour-samedi">
+            <span class="jour-nom">Samedi</span>
+            <span class="jour-emoji" aria-hidden="true">🔤</span>
+            <span class="jour-texte"><strong>Jeux de mots</strong> Concept ou Pêle-mêle</span>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Duels -->
+      <section class="section" aria-labelledby="titre-duels">
+        <p class="section-emoji" aria-hidden="true">🤖</p>
+        <h2 id="titre-duels">Défie-moi quand tu veux</h2>
+        <p class="section-lead">Neuf duels, contre moi ou contre un autre joueur. Tape la commande, je m'occupe du reste.</p>
+
+        <ul class="duels">
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">🎲</span><strong>La Grille</strong><span>Pose tes dés, détruis les miens.</span><code>/grille</code></li>
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">🔴</span><strong>Quatre à la suite</strong><span>Aligne 4 pions avant moi.</span><code>/quatre</code></li>
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">🟦</span><strong>Punto</strong><span>Aligne 4 tuiles d'une couleur.</span><code>/punto</code></li>
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">⏳</span><strong>Frise</strong><span>Range l'histoire dans l'ordre.</span><code>/frise</code></li>
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">🥔</span><strong>Potato</strong><span>Ne fais pas exploser la patate.</span><code>/potato</code></li>
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">✏️</span><strong>Petit Bac</strong><span>Un thème, une lettre, une minute.</span><code>/bac</code></li>
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">🪢</span><strong>Pendu</strong><span>Trouve le mot, seul ou à deux.</span><code>/pendu</code></li>
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">🃏</span><strong>Blackjack</strong><span>Approche-toi de 21.</span><code>/blackjack</code></li>
+          <li class="duel"><span class="duel-emoji" aria-hidden="true">🥤</span><strong>Gobelet</strong><span>Les meilleures combinaisons de dés.</span><code>/gobelet</code></li>
+        </ul>
+      </section>
+
+      <!-- Jeux spéciaux -->
+      <section class="section" aria-labelledby="titre-aventures">
+        <p class="section-emoji" aria-hidden="true">🗺️</p>
+        <h2 id="titre-aventures">Des aventures de 7 jours</h2>
+        <p class="section-lead">Régulièrement, un grand jeu occupe toute la semaine : un choix par jour, et tout se joue au bout du 7<sup>e</sup>.</p>
+
+        <ul class="aventures">
+          <li class="aventure"><span class="aventure-emoji" aria-hidden="true">🏝️</span><div><strong>Robinson</strong><p>Tous ensemble, construisez le radeau avant le tsunami.</p></div></li>
+          <li class="aventure"><span class="aventure-emoji" aria-hidden="true">🧌</span><div><strong>Pont du Troll</strong><p>Choisis ton pont en secret. Le troll attrape le plus chargé.</p></div></li>
+          <li class="aventure"><span class="aventure-emoji" aria-hidden="true">👺</span><div><strong>Goblin Hunters</strong><p>Des gobelins se cachent parmi les villageois. Démasque-les.</p></div></li>
+          <li class="aventure"><span class="aventure-emoji" aria-hidden="true">🐈</span><div><strong>Meow</strong><p>Trois bandes de chats se disputent la maison.</p></div></li>
+          <li class="aventure"><span class="aventure-emoji" aria-hidden="true">🏎️</span><div><strong>Mario Clash</strong><p>Une course folle sur un plateau de 49 cases.</p></div></li>
+          <li class="aventure"><span class="aventure-emoji" aria-hidden="true">❓</span><div><strong>Quiz</strong><p>Une question par jour sur un même thème.</p></div></li>
+          <li class="aventure"><span class="aventure-emoji" aria-hidden="true">🃏</span><div><strong>Blackjack</strong><p>Deux mains par jour pour battre le Croupier.</p></div></li>
+          <li class="aventure"><span class="aventure-emoji" aria-hidden="true">🎲</span><div><strong>Gobelet</strong><p>Cinq dés, trois lancers, la meilleure combinaison.</p></div></li>
+        </ul>
+      </section>
+
+      <!-- Passeport et Boss -->
+      <section class="section section-boss" aria-labelledby="titre-boss">
+        <p class="section-emoji" aria-hidden="true">🛂</p>
+        <h2 id="titre-boss">Remplis ton passeport, affronte le Boss</h2>
+        <p class="section-lead">Chaque mois, cinq tampons à gagner en jouant&nbsp;: mini-jeux, manches, victoires contre moi, aventure et quête du mois. Passeport complet&nbsp;? Tu m'affrontes en Boss, en une seule tentative.</p>
+        <p class="tampons" aria-hidden="true"><span>🧩</span><span>🔁</span><span>🤖</span><span>🗺️</span><span>⭐</span></p>
+      </section>
+
+      <!-- Appel final -->
+      <section class="final" aria-labelledby="titre-final">
+        <h2 id="titre-final">Alors, on joue&nbsp;?</h2>
+        <p class="section-lead">Rejoins le serveur, prends le rôle <strong>MINI-JEUX</strong> et tape <code>/mini-jeux</code> pour voir tout ce qui est en cours.</p>
+        <a class="bouton" href="https://discord.gg/kPdQN8zfjM">Rejoindre le serveur</a>
+      </section>
+    </main>
+
+    <footer class="pied">
+      <p>Kévina est un bot de jeux fait avec ❤️, en français.</p>
+    </footer>
+  </body>
+</html>
