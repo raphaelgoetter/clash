@@ -458,8 +458,8 @@ async function avatarsDesBots() {
   }
 }
 
-// Image jointe au message (`attachment://`), grille comme illustration,
-// comme le plateau de Bang! : confiée par URL, le proxy de Discord dépasse
+// Image jointe au message (`attachment://`), grille comme illustration :
+// confiée par URL, le proxy de Discord dépasse
 // parfois son délai et affiche le message sans image (constaté sur Meow le
 // 16/10 : illustration perdue à la réédition de l'annonce). Repli sur l'URL
 // si le téléchargement échoue.

@@ -1,4 +1,4 @@
-// Simulation d'équilibrage de La Grille sur les vraies règles
+// Simulation d'équilibrage de Bang! sur les vraies règles
 // (jeux/services/grilleRules.js) : profils hasard ou glouton (Kévina).
 // Usage : node jeux/outils/grille/simulateDuel.mjs [parties] [profilJoueur] [profilBot]
 // ex. : node jeux/outils/grille/simulateDuel.mjs 20000 hasard glouton

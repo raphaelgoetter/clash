@@ -1,8 +1,8 @@
 // ============================================================
-// bossGrille.js — La Grille en Boss de fin de saison (boss.js), interface
+// bossGrille.js — Bang! en Boss de fin de saison (boss.js), interface
 // commune décrite dans bossQuatre.js. Règles pures (grilleRules.js).
 //
-// Donne commune : le seul hasard de La Grille est le lancer de dé (Kévina
+// Donne commune : le seul hasard de Bang! est le lancer de dé (Kévina
 // joue en glouton, déterministe). Le n-ième dé lancé de la partie vient de
 // rngBossDe(graine, "de:n") : n = 0 pour le premier dé (creer), puis n =
 // nombre de coups joués après la pose qui déclenche le lancer. Les dés ne
@@ -30,7 +30,7 @@ const ecart = (d) => scoreGrille(d.grilles.joueur) - scoreGrille(d.grilles.bot);
 
 export const BOSS_GRILLE = {
   jeu: "grille",
-  nom: "La Grille",
+  nom: "Bang!",
   chargerConfig: loadDuelConfig,
   creer: ({ graine }) => creerDuel({ commence: "joueur", rng: rngDe(graine, 0) }),
   // `action` : { colonne } (0 gauche, 1 centre, 2 droite).

@@ -2,7 +2,7 @@
 // quiestceImage.js — Images de Qui est-ce ? : la grille des cartes de la
 // partie, publique (message officiel) ou personnelle (fiche d'enquête :
 // cartes incompatibles grisées et barrées, cible éventuellement trouvée).
-// Même technique que bangImage.js : SVG généré à la volée, rastérisé en PNG
+// Même technique que marioclashImage.js : SVG généré à la volée, rastérisé en PNG
 // via @resvg/resvg-js ; dessin des cartes (illustration officielle) partagé
 // via cardImage.js, sans goutte d'élixir.
 //
@@ -111,8 +111,8 @@ export async function getIllustrationImage() {
 // ── Tableau des enquêtes (message officiel) ──────────────────────────
 // Pensé pour mobile (image réduite à ~360 px de large par Discord) : deux
 // colonnes de vignettes horizontales, dans l'ordre du classement, avec peu
-// d'informations en gros : rang, avatar Discord (créature « Clay » de
-// Bang! à défaut), pseudo, points suivis de deux pictos (viseur : cibles
+// d'informations en gros : rang, avatar Discord (créature « Clay »
+// à défaut), pseudo, points suivis de deux pictos (viseur : cibles
 // démasquées ; masque : fois démasqué), flèche vers l'avatar de sa cible ;
 // voile de brume sous Brouillard. Aucune carte secrète n'y figure.
 // État passé dans l'URL, compressé (deflate + base64url, voir

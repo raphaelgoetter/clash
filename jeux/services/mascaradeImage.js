@@ -4,7 +4,7 @@
 // l'ordre, en noir et blanc (la dernière jouée encadrée) et, dans la vue
 // d'un joueur seulement, sa main (et la carte vue par ses Squelettes). Chaque carte montre son illustration officielle et
 // son coût en élixir (sa valeur dans le jeu).
-// Même technique que quiestceImage.js / bangImage.js : SVG généré à la
+// Même technique que quiestceImage.js : SVG généré à la
 // volée, rastérisé en PNG via @resvg/resvg-js ; dessin des cartes partagé
 // via cardImage.js.
 //

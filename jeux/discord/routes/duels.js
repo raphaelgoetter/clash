@@ -1,4 +1,4 @@
-// Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /grille,
+// Duels autonomes (1 ou 2 joueurs) : /blackjack, /gobelet, /bang,
 // /quatre, /punto, /frise, /potato, /bac, /pendu, Mascarade (archivé, commande
 // retirée : seuls les boutons des duels en cours restent routés) et leurs
 // boutons (blackjackduel_*, gobeletduel_*, grilleduel_*, quatreduel_*, puntoduel_*,
@@ -161,10 +161,11 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── /grille adversaire:bot : La Grille contre Kévina (plateau public,
+  // ── /bang adversaire:bot : Bang! contre Kévina (plateau public,
   // boutons dans une vue éphémère) ; adversaire:1v1 : contre un joueur (message public). Réservé
   // au rôle MINI-JEUX pour lancer, même principe que /blackjack ci-dessus.
-  if (body.type === 2 && body.data?.name === "grille") {
+  // /grille (ancien nom) reste accepté tant que les commandes ne sont pas réenregistrées.
+  if (body.type === 2 && ["bang", "grille"].includes(body.data?.name)) {
     const pvp = body.data.options?.find((o) => o.name === "adversaire")?.value === "1v1";
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
@@ -180,7 +181,7 @@ export async function routeDuels(body, res) {
     return;
   }
 
-  // ── La Grille : composants. grilleduel_poser:<colonne>[:pvp] édite la vue en
+  // ── Bang! : composants. grilleduel_poser:<colonne>[:pvp] édite la vue en
   // place ; grilleduel_ouvrir (Jouer du message public 1v1) et
   // grilleduel_regles : nouvel éphémère.
   if (body.type === 3 && typeof body.data?.custom_id === "string" && body.data.custom_id.startsWith("grilleduel_")) {

@@ -8,7 +8,7 @@
 // (grille, joueurs, enquêtes, journal) sous verrou, clôture quotidienne,
 // manches.
 //
-// Stockage : Upstash Redis (mêmes conventions que bang.js) — espace de clés
+// Stockage : Upstash Redis (mêmes conventions que les autres jeux spéciaux) — espace de clés
 // `quiestce:*`. Toute la partie tient dans une seule clé, lue et réécrite
 // sous verrou à chaque action.
 //
@@ -240,7 +240,7 @@ export function isTooSoonSinceLastClosure(publishedAt, now = Date.now()) {
   return (now - new Date(publishedAt).getTime()) / 3_600_000 < MIN_HOURS_BETWEEN_CLOSURES;
 }
 
-// ── Manches (comparaison entre parties, comme bang.js) ──────────────
+// ── Manches (comparaison entre parties) ──────────────
 
 export async function archiveManche(record) {
   const manche = Number(await getRedis().incr(MANCHE_SEQ_KEY));

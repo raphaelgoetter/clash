@@ -1,5 +1,5 @@
 // ============================================================
-// boss/grille.js — Vue de La Grille en Boss de fin de saison (handler
+// boss/grille.js — Vue de Bang! en Boss de fin de saison (handler
 // boss.js), interface commune décrite dans boss/quatre.js. Même plateau et
 // mêmes boutons que le duel contre Kévina (grilleDuel.js), sans bouton
 // Règles ni explosions animées (le récit du coup suffit).

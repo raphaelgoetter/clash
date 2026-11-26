@@ -1,11 +1,11 @@
 // ============================================================
-// grilleDuel.js (handler) — La Grille (`/grille`), deux modes :
-// - contre Kévina, le bot (`/grille adversaire:bot`) : plateau public
+// grilleDuel.js (handler) — Bang! (`/bang`), deux modes :
+// - contre Kévina, le bot (`/bang adversaire:bot`) : plateau public
 //   dans le salon (suivi par tous) et vue éphémère du joueur (plateau et
 //   boutons), édités en place à chaque coup ; Kévina pose son dé aussitôt
 //   après le joueur ; résultat publié dans un nouveau message en fin de
 //   partie ;
-// - 1v1 (`/grille adversaire:1v1`) : message public dans le salon (bouton
+// - 1v1 (`/bang adversaire:1v1`) : message public dans le salon (bouton
 //   Jouer dans le lobby seulement : rejoindre ; plateaux visibles de tous) et
 //   une vue éphémère par joueur, rééditée après chaque coup adverse (webhook
 //   mémorisé, valable 15 min, renouvelé à chaque coup du joueur). Une seule partie à la
@@ -108,9 +108,9 @@ async function patchOriginal(webhookUrl, payload) {
       }),
     });
     // Refus de Discord (vue invalide, jeton expiré) : sinon le clic reste sans effet visible
-    if (!res.ok) console.error(`[Grille] PATCH refusé (${res.status}) :`, (await res.text()).slice(0, 300));
+    if (!res.ok) console.error(`[Bang] PATCH refusé (${res.status}) :`, (await res.text()).slice(0, 300));
   } catch (err) {
-    console.error("[Grille] Échec PATCH:", err.message);
+    console.error("[Bang] Échec PATCH:", err.message);
   }
 }
 
@@ -121,7 +121,7 @@ async function supprimerOriginal(webhookUrl) {
     const res = await fetch(urlMessage(webhookUrl), { method: "DELETE" });
     return res.ok;
   } catch (err) {
-    console.error("[Grille] Échec DELETE:", err.message);
+    console.error("[Bang] Échec DELETE:", err.message);
     return false;
   }
 }
@@ -138,13 +138,13 @@ async function envoyerEphemere(webhookUrl, payload) {
       body: JSON.stringify({ ...payload, flags: 64 }),
     });
     if (!res.ok) {
-      console.error(`[Grille] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
+      console.error(`[Bang] Followup refusé (${res.status}) :`, (await res.text()).slice(0, 300));
       return null;
     }
     const { id } = await res.json();
     return id ? `${webhookUrl}/messages/${id}` : null;
   } catch (err) {
-    console.error("[Grille] Échec followup:", err.message);
+    console.error("[Bang] Échec followup:", err.message);
     return null;
   }
 }
@@ -167,12 +167,12 @@ async function messageSalon(method, channelId, messageId, payload) {
         : {}),
     });
     if (!res.ok && res.status !== 404) {
-      console.warn(`[Grille] Échec ${method} du message public (${res.status}).`);
+      console.warn(`[Bang] Échec ${method} du message public (${res.status}).`);
       return null;
     }
     return method === "POST" ? await res.json() : {};
   } catch (err) {
-    console.warn(`[Grille] Erreur réseau (${method} message public):`, err.message);
+    console.warn(`[Bang] Erreur réseau (${method} message public):`, err.message);
     return null;
   }
 }
@@ -300,7 +300,7 @@ function vueFin(d, { moi, A, raison }) {
   return {
     embeds: [
       {
-        title: `▦ La Grille · ${titreFin(d, moi, A, raison)}`,
+        title: `💣 Bang! · ${titreFin(d, moi, A, raison)}`,
         description: `${fin} La partie est terminée, et ${issue}`,
         color: GRILLE_COLOR,
       },
@@ -333,7 +333,7 @@ function buildVue(
           ...(d.de && !grilles ? [`Dé ${A.de} : ${formatDie(d.de, ADV)}`] : []),
         ]),
   ];
-  const titre = `▦ La Grille · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
+  const titre = `💣 Bang! · ${pvp ? (monTour ? "À toi !" : `contre ${A.Sujet}`) : "contre Kévina"}`;
   const embed = { title: titre, description: lignes.join("\n").slice(0, 4096), color: GRILLE_COLOR };
   // Bouton Règles : sur le message public seulement (jamais en double)
   if (!monTour) return { embeds: [embed], components: [] };
@@ -357,7 +357,7 @@ function buildVue(
 
 function buildReglesEmbed(config) {
   return {
-    title: "📖 Règles de La Grille",
+    title: "📖 Règles de Bang!",
     description: [
       "Chaque joueur a 3 colonnes de 3 cases (gauche, centre, droite). Tes dés sont bleus, ceux de ton adversaire rouges.",
       "",
@@ -409,7 +409,7 @@ function messageSolo(d, pseudo, config, { grilles = null, actif = d.actif } = {}
   return {
     embeds: [
       {
-        title: `▦ La Grille · ${pseudo} contre Kévina`,
+        title: `💣 Bang! · ${pseudo} contre Kévina`,
         description: [
           actif === "bot"
             ? `⏳ Kévina réfléchit…${d.de && !grilles ? ` Dé à poser : ${formatDie(d.de, ADV)}` : ""}`
@@ -466,7 +466,7 @@ export async function handleGrilleCommand(webhookUrl, body) {
     // Premier coup jamais joué : partie close au délai
     await surveillerDelaiSolo(followup ?? webhookUrl, discordId, duel, config, { channelId: body.channel_id, pseudo: username });
   } catch (err) {
-    console.error("[Grille] Échec lancement:", err.message);
+    console.error("[Bang] Échec lancement:", err.message);
   }
 }
 
@@ -497,7 +497,7 @@ function messageFinalSolo(d, pseudo, highScore = null) {
   return {
     embeds: [
       {
-        title: `▦ La Grille · ${pseudo} contre Kévina`,
+        title: `💣 Bang! · ${pseudo} contre Kévina`,
         description: [
           resultat,
           "",
@@ -540,7 +540,7 @@ async function executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo 
     await patchOriginal(webhookUrl, {
       embeds: [
         {
-          description: "⏰ Aucune partie en cours. Relance `/grille` !",
+          description: "⏰ Aucune partie en cours. Relance `/bang` !",
           color: GRILLE_COLOR,
         },
       ],
@@ -619,7 +619,7 @@ function vuePvp(partie, config, discordId, texte = null, grilles = null) {
     return {
       embeds: [
         {
-          title: "▦ La Grille · 1v1",
+          title: "💣 Bang! · 1v1",
           description: [
             ...(texte ? [texte, ""] : []),
             "⏳ En attente d'un adversaire : le premier qui clique sur **Jouer** dans le salon relève le défi.",
@@ -649,8 +649,8 @@ function vuePvp(partie, config, discordId, texte = null, grilles = null) {
 const BOUTON_JOUER = {
   type: 2,
   style: 3,
-  // ▦ n'est pas un emoji Discord : refusé comme icône de bouton
   label: "Jouer",
+  emoji: { name: "💣" },
   custom_id: "grilleduel_ouvrir",
 };
 
@@ -666,7 +666,7 @@ function messagePublic(partie, config, grilles = null) {
     return {
       embeds: [
         {
-          title: "▦ La Grille · 1v1",
+          title: "💣 Bang! · 1v1",
           description: `${partie.noms?.[partie.lanceur] ?? "?"} lance un duel ! Qui relève le défi ? Clique sur **Jouer** pour l'affronter.`,
           color: GRILLE_COLOR,
         },
@@ -679,7 +679,7 @@ function messagePublic(partie, config, grilles = null) {
   return {
     embeds: [
       {
-        title: `▦ La Grille · ${nom("joueur")} contre ${nom("bot")}`,
+        title: `💣 Bang! · ${nom("joueur")} contre ${nom("bot")}`,
         // Plateau neutre à petits dés, suivi par le salon ; chaque joueur
         // joue depuis sa vue éphémère
         description: [
@@ -716,7 +716,7 @@ function messageFinal(partie) {
   return {
     embeds: [
       {
-        title: `▦ La Grille · ${titreGagnant(g, nom)}`,
+        title: `💣 Bang! · ${titreGagnant(g, nom)}`,
         description: [resultat, "", ...plateauPublic(d, nom("joueur"), nom("bot"))].join("\n").slice(0, 4096),
         color: GRILLE_COLOR,
       },
@@ -791,14 +791,14 @@ async function surveillerDelai(partie, config, discordId, webhookUrl) {
 const AUCUNE_PARTIE_PVP = {
   embeds: [
     {
-      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/grille` (1v1) !",
+      description: "⏰ Aucun duel 1v1 en cours. Lance-en un avec `/bang` (1v1) !",
       color: GRILLE_COLOR,
     },
   ],
   components: [],
 };
 
-// `/grille adversaire:1v1` : ouvre le lobby (message public), la réponse
+// `/bang adversaire:1v1` : ouvre le lobby (message public), la réponse
 // éphémère devient la vue du lanceur.
 export async function handleGrillePvpCommand(webhookUrl, body) {
   try {
@@ -819,7 +819,7 @@ export async function handleGrillePvpCommand(webhookUrl, body) {
     // Vue du lanceur SOUS le message public : réponse différée (créée dès
     // la commande, au-dessus) supprimée, vue renvoyée en followup, dont
     // l'URL est mémorisée pour les mises à jour. Repli : réponse différée.
-    const vue = vuePvp(r.partie, config, discordId, "▦ Défi lancé dans le salon !");
+    const vue = vuePvp(r.partie, config, discordId, "💣 Défi lancé dans le salon !");
     const followup = (await supprimerOriginal(webhookUrl)) ? await envoyerEphemere(webhookUrl, vue) : null;
     const { partie } = await agirPvp((p) => {
       memoriserWebhook(p, discordId, followup ?? webhookUrl);
@@ -829,7 +829,7 @@ export async function handleGrillePvpCommand(webhookUrl, body) {
     if (!followup) await patchOriginal(webhookUrl, aJour ?? vue);
     else if (aJour) await patchOriginal(followup, aJour);
   } catch (err) {
-    console.error("[Grille] Échec lancement 1v1:", err.message);
+    console.error("[Bang] Échec lancement 1v1:", err.message);
     await patchOriginal(webhookUrl, { content: "⚠️ Erreur lors du lancement du duel." });
   }
 }
@@ -860,7 +860,7 @@ export async function handleGrilleOuvrir(webhookUrl, body) {
     if (resultat.erreur) {
       const [a, b] = Object.values(partie.sieges);
       await patchOriginal(webhookUrl, {
-        content: `Ce duel oppose ${partie.noms[a]} et ${partie.noms[b]}. Lance le tien avec \`/grille\` (1v1) une fois qu'il est terminé !`,
+        content: `Ce duel oppose ${partie.noms[a]} et ${partie.noms[b]}. Lance le tien avec \`/bang\` (1v1) une fois qu'il est terminé !`,
       });
       return;
     }
@@ -880,7 +880,7 @@ export async function handleGrilleOuvrir(webhookUrl, body) {
     await supprimerOriginal(ancienneVue);
     await rattraperPvp(partie, config);
   } catch (err) {
-    console.error("[Grille] Échec Jouer 1v1:", err.message);
+    console.error("[Bang] Échec Jouer 1v1:", err.message);
   }
 }
 
@@ -917,7 +917,7 @@ export async function handleGrillePoser(webhookUrl, discordId, colonne, { pvp = 
     if (pvp) await executerPvp(webhookUrl, discordId, colonne);
     else await executerSolo(webhookUrl, discordId, colonne, { channelId, pseudo });
   } catch (err) {
-    console.error("[Grille] Échec poser:", err.message);
+    console.error("[Bang] Échec poser:", err.message);
   }
 }
 
@@ -926,6 +926,6 @@ export async function handleGrilleRegles(webhookUrl) {
   try {
     await patchOriginal(webhookUrl, { embeds: [buildReglesEmbed(await loadDuelConfig())] });
   } catch (err) {
-    console.error("[Grille] Échec Règles:", err.message);
+    console.error("[Bang] Échec Règles:", err.message);
   }
 }

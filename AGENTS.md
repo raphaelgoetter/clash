@@ -134,7 +134,7 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 | `/champion-history clan:N` | Historique des vrais champions GDC passés d'un clan |
 | `/recap [saison:-1\|-2]` | Bottom 10 La Resistance / top 10 Les Resistants (saison passée) |
 | `/blacklist ajoute tag:#TAG [raison]` / `retire tag:#TAG` / `/blacklist consulte` | Liste Noire (rôle commençant par `STAFF`) |
-| `/grille adversaire:bot\|1v1` | La Grille (Knucklebones) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
+| `/bang adversaire:bot\|1v1` | Bang! (Knucklebones) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/quatre adversaire:bot\|1v1` | Quatre à la suite (Puissance 4) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/punto adversaire:bot\|1v1` | Punto (aligner 4 tuiles de même couleur) contre Kévina, le bot (plateau suivi dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |
 | `/frise adversaire:bot\|1v1` | Frise (classer des événements par année sur une frise commune en image : choisir une carte de sa main et son créneau, erreur = carte rangée et pioche, premier à vider sa main) contre Kévina, le bot (frise suivie dans le salon) ou 1v1 contre un joueur (salon), rôle MINI-JEUX |

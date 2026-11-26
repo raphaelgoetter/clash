@@ -23,7 +23,7 @@ Règles de dépendance :
 - les packages n'importent jamais une application ;
 - la racine n'importe `jeux/` qu'à deux points de branchement, en attendant le déploiement séparé du bot des jeux : `api/discord/interactions.js` (routes Discord) et `backend/server.js` (`jeux/server/imageRoutes.js`).
 
-Les imports vers un package utilisent le nom du workspace (`import { getOrSet } from "@clash/commun/cache.js"`), jamais un chemin relatif ; `npm install` à la racine crée les liens dans `node_modules/@clash/`. Les scripts npm des jeux restent déclarés dans le `package.json` racine (`node jeux/scripts/…`), à lancer depuis la racine pour que `./.env` soit trouvé. Les clés Blob (`readBlobAsset("bang/…")`) restent relatives au dossier de données, quel qu'il soit (`data/` ou `jeux/data/`).
+Les imports vers un package utilisent le nom du workspace (`import { getOrSet } from "@clash/commun/cache.js"`), jamais un chemin relatif ; `npm install` à la racine crée les liens dans `node_modules/@clash/`. Les scripts npm des jeux restent déclarés dans le `package.json` racine (`node jeux/scripts/…`), à lancer depuis la racine pour que `./.env` soit trouvé. Les clés Blob (`readBlobAsset("marioclash/…")`) restent relatives au dossier de données, quel qu'il soit (`data/` ou `jeux/data/`).
 
 ---
 

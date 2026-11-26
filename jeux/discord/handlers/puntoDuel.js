@@ -57,7 +57,7 @@ const ADV = ["rouge", "orange"];
 const REFLEXION_MS = { min: 2000, max: 5000 };
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 // Carte recouverte : affichée 💥 le temps d'une étape avant la nouvelle
-// carte (comme les dés détruits de La Grille)
+// carte (comme les dés détruits de Bang!)
 const EXPLOSION = "💥";
 const DELAI_EXPLOSION_MS = 900;
 

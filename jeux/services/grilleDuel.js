@@ -1,6 +1,6 @@
 // ============================================================
-// grilleDuel.js — La Grille (`/grille`) : un joueur contre Kévina (plateau
-// public + vue éphémère du joueur) ou contre un autre joueur (`/grille adversaire:1v1`,
+// grilleDuel.js — Bang! (`/bang`) : un joueur contre Kévina (plateau
+// public + vue éphémère du joueur) ou contre un autre joueur (`/bang adversaire:1v1`,
 // message public + vue éphémère par joueur). Règles pures dans
 // grilleRules.js.
 //
@@ -12,7 +12,7 @@
 // Kévina est conservé (`grilleduel:highscore`).
 //
 // ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
-// La Grille), source de vérité.
+// Bang!), source de vérité.
 //
 // ⚠️ automaticDeserialization désactivée volontairement (IDs Discord
 // corrompus sinon, voir jeux/CONTRIBUTING.md) : JSON sérialisé/désérialisé nous-mêmes.
@@ -86,7 +86,7 @@ async function withLock(discordId, fn) {
     }
     await new Promise((r) => setTimeout(r, 150));
   }
-  throw new Error("Verrou de La Grille indisponible");
+  throw new Error("Verrou de Bang! indisponible");
 }
 
 // Nouvelle partie contre Kévina (remplace une éventuelle partie en cours) :
@@ -163,7 +163,7 @@ export async function majHighScore(discordId, username, points, now = new Date()
   });
 }
 
-// ── 1v1 (`/grille adversaire:1v1`) ─────────────────────────────────────────
+// ── 1v1 (`/bang adversaire:1v1`) ─────────────────────────────────────────
 // Partie : { statut: "lobby" | "enCours" | "fini", channelId, messageId,
 // lanceur, noms: { discordId: pseudo }, sieges: { joueur, bot } (siège du
 // moteur → discordId ; "joueur" commence), duel, webhooks: { discordId:

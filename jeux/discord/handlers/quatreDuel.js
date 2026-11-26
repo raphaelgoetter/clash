@@ -8,7 +8,7 @@
 //   Jouer dans le lobby seulement : rejoindre ; plateau visible de tous) et
 //   une vue éphémère par joueur, rééditée après chaque coup adverse (webhook
 //   mémorisé, valable 15 min, renouvelé à chaque coup du joueur). Une seule partie à la
-//   fois, comme La Grille.
+//   fois, comme Bang!.
 // Réservé au rôle MINI-JEUX pour lancer (rejoindre un 1v1 ne l'exige pas).
 //
 // Plateau en images (quatreImage.js) : bandeau du pion à jouer au-dessus
@@ -757,7 +757,7 @@ function messagePublic(partie, config) {
 }
 
 // Fin du 1v1 : récapitulatif dans un NOUVEAU message (visible en bas du
-// salon), puis suppression du message de la partie (comme La Grille).
+// salon), puis suppression du message de la partie (comme Bang!).
 // Titre de fin du 1v1 : gagnant en premier (ordre des sièges si match nul)
 const titreGagnant = (g, nom) =>
   g === "nul" ? `${nom("joueur")} contre ${nom("bot")}` : `${nom(g)} contre ${nom(adversaire(g))}`;

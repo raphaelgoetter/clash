@@ -1,5 +1,5 @@
 // ============================================================
-// grilleRules.js — Règles pures de La Grille (`/grille`), adaptation fidèle de
+// grilleRules.js — Règles pures de Bang! (`/bang`), adaptation fidèle de
 // Knucklebones : chaque joueur a 3 colonnes de 3 cases (gauche, centre,
 // droite). À son tour, on lance 1 dé et on le pose dans une de ses
 // colonnes non pleines ; les dés de même valeur de la colonne adverse
@@ -12,7 +12,7 @@
 // et "bot" (Kévina, ou le second joueur en 1v1).
 //
 // ⚠️ Toute modification de règle doit suivre jeux/CONTRIBUTING.md (section
-// La Grille), source de vérité.
+// Bang!), source de vérité.
 // ============================================================
 
 export const IDS = ["joueur", "bot"];

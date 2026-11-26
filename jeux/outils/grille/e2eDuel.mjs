@@ -1,4 +1,4 @@
-// Test de bout en bout du handler de La Grille (contre Kévina et 1v1), sur Redis
+// Test de bout en bout du handler de Bang! (contre Kévina et 1v1), sur Redis
 // en mémoire ; TOUS les appels Discord sont interceptés (aucun message
 // réel). Vérifie les limites Discord des vues et affiche des exemples.
 // Usage : node --import @clash/commun/testing/registerFakeRedis.js jeux/outils/grille/e2eDuel.mjs
