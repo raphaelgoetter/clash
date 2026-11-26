@@ -8,8 +8,6 @@ import {
   buildLetterBag,
   buildLetterBagFromSeeds,
   pickCompatibleSecondarySeed,
-  filterPrimarySeedPool,
-  validWordsRangeFor,
   generateDraw,
   loadEligiblePool,
   MIN_VALID_WORDS,
@@ -36,19 +34,15 @@ function mulberry32(seed) {
 }
 
 async function main() {
-  // wordLetterCount — accents et espaces ignorés
-  assert.strictEqual(wordLetterCount("Bébé dragon"), 10);
-  assert.strictEqual(wordLetterCount("Reine des Archères"), 16);
-  assert.strictEqual(wordLetterCount("Arrows"), 6);
-  // wordLetterCount — la ponctuation (points) ne compte pas non plus
-  assert.strictEqual(wordLetterCount("P.E.K.K.A"), 5);
-  assert.strictEqual(wordLetterCount("Mini P.E.K.K.A"), 9);
+  // wordLetterCount — accents, espaces et ponctuation ignorés
+  assert.strictEqual(wordLetterCount("Salamèche"), 9);
+  assert.strictEqual(wordLetterCount("Dracaufeu"), 9);
+  assert.strictEqual(wordLetterCount("M. Mime"), 5);
 
   // canonicalWordForm — forme affichée/archivée : que des lettres, aucune
   // ponctuation ni espace d'origine (pas de tuile pour ça dans le tirage)
-  assert.strictEqual(canonicalWordForm("P.E.K.K.A"), "PEKKA");
-  assert.strictEqual(canonicalWordForm("Mini P.E.K.K.A"), "MINIPEKKA");
-  assert.strictEqual(canonicalWordForm("Bébé dragon"), "BEBEDRAGON");
+  assert.strictEqual(canonicalWordForm("M. Mime"), "MMIME");
+  assert.strictEqual(canonicalWordForm("Électhor"), "ELECTHOR");
 
   // filterEligiblePool — exclut apostrophe et > DRAW_SIZE lettres, garde le
   // reste. Fixture E générée depuis DRAW_SIZE (pas figée en dur) pour tester
@@ -56,26 +50,27 @@ async function main() {
   const boundaryWord = "abcdefghijklmnopqrstuvwxyz".slice(0, DRAW_SIZE);
   assert.strictEqual(boundaryWord.length, DRAW_SIZE);
   const sample = [
-    { cardKey: "A", fr: "Barbares d'élite" }, // apostrophe -> exclue
-    { cardKey: "B", fr: "Reine des Archères" }, // 16 lettres -> exclue (toujours > DRAW_SIZE)
-    { cardKey: "C", fr: "Bébé dragon" }, // 10 lettres -> incluse
-    { cardKey: "D", fr: null }, // pas de nom FR -> exclue
-    { cardKey: "E", fr: boundaryWord }, // DRAW_SIZE lettres pile -> incluse
+    { key: "A", fr: "Canarticho d'or" }, // apostrophe -> exclue
+    { key: "B", fr: "Papilusion Florizarre" }, // 20 lettres -> exclue (toujours > DRAW_SIZE)
+    { key: "C", fr: "Dracaufeu" }, // 9 lettres -> incluse
+    { key: "D", fr: null }, // pas de nom FR -> exclue
+    { key: "E", fr: boundaryWord }, // DRAW_SIZE lettres pile -> incluse
   ];
-  const eligible = filterEligiblePool(sample).map((c) => c.cardKey);
+  const eligible = filterEligiblePool(sample).map((c) => c.key);
   assert.deepStrictEqual(eligible.sort(), ["C", "E"]);
 
   // canFormFromBag — respecte les doublons de lettres, pas seulement l'ensemble
   assert.strictEqual(canFormFromBag("as", ["A", "S", "X"]), true);
   assert.strictEqual(canFormFromBag("aa", ["A", "S", "X"]), false); // un seul "a" dans le sac
   assert.strictEqual(canFormFromBag("aa", ["A", "A", "S"]), true);
-  assert.strictEqual(canFormFromBag("bébé dragon", "BEDRAGONBE".split("")), true); // espaces/accents ignorés
+  assert.strictEqual(canFormFromBag("M. Mime", "MMIEM".split("")), true); // ponctuation/espaces ignorés
+  assert.strictEqual(canFormFromBag("salamèche", "SALAMECHE".split("")), true); // accents ignorés
 
   // buildLetterBag — contient toujours les lettres du mot "seed", taille DRAW_SIZE
   const rng = mulberry32(42);
-  const bag = buildLetterBag("Bébé dragon", rng);
+  const bag = buildLetterBag("Dracaufeu", rng);
   assert.strictEqual(bag.length, DRAW_SIZE);
-  assert.strictEqual(canFormFromBag("Bébé dragon", bag), true);
+  assert.strictEqual(canFormFromBag("Dracaufeu", bag), true);
 
   // buildLetterBagFromSeeds — UNION des lettres (pas la somme) : "as" + "sa"
   // partagent déjà leurs lettres, donc 2 lettres suffisent, pas 4.
@@ -84,45 +79,39 @@ async function main() {
   assert.strictEqual(canFormFromBag("as", unionBag), true);
   assert.strictEqual(canFormFromBag("sa", unionBag), true);
   // les deux mots-seed tiennent simultanément dans un tirage à taille normale
-  const twoSeedBag = buildLetterBagFromSeeds(["Gel", "Golem"], mulberry32(2));
-  assert.strictEqual(canFormFromBag("Gel", twoSeedBag), true);
-  assert.strictEqual(canFormFromBag("Golem", twoSeedBag), true);
+  const twoSeedBag = buildLetterBagFromSeeds(["Onix", "Ponyta"], mulberry32(2));
+  assert.strictEqual(canFormFromBag("Onix", twoSeedBag), true);
+  assert.strictEqual(canFormFromBag("Ponyta", twoSeedBag), true);
 
-  // pickCompatibleSecondarySeed — jamais la carte principale elle-même,
-  // toujours une carte dont les lettres tiennent avec la principale
+  // pickCompatibleSecondarySeed — jamais le nom principal lui-même,
+  // toujours un nom dont les lettres tiennent avec le principal
   const miniPool = [
-    { cardKey: "A", fr: "Gel" },
-    { cardKey: "B", fr: "Golem" },
-    { cardKey: "C", fr: "Rage" },
+    { key: "A", fr: "Abo" },
+    { key: "B", fr: "Onix" },
+    { key: "C", fr: "Mew" },
   ];
   const secondary = pickCompatibleSecondarySeed(miniPool, miniPool[0], mulberry32(3));
-  assert.notStrictEqual(secondary?.cardKey, "A");
-  assert.ok(["B", "C"].includes(secondary?.cardKey));
-  // aucune carte compatible disponible (pool à une seule carte) -> null, pas d'erreur
+  assert.notStrictEqual(secondary?.key, "A");
+  assert.ok(["B", "C"].includes(secondary?.key));
+  // aucun nom compatible disponible (pool à un seul nom) -> null, pas d'erreur
   assert.strictEqual(pickCompatibleSecondarySeed([miniPool[0]], miniPool[0], mulberry32(3)), null);
-
-  // validWordsRangeFor — minimum abaissé à 3 pour une carte principale de 13+ lettres
-  assert.deepStrictEqual(validWordsRangeFor({ fr: "Gel" }), { min: MIN_VALID_WORDS, max: MAX_VALID_WORDS });
-  assert.deepStrictEqual(validWordsRangeFor({ fr: "Molosse de lave" }), { min: 3, max: MAX_VALID_WORDS });
 
   // generateDraw — aucun tirage dans la fourchette possible : garde le plus
   // proche, sans erreur
   const lonelyDraw = generateDraw([miniPool[0]], miniPool[0], mulberry32(4), 5);
   assert.strictEqual(lonelyDraw.validWords.length, 1);
-  assert.strictEqual(canFormFromBag("Gel", lonelyDraw.letters), true);
+  assert.strictEqual(canFormFromBag("Abo", lonelyDraw.letters), true);
 
-  // generateDraw sur le vrai pool — chaque carte principale de la rotation
-  // tombe dans sa fourchette, et les cartes exclues de la rotation n'y sont plus
+  // Vrai pool : les 151 Pokémon de 1re génération, Nidoran♀/♂ fusionnés,
+  // tous éligibles ; chaque nom principal tombe dans la fourchette
   const realPool = await loadEligiblePool();
-  const primaryPool = filterPrimarySeedPool(realPool);
-  assert.strictEqual(realPool.length - primaryPool.length, 5);
-  assert.ok(!primaryPool.some((c) => c.fr === "Bélier de combat"));
+  assert.strictEqual(realPool.length, 150);
+  assert.strictEqual(new Set(realPool.map((c) => canonicalWordForm(c.fr))).size, 150);
   const rngReal = mulberry32(11);
-  for (const entry of primaryPool) {
+  for (const entry of realPool) {
     const { letters, validWords } = generateDraw(realPool, entry, rngReal);
-    const { min, max } = validWordsRangeFor(entry);
     assert.strictEqual(canFormFromBag(entry.fr, letters), true);
-    assert.ok(validWords.length >= min && validWords.length <= max, `${entry.fr} : ${validWords.length} mots`);
+    assert.ok(validWords.length >= MIN_VALID_WORDS && validWords.length <= MAX_VALID_WORDS, `${entry.fr} : ${validWords.length} mots`);
   }
 
   // weightedRandomLetter — toujours une lettre valide de la table
@@ -132,30 +121,36 @@ async function main() {
   for (const letter of seenLetters) assert.match(letter, /^[a-z]$/);
 
   // validateSubmission — les 4 issues possibles
-  const pool = [{ cardKey: "C", fr: "Bébé dragon" }];
-  const fullList = [...pool, { cardKey: "A", fr: "Barbares d'élite" }];
-  const draw = "BEDRAGONBE".split(""); // contient "bébé dragon"
-
-  assert.strictEqual(validateSubmission(pool, fullList, draw, "bebe dragon").status, "ok");
-  assert.strictEqual(validateSubmission(pool, fullList, draw, "bebe dragon").length, 10);
-  assert.strictEqual(validateSubmission(pool, fullList, draw, "barbares d elite").status, "not-eligible");
-  assert.strictEqual(validateSubmission(pool, fullList, draw, "n importe quoi").status, "invalid");
-  // "Bébé dragon" reconnue mais ce tirage précis ne contient pas assez de lettres
-  assert.strictEqual(validateSubmission(pool, fullList, ["B", "E", "X"], "bebe dragon").status, "impossible");
-
-  // computeValidWordsForDraw — toutes les cartes du pool qui rentrent dans
-  // ce tirage précis, triées par longueur décroissante
-  const wordsPool = [
-    { cardKey: "C", fr: "Bébé dragon" }, // 10 lettres, rentre
-    { cardKey: "F", fr: "Gel" }, // 3 lettres, rentre (sous-ensemble)
-    { cardKey: "G", fr: "Golem" }, // ne rentre pas (pas de L/M en trop dans ce tirage)
+  const pool = [
+    { key: "006", fr: "Dracaufeu" },
+    { key: "122", fr: "M. Mime", accept: ["Mr. Mime"] },
   ];
-  const validWords = computeValidWordsForDraw(wordsPool, "BEDRAGONBEGEL".split(""));
+  const fullList = [...pool, { key: "X", fr: "Canarticho d'or" }];
+  const draw = "DRACAUFEUMMIEM".split(""); // contient "Dracaufeu" et "M. Mime"
+
+  assert.strictEqual(validateSubmission(pool, fullList, draw, "dracaufeu").status, "ok");
+  assert.strictEqual(validateSubmission(pool, fullList, draw, "dracaufeu").length, 9);
+  assert.strictEqual(validateSubmission(pool, fullList, draw, "canarticho d or").status, "not-eligible");
+  assert.strictEqual(validateSubmission(pool, fullList, draw, "n importe quoi").status, "invalid");
+  // variante acceptée et repli sans espaces, lettres comptées sur le nom officiel
+  assert.strictEqual(validateSubmission(pool, fullList, draw, "Mr Mime").entry.key, "122");
+  assert.strictEqual(validateSubmission(pool, fullList, draw, "MMime").length, 5);
+  // "Dracaufeu" reconnu mais ce tirage précis ne contient pas assez de lettres
+  assert.strictEqual(validateSubmission(pool, fullList, ["D", "R", "X"], "dracaufeu").status, "impossible");
+
+  // computeValidWordsForDraw — tous les noms du pool qui rentrent dans
+  // ce tirage précis, triés par longueur décroissante
+  const wordsPool = [
+    { key: "C", fr: "Dracaufeu" }, // 9 lettres, rentre
+    { key: "F", fr: "Draco" }, // 5 lettres, rentre (sous-ensemble)
+    { key: "G", fr: "Onix" }, // ne rentre pas (ni N, ni I, ni X)
+  ];
+  const validWords = computeValidWordsForDraw(wordsPool, "DRACAUFEUTOS".split(""));
   assert.deepStrictEqual(
-    validWords.map((w) => w.cardKey),
+    validWords.map((w) => w.key),
     ["C", "F"],
   );
-  assert.strictEqual(validWords[0].length, 10);
+  assert.strictEqual(validWords[0].length, 9);
 
   // computeScore — barème fixe : LONGEST_WORD_BONUS (5) si le mot égale la
   // longueur max du tirage, EXTRA_WORD_POINTS (1) sinon — jamais proportionnel

@@ -39,7 +39,7 @@ if (!channelId) {
 
     if (DRY_RUN) {
       console.log(`DRY-RUN — prochaine manche (salon ${channelId}) :`);
-      console.log(`  Pool éligible : ${result.poolSize} cartes`);
+      console.log(`  Pool éligible : ${result.poolSize} Pokémon`);
       console.log(`  Ping @MINI JEUX : ${result.pingRoleId ? "oui" : "non"}`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));
       return;

@@ -251,37 +251,37 @@ Groupe « Ciné-club » (mercredi 18:00 UTC) à partir de la refonte, en alterna
 
 ---
 
-## Pêle-mêle (retrouve les cartes cachées dans les lettres)
+## Pêle-mêle (retrouve les Pokémon cachés dans les lettres)
 
 Groupe « 🔤 Jeux de mots » (samedi 18:00 UTC), en alternance avec Concept. Service `jeux/services/pelemele.js`.
 
-Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Toute carte du pool formable avec ces lettres est valide ; la manche n'est jamais « résolue », elle reste ouverte jusqu'à son remplacement. Chaque joueur propose autant de cartes qu'il veut.
+Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Tout Pokémon du pool formable avec ces lettres est valide ; la manche n'est jamais « résolue », elle reste ouverte jusqu'à son remplacement. Chaque joueur propose autant de noms qu'il veut.
 
 ### Barème
 
-- **5 pts** (`LONGEST_WORD_BONUS`) pour la ou les cartes de longueur maximale possible sur ce tirage (`maxWordLength`).
-- **+1 pt** (`EXTRA_WORD_POINTS`) pour chaque autre carte valide.
-- Une carte déjà trouvée (forme canonique `canonicalWordForm`) ne rapporte rien.
-- Score = somme des cartes distinctes ; le ZSET de saison est incrémenté à chaque carte. Constantes fixes, indépendantes de `DRAW_SIZE`.
+- **5 pts** (`LONGEST_WORD_BONUS`) pour le ou les noms de longueur maximale possible sur ce tirage (`maxWordLength`).
+- **+1 pt** (`EXTRA_WORD_POINTS`) pour chaque autre nom valide.
+- Un nom déjà trouvé (forme canonique `canonicalWordForm`) ne rapporte rien.
+- Score = somme des noms distincts ; le ZSET de saison est incrémenté à chaque nom. Constantes fixes, indépendantes de `DRAW_SIZE`.
 
 ### Pool et validation
 
-- Éligible (`filterEligiblePool`) : `fr` connu, **sans apostrophe**, nombre de lettres (espaces/accents ignorés) ≤ `DRAW_SIZE`.
-- `validateSubmission()` (pure) : `invalid` (aucune carte connue), `not-eligible` (hors pool), `impossible` (ne rentre pas dans ce tirage), `ok`. Correspondance stricte normalisée, avec repli sans espaces.
+- Données : `jeux/data/pelemele/pokemon.json`, les 151 Pokémon de 1re génération (n° 001 à 151), noms français officiels vérifiés sur Poképédia. Un objet par nom : `key` (numéro du Pokédex), `fr`, et `accept` facultatif (variantes reconnues, ex. « Mr. Mime » pour « M. Mime »). Nidoran♀ et Nidoran♂, mêmes lettres, ne font qu'une entrée « Nidoran » (150 entrées).
+- Éligible (`filterEligiblePool`) : `fr` connu, **sans apostrophe**, nombre de lettres (espaces/accents/ponctuation ignorés) ≤ `DRAW_SIZE` ; les 150 noms le sont tous.
+- `validateSubmission()` (pure) : `invalid` (aucun nom connu), `not-eligible` (hors pool), `impossible` (ne rentre pas dans ce tirage), `ok`. Correspondance stricte normalisée sur `fr` ou `accept`, avec repli sans espaces ; les lettres comptées sont toujours celles de `fr` (« M. Mime » s'écrit MMIME).
 
 ### Tirage
 
-- Deux solutions garanties : carte principale en rotation équitable persistée (`pelemele:order`, `loadSeedOrder`/`pickNextIndex`) + seconde carte compatible (`pickCompatibleSecondarySeed`). Union de leurs lettres, complétée par des lettres pondérées selon les fréquences du Scrabble français (`FR_LETTER_WEIGHTS`), puis mélange (`buildLetterBagFromSeeds`).
-- Chaque tirage doit offrir **4 à 9 cartes trouvables** (`MIN_VALID_WORDS`/`MAX_VALID_WORDS`) : `generateDraw()` retire seconde carte et complément jusqu'à 1000 fois, sinon garde le tirage le plus proche. Carte principale de 13 lettres ou plus : minimum 3 (`validWordsRangeFor`).
-- Exclues de la rotation des cartes principales (`EXCLUDED_PRIMARY_SEEDS`, jamais plus de 3 mots trouvables) : Bélier de combat, Recrues royales, Électrocuteurs, Gang de gobelins, Fût à squelettes. Elles restent des réponses valides et des secondes cartes possibles.
+- Deux solutions garanties : nom principal en rotation équitable persistée (`pelemele:order`, `loadSeedOrder`/`pickNextIndex`) + second nom compatible (`pickCompatibleSecondarySeed`). Union de leurs lettres, complétée par des lettres pondérées selon les fréquences du Scrabble français (`FR_LETTER_WEIGHTS`), puis mélange (`buildLetterBagFromSeeds`).
+- Chaque tirage doit offrir **4 à 9 noms trouvables** (`MIN_VALID_WORDS`/`MAX_VALID_WORDS`) : `generateDraw()` retire second nom et complément jusqu'à 1000 fois, sinon garde le tirage le plus proche. Tous les noms atteignent la fourchette (vérifié par `pelemele.test.js`).
 - Une manche n'est archivée (`pelemele:archived:<id>`) qu'à son remplacement : `getAllArchivedResults()` y ajoute la manche de `pelemele:state` tant qu'elle ne l'est pas.
-- Tirages **préparés à l'avance** dans `pelemele:draws` (`{ seedCardKey, letters }`) : la file est remplie à `PREPARED_DRAWS_TARGET` (50) après chaque manche (`refillPreparedDraws`), `startNewGame()` consomme le premier.
-- La liste des cartes valides est calculée une fois à `startNewGame()` (`computeValidWordsForDraw`, stockée en `totalValidWords`/`maxWordLength`).
+- Tirages **préparés à l'avance** dans `pelemele:draws` (`{ seedKey, letters }`) : la file est remplie à `PREPARED_DRAWS_TARGET` (50) après chaque manche (`refillPreparedDraws`), `startNewGame()` consomme le premier. Un tirage dont le nom principal a quitté le pool (changement de liste) est retiré de la file.
+- La liste des noms valides est calculée une fois à `startNewGame()` (`computeValidWordsForDraw`, stockée en `totalValidWords`/`maxWordLength`).
 - Image du chevalet : `GET /api/pelemele/image` (pas d'anti-spoiler, les lettres sont publiques).
 
 ### Spécificités d'affichage
 
-- Bouton « Journal » (`pelemele_journal`) : cartes trouvées sur la manche en cours (`X/totalValidWords`) et les `JOURNAL_HISTORY_LIMIT` (10) dernières manches de la saison. Pas de DM de fin de manche.
+- Bouton « Journal » (`pelemele_journal`) : noms trouvés sur la manche en cours (`X/totalValidWords`) et les `JOURNAL_HISTORY_LIMIT` (10) dernières manches de la saison. Pas de DM de fin de manche.
 - Récap : chaque manche est libellée par son tirage (lettres).
 
 ### Redis (`pelemele:*`)
@@ -292,7 +292,7 @@ Schéma commun, plus :
 | ---------------------------------------- | ------------- | ------------------------------------------------------- |
 | `pelemele:participants:<gameId>`         | HASH          | `discordId → { foundWords[], score, lastFoundAt }`      |
 | `pelemele:attempts:<gameId>:<discordId>` | LIST          | Propositions valides (forme canonique), pour le Journal |
-| `pelemele:order`                         | STRING (JSON) | Rotation des cartes principales                         |
+| `pelemele:order`                         | STRING (JSON) | Rotation des noms principaux                            |
 | `pelemele:draws`                         | LIST          | Tirages préparés, dans l'ordre                          |
 
 Les résultats de **tous** les participants sont archivés d'un coup (`finalizeRound`) quand `startNewGame()` remplace la manche.
@@ -1891,7 +1891,7 @@ Variables : `DISCORD_CHANNEL_FRAME_TEST`, `DISCORD_CHANNEL_ANNONCES`, `DISCORD_T
 
 ## Noms français des cartes (`jeux/data/cardNames.json`)
 
-Source de vérité anglais ↔ français des cartes Clash Royale (exception, voir « Exceptions Clash Royale »), lue par Zoom carte, Pêle-mêle, Qui est-ce ? et Mascarade. Un objet par carte : `cardKey` (nom anglais exact de l'API, `fetchCards()`), `rarity`, `fr`, et selon les jeux `sound`, `elixir`, `hp`, `damage`, `range`, `type`, `family`.
+Source de vérité anglais ↔ français des cartes Clash Royale (exception, voir « Exceptions Clash Royale »), lue par Zoom carte, Qui est-ce ? et Mascarade. Un objet par carte : `cardKey` (nom anglais exact de l'API, `fetchCards()`), `rarity`, `fr`, et selon les jeux `sound`, `elixir`, `hp`, `damage`, `range`, `type`, `family`.
 
 - **Édité à la main**. Les scripts d'enrichissement (usage ponctuel) n'ajoutent que les champs absents et ne réécrivent jamais une entrée existante (sauf `--force` explicite) :
   - `jeux/scripts/generateCardNames.js` : ajoute les cartes manquantes ; `fr` résolu via les liens interlangues du wiki Fandom FR (vérifiés dans les deux sens). `fr: null` = à compléter à la main (liste en fin d'exécution). Toute valeur automatique est à relire.
@@ -1906,7 +1906,6 @@ Source de vérité anglais ↔ français des cartes Clash Royale (exception, voi
 Kévina est conçue pour tourner sur n'importe quel serveur : aucune référence à Clash Royale (données, API, images de cartes, `@clash/clash-royale`) hors des exceptions ci-dessous, à tenir à jour. Tout nouveau jeu est sans lien avec Clash Royale.
 
 - **Groupe ⚔️ Clash** (Trivia, `jeux/data/triviaclash/trivia-clash.json` ; Zoom carte, `jeux/data/jeux-visuels/zoom/`) : rendez-vous Clash Royale conservé.
-- **Pêle-mêle** : noms de cartes (`jeux/data/cardNames.json`).
 - **Mario Clash** : thème et nom seulement (aucune image ni donnée de carte).
 - **Jeux archivés** Mascarade et Qui est-ce ? : images de cartes (`@clash/clash-royale/cardImage.js`) et `cardNames.json`.
 - **Scripts de catalogue** (usage ponctuel, API Clash Royale via `@clash/clash-royale/clashApi.js`) : `generateCardNames.js`, `tagCards.js`, `generateCardStats.js` (`cardNames.json`), `generateZoomCatalog.js` (Zoom carte, avec `collectionConstants.js`).

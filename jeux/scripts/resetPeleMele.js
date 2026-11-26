@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // resetPeleMele.js
 // Remet à zéro le jeu Pêle-mêle : plus de manche active, ordre de
-// rotation des cartes "seed" remélangé à la prochaine manche, et
+// rotation des noms "seed" remélangé à la prochaine manche, et
 // historique/scores effacés.
 //
 // Usage : node jeux/scripts/resetPeleMele.js

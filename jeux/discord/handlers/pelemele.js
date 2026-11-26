@@ -1,21 +1,19 @@
 // ============================================================
 // pelemele.js — Handlers Discord pour le jeu "Pêle-mêle"
-// (DRAW_SIZE lettres tirées, proposer le nom de carte Clash Royale le plus
-// long qu'on peut former avec). Embed, bouton, modal. Miroir structurel de
-// jeux/discord/handlers/lajustecarte.js, avec deux différences (voir
+// (DRAW_SIZE lettres tirées, retrouver les Pokémon de 1re génération qu'on
+// peut former avec). Embed, bouton, modal. Deux particularités (voir
 // jeux/services/pelemele.js pour le détail complet) :
-// - pas de "carte secrète" : n'importe quelle carte du pool qui rentre dans
+// - pas de nom secret : n'importe quel nom du pool qui rentre dans
 //   le tirage est une réponse valide, il n'y a donc pas de notion de
 //   victoire qui termine la manche ;
 // - un joueur peut reproposer autant de fois qu'il veut ; TOUS ses mots
 //   distincts trouvés comptent (barème : LONGEST_WORD_BONUS pour le(s) mot(s)
 //   le(s) plus long(s) possible(s) du tirage, EXTRA_WORD_POINTS pour chaque
 //   autre — voir pelemele.js), pas juste le meilleur — le bouton
-//   "Proposer un mot" reste donc identique après chaque tentative (pas de
-//   bouton "Reproposer" séparé comme La Juste Carte).
+//   "Proposer un mot" reste donc identique après chaque tentative.
 //
-// Production (2026-09) : alterne avec Anagram, une saison sur
-// deux, sous le nom collectif "Jeux de lettres" — voir
+// Production : alterne avec Concept, une saison sur deux, dans le groupe
+// "Jeux de mots" — voir
 // jeux/services/jeuxdelettres.js. En production, la publication passe
 // UNIQUEMENT par jeux/scripts/postJeuxDeLettres.js (qui décide quel jeu est actif
 // et gère le récap de fin de saison du jeu qui vient de se terminer, quel
@@ -26,7 +24,7 @@
 import {
   DRAW_SIZE,
   loadEligiblePool,
-  loadFullCardList,
+  loadFullList,
   getCurrentSeasonId,
   readState,
   writeState,
@@ -72,16 +70,14 @@ function buildPeleMeleEmbed({
     title: "🔤 Le jeu du samedi : Pêle-mêle !",
     description:
       `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
-      `Plusieurs cartes Clash Royale se cachent derrière ces ${DRAW_SIZE} lettres. Sauras-tu toutes les retrouver ?\n\n` +
-      "🏆 **1 point** par carte trouvée, **5 points** s'il s'agit du mot le plus long.\n" +
+      // Nombre de solutions inconnu en dry-run (aucun tirage généré).
+      `${totalValidWords != null ? `**${totalValidWords}**` : "Plusieurs"} Pokémon de la 1re génération se cachent derrière ces ${DRAW_SIZE} lettres. Sauras-tu tous les retrouver ?\n\n` +
+      "🏆 **1 point** par Pokémon trouvé, **5 points** s'il s'agit du nom le plus long.\n" +
       "♾️ Tu as autant d'essais que tu veux !\n\n" +
-      (totalValidWords != null
-        ? `🎯 **${totalValidWords} carte${totalValidWords > 1 ? "s" : ""} valide${totalValidWords > 1 ? "s" : ""} sur ce tirage** : à toi de toutes les trouver !\n\n`
-        : "") +
       "📜 Détails (orthographe, accents, ponctuation...) dans le bouton **Règles**.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**",
     color: PELEMELE_COLOR,
-    // Cache-buster (?v=) — même pattern que frames.js/zoom.js/lajustecarte.js :
+    // Cache-buster (?v=) — même pattern que frames.js/zoom.js :
     // Discord met en cache l'aperçu d'un embed PAR URL.
     ...(gameId
       ? {
@@ -102,17 +98,17 @@ export function buildRulesEmbed() {
   return {
     title: "📜 Règles de Pêle-mêle",
     description:
-      `${DRAW_SIZE} lettres sont tirées au sort à chaque manche. Propose le nom d'une carte Clash Royale que tu peux former avec ces lettres, autant de fois que tu veux, aucune limite d'essais.\n\n` +
+      `${DRAW_SIZE} lettres sont tirées au sort à chaque manche. Propose le nom d'un Pokémon de la 1re génération (les 151 premiers du Pokédex) que tu peux former avec ces lettres, autant de fois que tu veux, aucune limite d'essais.\n\n` +
       "**Barème**\n" +
-      "🏆 **5 points** pour la (ou les) carte(s) la (les) plus longue(s) possible sur ce tirage.\n" +
-      "✨ **+1 point** pour chaque autre carte valide trouvée.\n" +
-      "Reproposer une carte déjà trouvée ne rapporte rien : seules les cartes **distinctes** comptent.\n\n" +
+      "🏆 **5 points** pour le (ou les) Pokémon au nom le plus long possible sur ce tirage.\n" +
+      "✨ **+1 point** pour chaque autre Pokémon trouvé.\n" +
+      "Reproposer un Pokémon déjà trouvé ne rapporte rien : seuls les Pokémon **distincts** comptent.\n\n" +
       "**Orthographe**\n" +
       "• Les accents ne sont pas obligatoires (é/e, à/a… acceptés indifféremment).\n" +
       "• La casse n'a pas d'importance (majuscules/minuscules).\n" +
-      "• Les points et autre ponctuation dans un nom de carte sont ignorés : **P.E.K.K.A** s'écrit simplement **PEKKA**.\n" +
+      "• Les noms sont les noms français officiels. La ponctuation est ignorée : **M. Mime** s'écrit simplement **MMIME**.\n" +
       "• Les espaces entre les mots d'un nom sont optionnels.\n" +
-      "• Les cartes dont le nom contient une **apostrophe** (ex. Barbares d'élite) ne font pas partie de ce jeu.",
+      "• Nidoran♀ et Nidoran♂ comptent pour un seul nom : **Nidoran**.",
     color: PELEMELE_COLOR,
   };
 }
@@ -304,8 +300,8 @@ export function buildAnswerModal(gameId) {
             type: 4,
             custom_id: "pelemele_answer_input",
             style: 1,
-            label: "Nom de la carte",
-            placeholder: "Nom de la carte…",
+            label: "Nom du Pokémon",
+            placeholder: "Nom du Pokémon…",
             required: true,
             max_length: 100,
           },
@@ -391,7 +387,6 @@ export async function postPeleMele(
 }
 
 // ── Réponse éphémère (PATCH de la réponse différée) ─────────────
-// Copie du pattern de lajustecarte.js — voir ce fichier pour le détail.
 
 async function postEphemeral(webhookUrl, content) {
   if (!webhookUrl) return;
@@ -517,7 +512,7 @@ export async function handleModalSubmit(
 
     const [pool, fullList] = await Promise.all([
       loadEligiblePool(),
-      loadFullCardList(),
+      loadFullList(),
     ]);
     const result = validateSubmission(pool, fullList, state.letters, rawAnswer);
 
@@ -534,7 +529,7 @@ export async function handleModalSubmit(
       const history = await getGuessHistory(gameId, discordId);
       await postEphemeral(
         webhookUrl,
-        `🚫 **${result.entry.fr}** existe dans Clash Royale, mais ne fait pas partie du pool de ce jeu (apostrophe dans le nom, ou plus de ${DRAW_SIZE} lettres). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
+        `🚫 **${result.entry.fr}** ne fait pas partie du pool de ce jeu (apostrophe dans le nom, ou plus de ${DRAW_SIZE} lettres). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
       );
       return;
     }
@@ -573,7 +568,7 @@ export async function handleModalSubmit(
       state.totalValidWords != null && foundCount === state.totalValidWords;
     const progress =
       state.totalValidWords != null
-        ? ` (${foundCount}/${state.totalValidWords} mots trouvés)`
+        ? ` (${foundCount}/${state.totalValidWords} Pokémon trouvés)`
         : "";
 
     await postEphemeral(
@@ -581,7 +576,7 @@ export async function handleModalSubmit(
       `${isLongest ? "🏆" : "🎉"} **${word}** (${result.length} lettre${result.length > 1 ? "s" : ""}) : +${points} pt${points > 1 ? "s" : ""} ! ` +
         `Score total sur cette manche : **${participant.score} pts**${progress}.` +
         (foundAll
-          ? "\n\n🎊 Tu as trouvé TOUS les mots de cette manche, bravo !"
+          ? "\n\n🎊 Tu as trouvé TOUS les Pokémon de cette manche, bravo !"
           : ""),
     );
   } catch (err) {

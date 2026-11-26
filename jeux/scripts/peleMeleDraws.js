@@ -2,7 +2,7 @@
 // peleMeleDraws.js
 // Complète la file des tirages Pêle-mêle préparés à l'avance (jusqu'à
 // PREPARED_DRAWS_TARGET) puis affiche, pour chaque manche à venir, le
-// nombre de cartes trouvables — sans les lettres ni les cartes, sauf avec
+// nombre de Pokémon trouvables — sans les lettres ni les noms, sauf avec
 // --reveal.
 //
 // Usage : node jeux/scripts/peleMeleDraws.js [--reveal]
@@ -26,7 +26,7 @@ const REVEAL = process.argv.includes("--reveal");
     draws.forEach((draw, idx) => {
       const validWords = computeValidWordsForDraw(pool, draw.letters);
       const details = REVEAL ? ` — ${draw.letters.join("")} (${validWords.map((w) => w.fr).join(", ")})` : "";
-      console.log(`${String(idx + 1).padStart(2)}. ${validWords.length} cartes trouvables${details}`);
+      console.log(`${String(idx + 1).padStart(2)}. ${validWords.length} Pokémon trouvables${details}`);
     });
   } catch (err) {
     console.error("Échec de la préparation des tirages :", err.message);

@@ -1,14 +1,14 @@
 // ============================================================
 // pelemele.js — Jeu "Pêle-mêle" (DRAW_SIZE lettres tirées au
-// sort, il faut proposer le nom de carte Clash Royale le plus long qu'on
-// peut former avec). Couche métier : pool éligible, tirage, validation des
-// propositions, scoring, classements. Miroir structurel de lajustecarte.js
-// (même stockage Upstash Redis, mêmes pièges — automaticDeserialization/
-// HGETALL, client paresseux — voir les commentaires détaillés dans
-// frames.js), avec des différences structurelles importantes :
+// sort, il faut retrouver les Pokémon de 1re génération qu'on peut former
+// avec). Couche métier : pool éligible, tirage, validation des
+// propositions, scoring, classements. Même stockage Upstash Redis et mêmes
+// pièges que les autres mini-jeux (automaticDeserialization/HGETALL, client
+// paresseux — voir les commentaires détaillés dans frames.js), avec des
+// différences structurelles importantes :
 //
-// 1. Pas de "carte secrète" à deviner : chaque manche est un TIRAGE DE
-//    DRAW_SIZE LETTRES ouvert. N'importe quelle carte du pool qui "rentre"
+// 1. Pas de nom secret à deviner : chaque manche est un TIRAGE DE
+//    DRAW_SIZE LETTRES ouvert. N'importe quel nom du pool qui "rentre"
 //    dans ces lettres est une réponse valide — il n'y a donc pas de notion
 //    de résolution collective ("quelqu'un a trouvé, la manche est finie").
 // 2. Un joueur peut reproposer autant de fois qu'il veut ; TOUS ses mots
@@ -17,27 +17,17 @@
 //    plus long(s) possible(s) du tirage, EXTRA_WORD_POINTS pour chaque autre
 //    (voir computeScore/submitWord ci-dessous ; pas juste le meilleur mot,
 //    contrairement à une version antérieure de ce fichier).
-// 3. La manche reste OUVERTE jusqu'à la manche suivante (comme Zoom/Blind
-//    Royale/La Juste Carte) : elle n'est jamais "résolue" à proprement
-//    parler, elle est simplement remplacée. Le classement de saison est
-//    incrémenté EN CONTINU (à chaque mot NOUVEAU trouvé, voir submitWord
-//    ci-dessous), pas au moment d'un événement "solved" unique comme
-//    lajustecarte.js — puisque cet événement n'existe pas ici.
+// 3. La manche reste OUVERTE jusqu'à la manche suivante : elle n'est
+//    jamais "résolue" à proprement parler, elle est simplement remplacée.
+//    Le classement de saison est incrémenté EN CONTINU (à chaque mot
+//    NOUVEAU trouvé, voir submitWord ci-dessous).
 //
-// DRAW_SIZE = 12 → 14 (2026-09) : mesuré empiriquement (simulation sur le
-// vrai pool) qu'à 12 lettres, 53% des tirages n'avaient QU'UNE seule carte
-// valide (la carte "seed"), rendant le jeu trop prévisible. À 14 lettres,
-// le pool éligible grossit de 72 à 94 cartes ET la marge de lettres de
-// complément après la carte seed augmente, ce qui fait tomber ce taux à
-// 36% (toujours mesuré par simulation, pas juste supposé) — amélioration
-// réelle mais partielle, gardé en tête si un futur ajustement est demandé.
-//
-// Production (2026-09) : Pêle-mêle alterne avec Anagram, une saison Clash
-// Royale sur deux, sous le nom collectif "Jeux de lettres" — voir
-// jeux/services/jeuxdelettres.js pour l'alternance et
-// jeux/scripts/postJeuxDeLettres.js pour l'orchestration (seul point d'entrée en
-// production ; jeux/scripts/postPeleMele.js reste utilisable pour forcer un post
-// direct de CE jeu précis, test comme rattrapage manuel).
+// Production : Pêle-mêle alterne avec Concept, une saison sur deux, dans le
+// groupe "Jeux de mots" — voir jeux/services/jeuxdelettres.js pour
+// l'alternance et jeux/scripts/postJeuxDeLettres.js pour l'orchestration
+// (seul point d'entrée en production ; jeux/scripts/postPeleMele.js reste
+// utilisable pour forcer un post direct de CE jeu précis, test comme
+// rattrapage manuel).
 // ============================================================
 
 import fs from "fs/promises";
@@ -49,7 +39,9 @@ import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.j
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CARD_NAMES_PATH = path.resolve(__dirname, "..", "data", "cardNames.json");
+// Pokémon de 1re génération (n° 001 à 151), noms français officiels
+// (Poképédia) ; Nidoran♀ et Nidoran♂, mêmes lettres, ne font qu'une entrée.
+const NAMES_PATH = path.resolve(__dirname, "..", "data", "pelemele", "pokemon.json");
 
 export const DRAW_SIZE = 14;
 
@@ -57,8 +49,6 @@ export const DRAW_SIZE = 14;
 // mécanique de créneau matin/soir, voir jeuxdelettres.js) — décision
 // produit actée le 2026-09-19.
 const SATURDAY = 6;
-
-const CARD_DEF_CACHE_TTL = 24 * 60 * 60 * 1000; // non utilisé pour l'instant (pas d'image de carte dans ce jeu), gardé pour cohérence si besoin plus tard
 
 // Construction paresseuse (pas au chargement du module) — voir frames.js
 // pour la raison exacte (ordre des imports ES vs dotenv.config()).
@@ -158,19 +148,18 @@ async function scanDelete(pattern) {
   if (keys.length) await getRedis().del(...keys);
 }
 
-// ── Pool éligible (sous-ensemble de jeux/data/cardNames.json) ──────────
-// Une carte est éligible si : (1) son nom FR est connu, (2) il ne contient
-// aucune apostrophe (décision produit explicite — ces cartes sont
-// entièrement écartées du pool, pas de repli sur une variante sans
-// apostrophe), (3) son nombre de lettres (espaces ignorés, accents ignorés)
-// est ≤ DRAW_SIZE — sans quoi elle ne pourrait jamais rentrer dans un
-// tirage.
+// ── Pool éligible (sous-ensemble de jeux/data/pelemele/pokemon.json) ───
+// Un nom est éligible si : (1) il est renseigné, (2) il ne contient aucune
+// apostrophe, (3) son nombre de lettres (espaces et accents ignorés) est
+// ≤ DRAW_SIZE — sans quoi il ne pourrait jamais rentrer dans un tirage.
+// Garde-fou générique : les 150 noms de la liste actuelle sont tous
+// éligibles.
 
 function hasApostrophe(str) {
   return /['’]/.test(String(str ?? ""));
 }
 
-// Lettres "brutes" d'un nom de carte : accents et espaces retirés, casse
+// Lettres "brutes" d'un nom : accents et espaces retirés, casse
 // ignorée — c'est l'alphabet utilisé pour le tirage ET la validation, les
 // tuiles de lettres n'ayant pas d'accent (comme au Scrabble). Réutilise
 // normalizeAnswer (déjà utilisé par tous les autres mini-jeux) plutôt que de
@@ -184,11 +173,9 @@ export function wordLetterCount(str) {
 }
 
 // Forme canonique affichée/archivée d'un mot trouvé : uniquement les lettres
-// (accents, espaces, points — "P.E.K.K.A", "Mini P.E.K.K.A" — retirés),
-// cohérent avec le principe du jeu : il n'existe ni tuile espace ni tuile
-// ponctuation parmi les lettres tirées, donc "P.E.K.K.A" s'écrit "PEKKA"
-// et "Mini P.E.K.K.A" s'écrit "MINIPEKKA", jamais avec leur ponctuation
-// d'origine.
+// (accents, espaces, points retirés), cohérent avec le principe du jeu : il
+// n'existe ni tuile espace ni tuile ponctuation parmi les lettres tirées,
+// donc "M. Mime" s'écrit "MMIME", jamais avec sa ponctuation d'origine.
 export function canonicalWordForm(str) {
   return bareLetters(str).toUpperCase();
 }
@@ -196,9 +183,9 @@ export function canonicalWordForm(str) {
 let fullListCache = null;
 let poolCache = null;
 
-export async function loadFullCardList() {
+export async function loadFullList() {
   if (fullListCache) return fullListCache;
-  const txt = await fs.readFile(CARD_NAMES_PATH, "utf-8");
+  const txt = await fs.readFile(NAMES_PATH, "utf-8");
   fullListCache = JSON.parse(txt);
   return fullListCache;
 }
@@ -211,18 +198,9 @@ export function filterEligiblePool(fullList) {
 
 export async function loadEligiblePool() {
   if (poolCache) return poolCache;
-  const fullList = await loadFullCardList();
+  const fullList = await loadFullList();
   poolCache = filterEligiblePool(fullList);
   return poolCache;
-}
-
-// Cartes de jeux/data/cardNames.json qui NE font PAS partie du pool (apostrophe
-// ou trop longues) — pour un futur affichage "cartes non incluses" côté
-// Discord, comme le bouton équivalent de La Juste Carte.
-export async function getExcludedCards() {
-  const fullList = await loadFullCardList();
-  const eligibleKeys = new Set((await loadEligiblePool()).map((c) => c.cardKey));
-  return fullList.filter((c) => c.fr && !eligibleKeys.has(c.cardKey)).sort((a, b) => a.fr.localeCompare(b.fr, "fr"));
 }
 
 // ── Multi-ensembles de lettres (cœur de la validation) ─────────────
@@ -236,7 +214,7 @@ function multisetFromLetters(letters) {
   return counts;
 }
 
-// word peut être n'importe quelle chaîne (typiquement un nom FR de carte) ;
+// word peut être n'importe quelle chaîne (typiquement un nom du pool) ;
 // bagLetters est un tableau de lettres (le tirage de la manche, casse
 // indifférente). Vrai si toutes les lettres de word peuvent être formées à
 // partir du multi-ensemble du tirage (sans dépasser le nombre de doublons
@@ -250,7 +228,7 @@ export function canFormFromBag(word, bagLetters) {
   return true;
 }
 
-// Toutes les cartes du pool qui rentrent dans CE tirage précis, triées par
+// Tous les noms du pool qui rentrent dans CE tirage précis, triées par
 // longueur décroissante — calculé UNE FOIS à la génération de la manche
 // (startNewGame) et stocké dans l'état (totalValidWords/maxWordLength),
 // jamais recalculé à chaque proposition. Sert à la fois à afficher "X mots
@@ -259,7 +237,7 @@ export function canFormFromBag(word, bagLetters) {
 export function computeValidWordsForDraw(pool, bagLetters) {
   return pool
     .filter((c) => canFormFromBag(c.fr, bagLetters))
-    .map((c) => ({ cardKey: c.cardKey, fr: c.fr, length: wordLetterCount(c.fr) }))
+    .map((c) => ({ key: c.key, fr: c.fr, length: wordLetterCount(c.fr) }))
     .sort((a, b) => b.length - a.length);
 }
 
@@ -338,17 +316,13 @@ export function buildLetterBag(seedFr, rng = Math.random, size = DRAW_SIZE) {
   return buildLetterBagFromSeeds([seedFr], rng, size);
 }
 
-// Tire une seconde carte "seed" compatible avec la première (leurs lettres
-// combinées tiennent dans DRAW_SIZE) — mesuré empiriquement (simulation sur
-// le vrai pool) qu'une garantie de 2 solutions plutôt qu'1 fait chuter le
-// taux de tirages "une seule carte trouvable" de 38% à 0% (moyenne de mots
-// trouvables : 2.4 → 3.9), largement au-delà d'un simple ajustement de la
-// pondération du tirage. maxTries=30 : jamais atteint en 3000 simulations,
-// gardé comme filet de sécurité — si aucune paire compatible n'est trouvée
-// (pool très restreint), retombe sur une seule solution garantie (comme
-// avant), jamais d'échec bloquant la génération d'une manche.
+// Tire un second nom "seed" compatible avec le premier (leurs lettres
+// combinées tiennent dans DRAW_SIZE) : garantit deux solutions par tirage.
+// maxTries est un filet de sécurité — si aucune paire compatible n'est
+// trouvée (pool très restreint), retombe sur une seule solution garantie,
+// jamais d'échec bloquant la génération d'une manche.
 export function pickCompatibleSecondarySeed(pool, primaryEntry, rng = Math.random, maxTries = 30) {
-  const candidates = pool.filter((c) => c.cardKey !== primaryEntry.cardKey);
+  const candidates = pool.filter((c) => c.key !== primaryEntry.key);
   if (candidates.length === 0) return null;
   for (let i = 0; i < maxTries; i++) {
     const candidate = candidates[Math.floor(rng() * candidates.length)];
@@ -359,39 +333,13 @@ export function pickCompatibleSecondarySeed(pool, primaryEntry, rng = Math.rando
   return null;
 }
 
-// ── Fourchette du nombre de cartes trouvables par tirage ───────────
-// Décision produit (2026-10-11) : chaque tirage doit offrir entre
-// MIN_VALID_WORDS et MAX_VALID_WORDS cartes trouvables. Mesuré par
-// simulation (20 000 tirages) : sans contrainte, seuls 48,5% des tirages
-// tombaient dans [4, 9] (24,5% à 1-2 mots, 26,6% à 3). Une carte principale
-// de LONG_SEED_MIN_LENGTH lettres ou plus ne laisse qu'une lettre libre au
-// plus : jamais plus de 3 mots trouvables en simulation, d'où le minimum
-// abaissé à LONG_SEED_MIN_VALID_WORDS pour elles.
+// ── Fourchette du nombre de noms trouvables par tirage ─────────────
+// Chaque tirage doit offrir entre MIN_VALID_WORDS et MAX_VALID_WORDS noms
+// trouvables. Simulation sur les 150 noms (6 000 tirages) : 100 % des
+// tirages dans la fourchette, 5,1 noms en moyenne.
 export const MIN_VALID_WORDS = 4;
 export const MAX_VALID_WORDS = 9;
-const LONG_SEED_MIN_LENGTH = 13;
-const LONG_SEED_MIN_VALID_WORDS = 3;
-
-// Cartes retirées de la rotation des cartes principales : aucune ne
-// dépasse 3 mots trouvables (et les trois premières jamais plus d'1, faute
-// de seconde carte compatible). Elles restent des réponses valides et
-// peuvent toujours sortir comme seconde carte seed.
-const EXCLUDED_PRIMARY_SEEDS = new Set([
-  "Battle Ram", // Bélier de combat
-  "Royal Recruits", // Recrues royales
-  "Zappies", // Électrocuteurs
-  "Goblin Gang", // Gang de gobelins
-  "Skeleton Barrel", // Fût à squelettes
-]);
-
-export function filterPrimarySeedPool(pool) {
-  return pool.filter((c) => !EXCLUDED_PRIMARY_SEEDS.has(c.cardKey));
-}
-
-export function validWordsRangeFor(primaryEntry) {
-  const min = wordLetterCount(primaryEntry.fr) >= LONG_SEED_MIN_LENGTH ? LONG_SEED_MIN_VALID_WORDS : MIN_VALID_WORDS;
-  return { min, max: MAX_VALID_WORDS };
-}
+const VALID_WORDS_RANGE = { min: MIN_VALID_WORDS, max: MAX_VALID_WORDS };
 
 // Distance d'un nombre de mots à la fourchette (0 = dedans).
 function distanceToRange(count, { min, max }) {
@@ -400,13 +348,12 @@ function distanceToRange(count, { min, max }) {
   return 0;
 }
 
-// Retire seconde carte + lettres de complément jusqu'à tomber dans la
-// fourchette de la carte principale. ~2 essais en moyenne (~50 pour
-// Berserker, le cas le plus dur) ; maxTries est un filet de sécurité : à
-// défaut, garde le tirage le plus proche de la fourchette plutôt que de
-// bloquer la génération d'une manche.
+// Retire second nom + lettres de complément jusqu'à tomber dans la
+// fourchette ; maxTries est un filet de sécurité : à défaut, garde le
+// tirage le plus proche de la fourchette plutôt que de bloquer la
+// génération d'une manche.
 export function generateDraw(pool, primaryEntry, rng = Math.random, maxTries = 1000) {
-  const range = validWordsRangeFor(primaryEntry);
+  const range = VALID_WORDS_RANGE;
   let best = null;
   for (let i = 0; i < maxTries; i++) {
     const secondaryEntry = pickCompatibleSecondarySeed(pool, primaryEntry, rng);
@@ -420,27 +367,29 @@ export function generateDraw(pool, primaryEntry, rng = Math.random, maxTries = 1
   return { letters: best.letters, validWords: best.validWords };
 }
 
-// ── Résolution d'une proposition texte → carte du pool ─────────────
-// Même stratégie que matchByFrName (lajustecarte.js) : égalité stricte sur
-// le nom FR normalisé, avec repli "compact" (espaces retirés) pour tolérer
-// un joueur qui tape sans les séparateurs. Dupliqué ici plutôt
-// qu'importé : convention du repo, chaque jeu garde sa propre copie de ces
-// petits helpers (voir les commentaires identiques dans blindroyale.js/
-// zoom.js/anagrams.js).
+// ── Résolution d'une proposition texte → nom du pool ───────────────
+// Égalité stricte sur le nom normalisé (ou l'une de ses variantes
+// acceptées, champ `accept`, ex. "Mr. Mime" pour "M. Mime"), avec repli
+// "compact" (espaces retirés) pour tolérer un joueur qui tape sans les
+// séparateurs. Les lettres comptées restent toujours celles de `fr`.
+function namesOf(entry) {
+  return [entry.fr, ...(entry.accept ?? [])].map(normalizeAnswer);
+}
+
 function matchByFrName(list, rawName) {
   const normalized = normalizeAnswer(rawName);
   if (!normalized) return null;
-  const exact = list.find((c) => normalizeAnswer(c.fr) === normalized);
+  const exact = list.find((c) => namesOf(c).includes(normalized));
   if (exact) return exact;
   const compact = normalized.replace(/\s+/g, "");
-  return list.find((c) => normalizeAnswer(c.fr).replace(/\s+/g, "") === compact) ?? null;
+  return list.find((c) => namesOf(c).some((n) => n.replace(/\s+/g, "") === compact)) ?? null;
 }
 
 // Fonction pure : ne dépend d'aucun état Redis, testable indépendamment.
-// Trois issues d'échec distinctes (comme resolveAnyCard de lajustecarte.js) :
-// - "invalid"      : aucune carte connue ne correspond (vraie faute de frappe)
-// - "not-eligible" : carte connue mais hors pool (apostrophe / trop longue)
-// - "impossible"   : carte du pool, mais ne rentre pas dans CE tirage précis
+// Trois issues d'échec distinctes :
+// - "invalid"      : aucun nom connu ne correspond (vraie faute de frappe)
+// - "not-eligible" : nom connu mais hors pool (apostrophe / trop long)
+// - "impossible"   : nom du pool, mais ne rentre pas dans CE tirage précis
 // - "ok"           : proposition valide, `length` = score obtenu
 export function validateSubmission(pool, fullList, bagLetters, rawText) {
   const entry = matchByFrName(pool, rawText);
@@ -484,17 +433,17 @@ export async function resetGame() {
 // ── Saison en cours (mois calendaire, voir saison.js) ──────────
 export { getCurrentSeasonId };
 
-// ── Ordre de rotation des cartes "seed" (garantissent une solution) ────
-// cardNames.json reste trié alphabétiquement, donc comme La Juste Carte on
-// ne peut pas s'appuyer sur l'ordre physique du fichier — mélangé une fois
-// puis persisté dans Redis. Ne détermine QUE la carte utilisée pour garantir
-// qu'une solution existe dans le tirage ; n'importe quelle autre carte du
-// pool qui rentre dans le tirage reste une réponse valide.
+// ── Ordre de rotation des noms "seed" (garantissent une solution) ──────
+// pokemon.json suit l'ordre du Pokédex, donc on ne s'appuie pas sur l'ordre
+// physique du fichier — mélangé une fois puis persisté dans Redis. Ne
+// détermine QUE le nom utilisé pour garantir qu'une solution existe dans le
+// tirage ; n'importe quel autre nom du pool qui rentre dans le tirage reste
+// une réponse valide.
 export async function loadSeedOrder(pool) {
   const stored = fromJson(await getRedis().get(ORDER_KEY)) || [];
-  const poolKeySet = new Set(pool.map((c) => c.cardKey));
+  const poolKeySet = new Set(pool.map((c) => c.key));
   const kept = stored.filter((k) => poolKeySet.has(k));
-  const missing = pool.map((c) => c.cardKey).filter((k) => !kept.includes(k));
+  const missing = pool.map((c) => c.key).filter((k) => !kept.includes(k));
   const order = [...kept, ...shuffle(missing)];
   if (missing.length > 0 || kept.length !== stored.length) {
     await getRedis().set(ORDER_KEY, toJson(order));
@@ -526,12 +475,12 @@ export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
 
 // ── Tirages préparés à l'avance ──────────────────────────────────
 // Décision produit (2026-10-11) : les tirages sont générés à l'avance et
-// stockés dans une LIST Redis (une entrée JSON {seedCardKey, letters} par
+// stockés dans une LIST Redis (une entrée JSON {seedKey, letters} par
 // manche, dans l'ordre de passage), complétée à PREPARED_DRAWS_TARGET après
-// chaque manche. On stocke la carte principale plutôt que son index : un
-// changement de pool (carte ajoutée/retirée) peut décaler les index de la
-// rotation, pas les cardKey. Le nombre de mots trouvables est recalculé à la
-// consommation, pour tenir compte d'une carte ajoutée au pool entre-temps.
+// chaque manche. On stocke le nom principal plutôt que son index : un
+// changement de pool (nom ajouté/retiré) peut décaler les index de la
+// rotation, pas les clés. Le nombre de mots trouvables est recalculé à la
+// consommation, pour tenir compte d'un nom ajouté au pool entre-temps.
 export const PREPARED_DRAWS_TARGET = 50;
 
 export async function listPreparedDraws() {
@@ -539,33 +488,36 @@ export async function listPreparedDraws() {
   return raw.map(fromJson).filter(Boolean);
 }
 
-// Carte principale à partir de laquelle continuer la rotation : la
-// dernière en file, sinon celle de la manche en cours. Les états antérieurs
-// aux tirages préparés n'ont pas de seedCardKey : on la retrouve via leur
-// currentIndex dans l'ordre stocké AVANT son éventuelle réécriture.
+// Les tirages dont le nom principal a quitté le pool (changement de liste)
+// sont d'abord retirés de la file. La rotation reprend après le dernier nom
+// en file, sinon après celui de la manche en cours.
 export async function refillPreparedDraws(target = PREPARED_DRAWS_TARGET) {
   const pool = await loadEligiblePool();
-  const storedOrder = fromJson(await getRedis().get(ORDER_KEY)) || [];
-  const order = await loadSeedOrder(filterPrimarySeedPool(pool));
-  const queued = await listPreparedDraws();
+  const order = await loadSeedOrder(pool);
+  const stored = await listPreparedDraws();
+  const queued = stored.filter((draw) => order.includes(draw.seedKey));
+  if (queued.length !== stored.length) {
+    await getRedis().del(DRAWS_KEY);
+    if (queued.length) await getRedis().rpush(DRAWS_KEY, ...queued.map(toJson));
+  }
   if (queued.length >= target) return queued.length;
 
   const state = await readState();
-  const lastSeedKey = queued.at(-1)?.seedCardKey ?? state?.seedCardKey ?? storedOrder[state?.currentIndex];
+  const lastSeedKey = queued.at(-1)?.seedKey ?? state?.seedKey;
   let index = order.indexOf(lastSeedKey);
   const newDraws = [];
   for (let i = queued.length; i < target; i++) {
     index = pickNextIndex({ currentIndex: index }, order);
-    const primaryEntry = pool.find((c) => c.cardKey === order[index]);
+    const primaryEntry = pool.find((c) => c.key === order[index]);
     const { letters } = generateDraw(pool, primaryEntry);
-    newDraws.push(toJson({ seedCardKey: primaryEntry.cardKey, letters }));
+    newDraws.push(toJson({ seedKey: primaryEntry.key, letters }));
   }
   await getRedis().rpush(DRAWS_KEY, ...newDraws);
   return target;
 }
 
 // Retire le prochain tirage de la file (en la remplissant d'abord si elle
-// est vide) ; un tirage dont la carte principale a quitté le pool est jeté.
+// est vide) ; un tirage dont le nom principal a quitté le pool est jeté.
 async function takeNextDraw(pool, order) {
   for (;;) {
     let draw = fromJson(await getRedis().lpop(DRAWS_KEY));
@@ -573,8 +525,8 @@ async function takeNextDraw(pool, order) {
       await refillPreparedDraws();
       draw = fromJson(await getRedis().lpop(DRAWS_KEY));
     }
-    const currentIndex = order.indexOf(draw.seedCardKey);
-    if (currentIndex >= 0) return { currentIndex, seedCardKey: draw.seedCardKey, letters: draw.letters };
+    const currentIndex = order.indexOf(draw.seedKey);
+    if (currentIndex >= 0) return { currentIndex, seedKey: draw.seedKey, letters: draw.letters };
   }
 }
 
@@ -582,12 +534,12 @@ async function takeNextDraw(pool, order) {
 
 export async function startNewGame(channelId) {
   const pool = await loadEligiblePool();
-  const order = await loadSeedOrder(filterPrimarySeedPool(pool));
+  const order = await loadSeedOrder(pool);
   const previousState = await readState();
-  // La carte PRINCIPALE de chaque tirage préparé suit la rotation équitable
-  // persistée — seule la seconde, purement là pour garantir davantage de
+  // Le nom PRINCIPAL de chaque tirage préparé suit la rotation équitable
+  // persistée — seul le second, purement là pour garantir davantage de
   // solutions, est tirée au hasard sans notion de rotation/répétition.
-  const { currentIndex, seedCardKey, letters } = await takeNextDraw(pool, order);
+  const { currentIndex, seedKey, letters } = await takeNextDraw(pool, order);
   const validWords = computeValidWordsForDraw(pool, letters);
   const totalValidWords = validWords.length;
   const maxWordLength = validWords[0]?.length ?? 0;
@@ -600,7 +552,7 @@ export async function startNewGame(channelId) {
 
   const newState = {
     currentIndex,
-    seedCardKey,
+    seedKey,
     gameId,
     seasonId,
     seasonManche,
@@ -615,8 +567,7 @@ export async function startNewGame(channelId) {
 
   await writeState(newState);
 
-  // Contrairement à lajustecarte.js (résolution ponctuelle "solved"), il n'y
-  // a ici aucun événement de fin de manche : on fige les résultats de la
+  // Aucun événement de fin de manche : on fige les résultats de la
   // manche précédente au moment où elle est remplacée par la nouvelle.
   if (previousState?.gameId && previousState.gameId !== newState.gameId) {
     await finalizeRound(previousState);
@@ -628,7 +579,7 @@ export async function startNewGame(channelId) {
   return { state: newState };
 }
 
-// Anti-double-post — même garde-fou que lajustecarte.js/anagrams.js contre
+// Anti-double-post — même garde-fou que les autres mini-jeux contre
 // un cron GitHub Actions en retard qui ferait avancer la manche deux fois.
 function todayUtcDateString(date) {
   return date.toISOString().slice(0, 10);
@@ -709,7 +660,7 @@ export async function submitWord(gameId, discordId, username, entry, length, max
 }
 
 // ── Résultats archivés (classement de la saison) ─────────────────
-// Contrairement à lajustecarte.js (archivage au moment du "solved"), ici on
+// Pas d'archivage au moment d'un "solved" : ici on
 // fige les résultats de TOUS les participants de la manche en une fois,
 // au moment où elle est remplacée (voir startNewGame). Le total de saison
 // (seasonKey, ZSET) est lui déjà à jour en continu via submitWord — ce
@@ -722,7 +673,7 @@ async function finalizeRound(previousState) {
 }
 
 // Résultats d'une manche, au format archivé : [champ, résultat] par joueur
-// ayant trouvé au moins une carte.
+// ayant trouvé au moins un nom.
 async function roundResults(state) {
   const participants = await hgetallJson(participantsKey(state.gameId));
   return Object.values(participants)
