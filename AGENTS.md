@@ -110,7 +110,6 @@ Ne pas confondre `description` (4096) et `field.value` (1024) — pour une longu
 
 | Commande | Description |
 |---|---|
-| `/trust tag:#TAG` | Analyse fiabilité joueur |
 | `/stats tag:#TAG` | Statistiques GDC détaillées |
 | `/matchup-gdc tag:#TAG` | Calcule le matchup GDC d'un joueur |
 | `/matchup tag:#TAG` | Matchup des 6 derniers combats du joueur, tous types |
