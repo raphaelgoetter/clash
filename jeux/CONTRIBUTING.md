@@ -251,11 +251,11 @@ Groupe « Ciné-club » (mercredi 18:00 UTC) à partir de la refonte, en alterna
 
 ---
 
-## Pêle-mêle (retrouve les Pokémon cachés dans les lettres)
+## Pêle-mêle (retrouve les Pokémon ou les capitales cachés dans les lettres)
 
 Groupe « 🔤 Jeux de mots » (samedi 18:00 UTC), en alternance avec Concept. Service `jeux/services/pelemele.js`.
 
-Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Tout Pokémon du pool formable avec ces lettres est valide ; la manche n'est jamais « résolue », elle reste ouverte jusqu'à son remplacement. Chaque joueur propose autant de noms qu'il veut.
+Une manche = un **thème** et un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Tout nom du pool du thème formable avec ces lettres est valide ; la manche n'est jamais « résolue », elle reste ouverte jusqu'à son remplacement. Chaque joueur propose autant de noms qu'il veut.
 
 ### Barème
 
@@ -264,18 +264,26 @@ Une manche = un **tirage** ouvert de `DRAW_SIZE` (14) lettres. Tout Pokémon du 
 - Un nom déjà trouvé (forme canonique `canonicalWordForm`) ne rapporte rien.
 - Score = somme des noms distincts ; le ZSET de saison est incrémenté à chaque nom. Constantes fixes, indépendantes de `DRAW_SIZE`.
 
+### Thèmes
+
+Les thèmes alternent d'une manche à l'autre dans l'ordre de `THEME_ORDER` (`nextTheme()` d'après le thème de la manche précédente ; une manche sans thème, antérieure à leur création, compte comme Pokémon et la suivante repart du premier thème). Le thème est stocké dans l'état (`theme`, lu par `themeOf()`) et dans chaque résultat archivé. Un fichier de noms par thème dans `jeux/data/pelemele/`, un objet par nom : `key` (identifiant stable), `fr`, et `accept` facultatif (variantes reconnues).
+
+- **`pokemon`** (`pokemon.json`) : les 151 Pokémon de 1re génération (n° 001 à 151, `key` = numéro du Pokédex), noms français officiels vérifiés sur Poképédia ; « Mr. Mime » accepté pour « M. Mime ». Nidoran♀ et Nidoran♂, mêmes lettres, ne font qu'une entrée « Nidoran » (150 entrées, toutes éligibles).
+- **`capitales`** (`capitales.json`) : capitales des 193 États membres de l'ONU, du Vatican et de la Palestine, orthographe de Wikipédia (« Liste des capitales du monde ») ; toutes les capitales d'un pays qui en a plusieurs (La Paz et Sucre, Pretoria, Le Cap et Bloemfontein…), sans les localités qui ne sont pas des capitales (Tel Aviv, Vaiaku…). Variantes acceptées pour les orthographes courantes (Kyiv, Beijing, Dhaka, Santo Domingo…). 209 entrées, 206 éligibles (Andorre-la-Vieille, Bandar Seri Begawan et Sri Jayawardenapura Kotte dépassent `DRAW_SIZE`).
+
+Textes joueurs propres à chaque thème : `THEME_TEXTES` du handler (annonce, progression). Règles et fenêtre de réponse communes aux thèmes.
+
 ### Pool et validation
 
-- Données : `jeux/data/pelemele/pokemon.json`, les 151 Pokémon de 1re génération (n° 001 à 151), noms français officiels vérifiés sur Poképédia. Un objet par nom : `key` (numéro du Pokédex), `fr`, et `accept` facultatif (variantes reconnues, ex. « Mr. Mime » pour « M. Mime »). Nidoran♀ et Nidoran♂, mêmes lettres, ne font qu'une entrée « Nidoran » (150 entrées).
-- Éligible (`filterEligiblePool`) : `fr` connu, **sans apostrophe**, nombre de lettres (espaces/accents/ponctuation ignorés) ≤ `DRAW_SIZE` ; les 150 noms le sont tous.
-- `validateSubmission()` (pure) : `invalid` (aucun nom connu), `not-eligible` (hors pool), `impossible` (ne rentre pas dans ce tirage), `ok`. Correspondance stricte normalisée sur `fr` ou `accept`, avec repli sans espaces ; les lettres comptées sont toujours celles de `fr` (« M. Mime » s'écrit MMIME).
+- Éligible (`filterEligiblePool`) : `fr` connu, nombre de lettres (espaces/accents/ponctuation, apostrophe comprise, ignorés) ≤ `DRAW_SIZE`.
+- `validateSubmission()` (pure), sur le pool du thème de la manche : `invalid` (aucun nom connu), `not-eligible` (hors pool), `impossible` (ne rentre pas dans ce tirage), `ok`. Correspondance stricte normalisée sur `fr` ou `accept`, avec repli sans espaces ; les lettres comptées sont toujours celles de `fr` (« M. Mime » s'écrit MMIME, « N'Djaména » NDJAMENA).
 
 ### Tirage
 
-- Deux solutions garanties : nom principal en rotation équitable persistée (`pelemele:order`, `loadSeedOrder`/`pickNextIndex`) + second nom compatible (`pickCompatibleSecondarySeed`). Union de leurs lettres, complétée par des lettres pondérées selon les fréquences du Scrabble français (`FR_LETTER_WEIGHTS`), puis mélange (`buildLetterBagFromSeeds`).
-- Chaque tirage doit offrir **4 à 9 noms trouvables** (`MIN_VALID_WORDS`/`MAX_VALID_WORDS`) : `generateDraw()` retire second nom et complément jusqu'à 1000 fois, sinon garde le tirage le plus proche. Tous les noms atteignent la fourchette (vérifié par `pelemele.test.js`).
+- Deux solutions garanties : nom principal en rotation équitable persistée par thème (`pelemele:order:<thème>`, `loadSeedOrder`/`pickNextIndex`) + second nom compatible (`pickCompatibleSecondarySeed`). Union de leurs lettres, complétée par des lettres pondérées selon les fréquences du Scrabble français (`FR_LETTER_WEIGHTS`), puis mélange (`buildLetterBagFromSeeds`).
+- Chaque tirage doit offrir **4 à 9 noms trouvables** (`MIN_VALID_WORDS`/`MAX_VALID_WORDS`) : `generateDraw()` retire second nom et complément jusqu'à 1000 fois, sinon garde le tirage le plus proche. Tous les noms des deux thèmes atteignent la fourchette (vérifié par `pelemele.test.js`).
 - Une manche n'est archivée (`pelemele:archived:<id>`) qu'à son remplacement : `getAllArchivedResults()` y ajoute la manche de `pelemele:state` tant qu'elle ne l'est pas.
-- Tirages **préparés à l'avance** dans `pelemele:draws` (`{ seedKey, letters }`) : la file est remplie à `PREPARED_DRAWS_TARGET` (50) après chaque manche (`refillPreparedDraws`), `startNewGame()` consomme le premier. Un tirage dont le nom principal a quitté le pool (changement de liste) est retiré de la file.
+- Tirages **préparés à l'avance**, une file par thème dans `pelemele:draws:<thème>` (`{ seedKey, letters }`) : la file du thème joué est remplie à `PREPARED_DRAWS_TARGET` (50) après chaque manche (`refillPreparedDraws`), `startNewGame()` consomme le premier. Un tirage dont le nom principal a quitté le pool (changement de liste) est retiré de la file.
 - La liste des noms valides est calculée une fois à `startNewGame()` (`computeValidWordsForDraw`, stockée en `totalValidWords`/`maxWordLength`).
 - Image du chevalet : `GET /api/pelemele/image` (pas d'anti-spoiler, les lettres sont publiques).
 
@@ -292,16 +300,16 @@ Schéma commun, plus :
 | ---------------------------------------- | ------------- | ------------------------------------------------------- |
 | `pelemele:participants:<gameId>`         | HASH          | `discordId → { foundWords[], score, lastFoundAt }`      |
 | `pelemele:attempts:<gameId>:<discordId>` | LIST          | Propositions valides (forme canonique), pour le Journal |
-| `pelemele:order`                         | STRING (JSON) | Rotation des noms principaux                            |
-| `pelemele:draws`                         | LIST          | Tirages préparés, dans l'ordre                          |
+| `pelemele:order:<thème>`                 | STRING (JSON) | Rotation des noms principaux du thème                   |
+| `pelemele:draws:<thème>`                 | LIST          | Tirages préparés du thème, dans l'ordre                 |
 
 Les résultats de **tous** les participants sont archivés d'un coup (`finalizeRound`) quand `startNewGame()` remplace la manche.
 
 ### Scripts npm spécifiques
 
 - `pelemele:test` force le post (ignore le gating).
-- `pelemele:draws` : complète la file et affiche le nombre de cartes trouvables par manche à venir (`-- --reveal` pour lettres et cartes).
-- `pelemele:reset` remélange aussi la rotation et vide les tirages préparés.
+- `pelemele:draws` : complète la file de chaque thème et affiche le nombre de noms trouvables par manche à venir (`-- --reveal` pour lettres et noms).
+- `pelemele:reset` remélange aussi les rotations et vide les tirages préparés de tous les thèmes.
 
 ---
 

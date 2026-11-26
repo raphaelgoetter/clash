@@ -1,7 +1,7 @@
 // ============================================================
 // pelemele.js — Handlers Discord pour le jeu "Pêle-mêle"
-// (DRAW_SIZE lettres tirées, retrouver les Pokémon de 1re génération qu'on
-// peut former avec). Embed, bouton, modal. Deux particularités (voir
+// (DRAW_SIZE lettres tirées, retrouver les noms du thème de la manche,
+// Pokémon ou capitales, qu'on peut former avec). Embed, bouton, modal. Deux particularités (voir
 // jeux/services/pelemele.js pour le détail complet) :
 // - pas de nom secret : n'importe quel nom du pool qui rentre dans
 //   le tirage est une réponse valide, il n'y a donc pas de notion de
@@ -42,6 +42,8 @@ import {
   computeSeasonRanking,
   getAllArchivedResults,
   findTiedRank,
+  themeOf,
+  nextTheme,
 } from "../../services/pelemele.js";
 import { nomSaison } from "../../services/saison.js";
 import {
@@ -55,24 +57,44 @@ import { URL_JEUX } from "../../services/urlJeux.js";
 
 const PELEMELE_COLOR = 0x9b59b6;
 
+// Libellés joueurs de chaque thème (voir THEME_ORDER dans le service).
+const THEME_TEXTES = {
+  pokemon: {
+    caches: "Pokémon de la 1re génération se cachent",
+    tous: "tous",
+    unTrouve: "Pokémon trouvé",
+    trouves: "Pokémon trouvés",
+    tousLes: "TOUS les Pokémon",
+  },
+  capitales: {
+    caches: "capitales du monde se cachent",
+    tous: "toutes",
+    unTrouve: "capitale trouvée",
+    trouves: "capitales trouvées",
+    tousLes: "TOUTES les capitales",
+  },
+};
+
 // L'image (chevalet de tuiles, voir pelemeleImage.js) n'existe que pour
 // une manche RÉELLEMENT démarrée (gameId != null) — en dry-run/preview,
 // aucun tirage n'a encore été généré (voir postPeleMele), donc pas
 // d'image à référencer.
 function buildPeleMeleEmbed({
+  theme,
   seasonId,
   seasonManche,
   seasonMancheTotal,
   gameId,
   totalValidWords,
 }) {
+  const t = THEME_TEXTES[themeOf({ theme })];
   return {
     title: "🔤 Le jeu du samedi : Pêle-mêle !",
     description:
       `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
       // Nombre de solutions inconnu en dry-run (aucun tirage généré).
-      `${totalValidWords != null ? `**${totalValidWords}**` : "Plusieurs"} Pokémon de la 1re génération se cachent derrière ces ${DRAW_SIZE} lettres. Sauras-tu tous les retrouver ?\n\n` +
-      "🏆 **1 point** par Pokémon trouvé, **5 points** s'il s'agit du nom le plus long.\n" +
+      `${totalValidWords != null ? `**${totalValidWords}**` : "Plusieurs"} ${t.caches} derrière ces ${DRAW_SIZE} lettres. Sauras-tu ${t.tous} les retrouver ?\n\n` +
+      `🏆 **1 point** par ${t.unTrouve}, **5 points** s'il s'agit du nom le plus long.\n` +
       "♾️ Tu as autant d'essais que tu veux !\n\n" +
       "📜 Détails (orthographe, accents, ponctuation...) dans le bouton **Règles**.\n\n" +
       "**Merci de ne pas spoiler ni tricher, sinon c'est pas drôle !**",
@@ -98,17 +120,18 @@ export function buildRulesEmbed() {
   return {
     title: "📜 Règles de Pêle-mêle",
     description:
-      `${DRAW_SIZE} lettres sont tirées au sort à chaque manche. Propose le nom d'un Pokémon de la 1re génération (les 151 premiers du Pokédex) que tu peux former avec ces lettres, autant de fois que tu veux, aucune limite d'essais.\n\n` +
+      `${DRAW_SIZE} lettres sont tirées au sort à chaque manche. Selon la manche, retrouve des **Pokémon de la 1re génération** (les 151 premiers du Pokédex) ou des **capitales du monde** que tu peux former avec ces lettres, autant de fois que tu veux, aucune limite d'essais.\n\n` +
       "**Barème**\n" +
-      "🏆 **5 points** pour le (ou les) Pokémon au nom le plus long possible sur ce tirage.\n" +
-      "✨ **+1 point** pour chaque autre Pokémon trouvé.\n" +
-      "Reproposer un Pokémon déjà trouvé ne rapporte rien : seuls les Pokémon **distincts** comptent.\n\n" +
+      "🏆 **5 points** pour le (ou les) nom(s) le(s) plus long(s) possible(s) sur ce tirage.\n" +
+      "✨ **+1 point** pour chaque autre nom trouvé.\n" +
+      "Reproposer un nom déjà trouvé ne rapporte rien : seuls les noms **distincts** comptent.\n\n" +
       "**Orthographe**\n" +
       "• Les accents ne sont pas obligatoires (é/e, à/a… acceptés indifféremment).\n" +
       "• La casse n'a pas d'importance (majuscules/minuscules).\n" +
-      "• Les noms sont les noms français officiels. La ponctuation est ignorée : **M. Mime** s'écrit simplement **MMIME**.\n" +
+      "• Les noms sont les noms français officiels. La ponctuation est ignorée : **M. Mime** s'écrit **MMIME**, **N'Djaména** s'écrit **NDJAMENA**.\n" +
       "• Les espaces entre les mots d'un nom sont optionnels.\n" +
-      "• Nidoran♀ et Nidoran♂ comptent pour un seul nom : **Nidoran**.",
+      "• Nidoran♀ et Nidoran♂ comptent pour un seul nom : **Nidoran**.\n" +
+      "• Toutes les capitales d'un pays qui en a plusieurs sont valides (ex. **La Paz** et **Sucre**).",
     color: PELEMELE_COLOR,
   };
 }
@@ -300,8 +323,8 @@ export function buildAnswerModal(gameId) {
             type: 4,
             custom_id: "pelemele_answer_input",
             style: 1,
-            label: "Nom du Pokémon",
-            placeholder: "Nom du Pokémon…",
+            label: "Ta réponse",
+            placeholder: "Un nom caché dans les lettres…",
             required: true,
             max_length: 100,
           },
@@ -323,11 +346,13 @@ export async function postPeleMele(
   { dryRun = false, force = false, noPing = false } = {},
 ) {
   if (dryRun) {
-    const pool = await loadEligiblePool();
+    const theme = nextTheme(await readState());
+    const pool = await loadEligiblePool(theme);
     const seasonId = await getCurrentSeasonId();
     const seasonManche = await previewSeasonManche(seasonId);
     const seasonMancheTotal = computeSeasonMancheTotal(seasonManche);
     const embed = buildPeleMeleEmbed({
+      theme,
       seasonId,
       seasonManche,
       seasonMancheTotal,
@@ -337,6 +362,7 @@ export async function postPeleMele(
       : await getRoleIdByName(MINI_JEUX_ROLE_NAME);
     return {
       dryRun: true,
+      theme,
       poolSize: pool.length,
       embed,
       components: buildAnswerComponents("preview"),
@@ -511,8 +537,8 @@ export async function handleModalSubmit(
     }
 
     const [pool, fullList] = await Promise.all([
-      loadEligiblePool(),
-      loadFullList(),
+      loadEligiblePool(themeOf(state)),
+      loadFullList(themeOf(state)),
     ]);
     const result = validateSubmission(pool, fullList, state.letters, rawAnswer);
 
@@ -529,7 +555,7 @@ export async function handleModalSubmit(
       const history = await getGuessHistory(gameId, discordId);
       await postEphemeral(
         webhookUrl,
-        `🚫 **${result.entry.fr}** ne fait pas partie du pool de ce jeu (apostrophe dans le nom, ou plus de ${DRAW_SIZE} lettres). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
+        `🚫 **${result.entry.fr}** ne fait pas partie du pool de ce jeu (plus de ${DRAW_SIZE} lettres). Cette tentative n'a pas été comptabilisée.\n${formatHistoryLine(history)}`,
       );
       return;
     }
@@ -563,12 +589,13 @@ export async function handleModalSubmit(
       return;
     }
 
+    const t = THEME_TEXTES[themeOf(state)];
     const isLongest = result.length === state.maxWordLength;
     const foundAll =
       state.totalValidWords != null && foundCount === state.totalValidWords;
     const progress =
       state.totalValidWords != null
-        ? ` (${foundCount}/${state.totalValidWords} Pokémon trouvés)`
+        ? ` (${foundCount}/${state.totalValidWords} ${t.trouves})`
         : "";
 
     await postEphemeral(
@@ -576,7 +603,7 @@ export async function handleModalSubmit(
       `${isLongest ? "🏆" : "🎉"} **${word}** (${result.length} lettre${result.length > 1 ? "s" : ""}) : +${points} pt${points > 1 ? "s" : ""} ! ` +
         `Score total sur cette manche : **${participant.score} pts**${progress}.` +
         (foundAll
-          ? "\n\n🎊 Tu as trouvé TOUS les Pokémon de cette manche, bravo !"
+          ? `\n\n🎊 Tu as trouvé ${t.tousLes} de cette manche, bravo !`
           : ""),
     );
   } catch (err) {

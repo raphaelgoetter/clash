@@ -10,6 +10,9 @@ import {
   pickCompatibleSecondarySeed,
   generateDraw,
   loadEligiblePool,
+  THEME_ORDER,
+  themeOf,
+  nextTheme,
   MIN_VALID_WORDS,
   MAX_VALID_WORDS,
   weightedRandomLetter,
@@ -44,20 +47,20 @@ async function main() {
   assert.strictEqual(canonicalWordForm("M. Mime"), "MMIME");
   assert.strictEqual(canonicalWordForm("Électhor"), "ELECTHOR");
 
-  // filterEligiblePool — exclut apostrophe et > DRAW_SIZE lettres, garde le
-  // reste. Fixture E générée depuis DRAW_SIZE (pas figée en dur) pour tester
+  // filterEligiblePool — exclut > DRAW_SIZE lettres et noms absents, garde le
+  // reste (apostrophe comprise, ignorée comme toute ponctuation). Fixture E générée depuis DRAW_SIZE (pas figée en dur) pour tester
   // la vraie limite actuelle sans se déphaser si DRAW_SIZE change encore.
   const boundaryWord = "abcdefghijklmnopqrstuvwxyz".slice(0, DRAW_SIZE);
   assert.strictEqual(boundaryWord.length, DRAW_SIZE);
   const sample = [
-    { key: "A", fr: "Canarticho d'or" }, // apostrophe -> exclue
+    { key: "A", fr: "N'Djaména" }, // apostrophe ignorée -> incluse
     { key: "B", fr: "Papilusion Florizarre" }, // 20 lettres -> exclue (toujours > DRAW_SIZE)
     { key: "C", fr: "Dracaufeu" }, // 9 lettres -> incluse
     { key: "D", fr: null }, // pas de nom FR -> exclue
     { key: "E", fr: boundaryWord }, // DRAW_SIZE lettres pile -> incluse
   ];
   const eligible = filterEligiblePool(sample).map((c) => c.key);
-  assert.deepStrictEqual(eligible.sort(), ["C", "E"]);
+  assert.deepStrictEqual(eligible.sort(), ["A", "C", "E"]);
 
   // canFormFromBag — respecte les doublons de lettres, pas seulement l'ensemble
   assert.strictEqual(canFormFromBag("as", ["A", "S", "X"]), true);
@@ -102,16 +105,30 @@ async function main() {
   assert.strictEqual(lonelyDraw.validWords.length, 1);
   assert.strictEqual(canFormFromBag("Abo", lonelyDraw.letters), true);
 
-  // Vrai pool : les 151 Pokémon de 1re génération, Nidoran♀/♂ fusionnés,
-  // tous éligibles ; chaque nom principal tombe dans la fourchette
-  const realPool = await loadEligiblePool();
-  assert.strictEqual(realPool.length, 150);
-  assert.strictEqual(new Set(realPool.map((c) => canonicalWordForm(c.fr))).size, 150);
-  const rngReal = mulberry32(11);
-  for (const entry of realPool) {
-    const { letters, validWords } = generateDraw(realPool, entry, rngReal);
-    assert.strictEqual(canFormFromBag(entry.fr, letters), true);
-    assert.ok(validWords.length >= MIN_VALID_WORDS && validWords.length <= MAX_VALID_WORDS, `${entry.fr} : ${validWords.length} mots`);
+  // Thèmes : alternance d'une manche à l'autre, Pokémon d'abord (y compris
+  // après une manche antérieure aux thèmes)
+  assert.deepStrictEqual(THEME_ORDER, ["pokemon", "capitales"]);
+  assert.strictEqual(nextTheme(null), "pokemon");
+  assert.strictEqual(nextTheme({ seedKey: "Archer Queen" }), "pokemon");
+  assert.strictEqual(nextTheme({ theme: "pokemon" }), "capitales");
+  assert.strictEqual(nextTheme({ theme: "capitales" }), "pokemon");
+  assert.strictEqual(themeOf({}), "pokemon");
+
+  // Vrais pools : 150 Pokémon (151, Nidoran♀/♂ fusionnés) et 206 capitales
+  // (209 moins les 3 de plus de DRAW_SIZE lettres), sans doublon de lettres ;
+  // chaque nom principal tombe dans la fourchette
+  const expectedSizes = { pokemon: 150, capitales: 206 };
+  for (const theme of THEME_ORDER) {
+    const realPool = await loadEligiblePool(theme);
+    assert.strictEqual(realPool.length, expectedSizes[theme], theme);
+    assert.strictEqual(new Set(realPool.map((c) => canonicalWordForm(c.fr))).size, realPool.length, theme);
+    assert.strictEqual(new Set(realPool.map((c) => c.key)).size, realPool.length, theme);
+    const rngReal = mulberry32(11);
+    for (const entry of realPool) {
+      const { letters, validWords } = generateDraw(realPool, entry, rngReal);
+      assert.strictEqual(canFormFromBag(entry.fr, letters), true);
+      assert.ok(validWords.length >= MIN_VALID_WORDS && validWords.length <= MAX_VALID_WORDS, `${theme} ${entry.fr} : ${validWords.length} mots`);
+    }
   }
 
   // weightedRandomLetter — toujours une lettre valide de la table

@@ -1,7 +1,7 @@
 // ============================================================
 // pelemele.js — Jeu "Pêle-mêle" (DRAW_SIZE lettres tirées au
-// sort, il faut retrouver les Pokémon de 1re génération qu'on peut former
-// avec). Couche métier : pool éligible, tirage, validation des
+// sort, il faut retrouver les noms du thème de la manche, Pokémon ou
+// capitales, qu'on peut former avec). Couche métier : pool éligible, tirage, validation des
 // propositions, scoring, classements. Même stockage Upstash Redis et mêmes
 // pièges que les autres mini-jeux (automaticDeserialization/HGETALL, client
 // paresseux — voir les commentaires détaillés dans frames.js), avec des
@@ -39,9 +39,26 @@ import { countRemainingWeekdayOccurrences, getCurrentSeasonId } from "./saison.j
 import { normalizeAnswer } from "@clash/commun/textNormalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Pokémon de 1re génération (n° 001 à 151), noms français officiels
-// (Poképédia) ; Nidoran♀ et Nidoran♂, mêmes lettres, ne font qu'une entrée.
-const NAMES_PATH = path.resolve(__dirname, "..", "data", "pelemele", "pokemon.json");
+// Thèmes, en alternance d'une manche à l'autre (ordre de THEME_ORDER),
+// un fichier de noms par thème dans jeux/data/pelemele/ :
+// - pokemon : les 151 Pokémon de 1re génération, noms français officiels
+//   (Poképédia) ; Nidoran♀ et Nidoran♂, mêmes lettres, ne font qu'une entrée ;
+// - capitales : capitales des 193 États de l'ONU, du Vatican et de la
+//   Palestine (Wikipédia, « Liste des capitales du monde »), toutes les
+//   capitales d'un pays qui en a plusieurs.
+export const THEME_ORDER = ["pokemon", "capitales"];
+const THEME_FILES = { pokemon: "pokemon.json", capitales: "capitales.json" };
+
+// Thème d'une manche ; les manches antérieures aux thèmes sont des Pokémon.
+export function themeOf(state) {
+  return state?.theme ?? THEME_ORDER[0];
+}
+
+// Thème de la manche qui suit `previousState` (le premier si elle n'en a pas).
+export function nextTheme(previousState) {
+  const index = THEME_ORDER.indexOf(previousState?.theme);
+  return THEME_ORDER[(index + 1) % THEME_ORDER.length];
+}
 
 export const DRAW_SIZE = 14;
 
@@ -101,9 +118,14 @@ async function hgetallJson(key) {
 }
 
 const STATE_KEY = "pelemele:state";
-const ORDER_KEY = "pelemele:order";
 const ROUND_SEQ_KEY = "pelemele:round_seq";
-const DRAWS_KEY = "pelemele:draws";
+
+function orderKey(theme) {
+  return `pelemele:order:${theme}`;
+}
+function drawsKey(theme) {
+  return `pelemele:draws:${theme}`;
+}
 
 function participantsKey(gameId) {
   return `pelemele:participants:${gameId}`;
@@ -148,16 +170,10 @@ async function scanDelete(pattern) {
   if (keys.length) await getRedis().del(...keys);
 }
 
-// ── Pool éligible (sous-ensemble de jeux/data/pelemele/pokemon.json) ───
-// Un nom est éligible si : (1) il est renseigné, (2) il ne contient aucune
-// apostrophe, (3) son nombre de lettres (espaces et accents ignorés) est
-// ≤ DRAW_SIZE — sans quoi il ne pourrait jamais rentrer dans un tirage.
-// Garde-fou générique : les 150 noms de la liste actuelle sont tous
-// éligibles.
-
-function hasApostrophe(str) {
-  return /['’]/.test(String(str ?? ""));
-}
+// ── Pool éligible (sous-ensemble du fichier du thème) ──────────────
+// Un nom est éligible s'il est renseigné et si son nombre de lettres
+// (espaces, accents et ponctuation ignorés) est ≤ DRAW_SIZE — sans quoi il
+// ne pourrait jamais rentrer dans un tirage.
 
 // Lettres "brutes" d'un nom : accents et espaces retirés, casse
 // ignorée — c'est l'alphabet utilisé pour le tirage ET la validation, les
@@ -180,27 +196,27 @@ export function canonicalWordForm(str) {
   return bareLetters(str).toUpperCase();
 }
 
-let fullListCache = null;
-let poolCache = null;
+const fullListCache = new Map();
+const poolCache = new Map();
 
-export async function loadFullList() {
-  if (fullListCache) return fullListCache;
-  const txt = await fs.readFile(NAMES_PATH, "utf-8");
-  fullListCache = JSON.parse(txt);
-  return fullListCache;
+export async function loadFullList(theme = THEME_ORDER[0]) {
+  if (!THEME_FILES[theme]) throw new Error(`Thème Pêle-mêle inconnu : ${theme}`);
+  if (!fullListCache.has(theme)) {
+    const txt = await fs.readFile(path.resolve(__dirname, "..", "data", "pelemele", THEME_FILES[theme]), "utf-8");
+    fullListCache.set(theme, JSON.parse(txt));
+  }
+  return fullListCache.get(theme);
 }
 
 // Fonction pure exportée séparément (testable sans I/O) — le filtre lui-même
 // ne dépend d'aucun état, seulement de la liste en entrée.
 export function filterEligiblePool(fullList) {
-  return fullList.filter((c) => c.fr && !hasApostrophe(c.fr) && wordLetterCount(c.fr) <= DRAW_SIZE);
+  return fullList.filter((c) => c.fr && wordLetterCount(c.fr) <= DRAW_SIZE);
 }
 
-export async function loadEligiblePool() {
-  if (poolCache) return poolCache;
-  const fullList = await loadFullList();
-  poolCache = filterEligiblePool(fullList);
-  return poolCache;
+export async function loadEligiblePool(theme = THEME_ORDER[0]) {
+  if (!poolCache.has(theme)) poolCache.set(theme, filterEligiblePool(await loadFullList(theme)));
+  return poolCache.get(theme);
 }
 
 // ── Multi-ensembles de lettres (cœur de la validation) ─────────────
@@ -388,7 +404,7 @@ function matchByFrName(list, rawName) {
 // Fonction pure : ne dépend d'aucun état Redis, testable indépendamment.
 // Trois issues d'échec distinctes :
 // - "invalid"      : aucun nom connu ne correspond (vraie faute de frappe)
-// - "not-eligible" : nom connu mais hors pool (apostrophe / trop long)
+// - "not-eligible" : nom connu mais hors pool (trop long)
 // - "impossible"   : nom du pool, mais ne rentre pas dans CE tirage précis
 // - "ok"           : proposition valide, `length` = score obtenu
 export function validateSubmission(pool, fullList, bagLetters, rawText) {
@@ -422,7 +438,9 @@ async function cleanupGameScratchData(gameId) {
 }
 
 export async function resetGame() {
-  await getRedis().del(STATE_KEY, ORDER_KEY, ROUND_SEQ_KEY, DRAWS_KEY);
+  await getRedis().del(STATE_KEY, ROUND_SEQ_KEY);
+  await scanDelete("pelemele:order*");
+  await scanDelete("pelemele:draws*");
   await scanDelete("pelemele:participants:*");
   await scanDelete("pelemele:usernames:*");
   await scanDelete("pelemele:attempts:*");
@@ -434,19 +452,20 @@ export async function resetGame() {
 export { getCurrentSeasonId };
 
 // ── Ordre de rotation des noms "seed" (garantissent une solution) ──────
-// pokemon.json suit l'ordre du Pokédex, donc on ne s'appuie pas sur l'ordre
-// physique du fichier — mélangé une fois puis persisté dans Redis. Ne
+// Une rotation par thème. Les fichiers sont triés (Pokédex, alphabet), donc
+// on ne s'appuie pas sur leur ordre physique — mélangé une fois puis
+// persisté dans Redis. Ne
 // détermine QUE le nom utilisé pour garantir qu'une solution existe dans le
 // tirage ; n'importe quel autre nom du pool qui rentre dans le tirage reste
 // une réponse valide.
-export async function loadSeedOrder(pool) {
-  const stored = fromJson(await getRedis().get(ORDER_KEY)) || [];
+export async function loadSeedOrder(pool, theme = THEME_ORDER[0]) {
+  const stored = fromJson(await getRedis().get(orderKey(theme))) || [];
   const poolKeySet = new Set(pool.map((c) => c.key));
   const kept = stored.filter((k) => poolKeySet.has(k));
   const missing = pool.map((c) => c.key).filter((k) => !kept.includes(k));
   const order = [...kept, ...shuffle(missing)];
   if (missing.length > 0 || kept.length !== stored.length) {
-    await getRedis().set(ORDER_KEY, toJson(order));
+    await getRedis().set(orderKey(theme), toJson(order));
   }
   return order;
 }
@@ -475,35 +494,35 @@ export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
 
 // ── Tirages préparés à l'avance ──────────────────────────────────
 // Décision produit (2026-10-11) : les tirages sont générés à l'avance et
-// stockés dans une LIST Redis (une entrée JSON {seedKey, letters} par
-// manche, dans l'ordre de passage), complétée à PREPARED_DRAWS_TARGET après
+// stockés dans une LIST Redis par thème (une entrée JSON {seedKey, letters}
+// par manche, dans l'ordre de passage), complétée à PREPARED_DRAWS_TARGET après
 // chaque manche. On stocke le nom principal plutôt que son index : un
 // changement de pool (nom ajouté/retiré) peut décaler les index de la
 // rotation, pas les clés. Le nombre de mots trouvables est recalculé à la
 // consommation, pour tenir compte d'un nom ajouté au pool entre-temps.
 export const PREPARED_DRAWS_TARGET = 50;
 
-export async function listPreparedDraws() {
-  const raw = (await getRedis().lrange(DRAWS_KEY, 0, -1)) || [];
+export async function listPreparedDraws(theme = THEME_ORDER[0]) {
+  const raw = (await getRedis().lrange(drawsKey(theme), 0, -1)) || [];
   return raw.map(fromJson).filter(Boolean);
 }
 
 // Les tirages dont le nom principal a quitté le pool (changement de liste)
 // sont d'abord retirés de la file. La rotation reprend après le dernier nom
-// en file, sinon après celui de la manche en cours.
-export async function refillPreparedDraws(target = PREPARED_DRAWS_TARGET) {
-  const pool = await loadEligiblePool();
-  const order = await loadSeedOrder(pool);
-  const stored = await listPreparedDraws();
+// en file, sinon après celui de la dernière manche de ce thème.
+export async function refillPreparedDraws(theme = THEME_ORDER[0], target = PREPARED_DRAWS_TARGET) {
+  const pool = await loadEligiblePool(theme);
+  const order = await loadSeedOrder(pool, theme);
+  const stored = await listPreparedDraws(theme);
   const queued = stored.filter((draw) => order.includes(draw.seedKey));
   if (queued.length !== stored.length) {
-    await getRedis().del(DRAWS_KEY);
-    if (queued.length) await getRedis().rpush(DRAWS_KEY, ...queued.map(toJson));
+    await getRedis().del(drawsKey(theme));
+    if (queued.length) await getRedis().rpush(drawsKey(theme), ...queued.map(toJson));
   }
   if (queued.length >= target) return queued.length;
 
   const state = await readState();
-  const lastSeedKey = queued.at(-1)?.seedKey ?? state?.seedKey;
+  const lastSeedKey = queued.at(-1)?.seedKey ?? (themeOf(state) === theme ? state?.seedKey : undefined);
   let index = order.indexOf(lastSeedKey);
   const newDraws = [];
   for (let i = queued.length; i < target; i++) {
@@ -512,18 +531,18 @@ export async function refillPreparedDraws(target = PREPARED_DRAWS_TARGET) {
     const { letters } = generateDraw(pool, primaryEntry);
     newDraws.push(toJson({ seedKey: primaryEntry.key, letters }));
   }
-  await getRedis().rpush(DRAWS_KEY, ...newDraws);
+  await getRedis().rpush(drawsKey(theme), ...newDraws);
   return target;
 }
 
 // Retire le prochain tirage de la file (en la remplissant d'abord si elle
 // est vide) ; un tirage dont le nom principal a quitté le pool est jeté.
-async function takeNextDraw(pool, order) {
+async function takeNextDraw(pool, order, theme) {
   for (;;) {
-    let draw = fromJson(await getRedis().lpop(DRAWS_KEY));
+    let draw = fromJson(await getRedis().lpop(drawsKey(theme)));
     if (!draw) {
-      await refillPreparedDraws();
-      draw = fromJson(await getRedis().lpop(DRAWS_KEY));
+      await refillPreparedDraws(theme);
+      draw = fromJson(await getRedis().lpop(drawsKey(theme)));
     }
     const currentIndex = order.indexOf(draw.seedKey);
     if (currentIndex >= 0) return { currentIndex, seedKey: draw.seedKey, letters: draw.letters };
@@ -533,13 +552,14 @@ async function takeNextDraw(pool, order) {
 // ── Cycle de vie d'une manche ────────────────────────────────────
 
 export async function startNewGame(channelId) {
-  const pool = await loadEligiblePool();
-  const order = await loadSeedOrder(pool);
   const previousState = await readState();
+  const theme = nextTheme(previousState);
+  const pool = await loadEligiblePool(theme);
+  const order = await loadSeedOrder(pool, theme);
   // Le nom PRINCIPAL de chaque tirage préparé suit la rotation équitable
   // persistée — seul le second, purement là pour garantir davantage de
   // solutions, est tirée au hasard sans notion de rotation/répétition.
-  const { currentIndex, seedKey, letters } = await takeNextDraw(pool, order);
+  const { currentIndex, seedKey, letters } = await takeNextDraw(pool, order, theme);
   const validWords = computeValidWordsForDraw(pool, letters);
   const totalValidWords = validWords.length;
   const maxWordLength = validWords[0]?.length ?? 0;
@@ -551,6 +571,7 @@ export async function startNewGame(channelId) {
   const seasonMancheTotal = computeSeasonMancheTotal(seasonManche, now);
 
   const newState = {
+    theme,
     currentIndex,
     seedKey,
     gameId,
@@ -574,7 +595,7 @@ export async function startNewGame(channelId) {
     await cleanupGameScratchData(previousState.gameId);
   }
 
-  await refillPreparedDraws();
+  await refillPreparedDraws(theme);
 
   return { state: newState };
 }
@@ -683,6 +704,7 @@ async function roundResults(state) {
       {
         gameId: state.gameId,
         seasonId: state.seasonId,
+        theme: themeOf(state),
         reponse: participant.foundWords.join(", "),
         // Lettres du tirage de CETTE manche — redondant entre les enregistrements
         // de plusieurs joueurs d'une même manche (même gameId), mais c'est le
