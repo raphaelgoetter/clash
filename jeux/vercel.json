@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "cd .. && npm install",
+  "buildCommand": "",
+  "outputDirectory": "public",
+  "functions": {
+    "api/discord.js": {
+      "maxDuration": 180
+    },
+    "api/images.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/api/((?!discord).*)", "destination": "/api/images.js" }
+  ]
+}

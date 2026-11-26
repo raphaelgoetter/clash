@@ -198,7 +198,7 @@ const recapSolo = salon.find((m) => m.method === "POST" && /bat (Kévina|Testeur
 // Récapitulatifs : frise décorative, jamais la frise de la partie ; erreurs listées
 // Messages en cours exclus : leur ligne « 🎯 Un bon joueur bat Kévina… » n'est pas un récapitulatif
 for (const m of salon.filter((m) => m.method === "POST" && !texte(m).includes("Au tour de") && /bat |Match nul|abandonne|à temps/.test(texte(m)))) {
-  if (images(m)[0] !== "https://trustroyale.vercel.app/api/frise/decor") throw new Error("récapitulatif sans frise décorative");
+  if (images(m)[0] !== "https://kevina-jeux.vercel.app/api/frise/decor") throw new Error("récapitulatif sans frise décorative");
 }
 if (!salon.some((m) => m.method === "POST" && texte(m).includes("**Erreurs**"))) throw new Error("erreurs jamais listées");
 console.log("\n--- Récap contre Kévina ---\n" + texte(recapSolo));

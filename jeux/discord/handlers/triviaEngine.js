@@ -9,7 +9,7 @@
 //   jour                  — jour de publication affiché (« mercredi »), ou
 //                           fonction (seasonId) → jour
 //   answerPrefix          — préfixe des custom_id des boutons A/B/C/D
-//   bannerPath            — image fixe du jeu (frontend TrustRoyale), ou null
+//   bannerPath            — image fixe du jeu (jeux/public/), ou null
 //   imageUrl              — (gameId) → URL de l'image propre à la manche
 //                           (prioritaire sur bannerPath), ou null
 //   afficherPropositions  — false : texte des propositions absent du post

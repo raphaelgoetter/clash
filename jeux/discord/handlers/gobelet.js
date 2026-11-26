@@ -70,7 +70,7 @@ const DE_CRENEAU = { [JOURNEE]: "de la journée", [SOIR]: "du soir" };
 
 const GOBELET_COLOR = 0x9b59b6;
 
-// Illustrations statiques (frontend/public/images/gobelet/), même principe
+// Illustrations statiques (jeux/public/images/gobelet/), même principe
 // que BLACKJACK_*_IMAGE_URL dans _handlers/blackjack.js. gobelet.webp pour
 // l'annonce, le Jour 1 et la révélation finale (Jour 8) ; dices.webp pour
 // les jours intermédiaires (2 à 7).

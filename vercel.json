@@ -16,6 +16,14 @@
     }
   },
   "redirects": [
+    { "source": "/images/blackjack/:path*", "destination": "https://kevina-jeux.vercel.app/images/blackjack/:path*", "permanent": true },
+    { "source": "/images/concept/:path*", "destination": "https://kevina-jeux.vercel.app/images/concept/:path*", "permanent": true },
+    { "source": "/images/gobelet/:path*", "destination": "https://kevina-jeux.vercel.app/images/gobelet/:path*", "permanent": true },
+    { "source": "/images/quizz/:path*", "destination": "https://kevina-jeux.vercel.app/images/quizz/:path*", "permanent": true },
+    { "source": "/images/robinson/:path*", "destination": "https://kevina-jeux.vercel.app/images/robinson/:path*", "permanent": true },
+    { "source": "/images/synopsis/:path*", "destination": "https://kevina-jeux.vercel.app/images/synopsis/:path*", "permanent": true },
+    { "source": "/images/trivia/:path*", "destination": "https://kevina-jeux.vercel.app/images/trivia/:path*", "permanent": true },
+    { "source": "/images/triviageek/:path*", "destination": "https://kevina-jeux.vercel.app/images/triviageek/:path*", "permanent": true },
     { "source": "/fr/player/:tag", "destination": "/player/:tag", "permanent": true },
     { "source": "/en/player/:tag", "destination": "/player/:tag", "permanent": true },
     { "source": "/fr/clan/:tag", "destination": "/clan/:tag", "permanent": true },

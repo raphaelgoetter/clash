@@ -347,12 +347,12 @@ Discord → POST /api/discord/interactions
 
 Fonction Vercel séparée de l'application Express pour limiter le cold start et tenir la fenêtre de réponse Discord (`backend/routes/discord.js` ne fait que renvoyer 404 vers cet endpoint).
 
-Deux applications Discord, deux fonctions Vercel :
+Deux applications Discord, deux projets Vercel (`trustroyale` et `kevina`, même dépôt) :
 
 | Bot | Endpoint (Interactions Endpoint URL) | Routes servies |
 | --- | --- | --- |
 | TrustRoyale | `api/discord/interactions.js` | TrustRoyale, plus celles des jeux pendant la transition (boutons des messages postés par TrustRoyale) |
-| Jeux | `api/discord/jeux.js` (404 tant que `DISCORD_JEUX_*` n'est pas configuré) | Jeux uniquement, voir `jeux/CONTRIBUTING.md` |
+| Jeux (Kévina) | `jeux/api/discord.js` sur le projet `kevina` (`https://kevina-jeux.vercel.app/api/discord`) ; `api/discord/jeux.js` le réexporte côté TrustRoyale pendant la transition | Jeux uniquement, voir `jeux/CONTRIBUTING.md` |
 
 Vérification de signature, lecture du corps brut et liste blanche des serveurs : `@clash/commun/discordInteractions.js`, partagés par les deux endpoints.
 

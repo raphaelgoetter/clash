@@ -61,7 +61,7 @@ import {
 
 const BLACKJACK_COLOR = 0x2ecc71;
 
-// Illustrations statiques (frontend/public/images/blackjack/), même
+// Illustrations statiques (jeux/public/images/blackjack/), même
 // principe que robinsonImageUrl() dans jeux/discord/handlers/robinson.js.
 // "start" pour le lancement (Jour 1) et la révélation finale (Jour 8) ;
 // "game" pour les jours intermédiaires (2 à 7).

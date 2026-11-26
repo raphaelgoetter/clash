@@ -1,18 +1,18 @@
-// Fonction Vercel des interactions Discord du bot des jeux (application
-// distincte de TrustRoyale). Ne sert que les routes des jeux ; architecture
-// et règles identiques à api/discord/interactions.js (réponse type 5 avant
-// tout await, runBackground).
+// Fonction Vercel des interactions Discord de Kévina (projet Vercel « kevina »,
+// dossier racine jeux/). Architecture et règles identiques à
+// api/discord/interactions.js de TrustRoyale (réponse type 5 avant tout
+// await, runBackground).
 
-import { BOT_JEUX_CONFIGURE } from "../../jeux/env.js";
+import { BOT_JEUX_CONFIGURE } from "../env.js";
 import {
   isAuthorizedGuild,
   readRawBody,
   verifyDiscordSignature,
 } from "@clash/commun/discordInteractions.js";
-import { routeMiniJeux } from "../../jeux/discord/routes/miniJeux.js";
-import { routeJeuxSpeciaux } from "../../jeux/discord/routes/jeuxSpeciaux.js";
-import { routeDuels } from "../../jeux/discord/routes/duels.js";
-import { estBoutonBoss, routeBoss } from "../../jeux/discord/routes/boss.js";
+import { routeMiniJeux } from "../discord/routes/miniJeux.js";
+import { routeJeuxSpeciaux } from "../discord/routes/jeuxSpeciaux.js";
+import { routeDuels } from "../discord/routes/duels.js";
+import { estBoutonBoss, routeBoss } from "../discord/routes/boss.js";
 
 const ROUTES = [routeBoss, routeMiniJeux, routeJeuxSpeciaux, routeDuels];
 

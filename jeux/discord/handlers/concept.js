@@ -61,7 +61,7 @@ function buildConceptEmbed({ emojis, categorie, seasonId, seasonManche, seasonMa
       "",
       "**Merci de ne pas spoiler, sinon c'est pas drôle !**",
     ].join("\n"),
-    // Bannière fixe (frontend/public/images/concept/). Cache-buster (?v=) :
+    // Bannière fixe (jeux/public/images/concept/). Cache-buster (?v=) :
     // Discord met en cache l'aperçu d'un embed par URL, échecs compris.
     image: { url: `${URL_JEUX}/images/concept/concept-game.webp?v=${Date.now()}` },
     color: CONCEPT_COLOR,

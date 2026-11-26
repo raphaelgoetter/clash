@@ -16,7 +16,7 @@ const handlers = createTriviaHandlers(svc, {
   color: 0xf1c40f,
   jour: (seasonId) => (isRefonteSeason("clash", seasonId) ? CLASH_JOUR : "mercredi"),
   answerPrefix: "trivia_answer",
-  // Bannière fixe (frontend/public/images/trivia/images/).
+  // Bannière fixe (jeux/public/images/trivia/images/).
   bannerPath: "/images/trivia/images/trivia-game.webp",
 });
 

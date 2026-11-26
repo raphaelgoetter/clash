@@ -13,7 +13,7 @@ const handlers = createTriviaHandlers(svc, {
   color: 0x9b59b6,
   jour: "lundi",
   answerPrefix: "triviageek_answer",
-  // Bannière fixe (frontend/public/images/triviageek/).
+  // Bannière fixe (jeux/public/images/triviageek/).
   bannerPath: "/images/triviageek/trivia-geek-game.webp",
 });
 

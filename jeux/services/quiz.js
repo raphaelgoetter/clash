@@ -14,7 +14,7 @@
 // Schéma de jeux/data/quiz/quiz.json : { manches: [{ id, theme, questions: [
 //   { type: "qcm"|"vrai_faux", enonce, image, choix: [...], bonne_reponse } × QUESTIONS_PAR_MANCHE
 // ] }] } — `id` est un slug stable (dossier d'images + debug), `image` un
-// chemin relatif sous frontend/public/images/ (ou null), `bonne_reponse`
+// chemin relatif sous jeux/public/images/ (ou null), `bonne_reponse`
 // l'index 0-based dans `choix`.
 // ============================================================
 

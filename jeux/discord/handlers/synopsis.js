@@ -88,7 +88,7 @@ function buildSynopsisEmbed({ variante, synopsis, seasonId, seasonManche, season
       "",
       "**Merci de ne pas spoiler, sinon c'est pas drôle !**",
     ].join("\n"),
-    // Bannière fixe (frontend/public/images/synopsis/). Cache-buster (?v=) :
+    // Bannière fixe (jeux/public/images/synopsis/). Cache-buster (?v=) :
     // Discord met en cache l'aperçu d'un embed par URL, échecs compris.
     image: { url: `${URL_JEUX}/images/synopsis/synopsis-game.webp?v=${Date.now()}` },
     color: SYNOPSIS_COLOR,

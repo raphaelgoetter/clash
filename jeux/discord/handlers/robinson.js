@@ -64,7 +64,7 @@ const listeNoms = (noms) => (noms.length > 1 ? `${noms.slice(0, -1).join(", ")} 
 const nomAffiche = (discordId, fallback) =>
   estPnj(discordId) ? Promise.resolve(fallback ?? "PNJ") : resolveDisplayName(discordId, fallback);
 
-// Illustrations (annonce, fin de partie) : frontend/public/images/robinson/
+// Illustrations (annonce, fin de partie) : jeux/public/images/robinson/
 function robinsonImageUrl(numero) {
   return `${URL_JEUX}/images/robinson/rob-${String(numero).padStart(2, "0")}.webp`;
 }
