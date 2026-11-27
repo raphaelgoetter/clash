@@ -23,6 +23,7 @@ import { getAllArchivedResults as getFrameResults } from "./frames.js";
 import { getAllArchivedResults as getTriviaResults } from "./trivia.js";
 import { getAllArchivedResults as getTriviaGeekResults } from "./triviageek.js";
 import { getAllArchivedResults as getIntrusResults } from "./intrus.js";
+import { getAllArchivedResults as getSekoidonResults } from "./sekoidon.js";
 import { getAllArchivedResults as getPeleMeleResults } from "./pelemele.js";
 import { getAllArchivedResults as getConceptResults } from "./concept.js";
 import { getAllArchivedResults as getSynopsisResults } from "./synopsis.js";
@@ -57,7 +58,7 @@ export const WEEKLY_GAMES = [
   { key: "anagram", title: "🔤 Anagram", fetch: getAnagramResults },
   { key: "pelemele", title: "🔤 Pêle-mêle", fetch: getPeleMeleResults },
   { key: "concept", title: "🧩 Concept", fetch: getConceptResults },
-  { key: "zoom", title: "🔍 Zoom carte", fetch: getZoomResults },
+  { key: "zoom", title: "🔍 Zoom carte / truc", fetch: getZoomResults },
   { key: "palette", title: "🎨 Palette", fetch: getPaletteResults },
   { key: "zoom2", title: "🔍 Zoom logo", fetch: getZoom2Results },
   { key: "platpays", title: "🍽️ Plat Pays", fetch: getPlatPaysResults },
@@ -77,6 +78,7 @@ export const WEEKLY_GAMES = [
     title: "🎒 Intrus de l'inventaire",
     fetch: getIntrusResults,
   },
+  { key: "sekoidon", title: "🤔 Sékoidon", fetch: getSekoidonResults },
 ];
 
 export const SPECIAL_GAMES = [

@@ -29,6 +29,7 @@ import * as frames from "../../services/frames.js";
 import * as trivia from "../../services/trivia.js";
 import * as triviageek from "../../services/triviageek.js";
 import * as intrus from "../../services/intrus.js";
+import * as sekoidon from "../../services/sekoidon.js";
 import * as pelemele from "../../services/pelemele.js";
 import * as concept from "../../services/concept.js";
 import * as synopsis from "../../services/synopsis.js";
@@ -48,7 +49,7 @@ const { start, end } = getSeasonBoundsById(seasonId);
 const dateCourante = now < end ? now : new Date(end.getTime() - 1000);
 
 // Clé de jeu (préfixe Redis) → service
-const SERVICES = { frame: frames, trivia, triviageek, intrus, pelemele, concept, synopsis, zoom, zoom2, platpays };
+const SERVICES = { frame: frames, trivia, triviageek, intrus, sekoidon, pelemele, concept, synopsis, zoom, zoom2, platpays };
 
 const redis = new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN, automaticDeserialization: false });
 const dansSaison = (date) => date && seasonIdForDate(new Date(date)) === seasonId;

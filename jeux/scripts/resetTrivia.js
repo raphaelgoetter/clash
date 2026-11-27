@@ -6,22 +6,24 @@
 // catalogue. Destructif, à utiliser avec
 // précaution une fois le jeu en production.
 //
-// Usage : node jeux/scripts/resetTrivia.js [--geek | --intrus]
-//   (--geek : Trivia Geek, --intrus : Intrus de l'inventaire)
+// Usage : node jeux/scripts/resetTrivia.js [--geek | --intrus | --sekoidon]
+//   (--geek : Trivia Geek, --intrus : Intrus de l'inventaire, --sekoidon : Sékoidon)
 
 import "../env.js";
 
 import { resetGame as resetTrivia } from "../services/trivia.js";
 import { resetGame as resetTriviaGeek } from "../services/triviageek.js";
 import { resetGame as resetIntrus } from "../services/intrus.js";
+import { resetGame as resetSekoidon } from "../services/sekoidon.js";
 
 const GEEK = process.argv.includes("--geek");
 const INTRUS = process.argv.includes("--intrus");
-const LABEL = INTRUS ? "Intrus de l'inventaire" : GEEK ? "Trivia Geek" : "Trivia";
+const SEKOIDON = process.argv.includes("--sekoidon");
+const LABEL = SEKOIDON ? "Sékoidon" : INTRUS ? "Intrus de l'inventaire" : GEEK ? "Trivia Geek" : "Trivia";
 
 (async () => {
   try {
-    await (INTRUS ? resetIntrus : GEEK ? resetTriviaGeek : resetTrivia)();
+    await (SEKOIDON ? resetSekoidon : INTRUS ? resetIntrus : GEEK ? resetTriviaGeek : resetTrivia)();
     console.log(`Jeu ${LABEL} remis à zéro : plus de manche active, participants et archives de saison effacés.`);
   } catch (err) {
     console.error("Échec de la remise à zéro :", err.message);

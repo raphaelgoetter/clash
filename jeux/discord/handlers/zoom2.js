@@ -2,7 +2,7 @@
 // zoom2.js — Handlers Discord du jeu "Zoom logo" (devine une marque à partir
 // d'un zoom sur son logo), groupe "Coup d'œil" du vendredi (voir
 // jeux/services/refonte.js). Embed, bouton indice, Modal, DM : même parcours
-// que Zoom carte (handlers/zoom.js), l'indice est une image dézoomée. En
+// que Zoom truc (handlers/zoom.js), l'indice est une image dézoomée. En
 // production, la publication passe par jeux/scripts/postJeuxVisuels.js
 // (orchestrateur du groupe, seul à poster le récap de fin de saison).
 // ============================================================

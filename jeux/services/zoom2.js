@@ -2,11 +2,11 @@
 // zoom2.js — Jeu "Zoom logo" (devine une marque à partir d'un zoom sur son
 // logo), groupe "Coup d'œil" du vendredi (voir jeux/services/refonte.js).
 // Couche métier : lecture du catalogue, état de la partie, scoring,
-// classements. Même mécanique et même stockage que Zoom carte (zoom.js),
-// sous le préfixe Redis `zoom2:` ; zoom.js reste intact tant que Zoom carte
+// classements. Même mécanique et même stockage que Zoom truc (zoom.js),
+// sous le préfixe Redis `zoom2:` ; zoom.js reste intact tant que Zoom truc
 // tourne.
 //
-// Différences avec Zoom carte :
+// Différences avec Zoom truc :
 // - gameId opaque dérivé du numéro (`l001`…) : il apparaît dans l'URL de
 //   l'image et dans les custom_id Discord, il ne doit pas trahir la réponse.
 // - Catalogue mélangé une fois pour toutes (jeux/data/jeux-visuels/zoom2/
@@ -186,7 +186,7 @@ export { getCurrentSeasonId };
 
 // ── Sélection du prochain logo : progression séquentielle ───
 // Avance d'une position dans le catalogue et boucle au début une fois
-// épuisé (même principe que Zoom carte).
+// épuisé (même principe que Zoom truc).
 export function pickNextZoom2Index(state, catalog) {
   const prevIndex = state?.gameId ? catalog.findIndex((e) => gameIdFor(e) === state.gameId) : -1;
   return (prevIndex + 1) % catalog.length;
@@ -258,7 +258,7 @@ export async function alreadyPostedThisWeek(now = new Date()) {
 }
 
 // ── Vérification de la réponse ─────────────────
-// Égalité STRICTE après normalisation (comme Zoom carte) : les noms de
+// Égalité STRICTE après normalisation (comme Zoom truc) : les noms de
 // marques sont courts, une sous-chaîne validerait « LG » dans « Algérie ».
 
 export function checkAnswer(entry, rawAnswer) {
@@ -268,7 +268,7 @@ export function checkAnswer(entry, rawAnswer) {
 }
 
 // ── Scoring ──────────────────────────────────────────────────────
-// Barème de Zoom carte (-2 par erreur, plancher 1) avec deux indices
+// Barème de Zoom truc (-2 par erreur, plancher 1) avec deux indices
 // indépendants : domaine d'activité (-1) et logo moins zoomé (-3).
 
 export const HINT_COSTS = { domaine: 1, image: 3 };

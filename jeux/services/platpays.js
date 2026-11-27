@@ -159,7 +159,7 @@ export function paysAffiche(entry) {
 }
 
 // ── Vérification de la réponse ──────────────────────────────────
-// Égalité stricte (comme Zoom carte), pas de sous-chaîne comme Frame :
+// Égalité stricte (comme Zoom truc), pas de sous-chaîne comme Frame :
 // « niger » ne doit pas valider « nigeria ». Les articles et prépositions de
 // tête sont ignorés (« le Japon », « au Japon », « l'Inde »).
 const LEADING_WORDS = /^((le|la|les|l|au|aux|en|du|de|des)\s+)+/;

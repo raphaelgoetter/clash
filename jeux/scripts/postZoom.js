@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // postZoom.js
-// Poste manuellement (ou via cron) une nouvelle partie du jeu Zoom carte.
+// Poste manuellement (ou via cron) une nouvelle partie du jeu Zoom truc.
 // Aucune commande Discord associée : c'est l'unique déclencheur de
 // publication, en phase de test comme en production.
 //
@@ -47,7 +47,7 @@ if (!channelId) {
         console.log("");
       }
       console.log(`DRY-RUN — prochaine partie (salon ${channelId}) :`);
-      console.log(`  Carte : ${result.entry.answer} (${result.entry.id})`);
+      console.log(`  Objet : ${result.entry.answer} (${result.entry.id})`);
       console.log(`  Ping @MINI JEUX : ${result.pingRoleId ? "oui" : "non"}`);
       console.log(JSON.stringify({ embeds: [result.embed], components: result.components }, null, 2));
       return;
@@ -62,7 +62,7 @@ if (!channelId) {
       `Partie postée dans ${channelId} — "${result.entry.answer}" (message ${result.message.id})`,
     );
   } catch (err) {
-    console.error("Échec de la publication Zoom carte :", err.message);
+    console.error("Échec de la publication Zoom truc :", err.message);
     process.exit(1);
   }
 })();

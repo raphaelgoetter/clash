@@ -7,6 +7,7 @@ import { getZoomCardImage, getZoomHintImage, getZoomRevealImage } from "../servi
 import { getZoom2CardImage, getZoom2HintImage, getZoom2RevealImage } from "../services/zoom2Image.js";
 import { getPlatImage } from "../services/platpaysImage.js";
 import { getIntrusImage } from "../services/intrusImage.js";
+import { getSekoidonImage } from "../services/sekoidonImage.js";
 import { getPeleMeleRackImage } from "../services/pelemeleImage.js";
 import {
   getBoardImage as getGoblinHuntersBoardImage,
@@ -96,8 +97,8 @@ router.get("/api/frames/image", async (req, res) => {
   res.send(image.buffer);
 });
 
-// Jeu Zoom carte : sert l'image en zoom extrême de la manche en cours
-// (embed public), ou dézoomée (indice, ?stage=hint), ou la carte entière
+// Jeu Zoom truc : sert l'image en zoom extrême de la manche en cours
+// (embed public), ou dézoomée (indice, ?stage=hint), ou la photo entière
 // (révélation, ?stage=reveal) — jamais un fichier brut de jeux/data/jeux-visuels/zoom/images
 // (non exposé statiquement, seule cette route y donne accès). Anti-spoiler :
 // les trois fonctions vérifient que gameId a réellement été posté (voir
@@ -113,7 +114,7 @@ router.get("/api/zoom/image", async (req, res) => {
   res.send(image.buffer);
 });
 
-// Jeu Zoom logo : mêmes trois étapes que Zoom carte, même garde-fou
+// Jeu Zoom logo : mêmes trois étapes que Zoom truc, même garde-fou
 // anti-spoiler (isGamePosted dans services/zoom2.js).
 router.get("/api/zoom2/image", async (req, res) => {
   const { gameId, stage } = req.query;
@@ -146,6 +147,18 @@ router.get("/api/intrus/image", async (req, res) => {
   const { gameId } = req.query;
   if (!gameId) return res.status(400).end();
   const image = await getIntrusImage(String(gameId)).catch(() => null);
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(image.buffer);
+});
+
+// Jeu Sékoidon : photo de l'objet d'une manche déjà postée (garde-fou
+// anti-spoiler isGamePosted dans services/sekoidon.js).
+router.get("/api/sekoidon/image", async (req, res) => {
+  const { gameId } = req.query;
+  if (!gameId) return res.status(400).end();
+  const image = await getSekoidonImage(String(gameId)).catch(() => null);
   if (!image) return res.status(404).end();
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");

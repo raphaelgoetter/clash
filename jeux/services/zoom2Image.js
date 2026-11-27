@@ -4,9 +4,9 @@
 // via @resvg/resvg-js). Images lues depuis Vercel Blob (voir blobAssets.js
 // et scripts/uploadImageAssetsToBlob.js), jamais depuis data/ au runtime.
 //
-// Différences avec Zoom carte :
+// Différences avec Zoom truc :
 // - fond BLANC : beaucoup de logos sont noirs sur fond transparent, ils
-//   disparaîtraient sur le fond sombre de Zoom carte ;
+//   disparaîtraient sur le fond sombre de Zoom truc ;
 // - zooms par défaut plus faibles (×6 sur un logo ne montre qu'un aplat de
 //   couleur), réglés logo par logo dans le catalogue (focal/zoomStages) ;
 // - la révélation est elle aussi composée sur fond blanc (logo entier,

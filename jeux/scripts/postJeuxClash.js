@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // postJeuxClash.js
-// Point d'entrée UNIQUE en production pour le groupe « Clash » (Trivia /
+// Point d'entrée UNIQUE en production pour le groupe « Curiosités » (Trivia /
 // Zoom carte, en alternance une saison sur deux à partir de la refonte —
 // voir jeux/services/jeuxclash.js). Même déroulé que postJeuxAveugle.js :
 //
@@ -35,8 +35,10 @@ import {
 import { REFONTE_SEASON, getWiredGame } from "../services/refonte.js";
 import { alreadyPostedThisWeek as triviaAlreadyPostedThisWeek } from "../services/trivia.js";
 import { alreadyPostedThisWeek as zoomAlreadyPostedThisWeek } from "../services/zoom.js";
+import { alreadyPostedThisWeek as sekoidonAlreadyPostedThisWeek } from "../services/sekoidon.js";
 import { postTrivia, postSeasonRecap as postTriviaSeasonRecap } from "../discord/handlers/trivia.js";
 import { postZoom, postSeasonRecap as postZoomSeasonRecap } from "../discord/handlers/zoom.js";
+import { postSekoidon, postSeasonRecap as postSekoidonSeasonRecap } from "../discord/handlers/sekoidon.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
@@ -49,10 +51,10 @@ if (!channelId) {
   process.exit(1);
 }
 
-const ALREADY_POSTED_BY_GAME = { trivia: triviaAlreadyPostedThisWeek, zoom: zoomAlreadyPostedThisWeek };
-const POST_BY_GAME = { trivia: postTrivia, zoom: postZoom };
-const RECAP_BY_GAME = { trivia: postTriviaSeasonRecap, zoom: postZoomSeasonRecap };
-const LABEL_BY_GAME = { trivia: "Trivia", zoom: "Zoom carte" };
+const ALREADY_POSTED_BY_GAME = { trivia: triviaAlreadyPostedThisWeek, zoom: zoomAlreadyPostedThisWeek, sekoidon: sekoidonAlreadyPostedThisWeek };
+const POST_BY_GAME = { trivia: postTrivia, zoom: postZoom, sekoidon: postSekoidon };
+const RECAP_BY_GAME = { trivia: postTriviaSeasonRecap, zoom: postZoomSeasonRecap, sekoidon: postSekoidonSeasonRecap };
+const LABEL_BY_GAME = { trivia: "Trivia", zoom: "Zoom truc", sekoidon: "Sékoidon" };
 
 (async () => {
   try {
@@ -61,7 +63,7 @@ const LABEL_BY_GAME = { trivia: "Trivia", zoom: "Zoom carte" };
     const activeGame = getActiveClashGame(currentSeasonId);
 
     if (!activeGame) {
-      console.log(`Pas de publication cette fois-ci — raison : groupe Clash ouvert à partir de la saison ${REFONTE_SEASON.clash} (saison en cours : ${currentSeasonId}).`);
+      console.log(`Pas de publication cette fois-ci — raison : groupe Curiosités ouvert à partir de la saison ${REFONTE_SEASON.clash} (saison en cours : ${currentSeasonId}).`);
       return;
     }
 
@@ -114,7 +116,7 @@ const LABEL_BY_GAME = { trivia: "Trivia", zoom: "Zoom carte" };
 
     console.log(`Manche ${LABEL_BY_GAME[activeGame]} postée dans ${channelId} (message ${result.message.id}).`);
   } catch (err) {
-    console.error("Échec de la publication Jeux Clash :", err.message);
+    console.error("Échec de la publication Curiosités :", err.message);
     process.exit(1);
   }
 })();

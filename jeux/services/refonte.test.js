@@ -1,5 +1,5 @@
 import assert from "assert";
-import { REFONTE_SEASON, REFONTE_PAIRS, getRefonteGame, getWiredGame, groupLabel, groupLabelForDate } from "./refonte.js";
+import { REFONTE_SEASON, REFONTE_PAIRS, REMPLACEMENTS, getRefonteGame, getWiredGame, groupLabel, groupLabelForDate } from "./refonte.js";
 import { getActiveCultureGame } from "./jeuxculture.js";
 import { getActiveBlindGame } from "./jeuxaveugle.js";
 import { getActiveLetterGame } from "./jeuxdelettres.js";
@@ -23,14 +23,17 @@ const GROUPS = {
 for (const [group, getActive] of Object.entries(GROUPS)) assert.strictEqual(getActive(137), null, group);
 console.log("✓ aucun jeu avant la bascule");
 
+// Jeu attendu, compte tenu des remplacements prévus (REMPLACEMENTS).
+const attendu = (group, seasonId, game) =>
+  (REMPLACEMENTS[group] ?? []).find((r) => r.ancien === game && seasonId >= r.saison)?.nouveau ?? game;
 for (const [group, getActive] of Object.entries(GROUPS)) {
   const bascule = REFONTE_SEASON[group];
   const [premier, second] = REFONTE_PAIRS[group];
   assert.strictEqual(getRefonteGame(group, bascule - 1), null, group);
-  assert.strictEqual(getActive(bascule), premier, group);
-  assert.strictEqual(getActive(bascule + 1), second, group);
-  assert.strictEqual(getActive(bascule + 2), premier, group);
-  assert.strictEqual(getActive(bascule + 11), second, group);
+  assert.strictEqual(getActive(bascule), attendu(group, bascule, premier), group);
+  assert.strictEqual(getActive(bascule + 1), attendu(group, bascule + 1, second), group);
+  assert.strictEqual(getActive(bascule + 2), attendu(group, bascule + 2, premier), group);
+  assert.strictEqual(getActive(bascule + 11), attendu(group, bascule + 11, second), group);
 }
 console.log("✓ nouvelles paires à partir de la saison de bascule");
 
@@ -53,11 +56,20 @@ for (const [group, getActive] of Object.entries(GROUPS)) {
 }
 console.log("✓ seuls les jeux prêts sont lancés après la bascule");
 
-// Groupe Clash : rien avant la bascule, puis Trivia (nov.) / Zoom carte
-// (déc.), jamais Zoom carte et Zoom logo le même mois.
+// Groupe Curiosités : rien avant la bascule, puis Trivia (nov.) / Zoom truc
+// (déc.), jamais Zoom truc et Zoom logo le même mois.
 assert.strictEqual(getActiveClashGame(137), null);
 assert.strictEqual(getActiveClashGame(138), "trivia");
 assert.strictEqual(getActiveClashGame(139), "zoom");
+// Sékoidon remplace le Trivia à partir de janvier 2027 (140) ; le Trivia
+// garde novembre 2026 (récap et historique).
+assert.strictEqual(getActiveClashGame(140), "sekoidon");
+assert.strictEqual(getActiveClashGame(141), "zoom");
+assert.strictEqual(getActiveClashGame(142), "sekoidon");
+assert.strictEqual(getWiredGame("clash", 138, "trivia"), "trivia");
+assert.strictEqual(getWiredGame("clash", 140, "trivia"), null);
+assert.strictEqual(getWiredGame("clash", 140, "sekoidon"), "sekoidon");
+assert.strictEqual(getWiredGame("clash", 138, "sekoidon"), null);
 for (let s = 138; s < 150; s++) {
   assert.ok(!(getActiveClashGame(s) === "zoom" && getActiveVisualGame(s) === "zoom2"), `saison ${s}`);
 }

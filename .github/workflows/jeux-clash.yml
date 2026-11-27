@@ -1,4 +1,4 @@
-name: Jeux Clash — Trivia / Zoom carte (alternance saisonnière)
+name: Curiosités — Trivia / Zoom truc (alternance saisonnière)
 
 permissions:
   contents: read
@@ -38,5 +38,5 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Post Jeux Clash (salon public, jeu actif décidé par le script)
+      - name: Post Curiosités (salon public, jeu actif décidé par le script)
         run: npm run clash:public

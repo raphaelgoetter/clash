@@ -1,17 +1,16 @@
 // ============================================================
-// zoom.js — Jeu "Zoom carte" (devine une carte à partir d'un zoom extrême
-// sur son icône). Couche métier : lecture du catalogue, état de la partie,
-// scoring, classements. Miroir structurel de frames.js/anagrams.js (même
+// zoom.js — Jeu "Zoom truc" (devine l'objet du quotidien à partir d'un zoom
+// extrême sur sa photo). Couche métier : lecture du catalogue, état de la
+// partie, scoring, classements. Miroir structurel de frames.js (même
 // stockage Upstash Redis, mêmes pièges — automaticDeserialization/HGETALL,
 // client paresseux — voir les commentaires détaillés dans frames.js).
 //
 // Deux différences par rapport à Frame :
-// - checkAnswer utilise une égalité STRICTE (comme anagrams.js), pas une
-//   correspondance par sous-chaîne — les noms de cartes sont courts.
-// - La progression est séquentielle comme Frame (pickNextZoomIndex), mais
-//   sur un catalogue MÉLANGÉ une fois pour toutes (voir
-//   jeux/scripts/generateZoomCatalog.js) plutôt que trié alphabétiquement —
-//   un ordre alphabétique aurait rendu le jeu totalement prévisible.
+// - checkAnswer compare des noms entiers (pas de sous-chaîne), en ignorant
+//   l'article de tête et le pluriel ;
+// - la progression est séquentielle (pickNextZoomIndex) sur un catalogue
+//   MÉLANGÉ une fois pour toutes : un ordre trié rendrait le jeu prévisible.
+//   Les nouveaux objets s'ajoutent en fin de fichier.
 // ============================================================
 
 import fs from "fs/promises";
@@ -179,14 +178,13 @@ export async function resetGame() {
 // ── Saison en cours (mois calendaire, voir saison.js) ──────────
 export { getCurrentSeasonId };
 
-// ── Sélection de la prochaine carte : progression séquentielle ───
+// ── Sélection du prochain objet : progression séquentielle ───
 // Même pattern que Frame/Anagram (pickNextFrameIndex) : avance d'une
 // position dans data/zoom/zoom.json et boucle au début une fois le
 // catalogue épuisé. Le "hasard" ne vient pas d'un tirage au moment de
 // poster (plus simple, pas d'état supplémentaire à maintenir en Redis) mais
-// du fait que le FICHIER lui-même a été mélangé une fois — voir
-// jeux/scripts/generateZoomCatalog.js, qui préserve cet ordre à chaque
-// régénération plutôt que de retrier alphabétiquement.
+// du fait que le FICHIER lui-même a été mélangé une fois (ne jamais le
+// retrier, ajouter en fin).
 export function pickNextZoomIndex(state, catalog) {
   const prevIndex = state?.gameId ? catalog.findIndex((e) => e.id === state.gameId) : -1;
   return (prevIndex + 1) % catalog.length;
@@ -208,7 +206,7 @@ async function assignSeasonMancheNumber(seasonId, gameId) {
 }
 
 // X = manche déjà attribuée + jours de publication restants avant la fin de
-// la saison calendaire (vendredis, puis mardis dans le groupe Clash, voir
+// la saison calendaire (vendredis, puis mardis dans le groupe Curiosités, voir
 // jeuxclash.js) — même principe que Frame (mercredis) / Anagram (samedis).
 export function computeSeasonMancheTotal(seasonManche, now = new Date()) {
   return seasonManche + countRemainingWeekdayOccurrences(now, publicationWeekday(seasonIdForDate(now), FRIDAY));
@@ -269,14 +267,25 @@ export async function alreadyPostedThisWeek(now = new Date()) {
 }
 
 // ── Normalisation et vérification de la réponse ─────────────────
-// normalizeAnswer partagée avec Frame/Anagram (textNormalize.js). checkAnswer
-// utilise une égalité STRICTE comme Anagram (pas de correspondance par
-// sous-chaîne comme Frame) — les noms de cartes sont courts.
+// normalizeAnswer partagée avec Frame (textNormalize.js), puis article de
+// tête retiré (« une éponge », « l'ampoule », « des ciseaux ») et chaque mot
+// ramené au singulier (s/x final retiré au-delà de 3 lettres : « allumettes »,
+// « pinceaux »). Égalité stricte ensuite, jamais de sous-chaîne.
+
+const ARTICLES = /^(le|la|les|l|un|une|des|du|de)\s+/;
+
+export function answerKey(raw) {
+  return normalizeAnswer(raw)
+    .replace(ARTICLES, "")
+    .split(" ")
+    .map((mot) => (mot.length > 3 ? mot.replace(/[sx]$/, "") : mot))
+    .join(" ");
+}
 
 export function checkAnswer(entry, rawAnswer) {
-  const normalized = normalizeAnswer(rawAnswer);
-  if (!normalized) return false;
-  return (entry.accept || []).map(normalizeAnswer).includes(normalized);
+  const key = answerKey(rawAnswer);
+  if (!key) return false;
+  return (entry.accept || []).map(answerKey).includes(key);
 }
 
 // ── Scoring ──────────────────────────────────────────────────────
@@ -358,8 +367,6 @@ export async function archiveSolve(state, entry, discordId, username, score, sol
   const result = {
     gameId: state.gameId,
     seasonId: state.seasonId,
-    cardKey: entry.cardKey,
-    variant: entry.variant,
     answer: entry.answer,
     postedAt: state.startedAt,
     discordId,
@@ -403,7 +410,7 @@ export async function previewSeasonManche(seasonId) {
   return seq + 1;
 }
 
-// Nom français de la carte d'une manche donnée — pour le récap de fin de
+// Nom de l'objet d'une manche donnée — pour le récap de fin de
 // saison (liste des manches jouées).
 export async function getZoomRoundLabel(gameId) {
   const catalog = await loadZoomCatalog();

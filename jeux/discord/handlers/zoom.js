@@ -1,6 +1,6 @@
 // ============================================================
-// zoom.js — Handlers Discord pour le jeu "Zoom carte" (devine une carte
-// zoomée à l'extrême). Embed, bouton indice, modal, DM. La publication
+// zoom.js — Handlers Discord pour le jeu "Zoom truc" (devine l'objet
+// zoomé à l'extrême). Embed, bouton indice, modal, DM. La publication
 // d'une partie passe uniquement par jeux/scripts/postZoom.js.
 // Miroir structurel de jeux/discord/handlers/frames.js, avec deux
 // différences : un seul palier d'indice (-3 pts, pas 2 comme Frame), et
@@ -57,13 +57,13 @@ async function resolveRankingPseudos(ranking) {
 // ── Embed / composants du post ────────────────────────────────
 
 function buildZoomEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, cacheBust }) {
-  // Vendredi (Jeux visuels), puis mardi dans le groupe Clash (jeuxclash.js).
+  // Vendredi (Jeux visuels), puis mardi dans le groupe Curiosités (jeuxclash.js).
   const jour = isRefonteSeason("clash", seasonId) ? CLASH_JOUR : "vendredi";
   return {
-    title: `🔍 Le jeu du ${jour} : Zoom carte !`,
+    title: `🔍 Le jeu du ${jour} : Zoom truc !`,
     description:
       `**${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**\n\n` +
-      "Une carte zoomée à l'extrême. Devine son nom !\n\n" +
+      "Un objet zoomé à l'extrême. Devine ce que c'est !\n\n" +
       "**Barème**\n" +
       "- Réponse exacte du 1er coup sans indice : **10 pts**\n" +
       "- Chaque tentative incorrecte : **-2 pts**\n" +
@@ -96,7 +96,7 @@ function buildZoomComponents(gameId) {
 export function buildAnswerModal(gameId) {
   return {
     custom_id: `zoom_answer_modal:${gameId}`,
-    title: "Quelle est cette carte ?",
+    title: "Quel est cet objet ?",
     components: [
       {
         type: 1,
@@ -106,7 +106,7 @@ export function buildAnswerModal(gameId) {
             custom_id: "zoom_answer_input",
             style: 1,
             label: "Ta réponse",
-            placeholder: "Nom de la carte...",
+            placeholder: "Nom de l'objet...",
             required: true,
             max_length: 60,
           },
@@ -146,7 +146,7 @@ function buildSeasonRecapEmbed(seasonRanking, endedSeasonId, newSeasonId, manche
   lines.push("", `Bravo à tous ! Rendez-vous juste après pour le lancement de la ${nomSaison(newSeasonId)}.`);
 
   return {
-    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Zoom carte » !`,
+    title: `🏆 Fin de la ${nomSaison(endedSeasonId)} « Zoom truc » !`,
     description:
       `Merci aux ${seasonRanking.length} joueur${seasonRanking.length > 1 ? "s" : ""} qui ont participé à ce mini-jeu cette saison.\n\n` +
       lines.join("\n"),
@@ -367,7 +367,7 @@ export async function handleHintButton(webhookUrl, gameId, discordId, username) 
     const suffix = alreadyUsed ? "_Indice déjà révélé._" : "_Indice révélé (-3 pts)._";
 
     await postEphemeralEmbed(webhookUrl, {
-      description: `🔍 Un peu moins zoomée...\n${suffix}`,
+      description: `🔍 Un peu moins zoomé...\n${suffix}`,
       image: { url: `${URL_JEUX}/api/zoom/image?gameId=${gameId}&stage=hint&v=${Date.now()}` },
       color: ZOOM_COLOR,
     });
@@ -383,11 +383,11 @@ function ordinal(n) {
 }
 
 // Embed (pas un simple texte) pour pouvoir inclure l'image de révélation de
-// la carte — un DM classique { content } ne permet pas d'image.
+// l'objet — un DM classique { content } ne permet pas d'image.
 function buildDmEmbed({ seasonId, seasonManche, seasonMancheTotal, gameId, answer, score, gameRank, seasonScore }) {
   return {
     description: [
-      `**Zoom carte : ${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
+      `**Zoom truc : ${nomSaison(seasonId)} · Manche ${seasonManche}/${seasonMancheTotal}**`,
       "",
       `🔍 **${answer}** : tu es le ${ordinal(gameRank)} à avoir trouvé !`,
       `Score de cette manche : **${score} pts**`,

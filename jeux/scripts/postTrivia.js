@@ -16,20 +16,23 @@
 //   node jeux/scripts/postTrivia.js --no-ping      — poste sans pinger @MINI-JEUX
 //   node jeux/scripts/postTrivia.js --geek         — Trivia Geek au lieu de Trivia (cumulable)
 //   node jeux/scripts/postTrivia.js --intrus       — Intrus de l'inventaire au lieu de Trivia (cumulable)
+//   node jeux/scripts/postTrivia.js --sekoidon     — Sékoidon au lieu de Trivia (cumulable)
 
 import "../env.js";
 
 import { postTrivia } from "../discord/handlers/trivia.js";
 import { postTriviaGeek } from "../discord/handlers/triviageek.js";
 import { postIntrus } from "../discord/handlers/intrus.js";
+import { postSekoidon } from "../discord/handlers/sekoidon.js";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const PUBLIC = process.argv.includes("--public");
 const FORCE = process.argv.includes("--force");
 const GEEK = process.argv.includes("--geek");
 const INTRUS = process.argv.includes("--intrus");
-const post = INTRUS ? postIntrus : GEEK ? postTriviaGeek : postTrivia;
-const LABEL = INTRUS ? "Intrus de l'inventaire" : GEEK ? "Trivia Geek" : "Trivia";
+const SEKOIDON = process.argv.includes("--sekoidon");
+const post = SEKOIDON ? postSekoidon : INTRUS ? postIntrus : GEEK ? postTriviaGeek : postTrivia;
+const LABEL = SEKOIDON ? "Sékoidon" : INTRUS ? "Intrus de l'inventaire" : GEEK ? "Trivia Geek" : "Trivia";
 // Jamais de ping sur le salon de test, même sans --no-ping explicite (voir
 // postPalette.js pour le même garde-fou).
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;

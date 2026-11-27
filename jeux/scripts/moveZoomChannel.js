@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // moveZoomChannel.js
-// Reposte la manche Zoom carte actuellement active dans un autre salon,
+// Reposte la manche Zoom truc actuellement active dans un autre salon,
 // sans faire avancer la partie ni perdre aucune donnée (scores,
 // participants, indices, tentatives, résultats archivés restent intacts).
 // L'ancien message reste techniquement fonctionnel mais n'est plus la

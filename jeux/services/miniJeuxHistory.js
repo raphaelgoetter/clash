@@ -26,6 +26,10 @@ import {
   readState as readTriviaState,
 } from "./trivia.js";
 import {
+  getAllArchivedResults as getSekoidonResults,
+  readState as readSekoidonState,
+} from "./sekoidon.js";
+import {
   getAllArchivedResults as getTriviaGeekResults,
   readState as readTriviaGeekState,
 } from "./triviageek.js";
@@ -94,7 +98,7 @@ function tagSubGame(fetchFn, subGame) {
   return async () => (await fetchFn()).map((r) => ({ ...r, subGame }));
 }
 
-// Trivia et Zoom carte rejoignent le groupe Clash à la refonte : leurs
+// Trivia et Zoom (carte, puis truc) rejoignent le groupe Curiosités (`clash`) à la refonte : leurs
 // résultats restent dans leur ancien groupe avant la bascule (clash: false),
 // dans « clash » ensuite (clash: true). Découpage par saison de la manche
 // (la dernière manche d'une saison peut se résoudre au début de la
@@ -230,6 +234,7 @@ const SCORE_GAMES = [
     openRounds: [
       openRound(readTriviaState, { clash: true }),
       openRound(readZoomState, { clash: true }),
+      openRound(readSekoidonState),
     ],
     labelFor: (seasonStart) => groupLabelForDate("clash", seasonStart),
     fetch: async () => [
@@ -239,8 +244,9 @@ const SCORE_GAMES = [
       )()),
       ...(await tagSubGame(
         splitAtClash(getZoomResults, { clash: true }),
-        "Zoom carte",
+        "Zoom truc",
       )()),
+      ...(await tagSubGame(getSekoidonResults, "Sékoidon")()),
     ],
   },
 ];

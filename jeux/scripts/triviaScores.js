@@ -5,20 +5,24 @@
 // pas de notion "en cours" (essai unique verrouillé) : un joueur a répondu
 // (correct ou non) ou n'a pas encore répondu, point final.
 //
-// Usage : node jeux/scripts/triviaScores.js [--geek | --intrus]
-//   (--geek : Trivia Geek, --intrus : Intrus de l'inventaire)
+// Usage : node jeux/scripts/triviaScores.js [--geek | --intrus | --sekoidon]
+//   (--geek : Trivia Geek, --intrus : Intrus de l'inventaire, --sekoidon : Sékoidon)
 
 import "../env.js";
 
 import * as triviaSvc from "../services/trivia.js";
 import * as triviaGeekSvc from "../services/triviageek.js";
 import * as intrusSvc from "../services/intrus.js";
+import * as sekoidonSvc from "../services/sekoidon.js";
 import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 
 const GEEK = process.argv.includes("--geek");
 const INTRUS = process.argv.includes("--intrus");
-const LABEL = INTRUS ? "Intrus de l'inventaire" : GEEK ? "Trivia Geek" : "Trivia";
-const { loadTriviaCatalog, resolveTriviaEntry, readState, getGameParticipants, computeSeasonRanking } = INTRUS
+const SEKOIDON = process.argv.includes("--sekoidon");
+const LABEL = SEKOIDON ? "Sékoidon" : INTRUS ? "Intrus de l'inventaire" : GEEK ? "Trivia Geek" : "Trivia";
+const { loadTriviaCatalog, resolveTriviaEntry, readState, getGameParticipants, computeSeasonRanking } = SEKOIDON
+  ? sekoidonSvc
+  : INTRUS
   ? intrusSvc
   : GEEK
     ? triviaGeekSvc

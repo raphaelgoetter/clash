@@ -1,5 +1,5 @@
 // Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle,
-// Zoom carte, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus), Quiz,
+// Zoom truc, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus, Sékoidon), Quiz,
 // sondage d'idées, /mini-jeux et /mini-jeux-history (commandes, boutons,
 // modals de réponse).
 //
@@ -35,6 +35,7 @@ import { handleQuizVote } from "../handlers/quiz.js";
 import { handleAnswerButton as handleTriviaAnswer } from "../handlers/trivia.js";
 import { handleAnswerButton as handleTriviaGeekAnswer } from "../handlers/triviageek.js";
 import { handleAnswerButton as handleIntrusAnswer } from "../handlers/intrus.js";
+import { handleAnswerButton as handleSekoidonAnswer } from "../handlers/sekoidon.js";
 import {
   handleHintButton as handleConceptHintButton,
   handleModalSubmit as handleConceptModalSubmit,
@@ -288,7 +289,7 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu Zoom carte : bouton indice ──
+  // ── Jeu Zoom truc : bouton indice ──
   if (
     body.type === 3 &&
     typeof body.data?.custom_id === "string" &&
@@ -310,7 +311,7 @@ export async function routeMiniJeux(body, res) {
     return;
   }
 
-  // ── Jeu Zoom carte : bouton "Répondre" → ouverture de la Modal ──
+  // ── Jeu Zoom truc : bouton "Répondre" → ouverture de la Modal ──
   // Réponse synchrone immédiate obligatoire : l'ouverture d'une Modal ne
   // peut pas être différée (pas de runBackground ici).
   if (
@@ -324,7 +325,7 @@ export async function routeMiniJeux(body, res) {
       .json({ type: 9, data: buildZoomAnswerModal(gameId) });
   }
 
-  // ── Jeu Zoom carte : soumission de la Modal (réponse du joueur) ──
+  // ── Jeu Zoom truc : soumission de la Modal (réponse du joueur) ──
   // body.type === 5 ici est un MODAL_SUBMIT (InteractionType), à ne pas
   // confondre avec le type de réponse 5 (DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE)
   // utilisé plus haut dans ce fichier — deux enums Discord distinctes qui
@@ -641,6 +642,25 @@ export async function routeMiniJeux(body, res) {
     res.status(200).json({ type: 5, data: { flags: 64 } });
     const webhookUrl = buildDiscordWebhookUrl(body);
     runBackground(() => handleIntrusAnswer(webhookUrl, gameId, letter, discordId, username));
+    return;
+  }
+
+  // ── Jeu Sékoidon : boutons de réponse A/B/C/D (même ACK que Trivia) ──
+  if (
+    body.type === 3 &&
+    typeof body.data?.custom_id === "string" &&
+    body.data.custom_id.startsWith("sekoidon_answer:")
+  ) {
+    const [, gameId, letter] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username =
+      body.member?.nick ||
+      body.member?.user?.global_name ||
+      body.member?.user?.username ||
+      "Inconnu";
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleSekoidonAnswer(webhookUrl, gameId, letter, discordId, username));
     return;
   }
 

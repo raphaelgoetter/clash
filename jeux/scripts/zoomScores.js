@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // zoomScores.js
-// Affiche le classement de la partie Zoom carte en cours : joueur, score de
+// Affiche le classement de la partie Zoom truc en cours : joueur, score de
 // cette partie et score total de la saison.
 //
 // Usage : node jeux/scripts/zoomScores.js
@@ -20,7 +20,7 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
 (async () => {
   const state = await readState();
   if (!state) {
-    console.log("Aucune partie Zoom carte active pour le moment.");
+    console.log("Aucune partie Zoom truc active pour le moment.");
     return;
   }
 
@@ -33,7 +33,7 @@ import { resolveDisplayName } from "@clash/commun/discordUsers.js";
   ]);
 
   console.log(
-    `Jeu Zoom carte — Manche ${state.seasonManche}/${state.seasonMancheTotal} (${entry?.answer ?? "?"}) — Saison ${state.seasonId}\n`,
+    `Jeu Zoom truc — Manche ${state.seasonManche}/${state.seasonMancheTotal} (${entry?.answer ?? "?"}) — Saison ${state.seasonId}\n`,
   );
 
   const touchedIds = new Set([

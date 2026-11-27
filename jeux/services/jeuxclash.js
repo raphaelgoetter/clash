@@ -1,12 +1,12 @@
 // ============================================================
-// jeuxclash.js — Tronc commun du groupe « Clash » (Trivia / Zoom carte),
-// créé par la refonte (voir refonte.js) pour garder un rendez-vous Clash
-// Royale : rien avant sa saison de bascule (138, novembre 2026), puis
-// alternance une saison sur deux, le MARDI 18h UTC.
+// jeuxclash.js — Tronc commun du groupe « Curiosités » (Trivia / Zoom truc),
+// créé par la refonte (voir refonte.js) : rien avant sa saison de bascule
+// (138, novembre 2026), puis alternance une saison sur deux, le MARDI 18h
+// UTC. Clé technique historique `clash` (clés Redis `clash:*`).
 // jeux/scripts/postJeuxClash.js est le seul consommateur destiné à la
 // production.
 //
-// Trivia et Zoom carte tournaient auparavant dans d'autres groupes
+// Trivia et Zoom (carte, devenu truc) tournaient auparavant dans d'autres groupes
 // (culture le mercredi, visuels le vendredi) : leur jour de publication
 // dépend donc de la saison (voir publicationWeekday), pour que la fin de
 // leur ancienne alternance reste inchangée.

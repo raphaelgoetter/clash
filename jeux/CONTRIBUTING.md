@@ -4,7 +4,7 @@ Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spécia
 
 Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale` (ce dernier pour les seules exceptions listées dans « Exceptions Clash Royale »).
 
-Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Meow, Goblin Hunters, Mario Clash, Pont du Troll) · faces de dé · duels · sondage public · noms des cartes · exceptions Clash Royale · jeux archivés et supprimés.
+Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Sékoidon, Concept, Synopsis éclaté, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Meow, Goblin Hunters, Mario Clash, Pont du Troll) · faces de dé · duels · sondage public · noms des cartes · exceptions Clash Royale · jeux archivés et supprimés.
 
 ---
 
@@ -24,7 +24,7 @@ Les jeux ont leur propre application Discord (« bot des jeux », Kévina), serv
 
 | Module                                | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `jeux/discord/routes/miniJeux.js`     | Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle, Zoom carte, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus), Quiz, sondage d'idées, `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
+| `jeux/discord/routes/miniJeux.js`     | Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus), Quiz, sondage d'idées, `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
 | `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Robinson, Goblin Hunters, Mario Clash, Qui est-ce ? archivé, Meow, Pont du Troll) |
 | `jeux/discord/routes/duels.js`        | `/blackjack`, `/gobelet`, `/bang`, `/quatre`, `/punto`, `/frise`, `/potato`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Mascarade, archivé, pour les parties en cours) |
 
@@ -34,7 +34,7 @@ Les jeux ont leur propre application Discord (« bot des jeux », Kévina), serv
 
 ## Mini-jeux hebdomadaires : fonctionnement commun
 
-S'applique à Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom carte, Zoom logo et Plat Pays. Chaque section de jeu ne décrit que ses spécificités.
+S'applique à Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Concept, Synopsis éclaté, Pêle-mêle, Zoom truc, Zoom logo et Plat Pays. Chaque section de jeu ne décrit que ses spécificités.
 
 ### Groupes et alternance saisonnière
 
@@ -46,12 +46,13 @@ Cinq groupes ; chacun fait tourner **un seul jeu par saison** (voir « Saison et
 | `lettres`              | 🔤 Jeux de mots    | Concept / Pêle-mêle                        | samedi 18:00 (`0 18 * * 6`)   | `jeux-de-lettres.yml` | `postJeuxDeLettres.js`            | `lettres:*` |
 | `visuels`              | 📸 Coup d'œil      | Zoom logo / Plat Pays                      | vendredi 18:00 (`0 18 * * 5`) | `jeux-visuels.yml`    | `postJeuxVisuels.js`              | `visuels:*` |
 | `aveugle`              | 🎮 Culture geek    | Trivia Geek / Intrus de l'inventaire       | lundi 18:00 (`0 18 * * 1`)    | `jeux-aveugle.yml`    | `postJeuxAveugle.js`              | `aveugle:*` |
-| `clash`                | ⚔️ Clash           | Trivia / Zoom carte                        | mardi 18:00 (`0 18 * * 2`)    | `jeux-clash.yml`      | `postJeuxClash.js`                | `clash:*`   |
+| `clash`                | 🧐 Curiosités      | Trivia, puis Sékoidon / Zoom truc          | mardi 18:00 (`0 18 * * 2`)    | `jeux-clash.yml`      | `postJeuxClash.js`                | `clash:*`   |
 
 Tous les groupes publient à 18:00 UTC, soit 19h à Paris en hiver et 20h à l'heure d'été (les crons GitHub sont en UTC). Service d'alternance par groupe : `jeux/services/jeux<groupe>.js` (`getActive<…>Game`, suivi `<groupe>:last_season_id`).
 
 - Les clés de groupe et `<groupe>:last_season_id` sont des identifiants techniques historiques ; seul le libellé est affiché (`groupLabel`, utilisé par `/mini-jeux-history`).
-- Trivia et Zoom carte ont tourné dans d'autres groupes avant novembre 2026 et y gardent leurs résultats : `/mini-jeux` n'attribue une manche à un groupe que si le jeu y était actif pour la saison de la manche (`state.seasonId`), et `/mini-jeux-history` range leurs résultats selon la saison de la manche (`splitAtClash`) : ancien groupe avant la bascule, « ⚔️ Clash » ensuite. Leur jour de publication dépend aussi de la saison (`publicationWeekday`, `jeuxclash.js`). Zoom carte (décembre, février…) et Zoom logo (novembre, janvier…) ne tombent jamais le même mois. Une manche plus ancienne que la saison précédente n'est jamais affichée comme en cours (`resolvePairGame`).
+- Trivia et Zoom (sous le nom Zoom carte) ont tourné dans d'autres groupes avant novembre 2026 et y gardent leurs résultats : `/mini-jeux` n'attribue une manche à un groupe que si le jeu y était actif pour la saison de la manche (`state.seasonId`), et `/mini-jeux-history` range leurs résultats selon la saison de la manche (`splitAtClash`) : ancien groupe avant la bascule, « 🧐 Curiosités » ensuite. Leur jour de publication dépend aussi de la saison (`publicationWeekday`, `jeuxclash.js`). Zoom truc (décembre, février…) et Zoom logo (novembre, janvier…) ne tombent jamais le même mois. Une manche plus ancienne que la saison précédente n'est jamais affichée comme en cours (`resolvePairGame`).
+- Remplacement d'un jeu de paire (`REMPLACEMENTS`, `refonte.js`) : à partir de sa saison, le nouveau jeu prend la place de l'ancien dans l'alternance (`getRefonteGame`, `getWiredGame`) ; l'ancien garde ses saisons passées (récap, historique). Sékoidon remplace ainsi le Trivia à partir de janvier 2027 (saison 140) ; le Trivia garde novembre 2026.
 - Un jeu n'est lancé que s'il figure dans `REFONTE_PRETS` (`getWiredGame`), dans sa propre paire, et dans les tables `*_BY_GAME` de l'orchestrateur. Sinon l'orchestrateur poste quand même le récap du jeu qui se termine, puis échoue explicitement (« pas encore prêt »), et `/mini-jeux` n'affiche jamais ce jeu.
 - Catalogue Trivia Geek : `jeux/data/triviageek/trivia-geek.json`, même format que `trivia-clash.json` (bonne réponse suffixée « √ », parcouru dans l'ordre, ajouts en fin de fichier) plus `numero` (repère humain, 1 = première manche, à garder égal à la position dans le fichier), `titre` (titre humoristique affiché avec la question) et `sourceUrl`. Chaque réponse est vérifiée par une source web avant d'entrer au catalogue.
 - Brancher un nouveau jeu : l'ajouter à `REFONTE_PAIRS` et `REFONTE_PRETS`, aux 4 tables de l'orchestrateur, à la paire de `minijeux.js` et à la catégorie de `miniJeuxHistory.js` (`tagSubGame`).
@@ -62,7 +63,7 @@ Les orchestrateurs sont les **seuls points d'entrée en production**. À chaque 
 2. Gating (sauf `--force`/`--dry-run`) : bon jour UTC, puis `alreadyPostedThisWeek()` du jeu actif (date UTC de `<jeu>:state.startedAt` = aujourd'hui).
 3. Délégation à `post<Jeu>(channelId, { force: true, skipSeasonRecap: true, noPing })`.
 
-`skipSeasonRecap` n'a d'effet que sur Frame et Zoom carte (accepté et ignoré par les autres) : un appel direct (`post<Jeu>.js`) de ces deux jeux détecte lui-même le changement de saison sur son propre état et poste le récap. Pour les autres jeux, le récap n'est posté **que** par l'orchestrateur. Les scripts `jeux/scripts/post<Jeu>.js` restent utilisables pour un test ou un rattrapage d'un jeu précis.
+`skipSeasonRecap` n'a d'effet que sur Frame et Zoom truc (accepté et ignoré par les autres) : un appel direct (`post<Jeu>.js`) de ces deux jeux détecte lui-même le changement de saison sur son propre état et poste le récap. Pour les autres jeux, le récap n'est posté **que** par l'orchestrateur. Les scripts `jeux/scripts/post<Jeu>.js` restent utilisables pour un test ou un rattrapage d'un jeu précis.
 
 Chaque service réexporte `getCurrentSeasonId()` depuis `jeux/services/saison.js` (aucun appel à l'API Clash Royale).
 
@@ -119,7 +120,7 @@ Clés communes (`<p>` = préfixe du jeu) :
 - Routes d'images : `jeux/server/imageRoutes.js` (servi par `jeux/api/images.js`, et encore monté par `backend/server.js` pendant la transition). URL d'embed `${URL_JEUX}/api/<jeu>/image?gameId=<gameId>&v=<horodatage>`.
 - ⚠️ `gameId` épingle l'image de **cette** manche (sinon les anciens messages affichent la manche en cours quand le proxy Discord revalide son cache). La route refuse tout `gameId` jamais posté (registre `<p>:posted_games` ou équivalent), donc aucune manche future devinable. `v` n'est qu'un cache-buster.
 - Seules les illustrations fixes de `jeux/public/images/` sont exposées statiquement ; aucun asset de `jeux/data/` ne l'est.
-- ⚠️ Zoom carte, Zoom logo, Plat Pays, Intrus de l'inventaire (images), les avatars « clay » (`avatars/`) et les polices `data/fonts/*.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`/`readGameFontPaths`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- <préfixe>`, avec le préfixe le plus précis possible (ex. `jeux-visuels/platpays`) : le script n'envoie que les chemins qui commencent par ce préfixe, et `jeux-visuels` seul renvoie plus de 400 fichiers.
+- ⚠️ Zoom truc, Zoom logo, Plat Pays, Intrus de l'inventaire (images), les avatars « clay » (`avatars/`) et les polices `data/fonts/*.ttf` sont lus depuis Vercel Blob privé (`readBlobAsset`/`readBlobFontPath`/`readGameFontPaths`, `packages/commun/blobAssets.js`, nécessite `BLOB_READ_WRITE_TOKEN`) : le dossier `jeux/data/jeux-visuels/` est trop lourd pour le bundle. Après toute régénération d'images : `npm run assets:upload-blob -- <préfixe>`, avec le préfixe le plus précis possible (ex. `jeux-visuels/platpays`) : le script n'envoie que les chemins qui commencent par ce préfixe, et `jeux-visuels` seul renvoie plus de 400 fichiers.
 - ⚠️ Un service ne déclare jamais de constante pointant sur un **dossier** de `jeux/data/` (ex. `DATA_DIR = path.resolve(…, "intrus")` puis `path.join(DATA_DIR, "x.json")`) : `@vercel/nft` embarque alors le dossier entier, images comprises, dans chaque fonction qui importe le service et chaque déploiement retenu (quota Functions Storage). Écrire le chemin complet de chaque fichier lu (`path.resolve(__dirname, "..", "data", "intrus", "objets.json")`).
 - ⚠️ Rendu SVG → PNG par `@resvg/resvg-js` : tout texte exige la police embarquée (`fontFiles` + `loadSystemFonts: false`), sinon il est invisible sur Vercel, sans erreur. Polices : `readGameFontPaths()` (`packages/commun/blobAssets.js`) charge Inter puis trois sous-ensembles Noto de repli (`data/fonts/Noto*-subset.ttf` : lettres mathématiques stylées 𝕄 𝐋 𝑨, symboles ✰ ♛ et une cinquantaine d'emojis monochromes courants), pour les pseudos stylés ; un repli absent de Blob est ignoré. Format TTF obligatoire (resvg ne lit pas le WOFF/WOFF2), sous-ensembles à garder légers (environ 250 Ko au total). Le SVG passe par `texteAffichable()` (`packages/commun/texteImage.js`) avant `new Resvg` : petites capitales (ᴄ ᴅ…) remplacées par des capitales, sélecteurs de variante U+FE0F retirés (sinon le repli échoue sur tout le texte). Pseudos tronqués avec `tronquer()` du même module (graphèmes, jamais `.length`).
 
@@ -181,15 +182,16 @@ Schéma commun, plus `frame:hints:<gameId>:<discordId>` (SET des indices pris). 
 
 ---
 
-## Trivia, Trivia Geek et Intrus de l'inventaire (QCM)
+## Trivia, Trivia Geek, Intrus de l'inventaire et Sékoidon (QCM)
 
-Trois instances du même moteur : service `jeux/services/triviaEngine.js` (`createTriviaService`), handlers `jeux/discord/handlers/triviaEngine.js` (`createTriviaHandlers`). Chaque instance a son préfixe Redis, son catalogue et son jour ; aucune donnée partagée.
+Quatre instances du même moteur : service `jeux/services/triviaEngine.js` (`createTriviaService`), handlers `jeux/discord/handlers/triviaEngine.js` (`createTriviaHandlers`). Chaque instance a son préfixe Redis, son catalogue et son jour ; aucune donnée partagée.
 
 | Jeu                              | Groupe                                                                                                  | Préfixe Redis | Catalogue                                          | Jour                 | Boutons              |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------- | -------------------- | -------------------- |
-| 🧠 Trivia (culture Clash Royale) | Jeux de culture (alternance avec Frame), puis Clash à partir de la refonte (alternance avec Zoom carte) | `trivia:`     | `jeux/data/triviaclash/trivia-clash.json`          | mercredi, puis mardi | `trivia_answer:`     |
+| 🧠 Trivia (culture Clash Royale) | Jeux de culture (alternance avec Frame), puis Curiosités de novembre 2026 à décembre 2026 (alternance avec Zoom truc) | `trivia:`     | `jeux/data/triviaclash/trivia-clash.json`          | mercredi, puis mardi | `trivia_answer:`     |
 | 🎮 Trivia Geek                   | Culture geek à partir de la refonte                                                                     | `triviageek:` | `jeux/data/triviageek/trivia-geek.json`            | lundi                | `triviageek_answer:` |
 | 🎒 Intrus de l'inventaire        | Culture geek à partir de la refonte (alternance avec Trivia Geek)                                       | `intrus:`     | `jeux/data/jeux-visuels/intrus/` (voir ci-dessous) | lundi                | `intrus_answer:`     |
+| 🤔 Sékoidon                      | Curiosités à partir de janvier 2027, à la place du Trivia (alternance avec Zoom truc)                   | `sekoidon:`   | `jeux/data/jeux-visuels/sekoidon/` (voir ci-dessous) | mardi              | `sekoidon_answer:`   |
 
 - QCM A/B/C/D, essai unique. Catalogue parcouru dans l'ordre du fichier, en boucle. `id` = index zéro-paddé (`q000`…) : ne jamais réordonner un catalogue déjà joué, ajouter en fin.
 - Champ optionnel `titre` : affiché en italique au-dessus de la question.
@@ -199,7 +201,7 @@ Trois instances du même moteur : service `jeux/services/triviaEngine.js` (`crea
 - Erratum : un champ `erratum` sur une question offre 1 pt à tous les participants de la manche (`grantErratumPoint()`, idempotent) et poste une annonce une seule fois (`<préfixe>:erratum_posted:<gameId>`).
 - Pas de logique de récap interne (`skipSeasonRecap` ignoré) : le récap de fin de saison est posté par l'orchestrateur du groupe.
 - Options du moteur : `loadCatalog` (service, catalogue qui n'est pas au format « √ ») et `imageUrl` (handlers, image propre à chaque manche, prioritaire sur `bannerPath`). Champs d'entrée optionnels : `label` (libellé du récap, à la place de la question), `optionNotes` (précision par proposition, affichée à la révélation) et `explication`.
-- Scripts : `trivia:*`, `triviageek:*` et `intrus:*` (`test`, `test:dry`, `reset`, `scores`) ; `postTrivia.js`, `resetTrivia.js` et `triviaScores.js` prennent `--geek` (Trivia Geek) ou `--intrus` (Intrus de l'inventaire).
+- Scripts : `trivia:*`, `triviageek:*`, `intrus:*` et `sekoidon:*` (`test`, `test:dry`, `reset`, `scores`) ; `postTrivia.js`, `resetTrivia.js` et `triviaScores.js` prennent `--geek` (Trivia Geek), `--intrus` (Intrus de l'inventaire) ou `--sekoidon` (Sékoidon).
 
 ### Intrus de l'inventaire
 
@@ -218,6 +220,17 @@ Trois instances du même moteur : service `jeux/services/triviaEngine.js` (`crea
 - Import d'une planche de sprites : `npm run intrus:importer -- --planche <png> --jeu "<Jeu>" --prefixe <id>` (`jeux/outils/intrus/importerPlanche.js`) découpe les sprites isolés (fond transparent ou couleur de bord ; `--alpha 128 --ecart 0` pour un atlas compact) dans `sources-local/<prefixe>/` et les ajoute à `objets.json` avec un nom provisoire « <Jeu> #NNN » (jamais affiché dans le post). Sprites téléchargés un par un : `--dossier <dossier>` (une image = un objet, nom repris du nom de fichier). The Spriters Resource bloque les scripts (Cloudflare) : planches à télécharger à la main. Ensuite `intrus:verifier`, tri des découpes dans la démo (onglet Objets, exclusion), upload Blob.
 - Assemblage automatique : `npm run intrus:assembler` (`--dry-run`, `--cible 60`) reconstruit `intrus.json` depuis le catalogue (même famille de style : pixel, icône carrée ou illustré = aplat ou peint ; netteté comparable, pas d'intrus visible, intrus le plus proche visuellement, pas d'intrus homonyme d'un objet du jeu du trio, variété par jeu), difficulté par proximité visuelle. Archive l'ancien fichier et les décisions dans `temp/intrus-planches/archive-*/`. Ne juge pas la cohérence de catégorie (potion avec potions) : relecture obligatoire dans la démo.
 - Démo de relecture : `npm run intrus:demo` (`jeux/outils/intrus/demoValidation.js`) lance une UI locale (`/api/intrus/demo`) pour parcourir les planches `iXXX.png`, marquer chaque proposition (`valide` / `refuse` / `a_revoir`) et saisir un commentaire. Les décisions sont persistées dans `temp/intrus-planches/validation.json`.
+
+### Sékoidon
+
+Une photo d'objet insolite et la question « À quoi sert cet objet ? », 4 usages possibles. Service `jeux/services/sekoidon.js`, image `jeux/services/sekoidonImage.js`, handler `jeux/discord/handlers/sekoidon.js`.
+
+- Post : la photo seule (`GET /api/sekoidon/image?gameId=`, JPEG lu depuis Blob, rien pour une manche jamais postée) et les 4 propositions dans l'embed. La réponse éphémère donne le nom et l'époque de l'objet, l'`explication`, la source et le crédit de la photo (`creditPhoto`).
+- Catalogue `jeux/data/jeux-visuels/sekoidon/sekoidon.json` : `numero` (= position), `objet`, `famille` (`etrange`, `moderne` = après 1950, `classique`), `univers` (médecine, guerre, transport…), `nom`, `epoque`, `bonne`, `leurres` (3), `explication`, `source`, `image`, `photo` (`page` Commons, `auteur`, `licence`). Parcouru dans l'ordre du fichier, en boucle ; `gameId` = `s` + numéro sur 3 chiffres. Ne jamais réordonner un catalogue déjà joué, ajouter en fin.
+- Ordre de jeu : jamais le même `univers`, ni deux `moderne` ou deux `classique`, à moins de 3 manches d'écart, et jamais 3 `etrange` d'affilée (vérifié par `sekoidon.test.js`). Un ajout s'insère à une position qui respecte ces écarts.
+- Contenu : surtout des objets vraiment étranges, des objets modernes et quelques insolites classiques ; usage vérifié sur Wikipédia ou la fiche du musée, jamais de mémoire ; leurres plausibles, pas d'em dash dans les textes joueurs. Chaque lot est validé sur une page de test avant d'entrer au catalogue.
+- `secours.json` (même dossier) : objets validés mais gardés hors du jeu, sans image locale (photo sur Commons via `photo.page`), jamais lus par le code ; réserve pour un ajout ou un autre usage.
+- Photos : licences libres ou non commerciales (Wikimedia Commons, Wellcome, musées en accès ouvert), crédit obligatoire ; jamais de photo d'agence, de boutique ou de site de vente. JPEG 1200 px dans `jeux/data/jeux-visuels/sekoidon/images/`, servis depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/sekoidon`.
 
 ---
 
@@ -313,9 +326,9 @@ Les résultats de **tous** les participants sont archivés d'un coup (`finalizeR
 
 ---
 
-## Zoom carte (devine la carte zoomée)
+## Zoom truc (devine l'objet zoomé)
 
-Groupe « ⚔️ Clash » (mardi 18:00 UTC), en alternance avec Trivia. Service `jeux/services/zoom.js`, image `jeux/services/zoomImage.js`. Une manche = une carte (base, évolution ou héros) zoomée à l'extrême.
+Groupe « 🧐 Curiosités » (mardi 18:00 UTC), en alternance avec Trivia. Service `jeux/services/zoom.js`, image `jeux/services/zoomImage.js`, handler `jeux/discord/handlers/zoom.js`. Une manche = un objet (quotidien, métiers, sport, musique, jeux…) photographié puis zoomé à l'extrême. Les manches jouées sous l'ancien thème (cartes Clash Royale, « Zoom carte ») restent dans les archives `zoom:*` avec leur réponse.
 
 ### Barème
 
@@ -323,22 +336,21 @@ Groupe « ⚔️ Clash » (mardi 18:00 UTC), en alternance avec Trivia. Service 
 
 ### Réponse et indice
 
-- Modal, égalité **stricte** normalisée. DM de fin de manche avec l'image entière.
+- Modal ; `checkAnswer` compare la clé `answerKey` de la réponse à celles de `accept` : `normalizeAnswer`, puis article de tête retiré (`le`, `la`, `les`, `l'`, `un`, `une`, `des`, `du`, `de`) et chaque mot de plus de 3 lettres ramené au singulier (`s`/`x` final retiré). Égalité stricte ensuite, jamais de sous-chaîne. DM de fin de manche avec la photo entière.
 - Indice = image dézoomée envoyée en **embed éphémère** (`/api/zoom/image?gameId=&stage=hint`), jamais une édition du post public. Révélation : `stage=reveal`.
 - Limite acceptée : l'URL `stage=hint` est reconstructible par qui a vu la manche, sans perdre les 3 pts.
 
 ### Catalogue (`jeux/data/jeux-visuels/zoom/zoom.json`)
 
-- Généré par `npm run zoom:catalog` (`jeux/scripts/generateZoomCatalog.js`, usage ponctuel). Pool : `cardKey` de `jeux/data/jeux-visuels/zoom/cartes-source.json` (50 cartes) + `EXTRA_ENTRIES` ajoutées à la main ; noms FR depuis `cardNames.json` uniquement.
-- Icônes de base : `fetchCards()`. Évolutions/héros : `fetchPlayer(REFERENCE_PLAYER_TAG)` (l'API n'expose ces variantes que pour les cartes évoluées par ce joueur ; filtre `countEvolved`/`countHeroes`, `packages/clash-royale/collectionConstants.js`), ou `iconUrls.evolutionMedium`/`heroMedium` pour les ajouts manuels.
-- Entrée : `id` (= `gameId`), `cardKey`, `variant: "base"|"evolution"|"hero"`, `answer`, `accept`, `image`, `width`/`height`, `sourceUrl`, `fetchedAt`, optionnellement `focal`/`zoomStages` (réglage manuel).
-- ⚠️ L'ordre du fichier **est** l'ordre de jeu (`pickNextZoomIndex` : index + 1, en boucle). Il a été mélangé une fois : le script ne le retrie jamais et insère les nouvelles cartes à des positions aléatoires. Un fichier trié rend le jeu prévisible.
-- Idempotent : ne retélécharge que si l'URL source change ; purge les entrées dont le `cardKey` a quitté le pool.
-- Images dans `jeux/data/jeux-visuels/zoom/images/`, servies depuis Blob (voir fonctionnement commun).
+- Écrit à la main. Entrée : `id` (= `gameId`, `t` + 3 chiffres, opaque car visible dans l'URL d'image et les `custom_id`, jamais réattribué), `answer`, `accept`, `image` (JPEG, 2000 px max sur le grand côté), `width`/`height` (dimensions réelles), `sourceUrl` (page du fichier sur Wikimedia Commons), `licence`, optionnellement `focal`/`zoomStages`.
+- Photos libres de Wikimedia Commons uniquement, objet net et bien éclairé, sans marque ni texte qui donne la réponse au zoom de la manche ou de l'indice.
+- `accept` : nom affiché + variantes courantes (synonymes, forme longue), sans mot trop général ; aucune variante redondante une fois passée par `answerKey`, aucune acceptée pour deux objets (vérifié par `zoom.test.js`).
+- ⚠️ L'ordre du fichier **est** l'ordre de jeu (`pickNextZoomIndex` : index + 1, en boucle). Il est mélangé de façon qu'un même univers (cuisine, bureau, couture, maison, métiers, sport, musique, jeux) ne revienne jamais à moins de trois manches d'écart. Un ajout s'insère à une position qui respecte cet écart, jamais en tri alphabétique.
+- Images dans `jeux/data/jeux-visuels/zoom/images/`, servies depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/zoom`.
 
 ### Recadrage
 
-Point focal normalisé (défaut `(0.5, 0.45)`) et facteur de zoom : `DEFAULT_STAGE0_SCALE = 6.0` (post public), `DEFAULT_STAGE1_SCALE = 3.1` (indice), surchargeables par carte (`focal`, `zoomStages.stage0/stage1`). Un embed est partagé par tout le salon : le zoom ne varie pas par joueur. ⚠️ Vérifier visuellement toute nouvelle carte : un zoom trop faible rend la réponse évidente.
+Point focal normalisé (défaut `(0.5, 0.5)`) et facteur de zoom par rapport au « cover » : `DEFAULT_STAGE0_SCALE = 6.0` (post public), `DEFAULT_STAGE1_SCALE = 2.5` (indice), surchargeables par objet (`focal`, `zoomStages.stage0/stage1`, avec `stage0 ≥ stage1 ≥ 1`). Le cadrage est ramené dans la photo : jamais de bande vide près d'un bord. Fond sombre, rendus PNG ; la révélation est la photo entière centrée. Un embed est partagé par tout le salon : le zoom ne varie pas par joueur. ⚠️ Chaque objet est réglé et vérifié visuellement (`renderZoomStages`) avant son ajout : le zoom de la manche doit laisser deviner une matière ou un détail, l'indice ne doit pas donner la réponse d'emblée.
 
 ### Redis (`zoom:*`)
 
@@ -346,18 +358,18 @@ Schéma commun avec `zoom:posted_games`, plus `zoom:hint:<gameId>:<discordId>` (
 
 ### Scripts npm spécifiques
 
-`zoom:catalog` ; `zoom:move` (reposte la manche active dans un autre salon sans l'avancer).
+`zoom:move` (reposte la manche active dans un autre salon sans l'avancer).
 
 ---
 
 ## Zoom logo (devine la marque à partir d'un zoom sur son logo)
 
-Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en alternance avec Plat Pays. Service `jeux/services/zoom2.js`, image `jeux/services/zoom2Image.js`, handler `jeux/discord/handlers/zoom2.js` : même mécanique que Zoom carte (réponse stricte normalisée, -2 pts par erreur, plancher 1), mais deux indices indépendants (`HINT_COSTS`) : indice 1 = domaine d'activité de la marque (texte éphémère, **-1 pt**), indice 2 = logo moins zoomé (image éphémère, **-3 pts**), DM de fin de manche avec le logo entier, score de la manche et total de la saison, sans rang d'arrivée. Récap de fin de saison posté uniquement par `postJeuxVisuels.js` (`skipSeasonRecap` ignoré).
+Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en alternance avec Plat Pays. Service `jeux/services/zoom2.js`, image `jeux/services/zoom2Image.js`, handler `jeux/discord/handlers/zoom2.js` : même mécanique que Zoom truc (réponse stricte normalisée, -2 pts par erreur, plancher 1), mais deux indices indépendants (`HINT_COSTS`) : indice 1 = domaine d'activité de la marque (texte éphémère, **-1 pt**), indice 2 = logo moins zoomé (image éphémère, **-3 pts**), DM de fin de manche avec le logo entier, score de la manche et total de la saison, sans rang d'arrivée. Récap de fin de saison posté uniquement par `postJeuxVisuels.js` (`skipSeasonRecap` ignoré).
 
 - Catalogue `jeux/data/jeux-visuels/zoom2/zoom2.json` : `numero` (= position), `answer`, `accept`, `domaine` (indice 1, obligatoire : secteur d'activité sans rien qui trahisse la marque, ex. « Constructeur automobile », « Banque »), `image`, `width`/`height` (dimensions réelles du PNG), `sourceUrl` (fichier Commons ou Wikipédia), optionnellement `focal`/`zoomStages`. Parcouru dans l'ordre du fichier, en boucle ; `gameId` = `l` + numéro sur 3 chiffres, opaque car visible dans l'URL d'image et les `custom_id`. Mélangé une fois : ne jamais réordonner, ajouter en fin.
 - Logos : toujours la version graphique (symbole) quand la marque en a une, jamais sa seule version typographique. Le logo Wikidata (`P154`) est souvent le logotype : chercher le symbole sur Commons, ou sur Wikipédia en anglais pour les logos non libres. Pas de marque trop évidente même zoomée (Apple, Nike, McDonald's…).
 - `accept` : nom affiché + variantes courantes (sigle, nom complet, orthographe fréquente), sans prénom seul ni mot courant ; aucune variante redondante une fois normalisée, aucune acceptée pour deux logos (vérifié par `zoom2.test.js`).
-- Recadrage : formule de Zoom carte, mais **fond blanc** (beaucoup de logos sont noirs sur fond transparent) et zooms par défaut `×3,5` (post public) / `×1,8` (indice), point focal `(0.5, 0.45)`. Réglage logo par logo validé visuellement avant l'ajout au catalogue ; la révélation (`stage=reveal`) est le logo entier centré sur fond blanc.
+- Recadrage : formule de Zoom truc, mais **fond blanc** (beaucoup de logos sont noirs sur fond transparent) et zooms par défaut `×3,5` (post public) / `×1,8` (indice), point focal `(0.5, 0.45)`. Réglage logo par logo validé visuellement avant l'ajout au catalogue ; la révélation (`stage=reveal`) est le logo entier centré sur fond blanc.
 - Images dans `jeux/data/jeux-visuels/zoom2/images/`, servies depuis Blob : après tout ajout, `npm run assets:upload-blob -- jeux-visuels/zoom2`.
 - Redis (`zoom2:*`) : schéma commun avec `zoom2:posted_games`, `zoom2:hint:<gameId>:<discordId>` (indice image) et `zoom2:domaine:<gameId>:<discordId>` (indice domaine), flags `SETNX` ; `zoom2:reset` purge aussi `posted_games`.
 - Boutons `zoom2_domaine:`, `zoom2_hint:`, `zoom2_answer:` (Modal `zoom2_answer_modal:`), route `/api/zoom2/image`. Classement joueur : « 🛂 Mon passeport » de `/mini-jeux`.
@@ -1899,13 +1911,12 @@ Variables : `DISCORD_CHANNEL_FRAME_TEST`, `DISCORD_CHANNEL_ANNONCES`, `DISCORD_T
 
 ## Noms français des cartes (`jeux/data/cardNames.json`)
 
-Source de vérité anglais ↔ français des cartes Clash Royale (exception, voir « Exceptions Clash Royale »), lue par Zoom carte, Qui est-ce ? et Mascarade. Un objet par carte : `cardKey` (nom anglais exact de l'API, `fetchCards()`), `rarity`, `fr`, et selon les jeux `sound`, `elixir`, `hp`, `damage`, `range`, `type`, `family`.
+Source de vérité anglais ↔ français des cartes Clash Royale (exception, voir « Exceptions Clash Royale »), lue par Qui est-ce ? et Mascarade (archivés). Un objet par carte : `cardKey` (nom anglais exact de l'API, `fetchCards()`), `rarity`, `fr`, et selon les jeux `sound`, `elixir`, `hp`, `damage`, `range`, `type`, `family`.
 
 - **Édité à la main**. Les scripts d'enrichissement (usage ponctuel) n'ajoutent que les champs absents et ne réécrivent jamais une entrée existante (sauf `--force` explicite) :
   - `jeux/scripts/generateCardNames.js` : ajoute les cartes manquantes ; `fr` résolu via les liens interlangues du wiki Fandom FR (vérifiés dans les deux sens). `fr: null` = à compléter à la main (liste en fin d'exécution). Toute valeur automatique est à relire.
   - `jeux/scripts/tagCards.js` (`--dry-run`, `--force` pour `type`/`family`) : `type` ∈ `troop|flying|spell|building` (préfixe d'id officiel `26` troupe, `27` bâtiment, `28` sort, puis liste de volants), `family` ∈ `goblin|skeleton|human|minion|null` ; complète `elixir` depuis l'API (sauf Miroir, coût variable).
   - `jeux/scripts/generateCardStats.js` : stats de combat (`elixir`, `hp`, `damage`, `range`) des troupes, lues par Qui est-ce ?.
-- `generateZoomCatalog.js` lit ses noms FR **uniquement** ici et resynchronise `answer`/`accept` à chaque exécution.
 
 ---
 
@@ -1913,10 +1924,10 @@ Source de vérité anglais ↔ français des cartes Clash Royale (exception, voi
 
 Kévina est conçue pour tourner sur n'importe quel serveur : aucune référence à Clash Royale (données, API, images de cartes, `@clash/clash-royale`) hors des exceptions ci-dessous, à tenir à jour. Tout nouveau jeu est sans lien avec Clash Royale.
 
-- **Groupe ⚔️ Clash** (Trivia, `jeux/data/triviaclash/trivia-clash.json` ; Zoom carte, `jeux/data/jeux-visuels/zoom/`) : rendez-vous Clash Royale conservé.
+- **Trivia** (`jeux/data/triviaclash/trivia-clash.json`) : thème Clash Royale, joué dans le groupe 🧐 Curiosités jusqu'en décembre 2026, remplacé par Sékoidon ensuite.
 - **Mario Clash** : thème et nom seulement (aucune image ni donnée de carte).
 - **Jeux archivés** Mascarade et Qui est-ce ? : images de cartes (`@clash/clash-royale/cardImage.js`) et `cardNames.json`.
-- **Scripts de catalogue** (usage ponctuel, API Clash Royale via `@clash/clash-royale/clashApi.js`) : `generateCardNames.js`, `tagCards.js`, `generateCardStats.js` (`cardNames.json`), `generateZoomCatalog.js` (Zoom carte, avec `collectionConstants.js`).
+- **Scripts de catalogue** (usage ponctuel, API Clash Royale via `@clash/clash-royale/clashApi.js`) : `generateCardNames.js`, `tagCards.js`, `generateCardStats.js` (`cardNames.json`).
 - **Culture générale** : quelques entrées isolées de catalogues (Frise : sortie de Clash Royale ; Zoom logo : Supercell ; Intrus : un coffre Clash Royale ; Quiz : le choix « TrustRoyale »).
 
 Vérification : `rg -i "clash|royale|élixir|supercell" jeux/` ne doit renvoyer que ces exceptions (et le préfixe de paquet `@clash/`).

@@ -22,6 +22,7 @@ import * as peleMeleSvc from "../../services/pelemele.js";
 import * as triviaSvc from "../../services/trivia.js";
 import * as triviaGeekSvc from "../../services/triviageek.js";
 import * as intrusSvc from "../../services/intrus.js";
+import * as sekoidonSvc from "../../services/sekoidon.js";
 import * as conceptSvc from "../../services/concept.js";
 import * as synopsisSvc from "../../services/synopsis.js";
 import * as blackjackDuelSvc from "../../services/blackjackDuel.js";
@@ -216,10 +217,11 @@ const CULTURE_GAMES = {
   frame: { title: "🎬 Trouve le film !", svc: frameSvc },
   synopsis: { title: "🎬 Synopsis éclaté", svc: synopsisSvc },
 };
-// ⚔️ Clash (mardi, voir jeuxclash.js).
+// 🧐 Curiosités (mardi, voir jeuxclash.js).
 const CLASH_GAMES = {
   trivia: { title: "🧠 Trivia", svc: triviaSvc },
-  zoom: { title: "🔍 Zoom carte", svc: zoomSvc },
+  zoom: { title: "🔍 Zoom truc", svc: zoomSvc },
+  sekoidon: { title: "🤔 Sékoidon", svc: sekoidonSvc },
 };
 
 // Filet de sécurité si getCurrentSeasonId() renvoyait null : on retombe sur
@@ -235,7 +237,7 @@ const CLASH_GAMES = {
 //
 // Une manche n'est retenue pour un groupe que si le jeu y était actif pour
 // la saison de la manche.
-// fallbackKey null : groupe masqué tant qu'il n'a aucun jeu (Clash avant la
+// fallbackKey null : groupe masqué tant qu'il n'a aucun jeu (Curiosités avant la
 // bascule).
 async function resolvePairGame(games, getSeasonId, getActiveKey, fallbackKey) {
   const seasonId = await getSeasonId();
@@ -665,7 +667,7 @@ function daysUntilEnd(now, game) {
   const startedToday =
     String(game.state?.startedAt ?? "").slice(0, 10) === now.toISOString().slice(0, 10);
   const regular = daysUntil === 0 && startedToday ? 7 : daysUntil;
-  // Trivia et Zoom carte rejoignent le groupe Clash à la refonte : la
+  // Trivia, Sékoidon et Zoom truc forment le groupe Curiosités (`clash`) : la
   // dernière manche de leur ancien groupe se termine dès que le groupe Clash
   // les reposte, si ce créneau tombe avant celui de l'ancien groupe.
   if (game.key === "clash" || !CLASH_GAMES[game.gameKey] || !game.state) return regular;
