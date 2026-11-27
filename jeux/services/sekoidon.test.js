@@ -31,6 +31,7 @@ objets.forEach((o, i) => {
   }
   assert.ok(/^https:\/\//.test(o.source), `source de ${ref}`);
   assert.ok(o.photo.page.startsWith("https://commons.wikimedia.org/wiki/File:") && o.photo.licence, `crédit photo de ${ref}`);
+  assert.ok(![o.photo.auteur, o.photo.licence].some((t) => /&[a-z#0-9]+;/i.test(t ?? "")), `entité HTML dans le crédit de ${ref}`);
   const jpg = fs.readFileSync(path.join(IMAGES_DIR, o.image));
   assert.strictEqual(jpg.toString("hex", 0, 3), "ffd8ff", `${o.image} est un JPEG`);
 });
