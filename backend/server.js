@@ -22,7 +22,6 @@ import discordRoutes from "./routes/discord.js";
 import { clearAll } from "@clash/commun/cache.js";
 import { fetchClan, fetchPlayer } from "@clash/clash-royale/clashApi.js";
 import { readCardArtFile } from "@clash/clash-royale/cardArt.js";
-import jeuxImageRoutes from "../jeux/server/imageRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -245,9 +244,6 @@ app.use("/api/decks", deckRoutes);
 app.use("/api/matchup", matchupRoutes);
 // Discord interactions endpoint (slash commands)
 app.use("/api/discord", discordRoutes);
-
-// Images des jeux (Frame, Zoom, Goblin Hunters, Meow…)
-app.use(jeuxImageRoutes);
 
 // Illustrations à jour des cartes que l'API sert encore avec un ancien
 // design (voir services/cardArt.js) : fichiers de data/card-art/ lus sur Blob.

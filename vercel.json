@@ -4,18 +4,37 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "npm install && cd frontend && npm install",
   "framework": null,
+  "ignoreCommand": "[ -n \"$VERCEL_GIT_PREVIOUS_SHA\" ] && git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- . ':(exclude)jeux' ':(exclude).github' ':(exclude)temp' ':(exclude)outils' ':(exclude)scripts' ':(exclude)*.md'",
   "functions": {
     "api/index.js": {
       "maxDuration": 60
     },
     "api/discord/interactions.js": {
       "maxDuration": 60
-    },
-    "api/discord/jeux.js": {
-      "maxDuration": 180
     }
   },
   "redirects": [
+    { "source": "/api/bac/:path*", "destination": "https://kevina-jeux.vercel.app/api/bac/:path*", "permanent": true },
+    { "source": "/api/blackjack/:path*", "destination": "https://kevina-jeux.vercel.app/api/blackjack/:path*", "permanent": true },
+    { "source": "/api/coffre/:path*", "destination": "https://kevina-jeux.vercel.app/api/coffre/:path*", "permanent": true },
+    { "source": "/api/frames/:path*", "destination": "https://kevina-jeux.vercel.app/api/frames/:path*", "permanent": true },
+    { "source": "/api/frise/:path*", "destination": "https://kevina-jeux.vercel.app/api/frise/:path*", "permanent": true },
+    { "source": "/api/goblinhunters/:path*", "destination": "https://kevina-jeux.vercel.app/api/goblinhunters/:path*", "permanent": true },
+    { "source": "/api/intrus/:path*", "destination": "https://kevina-jeux.vercel.app/api/intrus/:path*", "permanent": true },
+    { "source": "/api/marioclash/:path*", "destination": "https://kevina-jeux.vercel.app/api/marioclash/:path*", "permanent": true },
+    { "source": "/api/mascarade/:path*", "destination": "https://kevina-jeux.vercel.app/api/mascarade/:path*", "permanent": true },
+    { "source": "/api/meow/:path*", "destination": "https://kevina-jeux.vercel.app/api/meow/:path*", "permanent": true },
+    { "source": "/api/pelemele/:path*", "destination": "https://kevina-jeux.vercel.app/api/pelemele/:path*", "permanent": true },
+    { "source": "/api/pendu/:path*", "destination": "https://kevina-jeux.vercel.app/api/pendu/:path*", "permanent": true },
+    { "source": "/api/platpays/:path*", "destination": "https://kevina-jeux.vercel.app/api/platpays/:path*", "permanent": true },
+    { "source": "/api/pont/:path*", "destination": "https://kevina-jeux.vercel.app/api/pont/:path*", "permanent": true },
+    { "source": "/api/potato/:path*", "destination": "https://kevina-jeux.vercel.app/api/potato/:path*", "permanent": true },
+    { "source": "/api/quatre/:path*", "destination": "https://kevina-jeux.vercel.app/api/quatre/:path*", "permanent": true },
+    { "source": "/api/quiestce/:path*", "destination": "https://kevina-jeux.vercel.app/api/quiestce/:path*", "permanent": true },
+    { "source": "/api/robinson/:path*", "destination": "https://kevina-jeux.vercel.app/api/robinson/:path*", "permanent": true },
+    { "source": "/api/sekoidon/:path*", "destination": "https://kevina-jeux.vercel.app/api/sekoidon/:path*", "permanent": true },
+    { "source": "/api/zoom/:path*", "destination": "https://kevina-jeux.vercel.app/api/zoom/:path*", "permanent": true },
+    { "source": "/api/zoom2/:path*", "destination": "https://kevina-jeux.vercel.app/api/zoom2/:path*", "permanent": true },
     { "source": "/images/blackjack/:path*", "destination": "https://kevina-jeux.vercel.app/images/blackjack/:path*", "permanent": true },
     { "source": "/images/concept/:path*", "destination": "https://kevina-jeux.vercel.app/images/concept/:path*", "permanent": true },
     { "source": "/images/gobelet/:path*", "destination": "https://kevina-jeux.vercel.app/images/gobelet/:path*", "permanent": true },

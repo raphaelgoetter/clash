@@ -21,7 +21,7 @@ Règles de dépendance :
 
 - `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` : uniquement ses propres fichiers et `@clash/commun`, plus `@clash/clash-royale` pour les seules exceptions listées dans `jeux/CONTRIBUTING.md` (« Exceptions Clash Royale ») ;
 - les packages n'importent jamais une application ;
-- la racine n'importe `jeux/` qu'à deux points de branchement, en attendant le déploiement séparé du bot des jeux : `api/discord/interactions.js` (routes Discord) et `backend/server.js` (`jeux/server/imageRoutes.js`).
+- la racine n'importe jamais `jeux/` : TrustRoyale et Kévina sont deux projets Vercel séparés (voir « Déploiements Vercel séparés »).
 
 Les imports vers un package utilisent le nom du workspace (`import { getOrSet } from "@clash/commun/cache.js"`), jamais un chemin relatif ; `npm install` à la racine crée les liens dans `node_modules/@clash/`. Les scripts npm des jeux restent déclarés dans le `package.json` racine (`node jeux/scripts/…`), à lancer depuis la racine pour que `./.env` soit trouvé. Les clés Blob (`readBlobAsset("marioclash/…")`) restent relatives au dossier de données, quel qu'il soit (`data/` ou `jeux/data/`).
 
@@ -351,14 +351,21 @@ Deux applications Discord, deux projets Vercel (`trustroyale` et `kevina`, même
 
 | Bot | Endpoint (Interactions Endpoint URL) | Routes servies |
 | --- | --- | --- |
-| TrustRoyale | `api/discord/interactions.js` | TrustRoyale, plus celles des jeux pendant la transition (boutons des messages postés par TrustRoyale) |
-| Jeux (Kévina) | `jeux/api/discord.js` sur le projet `kevina` (`https://kevina-jeux.vercel.app/api/discord`) ; `api/discord/jeux.js` le réexporte côté TrustRoyale pendant la transition | Jeux uniquement, voir `jeux/CONTRIBUTING.md` |
+| TrustRoyale | `api/discord/interactions.js` | TrustRoyale uniquement |
+| Jeux (Kévina) | `jeux/api/discord.js` sur le projet `kevina` (`https://kevina-jeux.vercel.app/api/discord`) | Jeux uniquement, voir `jeux/CONTRIBUTING.md` |
 
 Vérification de signature, lecture du corps brut et liste blanche des serveurs : `@clash/commun/discordInteractions.js`, partagés par les deux endpoints.
 
+#### Déploiements Vercel séparés
+
+- **`trustroyale`** (racine du dépôt, `vercel.json`) ne charge aucun fichier de `jeux/`. Son `ignoreCommand` saute le build quand le push ne touche que `jeux/`, `.github/`, `temp/`, `outils/`, `scripts/` ou des fichiers `.md` (comparaison avec `VERCEL_GIT_PREVIOUS_SHA` ; build si la comparaison est impossible). ⚠️ Un nouveau dossier lu au runtime par TrustRoyale ne doit pas tomber dans ces exclusions.
+- **`kevina`** (dossier racine `jeux/`, `jeux/vercel.json`) ne se construit que si le push touche `jeux/`, `packages/` ou les `package*.json` racine (réglage du projet sur Vercel).
+- Un changement dans `packages/` ou le `package.json` racine (dont les scripts npm des jeux) déclenche les deux builds.
+- Anciennes URL d'images des jeux sur `trustroyale.vercel.app` (`/images/<jeu>/…`, `/api/<jeu>/…`, messages Discord d'avant la séparation) : redirections permanentes vers `kevina-jeux.vercel.app` dans `vercel.json`. Un jeu qui ajoute un préfixe `/api/<jeu>/` n'a pas à y être ajouté (ses messages pointent déjà vers `kevina`).
+
 ### Organisation des fichiers
 
-`api/discord/interactions.js` ne contient que le routeur : vérification de signature Ed25519, PING, autocomplétion des tags, liste blanche des serveurs (`AUTHORIZED_GUILD_IDS`), puis délégation aux modules de routes, essayés dans l'ordre jusqu'à ce que l'un réponde (`res.headersSent`) : d'abord ceux de TrustRoyale (`api/discord/_routes/`), puis ceux des jeux (`jeux/discord/routes/`, voir `jeux/CONTRIBUTING.md`).
+`api/discord/interactions.js` ne contient que le routeur : vérification de signature Ed25519, PING, autocomplétion des tags, liste blanche des serveurs (`AUTHORIZED_GUILD_IDS`), puis délégation aux modules de routes de TrustRoyale (`api/discord/_routes/`), essayés dans l'ordre jusqu'à ce que l'un réponde (`res.headersSent`).
 
 | Module | Contenu |
 | --- | --- |
