@@ -1,6 +1,7 @@
 // ============================================================
 // archivesJeuxSupprimes.js — Lecture seule des archives Redis des jeux
-// hebdomadaires supprimés (Anagram, Palette, Blind Royale, La Juste Carte),
+// hebdomadaires supprimés (Anagram, Palette, Blind Royale, La Juste Carte)
+// et des manches du Quiz (jeu spécial supprimé),
 // pour que leurs résultats restent dans /mini-jeux-history et le bouton
 // « 📊 Stats ».
 // Le code de ces jeux n'existe plus : seules leurs clés d'archive sont relues,
@@ -63,4 +64,11 @@ export const getAnagramResults = () => resultatsArchives("anagram");
 export const getPaletteResults = () => resultatsArchives("palette");
 export const getBlindRoyaleResults = () => resultatsArchives("blindroyale");
 export const getLaJusteCarteResults = () => resultatsArchives("lajustecarte");
+
+// Quiz (jeu spécial) : manches de `quiz:manches`, de la plus récente à la
+// plus ancienne ({ manche, mancheId, theme, resolvedAt, ranking, winners,
+// maxScore }, score de manche dans `ranking[].score`).
+export async function listQuizManches({ limit = 10 } = {}) {
+  return (await hgetallValues("quiz:manches")).sort((a, b) => b.manche - a.manche).slice(0, limit);
+}
 

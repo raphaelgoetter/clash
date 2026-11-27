@@ -1,5 +1,5 @@
 // Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle,
-// Zoom truc, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus, Sékoidon), Quiz,
+// Zoom truc, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus, Sékoidon),
 // sondage d'idées, /mini-jeux et /mini-jeux-history (commandes, boutons,
 // modals de réponse).
 //
@@ -29,7 +29,6 @@ import {
   buildRulesEmbed as buildPeleMeleRulesEmbed,
   handleJournalButton as handlePeleMeleJournalButton,
 } from "../handlers/pelemele.js";
-import { handleQuizVote } from "../handlers/quiz.js";
 // Publication via les orchestrateurs jeux/scripts/postJeux*.js, jamais
 // depuis ce fichier de routing.
 import { handleAnswerButton as handleTriviaAnswer } from "../handlers/trivia.js";
@@ -561,28 +560,6 @@ export async function routeMiniJeux(body, res) {
         rawAnswer,
       ),
     );
-    return;
-  }
-
-  // ── Quiz thématique : boutons de vote ──
-  if (
-    body.type === 3 &&
-    typeof body.data?.custom_id === "string" &&
-    body.data.custom_id.startsWith("quiz_vote:")
-  ) {
-    const [, manche, jour, choiceIndex] = body.data.custom_id.split(":");
-    const discordId = body.member?.user?.id;
-    const username =
-      body.member?.nick ||
-      body.member?.user?.global_name ||
-      body.member?.user?.username ||
-      "Inconnu";
-    // type 5 = DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE (éphémère) : confirmation
-    // privée uniquement : le message public n'est
-    // JAMAIS repatché (aucun compteur de votes affiché avant la révélation).
-    res.status(200).json({ type: 5, data: { flags: 64 } });
-    const webhookUrl = buildDiscordWebhookUrl(body);
-    runBackground(() => handleQuizVote(webhookUrl, manche, jour, choiceIndex, discordId, username));
     return;
   }
 

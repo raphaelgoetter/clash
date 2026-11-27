@@ -1,5 +1,5 @@
 // Jeux spéciaux sur 7 jours : Blackjack, Gobelet, Robinson, Goblin Hunters,
-// Mario Clash, Qui est-ce ? (archivé), Meow, Pont du Troll
+// Mario Clash, Qui est-ce ? (archivé), Meow, Pont du Troll, Le Coffre
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -85,9 +85,49 @@ import {
   handleRegles as handlePontRegles,
   handleVraiFaux as handlePontVraiFaux,
 } from "../handlers/pont.js";
+import {
+  handleJouer as handleCoffreJouer,
+  handleEssai as handleCoffreEssai,
+  handleRegles as handleCoffreRegles,
+  majBrouillon as majCoffreBrouillon,
+} from "../handlers/coffre.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
 export async function routeJeuxSpeciaux(body, res) {
+  // ── Le Coffre : Jouer et Règles (nouvel éphémère) ──
+  // custom_id : coffre_jouer:<jour>, coffre_regles
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^coffre_jouer:\d+$|^coffre_regles$/.test(body.data.custom_id)) {
+    const [action, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "coffre_regles") runBackground(() => handleCoffreRegles(webhookUrl));
+    else runBackground(() => handleCoffreJouer(webhookUrl, jour, discordId));
+    return;
+  }
+
+  // ── Le Coffre : choix d'un symbole (menus du plateau, réponse immédiate) ──
+  // custom_id : coffre_place:<jour>:<place>. Pur, aucun accès Redis : le
+  // brouillon est porté par le bouton Essayer du message.
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^coffre_place:\d+:[0-3]$/.test(body.data.custom_id)) {
+    const [, jour, place] = body.data.custom_id.split(":");
+    const components = majCoffreBrouillon(body.message, jour, Number(place), body.data.values?.[0]);
+    res.status(200).json({ type: 7, data: { components } });
+    return;
+  }
+
+  // ── Le Coffre : Essayer (édition en place de l'éphémère) ──
+  // custom_id : coffre_essai:<jour>:<brouillon>
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^coffre_essai:\d+:[0-5x]{4}$/.test(body.data.custom_id)) {
+    const [, jour, brouillon] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    const username = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handleCoffreEssai(webhookUrl, jour, brouillon, discordId, username));
+    return;
+  }
+
   // ── Pont du Troll : boutons du message public (nouvel éphémère) ──
   // custom_id : pont_pierre:<jour>, pont_cordes:<jour>, pont_rumeurs:<jour>,
   // pont_indice:<jour>, pont_regles

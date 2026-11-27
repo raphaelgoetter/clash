@@ -350,7 +350,7 @@ async function publishAndWriteState(
   }
 
   // Ping à chaque post (annonce, jours, révélation finale) — comme
-  // Blackjack/Quiz : une action est attendue CHAQUE jour (lancer ses dés).
+  // Comme Blackjack, une action est attendue CHAQUE jour (lancer ses dés).
   const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
   const res = await fetch(
@@ -419,7 +419,7 @@ export async function postGobelet(
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être
-  // reprise ici (voir jeux/CONTRIBUTING.md — incident réel du 23/08/2026 sur Quiz).
+  // reprise ici (voir jeux/CONTRIBUTING.md, « Salon test / salon public »).
   if (state && state.channelId !== channelId) {
     return { wrongChannel: true, activeChannelId: state.channelId };
   }

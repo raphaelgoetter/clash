@@ -4,7 +4,7 @@
 // décompte et clôture gérés par Discord lui-même, aucune logique de vote à
 // coder ici).
 //
-// Stockage : Upstash Redis (même instance que quiz.js/tamagotchi.js),
+// Stockage : Upstash Redis (même instance que les jeux),
 // espace de clés `poll:*` — uniquement la liste des messages déjà postés
 // (channelId, messageId, id de question), pas les votes eux-mêmes (Discord
 // les garde).

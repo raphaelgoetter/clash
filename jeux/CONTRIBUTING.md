@@ -4,7 +4,7 @@ Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spécia
 
 Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale` (ce dernier pour les seules exceptions listées dans « Exceptions Clash Royale »).
 
-Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Sékoidon, Concept, Synopsis éclaté, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays) · jeux spéciaux (Quiz, Robinson, Blackjack, Gobelet, Meow, Goblin Hunters, Mario Clash, Pont du Troll) · faces de dé · duels · sondage public · noms des cartes · exceptions Clash Royale · jeux archivés et supprimés.
+Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Sékoidon, Concept, Synopsis éclaté, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays) · jeux spéciaux (Robinson, Blackjack, Gobelet, Meow, Goblin Hunters, Mario Clash, Pont du Troll, Le Coffre) · faces de dé · duels · sondage public · noms des cartes · exceptions Clash Royale · jeux archivés et supprimés.
 
 ---
 
@@ -24,8 +24,8 @@ Les jeux ont leur propre application Discord (« bot des jeux », Kévina), serv
 
 | Module                                | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `jeux/discord/routes/miniJeux.js`     | Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus), Quiz, sondage d'idées, `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
-| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Robinson, Goblin Hunters, Mario Clash, Qui est-ce ? archivé, Meow, Pont du Troll) |
+| `jeux/discord/routes/miniJeux.js`     | Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus), sondage d'idées, `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
+| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Robinson, Goblin Hunters, Mario Clash, Qui est-ce ? archivé, Meow, Pont du Troll, Le Coffre) |
 | `jeux/discord/routes/duels.js`        | `/blackjack`, `/gobelet`, `/bang`, `/quatre`, `/punto`, `/frise`, `/potato`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Mascarade, archivé, pour les parties en cours) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
@@ -394,7 +394,7 @@ Groupe « Coup d'œil » (vendredi 18:00 UTC) à partir de la refonte, en altern
 
 ## Jeux spéciaux : fonctionnement commun
 
-Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scripts/post<Jeu>.js`, boutons routés par `jeux/discord/routes/jeuxSpeciaux.js`, sauf le vote du Quiz `quiz_vote:` routé par `miniJeux.js`) : Quiz, Robinson, Mario Clash, Gobelet, Blackjack, Meow, Goblin Hunters, Pont du Troll (+ Qui est-ce ?, archivé). Un seul jeu spécial actif à la fois sur le salon public, affiché dans `/mini-jeux` (`SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`, premier état non terminé sur le salon public).
+Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scripts/post<Jeu>.js`, boutons routés par `jeux/discord/routes/jeuxSpeciaux.js`) : Robinson, Mario Clash, Gobelet, Blackjack, Meow, Goblin Hunters, Pont du Troll, Le Coffre (+ Qui est-ce ?, archivé). Un seul jeu spécial actif à la fois sur le salon public, affiché dans `/mini-jeux` (`SPECIAL_GAMES`, `jeux/discord/handlers/minijeux.js`, premier état non terminé sur le salon public).
 
 ### Lancement : jour d'annonce obligatoire
 
@@ -448,7 +448,7 @@ Jeux spéciaux Blackjack et Gobelet seulement (pas leurs duels) : `jeux/services
 ### Classements
 
 - Rangs ex aequo : deux joueurs à égalité partagent le même rang (« 1, 2, 2, 4 ») via `rangExAequo()` (`@clash/commun/classement.js`) ; les récaps utilisent `findTiedRank()`.
-- ⚠️ Rang écrit avec le point échappé (`` `${rang}\\. ${nom}` ``, rendu « 1. ») : une ligne « 1. … » est une liste markdown que Discord renumérote (1, 2, 3…), ce qui efface les ex aequo. Appliqué aux classements du Pont du Troll, de Blackjack, Gobelet, Quiz, Blackjack Duel et Gobelet Duel. Départages propres à un jeu : voir sa section.
+- ⚠️ Rang écrit avec le point échappé (`` `${rang}\\. ${nom}` ``, rendu « 1. ») : une ligne « 1. … » est une liste markdown que Discord renumérote (1, 2, 3…), ce qui efface les ex aequo. Appliqué aux classements du Pont du Troll, du Coffre, de Blackjack, Gobelet, Blackjack Duel et Gobelet Duel. Départages propres à un jeu : voir sa section.
 
 ## Passeport mensuel (« 🛂 Mon passeport »)
 
@@ -468,7 +468,7 @@ Registre : `jeux/services/passeport.js` (tests `passeport.test.js`). Le mois ret
 
 - `noterManche(discordId, jeu, gameId)` : première interaction avec une manche, idempotente. Appelée dans le service de chaque jeu hebdomadaire : `touchUsername()` (tentative, indice) et `markSolved()` (bonne réponse du premier coup sans indice, qui n'écrit pas de tentative) ; Pêle-mêle par `touchUsername()` (appelé par `submitWord()`) ; moteur Trivia (Trivia, Trivia Geek, Intrus) par `recordAnswer()`. Clés de jeu : celles de `WEEKLY_GAMES` (`miniJeuxStats.js`), préfixe pour le moteur Trivia.
 - `noterVictoireDuel(discordId, jeu, mode)`, `mode` = `bot` | `pvp` : dans `finSerieSolo()` / `finSeriesPvp()` (Quatre, Punto, Frise, Mascarade, Potato, Bac), `finSeries()` en 1v1 seulement (Pendu : le solo n'oppose personne), `agirDuel()` / `agirPvp()` (Bang!), `resolveManche()` en 1v1 avec un premier seul en tête (Blackjack, Gobelet ; pas de victoire définie en solo). Un match nul ne compte pas.
-- `noterJeuSpecial(discordId, jeu)` : vote enregistré (Quiz, Robinson), inscription ou action (Goblin Hunters), main écrite (Blackjack, Gobelet), action (Mario Clash), toute action sous `agir()` (Qui est-ce ?, Meow). Les archives des jeux spéciaux ne permettent pas de reconstituer après coup qui a joué dans un mois (pas de date de début, pas de participants pour Robinson, Goblin Hunters, Mario Clash).
+- `noterJeuSpecial(discordId, jeu)` : vote enregistré (Robinson), inscription ou action (Goblin Hunters), main écrite (Blackjack, Gobelet), action (Mario Clash), pont choisi (Pont du Troll), premier essai du jour (Le Coffre), toute action sous `agir()` (Qui est-ce ?, Meow). Les archives des jeux spéciaux ne permettent pas de reconstituer après coup qui a joué dans un mois (pas de date de début, pas de participants pour Robinson, Goblin Hunters, Mario Clash).
 
 Rattrapage (registre en retard sur les jeux : déploiement en cours de mois, incident) : `node jeux/outils/passeport/rattrapage.mjs [--saison <id>] [--ecrire]` (aperçu sans `--ecrire`, idempotent). Il reprend les manches archivées datées de la saison, tous ceux qui ont interagi avec la manche en cours, les classements des jeux spéciaux terminés dans la saison et les inscrits de Qui est-ce ? / Meow en cours. Les victoires en duel ne sont pas récupérables.
 
@@ -536,12 +536,12 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | --------------------- | ------------------- | -------------------------------------------------------------------------------------------- |
 | Meow                  | `meow.yml`          | `22 7 * * *` (8h22 à Paris en hiver, après le bilan de 8 h et avant la distribution de 8h30) |
 | Goblin Hunters        | `goblinhunters.yml` | `4 8 * * *`                                                                                  |
-| Quiz                  | `quiz.yml`          | `6 8 * * *`                                                                                  |
 | Robinson              | `robinson.yml`      | `8 7 * * *` (8h08 à Paris en hiver, l'île dort de minuit à 8 h)                              |
 | Blackjack             | `blackjack.yml`     | `12 7 * * *` (8h12 à Paris en hiver, après le décompte de 8 h des deux mains)                |
 | Mario Clash           | `marioclash.yml`    | `14 8 * * *`                                                                                 |
 | Jeu du Gobelet        | `gobelet.yml`       | `16 7 * * *` (8h16 à Paris en hiver, après le décompte de 8 h des deux mains)                |
 | Pont du Troll         | `pont.yml`          | `24 7 * * *` (8h24 à Paris en hiver : résultat et Vrai/Faux) et `4 13 * * *` (14h04 en hiver : ponts) |
+| Le Coffre             | `coffre.yml`        | `28 7 * * *` (8h28 à Paris en hiver : code de la veille et nouveau coffre)                    |
 | Boss de fin de saison | `boss.yml`          | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison »)      |
 
 Qui est-ce ? (`quiestce.yml`, minute 20 réservée) a son cron commenté : voir « Jeux archivés et supprimés ».
@@ -550,94 +550,6 @@ Qui est-ce ? (`quiestce.yml`, minute 20 réservée) a son cron commenté : voir 
 - ⚠️ Ne jamais caler deux crons sur la même minute ni sur une heure ronde : les triggers `schedule` de GitHub sont _best-effort_ et retardés aux heures chargées.
 - ⚠️ Un trigger `schedule` peut se désynchroniser silencieusement côté GitHub (aucun run, `workflow_dispatch` fonctionne toujours). Correctif officiel : pousser un commit sur la branche par défaut qui touche le workflow ([community#185355](https://github.com/orgs/community/discussions/185355)).
 - Rattrapage d'un cron manqué : `workflow_dispatch`. Sans risque grâce aux garde-fous anti-double-avancée (ex. `isTooSoonSinceLastClosure()`, `jeux/services/robinson.js`).
-
----
-
-## Quiz — 7 questions sur une thématique
-
-Jeu spécial de 7 jours : une question à choix par jour sur une thématique unique par manche, votes secrets et définitifs, bonnes réponses et classement révélés après le Jour 7. Pas de commande slash.
-
-| Rôle                                                        | Fichier                                  |
-| ----------------------------------------------------------- | ---------------------------------------- |
-| Contenu, état, votes, scoring, Redis                        | `jeux/services/quiz.js`                  |
-| Discord (embeds, boutons, `postQuiz()`, `handleQuizVote()`) | `jeux/discord/handlers/quiz.js`          |
-| Routage du bouton `quiz_vote:*`                             | `jeux/discord/routes/miniJeux.js`        |
-| Publication quotidienne                                     | `jeux/scripts/postQuiz.js`               |
-| Contenu                                                     | `jeux/data/quiz/quiz.json` (voir Config) |
-
-### Déroulement (Quiz)
-
-- **Annonce** (`phase: "annonce"`) : pas de bouton (pas de bouton Règles), thématique non révélée (« révélée demain »).
-- **Passage au Jour 1** : thématique tirée par `pickNextMancheIndex()`, **cycle séquentiel** dans l'ordre de `manches` (jamais aléatoire, jamais deux fois la même de suite), curseur `quiz:theme_cursor`. Le numéro de manche (`INCR quiz:manche_seq`) est attribué **dès le Jour 1** (pas à la clôture) car il namespace les votes des 7 jours.
-- **Jours 1 à 7** : question `questions[jour - 1]`. Chaque post supprime le message de la veille puis publie le suivant ; la clôture d'un jour est silencieuse (aucun bilan intermédiaire).
-- **Après le Jour 7** : révélation finale (`termine: true`), archivage si `isPublic`.
-
-### Votes
-
-- Bouton `Réponse A/B/…` (`custom_id` `quiz_vote:<manche>:<jour>:<index>`), un bouton par entrée de `choix`.
-- **Vote unique et définitif** (`recordVote()`) : revoter le même choix = no-op (`already_recorded`), un autre choix = refusé sans écriture (`rejected`).
-- Clic sur une question qui n'est plus la question active (`manche`/`jour` ≠ état, ou partie terminée) : « Cette question est déjà close, regarde le nouveau message ! ».
-- ⚠️ Rien n'est public avant la révélation : aucun compteur de votes, message public jamais repatché. `/mini-jeux` n'affiche que la participation du jour (« N participants ce jour »), jamais de score.
-
-### Barème et classement (Quiz)
-
-- 1 point par bonne réponse (`choiceIndex === bonne_reponse`), 0 pour une mauvaise réponse ou un jour sans vote. Score sur 7.
-- `computeMancheRanking()` : seuls les joueurs ayant voté au moins une fois, tri par score décroissant, rangs ex aequo (`rangExAequo`, sans critère de départage). Top 20 affiché.
-- Vainqueurs : tous les joueurs au score max, **seulement si ce max > 0** (sinon `winners: []`).
-- Score de manche cumulé dans l'historique de saison des mini-jeux (`miniJeuxHistory.js`, champ `score`).
-
-### Interface (Quiz)
-
-- Annonce : `❓ Quiz : une nouvelle manche se prépare`, pied « La partie commence demain à 8 h UTC (heure de Paris) ».
-- Question : titre `❓ Quiz : <theme> (Jour X/7)`, énoncé en titre Markdown, propositions `**A.** …` **dans l'embed uniquement** (boutons génériques `Réponse A`, pour ne pas trahir la longueur des réponses), image optionnelle, pied « Vote avant <8 h UTC> demain » + heure du post (Paris).
-- Réponse au clic : ACK `type: 5` éphémère (`flags: 64`) envoyé avant tout traitement, puis `runBackground()` → `handleQuizVote()` patche le message éphémère (« Vote enregistré ! », « Tu as déjà voté… »).
-- Révélation `🏁 Quiz : révélation finale` : thème, bonne réponse de chaque jour, classement, vainqueurs, puis vainqueurs des 10 dernières manches archivées (`listManches()`).
-
-### Config (`jeux/data/quiz/quiz.json`)
-
-```
-{ manches: [{ id, theme, questions: [{ type, enonce, image, choix, bonne_reponse }] }] }
-```
-
-| Champ           | Rôle                                                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `id`            | Slug stable (stocké en `mancheId`, debug)                                                                                           |
-| `theme`         | Affiché dans les titres et la révélation                                                                                            |
-| `questions`     | ⚠️ **Exactement 7** : `TOTAL_QUESTIONS = 7` est codé en dur (titres, passage à la révélation)                                       |
-| `type`          | `"qcm"` ou `"vrai_faux"` (informatif : le nombre de boutons suit `choix.length`)                                                    |
-| `image`         | Chemin relatif sous `jeux/public/images/` (servi par `${URL_JEUX}/images/…`) ou `null`, jamais d'URL absolue |
-| `choix`         | 2 à 5 propositions (lettres A-E, une seule rangée de boutons)                                                                       |
-| `bonne_reponse` | Index 0-based dans `choix`                                                                                                          |
-
-Le fichier est lu une fois et mis en cache (jamais muté). Manches actuelles : `staff-histoire`, `Nombres`.
-
-### Stockage Redis (`quiz:*`)
-
-| Clé                                   | Type   | Contenu                                                                                             |
-| ------------------------------------- | ------ | --------------------------------------------------------------------------------------------------- |
-| `quiz:state`                          | STRING | `{ phase, manche, mancheIndex, mancheId, theme, jour, channelId, messageId, publishedAt, termine }` |
-| `quiz:votes:<manche>:<jour>`          | HASH   | `discordId → index du choix`                                                                        |
-| `quiz:vote_usernames:<manche>:<jour>` | HASH   | `discordId → pseudo` (affichage seulement)                                                          |
-| `quiz:theme_cursor`                   | STRING | index de la dernière thématique jouée                                                               |
-| `quiz:manche_seq`                     | STRING | compteur de manches (incrémenté au Jour 1)                                                          |
-| `quiz:manches`                        | HASH   | `manche → { manche, mancheId, theme, resolvedAt, ranking, winners, maxScore }`                      |
-
-`resetQuiz()` efface `quiz:state` et les votes ; `--manches` efface aussi `quiz:manches`, `quiz:manche_seq` et `quiz:theme_cursor` (le cycle repart de la première thématique).
-
-### Scripts et cron (Quiz)
-
-| Commande                              | Effet                                                                            |
-| ------------------------------------- | -------------------------------------------------------------------------------- |
-| `npm run quiz:test` / `:test:dry`     | Salon de test / aperçu console                                                   |
-| `npm run quiz:public` / `:public:dry` | Salon public                                                                     |
-| `npm run quiz:reset`                  | **Destructif** : partie et votes effacés, archive, compteur et curseur conservés |
-| `npm run quiz:reset:manches`          | **Destructif** : efface aussi archive, compteur et curseur                       |
-| `npm run quiz:status`                 | Manche, thème, jour, votants du jour (sans le contenu des votes)                 |
-| `npm run quiz:scores`                 | Admin : matrice joueur × jour (1/0/`-`) + total, visible avant la révélation     |
-
-Options de `postQuiz.js` : `--dry-run`, `--public`, `--no-ping`, `--require-active`, `--force`.
-
-Cron `.github/workflows/quiz.yml` : `6 8 * * *`. Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`, `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
 
 ---
 
@@ -1333,7 +1245,7 @@ Ordre : 1) Étoiles actives → immunisés ; 2) **sorts** (bloqués si immunisé
 | `npm run marioclash:reset:manches`          | Idem + `manches`/`manche_seq`                 |
 | `npm run marioclash:status`                 | État courant                                  |
 
-Options du script : `--no-ping`, `--require-active`, `--force`. Production : présentation lancée à la main (`workflow_dispatch` de `.github/workflows/marioclash.yml` ou `npm run marioclash:public`), puis cron `14 8 * * *` (8h14 UTC, `--require-active`). ⚠️ Chaque cron de 8h UTC a sa propre minute (bossraid 2, goblinhunters 4, quiz 6, tamagotchi 10, blackjack 12, marioclash 14). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`).
+Options du script : `--no-ping`, `--require-active`, `--force`. Production : présentation lancée à la main (`workflow_dispatch` de `.github/workflows/marioclash.yml` ou `npm run marioclash:public`), puis cron `14 8 * * *` (8h14 UTC, `--require-active`). ⚠️ Chaque cron a sa propre minute (voir « Crons GitHub Actions (jeux spéciaux) »). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`).
 
 ---
 
@@ -1479,6 +1391,102 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 | `npm run pont:status`                 | État courant : jour et phase, participants du Vrai/Faux (bonnes et mauvaises réponses), multiplicateurs, événement, répartition **secrète** du jour, rumeurs (vérité, mensonge) et Indices consultés, projection du résultat, classement. Sans Discord |
 
 Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/pont.yml` : `24 7 * * *` (8h24 à Paris en hiver : résultat de la veille et Vrai/Faux) et `4 13 * * *` (14h04 : ponts), même commande, le script fait la transition prête (`transitionPrete()`). En été, les deux passages ont lieu une heure plus tard (9h24 et 15h04), et les textes suivent (`horaires()`). Ping `@MINI-JEUX` à l'annonce, au message du matin de chaque jour et à la fin de partie (jamais à l'ouverture des ponts). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
+
+---
+
+## Le Coffre (Mastermind quotidien)
+
+Jeu spécial de 7 jours (`duree_jours`) : chaque jour, un nouveau coffre fermé par un code secret de 4 symboles tous différents parmi 6. Chaque joueur a 5 essais et un indice secret, différent pour chacun ; chaque essai répond par le nombre de symboles bien placés et mal placés. Classement cumulé, révélé après le Jour 7. Pas de commande slash. Pas d'inscription : tout membre peut jouer à partir de n'importe quel jour.
+
+| Rôle                                          | Fichier                                                                          |
+| --------------------------------------------- | -------------------------------------------------------------------------------- |
+| Règles, Redis, PNJ                            | `jeux/services/coffre.js`                                                        |
+| Images (plateau privé, jour, code révélé)     | `jeux/services/coffreImage.js`                                                   |
+| Discord (`postCoffre()`, plateau, Règles)     | `jeux/discord/handlers/coffre.js`                                                |
+| Routage des boutons et menus                  | `jeux/discord/routes/jeuxSpeciaux.js`                                            |
+| Publication quotidienne, statut, remise à zéro | `jeux/scripts/postCoffre.js`, `jeux/scripts/coffreStatus.js`, `jeux/scripts/resetCoffre.js` |
+| Config                                        | `jeux/data/coffre/coffre.json` : `duree_jours` (7), `longueur_code` (4), `essais_par_jour` (5) |
+| Simulation d'équilibrage                      | `jeux/outils/coffre-simulation/simuler.mjs`                                      |
+| Tests                                         | `jeux/services/coffre.test.js`                                                   |
+| Images (fonds, annonce)                       | `jeux/data/coffre/images/` (Vercel Blob, voir « Images »)                        |
+
+### Déroulement (Le Coffre)
+
+- Jour d'annonce, puis Jours 1 à 7 (voir « Lancement : jour d'annonce obligatoire »). Un seul message par jour, publié par le cron vers 8h30 (9h30 en été, `heureOuverture()` : cron à heure UTC fixe, ⚠️ jamais d'heure en dur dans un texte joueur).
+- `postCoffre()` : annonce -> Jour 1 (remise à zéro de la partie, `resetPartie()`, code du Jour 1) ; jour N -> résultat du jour N (code révélé, bilan, historique) puis nouveau coffre (code du jour N+1) ou, après le Jour 7, classement final (`termine: true`).
+- Garde-fou `transitionPrete()` : annonce -> Jour 1 au moins 8 h après l'annonce (`isTooSoonSinceLastClosure()`) ; jour N -> suite au jour de jeu suivant (`jourDeJeu()`, après 8h). Contourné par `--force` et automatiquement hors `--public`.
+- Coffre ouvert aux essais de la publication à **minuit** (heure de Paris, `jourOuvert()`) ; de minuit au passage du cron, plus aucun essai (« Le coffre est fermé depuis minuit »).
+- ⚠️ **Jamais de ping hors salon public** : `if (!isPublic) noPing = true` en tête de `postCoffre()` (en plus de `NO_PING` dans `postCoffre.js`), testé dans `coffre.test.js`. Ping à l'annonce, à chaque jour et à la fin de partie.
+- **PNJ du salon de test** : 5 joueurs fictifs (`PNJ`, ids `pnj-1` à `pnj-5`) jouent chaque coffre dès sa publication (`jouerPnj()`) : codes au hasard compatibles avec leur indice et leurs réponses précédentes. Jamais sur le salon public, même demandés (`pnj && !isPublic`), jamais de passeport. `--sans-pnj` les désactive.
+
+### Règles (Le Coffre)
+
+- **Symboles** (`SYMBOLES`) : forme ET couleur distinctes (daltoniens), émoji Discord de la même forme et de la même couleur que le dessin du plateau : 🟣 Rond, 🟦 Carré, 🔶 Losange, ⭐ Étoile, 💚 Cœur, 🔺 Triangle.
+- **Code du jour** (`tirerCode()`) : 4 symboles tous différents (360 codes possibles). Doubles écartés : 1 296 codes, réponse plus difficile à lire (décompte des mal placés), 60 % d'ouvertures au lieu de 76 % en simulation.
+- **Réponse** (`reponse()`) : nombre de bien placés 🟢 et de mal placés 🟡, jamais lesquels (ce n'est pas un Wordle).
+- **Essais** (`jouerEssai()`) : 5 par jour et par joueur, 4 symboles différents obligatoires (`essaiValide()`), verrou par joueur (`SET NX`, 10 s) contre le double clic. Coffre ouvert ou 5 essais joués : plus d'essai.
+- **Indice secret** (`indiceDuJoueur()`) : tiré de façon reproductible à partir de `partieId:jour:discordId` (même indice à chaque ouverture du plateau, aucun stockage), toujours vrai. Types et poids : absent (« 🟣 n'est pas dans le code », 3), position (« 🔺 est en 3e place », 2), ailleurs (« ⭐ est dans le code, mais pas en 1re place », 3), pas en (« 💚 n'est pas en 2e place », 2, symbole présent ailleurs ou absent). Les joueurs peuvent le partager (ou bluffer) dans le salon, rien n'est publié par le bot.
+- **Publication certifiée des indices écartée** (simulation) : publiés au fil de la journée, ils donnaient environ 90 % des victoires aux joueurs tardifs ; publiés le matin avec un bonus fixe, tout le monde publiait et le coffre devenait trivial (99 % d'ouvertures).
+
+### Barème et classement (Le Coffre)
+
+- Coffre ouvert au N-ième essai : `6 - N` points (`pointsOuverture()` : 5, 4, 3, 2, 1), ajoutés dès l'ouverture. Pas de bonus de rapidité : l'heure de jeu ne change rien.
+- Tout joueur entre au classement dès son premier essai, même à 0 point. `buildRanking()` : points décroissants, puis **le moins d'essais utilisés** sur la partie (`coffre:essais_total`) ; ex aequo au-delà (`rangExAequo()`).
+- Simulation (300 parties, 12 à 20 joueurs, bots de trois niveaux) : 76 % de coffres ouverts, 3,8 essais en moyenne, environ 25 % de 1re place ex aequo aux points seuls (d'où le départage aux essais).
+- Score de manche cumulé dans l'historique de saison des mini-jeux (`miniJeuxHistory.js`, champ `points`) et compté dans les stats de `/mini-jeux` (`miniJeuxStats.js`). `/mini-jeux` : « a joué » = au moins un essai du jour, nombre de joueurs du jour, score de la partie.
+
+### Interface (Le Coffre)
+
+- **Message public en Components V2** (`versV2()`, `jeux/discord/composantsV2.js`), un seul bloc et une seule image. Boutons `[🔐 Jouer]` (`coffre_jouer:<jour>`) et `[📖 Règles]` (`coffre_regles`).
+  - Annonce : illustration et le seul bouton Règles.
+  - Jour 1 : image du jour (les 6 symboles).
+  - À partir du Jour 2 : **Résultat du Jour N-1** (code en émojis, coffres ouverts, le plus rapide, top 5 du classement), image du code révélé, puis « Nouveau coffre ! » sous l'image.
+  - Fin de partie : résultat du Jour 7, classement complet (20 premiers), vainqueurs et vainqueurs des parties précédentes.
+  - Pied : « 🔐 N joueurs · M coffres ouverts · Fermeture à minuit », mis à jour au premier essai d'un joueur et à chaque ouverture (`majCompteur()`).
+- **Plateau privé** (éphémère, embed) : image du plateau, indice en texte, légende 🟢/🟡, 4 menus (`coffre_place:<jour>:<place>`, un par place, 6 options) et `[🔑 Essayer]` (`coffre_essai:<jour>:<brouillon>`).
+  - Le **brouillon** (4 caractères, index du symbole ou `x`) est porté par le `custom_id` du bouton Essayer : un choix dans un menu répond tout de suite (type 7, `majBrouillon()`, pur, sans Redis) ; un symbole choisi quitte son ancienne place. Essayer est désactivé tant que les 4 places n'ont pas 4 symboles différents.
+  - Après un essai : ligne de résultat (« ⭐ 💚 🔺 🟣 : 🟢 3 bien placés · 🟡 0 mal placé »), plateau à jour, menus pré-remplis avec le dernier essai. Coffre ouvert : points gagnés et position au classement (`maPosition()`).
+- Vocabulaire joueur : « essai », « coffre ouvert », « bien placés », « mal placés ».
+
+### Images (Le Coffre)
+
+- `jeux/services/coffreImage.js` : SVG **900 × 600 (paysage 3:2)** rastérisé par `@resvg/resvg-js` (police `readGameFontPaths()`), encodé en JPEG (qualité 85). Plateau à gauche, coffre du décor à droite. Lisibilité mobile : aucun texte de moins de 36 px sur 900 px de large. Routes (`jeux/server/imageRoutes.js`) :
+  - `/api/coffre/plateau?d=<plateau>` : plateau privé rendu sans état depuis `d` (`encodePlateau()` / `decodePlateau()` : jour, essais **avec leurs réponses déjà calculées par le serveur**, coffre ouvert, points, indice). L'URL ne connaît pas le code : elle ne permet pas de tester un essai. Fond ouvert si le coffre l'est ;
+  - `/api/coffre/jour?jour=<n>&v=<horodatage>` : les 6 symboles et la règle, rien de secret ;
+  - `/api/coffre/code?partie=<partieId>&jour=<n>&v=<horodatage>` : code d'un jour déjà résolu (`coffre:historique`), 404 avant le résultat ou pour une autre partie ;
+  - `/api/coffre/illustration?v=<version>` : illustration d'annonce telle quelle (`ILLUSTRATION_VERSION` à incrémenter après remplacement).
+- **Fonds** lus par `readBlobAsset()` : `coffre/images/coffre-fond.jpg` (coffre fermé : plateau en cours, image du jour), `coffre/images/coffre-ouvert.jpg` (même cadrage, coffre ouvert : plateau ouvert, code révélé), `coffre/images/coffre-start.webp` (900 × 507, annonce). Après remplacement : `npm run assets:upload-blob -- coffre/images` (dossier déclaré dans `TARGETS` de `scripts/uploadImageAssetsToBlob.js`).
+
+### Manches (Le Coffre)
+
+`archiveManche({ ranking, winners, maxPoints, resolvedAt })` archive chaque partie terminée dans `coffre:manches` (numéro via `INCR coffre:manche_seq`), **uniquement en publication publique**.
+
+### Stockage Redis (`coffre:*`)
+
+| Clé                             | Type   | Contenu                                                                                                                      |
+| ------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `coffre:state`                  | STRING | `{ phase: "annonce" \| "jour", jour, partieId, channelId, messageId, publishedAt, termine, embeds, components }`              |
+| `coffre:codes`                  | HASH   | `jour → [4 symboles]` (secret jusqu'au résultat)                                                                             |
+| `coffre:parties:<jour>`         | HASH   | `discordId → { essais: [{ symboles, bien, mal, at }], ouvert, points }`                                                       |
+| `coffre:verrou:<jour>:<id>`     | STRING | verrou d'essai (10 s)                                                                                                        |
+| `coffre:points`                 | HASH   | `discordId → points` de la partie                                                                                            |
+| `coffre:essais_total`           | HASH   | `discordId → essais utilisés` (départage)                                                                                    |
+| `coffre:usernames`              | HASH   | `discordId → pseudo`                                                                                                         |
+| `coffre:historique`             | HASH   | `jour → { jour, partieId, code, joueurs, ouverts, parEssais, meilleur, resolvedAt }`                                          |
+| `coffre:manches`                | HASH   | `manche → { manche, ranking: [{ discordId, username, points, essais }], winners, maxPoints, resolvedAt }`, jamais nettoyé sauf `--manches` |
+| `coffre:manche_seq`             | STRING | compteur de manches                                                                                                          |
+
+### Scripts et cron (Le Coffre)
+
+| Commande                                  | Effet                                                                                          |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `npm run coffre:test` / `:test:dry`       | Salon de test (jamais de ping, 5 PNJ) / aperçu console                                         |
+| `npm run coffre:public` / `:public:dry`   | Salon public (cron)                                                                            |
+| `npm run coffre:reset`                    | **Destructif** : partie en cours effacée, `coffre:manches` préservé                             |
+| `npm run coffre:reset:manches`            | **Destructif** : efface aussi l'archive des manches                                            |
+| `npm run coffre:status`                   | Jour, code **secret** du jour, joueurs (essais, ouverture, indice), classement. Sans Discord   |
+
+Options du script : `--dry-run`, `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/coffre.yml` : `28 7 * * *` (8h28 à Paris en hiver, 9h28 en été). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
 
 ---
 
@@ -1928,7 +1936,7 @@ Kévina est conçue pour tourner sur n'importe quel serveur : aucune référence
 - **Mario Clash** : thème et nom seulement (aucune image ni donnée de carte).
 - **Jeux archivés** Mascarade et Qui est-ce ? : images de cartes (`@clash/clash-royale/cardImage.js`) et `cardNames.json`.
 - **Scripts de catalogue** (usage ponctuel, API Clash Royale via `@clash/clash-royale/clashApi.js`) : `generateCardNames.js`, `tagCards.js`, `generateCardStats.js` (`cardNames.json`).
-- **Culture générale** : quelques entrées isolées de catalogues (Frise : sortie de Clash Royale ; Zoom logo : Supercell ; Intrus : un coffre Clash Royale ; Quiz : le choix « TrustRoyale »).
+- **Culture générale** : quelques entrées isolées de catalogues (Frise : sortie de Clash Royale ; Zoom logo : Supercell ; Intrus : un coffre Clash Royale).
 
 Vérification : `rg -i "clash|royale|élixir|supercell" jeux/` ne doit renvoyer que ces exceptions (et le préfixe de paquet `@clash/`).
 
@@ -1943,7 +1951,7 @@ Vérification : `rg -i "clash|royale|élixir|supercell" jeux/` ne doit renvoyer 
 
 ### Jeux supprimés (code retiré)
 
-Tamagotchi, Boss Raid et l'ancien Bang! (jeux spéciaux ; sans rapport avec le duel Bang!), Anagram, Palette, La Juste Carte et Blind Royale (mini-jeux hebdomadaires), Six et Tourneboule (duels) : code, données, images, workflows et scripts supprimés. Règles, barèmes et clés Redis : historique git (`jeux/CONTRIBUTING.md` avant le 25/11/2026).
+Tamagotchi, Boss Raid, l'ancien Bang! (sans rapport avec le duel Bang!) et le Quiz (jeux spéciaux), Anagram, Palette, La Juste Carte et Blind Royale (mini-jeux hebdomadaires), Six et Tourneboule (duels) : code, données, images, workflows et scripts supprimés. Règles, barèmes et clés Redis : historique git (`jeux/CONTRIBUTING.md` avant le 25/11/2026).
 
-- Leurs clés Redis restent en place, rien n'est purgé. Les résultats des 4 mini-jeux hebdomadaires restent dans `/mini-jeux-history` et le bouton « 📊 Stats » : `jeux/services/archivesJeuxSupprimes.js` relit seulement `<jeu>:archived:<seasonId>` (`anagram`, `palette`, `blindroyale`, `lajustecarte`). Aucune partie de l'ancien Bang!, de Tamagotchi ni Boss Raid n'avait de classement archivé exploitable.
+- Leurs clés Redis restent en place, rien n'est purgé. Les résultats des 4 mini-jeux hebdomadaires restent dans `/mini-jeux-history` et le bouton « 📊 Stats » : `jeux/services/archivesJeuxSupprimes.js` relit seulement `<jeu>:archived:<seasonId>` (`anagram`, `palette`, `blindroyale`, `lajustecarte`), ainsi que les manches du Quiz (`quiz:manches`, `listQuizManches()`, score de manche `score`). Aucune partie de l'ancien Bang!, de Tamagotchi ni Boss Raid n'avait de classement archivé exploitable.
 - Les avatars « clay » (`jeux/data/avatars/`, Blob `avatars/clay-XX.png`) servent au Pont du Troll, à Qui est-ce ? et à `avatarsDiscord.js`.

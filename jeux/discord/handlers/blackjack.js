@@ -347,8 +347,8 @@ async function publishAndWriteState(
     }
   }
 
-  // Ping à chaque post (annonce, Jour 1, jours suivants, révélation finale) — comme
-  // Quiz : une action est attendue CHAQUE jour (jouer sa main), contrairement
+  // Ping à chaque post (annonce, Jour 1, jours suivants, révélation finale) :
+  // une action est attendue CHAQUE jour (jouer sa main), contrairement
   // à Robinson/Tamagoshi qui ne pingent qu'au lancement/à la fin.
   const roleId = !noPing ? await getRoleIdByName(MINI_JEUX_ROLE_NAME) : null;
 
@@ -404,7 +404,7 @@ export async function postBlackjack(
 
   if (state?.termine) return { termine: true };
 
-  // Garde-fou anti-double-avancée (même incident/pattern que Robinson/Quiz,
+  // Garde-fou anti-double-avancée (même incident/pattern que Robinson,
   // 26-27/08) : jamais appliqué en dry-run, contournable avec --force.
   if (
     state &&
@@ -420,7 +420,7 @@ export async function postBlackjack(
   }
 
   // Garde-fou : une partie active sur un AUTRE salon ne doit JAMAIS être
-  // reprise ici (voir jeux/CONTRIBUTING.md — incident réel du 23/08/2026 sur Quiz).
+  // reprise ici (voir jeux/CONTRIBUTING.md, « Salon test / salon public »).
   if (state && state.channelId !== channelId) {
     return { wrongChannel: true, activeChannelId: state.channelId };
   }

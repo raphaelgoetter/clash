@@ -126,7 +126,7 @@ export async function writeState(state) {
   await getRedis().set(STATE_KEY, toJson(state));
 }
 
-// Garde-fou anti-double-avancée (même incident/pattern que Robinson/Quiz,
+// Garde-fou anti-double-avancée (même incident/pattern que Robinson,
 // 26-27/08) : un cron `schedule` en retard peut encore se déclencher après
 // qu'un admin a relancé le jour à la main entretemps — sans ce filet, les
 // deux appels à postBlackjack() clôtureraient chacun un jour d'affilée.

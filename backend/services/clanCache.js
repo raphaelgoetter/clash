@@ -1,7 +1,7 @@
 // ============================================================
 // clanCache.js — cache de données clan pour le frontend
 //
-// Stockage : Upstash Redis (même instance que quiz.js/tamagotchi.js),
+// Stockage : Upstash Redis (même instance que les jeux),
 // espace de clés `clancache:*`. Remplace l'ancien double stockage
 // fichier (/tmp + bundle statique frontend/public/clan-cache) : ce
 // dernier forçait un redéploiement Vercel à chaque régénération

@@ -4,7 +4,7 @@
 // associée : c'est jeux/scripts/postPoll.js qui déclenche la publication, en
 // phase de test comme en public.
 //
-// Contrairement aux mini-jeux (Quiz, Tamagotchi, ...), il n'y a aucun bouton
+// Contrairement aux mini-jeux et jeux spéciaux, il n'y a aucun bouton
 // ni interaction à gérer pour les questions "choice"/"note" : Discord
 // affiche et compte les votes tout seul via l'objet `poll` du message.
 //

@@ -61,15 +61,16 @@ import {
   getAllArchivedResults as getPlatPaysResults,
   readState as readPlatPaysState,
 } from "./platpays.js";
-import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listPontManches } from "./pont.js";
+import { listManches as listCoffreManches } from "./coffre.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
 import {
   getAnagramResults,
   getPaletteResults,
   getBlindRoyaleResults,
   getLaJusteCarteResults,
+  listQuizManches,
 } from "./archivesJeuxSupprimes.js";
 import { listManches as listQuiEstCeManches } from "./quiestce.js";
 import { PREMIERE_SAISON_BOSS, championsBoss } from "./boss.js";
@@ -85,6 +86,7 @@ const GAME_ORDER = [
   "quiz",
   "blackjack",
   "pont",
+  "coffre",
   "marioclash",
   "quiestce",
 ];
@@ -270,6 +272,12 @@ const MANCHE_SCORE_GAMES = [
     key: "pont",
     label: "🧌 Pont du Troll",
     fetch: () => listPontManches({ limit: Infinity }),
+    scoreField: "points",
+  },
+  {
+    key: "coffre",
+    label: "🔐 Le Coffre",
+    fetch: () => listCoffreManches({ limit: Infinity }),
     scoreField: "points",
   },
   {

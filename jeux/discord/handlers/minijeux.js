@@ -1,8 +1,8 @@
 // ============================================================
 // minijeux.js — Handler Discord pour /mini-jeux : état des lieux des 5
 // groupes de mini-jeux hebdomadaires (deux jeux en alternance chacun, voir
-// refonte.js), du jeu spécial actuellement actif (Quiz, Robinson, Goblin
-// Hunters, Blackjack, Pont du Troll, Mario Clash, Gobelet ou Meow ; Qui
+// refonte.js), du jeu spécial actuellement actif (Robinson, Goblin Hunters,
+// Blackjack, Pont du Troll, Le Coffre, Mario Clash, Gobelet ou Meow ; Qui
 // est-ce ? archivé) et des duels.
 // Lecture seule, aucune écriture Redis.
 //
@@ -56,11 +56,6 @@ import {
   CLASH_WEEKDAY,
 } from "../../services/jeuxclash.js";
 
-import {
-  readState as readQuizState,
-  loadQuizConfig,
-  listVotes as listQuizVotes,
-} from "../../services/quiz.js";
 import {
   readState as readRobinsonState,
   loadRobinsonConfig,
@@ -117,6 +112,13 @@ import {
   compterReponsesVraiFaux as compterPontReponsesVraiFaux,
   MATIN as PONT_MATIN,
 } from "../../services/pont.js";
+import {
+  readState as readCoffreState,
+  loadCoffreConfig,
+  readPartie as readCoffrePartie,
+  compterJoueurs as compterCoffreJoueurs,
+  readPoints as readCoffrePoints,
+} from "../../services/coffre.js";
 import { CRENEAUX, creneauJouable } from "../../services/creneaux.js";
 
 // Blackjack et Gobelet : deux mains par jour (creneaux.js). « A joué » =
@@ -298,40 +300,6 @@ function resolveActiveClashGame() {
 // terminé sur le salon public) gagne.
 const SPECIAL_GAMES = [
   {
-    key: "quiz",
-    title: "Quiz",
-    style: "Trivia",
-    readState: readQuizState,
-    // Classement Quiz volontairement secret (voir quiz.js) : participation
-    // du jour uniquement, jamais de score.
-    async participation(state, discordId) {
-      if (state.phase === "annonce") return null;
-      const votes = await listQuizVotes(state.manche, state.jour);
-      return { played: votes.some((v) => v.discordId === discordId) };
-    },
-    async detail(state) {
-      if (state.phase === "annonce") {
-        // Jour de présentation : pas encore de jour joué (jour = null) —
-        // même traitement que Mario Clash ci-dessous.
-        return {
-          jour: null,
-          dureeJours: null,
-          participantsLabel: null,
-          phaseLabel: "Phase de présentation du jeu",
-        };
-      }
-      const config = await loadQuizConfig();
-      const dureeJours =
-        config.manches[state.mancheIndex]?.questions.length ?? null;
-      const votes = await listQuizVotes(state.manche, state.jour);
-      return {
-        jour: state.jour,
-        dureeJours,
-        participantsLabel: formatParticipantsToday(votes.length),
-      };
-    },
-  },
-  {
     key: "robinson",
     title: "Robinson",
     style: "Collaboratif",
@@ -475,6 +443,37 @@ const SPECIAL_GAMES = [
         participantsLabel: formatParticipantsToday(
           await (state.phase === PONT_MATIN ? compterPontReponsesVraiFaux : compterPontPassants)(state.jour),
         ),
+      };
+    },
+  },
+  {
+    key: "coffre",
+    title: "Le Coffre",
+    style: "Déduction",
+    readState: readCoffreState,
+    // Joueurs ayant fait au moins un essai (bouton "📊 Stats")
+    async livePlayerIds() {
+      return Object.keys(await readCoffrePoints());
+    },
+    // « A joué » = au moins un essai sur le coffre du jour, jamais le détail
+    async participation(state, discordId) {
+      if (state.phase === "annonce") return null;
+      const [partie, points] = await Promise.all([readCoffrePartie(state.jour, discordId), readCoffrePoints()]);
+      const total = points[discordId] ?? 0;
+      return {
+        played: partie.essais.length > 0,
+        scoreLabel: `Score de la partie : **${total} point${total > 1 ? "s" : ""}**`,
+      };
+    },
+    async detail(state) {
+      if (state.phase === "annonce") {
+        return { jour: null, dureeJours: null, participantsLabel: null, phaseLabel: "Phase de présentation du jeu" };
+      }
+      const config = await loadCoffreConfig();
+      return {
+        jour: state.jour,
+        dureeJours: config.duree_jours,
+        participantsLabel: formatParticipantsToday(await compterCoffreJoueurs(state.jour)),
       };
     },
   },
@@ -634,7 +633,7 @@ const SPECIAL_GAMES = [
   },
 ];
 
-// Quiz/Robinson/Blackjack ne comptent que les votants
+// Robinson/Blackjack ne comptent que les votants
 // du JOUR courant (aucune trace des jours précédents n'est agrégée côté
 // service) — le préciser pour ne pas laisser croire à un total sur toute la
 // partie. Goblin Hunters s'exprime différemment (inscrits ou vivants), voir

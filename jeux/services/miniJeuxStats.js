@@ -30,18 +30,19 @@ import { getAllArchivedResults as getSynopsisResults } from "./synopsis.js";
 import { getAllArchivedResults as getZoomResults } from "./zoom.js";
 import { getAllArchivedResults as getZoom2Results } from "./zoom2.js";
 import { getAllArchivedResults as getPlatPaysResults } from "./platpays.js";
-import { listManches as listQuizManches } from "./quiz.js";
 import { listManches as listBlackjackManches } from "./blackjack.js";
 import { listManches as listMarioClashManches } from "./marioclash.js";
 import { listManches as listGobeletManches } from "./gobelet.js";
 import { listManches as listQuiEstCeManches } from "./quiestce.js";
 import { listManches as listMeowManches } from "./meow.js";
 import { listManches as listPontManches } from "./pont.js";
+import { listManches as listCoffreManches } from "./coffre.js";
 import {
   getAnagramResults,
   getPaletteResults,
   getBlindRoyaleResults,
   getLaJusteCarteResults,
+  listQuizManches,
 } from "./archivesJeuxSupprimes.js";
 
 // Au-delà des 3 premiers paliers, un palier d'assidus n'est affiché que s'il
@@ -89,6 +90,7 @@ export const SPECIAL_GAMES = [
   { key: "quiestce", title: "🕵️ Qui est-ce ?", fetch: listQuiEstCeManches },
   { key: "meow", title: "🐱 Meow", fetch: listMeowManches },
   { key: "pont", title: "🧌 Pont du Troll", fetch: listPontManches },
+  { key: "coffre", title: "🔐 Le Coffre", fetch: listCoffreManches },
 ];
 
 function mancheParticipantCount(manche) {

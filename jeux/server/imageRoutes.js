@@ -74,6 +74,14 @@ import {
   getIllustrationImage as getPontIllustrationImage,
 } from "../services/pontImage.js";
 import { loadPontConfig, jourConfig, getHistoriqueEntry as getPontHistorique, readAvatars as readPontAvatars } from "../services/pont.js";
+import {
+  decodePlateau as decodeCoffrePlateau,
+  getPlateauImage as getCoffrePlateauImage,
+  getJourImage as getCoffreJourImage,
+  getCodeImage as getCoffreCodeImage,
+  getIllustrationImage as getCoffreIllustrationImage,
+} from "../services/coffreImage.js";
+import { loadCoffreConfig, getHistoriqueEntry as getCoffreHistorique } from "../services/coffre.js";
 import { decodeGrille as decodeQuatreGrille, getBandeauImage as getQuatreBandeauImage, getGrilleImage as getQuatreGrilleImage } from "../services/quatreImage.js";
 
 const router = express.Router();
@@ -508,6 +516,40 @@ router.get("/api/pont/illustration", async (req, res) => {
   res.setHeader("Content-Type", image.mimeType);
   res.setHeader("Cache-Control", "no-store");
   res.send(image.buffer);
+});
+
+// Le Coffre : plateau privé rendu sans état depuis `d` (essais ET réponses
+// déjà calculées par le serveur : l'URL ne sert pas d'oracle), image du jour
+// (les 6 symboles, rien de secret), code d'un jour déjà résolu (historique
+// de la partie `partie`, jamais le jour en cours), illustration d'annonce.
+const envoyerImage = (res, image, cache = "public, max-age=86400, s-maxage=86400") => {
+  if (!image) return res.status(404).end();
+  res.setHeader("Content-Type", image.mimeType);
+  res.setHeader("Cache-Control", cache);
+  res.send(image.buffer);
+};
+
+router.get("/api/coffre/plateau", async (req, res) => {
+  const plateau = decodeCoffrePlateau(req.query.d);
+  envoyerImage(res, plateau ? await getCoffrePlateauImage(plateau).catch(() => null) : null);
+});
+
+router.get("/api/coffre/jour", async (req, res) => {
+  const jour = Number(req.query.jour);
+  const config = await loadCoffreConfig().catch(() => null);
+  if (!config || !Number.isInteger(jour) || jour < 1 || jour > config.duree_jours) return res.status(404).end();
+  envoyerImage(res, await getCoffreJourImage(jour, config.duree_jours).catch(() => null));
+});
+
+router.get("/api/coffre/code", async (req, res) => {
+  const entry = await getCoffreHistorique(String(Number(req.query.jour))).catch(() => null);
+  if (!entry || entry.partieId !== String(req.query.partie ?? "")) return res.status(404).end();
+  const config = await loadCoffreConfig();
+  envoyerImage(res, await getCoffreCodeImage(entry, config.duree_jours).catch(() => null));
+});
+
+router.get("/api/coffre/illustration", async (req, res) => {
+  envoyerImage(res, await getCoffreIllustrationImage().catch(() => null), "no-store");
 });
 
 export default router;

@@ -1,0 +1,45 @@
+name: Le Coffre
+
+permissions:
+  contents: read
+
+on:
+  # Le lancement se fait uniquement à la main (workflow_dispatch) et publie
+  # le jour de présentation (annonce), jamais le Jour 1 directement. Le cron
+  # ne fait qu'avancer une partie déjà lancée (voir --require-active passé
+  # au script ci-dessous) : tant qu'aucun lancement manuel n'a eu lieu, il ne
+  # se passe rien (l'état est partagé avec le salon de test, voir
+  # jeux/CONTRIBUTING.md).
+  schedule:
+    # 8h28 à Paris en hiver (9h28 en été) : code de la veille (coffre fermé
+    # à minuit) et nouveau coffre. Minute distincte des autres crons, voir
+    # jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) ».
+    - cron: "28 7 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      # Bot des jeux (jeux/env.js) : vides tant que les secrets n'existent pas.
+      DISCORD_JEUX_TOKEN: ${{ secrets.DISCORD_JEUX_TOKEN }}
+      DISCORD_JEUX_APP_ID: ${{ secrets.DISCORD_JEUX_APP_ID }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_FRAME_PUBLIC: ${{ secrets.DISCORD_CHANNEL_FRAME_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Publie le jour du Coffre (salon public)
+        run: npm run coffre:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}

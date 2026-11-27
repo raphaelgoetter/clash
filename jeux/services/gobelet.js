@@ -135,7 +135,7 @@ export async function writeState(state) {
 }
 
 // Garde-fou anti-double-avancée (même pattern que les autres jeux à cron du
-// repo — Blackjack, Robinson, Quiz… — copié ici plutôt qu'importé : chaque
+// repo — Blackjack, Robinson… — copié ici plutôt qu'importé : chaque
 // jeu a sa propre copie, aucun partage inter-jeux de ce garde-fou dans le
 // repo) : un cron `schedule` en retard peut encore se déclencher après
 // qu'un admin a relancé le jour à la main entretemps — sans ce filet, les
