@@ -82,6 +82,12 @@ import {
   getIllustrationImage as getCoffreIllustrationImage,
 } from "../services/coffreImage.js";
 import { loadCoffreConfig, getHistoriqueEntry as getCoffreHistorique } from "../services/coffre.js";
+import {
+  decodePlateau as decodePilePoilPlateau,
+  getPlateauImage as getPilePoilPlateauImage,
+  getRecapImage as getPilePoilRecapImage,
+} from "../services/pilepoilImage.js";
+import { loadPilePoilConfig, getHistoriqueEntry as getPilePoilHistorique, espaceDuCode as pilePoilEspace } from "../services/pilepoil.js";
 import { decodeGrille as decodeQuatreGrille, getBandeauImage as getQuatreBandeauImage, getGrilleImage as getQuatreGrilleImage } from "../services/quatreImage.js";
 
 const router = express.Router();
@@ -550,6 +556,22 @@ router.get("/api/coffre/code", async (req, res) => {
 
 router.get("/api/coffre/illustration", async (req, res) => {
   envoyerImage(res, await getCoffreIllustrationImage().catch(() => null), "no-store");
+});
+
+// Pile Poil : plateau privé rendu sans état depuis `d` (essais ET retours
+// déjà calculés par le serveur : l'URL ne sert pas d'oracle), récap d'un
+// jour déjà clos (grilles sans chiffres), 404 tant que le jour est en cours.
+router.get("/api/pilepoil/plateau", async (req, res) => {
+  const plateau = decodePilePoilPlateau(req.query.d);
+  envoyerImage(res, plateau ? await getPilePoilPlateauImage(plateau).catch(() => null) : null);
+});
+
+router.get("/api/pilepoil/recap", async (req, res) => {
+  if (!["p", "t"].includes(req.query.e)) return res.status(404).end();
+  const entry = await getPilePoilHistorique(pilePoilEspace(req.query.e), String(Number(req.query.jour))).catch(() => null);
+  if (!entry) return res.status(404).end();
+  const config = await loadPilePoilConfig();
+  envoyerImage(res, await getPilePoilRecapImage({ jour: entry.jour, grilles: entry.grilles ?? [], essaisMax: config.essais }).catch(() => null));
 });
 
 export default router;

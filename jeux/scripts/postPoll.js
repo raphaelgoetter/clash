@@ -24,11 +24,11 @@ const FORCE = process.argv.includes("--force");
 
 const channelId = PUBLIC
   ? process.env.DISCORD_CHANNEL_ANNONCES
-  : process.env.DISCORD_CHANNEL_FRAME_TEST;
+  : process.env.DISCORD_CHANNEL_JEUX_TEST;
 
 if (!channelId) {
   console.error(
-    `Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_ANNONCES" : "DISCORD_CHANNEL_FRAME_TEST"}`,
+    `Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_ANNONCES" : "DISCORD_CHANNEL_JEUX_TEST"}`,
   );
   process.exit(1);
 }

@@ -42,9 +42,9 @@ const PUBLIC = process.argv.includes("--public");
 const MP_TEST = process.argv.flatMap((a, i, all) => (a === "--mp" && all[i + 1] ? [all[i + 1]] : []));
 
 const BOSS_COLOR = 0x8e44ad;
-const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC : process.env.DISCORD_CHANNEL_FRAME_TEST;
+const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_JEUX_PUBLIC : process.env.DISCORD_CHANNEL_JEUX_TEST;
 if (!channelId && !DRY_RUN) {
-  console.error(`Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_FRAME_PUBLIC" : "DISCORD_CHANNEL_FRAME_TEST"}`);
+  console.error(`Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_JEUX_PUBLIC" : "DISCORD_CHANNEL_JEUX_TEST"}`);
   process.exit(1);
 }
 

@@ -1,0 +1,43 @@
+name: Pile Poil
+
+permissions:
+  contents: read
+
+on:
+  # Jeu quotidien sans fin. Le premier lancement se fait à la main
+  # (workflow_dispatch) ; le cron passe --require-active : sans jeu lancé (ou
+  # en pause, npm run pilepoil:pause), il ne se passe rien. Un lancement
+  # manuel relance un jeu en pause.
+  schedule:
+    # 9h02 à Paris en hiver (10h02 en été) : récap de la veille et égalité du
+    # jour, après tous les jeux spéciaux. Minute distincte des autres crons,
+    # voir jeux/CONTRIBUTING.md, section « Crons GitHub Actions (jeux spéciaux) ».
+    - cron: "2 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  post-jour:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      # Bot des jeux (jeux/env.js) : vides tant que les secrets n'existent pas.
+      DISCORD_JEUX_TOKEN: ${{ secrets.DISCORD_JEUX_TOKEN }}
+      DISCORD_JEUX_APP_ID: ${{ secrets.DISCORD_JEUX_APP_ID }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CHANNEL_JEUX_PUBLIC: ${{ secrets.DISCORD_CHANNEL_JEUX_PUBLIC }}
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Publie le jour de Pile Poil (salon public)
+        run: npm run pilepoil:public -- ${{ github.event_name == 'schedule' && '--require-active' || '' }}

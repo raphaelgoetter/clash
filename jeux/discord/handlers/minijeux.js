@@ -183,11 +183,11 @@ async function buildDuelsBlock() {
 }
 const BAR_SEGMENTS = 7;
 
-// Même salon pour tous les mini-jeux (voir DISCORD_CHANNEL_FRAME_PUBLIC
+// Même salon pour tous les mini-jeux (voir DISCORD_CHANNEL_JEUX_PUBLIC
 // réutilisé par tous les workflows .github/workflows/*.yml) — sert aussi de
 // garde-fou : une partie active sur le salon de test ne doit jamais
 // apparaître ici comme état "public".
-const PUBLIC_CHANNEL_ID = process.env.DISCORD_CHANNEL_FRAME_PUBLIC;
+const PUBLIC_CHANNEL_ID = process.env.DISCORD_CHANNEL_JEUX_PUBLIC;
 
 function channelLink() {
   const guildId = process.env.DISCORD_GUILD_ID;

@@ -29,9 +29,9 @@ const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 // Salon de test : 5 PNJ traversent chaque jour (jamais sur le salon public)
 const PNJ = !PUBLIC && !process.argv.includes("--sans-pnj");
 
-const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC : process.env.DISCORD_CHANNEL_FRAME_TEST;
+const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_JEUX_PUBLIC : process.env.DISCORD_CHANNEL_JEUX_TEST;
 if (!channelId) {
-  console.error(`Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_FRAME_PUBLIC" : "DISCORD_CHANNEL_FRAME_TEST"}`);
+  console.error(`Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_JEUX_PUBLIC" : "DISCORD_CHANNEL_JEUX_TEST"}`);
   process.exit(1);
 }
 

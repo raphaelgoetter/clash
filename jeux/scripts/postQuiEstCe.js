@@ -36,10 +36,10 @@ const PNJ = !PUBLIC && !process.argv.includes("--sans-pnj");
 
 // Réutilise les salons du jeu Frame (même principe que les autres jeux
 // spéciaux, voir jeux/CONTRIBUTING.md) plutôt que de provisionner un salon dédié.
-const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC : process.env.DISCORD_CHANNEL_FRAME_TEST;
+const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_JEUX_PUBLIC : process.env.DISCORD_CHANNEL_JEUX_TEST;
 
 if (!channelId) {
-  console.error(`Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_FRAME_PUBLIC" : "DISCORD_CHANNEL_FRAME_TEST"}`);
+  console.error(`Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_JEUX_PUBLIC" : "DISCORD_CHANNEL_JEUX_TEST"}`);
   process.exit(1);
 }
 

@@ -5,7 +5,7 @@
 // jeux/scripts/postJeuxDeLettres.js, le point d'entrée normal en production, qui
 // décide lui-même si c'est Anagram ou Pêle-mêle qui doit poster). Utile pour
 // tester ou rattraper un créneau manqué de Pêle-mêle spécifiquement, une
-// fois que c'est bien sa saison. Réutilise DISCORD_CHANNEL_FRAME_PUBLIC/TEST
+// fois que c'est bien sa saison. Réutilise DISCORD_CHANNEL_JEUX_PUBLIC/TEST
 // (voir jeux/CONTRIBUTING.md) plutôt que de nouvelles variables dédiées.
 //
 // Usage :
@@ -26,10 +26,10 @@ const FORCE = process.argv.includes("--force");
 // postAnagram.js/postTamagotchi.js pour le même garde-fou).
 const NO_PING = process.argv.includes("--no-ping") || !PUBLIC;
 
-const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC : process.env.DISCORD_CHANNEL_FRAME_TEST;
+const channelId = PUBLIC ? process.env.DISCORD_CHANNEL_JEUX_PUBLIC : process.env.DISCORD_CHANNEL_JEUX_TEST;
 
 if (!channelId) {
-  console.error(`Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_FRAME_PUBLIC" : "DISCORD_CHANNEL_FRAME_TEST"}`);
+  console.error(`Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_JEUX_PUBLIC" : "DISCORD_CHANNEL_JEUX_TEST"}`);
   process.exit(1);
 }
 

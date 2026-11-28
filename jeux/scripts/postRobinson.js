@@ -45,12 +45,12 @@ const PNJ = !PUBLIC && !process.argv.includes("--sans-pnj");
 // voir jeux/CONTRIBUTING.md) plutôt que de provisionner de nouveaux salons
 // Discord dédiés à Robinson.
 const channelId = PUBLIC
-  ? process.env.DISCORD_CHANNEL_FRAME_PUBLIC
-  : process.env.DISCORD_CHANNEL_FRAME_TEST;
+  ? process.env.DISCORD_CHANNEL_JEUX_PUBLIC
+  : process.env.DISCORD_CHANNEL_JEUX_TEST;
 
 if (!channelId) {
   console.error(
-    `Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_FRAME_PUBLIC" : "DISCORD_CHANNEL_FRAME_TEST"}`,
+    `Variable d'environnement manquante : ${PUBLIC ? "DISCORD_CHANNEL_JEUX_PUBLIC" : "DISCORD_CHANNEL_JEUX_TEST"}`,
   );
   process.exit(1);
 }

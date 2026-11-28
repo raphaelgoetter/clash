@@ -1,10 +1,10 @@
 # 🎲 Jeux Discord : documentation développeurs
 
-Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spéciaux sur 7 jours, duels à la demande) : règles, barèmes, données, clés Redis, scripts et crons. **Avant de modifier une règle de jeu, consulter ce document** et le mettre à jour dans le même changement.
+Source de vérité des jeux de la famille (mini-jeux hebdomadaires, jeux spéciaux sur 7 jours, jeu quotidien, duels à la demande) : règles, barèmes, données, clés Redis, scripts et crons. **Avant de modifier une règle de jeu, consulter ce document** et le mettre à jour dans le même changement.
 
 Pour l'architecture commune (organisation du monorepo, endpoint Discord, `runBackground()`, règles critiques du bot, variables d'environnement), voir le [`CONTRIBUTING.md` racine](../CONTRIBUTING.md). Rappel : `jeux/` n'importe jamais `backend/`, `api/` ni `scripts/` ; uniquement ses fichiers et `@clash/commun` / `@clash/clash-royale` (ce dernier pour les seules exceptions listées dans « Exceptions Clash Royale »).
 
-Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Sékoidon, Concept, Synopsis éclaté, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays) · jeux spéciaux (Robinson, Blackjack, Gobelet, Meow, Goblin Hunters, Mario Clash, Pont du Troll, Le Coffre) · faces de dé · duels · sondage public · noms des cartes · exceptions Clash Royale · jeux archivés et supprimés.
+Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek, Intrus de l'inventaire, Sékoidon, Concept, Synopsis éclaté, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays) · jeux spéciaux (Robinson, Blackjack, Gobelet, Meow, Goblin Hunters, Mario Clash, Pont du Troll, Le Coffre) · jeu quotidien (Pile Poil) · faces de dé · duels · sondage public · noms des cartes · exceptions Clash Royale · jeux archivés et supprimés.
 
 ---
 
@@ -13,7 +13,7 @@ Sommaire : routes Discord · mini-jeux hebdomadaires (Frame, Trivia, Trivia Geek
 Les jeux ont leur propre application Discord (« bot des jeux », Kévina), servie par `jeux/api/discord.js` sur le projet Vercel `kevina` (architecture commune, `runBackground()` et règles critiques : voir `CONTRIBUTING.md` racine). La logique propre à chaque jeu est dans `jeux/discord/handlers/`.
 
 - **Projet Vercel `kevina`** : même dépôt, dossier racine `jeux/` (option « fichiers hors du dossier racine » activée pour `packages/`), configuration `jeux/vercel.json`, adresse `https://kevina-jeux.vercel.app`. Deux fonctions : `jeux/api/discord.js` (Interactions Endpoint URL `https://kevina-jeux.vercel.app/api/discord`, `maxDuration` 180 s) et `jeux/api/images.js` (routes `/api/<jeu>/…` de `jeux/server/imageRoutes.js`, `/api/health`). Images fixes servies depuis `jeux/public/images/`. Page d'accueil publique : `jeux/public/index.html` (+ `accueil.css`, `accueil.js`, avatar `kevina.png`), statique, à tenir à jour quand un jeu est ajouté, archivé ou change de jour ; l'heure des mini-jeux y est calculée en heure de Paris depuis 18:00 UTC. Build ignoré si le commit ne touche ni `jeux/`, ni `packages/`, ni les `package*.json` racine.
-- **Variables Vercel `kevina`** : `DISCORD_JEUX_TOKEN`, `DISCORD_JEUX_APP_ID`, `DISCORD_JEUX_PUBLIC_KEY`, `DISCORD_GUILD_ID`, `AUTHORIZED_GUILD_IDS`, `DISCORD_CHANNEL_FRAME_TEST`, `DISCORD_CHANNEL_FRAME_PUBLIC`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `BLOB_READ_WRITE_TOKEN` (même base Upstash et même stockage Blob que TrustRoyale). Toute nouvelle variable lue par le runtime des jeux s'y ajoute.
+- **Variables Vercel `kevina`** : `DISCORD_JEUX_TOKEN`, `DISCORD_JEUX_APP_ID`, `DISCORD_JEUX_PUBLIC_KEY`, `DISCORD_GUILD_ID`, `AUTHORIZED_GUILD_IDS`, `DISCORD_CHANNEL_JEUX_TEST`, `DISCORD_CHANNEL_JEUX_PUBLIC`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `BLOB_READ_WRITE_TOKEN` (même base Upstash et même stockage Blob que TrustRoyale). Toute nouvelle variable lue par le runtime des jeux s'y ajoute.
 - **Séparé de TrustRoyale** : le projet `trustroyale` ne charge aucun fichier de `jeux/` ; ses anciennes URL d'images (`/images/<jeu>/…`, `/api/<jeu>/…`) redirigent vers `kevina-jeux.vercel.app` (`vercel.json` racine). Voir « Déploiements Vercel séparés » dans le `CONTRIBUTING.md` racine.
 
 - **Identifiants** : `jeux/env.js`, importé en premier par `jeux/api/discord.js`, `jeux/api/images.js` et par chaque `jeux/scripts/*.js`, charge `./.env` puis substitue `DISCORD_JEUX_TOKEN` / `DISCORD_JEUX_APP_ID` / `DISCORD_JEUX_PUBLIC_KEY` à `DISCORD_TOKEN` / `DISCORD_APP_ID` / `DISCORD_PUBLIC_KEY`. Le code des jeux ne lit que les noms standards et agit donc au nom du bot des jeux. Sans `DISCORD_JEUX_*`, `jeux/api/discord.js` répond 404.
@@ -25,7 +25,7 @@ Les jeux ont leur propre application Discord (« bot des jeux », Kévina), serv
 | Module                                | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `jeux/discord/routes/miniJeux.js`     | Mini-jeux hebdomadaires (Frame, Synopsis éclaté, Concept, Pêle-mêle, Zoom truc, Zoom logo, Plat Pays, Trivia, Trivia Geek, Intrus), sondage d'idées, `/mini-jeux` (boutons « 🛂 Mon passeport », voir « Passeport mensuel », et « 📊 Stats », ce dernier calculé par `jeux/services/miniJeuxStats.js` depuis les archives des jeux ; ses assidus portent sur la saison précédente tant qu'une de ses manches court encore, 7 jours après sa publication), `/mini-jeux-history` (vainqueurs par saison, champion du Boss : voir « Boss de fin de saison ») |
-| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Robinson, Goblin Hunters, Mario Clash, Qui est-ce ? archivé, Meow, Pont du Troll, Le Coffre) |
+| `jeux/discord/routes/jeuxSpeciaux.js` | Jeux spéciaux sur 7 jours (Blackjack, Gobelet, Robinson, Goblin Hunters, Mario Clash, Qui est-ce ? archivé, Meow, Pont du Troll, Le Coffre) et Pile Poil (jeu quotidien) |
 | `jeux/discord/routes/duels.js`        | `/blackjack`, `/gobelet`, `/bang`, `/quatre`, `/punto`, `/frise`, `/potato`, `/bac`, `/pendu`, `/pendu-generator` et leurs boutons de duel (plus ceux de Mascarade, archivé, pour les parties en cours) |
 
 ⚠️ Les `custom_id` et noms de commandes doivent rester disjoints de ceux des modules TrustRoyale : l'ordre des modules n'est pas un mécanisme de priorité.
@@ -69,11 +69,11 @@ Chaque service réexporte `getCurrentSeasonId()` depuis `jeux/services/saison.js
 
 ### Salons, ping et variables d'environnement
 
-- Salon de test `DISCORD_CHANNEL_FRAME_TEST`, salon public `DISCORD_CHANNEL_FRAME_PUBLIC` : partagés par tous les mini-jeux, ne pas créer de salon dédié.
+- Salon de test `DISCORD_CHANNEL_JEUX_TEST`, salon public `DISCORD_CHANNEL_JEUX_PUBLIC` : partagés par tous les mini-jeux, ne pas créer de salon dédié.
 - Le salon de test ne pingue jamais (`NO_PING = --no-ping || !--public`). En public, ping du rôle `MINI-JEUX` résolu par son nom (`MINI_JEUX_ROLE_NAME`, `getRoleIdByName`/`buildRolePingFields`, `packages/commun/discordRoles.js`). ⚠️ Le nom doit correspondre exactement au rôle Discord, sinon le ping échoue silencieusement pour tous les jeux.
 - Redis : `KV_REST_API_URL`/`KV_REST_API_TOKEN` (Upstash), un préfixe de clés par jeu, aucun partage de données entre jeux.
 - Adresse publique des images (embeds) : `URL_JEUX` (`jeux/services/urlJeux.js`), lue dans `JEUX_URL_PUBLIQUE`, `https://kevina-jeux.vercel.app` par défaut. Jamais d'adresse écrite en dur dans un handler.
-- Secrets des 5 workflows : `CLASH_API_KEY`, `DISCORD_TOKEN`, `DISCORD_APP_ID`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`, `KV_REST_API_URL`, `KV_REST_API_TOKEN` (GitHub → Settings → Secrets and variables → Actions). Sans les `KV_*`, échec `[Upstash Redis] The 'url'/'token' property is missing`.
+- Secrets des 5 workflows : `CLASH_API_KEY`, `DISCORD_TOKEN`, `DISCORD_APP_ID`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_JEUX_PUBLIC`, `KV_REST_API_URL`, `KV_REST_API_TOKEN` (GitHub → Settings → Secrets and variables → Actions). Sans les `KV_*`, échec `[Upstash Redis] The 'url'/'token' property is missing`.
 
 ### Stockage Upstash Redis : pièges et schéma
 
@@ -411,7 +411,7 @@ Jeux à avancée quotidienne (un message actif à la fois, publié par `jeux/scr
 
 ### Salon test / salon public : état partagé
 
-- Tous les jeux réutilisent `DISCORD_CHANNEL_FRAME_TEST` (par défaut) et `DISCORD_CHANNEL_FRAME_PUBLIC` (`--public`) ; aucune variable de salon dédiée. Redis : même instance (`KV_REST_API_URL`/`KV_REST_API_TOKEN`), `automaticDeserialization: false`, un espace de clés par jeu.
+- Tous les jeux réutilisent `DISCORD_CHANNEL_JEUX_TEST` (par défaut) et `DISCORD_CHANNEL_JEUX_PUBLIC` (`--public`) ; aucune variable de salon dédiée. Redis : même instance (`KV_REST_API_URL`/`KV_REST_API_TOKEN`), `automaticDeserialization: false`, un espace de clés par jeu.
 - ⚠️ **Un seul état Redis par jeu, partagé entre les deux salons.** Si une partie est active sur l'autre salon, `post<Jeu>()` renvoie `wrongChannel` et ne publie rien : `npm run <jeu>:reset` avant de changer de salon.
 - Archivage des manches (`<jeu>:manches`, `<jeu>:manche_seq`, `archiveManche()`) **uniquement** en publication réelle sur le salon public (`isPublic`), jamais en dry-run ni sur le salon de test. `npm run <jeu>:reset` conserve l'archive ; `<jeu>:reset:manches` l'efface (filet de sécurité).
 
@@ -543,6 +543,7 @@ Chaque jeu à avancée quotidienne a son propre workflow `.github/workflows/<jeu
 | Pont du Troll         | `pont.yml`          | `24 7 * * *` (8h24 à Paris en hiver : résultat et Vrai/Faux) et `4 13 * * *` (14h04 en hiver : ponts) |
 | Le Coffre             | `coffre.yml`        | `28 7 * * *` (8h28 à Paris en hiver : code de la veille et nouveau coffre)                    |
 | Boss de fin de saison | `boss.yml`          | `26 8 * * *` (tous les jours, sans `--require-active` : voir « Boss de fin de saison »)      |
+| Pile Poil             | `pilepoil.yml`      | `2 8 * * *` (9h02 à Paris en hiver, jeu quotidien sans fin : voir « Pile Poil »)             |
 
 Qui est-ce ? (`quiestce.yml`, minute 20 réservée) a son cron commenté : voir « Jeux archivés et supprimés ».
 
@@ -647,14 +648,14 @@ Contraintes issues de la simulation :
 
 | Commande | Effet |
 | --- | --- |
-| `npm run robinson:test` / `:test:dry` | salon de test (`DISCORD_CHANNEL_FRAME_TEST`, 5 PNJ, jamais de ping) / aperçu console |
-| `npm run robinson:public` / `:public:dry` | salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`) / aperçu |
+| `npm run robinson:test` / `:test:dry` | salon de test (`DISCORD_CHANNEL_JEUX_TEST`, 5 PNJ, jamais de ping) / aperçu console |
+| `npm run robinson:public` / `:public:dry` | salon public (`DISCORD_CHANNEL_JEUX_PUBLIC`) / aperçu |
 | `npm run robinson:reset` | efface la partie en cours (**destructif**, garde les manches) |
 | `npm run robinson:reset:manches` | idem + `robinson:manches`/`manche_seq` |
 | `npm run robinson:status` | état courant, votes du jour, joueurs à bord, projection de la nuit ; vraie météo de demain seulement avec `-- --spoiler` |
 | `npm run robinson:refresh` / `:refresh:dry` | réédite le message du jour en place (sans résoudre la nuit) après un correctif de texte |
 
-Workflow `.github/workflows/robinson.yml` : cron `8 7 * * *` UTC (avec `--require-active`) + `workflow_dispatch` (lancement). Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_FRAME_PUBLIC`/`_TEST`, `KV_REST_API_URL`/`KV_REST_API_TOKEN` (aucune spécifique). Changement de règles : uniquement entre deux parties, suivi de `npm run robinson:reset`.
+Workflow `.github/workflows/robinson.yml` : cron `8 7 * * *` UTC (avec `--require-active`) + `workflow_dispatch` (lancement). Variables : `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_JEUX_PUBLIC`/`_TEST`, `KV_REST_API_URL`/`KV_REST_API_TOKEN` (aucune spécifique). Changement de règles : uniquement entre deux parties, suivi de `npm run robinson:reset`.
 
 ---
 
@@ -736,14 +737,14 @@ Règles officielles (choix validés par simulation, `jeux/outils/blackjack-simul
 
 | Commande                                   | Effet                                                                  |
 | ------------------------------------------ | ---------------------------------------------------------------------- |
-| `npm run blackjack:test` / `:test:dry`     | Salon de test (`DISCORD_CHANNEL_FRAME_TEST`) / aperçu console          |
-| `npm run blackjack:public` / `:public:dry` | Salon public (`DISCORD_CHANNEL_FRAME_PUBLIC`)                          |
+| `npm run blackjack:test` / `:test:dry`     | Salon de test (`DISCORD_CHANNEL_JEUX_TEST`) / aperçu console          |
+| `npm run blackjack:public` / `:public:dry` | Salon public (`DISCORD_CHANNEL_JEUX_PUBLIC`)                          |
 | `npm run blackjack:reset`                  | **Destructif** : partie en cours effacée, `blackjack:manches` préservé |
 | `npm run blackjack:reset:manches`          | **Destructif** : efface aussi l'archive des manches                    |
 | `npm run blackjack:status`                 | État courant et projection de la clôture, sans Discord                 |
 | `npm run blackjack:scores`                 | Classement cumulé seul                                                 |
 
-Cron `.github/workflows/blackjack.yml` : `12 7 * * *`. Variables : `DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
+Cron `.github/workflows/blackjack.yml` : `12 7 * * *`. Variables : `DISCORD_CHANNEL_JEUX_TEST`/`PUBLIC`, `DISCORD_TOKEN`, `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
 
 ## Faces de dé communes
 
@@ -1135,12 +1136,12 @@ Ordre : actions des bots de remplacement → **vote** (l'éliminé est retiré d
 
 | Commande                                       | Effet                                                                                                                         |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `npm run goblinhunters:test`                   | Étape courante sur `DISCORD_CHANNEL_FRAME_TEST` (sans ping, sans garde-fou 8 h)                                               |
+| `npm run goblinhunters:test`                   | Étape courante sur `DISCORD_CHANNEL_JEUX_TEST` (sans ping, sans garde-fou 8 h)                                               |
 | `npm run goblinhunters:test:dry`               | Aperçu console sans écrire ni poster (en inscription : répartition camps/rôles simulée)                                       |
 | `npm run goblinhunters:test:force-close`       | ⚠️ Tests uniquement : ignore `closingAt` et lance dès l'effectif minimum (combinable avec `--dry-run`)                        |
 | `npm run goblinhunters:seed-test-pool`         | ⚠️ Tests : inscrit de faux joueurs `test_fake_N` (10 par défaut, nombre en argument du script) ; leurs DM échouent proprement |
 | `npm run goblinhunters:scatter-test-pool`      | ⚠️ Tests : répartit les faux joueurs sur les 5 lieux (à relancer chaque jour de test)                                         |
-| `npm run goblinhunters:public` / `:public:dry` | Salon public `DISCORD_CHANNEL_FRAME_PUBLIC` (cron)                                                                            |
+| `npm run goblinhunters:public` / `:public:dry` | Salon public `DISCORD_CHANNEL_JEUX_PUBLIC` (cron)                                                                            |
 | `npm run goblinhunters:reset`                  | ⚠️ Destructif : efface la manche en cours, garde `manches`                                                                    |
 | `npm run goblinhunters:reset:manches`          | ⚠️ Idem + `manches`/`manche_seq`                                                                                              |
 | `npm run goblinhunters:status`                 | État complet. ⚠️ Admin uniquement (spoile camps et rôles)                                                                     |
@@ -1148,7 +1149,7 @@ Ordre : actions des bots de remplacement → **vote** (l'éliminé est retiré d
 - `node jeux/scripts/goblinHuntersRecap.js` : compte-rendu admin (votes, attaques contre son camp, enquêtes, absences) à partir de l'historique. ⚠️ Spoile, lecture seule.
 - **Production** : seule l'ouverture des inscriptions est manuelle (`workflow_dispatch` de `.github/workflows/goblinhunters.yml` ou `npm run goblinhunters:public`). Le cron `4 8 * * *` (8h04 UTC, `--require-active` : ne fait rien sans partie ouverte) gère rappels, lancement/annulation et clôtures.
 - **Test complet** : `seed-test-pool` → `test` (ouvre) → `test:force-close` (lance) → chaque jour `scatter-test-pool` puis clic(s) puis `test` (clôture) → `reset`.
-- **Environnement** : aucune variable dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, secrets GitHub déjà en place).
+- **Environnement** : aucune variable dédiée (`DISCORD_CHANNEL_JEUX_TEST`/`PUBLIC`, `KV_REST_API_URL`/`TOKEN`, secrets GitHub déjà en place).
 
 ---
 
@@ -1245,7 +1246,7 @@ Ordre : 1) Étoiles actives → immunisés ; 2) **sorts** (bloqués si immunisé
 | `npm run marioclash:reset:manches`          | Idem + `manches`/`manche_seq`                 |
 | `npm run marioclash:status`                 | État courant                                  |
 
-Options du script : `--no-ping`, `--require-active`, `--force`. Production : présentation lancée à la main (`workflow_dispatch` de `.github/workflows/marioclash.yml` ou `npm run marioclash:public`), puis cron `14 8 * * *` (8h14 UTC, `--require-active`). ⚠️ Chaque cron a sa propre minute (voir « Crons GitHub Actions (jeux spéciaux) »). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`).
+Options du script : `--no-ping`, `--require-active`, `--force`. Production : présentation lancée à la main (`workflow_dispatch` de `.github/workflows/marioclash.yml` ou `npm run marioclash:public`), puis cron `14 8 * * *` (8h14 UTC, `--require-active`). ⚠️ Chaque cron a sa propre minute (voir « Crons GitHub Actions (jeux spéciaux) »). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_JEUX_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`).
 
 ---
 
@@ -1390,7 +1391,7 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, chaque membre traverse le
 | `npm run pont:reset:manches`          | **Destructif** : efface aussi l'archive des manches                                                                                                             |
 | `npm run pont:status`                 | État courant : jour et phase, participants du Vrai/Faux (bonnes et mauvaises réponses), multiplicateurs, événement, répartition **secrète** du jour, rumeurs (vérité, mensonge) et Indices consultés, projection du résultat, classement. Sans Discord |
 
-Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/pont.yml` : `24 7 * * *` (8h24 à Paris en hiver : résultat de la veille et Vrai/Faux) et `4 13 * * *` (14h04 : ponts), même commande, le script fait la transition prête (`transitionPrete()`). En été, les deux passages ont lieu une heure plus tard (9h24 et 15h04), et les textes suivent (`horaires()`). Ping `@MINI-JEUX` à l'annonce, au message du matin de chaque jour et à la fin de partie (jamais à l'ouverture des ponts). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
+Options du script : `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/pont.yml` : `24 7 * * *` (8h24 à Paris en hiver : résultat de la veille et Vrai/Faux) et `4 13 * * *` (14h04 : ponts), même commande, le script fait la transition prête (`transitionPrete()`). En été, les deux passages ont lieu une heure plus tard (9h24 et 15h04), et les textes suivent (`horaires()`). Ping `@MINI-JEUX` à l'annonce, au message du matin de chaque jour et à la fin de partie (jamais à l'ouverture des ponts). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_JEUX_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
 
 ---
 
@@ -1486,7 +1487,104 @@ Jeu spécial de 7 jours (`duree_jours`) : chaque jour, un nouveau coffre fermé 
 | `npm run coffre:reset:manches`            | **Destructif** : efface aussi l'archive des manches                                            |
 | `npm run coffre:status`                   | Jour, code **secret** du jour, joueurs (essais, ouverture, indice), classement. Sans Discord   |
 
-Options du script : `--dry-run`, `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/coffre.yml` : `28 7 * * *` (8h28 à Paris en hiver, 9h28 en été). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_FRAME_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
+Options du script : `--dry-run`, `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/coffre.yml` : `28 7 * * *` (8h28 à Paris en hiver, 9h28 en été). Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_JEUX_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
+
+---
+
+## Pile Poil (calcul du jour, quotidien en continu)
+
+Jeu quotidien **sans fin** : chaque jour, une égalité secrète, la même pour tous, à retrouver en 6 essais, chiffre par chiffre. Ce n'est ni un mini-jeu hebdomadaire ni un jeu spécial : pas de partie de 7 jours ni de classement final de partie, mais un classement du jour et un classement du mois. Pas de commande slash ni d'inscription : tout membre peut jouer chaque jour.
+
+| Rôle                                              | Fichier                                                                                         |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Règles pures (tirage, retour, pavé, points)       | `jeux/services/pilepoilRules.js`                                                                |
+| Redis, classements, série, PNJ                    | `jeux/services/pilepoil.js`                                                                     |
+| Images (plateau privé, récap du jour)             | `jeux/services/pilepoilImage.js`                                                                |
+| Discord (`postPilePoil()`, plateau, modale, Règles) | `jeux/discord/handlers/pilepoil.js`                                                           |
+| Routage des boutons et de la modale               | `jeux/discord/routes/jeuxSpeciaux.js`                                                           |
+| Publication quotidienne, statut, remise à zéro    | `jeux/scripts/postPilePoil.js`, `jeux/scripts/pilepoilStatus.js`, `jeux/scripts/resetPilePoil.js` |
+| Config                                            | `jeux/data/pilepoil/pilepoil.json` : `essais` (6), `top_mois_recap` (5)                         |
+| Simulation de difficulté                          | `jeux/outils/pilepoil/simuler.mjs`                                                              |
+| Tests                                             | `jeux/services/pilepoilRules.test.js`, `jeux/services/pilepoil.test.js`                         |
+
+### Déroulement (Pile Poil)
+
+- **Un message public par jour**, publié par le cron à 9 h à Paris en hiver (10 h en été : cron à heure UTC fixe, ⚠️ jamais d'heure en dur dans un texte joueur, calculée par une fonction à la manière de `heureOuverture()` du Coffre). Il contient le **récap de la veille** puis ouvre l'**égalité du jour**.
+- **Jour de jeu** : d'une publication à la suivante. Les essais restent possibles jusqu'au passage du cron du lendemain, qui clôt le jour (aucune coupure à minuit). Un clic sur un ancien message répond « Cette égalité est terminée » avec un lien vers le message du jour.
+- **Lancement** : le premier passage se fait à la main (`workflow_dispatch`) et publie une présentation du jeu avec la première égalité. Le cron passe `--require-active` : sans état en Redis, il ne fait rien (aucun démarrage automatique au déploiement). Une fois lancé, le jeu tourne sans fin ; `npm run pilepoil:pause` arrête les publications sans rien effacer.
+- Garde-fou anti-double-publication : un jour publié depuis moins de 8 h n'est pas clos (`isTooSoonSinceLastClosure()`), sauf `--force` (automatique hors `--public`).
+- **Salon de test séparé** : contrairement aux jeux spéciaux, le jeu tourne en permanence sur le salon public ; hors `--public`, toutes les clés passent sous le préfixe `pilepoil:test:*`, pour tester sans toucher à la partie publique ni la remettre à zéro.
+- **PNJ du salon de test** : 5 joueurs fictifs (`pnj-1` à `pnj-5`) jouent chaque égalité dès sa publication (essais compatibles avec leurs retours précédents). Jamais sur le salon public, jamais de passeport. `--sans-pnj` les désactive.
+- **Ping** : aucun ping quotidien (jeu permanent) ; seule la présentation du lancement pingue le rôle `MINI-JEUX`. ⚠️ Verrou habituel : `if (!isPublic) noPing = true` en tête de `postPilePoil()`, en plus de `NO_PING` dans le script, et test qui le vérifie (modèle `pont.test.js`).
+
+### Règles (Pile Poil)
+
+- **Égalité du jour** : 8 caractères, une seule opération, gabarit `__+__=__` ou `__-__=__` (deux nombres de 10 à 99, résultat de 10 à 99). 6 480 égalités possibles (3 240 par signe), tirées au hasard à la publication parmi celles jamais sorties (`pilepoil:sorties`), signe tiré à pile ou face. Jamais de `×` ni de `÷`.
+- **Gabarit affiché d'avance** : le signe et le `=` sont visibles dès le départ ; le joueur ne cherche que les **6 chiffres**.
+- **Essais** : 6 par jour et par joueur. Un essai = 6 chiffres quelconques, **le total n'a pas besoin d'être juste** (pour ne pas décourager). Saisie tolérante : `47+38=85`, `47 38 85` ou `473885` donnent le même essai ; tout ce qui n'est pas un chiffre est ignoré, il faut exactement 6 chiffres, sinon l'essai est refusé sans être compté. Verrou par joueur (`SET NX`, 10 s) contre le double envoi.
+- **Retour chiffre par chiffre** (`retour()`, règle du Wordle, doublons compris) : 🟩 bien placé, 🟨 présent ailleurs, ⬛ absent. Un chiffre présent une seule fois dans la solution ne colore qu'une case de l'essai (les bien placés d'abord).
+- **Pavé 0-9** : chaque chiffre prend son meilleur état connu (bien placé > présent > absent > pas encore joué).
+- **Victoire** : les 6 chiffres bien placés, dans l'ordre exact. `38+47=85` ne gagne pas si la solution est `47+38=85`.
+- Simulation (joueur parfait, 2 000 parties) : 3,2 à 3,4 essais en moyenne, moins de 1 % d'échecs ; deux essais « sondes » couvrant les 10 chiffres garantissent de trouver en 5 essais au plus.
+
+### Barème et classements (Pile Poil)
+
+- **Points du jour** : trouvé au N-ième essai = `7 - N` points (6, 5, 4, 3, 2, 1) ; échec = 0. Jamais de bonus de rapidité ni de départage à l'heure : on peut jouer n'importe quand dans la journée sans être avantagé.
+- **Classement du jour** (dans le récap) : regroupé par nombre d'essais (« 3 essais : A, B »), puis les échecs ; ex aequo assumés.
+- **Classement du mois** (mois calendaire, heure de Paris, `seasonIdForDate()`) : cumul des points. Départage : le moins de jours joués à points égaux (meilleure moyenne), puis ex aequo (`rangExAequo()`). Le mois retenu est celui du **jour de jeu** (date de publication de l'égalité). Top `top_mois_recap` (5) dans chaque récap.
+- **Fin de mois** : le récap publié le 1er du mois ajoute le classement final du mois écoulé (20 premiers, félicitations au(x) vainqueur(s)), une seule fois (marqueur `pilepoil:mois:<seasonId>:final`). Rien de plus à remettre à zéro : le nouveau mois a sa propre clé.
+- **Série** : nombre de jours consécutifs où le joueur a trouvé l'égalité, affiché sur son plateau ; elle ne rapporte aucun point. Un jour sans essai ou raté remet la série à 0.
+- Tout joueur entre au classement du mois dès son premier essai, même à 0 point. Rangs avec le point échappé (voir « Classements »).
+
+### Interface (Pile Poil)
+
+- **Message public en Components V2** (`versV2()`), un seul bloc et une seule image. Boutons `[🧮 Jouer]` et `[📖 Règles]` (`pilepoil_regles`).
+  - Récap de la veille : solution en clair, nombre de joueurs, classement du jour (pseudos en texte, jamais de mention), image des grilles sans chiffres, top 5 du mois.
+  - Égalité du jour : « Pile Poil n°N » et gabarit (`__+__=__`).
+  - Pied : « 🧮 N joueurs · M ont trouvé », mis à jour au premier essai d'un joueur et à chaque réussite.
+- **Plateau privé** (éphémère) : image du plateau, bouton `[✏️ Proposer]` qui ouvre une **modale** à un champ texte (6 chiffres). L'envoi de la modale répond `type: 6` et édite en place le plateau éphémère. Égalité trouvée : points, série et rang du mois.
+- Vocabulaire joueur : « essai », « égalité », « bien placé », « présent ailleurs », « absent ».
+
+### Images (Pile Poil)
+
+- `jeux/services/pilepoilImage.js` : SVG **600 px de large (portrait)**, style sombre à tuiles plates (validé sur maquette), rastérisé par `@resvg/resvg-js` (police `readGameFontPaths()`, Inter embarquée), en PNG. Lisibilité mobile : aucun texte de moins de 24 px sur 600 px de large, vérifié à 360 px.
+- **Plateau** : titre « Pile Poil », « Jour N · essai k/6 » ; 6 lignes de 8 cases (signe et `=` sur des cases fixes plus sombres) ; couleurs : vert bien placé, jaune présent ailleurs, gris absent ; pavé 0-9 en dessous.
+- Routes (`jeux/server/imageRoutes.js`) :
+  - `/api/pilepoil/plateau?d=<plateau>` : rendu sans état depuis `d` (essais **avec leurs retours déjà calculés par le serveur**). L'URL ne contient pas la solution : elle ne permet pas de tester un essai ;
+  - `/api/pilepoil/recap?e=<p|t>&jour=<n>&v=<horodatage>` : grilles colorées d'un jour clos **sans chiffres**, lues dans `pilepoil:historique` (12 joueurs au plus, trouvés au moins d'essais d'abord, pseudos tronqués avec `tronquer()`) ; 6 cases par ligne groupées par 2, sans les cases du signe et du `=` ; 404 tant que le jour n'est pas clos.
+- `e` (`p` public, `t` test) choisit l'espace de clés ; il figure aussi dans les `custom_id` (`pilepoil_jouer:<e>:<jour>`, `pilepoil_proposer:<e>:<jour>`, `pilepoil_modal:<e>:<jour>`).
+
+### Stockage Redis (`pilepoil:*`)
+
+Hors `--public`, mêmes clés sous `pilepoil:test:*`.
+
+| Clé                                  | Type   | Contenu                                                                                     |
+| ------------------------------------ | ------ | ------------------------------------------------------------------------------------------- |
+| `pilepoil:state`                     | STRING | `{ jour, seasonId, channelId, messageId, publishedAt, pause, embeds, components }`          |
+| `pilepoil:solutions`                 | HASH   | `jour → égalité` (secret jusqu'au récap)                                                    |
+| `pilepoil:sorties`                   | SET    | égalités déjà tirées (jamais deux fois la même)                                             |
+| `pilepoil:parties:<jour>`            | HASH   | `discordId → { essais: [{ chiffres, retour, at }], trouve, points }`                        |
+| `pilepoil:verrou:<jour>:<id>`        | STRING | verrou d'essai (10 s)                                                                       |
+| `pilepoil:usernames`                 | HASH   | `discordId → pseudo`                                                                        |
+| `pilepoil:series`                    | HASH   | `discordId → { serie, dernierJourTrouve }`                                                  |
+| `pilepoil:mois:<seasonId>`           | HASH   | `discordId → points du mois` (`HINCRBY`, 0 dès le premier essai)                           |
+| `pilepoil:mois:<seasonId>:jours`     | HASH   | `discordId → jours joués` (départage)                                                       |
+| `pilepoil:mois:<seasonId>:final`     | STRING | marqueur du classement final publié                                                         |
+| `pilepoil:historique`                | HASH   | `jour → { jour, seasonId, solution, joueurs, trouves, parEssais, rates, grilles, resolvedAt }` (`grilles` : 12 premières grilles sans chiffres, pour l'image du récap) |
+
+Les `pilepoil:parties:<jour>` et `pilepoil:verrou:*` expirent après 40 jours ; le reste est permanent.
+
+### Scripts et cron (Pile Poil)
+
+| Commande                                    | Effet                                                                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `npm run pilepoil:test` / `:test:dry`       | Salon de test, clés `pilepoil:test:*` (jamais de ping, 5 PNJ) / aperçu console            |
+| `npm run pilepoil:public` / `:public:dry`   | Salon public (cron)                                                                       |
+| `npm run pilepoil:status` (`-- --test`)     | Jour, solution **secrète** du jour, joueurs (essais, retours), classement du mois. Sans Discord |
+| `npm run pilepoil:pause`                    | Arrête les publications publiques (`pause: true`, le cron passe son tour), sans rien effacer ; la partie du jour reste jouable ; relance par `workflow_dispatch` |
+| `npm run pilepoil:reset`                    | **Destructif** : efface les clés de test `pilepoil:test:*` ; `-- --public` efface aussi le jeu public |
+
+Options du script : `--dry-run`, `--no-ping`, `--require-active`, `--force`, `--sans-pnj` (salon de test). Cron `.github/workflows/pilepoil.yml` : `2 8 * * *` (9h02 à Paris en hiver, 10h02 en été), après tous les jeux spéciaux. Aucune variable d'environnement dédiée (`DISCORD_CHANNEL_JEUX_TEST`/`PUBLIC`, `KV_REST_API_*`, `DISCORD_TOKEN`).
 
 ---
 
@@ -1907,13 +2005,13 @@ Sondage ponctuel : chaque question devient un message séparé avec un **sondage
 
 | Commande                      | Effet                                                                             |
 | ----------------------------- | --------------------------------------------------------------------------------- |
-| `poll:test` / `:test:dry`     | Salon `DISCORD_CHANNEL_FRAME_TEST`, sans ping / aperçu console                    |
+| `poll:test` / `:test:dry`     | Salon `DISCORD_CHANNEL_JEUX_TEST`, sans ping / aperçu console                    |
 | `poll:test:force`             | Supprime les messages d'un sondage actif puis reposte                             |
 | `poll:public` / `:public:dry` | Salon « Annonces » `DISCORD_CHANNEL_ANNONCES`, `@everyone` sur le premier message |
 | `poll:status`                 | Idées soumises uniquement (les votes sont visibles dans Discord)                  |
 | `poll:reset`                  | Supprime les messages postés (best-effort) et l'état. **Destructif**              |
 
-Variables : `DISCORD_CHANNEL_FRAME_TEST`, `DISCORD_CHANNEL_ANNONCES`, `DISCORD_TOKEN`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`.
+Variables : `DISCORD_CHANNEL_JEUX_TEST`, `DISCORD_CHANNEL_ANNONCES`, `DISCORD_TOKEN`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`.
 
 ---
 

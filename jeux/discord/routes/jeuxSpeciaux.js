@@ -1,5 +1,6 @@
 // Jeux spéciaux sur 7 jours : Blackjack, Gobelet, Robinson, Goblin Hunters,
-// Mario Clash, Qui est-ce ? (archivé), Meow, Pont du Troll, Le Coffre
+// Mario Clash, Qui est-ce ? (archivé), Meow, Pont du Troll, Le Coffre, et
+// Pile Poil (jeu quotidien sans fin)
 //
 // Routage extrait de api/discord/interactions.js : chaque bloc répond à
 // Discord via `res` s'il reconnaît l'interaction, sinon la fonction rend
@@ -91,9 +92,49 @@ import {
   handleRegles as handleCoffreRegles,
   majBrouillon as majCoffreBrouillon,
 } from "../handlers/coffre.js";
+import {
+  handleJouer as handlePilePoilJouer,
+  handleProposition as handlePilePoilProposition,
+  handleRegles as handlePilePoilRegles,
+  buildProposerModal as buildPilePoilModal,
+} from "../handlers/pilepoil.js";
+import { espaceDuCode as pilePoilEspace } from "../../services/pilepoil.js";
 import { runBackground, buildDiscordWebhookUrl } from "@clash/commun/discordInteractions.js";
 
+const pseudoDe = (body) => body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || "Inconnu";
+
 export async function routeJeuxSpeciaux(body, res) {
+  // ── Pile Poil : Jouer et Règles (nouvel éphémère) ──
+  // custom_id : pilepoil_jouer:<p|t>:<jour>, pilepoil_regles
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^pilepoil_jouer:[pt]:\d+$|^pilepoil_regles$/.test(body.data.custom_id)) {
+    const [action, code, jour] = body.data.custom_id.split(":");
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 5, data: { flags: 64 } });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    if (action === "pilepoil_regles") runBackground(() => handlePilePoilRegles(webhookUrl));
+    else runBackground(() => handlePilePoilJouer(webhookUrl, pilePoilEspace(code), jour, discordId));
+    return;
+  }
+
+  // ── Pile Poil : Proposer → ouverture de la modale (synchrone) ──
+  // custom_id : pilepoil_proposer:<p|t>:<jour>
+  if (body.type === 3 && typeof body.data?.custom_id === "string" && /^pilepoil_proposer:[pt]:\d+$/.test(body.data.custom_id)) {
+    const [, code, jour] = body.data.custom_id.split(":");
+    return res.status(200).json({ type: 9, data: buildPilePoilModal(code, jour) });
+  }
+
+  // ── Pile Poil : envoi de la modale (body.type 5 = MODAL_SUBMIT), édition
+  // en place du plateau éphémère d'où vient le bouton Proposer ──
+  if (body.type === 5 && typeof body.data?.custom_id === "string" && /^pilepoil_modal:[pt]:\d+$/.test(body.data.custom_id)) {
+    const [, code, jour] = body.data.custom_id.split(":");
+    const saisie = body.data.components?.[0]?.components?.[0]?.value || "";
+    const discordId = body.member?.user?.id;
+    res.status(200).json({ type: 6 });
+    const webhookUrl = buildDiscordWebhookUrl(body);
+    runBackground(() => handlePilePoilProposition(webhookUrl, pilePoilEspace(code), jour, discordId, pseudoDe(body), saisie));
+    return;
+  }
+
   // ── Le Coffre : Jouer et Règles (nouvel éphémère) ──
   // custom_id : coffre_jouer:<jour>, coffre_regles
   if (body.type === 3 && typeof body.data?.custom_id === "string" && /^coffre_jouer:\d+$|^coffre_regles$/.test(body.data.custom_id)) {
