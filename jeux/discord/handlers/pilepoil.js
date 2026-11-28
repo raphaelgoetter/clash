@@ -76,10 +76,8 @@ const urlRecap = (espace, jour, v) => `${URL_JEUX}/api/pilepoil/recap?e=${codeEs
 
 // ── Textes publics ────────────────────────────────────────────────
 
-const lignesEgaliteDuJour = (signe, config) => [
-  `Retrouve l'égalité secrète \`${gabarit(signe)}\` : le signe et le \`=\` sont déjà placés, à toi de trouver les **6 chiffres**, en ${config.essais} essais au plus.`,
-  "Après chaque essai : 🟩 bien placé · 🟨 présent ailleurs · ⬛ absent. Ton essai n'a pas besoin d'être juste !",
-];
+// Texte public minimal : le détail est dans les Règles
+const lignesEgaliteDuJour = (config) => [`Trouve les 6 chiffres en ${config.essais} essais.`];
 
 const footerJour = (joueurs, trouves) => ({
   text: `🧮 ${pluriel(joueurs, "joueur")} · ${trouves} ${trouves > 1 ? "ont" : "a"} trouvé`,
@@ -240,13 +238,7 @@ export async function postPilePoil(
     const embeds = [
       {
         title: "🧮 Pile Poil n°1 : le calcul du jour",
-        description: [
-          "**Nouveau jeu quotidien !** Chaque jour, une égalité secrète, la même pour tout le monde.",
-          "",
-          ...lignesEgaliteDuJour(signe, config),
-          "",
-          `Trouvé au 1er essai = ${points(config.essais)}, au dernier = 1 point. Classement du jour et du mois, nouvelle égalité chaque matin vers ${heurePublication(now)}.`,
-        ].join("\n"),
+        description: ["**Nouveau jeu quotidien !** Une égalité secrète par jour, la même pour tous.", ...lignesEgaliteDuJour(config)].join("\n"),
         color: PILEPOIL_COLOR,
         image: { url: urlPlateau({ jour: 1, signe, essaisMax: config.essais, essais: [], trouve: false }) },
         footer: footerJour(0, 0),
@@ -280,7 +272,7 @@ export async function postPilePoil(
   const avecFinal = finDeMois && (dryRun || (await marquerFinalMois(espace, state.seasonId)));
   const apres = [];
   if (avecFinal) apres.push(...lignesFinalMois(rankingMois, state.seasonId), "");
-  apres.push(`### 🧮 Égalité du jour : \`${gabarit(signe)}\``, ...lignesEgaliteDuJour(signe, config));
+  apres.push(`### 🧮 Égalité du jour : \`${gabarit(signe)}\``, ...lignesEgaliteDuJour(config));
   const embeds = [
     {
       title: `🧮 Pile Poil n°${jour}`,
@@ -382,18 +374,16 @@ async function vuePlateau(espace, state, config, discordId, { message = null } =
   const fini = partie.trouve || restants <= 0;
   const lignes = [];
   if (message) lignes.push(message, "");
+  // Texte minimal : le détail est dans les Règles
   if (!fini) {
-    lignes.push(
-      `Égalité du jour : \`${gabarit(signe)}\`. Propose 6 chiffres (${pluriel(restants, "essai")} restant${restants > 1 ? "s" : ""}).`,
-      "🟩 bien placé · 🟨 présent ailleurs · ⬛ absent",
-    );
+    lignes.push(`${pluriel(restants, "essai")} restant${restants > 1 ? "s" : ""}.`);
   } else if (partie.trouve) {
     const serie = serieAffichee(await readSerie(espace, discordId), state.jour);
     lignes.push(`🔥 Série : ${pluriel(serie, "jour")} d'affilée.`);
     const position = await maPositionMois(espace, state.seasonId, discordId);
     if (position) lignes.push(position);
   } else {
-    lignes.push("Raté pour aujourd'hui ! La solution sera dévoilée demain matin.");
+    lignes.push("Raté ! Solution demain matin.");
   }
   return {
     content: "",
@@ -477,7 +467,8 @@ export async function handleProposition(webhookUrl, espace, jour, discordId, use
     else if (r.statut === "occupe") message = "Un essai est déjà en cours, patiente une seconde.";
     else if (r.statut === "termine") message = r.partie.trouve ? "Tu as déjà trouvé l'égalité du jour !" : "Plus d'essai aujourd'hui.";
     else if (r.partie.trouve) message = `🎉 **Pile poil ! Trouvé en ${pluriel(r.partie.essais.length, "essai")} : +${points(r.partie.points)}**`;
-    else message = `${egaliteLisible(signeDe(solution), chiffres)} : ${ligneRetour(r.retour)}`;
+    // Essai raté : l'image du plateau suffit
+    else message = null;
     await patchOriginal(webhookUrl, await vuePlateau(espace, state, config, discordId, { message }));
     // Compteurs publics : premier essai du joueur, ou égalité trouvée
     if (r.statut === "ok" && (r.partie.essais.length === 1 || r.partie.trouve)) await majCompteur(espace, state);
